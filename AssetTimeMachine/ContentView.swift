@@ -21,7 +21,7 @@ struct ContentView: View {
                 }
                 .tag(AppTab.dashboard)
 
-            SnapshotListView()
+            SnapshotListView(marketStore: marketStore)
                 .tabItem {
                     Label("记录", systemImage: "square.and.pencil")
                 }
@@ -262,6 +262,7 @@ private struct DashboardView: View {
 
 private struct SnapshotListView: View {
     @Environment(\.modelContext) private var modelContext
+    @ObservedObject var marketStore: RemoteMarketStore
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
     @Query private var categories: [AssetCategory]
 
@@ -337,6 +338,7 @@ private struct SnapshotListView: View {
                             ForEach(visibleCategories) { category in
                                 RecordCategoryCard(
                                     category: category,
+                                    marketStore: marketStore,
                                     amountInputs: $amountInputs,
                                     quantityInputs: $quantityInputs,
                                     unitPriceInputs: $unitPriceInputs,
@@ -384,6 +386,12 @@ private struct SnapshotListView: View {
         }
         .task {
             await prepareSnapshotIfNeeded()
+            await syncAutoRatesIfPossible()
+        }
+        .onChange(of: marketStore.exchangeRates) { _, _ in
+            Task { @MainActor in
+                await syncAutoRatesIfPossible()
+            }
         }
     }
 
@@ -413,6 +421,39 @@ private struct SnapshotListView: View {
     }
 
     @MainActor
+    private func syncAutoRatesIfPossible() async {
+        guard let snapshot = currentSnapshot else { return }
+
+        for entry in snapshot.entries {
+            guard let item = entry.item,
+                  let currencyCode = item.autoExchangeRateCurrencyCode,
+                  let rate = marketStore.exchangeRate(for: currencyCode) else {
+                continue
+            }
+
+            let rateText = rate.plainNumberString()
+            if unitPriceInputs[item.id] != rateText {
+                unitPriceInputs[item.id] = rateText
+            }
+
+            let currentRate = entry.unitPrice ?? 0
+            if abs(currentRate - rate) > 0.0001 {
+                do {
+                    try SnapshotService.upsertEntry(
+                        snapshot: snapshot,
+                        item: item,
+                        quantity: normalizedNumber(from: quantityInputs[item.id]),
+                        unitPrice: rate,
+                        in: modelContext
+                    )
+                } catch {
+                    print("[AssetTimeMachine] sync auto rate failed: \(error)")
+                }
+            }
+        }
+    }
+
+    @MainActor
     private func persist(item: AssetItem) {
         guard let snapshot = currentSnapshot else { return }
 
@@ -423,7 +464,11 @@ private struct SnapshotListView: View {
                 try SnapshotService.upsertEntry(snapshot: snapshot, item: item, amount: amount, in: modelContext)
             case .quantityAndUnitPrice:
                 let quantity = normalizedNumber(from: quantityInputs[item.id])
-                let unitPrice = normalizedNumber(from: unitPriceInputs[item.id])
+                let autoRate = item.autoExchangeRateCurrencyCode.flatMap { marketStore.exchangeRate(for: $0) }
+                let unitPrice = autoRate ?? normalizedNumber(from: unitPriceInputs[item.id])
+                if let autoRate {
+                    unitPriceInputs[item.id] = autoRate.plainNumberString()
+                }
                 try SnapshotService.upsertEntry(snapshot: snapshot, item: item, quantity: quantity, unitPrice: unitPrice, in: modelContext)
             }
         } catch {
@@ -443,6 +488,7 @@ private struct SnapshotListView: View {
 
 private struct RecordCategoryCard: View {
     let category: AssetCategory
+    @ObservedObject var marketStore: RemoteMarketStore
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
     @Binding var unitPriceInputs: [UUID: String]
@@ -472,6 +518,7 @@ private struct RecordCategoryCard: View {
                 ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     AssetEntryInputRow(
                         item: item,
+                        autoExchangeRate: item.autoExchangeRateCurrencyCode.flatMap { marketStore.exchangeRate(for: $0) },
                         amountText: Binding(
                             get: { amountInputs[item.id] ?? "" },
                             set: { newValue in
@@ -509,6 +556,7 @@ private struct RecordCategoryCard: View {
 
 private struct AssetEntryInputRow: View {
     let item: AssetItem
+    let autoExchangeRate: Double?
     @Binding var amountText: String
     @Binding var quantityText: String
     @Binding var unitPriceText: String
@@ -523,6 +571,11 @@ private struct AssetEntryInputRow: View {
 
             if item.valuationMethod == .directAmount {
                 ATMInputField(text: $amountText, placeholder: "0", width: 140)
+            } else if let currencyCode = item.autoExchangeRateCurrencyCode {
+                HStack(spacing: 8) {
+                    ATMInputField(text: $quantityText, placeholder: currencyCode, width: 84)
+                    AutoRateField(currencyCode: currencyCode, rateText: autoRateDisplayText)
+                }
             } else {
                 HStack(spacing: 8) {
                     ATMInputField(text: $quantityText, placeholder: "数量", width: 74)
@@ -531,6 +584,45 @@ private struct AssetEntryInputRow: View {
             }
         }
         .padding(.vertical, 12)
+    }
+
+    private var autoRateDisplayText: String {
+        if let autoExchangeRate {
+            return autoExchangeRate.plainNumberString()
+        }
+        return unitPriceText.isEmpty ? "--" : unitPriceText
+    }
+}
+
+private struct AutoRateField: View {
+    let currencyCode: String
+    let rateText: String
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            Text("汇率")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(AssetTheme.textSecondary)
+            Text(rateText)
+                .font(.system(.body, design: .rounded).weight(.semibold))
+                .foregroundStyle(AssetTheme.goldSoft)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(width: 92, height: 42, alignment: .trailing)
+        .padding(.horizontal, 12)
+        .background(AssetTheme.background.opacity(0.44), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.4), lineWidth: 1)
+        )
+        .overlay(alignment: .topLeading) {
+            Text(currencyCode)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(AssetTheme.textSecondary)
+                .padding(.top, 6)
+                .padding(.leading, 10)
+        }
     }
 }
 
@@ -1203,6 +1295,19 @@ private extension AssetCategory {
                 }
                 return lhs.sortOrder < rhs.sortOrder
             }
+    }
+}
+
+private extension AssetItem {
+    var autoExchangeRateCurrencyCode: String? {
+        guard valuationMethod == .quantityAndUnitPrice else { return nil }
+        let uppercasedName = name.uppercased()
+        for currencyCode in ["USD", "EUR", "GBP", "JPY", "HKD", "SGD", "AUD", "CAD", "KRW"] {
+            if uppercasedName.hasSuffix(" \(currencyCode)") || uppercasedName == currencyCode {
+                return currencyCode
+            }
+        }
+        return nil
     }
 }
 

@@ -38,6 +38,31 @@ struct PublicMarketOverview: Codable {
     }
 }
 
+struct PublicExchangeRateItem: Codable, Identifiable {
+    let currency: String
+    let rate: Double
+
+    var id: String { currency }
+}
+
+struct PublicExchangeRates: Codable {
+    let success: Bool
+    let baseCurrency: String
+    let source: String
+    let fetchedAt: Date
+    let recordDate: String?
+    let rates: [PublicExchangeRateItem]
+
+    enum CodingKeys: String, CodingKey {
+        case success
+        case baseCurrency = "base_currency"
+        case source
+        case fetchedAt = "fetched_at"
+        case recordDate = "record_date"
+        case rates
+    }
+}
+
 struct MarketEndpointDoc: Identifiable {
     let title: String
     let path: String
@@ -81,6 +106,21 @@ enum RemoteMarketClient {
         let url = url(for: "/api/v1/money/public/market-overview")
         let (data, response) = try await URLSession.shared.data(from: url)
         try validate(response: response, data: data)
+        return try decoder().decode(PublicMarketOverview.self, from: data)
+    }
+
+    static func fetchExchangeRates() async throws -> PublicExchangeRates {
+        let url = url(for: "/api/v1/money/public/rmb-exchange-rates")
+        let (data, response) = try await URLSession.shared.data(from: url)
+        try validate(response: response, data: data)
+        return try decoder().decode(PublicExchangeRates.self, from: data)
+    }
+
+    static func url(for path: String) -> URL {
+        URL(string: path, relativeTo: baseURL)!.absoluteURL
+    }
+
+    private static func decoder() -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
@@ -92,11 +132,7 @@ enum RemoteMarketClient {
 
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unsupported date format: \(value)")
         }
-        return try decoder.decode(PublicMarketOverview.self, from: data)
-    }
-
-    static func url(for path: String) -> URL {
-        URL(string: path, relativeTo: baseURL)!.absoluteURL
+        return decoder
     }
 
     private static let fractionalISO8601DateFormatter: ISO8601DateFormatter = {
@@ -139,6 +175,7 @@ enum RemoteMarketClient {
 @MainActor
 final class RemoteMarketStore: ObservableObject {
     @Published var overview: PublicMarketOverview?
+    @Published var exchangeRates: [String: Double] = [:]
     @Published var isLoading = false
     @Published var errorMessage: String?
 
@@ -154,9 +191,22 @@ final class RemoteMarketStore: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+
+        do {
+            let exchangeRates = try await RemoteMarketClient.fetchExchangeRates()
+            self.exchangeRates = Dictionary(uniqueKeysWithValues: exchangeRates.rates.map { ($0.currency.uppercased(), $0.rate) })
+        } catch {
+            if errorMessage == nil {
+                errorMessage = error.localizedDescription
+            }
+        }
     }
 
     func market(for symbol: String) -> PublicMarketPrice? {
         overview?.markets.first(where: { $0.symbol == symbol })
+    }
+
+    func exchangeRate(for currency: String) -> Double? {
+        exchangeRates[currency.uppercased()]
     }
 }
