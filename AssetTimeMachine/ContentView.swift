@@ -20,6 +20,11 @@ struct ContentView: View {
                 .tabItem {
                     Label("时光机", systemImage: "clock.arrow.circlepath")
                 }
+
+            APIDocumentationView()
+                .tabItem {
+                    Label("接口文档", systemImage: "book.pages")
+                }
         }
         .task {
             try? SeedDataService.seedDefaultCategoriesIfNeeded(in: modelContext)
@@ -110,6 +115,85 @@ private struct TimeMachineView: View {
             }
             .navigationTitle("时光机")
         }
+    }
+}
+
+private struct APIDocumentationView: View {
+    private let baseURL = "https://api.flyingrtx.com"
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("公共行情接口") {
+                    APIDocRow(
+                        title: "黄金价格",
+                        method: "GET",
+                        path: "/api/v1/money/public/gold-price",
+                        description: "返回人民币计价的黄金单价，单位 gram。"
+                    )
+
+                    APIDocRow(
+                        title: "BTC 价格",
+                        method: "GET",
+                        path: "/api/v1/money/public/btc-price",
+                        description: "返回 Binance 的 BTCUSDT 最新价格。"
+                    )
+
+                    APIDocRow(
+                        title: "纳指参考价格",
+                        method: "GET",
+                        path: "/api/v1/money/public/nasdaq-price",
+                        description: "当前使用 QQQ 作为纳指代理锚点，返回美元价格。"
+                    )
+
+                    APIDocRow(
+                        title: "行情概览",
+                        method: "GET",
+                        path: "/api/v1/money/public/market-overview",
+                        description: "汇总返回 gold、btc、nasdaq 三个锚点。"
+                    )
+                }
+
+                Section("说明") {
+                    LabeledContent("Base URL", value: baseURL)
+                    Text("这些接口默认给资产时光机后续做锚点分析和调试联调用，不需要登录。")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("接口文档")
+        }
+    }
+}
+
+private struct APIDocRow: View {
+    let title: String
+    let method: String
+    let path: String
+    let description: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(title)
+                    .font(.headline)
+                Spacer()
+                Text(method)
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.blue.opacity(0.12), in: Capsule())
+            }
+
+            Text(path)
+                .font(.system(.footnote, design: .monospaced))
+                .textSelection(.enabled)
+
+            Text(description)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
     }
 }
 
