@@ -1,26 +1,36 @@
 import SwiftUI
 import SwiftData
 
+private enum AppTab: Hashable {
+    case dashboard
+    case snapshots
+    case timeMachine
+}
+
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var marketStore = RemoteMarketStore()
+    @State private var selectedTab: AppTab = ProcessInfo.processInfo.arguments.contains("-openSnapshotsTab") ? .snapshots : .dashboard
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             DashboardView(marketStore: marketStore)
                 .tabItem {
                     Label("首页", systemImage: "house")
                 }
+                .tag(AppTab.dashboard)
 
             SnapshotListView()
                 .tabItem {
                     Label("记录", systemImage: "square.and.pencil")
                 }
+                .tag(AppTab.snapshots)
 
             TimeMachineView()
                 .tabItem {
                     Label("时光机", systemImage: "clock.arrow.circlepath")
                 }
+                .tag(AppTab.timeMachine)
         }
         .tint(AssetTheme.gold)
         .task {
