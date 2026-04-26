@@ -122,42 +122,13 @@ private struct DashboardView: View {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        ATMHeader(title: "资产时光机") {
-                            Button {
-                                Task { await marketStore.refresh() }
-                            } label: {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundStyle(AssetTheme.gold)
-                                    .frame(width: 44, height: 44)
-                                    .background(.white.opacity(0.04), in: Circle())
-                                    .overlay(Circle().stroke(AssetTheme.border, lineWidth: 1))
-                            }
-                            .buttonStyle(.plain)
-                        }
-
-                        heroCard
-
-                        HStack(spacing: 12) {
-                            MetricTile(
-                                title: "总资产",
-                                value: totalAssets.currencyString(),
-                                accent: AssetTheme.gold
-                            )
-
-                            MetricTile(
-                                title: "总负债",
-                                value: totalLiabilities.currencyString(),
-                                accent: AssetTheme.negative
-                            )
-                        }
-
+                    VStack(alignment: .leading, spacing: 22) {
+                        summaryStrip
                         marketSection
                         recentSection
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 12)
+                    .padding(.top, 28)
                     .padding(.bottom, 120)
                 }
             }
@@ -165,15 +136,19 @@ private struct DashboardView: View {
         }
     }
 
-    private var heroCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top) {
+    private var summaryStrip: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 10) {
-                    GoldChip(text: "净资产（元）")
+                    Text("净资产")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(AssetTheme.textSecondary)
 
                     Text(netAssets.currencyString())
-                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                        .font(.system(size: 42, weight: .bold, design: .rounded))
                         .foregroundStyle(AssetTheme.textPrimary)
+                        .minimumScaleFactor(0.72)
+                        .lineLimit(2)
 
                     HStack(spacing: 10) {
                         InlineStat(text: "记录天数 \(snapshots.count)", color: AssetTheme.textSecondary)
@@ -181,30 +156,45 @@ private struct DashboardView: View {
                     }
                 }
 
-                Spacer(minLength: 16)
+                Spacer(minLength: 12)
 
-                SparklineCard(points: [0.14, 0.18, 0.22, 0.21, 0.28, 0.32, 0.30, 0.38, 0.43])
-                    .frame(width: 132, height: 84)
+                Button {
+                    Task { await marketStore.refresh() }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(AssetTheme.gold)
+                        .frame(width: 42, height: 42)
+                        .background(.white.opacity(0.04), in: Circle())
+                        .overlay(Circle().stroke(AssetTheme.border, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
             }
 
-            Divider().overlay(AssetTheme.border)
+            HStack(alignment: .top, spacing: 18) {
+                SummaryColumnMetric(
+                    title: "总资产",
+                    value: totalAssets.currencyString(),
+                    accent: AssetTheme.gold
+                )
 
-            HStack(spacing: 12) {
-                CompactStat(title: "资产", value: totalAssets.currencyString(), accent: AssetTheme.gold)
-                CompactStat(title: "负债", value: totalLiabilities.currencyString(), accent: AssetTheme.negative)
-                CompactStat(title: "条目", value: "\(entries.count)", accent: AssetTheme.accentBlue)
+                SummaryColumnMetric(
+                    title: "总负债",
+                    value: totalLiabilities.currencyString(),
+                    accent: AssetTheme.negative
+                )
+
+                SummaryColumnMetric(
+                    title: "条目",
+                    value: "\(entries.count)",
+                    accent: AssetTheme.accentBlue
+                )
             }
+
+            Rectangle()
+                .fill(AssetTheme.border.opacity(0.55))
+                .frame(height: 1)
         }
-        .padding(22)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(AssetTheme.heroGradient)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(AssetTheme.border, lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.28), radius: 28, x: 0, y: 16)
     }
 
     private var marketSection: some View {
@@ -1721,39 +1711,6 @@ private struct CompactStat: View {
     }
 }
 
-private struct MetricTile: View {
-    let title: String
-    let value: String
-    let detail: String?
-    let accent: Color
-
-    init(title: String, value: String, detail: String? = nil, accent: Color) {
-        self.title = title
-        self.value = value
-        self.detail = detail
-        self.accent = accent
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(AssetTheme.textSecondary)
-            Text(value)
-                .font(.title3.weight(.bold))
-                .foregroundStyle(AssetTheme.textPrimary)
-                .minimumScaleFactor(0.72)
-            if let detail, !detail.isEmpty {
-                Text(detail)
-                    .font(.footnote)
-                    .foregroundStyle(accent)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .atmCardStyle()
-    }
-}
-
 private struct MarketPriceRow: View {
     let market: PublicMarketPrice
 
@@ -1912,68 +1869,6 @@ private struct SkeletonLine: View {
         RoundedRectangle(cornerRadius: 999, style: .continuous)
             .fill(.white.opacity(0.08))
             .frame(width: width, height: 14)
-    }
-}
-
-private struct SparklineCard: View {
-    let points: [CGFloat]
-
-    var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(.white.opacity(0.03))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(AssetTheme.border.opacity(0.8), lineWidth: 1)
-                )
-
-            ChartLine(points: points)
-                .stroke(AssetTheme.goldSoft, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
-                .padding(14)
-
-            ChartLine(points: points)
-                .fill(
-                    LinearGradient(
-                        colors: [AssetTheme.gold.opacity(0.24), .clear],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .padding(14)
-                .mask(
-                    VStack(spacing: 0) {
-                        Spacer()
-                        Rectangle().frame(height: 40)
-                    }
-                )
-        }
-    }
-}
-
-private struct ChartLine: Shape {
-    let points: [CGFloat]
-
-    func path(in rect: CGRect) -> Path {
-        guard points.count > 1 else { return Path() }
-
-        let stepX = rect.width / CGFloat(points.count - 1)
-        let minY = points.min() ?? 0
-        let maxY = points.max() ?? 1
-        let range = max(maxY - minY, 0.001)
-
-        var path = Path()
-        for (index, point) in points.enumerated() {
-            let x = CGFloat(index) * stepX
-            let normalizedY = (point - minY) / range
-            let y = rect.height - normalizedY * rect.height
-
-            if index == 0 {
-                path.move(to: CGPoint(x: x, y: y))
-            } else {
-                path.addLine(to: CGPoint(x: x, y: y))
-            }
-        }
-        return path
     }
 }
 
