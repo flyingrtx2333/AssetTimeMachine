@@ -846,65 +846,15 @@ private struct TimeMachineView: View {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        ATMHeader(title: "时光机", subtitle: "像网站趋势页一样看资产曲线和 BTC / 纳指折算。")
-
+                    VStack(alignment: .leading, spacing: 14) {
                         TimeMachineRangePicker(selectedRange: $selectedRange)
 
                         if let latestPoint, !filteredTrendPoints.isEmpty {
-                            VStack(alignment: .leading, spacing: 16) {
-                                HStack(alignment: .top, spacing: 12) {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        Text(latestPoint.date.chineseLongDateString)
-                                            .font(.headline)
-                                            .foregroundStyle(AssetTheme.textPrimary)
-
-                                        Text(latestPoint.mainAssets.currencyString())
-                                            .font(.system(size: 34, weight: .bold, design: .rounded))
-                                            .foregroundStyle(AssetTheme.goldSoft)
-                                            .minimumScaleFactor(0.72)
-                                            .lineLimit(1)
-                                    }
-
-                                    Spacer(minLength: 12)
-
-                                    GoldChip(text: selectedRange.summaryLabel)
-                                }
-
-                                LazyVGrid(
-                                    columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
-                                    spacing: 12
-                                ) {
-                                    TimeMachineMetricCard(
-                                        title: "净资产",
-                                        value: latestPoint.netAssets.currencyString(),
-                                        detail: "负债 \(latestPoint.liabilities.currencyString())",
-                                        accent: AssetTheme.positive
-                                    )
-                                    TimeMachineMetricCard(
-                                        title: "BTC 折算",
-                                        value: latestPoint.btcEquivalent?.plainNumberString() ?? "--",
-                                        detail: "按当前 BTC 锚点",
-                                        accent: AssetTheme.accentOrange
-                                    )
-                                    TimeMachineMetricCard(
-                                        title: "纳指折算",
-                                        value: latestPoint.nasdaqEquivalent?.plainNumberString() ?? "--",
-                                        detail: "按当前 QQQ 锚点",
-                                        accent: AssetTheme.accentBlue
-                                    )
-                                    TimeMachineMetricCard(
-                                        title: "黄金折算",
-                                        value: latestPoint.goldEquivalent?.plainNumberString() ?? "--",
-                                        detail: "按当前金价折算",
-                                        accent: AssetTheme.gold
-                                    )
-                                }
-
-                            }
-                            .atmCardStyle()
-
-                            TimeMachineHeroTrendCard(points: filteredTrendPoints)
+                            TimeMachineHeroTrendCard(
+                                points: filteredTrendPoints,
+                                latestPoint: latestPoint,
+                                selectedRangeLabel: selectedRange.summaryLabel
+                            )
 
                             LazyVGrid(
                                 columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
@@ -943,8 +893,8 @@ private struct TimeMachineView: View {
                         }
                     }
                     .padding(.horizontal, 16)
-                    .padding(.top, 12)
-                    .padding(.bottom, 120)
+                    .padding(.top, 8)
+                    .padding(.bottom, 156)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -1082,57 +1032,84 @@ private struct TimeMachineRangePicker: View {
     }
 }
 
-private struct TimeMachineMetricCard: View {
+private struct TimeMachineInlineMetric: View {
     let title: String
     let value: String
-    let detail: String
     let accent: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(AssetTheme.textSecondary)
-
             Text(value)
-                .font(.title3.weight(.bold))
-                .foregroundStyle(AssetTheme.textPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.68)
-
-            Text(detail)
-                .font(.footnote)
+                .font(.subheadline.weight(.bold))
                 .foregroundStyle(accent)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.78), lineWidth: 1)
-        )
     }
 }
 
 private struct TimeMachineHeroTrendCard: View {
     let points: [TimeMachineTrendPoint]
+    let latestPoint: TimeMachineTrendPoint
+    let selectedRangeLabel: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("资产走势")
-                        .font(.title3.weight(.bold))
-                        .foregroundStyle(AssetTheme.textPrimary)
-                    Text(dateRangeLabel)
-                        .font(.footnote)
-                        .foregroundStyle(AssetTheme.textSecondary)
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("资产走势")
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(AssetTheme.textPrimary)
+                        Text(dateRangeLabel)
+                            .font(.footnote)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+
+                    Spacer()
+
+                    Text(selectedRangeLabel)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(AssetTheme.goldSoft)
                 }
 
-                Spacer()
+                Text(latestPoint.mainAssets.currencyString())
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .foregroundStyle(AssetTheme.goldSoft)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
 
-                VStack(alignment: .trailing, spacing: 6) {
+                LazyVGrid(
+                    columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
+                    spacing: 10
+                ) {
+                    TimeMachineInlineMetric(
+                        title: "净资产",
+                        value: latestPoint.netAssets.currencyString(),
+                        accent: AssetTheme.textPrimary
+                    )
+                    TimeMachineInlineMetric(
+                        title: "负债",
+                        value: latestPoint.liabilities.currencyString(),
+                        accent: AssetTheme.negative
+                    )
+                    TimeMachineInlineMetric(
+                        title: "BTC 折算",
+                        value: latestPoint.btcEquivalent?.plainNumberString() ?? "--",
+                        accent: AssetTheme.accentOrange
+                    )
+                    TimeMachineInlineMetric(
+                        title: "纳指折算",
+                        value: latestPoint.nasdaqEquivalent?.plainNumberString() ?? "--",
+                        accent: AssetTheme.accentBlue
+                    )
+                }
+
+                HStack(spacing: 14) {
                     ForEach(TimeMachineAssetSeries.allCases) { series in
                         HStack(spacing: 6) {
                             Circle()
@@ -1178,11 +1155,6 @@ private struct TimeMachineHeroTrendCard: View {
                 }
             }
             .chartLegend(.hidden)
-            .chartPlotStyle { plot in
-                plot
-                    .background(.white.opacity(0.015))
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            }
         }
         .atmCardStyle()
     }
@@ -1259,11 +1231,6 @@ private struct TimeMachineMiniTrendCard: View {
                     }
                 }
                 .chartLegend(.hidden)
-                .chartPlotStyle { plot in
-                    plot
-                        .background(.white.opacity(0.015))
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                }
             } else {
                 Text("等待更多历史记录，折线图才会更像网站趋势页。")
                     .font(.footnote)
