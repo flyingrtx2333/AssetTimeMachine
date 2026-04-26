@@ -338,7 +338,6 @@ private struct SnapshotListView: View {
                             ForEach(visibleCategories) { category in
                                 RecordCategoryCard(
                                     category: category,
-                                    marketStore: marketStore,
                                     amountInputs: $amountInputs,
                                     quantityInputs: $quantityInputs,
                                     unitPriceInputs: $unitPriceInputs,
@@ -488,7 +487,6 @@ private struct SnapshotListView: View {
 
 private struct RecordCategoryCard: View {
     let category: AssetCategory
-    @ObservedObject var marketStore: RemoteMarketStore
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
     @Binding var unitPriceInputs: [UUID: String]
@@ -518,7 +516,6 @@ private struct RecordCategoryCard: View {
                 ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     AssetEntryInputRow(
                         item: item,
-                        autoExchangeRate: item.autoExchangeRateCurrencyCode.flatMap { marketStore.exchangeRate(for: $0) },
                         amountText: Binding(
                             get: { amountInputs[item.id] ?? "" },
                             set: { newValue in
@@ -556,7 +553,6 @@ private struct RecordCategoryCard: View {
 
 private struct AssetEntryInputRow: View {
     let item: AssetItem
-    let autoExchangeRate: Double?
     @Binding var amountText: String
     @Binding var quantityText: String
     @Binding var unitPriceText: String
@@ -572,10 +568,7 @@ private struct AssetEntryInputRow: View {
             if item.valuationMethod == .directAmount {
                 ATMInputField(text: $amountText, placeholder: "0", width: 140)
             } else if let currencyCode = item.autoExchangeRateCurrencyCode {
-                HStack(spacing: 8) {
-                    ATMInputField(text: $quantityText, placeholder: currencyCode, width: 84)
-                    AutoRateField(currencyCode: currencyCode, rateText: autoRateDisplayText)
-                }
+                ATMInputField(text: $quantityText, placeholder: currencyCode, width: 140)
             } else {
                 HStack(spacing: 8) {
                     ATMInputField(text: $quantityText, placeholder: "数量", width: 74)
@@ -584,45 +577,6 @@ private struct AssetEntryInputRow: View {
             }
         }
         .padding(.vertical, 12)
-    }
-
-    private var autoRateDisplayText: String {
-        if let autoExchangeRate {
-            return autoExchangeRate.plainNumberString()
-        }
-        return unitPriceText.isEmpty ? "--" : unitPriceText
-    }
-}
-
-private struct AutoRateField: View {
-    let currencyCode: String
-    let rateText: String
-
-    var body: some View {
-        VStack(alignment: .trailing, spacing: 2) {
-            Text("汇率")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(AssetTheme.textSecondary)
-            Text(rateText)
-                .font(.system(.body, design: .rounded).weight(.semibold))
-                .foregroundStyle(AssetTheme.goldSoft)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-        }
-        .frame(width: 92, height: 42, alignment: .trailing)
-        .padding(.horizontal, 12)
-        .background(AssetTheme.background.opacity(0.44), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.4), lineWidth: 1)
-        )
-        .overlay(alignment: .topLeading) {
-            Text(currencyCode)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(AssetTheme.textSecondary)
-                .padding(.top, 6)
-                .padding(.leading, 10)
-        }
     }
 }
 
