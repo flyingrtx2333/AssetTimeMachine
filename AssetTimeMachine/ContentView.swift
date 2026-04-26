@@ -504,21 +504,14 @@ private struct MarketPriceRow: View {
     let market: PublicMarketPrice
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
+        HStack(spacing: 14) {
             Circle()
                 .fill(color)
                 .frame(width: 10, height: 10)
-                .padding(.top, 7)
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text(displayName)
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(AssetTheme.textPrimary)
-
-                Text("\(market.unit) · \(market.source) · \(market.fetchedAt.formatted(date: .omitted, time: .shortened))")
-                    .font(.footnote)
-                    .foregroundStyle(AssetTheme.textSecondary)
-            }
+            Text(displayName)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(AssetTheme.textPrimary)
 
             Spacer()
 
@@ -531,7 +524,7 @@ private struct MarketPriceRow: View {
                     .foregroundStyle(AssetTheme.goldSoft)
             }
         }
-        .padding(.vertical, 14)
+        .padding(.vertical, 16)
     }
 
     private var displayName: String {
