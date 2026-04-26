@@ -9,12 +9,12 @@ struct ContentView: View {
         TabView {
             DashboardView(marketStore: marketStore)
                 .tabItem {
-                    Label("首页", systemImage: "chart.line.uptrend.xyaxis")
+                    Label("首页", systemImage: "house")
                 }
 
             SnapshotListView()
                 .tabItem {
-                    Label("记录", systemImage: "calendar")
+                    Label("记录", systemImage: "square.and.pencil")
                 }
 
             TimeMachineView()
@@ -24,9 +24,10 @@ struct ContentView: View {
 
             APIDocumentationView(marketStore: marketStore)
                 .tabItem {
-                    Label("接口文档", systemImage: "book.pages")
+                    Label("接口文档", systemImage: "doc.text")
                 }
         }
+        .tint(AssetTheme.gold)
         .task {
             try? SeedDataService.seedDefaultCategoriesIfNeeded(in: modelContext)
             await marketStore.refresh()
@@ -39,9 +40,7 @@ private struct DashboardView: View {
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
     @Query private var entries: [AssetEntry]
 
-    private var latestSnapshot: AssetSnapshot? {
-        snapshots.first
-    }
+    private var latestSnapshot: AssetSnapshot? { snapshots.first }
 
     private var totalAssets: Double {
         entries
@@ -61,53 +60,170 @@ private struct DashboardView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section("资产概览") {
-                    SummaryRow(title: "总资产", value: totalAssets)
-                    SummaryRow(title: "总负债", value: totalLiabilities)
-                    SummaryRow(title: "净资产", value: netAssets, emphasize: true)
+            ZStack {
+                AssetTheme.pageGradient.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        ATMHeader(
+                            title: "资产时光机",
+                            subtitle: "黑金风第一版，先把气质立住。"
+                        ) {
+                            Button {
+                                Task { await marketStore.refresh() }
+                            } label: {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundStyle(AssetTheme.gold)
+                                    .frame(width: 44, height: 44)
+                                    .background(.white.opacity(0.04), in: Circle())
+                                    .overlay(Circle().stroke(AssetTheme.border, lineWidth: 1))
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        heroCard
+
+                        HStack(spacing: 12) {
+                            MetricTile(
+                                title: "总资产",
+                                value: totalAssets.currencyString(),
+                                detail: "已录入 \(entries.filter { ($0.item?.category?.group ?? .financial) != .liability }.count) 项",
+                                accent: AssetTheme.gold
+                            )
+
+                            MetricTile(
+                                title: "总负债",
+                                value: totalLiabilities.currencyString(),
+                                detail: "当前负债类 \(entries.filter { ($0.item?.category?.group ?? .financial) == .liability }.count) 项",
+                                accent: AssetTheme.negative
+                            )
+                        }
+
+                        marketSection
+                        recentSection
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 120)
+                }
+            }
+            .toolbar(.hidden, for: .navigationBar)
+        }
+    }
+
+    private var heroCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 10) {
+                    GoldChip(text: "净资产（元）")
+
+                    Text(netAssets.currencyString())
+                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                        .foregroundStyle(AssetTheme.textPrimary)
+
+                    HStack(spacing: 10) {
+                        InlineStat(text: "记录天数 \(snapshots.count)", color: AssetTheme.textSecondary)
+                        InlineStat(text: latestSnapshot.map { "最近 \($0.date.shortDateString)" } ?? "还没有快照", color: AssetTheme.goldSoft)
+                    }
                 }
 
-                Section("市场锚点") {
-                    if let overview = marketStore.overview {
-                        ForEach(overview.markets) { market in
+                Spacer(minLength: 16)
+
+                SparklineCard(points: [0.14, 0.18, 0.22, 0.21, 0.28, 0.32, 0.30, 0.38, 0.43])
+                    .frame(width: 132, height: 84)
+            }
+
+            Divider().overlay(AssetTheme.border)
+
+            HStack(spacing: 12) {
+                CompactStat(title: "资产", value: totalAssets.currencyString(), accent: AssetTheme.gold)
+                CompactStat(title: "负债", value: totalLiabilities.currencyString(), accent: AssetTheme.negative)
+                CompactStat(title: "条目", value: "\(entries.count)", accent: AssetTheme.accentBlue)
+            }
+        }
+        .padding(22)
+        .background(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(AssetTheme.heroGradient)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(AssetTheme.border, lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.28), radius: 28, x: 0, y: 16)
+    }
+
+    private var marketSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SectionTitle(title: "市场锚点", subtitle: "公共行情接口，直接给时光机做参考")
+
+            Group {
+                if let overview = marketStore.overview {
+                    VStack(spacing: 0) {
+                        ForEach(Array(overview.markets.enumerated()), id: \.element.id) { index, market in
                             MarketPriceRow(market: market)
+
+                            if index < overview.markets.count - 1 {
+                                Divider().overlay(AssetTheme.border.opacity(0.6))
+                            }
                         }
 
                         if let updateIntervalHours = overview.updateIntervalHours {
-                            Label("服务端每 \(updateIntervalHours) 小时刷新一次数据库", systemImage: "clock.badge.checkmark")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
+                            HStack(spacing: 8) {
+                                Image(systemName: "clock.badge.checkmark")
+                                Text("服务端每 \(updateIntervalHours) 小时刷新一次数据库")
+                            }
+                            .font(.footnote)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                            .padding(.top, 14)
                         }
-                    } else if marketStore.isLoading {
-                        ProgressView("正在同步公共行情…")
-                    } else {
-                        ContentUnavailableView(
-                            "还没拉到公共行情",
-                            systemImage: "wifi.exclamationmark",
-                            description: Text(marketStore.errorMessage ?? "可以稍后再试一次。")
-                        )
                     }
-                }
-
-                Section("最近记录") {
-                    if let latestSnapshot {
-                        LabeledContent("最近日期", value: latestSnapshot.date.formatted(date: .abbreviated, time: .omitted))
-                        LabeledContent("记录条目", value: "\(latestSnapshot.entries.count)")
-                    } else {
-                        ContentUnavailableView("还没有资产记录", systemImage: "tray", description: Text("接下来可以先创建资产分类和首日快照。"))
+                    .atmCardStyle()
+                } else if marketStore.isLoading {
+                    VStack(spacing: 14) {
+                        SkeletonLine(width: 130)
+                        SkeletonLine(width: 240)
+                        SkeletonLine(width: 210)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .atmCardStyle()
+                } else {
+                    EmptyStateCard(
+                        title: "公共行情还没拉下来",
+                        message: marketStore.errorMessage ?? "稍后点一下右上角刷新，我再去把 gold、btc、nasdaq 捞回来。",
+                        systemImage: "wifi.exclamationmark"
+                    )
                 }
             }
-            .navigationTitle("资产时光机")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        Task { await marketStore.refresh() }
-                    } label: {
-                        Label("刷新行情", systemImage: "arrow.clockwise")
+        }
+    }
+
+    private var recentSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SectionTitle(title: "最近记录", subtitle: "后面会做成每日继承式记账")
+
+            if let latestSnapshot {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text(latestSnapshot.date.longDateString)
+                            .font(.headline)
+                            .foregroundStyle(AssetTheme.textPrimary)
+                        Spacer()
+                        GoldChip(text: "\(latestSnapshot.entries.count) 项")
                     }
+
+                    Text("下一步可以把这一天作为模板，继续记下一天。")
+                        .font(.subheadline)
+                        .foregroundStyle(AssetTheme.textSecondary)
                 }
+                .atmCardStyle()
+            } else {
+                EmptyStateCard(
+                    title: "还没有资产记录",
+                    message: "先建首日快照，后面我就能帮你把时间线、涨跌、回撤都做得很性感。",
+                    systemImage: "tray"
+                )
             }
         }
     }
@@ -118,22 +234,44 @@ private struct SnapshotListView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                if snapshots.isEmpty {
-                    ContentUnavailableView("还没有每日快照", systemImage: "calendar.badge.plus", description: Text("后面这里会做成每天继承前一天的快速记账入口。"))
-                } else {
-                    ForEach(snapshots) { snapshot in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(snapshot.date.formatted(date: .abbreviated, time: .omitted))
-                                .font(.headline)
-                            Text("共 \(snapshot.entries.count) 项")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+            ZStack {
+                AssetTheme.pageGradient.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        ATMHeader(title: "每日记录", subtitle: "按天回看，你的财富不是凭感觉，是有时间线的。\n")
+
+                        if snapshots.isEmpty {
+                            EmptyStateCard(
+                                title: "这里还空着",
+                                message: "等你录入第一天快照后，这里会变成黑金账本。",
+                                systemImage: "calendar.badge.plus"
+                            )
+                        } else {
+                            ForEach(snapshots) { snapshot in
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack {
+                                        Text(snapshot.date.longDateString)
+                                            .font(.headline)
+                                            .foregroundStyle(AssetTheme.textPrimary)
+                                        Spacer()
+                                        GoldChip(text: "\(snapshot.entries.count) 条")
+                                    }
+
+                                    Text("支持后续做成‘继承前一天 + 快速改单项’的录入体验。")
+                                        .font(.subheadline)
+                                        .foregroundStyle(AssetTheme.textSecondary)
+                                }
+                                .atmCardStyle()
+                            }
                         }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 120)
                 }
             }
-            .navigationTitle("每日记录")
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 }
@@ -141,101 +279,235 @@ private struct SnapshotListView: View {
 private struct TimeMachineView: View {
     var body: some View {
         NavigationStack {
-            List {
-                Section("时光机") {
-                    Label("按日期回看总资产、净资产和资产构成", systemImage: "clock")
-                    Label("后续会补历史高点、回撤、阶段涨跌", systemImage: "mountain.2")
+            ZStack {
+                AssetTheme.pageGradient.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        ATMHeader(title: "时光机", subtitle: "历史对比、阶段涨跌、资产构成，这里以后会很能打。")
+
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
+                                Text("2026年4月26日")
+                                    .font(.headline)
+                                    .foregroundStyle(AssetTheme.textPrimary)
+                                Spacer()
+                                GoldChip(text: "预览态")
+                            }
+
+                            Text("1,158,267.30")
+                                .font(.system(size: 34, weight: .bold, design: .rounded))
+                                .foregroundStyle(AssetTheme.goldSoft)
+
+                            HStack(spacing: 12) {
+                                MetricTile(title: "较昨日", value: "-3,247.10", detail: "-0.28%", accent: AssetTheme.negative)
+                                MetricTile(title: "较年初", value: "+158,267.30", detail: "+15.81%", accent: AssetTheme.positive)
+                            }
+                        }
+                        .atmCardStyle()
+
+                        VStack(alignment: .leading, spacing: 14) {
+                            SectionTitle(title: "准备接入的能力", subtitle: "逻辑先行，UI 我先把风格垫起来")
+
+                            CapabilityRow(title: "历史高点 / 回撤", icon: "mountain.2", tint: AssetTheme.gold)
+                            CapabilityRow(title: "按资产分类回放", icon: "square.grid.2x2", tint: AssetTheme.accentBlue)
+                            CapabilityRow(title: "对比外部市场锚点", icon: "chart.line.uptrend.xyaxis", tint: AssetTheme.accentOrange)
+                        }
+                        .atmCardStyle()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 120)
                 }
             }
-            .navigationTitle("时光机")
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 }
 
 private struct APIDocumentationView: View {
     @ObservedObject var marketStore: RemoteMarketStore
-    private let baseURL = RemoteMarketClient.baseURL.absoluteString
 
     var body: some View {
         NavigationStack {
-            List {
-                Section("公共行情接口") {
-                    ForEach(RemoteMarketClient.endpointDocs) { endpoint in
-                        APIDocRow(
-                            title: endpoint.title,
-                            method: "GET",
-                            path: endpoint.path,
-                            description: endpoint.description,
-                            market: endpoint.symbol.flatMap { marketStore.market(for: $0) }
-                        )
-                    }
-                }
+            ZStack {
+                AssetTheme.pageGradient.ignoresSafeArea()
 
-                Section("说明") {
-                    LabeledContent("Base URL", value: baseURL)
-                    Text("这些接口默认给资产时光机后续做锚点分析和调试联调用，不需要登录。")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        ATMHeader(title: "接口文档", subtitle: "给 App 自己看的，也给未来的分析逻辑备用。") {
+                            Button {
+                                Task { await marketStore.refresh() }
+                            } label: {
+                                GoldChip(text: "刷新")
+                            }
+                            .buttonStyle(.plain)
+                        }
 
-                    if let errorMessage = marketStore.errorMessage {
-                        Text(errorMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.red)
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("Base URL")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(AssetTheme.textSecondary)
+
+                            Text(RemoteMarketClient.baseURL.absoluteString)
+                                .font(.system(.body, design: .monospaced))
+                                .foregroundStyle(AssetTheme.textPrimary)
+                                .textSelection(.enabled)
+                        }
+                        .atmCardStyle()
+
+                        ForEach(RemoteMarketClient.endpointDocs) { endpoint in
+                            EndpointCard(endpoint: endpoint, market: endpoint.symbol.flatMap { marketStore.market(for: $0) })
+                        }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 120)
                 }
             }
-            .navigationTitle("接口文档")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        Task { await marketStore.refresh() }
-                    } label: {
-                        Label("刷新", systemImage: "arrow.clockwise")
-                    }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 }
 
-private struct APIDocRow: View {
+private struct ATMHeader<Trailing: View>: View {
     let title: String
-    let method: String
-    let path: String
-    let description: String
-    let market: PublicMarketPrice?
+    let subtitle: String
+    @ViewBuilder var trailing: Trailing
+
+    init(title: String, subtitle: String, @ViewBuilder trailing: () -> Trailing = { EmptyView() }) {
+        self.title = title
+        self.subtitle = subtitle
+        self.trailing = trailing()
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(.white.opacity(0.04))
+                            .frame(width: 40, height: 40)
+                        Image(systemName: "hourglass")
+                            .foregroundStyle(AssetTheme.gold)
+                    }
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(AssetTheme.border, lineWidth: 1)
+                    )
+
+                    Text(title)
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                }
+
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+            trailing
+        }
+    }
+}
+
+private struct SectionTitle: View {
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(AssetTheme.textPrimary)
+            Text(subtitle)
+                .font(.subheadline)
+                .foregroundStyle(AssetTheme.textSecondary)
+        }
+    }
+}
+
+private struct GoldChip: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(AssetTheme.goldSoft)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(AssetTheme.gold.opacity(0.12), in: Capsule())
+            .overlay(Capsule().stroke(AssetTheme.border, lineWidth: 1))
+    }
+}
+
+private struct InlineStat: View {
+    let text: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(color)
+                .frame(width: 5, height: 5)
+            Text(text)
+                .font(.footnote)
+                .foregroundStyle(color)
+        }
+    }
+}
+
+private struct CompactStat: View {
+    let title: String
+    let value: String
+    let accent: Color
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(title)
-                    .font(.headline)
-                Spacer()
-                Text(method)
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.blue.opacity(0.12), in: Capsule())
-            }
-
-            Text(path)
-                .font(.system(.footnote, design: .monospaced))
-                .textSelection(.enabled)
-
-            Text(description)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            if let market {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("当前值: \(market.price.formatted(.number.precision(.fractionLength(2)))) \(market.currency) / \(market.unit)")
-                    Text("来源: \(market.source), 更新时间: \(market.fetchedAt.formatted(date: .abbreviated, time: .shortened))")
-                }
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            }
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(AssetTheme.textSecondary)
+            Text(value)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(AssetTheme.textPrimary)
+            RoundedRectangle(cornerRadius: 999)
+                .fill(accent)
+                .frame(width: 28, height: 3)
         }
-        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.8), lineWidth: 1)
+        )
+    }
+}
+
+private struct MetricTile: View {
+    let title: String
+    let value: String
+    let detail: String
+    let accent: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(AssetTheme.textSecondary)
+            Text(value)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(AssetTheme.textPrimary)
+                .minimumScaleFactor(0.72)
+            Text(detail)
+                .font(.footnote)
+                .foregroundStyle(accent)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .atmCardStyle()
     }
 }
 
@@ -243,46 +515,242 @@ private struct MarketPriceRow: View {
     let market: PublicMarketPrice
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(marketDisplayName)
-                Spacer()
-                Text("\(market.price.formatted(.number.precision(.fractionLength(2)))) \(market.currency)")
-                    .fontWeight(.semibold)
+        HStack(alignment: .top, spacing: 14) {
+            Circle()
+                .fill(color)
+                .frame(width: 10, height: 10)
+                .padding(.top, 7)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(displayName)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                Text("\(market.unit) · \(market.source) · \(market.fetchedAt.formatted(date: .omitted, time: .shortened))")
+                    .font(.footnote)
+                    .foregroundStyle(AssetTheme.textSecondary)
             }
 
-            Text("\(market.unit) · \(market.source) · \(market.fetchedAt.formatted(date: .omitted, time: .shortened))")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 6) {
+                Text(market.price.formatted(.number.precision(.fractionLength(2))))
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+                Text(market.currency)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AssetTheme.goldSoft)
+            }
+        }
+        .padding(.vertical, 14)
+    }
+
+    private var displayName: String {
+        switch market.symbol {
+        case "gold": return "黄金"
+        case "btc": return "BTC"
+        case "nasdaq": return "纳指锚点"
+        default: return market.symbol.uppercased()
         }
     }
 
-    private var marketDisplayName: String {
+    private var color: Color {
         switch market.symbol {
-        case "gold":
-            return "黄金"
-        case "btc":
-            return "BTC"
-        case "nasdaq":
-            return "纳指锚点"
-        default:
-            return market.symbol
+        case "gold": return AssetTheme.gold
+        case "btc": return AssetTheme.accentOrange
+        case "nasdaq": return AssetTheme.accentBlue
+        default: return AssetTheme.textSecondary
         }
     }
 }
 
-private struct SummaryRow: View {
-    let title: String
-    let value: Double
-    var emphasize: Bool = false
+private struct EndpointCard: View {
+    let endpoint: MarketEndpointDoc
+    let market: PublicMarketPrice?
 
     var body: some View {
-        HStack {
-            Text(title)
-            Spacer()
-            Text(value, format: .currency(code: Locale.current.currency?.identifier ?? "CNY"))
-                .fontWeight(emphasize ? .semibold : .regular)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(endpoint.title)
+                        .font(.headline)
+                        .foregroundStyle(AssetTheme.textPrimary)
+
+                    Text(endpoint.path)
+                        .font(.system(.footnote, design: .monospaced))
+                        .foregroundStyle(AssetTheme.goldSoft)
+                        .textSelection(.enabled)
+                }
+
+                Spacer(minLength: 12)
+                GoldChip(text: "GET")
+            }
+
+            Text(endpoint.description)
+                .font(.subheadline)
+                .foregroundStyle(AssetTheme.textSecondary)
+
+            if let market {
+                HStack(spacing: 12) {
+                    Label(market.price.formatted(.number.precision(.fractionLength(2))), systemImage: "waveform.path.ecg")
+                    Text(market.currency)
+                    Spacer()
+                    Text(market.fetchedAt.formatted(date: .omitted, time: .shortened))
+                }
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(AssetTheme.goldSoft)
+                .padding(12)
+                .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
         }
+        .atmCardStyle()
+    }
+}
+
+private struct CapabilityRow: View {
+    let title: String
+    let icon: String
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .foregroundStyle(tint)
+                .frame(width: 28)
+            Text(title)
+                .foregroundStyle(AssetTheme.textPrimary)
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(AssetTheme.textSecondary)
+        }
+        .padding(14)
+        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
+        )
+    }
+}
+
+private struct EmptyStateCard: View {
+    let title: String
+    let message: String
+    let systemImage: String
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: systemImage)
+                .font(.system(size: 34, weight: .medium))
+                .foregroundStyle(AssetTheme.gold)
+
+            VStack(spacing: 8) {
+                Text(title)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 26)
+        .atmCardStyle()
+    }
+}
+
+private struct SkeletonLine: View {
+    let width: CGFloat
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 999, style: .continuous)
+            .fill(.white.opacity(0.08))
+            .frame(width: width, height: 14)
+    }
+}
+
+private struct SparklineCard: View {
+    let points: [CGFloat]
+
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(.white.opacity(0.03))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(AssetTheme.border.opacity(0.8), lineWidth: 1)
+                )
+
+            ChartLine(points: points)
+                .stroke(AssetTheme.goldSoft, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                .padding(14)
+
+            ChartLine(points: points)
+                .fill(
+                    LinearGradient(
+                        colors: [AssetTheme.gold.opacity(0.24), .clear],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .padding(14)
+                .mask(
+                    VStack(spacing: 0) {
+                        Spacer()
+                        Rectangle().frame(height: 40)
+                    }
+                )
+        }
+    }
+}
+
+private struct ChartLine: Shape {
+    let points: [CGFloat]
+
+    func path(in rect: CGRect) -> Path {
+        guard points.count > 1 else { return Path() }
+
+        let stepX = rect.width / CGFloat(points.count - 1)
+        let minY = points.min() ?? 0
+        let maxY = points.max() ?? 1
+        let range = max(maxY - minY, 0.001)
+
+        var path = Path()
+        for (index, point) in points.enumerated() {
+            let x = CGFloat(index) * stepX
+            let normalizedY = (point - minY) / range
+            let y = rect.height - normalizedY * rect.height
+
+            if index == 0 {
+                path.move(to: CGPoint(x: x, y: y))
+            } else {
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+        }
+        return path
+    }
+}
+
+private extension Double {
+    func currencyString(code: String = "CNY") -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = code
+        formatter.maximumFractionDigits = 2
+        formatter.minimumFractionDigits = 2
+        formatter.locale = Locale(identifier: "zh_CN")
+        return formatter.string(from: NSNumber(value: self)) ?? String(format: "%.2f", self)
+    }
+}
+
+private extension Date {
+    var shortDateString: String {
+        formatted(date: .abbreviated, time: .omitted)
+    }
+
+    var longDateString: String {
+        formatted(date: .long, time: .omitted)
     }
 }
 

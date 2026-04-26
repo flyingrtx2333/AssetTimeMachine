@@ -10,6 +10,10 @@ import SwiftData
 
 @main
 struct AssetTimeMachineApp: App {
+    init() {
+        AssetTheme.configureSystemAppearance()
+    }
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             AssetCategory.self,
@@ -29,6 +33,7 @@ struct AssetTimeMachineApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .preferredColorScheme(.dark)
         }
         .modelContainer(sharedModelContainer)
     }
