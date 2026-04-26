@@ -12,7 +12,10 @@ import SwiftData
 struct AssetTimeMachineApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            AssetCategory.self,
+            AssetItem.self,
+            AssetSnapshot.self,
+            AssetEntry.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
