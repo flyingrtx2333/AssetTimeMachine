@@ -297,7 +297,7 @@ private struct SnapshotListView: View {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 24) {
                         ATMHeader(title: "每日记录") {
                             if let currentSnapshot {
                                 GoldChip(text: currentSnapshot.date.shortDateString)
@@ -305,15 +305,19 @@ private struct SnapshotListView: View {
                         }
 
                         if let currentSnapshot {
-                            VStack(alignment: .leading, spacing: 18) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("净资产")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(AssetTheme.textSecondary)
+
                                 Text(PortfolioCalculator.netAssets(for: currentSnapshot).currencyString())
-                                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                                    .font(.system(size: 32, weight: .bold, design: .rounded))
                                     .foregroundStyle(AssetTheme.goldSoft)
                                     .minimumScaleFactor(0.72)
 
-                                HStack(spacing: 12) {
-                                    CompactStat(title: "资产", value: PortfolioCalculator.totalAssets(for: currentSnapshot).currencyString(), accent: AssetTheme.gold)
-                                    CompactStat(title: "负债", value: PortfolioCalculator.totalLiabilities(for: currentSnapshot).currencyString(), accent: AssetTheme.negative)
+                                HStack(spacing: 18) {
+                                    SimpleMetricText(title: "资产", value: PortfolioCalculator.totalAssets(for: currentSnapshot).currencyString(), accent: AssetTheme.gold)
+                                    SimpleMetricText(title: "负债", value: PortfolioCalculator.totalLiabilities(for: currentSnapshot).currencyString(), accent: AssetTheme.negative)
                                 }
 
                                 if let lastSavedAt {
@@ -322,7 +326,6 @@ private struct SnapshotListView: View {
                                         .foregroundStyle(AssetTheme.textSecondary)
                                 }
                             }
-                            .atmCardStyle()
 
                             ForEach(visibleCategories) { category in
                                 RecordCategoryCard(
@@ -339,11 +342,7 @@ private struct SnapshotListView: View {
                             NavigationLink {
                                 SnapshotArchiveView()
                             } label: {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "clock.arrow.circlepath")
-                                        .foregroundStyle(AssetTheme.gold)
-                                        .frame(width: 24)
-
+                                HStack(spacing: 10) {
                                     Text("全部资产记录")
                                         .font(.headline)
                                         .foregroundStyle(AssetTheme.textPrimary)
@@ -354,12 +353,12 @@ private struct SnapshotListView: View {
                                         .font(.caption.weight(.semibold))
                                         .foregroundStyle(AssetTheme.textSecondary)
                                 }
-                                .padding(18)
-                                .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                        .stroke(AssetTheme.border.opacity(0.8), lineWidth: 1)
-                                )
+                                .padding(.vertical, 12)
+                                .overlay(alignment: .top) {
+                                    Rectangle()
+                                        .fill(AssetTheme.border.opacity(0.55))
+                                        .frame(height: 1)
+                                }
                             }
                             .buttonStyle(.plain)
                         } else {
@@ -369,7 +368,7 @@ private struct SnapshotListView: View {
                             )
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 18)
                     .padding(.top, 12)
                     .padding(.bottom, 120)
                 }
@@ -443,18 +442,28 @@ private struct RecordCategoryCard: View {
     @Binding var unitPriceInputs: [UUID: String]
     let onChanged: (AssetItem) -> Void
 
+    private var items: [AssetItem] {
+        category.activeSortedItems
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
                 Text(category.name)
                     .font(.title3.weight(.bold))
                     .foregroundStyle(AssetTheme.textPrimary)
                 Spacer()
-                GoldChip(text: "\(category.activeSortedItems.count) 项")
+                Text("\(items.count) 项")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textSecondary)
             }
 
-            VStack(spacing: 12) {
-                ForEach(category.activeSortedItems) { item in
+            Rectangle()
+                .fill(AssetTheme.border.opacity(0.55))
+                .frame(height: 1)
+
+            VStack(spacing: 0) {
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     AssetEntryInputRow(
                         item: item,
                         amountText: Binding(
@@ -479,10 +488,16 @@ private struct RecordCategoryCard: View {
                             }
                         )
                     )
+
+                    if index < items.count - 1 {
+                        Rectangle()
+                            .fill(AssetTheme.border.opacity(0.32))
+                            .frame(height: 1)
+                            .padding(.leading, 2)
+                    }
                 }
             }
         }
-        .atmCardStyle()
     }
 }
 
@@ -493,46 +508,66 @@ private struct AssetEntryInputRow: View {
     @Binding var unitPriceText: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             Text(item.name)
-                .font(.headline)
+                .font(.body.weight(.medium))
                 .foregroundStyle(AssetTheme.textPrimary)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             if item.valuationMethod == .directAmount {
-                ATMInputField(text: $amountText, placeholder: item.category?.group == .liability ? "0" : "0")
+                ATMInputField(text: $amountText, placeholder: "0", width: 140)
             } else {
-                HStack(spacing: 10) {
-                    ATMInputField(text: $quantityText, placeholder: "数量")
-                    ATMInputField(text: $unitPriceText, placeholder: "单价")
+                HStack(spacing: 8) {
+                    ATMInputField(text: $quantityText, placeholder: "数量", width: 74)
+                    ATMInputField(text: $unitPriceText, placeholder: "单价", width: 92)
                 }
             }
         }
-        .padding(14)
-        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
-        )
+        .padding(.vertical, 12)
     }
 }
 
 private struct ATMInputField: View {
     @Binding var text: String
     let placeholder: String
+    let width: CGFloat
 
     var body: some View {
         TextField("", text: $text, prompt: Text(placeholder).foregroundStyle(AssetTheme.textSecondary))
             .keyboardType(.decimalPad)
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
+            .multilineTextAlignment(.trailing)
+            .font(.system(.body, design: .rounded).weight(.semibold))
             .foregroundStyle(AssetTheme.textPrimary)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 13)
-            .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.horizontal, 12)
+            .frame(width: width, height: 42)
+            .background(AssetTheme.background.opacity(0.72), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(AssetTheme.border.opacity(0.65), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(AssetTheme.border.opacity(0.55), lineWidth: 1)
             )
+    }
+}
+
+private struct SimpleMetricText: View {
+    let title: String
+    let value: String
+    let accent: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(AssetTheme.textSecondary)
+            Text(value)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(AssetTheme.textPrimary)
+            RoundedRectangle(cornerRadius: 999)
+                .fill(accent)
+                .frame(width: 24, height: 2)
+        }
     }
 }
 
