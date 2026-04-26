@@ -298,33 +298,41 @@ private struct SnapshotListView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
-                        ATMHeader(title: "每日记录") {
-                            if let currentSnapshot {
-                                GoldChip(text: currentSnapshot.date.shortDateString)
-                            }
-                        }
-
                         if let currentSnapshot {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("净资产")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(AssetTheme.textSecondary)
-
-                                Text(PortfolioCalculator.netAssets(for: currentSnapshot).currencyString())
-                                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                                    .foregroundStyle(AssetTheme.goldSoft)
-                                    .minimumScaleFactor(0.72)
-
-                                HStack(spacing: 18) {
-                                    SimpleMetricText(title: "资产", value: PortfolioCalculator.totalAssets(for: currentSnapshot).currencyString(), accent: AssetTheme.gold)
-                                    SimpleMetricText(title: "负债", value: PortfolioCalculator.totalLiabilities(for: currentSnapshot).currencyString(), accent: AssetTheme.negative)
-                                }
-
-                                if let lastSavedAt {
-                                    Text("已自动保存 · \(lastSavedAt.formatted(date: .omitted, time: .shortened))")
-                                        .font(.footnote)
+                            HStack(alignment: .top, spacing: 12) {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text("主资产")
+                                        .font(.caption.weight(.semibold))
                                         .foregroundStyle(AssetTheme.textSecondary)
+
+                                    Text(PortfolioCalculator.totalAssets(for: currentSnapshot).currencyString())
+                                        .font(.system(size: 30, weight: .bold, design: .rounded))
+                                        .foregroundStyle(AssetTheme.goldSoft)
+                                        .minimumScaleFactor(0.58)
+                                        .lineLimit(1)
+
+                                    if let lastSavedAt {
+                                        Text("已自动保存 · \(lastSavedAt.formatted(date: .omitted, time: .shortened))")
+                                            .font(.footnote)
+                                            .foregroundStyle(AssetTheme.textSecondary)
+                                    }
                                 }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .layoutPriority(1)
+
+                                VStack(alignment: .leading, spacing: 12) {
+                                    SummaryColumnMetric(
+                                        title: "负债",
+                                        value: PortfolioCalculator.totalLiabilities(for: currentSnapshot).currencyString(),
+                                        accent: AssetTheme.negative
+                                    )
+                                    SummaryColumnMetric(
+                                        title: "净资产",
+                                        value: PortfolioCalculator.netAssets(for: currentSnapshot).currencyString(),
+                                        accent: AssetTheme.gold
+                                    )
+                                }
+                                .frame(width: 136, alignment: .leading)
                             }
 
                             ForEach(visibleCategories) { category in
@@ -369,7 +377,7 @@ private struct SnapshotListView: View {
                         }
                     }
                     .padding(.horizontal, 18)
-                    .padding(.top, 12)
+                    .padding(.top, 28)
                     .padding(.bottom, 120)
                 }
             }
@@ -551,19 +559,21 @@ private struct ATMInputField: View {
     }
 }
 
-private struct SimpleMetricText: View {
+private struct SummaryColumnMetric: View {
     let title: String
     let value: String
     let accent: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 5) {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(AssetTheme.textSecondary)
             Text(value)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(AssetTheme.textPrimary)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
             RoundedRectangle(cornerRadius: 999)
                 .fill(accent)
                 .frame(width: 24, height: 2)
