@@ -846,43 +846,42 @@ private struct TimeMachineView: View {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 10) {
                         TimeMachineRangePicker(selectedRange: $selectedRange)
 
                         if let latestPoint, !filteredTrendPoints.isEmpty {
                             TimeMachineHeroTrendCard(
                                 points: filteredTrendPoints,
-                                latestPoint: latestPoint,
-                                selectedRangeLabel: selectedRange.summaryLabel
+                                latestPoint: latestPoint
                             )
 
                             LazyVGrid(
                                 columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
-                                spacing: 12
+                                spacing: 10
                             ) {
                                 TimeMachineMiniTrendCard(
-                                    title: "BTC 折算",
-                                    subtitle: btcAnchorPrice.map { "当前 BTC ≈ \($0.currencyString())" } ?? "等待行情刷新",
+                                    title: "BTC",
+                                    subtitle: btcAnchorPrice.map { "BTC \($0.currencyString())" } ?? "暂无行情",
                                     points: btcPoints,
                                     color: AssetTheme.accentOrange,
-                                    latestLabel: latestPoint.btcEquivalent.map { "\($0.plainNumberString()) BTC" } ?? "--"
+                                    latestLabel: latestPoint.btcEquivalent.map { $0.plainNumberString() } ?? "--"
                                 )
 
                                 TimeMachineMiniTrendCard(
-                                    title: "纳指锚点折算",
-                                    subtitle: nasdaqAnchorPrice.map { "当前 QQQ ≈ \($0.currencyString())" } ?? "等待行情刷新",
+                                    title: "纳指",
+                                    subtitle: nasdaqAnchorPrice.map { "QQQ \($0.currencyString())" } ?? "暂无行情",
                                     points: nasdaqPoints,
                                     color: AssetTheme.accentBlue,
-                                    latestLabel: latestPoint.nasdaqEquivalent.map { "\($0.plainNumberString()) 份" } ?? "--"
+                                    latestLabel: latestPoint.nasdaqEquivalent.map { $0.plainNumberString() } ?? "--"
                                 )
                             }
 
                             TimeMachineMiniTrendCard(
-                                title: "黄金折算",
-                                subtitle: goldAnchorPrice.map { "当前金价 ≈ \($0.currencyString()) / g" } ?? "等待行情刷新",
+                                title: "黄金",
+                                subtitle: goldAnchorPrice.map { "金价 \($0.currencyString())/g" } ?? "暂无行情",
                                 points: goldPoints,
                                 color: AssetTheme.gold,
-                                latestLabel: latestPoint.goldEquivalent.map { "\($0.plainNumberString()) g" } ?? "--"
+                                latestLabel: latestPoint.goldEquivalent.map { $0.plainNumberString() } ?? "--"
                             )
                         } else {
                             EmptyStateCard(
@@ -894,7 +893,7 @@ private struct TimeMachineView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
-                    .padding(.bottom, 156)
+                    .padding(.bottom, 136)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -1007,22 +1006,22 @@ private struct TimeMachineRangePicker: View {
     @Binding var selectedRange: TimeMachineRange
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             ForEach(TimeMachineRange.allCases) { range in
                 Button {
                     selectedRange = range
                 } label: {
                     Text(range.label)
-                        .font(.subheadline.weight(.semibold))
+                        .font(.footnote.weight(.semibold))
                         .foregroundStyle(selectedRange == range ? AssetTheme.background : AssetTheme.textPrimary)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
+                        .padding(.vertical, 9)
                         .background(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
                                 .fill(selectedRange == range ? AssetTheme.goldSoft : .white.opacity(0.03))
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
                                 .stroke(AssetTheme.border.opacity(selectedRange == range ? 0 : 0.72), lineWidth: 1)
                         )
                 }
@@ -1038,12 +1037,12 @@ private struct TimeMachineInlineMetric: View {
     let accent: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 4) {
             Text(title)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(AssetTheme.textSecondary)
             Text(value)
-                .font(.subheadline.weight(.bold))
+                .font(.caption.weight(.bold))
                 .foregroundStyle(accent)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
@@ -1055,37 +1054,32 @@ private struct TimeMachineInlineMetric: View {
 private struct TimeMachineHeroTrendCard: View {
     let points: [TimeMachineTrendPoint]
     let latestPoint: TimeMachineTrendPoint
-    let selectedRangeLabel: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("资产走势")
-                            .font(.title3.weight(.bold))
-                            .foregroundStyle(AssetTheme.textPrimary)
-                        Text(dateRangeLabel)
-                            .font(.footnote)
-                            .foregroundStyle(AssetTheme.textSecondary)
-                    }
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text("资产走势")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(AssetTheme.textPrimary)
 
                     Spacer()
 
-                    Text(selectedRangeLabel)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(AssetTheme.goldSoft)
+                    Text(dateRangeLabel)
+                        .font(.caption)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .lineLimit(1)
                 }
 
                 Text(latestPoint.mainAssets.currencyString())
-                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundStyle(AssetTheme.goldSoft)
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
 
                 LazyVGrid(
                     columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
-                    spacing: 10
+                    spacing: 8
                 ) {
                     TimeMachineInlineMetric(
                         title: "净资产",
@@ -1109,7 +1103,7 @@ private struct TimeMachineHeroTrendCard: View {
                     )
                 }
 
-                HStack(spacing: 14) {
+                HStack(spacing: 12) {
                     ForEach(TimeMachineAssetSeries.allCases) { series in
                         HStack(spacing: 6) {
                             RoundedRectangle(cornerRadius: 999, style: .continuous)
@@ -1161,7 +1155,7 @@ private struct TimeMachineHeroTrendCard: View {
                 TimeMachineAssetSeries.netAssets.title: TimeMachineAssetSeries.netAssets.color,
                 TimeMachineAssetSeries.liabilities.title: TimeMachineAssetSeries.liabilities.color,
             ])
-            .frame(height: 260)
+            .frame(height: 238)
             .chartXAxis {
                 AxisMarks(values: .automatic(desiredCount: 4)) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
@@ -1198,20 +1192,21 @@ private struct TimeMachineMiniTrendCard: View {
     let latestLabel: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 10) {
-                VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.headline)
+                        .font(.subheadline.weight(.bold))
                         .foregroundStyle(AssetTheme.textPrimary)
+                        .lineLimit(1)
                     Text(subtitle)
-                        .font(.footnote)
+                        .font(.caption)
                         .foregroundStyle(AssetTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(1)
                 }
                 Spacer(minLength: 8)
                 Text(latestLabel)
-                    .font(.subheadline.weight(.bold))
+                    .font(.footnote.weight(.bold))
                     .foregroundStyle(color)
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
@@ -1240,27 +1235,15 @@ private struct TimeMachineMiniTrendCard: View {
                     .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round))
                     .interpolationMethod(.catmullRom)
                 }
-                .frame(height: 156)
-                .chartXAxis {
-                    AxisMarks(values: .automatic(desiredCount: 3)) { value in
-                        AxisValueLabel(format: .dateTime.month().day())
-                            .foregroundStyle(AssetTheme.textSecondary)
-                    }
-                }
-                .chartYAxis {
-                    AxisMarks(values: .automatic(desiredCount: 3)) { _ in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
-                            .foregroundStyle(.white.opacity(0.07))
-                        AxisValueLabel(format: FloatingPointFormatStyle<Double>.number.notation(.compactName))
-                            .foregroundStyle(AssetTheme.textSecondary)
-                    }
-                }
+                .frame(height: 126)
+                .chartXAxis(.hidden)
+                .chartYAxis(.hidden)
                 .chartLegend(.hidden)
             } else {
-                Text("等待更多历史记录，折线图才会更像网站趋势页。")
-                    .font(.footnote)
+                Text("记录不足")
+                    .font(.caption)
                     .foregroundStyle(AssetTheme.textSecondary)
-                    .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)
+                    .frame(maxWidth: .infinity, minHeight: 86, alignment: .leading)
             }
         }
         .atmCardStyle()
