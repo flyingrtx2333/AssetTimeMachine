@@ -261,7 +261,35 @@ private struct DashboardView: View {
 }
 
 private struct SnapshotListView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
+    @Query private var categories: [AssetCategory]
+
+    @State private var currentSnapshotID: UUID?
+    @State private var amountInputs: [UUID: String] = [:]
+    @State private var quantityInputs: [UUID: String] = [:]
+    @State private var unitPriceInputs: [UUID: String] = [:]
+    @State private var lastSavedAt: Date?
+    @State private var didPrepare = false
+
+    private var currentSnapshot: AssetSnapshot? {
+        if let currentSnapshotID,
+           let snapshot = snapshots.first(where: { $0.id == currentSnapshotID }) {
+            return snapshot
+        }
+        return snapshots.first(where: { Calendar.current.isDateInToday($0.date) }) ?? snapshots.first
+    }
+
+    private var visibleCategories: [AssetCategory] {
+        categories
+            .filter { !$0.activeSortedItems.isEmpty }
+            .sorted {
+                if $0.group.sortPriority == $1.group.sortPriority {
+                    return $0.createdAt < $1.createdAt
+                }
+                return $0.group.sortPriority < $1.group.sortPriority
+            }
+    }
 
     var body: some View {
         NavigationStack {
@@ -270,30 +298,75 @@ private struct SnapshotListView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 18) {
-                        ATMHeader(title: "每日记录")
+                        ATMHeader(title: "每日记录") {
+                            if let currentSnapshot {
+                                GoldChip(text: currentSnapshot.date.shortDateString)
+                            }
+                        }
 
-                        if snapshots.isEmpty {
+                        if let currentSnapshot {
+                            VStack(alignment: .leading, spacing: 18) {
+                                Text(PortfolioCalculator.netAssets(for: currentSnapshot).currencyString())
+                                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                                    .foregroundStyle(AssetTheme.goldSoft)
+                                    .minimumScaleFactor(0.72)
+
+                                HStack(spacing: 12) {
+                                    CompactStat(title: "资产", value: PortfolioCalculator.totalAssets(for: currentSnapshot).currencyString(), accent: AssetTheme.gold)
+                                    CompactStat(title: "负债", value: PortfolioCalculator.totalLiabilities(for: currentSnapshot).currencyString(), accent: AssetTheme.negative)
+                                }
+
+                                if let lastSavedAt {
+                                    Text("已自动保存 · \(lastSavedAt.formatted(date: .omitted, time: .shortened))")
+                                        .font(.footnote)
+                                        .foregroundStyle(AssetTheme.textSecondary)
+                                }
+                            }
+                            .atmCardStyle()
+
+                            ForEach(visibleCategories) { category in
+                                RecordCategoryCard(
+                                    category: category,
+                                    amountInputs: $amountInputs,
+                                    quantityInputs: $quantityInputs,
+                                    unitPriceInputs: $unitPriceInputs,
+                                    onChanged: { item in
+                                        persist(item: item)
+                                    }
+                                )
+                            }
+
+                            NavigationLink {
+                                SnapshotArchiveView()
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "clock.arrow.circlepath")
+                                        .foregroundStyle(AssetTheme.gold)
+                                        .frame(width: 24)
+
+                                    Text("全部资产记录")
+                                        .font(.headline)
+                                        .foregroundStyle(AssetTheme.textPrimary)
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(AssetTheme.textSecondary)
+                                }
+                                .padding(18)
+                                .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                        .stroke(AssetTheme.border.opacity(0.8), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        } else {
                             EmptyStateCard(
                                 title: "暂无记录",
                                 systemImage: "calendar.badge.plus"
                             )
-                        } else {
-                            ForEach(snapshots) { snapshot in
-                                VStack(alignment: .leading, spacing: 12) {
-                                    HStack {
-                                        Text(snapshot.date.longDateString)
-                                            .font(.headline)
-                                            .foregroundStyle(AssetTheme.textPrimary)
-                                        Spacer()
-                                        GoldChip(text: "\(snapshot.entries.count) 条")
-                                    }
-
-                                    Text("\(snapshot.entries.count) 条")
-                                        .font(.subheadline)
-                                        .foregroundStyle(AssetTheme.textSecondary)
-                                }
-                                .atmCardStyle()
-                            }
                         }
                     }
                     .padding(.horizontal, 20)
@@ -303,6 +376,287 @@ private struct SnapshotListView: View {
             }
             .toolbar(.hidden, for: .navigationBar)
         }
+        .task {
+            await prepareSnapshotIfNeeded()
+        }
+    }
+
+    @MainActor
+    private func prepareSnapshotIfNeeded() async {
+        guard !didPrepare else { return }
+        didPrepare = true
+
+        do {
+            try SeedDataService.seedDefaultCategoriesIfNeeded(in: modelContext)
+            let snapshot = try SnapshotService.createSnapshot(on: .now, inheritPrevious: true, createMissingEntries: true, in: modelContext)
+            currentSnapshotID = snapshot.id
+            hydrateInputs(from: snapshot)
+        } catch {
+            print("[AssetTimeMachine] prepare snapshot failed: \(error)")
+        }
+    }
+
+    @MainActor
+    private func hydrateInputs(from snapshot: AssetSnapshot) {
+        for entry in snapshot.entries {
+            guard let item = entry.item else { continue }
+            amountInputs[item.id] = item.valuationMethod == .directAmount ? (entry.amount?.plainNumberString() ?? "") : ""
+            quantityInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.quantity?.plainNumberString() ?? "") : ""
+            unitPriceInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.unitPrice?.plainNumberString() ?? "") : ""
+        }
+    }
+
+    @MainActor
+    private func persist(item: AssetItem) {
+        guard let snapshot = currentSnapshot else { return }
+
+        do {
+            switch item.valuationMethod {
+            case .directAmount:
+                let amount = normalizedNumber(from: amountInputs[item.id], forcePositive: item.category?.group == .liability)
+                try SnapshotService.upsertEntry(snapshot: snapshot, item: item, amount: amount, in: modelContext)
+            case .quantityAndUnitPrice:
+                let quantity = normalizedNumber(from: quantityInputs[item.id])
+                let unitPrice = normalizedNumber(from: unitPriceInputs[item.id])
+                try SnapshotService.upsertEntry(snapshot: snapshot, item: item, quantity: quantity, unitPrice: unitPrice, in: modelContext)
+            }
+            lastSavedAt = .now
+        } catch {
+            print("[AssetTimeMachine] persist entry failed: \(error)")
+        }
+    }
+
+    private func normalizedNumber(from text: String?, forcePositive: Bool = false) -> Double? {
+        guard let raw = text?.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty,
+              let value = Double(raw) else {
+            return nil
+        }
+        return forcePositive ? abs(value) : value
+    }
+}
+
+private struct RecordCategoryCard: View {
+    let category: AssetCategory
+    @Binding var amountInputs: [UUID: String]
+    @Binding var quantityInputs: [UUID: String]
+    @Binding var unitPriceInputs: [UUID: String]
+    let onChanged: (AssetItem) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text(category.name)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+                Spacer()
+                GoldChip(text: "\(category.activeSortedItems.count) 项")
+            }
+
+            VStack(spacing: 12) {
+                ForEach(category.activeSortedItems) { item in
+                    AssetEntryInputRow(
+                        item: item,
+                        amountText: Binding(
+                            get: { amountInputs[item.id] ?? "" },
+                            set: { newValue in
+                                amountInputs[item.id] = newValue
+                                onChanged(item)
+                            }
+                        ),
+                        quantityText: Binding(
+                            get: { quantityInputs[item.id] ?? "" },
+                            set: { newValue in
+                                quantityInputs[item.id] = newValue
+                                onChanged(item)
+                            }
+                        ),
+                        unitPriceText: Binding(
+                            get: { unitPriceInputs[item.id] ?? "" },
+                            set: { newValue in
+                                unitPriceInputs[item.id] = newValue
+                                onChanged(item)
+                            }
+                        )
+                    )
+                }
+            }
+        }
+        .atmCardStyle()
+    }
+}
+
+private struct AssetEntryInputRow: View {
+    let item: AssetItem
+    @Binding var amountText: String
+    @Binding var quantityText: String
+    @Binding var unitPriceText: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(item.name)
+                .font(.headline)
+                .foregroundStyle(AssetTheme.textPrimary)
+
+            if item.valuationMethod == .directAmount {
+                ATMInputField(text: $amountText, placeholder: item.category?.group == .liability ? "0" : "0")
+            } else {
+                HStack(spacing: 10) {
+                    ATMInputField(text: $quantityText, placeholder: "数量")
+                    ATMInputField(text: $unitPriceText, placeholder: "单价")
+                }
+            }
+        }
+        .padding(14)
+        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
+        )
+    }
+}
+
+private struct ATMInputField: View {
+    @Binding var text: String
+    let placeholder: String
+
+    var body: some View {
+        TextField("", text: $text, prompt: Text(placeholder).foregroundStyle(AssetTheme.textSecondary))
+            .keyboardType(.decimalPad)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .foregroundStyle(AssetTheme.textPrimary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 13)
+            .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(AssetTheme.border.opacity(0.65), lineWidth: 1)
+            )
+    }
+}
+
+private struct SnapshotArchiveView: View {
+    @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
+
+    var body: some View {
+        ZStack {
+            AssetTheme.pageGradient.ignoresSafeArea()
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 18) {
+                    ATMHeader(title: "全部记录")
+
+                    ForEach(snapshots) { snapshot in
+                        NavigationLink {
+                            SnapshotDetailView(snapshot: snapshot)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 14) {
+                                HStack {
+                                    Text(snapshot.date.longDateString)
+                                        .font(.headline)
+                                        .foregroundStyle(AssetTheme.textPrimary)
+                                    Spacer()
+                                    GoldChip(text: "\(snapshot.entries.count) 项")
+                                }
+
+                                HStack(spacing: 12) {
+                                    CompactStat(title: "净资产", value: PortfolioCalculator.netAssets(for: snapshot).currencyString(), accent: AssetTheme.gold)
+                                    CompactStat(title: "负债", value: PortfolioCalculator.totalLiabilities(for: snapshot).currencyString(), accent: AssetTheme.negative)
+                                }
+                            }
+                            .atmCardStyle()
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 120)
+            }
+        }
+        .toolbar(.hidden, for: .navigationBar)
+    }
+}
+
+private struct SnapshotDetailView: View {
+    let snapshot: AssetSnapshot
+
+    private var groupedEntries: [(group: AssetGroup, entries: [AssetEntry])] {
+        AssetGroup.allCases.compactMap { group in
+            let entries = snapshot.entries
+                .filter { $0.item?.category?.group == group }
+                .sorted { lhs, rhs in
+                    (lhs.item?.sortOrder ?? 0) < (rhs.item?.sortOrder ?? 0)
+                }
+            guard !entries.isEmpty else { return nil }
+            return (group, entries)
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            AssetTheme.pageGradient.ignoresSafeArea()
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 18) {
+                    ATMHeader(title: snapshot.date.longDateString)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(PortfolioCalculator.netAssets(for: snapshot).currencyString())
+                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .foregroundStyle(AssetTheme.goldSoft)
+
+                        HStack(spacing: 12) {
+                            CompactStat(title: "资产", value: PortfolioCalculator.totalAssets(for: snapshot).currencyString(), accent: AssetTheme.gold)
+                            CompactStat(title: "负债", value: PortfolioCalculator.totalLiabilities(for: snapshot).currencyString(), accent: AssetTheme.negative)
+                        }
+                    }
+                    .atmCardStyle()
+
+                    ForEach(groupedEntries, id: \.group) { section in
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text(section.group.displayName)
+                                .font(.title3.weight(.bold))
+                                .foregroundStyle(AssetTheme.textPrimary)
+
+                            ForEach(section.entries) { entry in
+                                HStack(alignment: .top, spacing: 12) {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text(entry.item?.name ?? "未命名")
+                                            .font(.headline)
+                                            .foregroundStyle(AssetTheme.textPrimary)
+
+                                        if let quantity = entry.quantity, let unitPrice = entry.unitPrice {
+                                            Text("\(quantity.plainNumberString()) × \(unitPrice.plainNumberString())")
+                                                .font(.footnote)
+                                                .foregroundStyle(AssetTheme.textSecondary)
+                                        }
+                                    }
+
+                                    Spacer()
+
+                                    Text(entry.resolvedAmount.currencyString())
+                                        .font(.headline.weight(.semibold))
+                                        .foregroundStyle(section.group == .liability ? AssetTheme.negative : AssetTheme.goldSoft)
+                                }
+                                .padding(14)
+                                .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                        .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
+                                )
+                            }
+                        }
+                        .atmCardStyle()
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 120)
+            }
+        }
+        .toolbar(.hidden, for: .navigationBar)
     }
 }
 
@@ -784,6 +1138,38 @@ private extension Double {
         formatter.minimumFractionDigits = 2
         formatter.locale = Locale(identifier: "zh_CN")
         return formatter.string(from: NSNumber(value: self)) ?? String(format: "%.2f", self)
+    }
+
+    func plainNumberString() -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 4
+        formatter.minimumFractionDigits = 0
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.string(from: NSNumber(value: self)) ?? String(self)
+    }
+}
+
+private extension AssetCategory {
+    var activeSortedItems: [AssetItem] {
+        items
+            .filter(\.isActive)
+            .sorted { lhs, rhs in
+                if lhs.sortOrder == rhs.sortOrder {
+                    return lhs.createdAt < rhs.createdAt
+                }
+                return lhs.sortOrder < rhs.sortOrder
+            }
+    }
+}
+
+private extension AssetGroup {
+    var sortPriority: Int {
+        switch self {
+        case .financial: return 0
+        case .physical: return 1
+        case .liability: return 2
+        }
     }
 }
 
