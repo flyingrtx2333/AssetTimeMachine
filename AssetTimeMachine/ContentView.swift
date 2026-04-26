@@ -819,25 +819,27 @@ private struct TimeMachineView: View {
         return nasdaqPriceUSD / usdPerCNY
     }
 
-    private var btcPoints: [TimeMachineValuePoint] {
-        filteredTrendPoints.compactMap {
-            guard let value = $0.btcEquivalent else { return nil }
-            return TimeMachineValuePoint(date: $0.date, value: value)
-        }
-    }
-
-    private var nasdaqPoints: [TimeMachineValuePoint] {
-        filteredTrendPoints.compactMap {
-            guard let value = $0.nasdaqEquivalent else { return nil }
-            return TimeMachineValuePoint(date: $0.date, value: value)
-        }
-    }
-
-    private var goldPoints: [TimeMachineValuePoint] {
-        filteredTrendPoints.compactMap {
-            guard let value = $0.goldEquivalent else { return nil }
-            return TimeMachineValuePoint(date: $0.date, value: value)
-        }
+    private var currentAnchorItems: [TimeMachineCurrentAnchorItem] {
+        [
+            TimeMachineCurrentAnchorItem(
+                title: "BTC",
+                value: latestPoint?.btcEquivalent?.plainNumberString() ?? "--",
+                detail: btcAnchorPrice.map { $0.currencyString() } ?? "暂无行情",
+                accent: AssetTheme.accentOrange
+            ),
+            TimeMachineCurrentAnchorItem(
+                title: "纳指",
+                value: latestPoint?.nasdaqEquivalent?.plainNumberString() ?? "--",
+                detail: nasdaqAnchorPrice.map { $0.currencyString() } ?? "暂无行情",
+                accent: AssetTheme.accentBlue
+            ),
+            TimeMachineCurrentAnchorItem(
+                title: "黄金",
+                value: latestPoint?.goldEquivalent?.plainNumberString() ?? "--",
+                detail: goldAnchorPrice.map { "\($0.currencyString())/g" } ?? "暂无行情",
+                accent: AssetTheme.gold
+            ),
+        ]
     }
 
     var body: some View {
@@ -855,34 +857,7 @@ private struct TimeMachineView: View {
                                 latestPoint: latestPoint
                             )
 
-                            LazyVGrid(
-                                columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
-                                spacing: 10
-                            ) {
-                                TimeMachineMiniTrendCard(
-                                    title: "BTC",
-                                    subtitle: btcAnchorPrice.map { "BTC \($0.currencyString())" } ?? "暂无行情",
-                                    points: btcPoints,
-                                    color: AssetTheme.accentOrange,
-                                    latestLabel: latestPoint.btcEquivalent.map { $0.plainNumberString() } ?? "--"
-                                )
-
-                                TimeMachineMiniTrendCard(
-                                    title: "纳指",
-                                    subtitle: nasdaqAnchorPrice.map { "QQQ \($0.currencyString())" } ?? "暂无行情",
-                                    points: nasdaqPoints,
-                                    color: AssetTheme.accentBlue,
-                                    latestLabel: latestPoint.nasdaqEquivalent.map { $0.plainNumberString() } ?? "--"
-                                )
-                            }
-
-                            TimeMachineMiniTrendCard(
-                                title: "黄金",
-                                subtitle: goldAnchorPrice.map { "金价 \($0.currencyString())/g" } ?? "暂无行情",
-                                points: goldPoints,
-                                color: AssetTheme.gold,
-                                latestLabel: latestPoint.goldEquivalent.map { $0.plainNumberString() } ?? "--"
-                            )
+                            TimeMachineCurrentAnchorCard(items: currentAnchorItems)
                         } else {
                             EmptyStateCard(
                                 title: "还没有趋势数据",
@@ -1051,6 +1026,15 @@ private struct TimeMachineInlineMetric: View {
     }
 }
 
+private struct TimeMachineCurrentAnchorItem: Identifiable {
+    let title: String
+    let value: String
+    let detail: String
+    let accent: Color
+
+    var id: String { title }
+}
+
 private struct TimeMachineHeroTrendCard: View {
     let points: [TimeMachineTrendPoint]
     let latestPoint: TimeMachineTrendPoint
@@ -1181,6 +1165,44 @@ private struct TimeMachineHeroTrendCard: View {
     private var dateRangeLabel: String {
         guard let first = points.first?.date, let last = points.last?.date else { return "暂无范围" }
         return "\(first.recordDateString) - \(last.recordDateString)"
+    }
+}
+
+private struct TimeMachineCurrentAnchorCard: View {
+    let items: [TimeMachineCurrentAnchorItem]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("当前锚点折算")
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(AssetTheme.textPrimary)
+
+            ForEach(items) { item in
+                HStack(spacing: 8) {
+                    RoundedRectangle(cornerRadius: 999, style: .continuous)
+                        .fill(item.accent)
+                        .frame(width: 12, height: 3)
+
+                    Text(item.title)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(AssetTheme.textSecondary)
+
+                    Text(item.value)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(item.accent)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 8)
+
+                    Text(item.detail)
+                        .font(.caption)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                }
+            }
+        }
+        .atmCardStyle()
     }
 }
 
