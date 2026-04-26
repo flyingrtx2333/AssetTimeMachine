@@ -11,6 +11,7 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var marketStore = RemoteMarketStore()
     @State private var selectedTab: AppTab = ProcessInfo.processInfo.arguments.contains("-openSnapshotsTab") ? .snapshots : .dashboard
+    @State private var didRunStartup = false
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -34,9 +35,50 @@ struct ContentView: View {
         }
         .tint(AssetTheme.gold)
         .task {
-            try? SeedDataService.seedDefaultCategoriesIfNeeded(in: modelContext)
-            await marketStore.refresh()
+            await runStartupIfNeeded()
         }
+    }
+
+    @MainActor
+    private func runStartupIfNeeded() async {
+        guard !didRunStartup else { return }
+        didRunStartup = true
+
+        if let importPath = launchArgumentValue(after: "-importJSONPath") {
+            do {
+                let data = try Data(contentsOf: URL(fileURLWithPath: importPath))
+                try ImportExportService.importJSON(
+                    data,
+                    into: modelContext,
+                    replaceExisting: ProcessInfo.processInfo.arguments.contains("-replaceExistingImport")
+                )
+                try? "success".write(
+                    to: URL(fileURLWithPath: "/tmp/assettimemachine-import-status.txt"),
+                    atomically: true,
+                    encoding: .utf8
+                )
+            } catch {
+                let message = "[AssetTimeMachine] import failed: \(error)"
+                print(message)
+                try? message.write(
+                    to: URL(fileURLWithPath: "/tmp/assettimemachine-import-status.txt"),
+                    atomically: true,
+                    encoding: .utf8
+                )
+            }
+        } else {
+            try? SeedDataService.seedDefaultCategoriesIfNeeded(in: modelContext)
+        }
+
+        await marketStore.refresh()
+    }
+
+    private func launchArgumentValue(after flag: String) -> String? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: flag), index + 1 < arguments.count else {
+            return nil
+        }
+        return arguments[index + 1]
     }
 }
 
