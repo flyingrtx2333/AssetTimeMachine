@@ -21,6 +21,39 @@ struct DrawdownMetrics {
     let troughDate: Date
 }
 
+enum ComparisonPeriod: CaseIterable {
+    case day
+    case week
+    case month
+    case year
+
+    var calendarComponent: Calendar.Component {
+        switch self {
+        case .day:
+            return .day
+        case .week:
+            return .day
+        case .month:
+            return .month
+        case .year:
+            return .year
+        }
+    }
+
+    var offsetValue: Int {
+        switch self {
+        case .day:
+            return -1
+        case .week:
+            return -7
+        case .month:
+            return -1
+        case .year:
+            return -1
+        }
+    }
+}
+
 enum SeedDataService {
     static let defaultCategories: [(name: String, group: AssetGroup)] = [
         ("金融资产", .financial),
@@ -256,6 +289,48 @@ enum SnapshotService {
         snapshot.updatedAt = .now
         item.updatedAt = .now
         try context.save()
+    }
+}
+
+enum TrendAnalysisService {
+    static func nearestSnapshot(to targetDate: Date, in snapshots: [AssetSnapshot]) -> AssetSnapshot? {
+        let sorted = snapshots.sorted { abs($0.date.timeIntervalSince(targetDate)) < abs($1.date.timeIntervalSince(targetDate)) }
+        return sorted.first
+    }
+
+    static func comparisonMetrics(
+        for current: AssetSnapshot,
+        period: ComparisonPeriod,
+        in snapshots: [AssetSnapshot],
+        calendar: Calendar = .current
+    ) -> ChangeMetrics? {
+        let targetDate = calendar.date(byAdding: period.calendarComponent, value: period.offsetValue, to: current.date)
+        guard let targetDate,
+              let previous = nearestSnapshot(to: targetDate, in: snapshots.filter({ $0.id != current.id }))
+        else {
+            return nil
+        }
+
+        let previousMetrics = PortfolioCalculator.metrics(for: previous)
+        let currentMetrics = PortfolioCalculator.metrics(for: current)
+        return PortfolioCalculator.change(from: previousMetrics, to: currentMetrics)
+    }
+
+    static func dateRangeMetrics(
+        from startDate: Date,
+        to endDate: Date,
+        in snapshots: [AssetSnapshot]
+    ) -> [SnapshotMetrics] {
+        snapshots
+            .filter { $0.date >= startDate && $0.date <= endDate }
+            .sorted { $0.date < $1.date }
+            .map(PortfolioCalculator.metrics(for:))
+    }
+
+    static func latestMetrics(in snapshots: [AssetSnapshot]) -> SnapshotMetrics? {
+        snapshots
+            .max(by: { $0.date < $1.date })
+            .map(PortfolioCalculator.metrics(for:))
     }
 }
 

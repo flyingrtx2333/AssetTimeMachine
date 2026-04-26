@@ -36,7 +36,22 @@ struct LogicTests {
         let change = PortfolioCalculator.change(from: history[1], to: history[2])
         let drawdown = PortfolioCalculator.maxDrawdown(in: history)
         let drawdownText = String(format: "%.2f", drawdown?.drawdownRatio ?? 0)
+        let weekly = TrendAnalysisService.comparisonMetrics(for: s3, period: .week, in: [s1, s2, s3])
 
-        return "change=\(Int(change?.absoluteChange ?? 0)), drawdown=\(drawdownText)"
+        return "change=\(Int(change?.absoluteChange ?? 0)), drawdown=\(drawdownText), weekly=\(Int(weekly?.absoluteChange ?? 0))"
+    }
+
+    static func exportPreview() -> String {
+        let payload = ExportPayload(
+            exportedAt: Date(timeIntervalSince1970: 0),
+            categories: [.init(id: UUID(), name: "金融资产", group: "financial", createdAt: .now)],
+            items: [],
+            snapshots: []
+        )
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let data = try? encoder.encode(payload)
+        return "bytes=\(data?.count ?? 0)"
     }
 }
