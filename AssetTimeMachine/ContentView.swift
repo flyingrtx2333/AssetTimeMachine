@@ -1112,9 +1112,20 @@ private struct TimeMachineHeroTrendCard: View {
                 HStack(spacing: 14) {
                     ForEach(TimeMachineAssetSeries.allCases) { series in
                         HStack(spacing: 6) {
-                            Circle()
+                            RoundedRectangle(cornerRadius: 999, style: .continuous)
                                 .fill(series.color)
-                                .frame(width: 7, height: 7)
+                                .frame(width: 16, height: 3)
+                                .overlay {
+                                    if series == .liabilities {
+                                        HStack(spacing: 3) {
+                                            ForEach(0..<3, id: \.self) { _ in
+                                                Capsule()
+                                                    .fill(series.color)
+                                                    .frame(width: 4, height: 3)
+                                            }
+                                        }
+                                    }
+                                }
                             Text(series.title)
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(AssetTheme.textSecondary)
@@ -1130,12 +1141,26 @@ private struct TimeMachineHeroTrendCard: View {
                             x: .value("日期", point.date),
                             y: .value(series.title, series.value(from: point))
                         )
-                        .foregroundStyle(series.color)
+                        .foregroundStyle(by: .value("序列", series.title))
                         .lineStyle(series.strokeStyle)
                         .interpolationMethod(.catmullRom)
                     }
+
+                    if let lastPoint = points.last {
+                        PointMark(
+                            x: .value("日期", lastPoint.date),
+                            y: .value(series.title, series.value(from: lastPoint))
+                        )
+                        .foregroundStyle(series.color)
+                        .symbolSize(46)
+                    }
                 }
             }
+            .chartForegroundStyleScale([
+                TimeMachineAssetSeries.mainAssets.title: TimeMachineAssetSeries.mainAssets.color,
+                TimeMachineAssetSeries.netAssets.title: TimeMachineAssetSeries.netAssets.color,
+                TimeMachineAssetSeries.liabilities.title: TimeMachineAssetSeries.liabilities.color,
+            ])
             .frame(height: 260)
             .chartXAxis {
                 AxisMarks(values: .automatic(desiredCount: 4)) { value in
