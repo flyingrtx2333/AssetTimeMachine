@@ -845,49 +845,43 @@ private struct TimeMachineView: View {
         return liveNasdaqAnchorPriceUSD / liveUSDPerCNY
     }
 
-    private var detailTrendCards: [TimeMachineMiniTrendDescriptor] {
+    private var detailTrendCards: [TimeMachineCombinedTrendDescriptor] {
         [
-            TimeMachineMiniTrendDescriptor(
-                title: "黄金价格",
-                subtitle: "历史金价（人民币/克）",
-                points: valuePoints(for: filteredTrendPoints, keyPath: \.goldAnchorPriceCNY),
-                color: AssetTheme.gold,
-                latestLabel: latestPoint?.goldAnchorPriceCNY.map { "\($0.currencyString())/g" } ?? "--"
+            TimeMachineCombinedTrendDescriptor(
+                title: "黄金",
+                leftTitle: "价格",
+                rightTitle: "折算",
+                points: pairedPoints(for: filteredTrendPoints, left: \.goldAnchorPriceCNY, right: \.goldEquivalent),
+                leftColor: AssetTheme.gold,
+                rightColor: AssetTheme.goldSoft,
+                leftLatestLabel: latestPoint?.goldAnchorPriceCNY.map { "\($0.currencyString())/g" } ?? "--",
+                rightLatestLabel: latestPoint?.goldEquivalent.map { "\($0.plainNumberString()) g" } ?? "--",
+                leftAxisStyle: .currency(code: "CNY"),
+                rightAxisStyle: .quantity(unit: "g", maxFractionDigits: 2)
             ),
-            TimeMachineMiniTrendDescriptor(
-                title: "黄金折算",
-                subtitle: "主资产可换算黄金克数",
-                points: valuePoints(for: filteredTrendPoints, keyPath: \.goldEquivalent),
-                color: AssetTheme.goldSoft,
-                latestLabel: latestPoint?.goldEquivalent.map { "\($0.plainNumberString()) g" } ?? "--"
+            TimeMachineCombinedTrendDescriptor(
+                title: "纳指",
+                leftTitle: "价格",
+                rightTitle: "折算",
+                points: pairedPoints(for: filteredTrendPoints, left: \.nasdaqAnchorPriceUSD, right: \.nasdaqEquivalent),
+                leftColor: AssetTheme.accentBlue,
+                rightColor: AssetTheme.accentBlue.opacity(0.72),
+                leftLatestLabel: latestPoint?.nasdaqAnchorPriceUSD.map { $0.currencyString(code: "USD") } ?? "--",
+                rightLatestLabel: latestPoint?.nasdaqEquivalent.map { "\($0.plainNumberString()) 份" } ?? "--",
+                leftAxisStyle: .currency(code: "USD"),
+                rightAxisStyle: .quantity(unit: "份", maxFractionDigits: 2)
             ),
-            TimeMachineMiniTrendDescriptor(
-                title: "纳指价格",
-                subtitle: "QQQ 历史价格（美元）",
-                points: valuePoints(for: filteredTrendPoints, keyPath: \.nasdaqAnchorPriceUSD),
-                color: AssetTheme.accentBlue,
-                latestLabel: latestPoint?.nasdaqAnchorPriceUSD.map { $0.currencyString(code: "USD") } ?? "--"
-            ),
-            TimeMachineMiniTrendDescriptor(
-                title: "纳指折算",
-                subtitle: "主资产可换算 QQQ 份额",
-                points: valuePoints(for: filteredTrendPoints, keyPath: \.nasdaqEquivalent),
-                color: AssetTheme.accentBlue.opacity(0.88),
-                latestLabel: latestPoint?.nasdaqEquivalent.map { "\($0.plainNumberString()) 份" } ?? "--"
-            ),
-            TimeMachineMiniTrendDescriptor(
-                title: "BTC 价格",
-                subtitle: "历史 BTC 价格（美元）",
-                points: valuePoints(for: filteredTrendPoints, keyPath: \.btcAnchorPriceUSD),
-                color: AssetTheme.accentOrange,
-                latestLabel: latestPoint?.btcAnchorPriceUSD.map { $0.currencyString(code: "USD") } ?? "--"
-            ),
-            TimeMachineMiniTrendDescriptor(
-                title: "BTC 折算",
-                subtitle: "主资产可换算 BTC 数量",
-                points: valuePoints(for: filteredTrendPoints, keyPath: \.btcEquivalent),
-                color: AssetTheme.accentOrange.opacity(0.9),
-                latestLabel: latestPoint?.btcEquivalent.map { "\($0.plainNumberString()) BTC" } ?? "--"
+            TimeMachineCombinedTrendDescriptor(
+                title: "BTC",
+                leftTitle: "价格",
+                rightTitle: "折算",
+                points: pairedPoints(for: filteredTrendPoints, left: \.btcAnchorPriceUSD, right: \.btcEquivalent),
+                leftColor: AssetTheme.accentOrange,
+                rightColor: AssetTheme.accentOrange.opacity(0.74),
+                leftLatestLabel: latestPoint?.btcAnchorPriceUSD.map { $0.currencyString(code: "USD") } ?? "--",
+                rightLatestLabel: latestPoint?.btcEquivalent.map { "\($0.plainNumberString()) BTC" } ?? "--",
+                leftAxisStyle: .currency(code: "USD"),
+                rightAxisStyle: .quantity(unit: "BTC", maxFractionDigits: 4)
             ),
         ]
     }
@@ -916,13 +910,17 @@ private struct TimeMachineView: View {
         hasValue && Calendar.current.isDateInToday(snapshot.date) ? snapshot.date : nil
     }
 
-    private func valuePoints(
+    private func pairedPoints(
         for source: [TimeMachineTrendPoint],
-        keyPath: KeyPath<TimeMachineTrendPoint, Double?>
-    ) -> [TimeMachineValuePoint] {
+        left leftKeyPath: KeyPath<TimeMachineTrendPoint, Double?>,
+        right rightKeyPath: KeyPath<TimeMachineTrendPoint, Double?>
+    ) -> [TimeMachineDualAxisPoint] {
         source.compactMap { point in
-            guard let value = point[keyPath: keyPath] else { return nil }
-            return TimeMachineValuePoint(date: point.date, value: value)
+            guard let leftValue = point[keyPath: leftKeyPath],
+                  let rightValue = point[keyPath: rightKeyPath] else {
+                return nil
+            }
+            return TimeMachineDualAxisPoint(date: point.date, leftValue: leftValue, rightValue: rightValue)
         }
     }
 
@@ -941,18 +939,9 @@ private struct TimeMachineView: View {
                                 latestPoint: latestPoint
                             )
 
-                            LazyVGrid(
-                                columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
-                                spacing: 12
-                            ) {
+                            VStack(spacing: 12) {
                                 ForEach(detailTrendCards) { card in
-                                    TimeMachineMiniTrendCard(
-                                        title: card.title,
-                                        subtitle: card.subtitle,
-                                        points: card.points,
-                                        color: card.color,
-                                        latestLabel: card.latestLabel
-                                    )
+                                    TimeMachineDualAxisTrendCard(descriptor: card)
                                 }
                             }
                         } else {
@@ -1034,19 +1023,40 @@ private struct TimeMachineTrendPoint: Identifiable {
     var id: Date { date }
 }
 
-private struct TimeMachineMiniTrendDescriptor: Identifiable {
+private struct TimeMachineCombinedTrendDescriptor: Identifiable {
     let title: String
-    let subtitle: String
-    let points: [TimeMachineValuePoint]
-    let color: Color
-    let latestLabel: String
+    let leftTitle: String
+    let rightTitle: String
+    let points: [TimeMachineDualAxisPoint]
+    let leftColor: Color
+    let rightColor: Color
+    let leftLatestLabel: String
+    let rightLatestLabel: String
+    let leftAxisStyle: TimeMachineAxisValueStyle
+    let rightAxisStyle: TimeMachineAxisValueStyle
 
     var id: String { title }
 }
 
-private struct TimeMachineValuePoint: Identifiable {
+private enum TimeMachineAxisValueStyle {
+    case currency(code: String, suffix: String = "")
+    case quantity(unit: String, maxFractionDigits: Int = 2)
+
+    func compactLabel(for value: Double) -> String {
+        switch self {
+        case let .currency(code, suffix):
+            let symbol = code == "USD" ? "$" : "¥"
+            return "\(symbol)\(value.compactNumberString())\(suffix)"
+        case let .quantity(unit, maxFractionDigits):
+            return "\(value.compactNumberString(maxFractionDigits: maxFractionDigits))\(unit)"
+        }
+    }
+}
+
+private struct TimeMachineDualAxisPoint: Identifiable {
     let date: Date
-    let value: Double
+    let leftValue: Double
+    let rightValue: Double
 
     var id: Date { date }
 }
@@ -1321,69 +1331,183 @@ private struct TimeMachineCurrentAnchorCard: View {
     }
 }
 
-private struct TimeMachineMiniTrendCard: View {
-    let title: String
-    let subtitle: String
-    let points: [TimeMachineValuePoint]
-    let color: Color
-    let latestLabel: String
+private struct TimeMachineDualAxisTrendCard: View {
+    let descriptor: TimeMachineCombinedTrendDescriptor
+
+    private var normalizedPoints: [TimeMachineDualAxisNormalizedPoint] {
+        let leftRange = valueRange(for: descriptor.points.map(\.leftValue))
+        let rightRange = valueRange(for: descriptor.points.map(\.rightValue))
+
+        return descriptor.points.map { point in
+            .init(
+                date: point.date,
+                leftNormalized: normalize(point.leftValue, in: leftRange),
+                rightNormalized: normalize(point.rightValue, in: rightRange)
+            )
+        }
+    }
+
+    private var leftRange: ClosedRange<Double> {
+        valueRange(for: descriptor.points.map(\.leftValue))
+    }
+
+    private var rightRange: ClosedRange<Double> {
+        valueRange(for: descriptor.points.map(\.rightValue))
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 8) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .lineLimit(1)
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(AssetTheme.textSecondary)
-                        .lineLimit(1)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                Text(descriptor.title)
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                Spacer(minLength: 12)
+
+                VStack(alignment: .trailing, spacing: 8) {
+                    TimeMachineLegendMetric(
+                        title: descriptor.leftTitle,
+                        value: descriptor.leftLatestLabel,
+                        color: descriptor.leftColor
+                    )
+                    TimeMachineLegendMetric(
+                        title: descriptor.rightTitle,
+                        value: descriptor.rightLatestLabel,
+                        color: descriptor.rightColor
+                    )
                 }
-                Spacer(minLength: 8)
-                Text(latestLabel)
-                    .font(.footnote.weight(.bold))
-                    .foregroundStyle(color)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
             }
 
-            if points.count >= 2 {
-                Chart(points) { point in
-                    AreaMark(
-                        x: .value("日期", point.date),
-                        y: .value(title, point.value)
+            if normalizedPoints.count >= 2 {
+                HStack(spacing: 8) {
+                    TimeMachineAxisStrip(
+                        topLabel: descriptor.leftAxisStyle.compactLabel(for: leftRange.upperBound),
+                        bottomLabel: descriptor.leftAxisStyle.compactLabel(for: leftRange.lowerBound),
+                        alignment: .leading
                     )
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [color.opacity(0.24), color.opacity(0.02)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .interpolationMethod(.catmullRom)
 
-                    LineMark(
-                        x: .value("日期", point.date),
-                        y: .value(title, point.value)
+                    Chart(normalizedPoints) { point in
+                        AreaMark(
+                            x: .value("日期", point.date),
+                            y: .value("left", point.leftNormalized)
+                        )
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [descriptor.leftColor.opacity(0.18), descriptor.leftColor.opacity(0.02)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .interpolationMethod(.catmullRom)
+
+                        LineMark(
+                            x: .value("日期", point.date),
+                            y: .value("left", point.leftNormalized)
+                        )
+                        .foregroundStyle(descriptor.leftColor)
+                        .lineStyle(StrokeStyle(lineWidth: 2.4, lineCap: .round))
+                        .interpolationMethod(.catmullRom)
+
+                        LineMark(
+                            x: .value("日期", point.date),
+                            y: .value("right", point.rightNormalized)
+                        )
+                        .foregroundStyle(descriptor.rightColor)
+                        .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, dash: [5, 4]))
+                        .interpolationMethod(.catmullRom)
+                    }
+                    .frame(height: 156)
+                    .chartYScale(domain: 0 ... 1)
+                    .chartXAxis {
+                        AxisMarks(values: .automatic(desiredCount: 3)) { value in
+                            AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                                .foregroundStyle(.white.opacity(0.06))
+                            AxisTick().foregroundStyle(.white.opacity(0.12))
+                            AxisValueLabel(format: .dateTime.month(.defaultDigits), centered: true)
+                                .foregroundStyle(AssetTheme.textSecondary)
+                        }
+                    }
+                    .chartYAxis(.hidden)
+                    .chartLegend(.hidden)
+
+                    TimeMachineAxisStrip(
+                        topLabel: descriptor.rightAxisStyle.compactLabel(for: rightRange.upperBound),
+                        bottomLabel: descriptor.rightAxisStyle.compactLabel(for: rightRange.lowerBound),
+                        alignment: .trailing
                     )
-                    .foregroundStyle(color)
-                    .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round))
-                    .interpolationMethod(.catmullRom)
                 }
-                .frame(height: 126)
-                .chartXAxis(.hidden)
-                .chartYAxis(.hidden)
-                .chartLegend(.hidden)
             } else {
                 Text("记录不足")
                     .font(.caption)
                     .foregroundStyle(AssetTheme.textSecondary)
-                    .frame(maxWidth: .infinity, minHeight: 86, alignment: .leading)
+                    .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)
             }
         }
         .atmCardStyle()
+    }
+
+    private func valueRange(for values: [Double]) -> ClosedRange<Double> {
+        let minValue = values.min() ?? 0
+        let maxValue = values.max() ?? 1
+        if abs(maxValue - minValue) < 0.0001 {
+            return minValue ... (maxValue + 1)
+        }
+        return minValue ... maxValue
+    }
+
+    private func normalize(_ value: Double, in range: ClosedRange<Double>) -> Double {
+        let span = max(range.upperBound - range.lowerBound, 0.0001)
+        return (value - range.lowerBound) / span
+    }
+}
+
+private struct TimeMachineDualAxisNormalizedPoint: Identifiable {
+    let date: Date
+    let leftNormalized: Double
+    let rightNormalized: Double
+
+    var id: Date { date }
+}
+
+private struct TimeMachineLegendMetric: View {
+    let title: String
+    let value: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Capsule()
+                .fill(color)
+                .frame(width: 12, height: 3)
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(AssetTheme.textSecondary)
+            Text(value)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+    }
+}
+
+private struct TimeMachineAxisStrip: View {
+    let topLabel: String
+    let bottomLabel: String
+    let alignment: HorizontalAlignment
+
+    var body: some View {
+        VStack(alignment: alignment, spacing: 0) {
+            Text(topLabel)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(AssetTheme.textSecondary)
+            Spacer(minLength: 10)
+            Text(bottomLabel)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(AssetTheme.textSecondary)
+        }
+        .frame(width: 44)
+        .frame(maxHeight: 156)
     }
 }
 
@@ -1833,6 +1957,32 @@ private extension Double {
         formatter.minimumFractionDigits = 0
         formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter.string(from: NSNumber(value: self)) ?? String(self)
+    }
+
+    func compactNumberString(maxFractionDigits: Int = 1) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = maxFractionDigits
+        formatter.minimumFractionDigits = 0
+        formatter.usesGroupingSeparator = false
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+
+        let absValue = abs(self)
+        let sign = self < 0 ? "-" : ""
+
+        switch absValue {
+        case 1_000_000_000...:
+            let value = absValue / 1_000_000_000
+            return "\(sign)\((formatter.string(from: NSNumber(value: value)) ?? String(value)))B"
+        case 1_000_000...:
+            let value = absValue / 1_000_000
+            return "\(sign)\((formatter.string(from: NSNumber(value: value)) ?? String(value)))M"
+        case 1_000...:
+            let value = absValue / 1_000
+            return "\(sign)\((formatter.string(from: NSNumber(value: value)) ?? String(value)))K"
+        default:
+            return formatter.string(from: NSNumber(value: self)) ?? String(self)
+        }
     }
 }
 
