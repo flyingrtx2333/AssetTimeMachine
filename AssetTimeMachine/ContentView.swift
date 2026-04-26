@@ -21,11 +21,6 @@ struct ContentView: View {
                 .tabItem {
                     Label("时光机", systemImage: "clock.arrow.circlepath")
                 }
-
-            APIDocumentationView(marketStore: marketStore)
-                .tabItem {
-                    Label("接口文档", systemImage: "doc.text")
-                }
         }
         .tint(AssetTheme.gold)
         .task {
@@ -65,10 +60,7 @@ private struct DashboardView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 18) {
-                        ATMHeader(
-                            title: "资产时光机",
-                            subtitle: "黑金风第一版，先把气质立住。"
-                        ) {
+                        ATMHeader(title: "资产时光机") {
                             Button {
                                 Task { await marketStore.refresh() }
                             } label: {
@@ -88,14 +80,12 @@ private struct DashboardView: View {
                             MetricTile(
                                 title: "总资产",
                                 value: totalAssets.currencyString(),
-                                detail: "已录入 \(entries.filter { ($0.item?.category?.group ?? .financial) != .liability }.count) 项",
                                 accent: AssetTheme.gold
                             )
 
                             MetricTile(
                                 title: "总负债",
                                 value: totalLiabilities.currencyString(),
-                                detail: "当前负债类 \(entries.filter { ($0.item?.category?.group ?? .financial) == .liability }.count) 项",
                                 accent: AssetTheme.negative
                             )
                         }
@@ -156,7 +146,7 @@ private struct DashboardView: View {
 
     private var marketSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionTitle(title: "市场锚点", subtitle: "公共行情接口，直接给时光机做参考")
+            SectionTitle(title: "市场锚点")
 
             Group {
                 if let overview = marketStore.overview {
@@ -169,15 +159,6 @@ private struct DashboardView: View {
                             }
                         }
 
-                        if let updateIntervalHours = overview.updateIntervalHours {
-                            HStack(spacing: 8) {
-                                Image(systemName: "clock.badge.checkmark")
-                                Text("服务端每 \(updateIntervalHours) 小时刷新一次数据库")
-                            }
-                            .font(.footnote)
-                            .foregroundStyle(AssetTheme.textSecondary)
-                            .padding(.top, 14)
-                        }
                     }
                     .atmCardStyle()
                 } else if marketStore.isLoading {
@@ -190,8 +171,7 @@ private struct DashboardView: View {
                     .atmCardStyle()
                 } else {
                     EmptyStateCard(
-                        title: "公共行情还没拉下来",
-                        message: marketStore.errorMessage ?? "稍后点一下右上角刷新，我再去把 gold、btc、nasdaq 捞回来。",
+                        title: marketStore.errorMessage ?? "行情暂不可用",
                         systemImage: "wifi.exclamationmark"
                     )
                 }
@@ -201,7 +181,7 @@ private struct DashboardView: View {
 
     private var recentSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionTitle(title: "最近记录", subtitle: "后面会做成每日继承式记账")
+            SectionTitle(title: "最近记录")
 
             if let latestSnapshot {
                 VStack(alignment: .leading, spacing: 12) {
@@ -213,15 +193,14 @@ private struct DashboardView: View {
                         GoldChip(text: "\(latestSnapshot.entries.count) 项")
                     }
 
-                    Text("下一步可以把这一天作为模板，继续记下一天。")
+                    Text("\(latestSnapshot.entries.count) 项")
                         .font(.subheadline)
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
                 .atmCardStyle()
             } else {
                 EmptyStateCard(
-                    title: "还没有资产记录",
-                    message: "先建首日快照，后面我就能帮你把时间线、涨跌、回撤都做得很性感。",
+                    title: "暂无记录",
                     systemImage: "tray"
                 )
             }
@@ -239,12 +218,11 @@ private struct SnapshotListView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 18) {
-                        ATMHeader(title: "每日记录", subtitle: "按天回看，你的财富不是凭感觉，是有时间线的。\n")
+                        ATMHeader(title: "每日记录")
 
                         if snapshots.isEmpty {
                             EmptyStateCard(
-                                title: "这里还空着",
-                                message: "等你录入第一天快照后，这里会变成黑金账本。",
+                                title: "暂无记录",
                                 systemImage: "calendar.badge.plus"
                             )
                         } else {
@@ -258,7 +236,7 @@ private struct SnapshotListView: View {
                                         GoldChip(text: "\(snapshot.entries.count) 条")
                                     }
 
-                                    Text("支持后续做成‘继承前一天 + 快速改单项’的录入体验。")
+                                    Text("\(snapshot.entries.count) 条")
                                         .font(.subheadline)
                                         .foregroundStyle(AssetTheme.textSecondary)
                                 }
@@ -284,7 +262,7 @@ private struct TimeMachineView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 18) {
-                        ATMHeader(title: "时光机", subtitle: "历史对比、阶段涨跌、资产构成，这里以后会很能打。")
+                        ATMHeader(title: "时光机")
 
                         VStack(alignment: .leading, spacing: 16) {
                             HStack {
@@ -306,14 +284,6 @@ private struct TimeMachineView: View {
                         }
                         .atmCardStyle()
 
-                        VStack(alignment: .leading, spacing: 14) {
-                            SectionTitle(title: "准备接入的能力", subtitle: "逻辑先行，UI 我先把风格垫起来")
-
-                            CapabilityRow(title: "历史高点 / 回撤", icon: "mountain.2", tint: AssetTheme.gold)
-                            CapabilityRow(title: "按资产分类回放", icon: "square.grid.2x2", tint: AssetTheme.accentBlue)
-                            CapabilityRow(title: "对比外部市场锚点", icon: "chart.line.uptrend.xyaxis", tint: AssetTheme.accentOrange)
-                        }
-                        .atmCardStyle()
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 12)
@@ -372,10 +342,10 @@ private struct APIDocumentationView: View {
 
 private struct ATMHeader<Trailing: View>: View {
     let title: String
-    let subtitle: String
+    let subtitle: String?
     @ViewBuilder var trailing: Trailing
 
-    init(title: String, subtitle: String, @ViewBuilder trailing: () -> Trailing = { EmptyView() }) {
+    init(title: String, subtitle: String? = nil, @ViewBuilder trailing: () -> Trailing = { EmptyView() }) {
         self.title = title
         self.subtitle = subtitle
         self.trailing = trailing()
@@ -402,10 +372,12 @@ private struct ATMHeader<Trailing: View>: View {
                         .foregroundStyle(AssetTheme.textPrimary)
                 }
 
-                Text(subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(AssetTheme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             Spacer(minLength: 0)
@@ -416,16 +388,24 @@ private struct ATMHeader<Trailing: View>: View {
 
 private struct SectionTitle: View {
     let title: String
-    let subtitle: String
+    let subtitle: String?
+
+    init(title: String, subtitle: String? = nil) {
+        self.title = title
+        self.subtitle = subtitle
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.title3.weight(.bold))
                 .foregroundStyle(AssetTheme.textPrimary)
-            Text(subtitle)
-                .font(.subheadline)
-                .foregroundStyle(AssetTheme.textSecondary)
+
+            if let subtitle, !subtitle.isEmpty {
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(AssetTheme.textSecondary)
+            }
         }
     }
 }
@@ -490,8 +470,15 @@ private struct CompactStat: View {
 private struct MetricTile: View {
     let title: String
     let value: String
-    let detail: String
+    let detail: String?
     let accent: Color
+
+    init(title: String, value: String, detail: String? = nil, accent: Color) {
+        self.title = title
+        self.value = value
+        self.detail = detail
+        self.accent = accent
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -502,9 +489,11 @@ private struct MetricTile: View {
                 .font(.title3.weight(.bold))
                 .foregroundStyle(AssetTheme.textPrimary)
                 .minimumScaleFactor(0.72)
-            Text(detail)
-                .font(.footnote)
-                .foregroundStyle(accent)
+            if let detail, !detail.isEmpty {
+                Text(detail)
+                    .font(.footnote)
+                    .foregroundStyle(accent)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .atmCardStyle()
@@ -635,8 +624,14 @@ private struct CapabilityRow: View {
 
 private struct EmptyStateCard: View {
     let title: String
-    let message: String
+    let message: String?
     let systemImage: String
+
+    init(title: String, message: String? = nil, systemImage: String) {
+        self.title = title
+        self.message = message
+        self.systemImage = systemImage
+    }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -648,10 +643,13 @@ private struct EmptyStateCard: View {
                 Text(title)
                     .font(.title3.weight(.bold))
                     .foregroundStyle(AssetTheme.textPrimary)
-                Text(message)
-                    .font(.subheadline)
-                    .foregroundStyle(AssetTheme.textSecondary)
-                    .multilineTextAlignment(.center)
+
+                if let message, !message.isEmpty {
+                    Text(message)
+                        .font(.subheadline)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .multilineTextAlignment(.center)
+                }
             }
         }
         .frame(maxWidth: .infinity)
