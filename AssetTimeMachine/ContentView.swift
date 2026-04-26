@@ -81,6 +81,7 @@ struct ContentView: View {
         }
 
         await marketStore.refresh()
+        await SnapshotAnchorService.backfillIfNeeded(in: modelContext)
     }
 
     private func launchArgumentValue(after flag: String) -> String? {
@@ -414,6 +415,7 @@ private struct SnapshotListView: View {
             let snapshot = try SnapshotService.createSnapshot(on: .now, inheritPrevious: true, createMissingEntries: true, in: modelContext)
             currentSnapshotID = snapshot.id
             hydrateInputs(from: snapshot)
+            await SnapshotAnchorService.captureLiveAnchorsIfPossible(for: snapshot, marketStore: marketStore, in: modelContext)
         } catch {
             print("[AssetTimeMachine] prepare snapshot failed: \(error)")
         }
@@ -460,6 +462,8 @@ private struct SnapshotListView: View {
                 }
             }
         }
+
+        await SnapshotAnchorService.captureLiveAnchorsIfPossible(for: snapshot, marketStore: marketStore, in: modelContext)
     }
 
     @MainActor
@@ -773,6 +777,10 @@ private struct TimeMachineView: View {
             let liabilities = PortfolioCalculator.totalLiabilities(for: snapshot)
             let netAssets = mainAssets - liabilities
 
+            let goldAnchorPrice = snapshot.goldAnchorPriceCNY ?? liveGoldAnchorPriceIfToday(for: snapshot)
+            let btcAnchorPrice = snapshot.btcAnchorPriceCNY ?? liveBTCAnchorPriceIfToday(for: snapshot)
+            let nasdaqAnchorPrice = snapshot.nasdaqAnchorPriceCNY ?? liveNasdaqAnchorPriceIfToday(for: snapshot)
+
             return TimeMachineTrendPoint(
                 date: snapshot.date,
                 mainAssets: mainAssets,
@@ -780,7 +788,13 @@ private struct TimeMachineView: View {
                 liabilities: liabilities,
                 goldEquivalent: goldAnchorPrice.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
                 btcEquivalent: btcAnchorPrice.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-                nasdaqEquivalent: nasdaqAnchorPrice.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil
+                nasdaqEquivalent: nasdaqAnchorPrice.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
+                goldAnchorPriceCNY: goldAnchorPrice,
+                goldAnchorDate: snapshot.goldAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: goldAnchorPrice != nil),
+                btcAnchorPriceCNY: btcAnchorPrice,
+                btcAnchorDate: snapshot.btcAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: btcAnchorPrice != nil),
+                nasdaqAnchorPriceCNY: nasdaqAnchorPrice,
+                nasdaqAnchorDate: snapshot.nasdaqAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: nasdaqAnchorPrice != nil)
             )
         }
     }
@@ -793,30 +807,30 @@ private struct TimeMachineView: View {
         filteredTrendPoints.last ?? trendPoints.last
     }
 
-    private var usdPerCNY: Double? {
+    private var liveUSDPerCNY: Double? {
         marketStore.exchangeRate(for: "USD")
     }
 
-    private var goldAnchorPrice: Double? {
+    private var liveGoldAnchorPrice: Double? {
         marketStore.market(for: "gold")?.price
     }
 
-    private var btcAnchorPrice: Double? {
+    private var liveBTCAnchorPrice: Double? {
         guard let btcPriceUSD = marketStore.market(for: "btc")?.price,
-              let usdPerCNY,
-              usdPerCNY > 0 else {
+              let liveUSDPerCNY,
+              liveUSDPerCNY > 0 else {
             return nil
         }
-        return btcPriceUSD / usdPerCNY
+        return btcPriceUSD / liveUSDPerCNY
     }
 
-    private var nasdaqAnchorPrice: Double? {
+    private var liveNasdaqAnchorPrice: Double? {
         guard let nasdaqPriceUSD = marketStore.market(for: "nasdaq")?.price,
-              let usdPerCNY,
-              usdPerCNY > 0 else {
+              let liveUSDPerCNY,
+              liveUSDPerCNY > 0 else {
             return nil
         }
-        return nasdaqPriceUSD / usdPerCNY
+        return nasdaqPriceUSD / liveUSDPerCNY
     }
 
     private var currentAnchorItems: [TimeMachineCurrentAnchorItem] {
@@ -824,22 +838,45 @@ private struct TimeMachineView: View {
             TimeMachineCurrentAnchorItem(
                 title: "BTC",
                 value: latestPoint?.btcEquivalent?.plainNumberString() ?? "--",
-                detail: btcAnchorPrice.map { $0.currencyString() } ?? "暂无行情",
+                detail: detailText(price: latestPoint?.btcAnchorPriceCNY, date: latestPoint?.btcAnchorDate),
                 accent: AssetTheme.accentOrange
             ),
             TimeMachineCurrentAnchorItem(
                 title: "纳指",
                 value: latestPoint?.nasdaqEquivalent?.plainNumberString() ?? "--",
-                detail: nasdaqAnchorPrice.map { $0.currencyString() } ?? "暂无行情",
+                detail: detailText(price: latestPoint?.nasdaqAnchorPriceCNY, date: latestPoint?.nasdaqAnchorDate),
                 accent: AssetTheme.accentBlue
             ),
             TimeMachineCurrentAnchorItem(
                 title: "黄金",
                 value: latestPoint?.goldEquivalent?.plainNumberString() ?? "--",
-                detail: goldAnchorPrice.map { "\($0.currencyString())/g" } ?? "暂无行情",
+                detail: detailText(price: latestPoint?.goldAnchorPriceCNY, date: latestPoint?.goldAnchorDate, suffix: "/g"),
                 accent: AssetTheme.gold
             ),
         ]
+    }
+
+    private func liveGoldAnchorPriceIfToday(for snapshot: AssetSnapshot) -> Double? {
+        Calendar.current.isDateInToday(snapshot.date) ? liveGoldAnchorPrice : nil
+    }
+
+    private func liveBTCAnchorPriceIfToday(for snapshot: AssetSnapshot) -> Double? {
+        Calendar.current.isDateInToday(snapshot.date) ? liveBTCAnchorPrice : nil
+    }
+
+    private func liveNasdaqAnchorPriceIfToday(for snapshot: AssetSnapshot) -> Double? {
+        Calendar.current.isDateInToday(snapshot.date) ? liveNasdaqAnchorPrice : nil
+    }
+
+    private func liveAnchorDateIfToday(for snapshot: AssetSnapshot, hasValue: Bool) -> Date? {
+        hasValue && Calendar.current.isDateInToday(snapshot.date) ? snapshot.date : nil
+    }
+
+    private func detailText(price: Double?, date: Date?, suffix: String = "") -> String {
+        guard let price else { return "暂无锚点" }
+        let priceText = "\(price.currencyString())\(suffix)"
+        guard let date else { return priceText }
+        return "\(priceText) · \(date.recordDateString)"
     }
 
     var body: some View {
@@ -925,6 +962,12 @@ private struct TimeMachineTrendPoint: Identifiable {
     let goldEquivalent: Double?
     let btcEquivalent: Double?
     let nasdaqEquivalent: Double?
+    let goldAnchorPriceCNY: Double?
+    let goldAnchorDate: Date?
+    let btcAnchorPriceCNY: Double?
+    let btcAnchorDate: Date?
+    let nasdaqAnchorPriceCNY: Double?
+    let nasdaqAnchorDate: Date?
 
     var id: Date { date }
 }
@@ -1173,7 +1216,7 @@ private struct TimeMachineCurrentAnchorCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("当前锚点折算")
+            Text("最新快照锚点")
                 .font(.subheadline.weight(.bold))
                 .foregroundStyle(AssetTheme.textPrimary)
 

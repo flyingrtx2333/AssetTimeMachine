@@ -113,6 +113,15 @@ final class AssetSnapshot {
     var note: String
     var createdAt: Date
     var updatedAt: Date
+    var goldAnchorPriceCNY: Double?
+    var goldAnchorPriceDate: Date?
+    var btcAnchorPriceUSD: Double?
+    var btcAnchorPriceDate: Date?
+    var nasdaqAnchorPriceUSD: Double?
+    var nasdaqAnchorPriceDate: Date?
+    var usdPerCNY: Double?
+    var usdPerCNYDate: Date?
+    var marketAnchorsUpdatedAt: Date?
     @Relationship(deleteRule: .cascade, inverse: \AssetEntry.snapshot) var entries: [AssetEntry]
 
     init(
@@ -120,14 +129,42 @@ final class AssetSnapshot {
         date: Date,
         note: String = "",
         createdAt: Date = .now,
-        updatedAt: Date = .now
+        updatedAt: Date = .now,
+        goldAnchorPriceCNY: Double? = nil,
+        goldAnchorPriceDate: Date? = nil,
+        btcAnchorPriceUSD: Double? = nil,
+        btcAnchorPriceDate: Date? = nil,
+        nasdaqAnchorPriceUSD: Double? = nil,
+        nasdaqAnchorPriceDate: Date? = nil,
+        usdPerCNY: Double? = nil,
+        usdPerCNYDate: Date? = nil,
+        marketAnchorsUpdatedAt: Date? = nil
     ) {
         self.id = id
         self.date = date
         self.note = note
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.goldAnchorPriceCNY = goldAnchorPriceCNY
+        self.goldAnchorPriceDate = goldAnchorPriceDate
+        self.btcAnchorPriceUSD = btcAnchorPriceUSD
+        self.btcAnchorPriceDate = btcAnchorPriceDate
+        self.nasdaqAnchorPriceUSD = nasdaqAnchorPriceUSD
+        self.nasdaqAnchorPriceDate = nasdaqAnchorPriceDate
+        self.usdPerCNY = usdPerCNY
+        self.usdPerCNYDate = usdPerCNYDate
+        self.marketAnchorsUpdatedAt = marketAnchorsUpdatedAt
         self.entries = []
+    }
+
+    var btcAnchorPriceCNY: Double? {
+        guard let btcAnchorPriceUSD, let usdPerCNY, usdPerCNY > 0 else { return nil }
+        return btcAnchorPriceUSD / usdPerCNY
+    }
+
+    var nasdaqAnchorPriceCNY: Double? {
+        guard let nasdaqAnchorPriceUSD, let usdPerCNY, usdPerCNY > 0 else { return nil }
+        return nasdaqAnchorPriceUSD / usdPerCNY
     }
 }
 

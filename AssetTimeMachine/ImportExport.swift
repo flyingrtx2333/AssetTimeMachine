@@ -32,6 +32,15 @@ struct ExportPayload: Codable {
         let note: String
         let createdAt: Date
         let updatedAt: Date
+        let goldAnchorPriceCNY: Double?
+        let goldAnchorPriceDate: Date?
+        let btcAnchorPriceUSD: Double?
+        let btcAnchorPriceDate: Date?
+        let nasdaqAnchorPriceUSD: Double?
+        let nasdaqAnchorPriceDate: Date?
+        let usdPerCNY: Double?
+        let usdPerCNYDate: Date?
+        let marketAnchorsUpdatedAt: Date?
         let entries: [EntryPayload]
     }
 
@@ -84,6 +93,15 @@ enum ImportExportService {
                     note: snapshot.note,
                     createdAt: snapshot.createdAt,
                     updatedAt: snapshot.updatedAt,
+                    goldAnchorPriceCNY: snapshot.goldAnchorPriceCNY,
+                    goldAnchorPriceDate: snapshot.goldAnchorPriceDate,
+                    btcAnchorPriceUSD: snapshot.btcAnchorPriceUSD,
+                    btcAnchorPriceDate: snapshot.btcAnchorPriceDate,
+                    nasdaqAnchorPriceUSD: snapshot.nasdaqAnchorPriceUSD,
+                    nasdaqAnchorPriceDate: snapshot.nasdaqAnchorPriceDate,
+                    usdPerCNY: snapshot.usdPerCNY,
+                    usdPerCNYDate: snapshot.usdPerCNYDate,
+                    marketAnchorsUpdatedAt: snapshot.marketAnchorsUpdatedAt,
                     entries: snapshot.entries.map {
                         .init(
                             id: $0.id,
@@ -166,7 +184,16 @@ enum ImportExportService {
                 date: snapshotPayload.date,
                 note: snapshotPayload.note,
                 createdAt: snapshotPayload.createdAt,
-                updatedAt: snapshotPayload.updatedAt
+                updatedAt: snapshotPayload.updatedAt,
+                goldAnchorPriceCNY: snapshotPayload.goldAnchorPriceCNY,
+                goldAnchorPriceDate: snapshotPayload.goldAnchorPriceDate,
+                btcAnchorPriceUSD: snapshotPayload.btcAnchorPriceUSD,
+                btcAnchorPriceDate: snapshotPayload.btcAnchorPriceDate,
+                nasdaqAnchorPriceUSD: snapshotPayload.nasdaqAnchorPriceUSD,
+                nasdaqAnchorPriceDate: snapshotPayload.nasdaqAnchorPriceDate,
+                usdPerCNY: snapshotPayload.usdPerCNY,
+                usdPerCNYDate: snapshotPayload.usdPerCNYDate,
+                marketAnchorsUpdatedAt: snapshotPayload.marketAnchorsUpdatedAt
             )
             context.insert(snapshot)
 
