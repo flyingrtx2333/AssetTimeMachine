@@ -2,6 +2,8 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
+
     var body: some View {
         TabView {
             DashboardView()
@@ -18,6 +20,9 @@ struct ContentView: View {
                 .tabItem {
                     Label("时光机", systemImage: "clock.arrow.circlepath")
                 }
+        }
+        .task {
+            try? SeedDataService.seedDefaultCategoriesIfNeeded(in: modelContext)
         }
     }
 }
