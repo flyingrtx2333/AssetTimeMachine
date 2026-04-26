@@ -269,7 +269,6 @@ private struct SnapshotListView: View {
     @State private var amountInputs: [UUID: String] = [:]
     @State private var quantityInputs: [UUID: String] = [:]
     @State private var unitPriceInputs: [UUID: String] = [:]
-    @State private var lastSavedAt: Date?
     @State private var didPrepare = false
 
     private var currentSnapshot: AssetSnapshot? {
@@ -311,11 +310,11 @@ private struct SnapshotListView: View {
                                         .minimumScaleFactor(0.58)
                                         .lineLimit(1)
 
-                                    if let lastSavedAt {
-                                        Text("已自动保存 · \(lastSavedAt.formatted(date: .omitted, time: .shortened))")
-                                            .font(.footnote)
-                                            .foregroundStyle(AssetTheme.textSecondary)
-                                    }
+                                    Text(currentSnapshot.date.recordDateString)
+                                        .font(.subheadline.weight(.semibold))
+                                        .tracking(0.3)
+                                        .foregroundStyle(AssetTheme.gold.opacity(0.72))
+                                        .padding(.top, 2)
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .layoutPriority(1)
@@ -427,7 +426,6 @@ private struct SnapshotListView: View {
                 let unitPrice = normalizedNumber(from: unitPriceInputs[item.id])
                 try SnapshotService.upsertEntry(snapshot: snapshot, item: item, quantity: quantity, unitPrice: unitPrice, in: modelContext)
             }
-            lastSavedAt = .now
         } catch {
             print("[AssetTimeMachine] persist entry failed: \(error)")
         }
@@ -1225,6 +1223,13 @@ private extension Date {
 
     var longDateString: String {
         formatted(date: .long, time: .omitted)
+    }
+
+    var recordDateString: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "yyyy.M.d"
+        return formatter.string(from: self)
     }
 }
 
