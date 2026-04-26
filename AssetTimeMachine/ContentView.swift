@@ -299,7 +299,7 @@ private struct SnapshotListView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
                         if let currentSnapshot {
-                            HStack(alignment: .top, spacing: 12) {
+                            HStack(alignment: .top, spacing: 16) {
                                 VStack(alignment: .leading, spacing: 10) {
                                     Text("主资产")
                                         .font(.caption.weight(.semibold))
@@ -332,7 +332,7 @@ private struct SnapshotListView: View {
                                         accent: AssetTheme.gold
                                     )
                                 }
-                                .frame(width: 136, alignment: .leading)
+                                .frame(width: 128, alignment: .leading)
                             }
 
                             ForEach(visibleCategories) { category in
@@ -376,7 +376,7 @@ private struct SnapshotListView: View {
                             )
                         }
                     }
-                    .padding(.horizontal, 18)
+                    .padding(.horizontal, 14)
                     .padding(.top, 28)
                     .padding(.bottom, 120)
                 }
@@ -557,22 +557,24 @@ private struct AssetEntryInputRow: View {
     @Binding var quantityText: String
     @Binding var unitPriceText: String
 
+    private let labelWidth: CGFloat = 116
+
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .center, spacing: 14) {
             Text(item.name)
-                .font(.body.weight(.medium))
+                .font(.body.weight(.semibold))
                 .foregroundStyle(AssetTheme.textPrimary)
                 .lineLimit(2)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(width: labelWidth, alignment: .leading)
 
             if item.valuationMethod == .directAmount {
-                ATMInputField(text: $amountText, placeholder: "0", width: 140)
+                ATMInputField(text: $amountText, placeholder: "0")
             } else if let currencyCode = item.autoExchangeRateCurrencyCode {
-                ATMInputField(text: $quantityText, placeholder: currencyCode, width: 140)
+                ATMInputField(text: $quantityText, placeholder: currencyCode)
             } else {
                 HStack(spacing: 8) {
-                    ATMInputField(text: $quantityText, placeholder: "数量", width: 74)
-                    ATMInputField(text: $unitPriceText, placeholder: "单价", width: 92)
+                    ATMInputField(text: $quantityText, placeholder: "数量", width: 82)
+                    ATMInputField(text: $unitPriceText, placeholder: "单价")
                 }
             }
         }
@@ -583,7 +585,7 @@ private struct AssetEntryInputRow: View {
 private struct ATMInputField: View {
     @Binding var text: String
     let placeholder: String
-    let width: CGFloat
+    var width: CGFloat? = nil
 
     var body: some View {
         TextField("", text: $text, prompt: Text(placeholder).foregroundStyle(AssetTheme.textSecondary))
@@ -593,12 +595,13 @@ private struct ATMInputField: View {
             .multilineTextAlignment(.trailing)
             .font(.system(.body, design: .rounded).weight(.semibold))
             .foregroundStyle(AssetTheme.textPrimary)
-            .padding(.horizontal, 12)
-            .frame(width: width, height: 42)
-            .background(AssetTheme.background.opacity(0.72), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .padding(.horizontal, 14)
+            .frame(maxWidth: width == nil ? .infinity : nil, alignment: .trailing)
+            .frame(width: width, height: 44)
+            .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(AssetTheme.border.opacity(0.55), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(AssetTheme.border.opacity(0.52), lineWidth: 1)
             )
     }
 }
