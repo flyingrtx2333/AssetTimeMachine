@@ -18,4 +18,25 @@ struct LogicTests {
 
         return "assets=\(Int(totalAssets)), liabilities=\(Int(totalLiabilities)), net=\(Int(netAssets))"
     }
+
+    static func trendPreview() -> String {
+        let category = AssetCategory(name: "金融资产", group: .financial)
+        let cash = AssetItem(name: "现金", category: category)
+
+        let s1 = AssetSnapshot(date: Date(timeIntervalSince1970: 0))
+        s1.entries = [AssetEntry(amount: 100, snapshot: s1, item: cash)]
+
+        let s2 = AssetSnapshot(date: Date(timeIntervalSince1970: 86_400))
+        s2.entries = [AssetEntry(amount: 150, snapshot: s2, item: cash)]
+
+        let s3 = AssetSnapshot(date: Date(timeIntervalSince1970: 172_800))
+        s3.entries = [AssetEntry(amount: 120, snapshot: s3, item: cash)]
+
+        let history = PortfolioCalculator.historyMetrics(for: [s1, s2, s3])
+        let change = PortfolioCalculator.change(from: history[1], to: history[2])
+        let drawdown = PortfolioCalculator.maxDrawdown(in: history)
+        let drawdownText = String(format: "%.2f", drawdown?.drawdownRatio ?? 0)
+
+        return "change=\(Int(change?.absoluteChange ?? 0)), drawdown=\(drawdownText)"
+    }
 }

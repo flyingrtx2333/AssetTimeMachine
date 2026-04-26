@@ -1,6 +1,26 @@
 import Foundation
 import SwiftData
 
+struct SnapshotMetrics {
+    let date: Date
+    let totalAssets: Double
+    let totalLiabilities: Double
+    let netAssets: Double
+}
+
+struct ChangeMetrics {
+    let absoluteChange: Double
+    let percentageChange: Double?
+}
+
+struct DrawdownMetrics {
+    let peakValue: Double
+    let troughValue: Double
+    let drawdownRatio: Double
+    let peakDate: Date
+    let troughDate: Date
+}
+
 enum SeedDataService {
     static let defaultCategories: [(name: String, group: AssetGroup)] = [
         ("金融资产", .financial),
@@ -48,6 +68,79 @@ enum SeedDataService {
     }
 }
 
+enum AssetItemService {
+    @MainActor
+    static func createItem(
+        name: String,
+        category: AssetCategory,
+        valuationMethod: ValuationMethod = .directAmount,
+        note: String = "",
+        in context: ModelContext
+    ) throws -> AssetItem {
+        let nextSortOrder = (category.items.map(\AssetItem.sortOrder).max() ?? -1) + 1
+        let item = AssetItem(
+            name: name,
+            note: note,
+            valuationMethod: valuationMethod,
+            sortOrder: nextSortOrder,
+            category: category
+        )
+        context.insert(item)
+        try context.save()
+        return item
+    }
+
+    @MainActor
+    static func updateItem(
+        _ item: AssetItem,
+        name: String? = nil,
+        note: String? = nil,
+        valuationMethod: ValuationMethod? = nil,
+        isActive: Bool? = nil,
+        category: AssetCategory? = nil,
+        in context: ModelContext
+    ) throws {
+        if let name { item.name = name }
+        if let note { item.note = note }
+        if let valuationMethod { item.valuationMethod = valuationMethod }
+        if let isActive { item.isActive = isActive }
+        if let category { item.category = category }
+        item.updatedAt = .now
+        try context.save()
+    }
+
+    @MainActor
+    static func reorderItems(
+        in category: AssetCategory,
+        itemIDsInOrder: [UUID],
+        context: ModelContext
+    ) throws {
+        let orderMap = Dictionary(uniqueKeysWithValues: itemIDsInOrder.enumerated().map { ($1, $0) })
+
+        for item in category.items {
+            if let order = orderMap[item.id] {
+                item.sortOrder = order
+                item.updatedAt = .now
+            }
+        }
+
+        try context.save()
+    }
+
+    @MainActor
+    static func activeItems(in category: AssetCategory, context: ModelContext) throws -> [AssetItem] {
+        let allItems = try context.fetch(FetchDescriptor<AssetItem>())
+        return allItems
+            .filter { $0.category?.id == category.id && $0.isActive }
+            .sorted { lhs, rhs in
+                if lhs.sortOrder == rhs.sortOrder {
+                    return lhs.createdAt < rhs.createdAt
+                }
+                return lhs.sortOrder < rhs.sortOrder
+            }
+    }
+}
+
 enum SnapshotService {
     @MainActor
     static func latestSnapshot(in context: ModelContext) throws -> AssetSnapshot? {
@@ -70,6 +163,7 @@ enum SnapshotService {
         on date: Date,
         note: String = "",
         inheritPrevious: Bool = true,
+        createMissingEntries: Bool = true,
         in context: ModelContext
     ) throws -> AssetSnapshot {
         if let existing = try snapshot(on: date, in: context) {
@@ -98,6 +192,10 @@ enum SnapshotService {
             }
         }
 
+        if createMissingEntries {
+            try ensureEntriesExist(for: snapshot, in: context)
+        }
+
         snapshot.updatedAt = .now
         try context.save()
         return snapshot
@@ -114,6 +212,17 @@ enum SnapshotService {
         )
         descriptor.fetchLimit = 1
         return try context.fetch(descriptor).first
+    }
+
+    @MainActor
+    static func ensureEntriesExist(for snapshot: AssetSnapshot, in context: ModelContext) throws {
+        let allItems = try context.fetch(FetchDescriptor<AssetItem>())
+        let existingItemIDs = Set(snapshot.entries.compactMap { $0.item?.id })
+
+        for item in allItems where item.isActive && !existingItemIDs.contains(item.id) {
+            let entry = AssetEntry(snapshot: snapshot, item: item)
+            context.insert(entry)
+        }
     }
 
     @MainActor
@@ -151,6 +260,17 @@ enum SnapshotService {
 }
 
 enum PortfolioCalculator {
+    static func metrics(for snapshot: AssetSnapshot) -> SnapshotMetrics {
+        let totalAssets = totalAssets(for: snapshot)
+        let totalLiabilities = totalLiabilities(for: snapshot)
+        return SnapshotMetrics(
+            date: snapshot.date,
+            totalAssets: totalAssets,
+            totalLiabilities: totalLiabilities,
+            netAssets: totalAssets - totalLiabilities
+        )
+    }
+
     static func totalAssets(for snapshot: AssetSnapshot) -> Double {
         snapshot.entries
             .filter { ($0.item?.category?.group ?? .financial) != .liability }
@@ -174,5 +294,69 @@ enum PortfolioCalculator {
         .mapValues { entries in
             entries.reduce(0) { $0 + $1.resolvedAmount }
         }
+    }
+
+    static func historyMetrics(for snapshots: [AssetSnapshot]) -> [SnapshotMetrics] {
+        snapshots
+            .sorted { $0.date < $1.date }
+            .map(metrics(for:))
+    }
+
+    static func change(from previous: SnapshotMetrics?, to current: SnapshotMetrics) -> ChangeMetrics? {
+        guard let previous else { return nil }
+        let absoluteChange = current.netAssets - previous.netAssets
+        let percentageChange: Double?
+        if previous.netAssets == 0 {
+            percentageChange = nil
+        } else {
+            percentageChange = absoluteChange / previous.netAssets
+        }
+        return ChangeMetrics(absoluteChange: absoluteChange, percentageChange: percentageChange)
+    }
+
+    static func maxDrawdown(in metrics: [SnapshotMetrics]) -> DrawdownMetrics? {
+        guard let first = metrics.first else { return nil }
+
+        var peak = first
+        var worst: DrawdownMetrics?
+
+        for point in metrics {
+            if point.netAssets > peak.netAssets {
+                peak = point
+            }
+
+            guard peak.netAssets > 0 else { continue }
+            let drawdownRatio = (peak.netAssets - point.netAssets) / peak.netAssets
+
+            if let existingWorst = worst {
+                if drawdownRatio > existingWorst.drawdownRatio {
+                    worst = DrawdownMetrics(
+                        peakValue: peak.netAssets,
+                        troughValue: point.netAssets,
+                        drawdownRatio: drawdownRatio,
+                        peakDate: peak.date,
+                        troughDate: point.date
+                    )
+                }
+            } else {
+                worst = DrawdownMetrics(
+                    peakValue: peak.netAssets,
+                    troughValue: point.netAssets,
+                    drawdownRatio: drawdownRatio,
+                    peakDate: peak.date,
+                    troughDate: point.date
+                )
+            }
+        }
+
+        return worst
+    }
+
+    static func highestNetWorth(in metrics: [SnapshotMetrics]) -> SnapshotMetrics? {
+        metrics.max { $0.netAssets < $1.netAssets }
+    }
+
+    static func lowestNetWorth(in metrics: [SnapshotMetrics]) -> SnapshotMetrics? {
+        metrics.min { $0.netAssets < $1.netAssets }
     }
 }
