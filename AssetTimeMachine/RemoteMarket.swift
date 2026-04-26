@@ -82,13 +82,43 @@ enum RemoteMarketClient {
         let (data, response) = try await URLSession.shared.data(from: url)
         try validate(response: response, data: data)
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let value = try container.decode(String.self)
+
+            if let date = fractionalISO8601DateFormatter.date(from: value) ?? iso8601DateFormatter.date(from: value) ?? localDateFormatter.date(from: value) {
+                return date
+            }
+
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unsupported date format: \(value)")
+        }
         return try decoder.decode(PublicMarketOverview.self, from: data)
     }
 
     static func url(for path: String) -> URL {
         URL(string: path, relativeTo: baseURL)!.absoluteURL
     }
+
+    private static let fractionalISO8601DateFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private static let iso8601DateFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
+    private static let localDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        return formatter
+    }()
 
     private static func validate(response: URLResponse, data: Data) throws {
         guard let httpResponse = response as? HTTPURLResponse else {
