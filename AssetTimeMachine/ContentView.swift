@@ -10,7 +10,16 @@ private enum AppTab: Hashable {
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var marketStore = RemoteMarketStore()
-    @State private var selectedTab: AppTab = ProcessInfo.processInfo.arguments.contains("-openSnapshotsTab") ? .snapshots : .dashboard
+    @State private var selectedTab: AppTab = {
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("-openTimeMachineTab") {
+            return .timeMachine
+        }
+        if arguments.contains("-openSnapshotsTab") {
+            return .snapshots
+        }
+        return .dashboard
+    }()
     @State private var didRunStartup = false
 
     var body: some View {
