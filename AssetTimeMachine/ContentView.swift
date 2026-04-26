@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Charts
 
 private enum AppTab: Hashable {
     case dashboard
@@ -36,7 +37,7 @@ struct ContentView: View {
                 }
                 .tag(AppTab.snapshots)
 
-            TimeMachineView()
+            TimeMachineView(marketStore: marketStore)
                 .tabItem {
                     Label("时光机", systemImage: "clock.arrow.circlepath")
                 }
@@ -762,6 +763,83 @@ private struct SnapshotDetailView: View {
 }
 
 private struct TimeMachineView: View {
+    @ObservedObject var marketStore: RemoteMarketStore
+    @Query(sort: \AssetSnapshot.date, order: .forward) private var snapshots: [AssetSnapshot]
+    @State private var selectedRange: TimeMachineRange = .oneYear
+
+    private var trendPoints: [TimeMachineTrendPoint] {
+        snapshots.map { snapshot in
+            let mainAssets = PortfolioCalculator.totalAssets(for: snapshot)
+            let liabilities = PortfolioCalculator.totalLiabilities(for: snapshot)
+            let netAssets = mainAssets - liabilities
+
+            return TimeMachineTrendPoint(
+                date: snapshot.date,
+                mainAssets: mainAssets,
+                netAssets: netAssets,
+                liabilities: liabilities,
+                goldEquivalent: goldAnchorPrice.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
+                btcEquivalent: btcAnchorPrice.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
+                nasdaqEquivalent: nasdaqAnchorPrice.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil
+            )
+        }
+    }
+
+    private var filteredTrendPoints: [TimeMachineTrendPoint] {
+        selectedRange.filter(trendPoints)
+    }
+
+    private var latestPoint: TimeMachineTrendPoint? {
+        filteredTrendPoints.last ?? trendPoints.last
+    }
+
+    private var usdPerCNY: Double? {
+        marketStore.exchangeRate(for: "USD")
+    }
+
+    private var goldAnchorPrice: Double? {
+        marketStore.market(for: "gold")?.price
+    }
+
+    private var btcAnchorPrice: Double? {
+        guard let btcPriceUSD = marketStore.market(for: "btc")?.price,
+              let usdPerCNY,
+              usdPerCNY > 0 else {
+            return nil
+        }
+        return btcPriceUSD / usdPerCNY
+    }
+
+    private var nasdaqAnchorPrice: Double? {
+        guard let nasdaqPriceUSD = marketStore.market(for: "nasdaq")?.price,
+              let usdPerCNY,
+              usdPerCNY > 0 else {
+            return nil
+        }
+        return nasdaqPriceUSD / usdPerCNY
+    }
+
+    private var btcPoints: [TimeMachineValuePoint] {
+        filteredTrendPoints.compactMap {
+            guard let value = $0.btcEquivalent else { return nil }
+            return TimeMachineValuePoint(date: $0.date, value: value)
+        }
+    }
+
+    private var nasdaqPoints: [TimeMachineValuePoint] {
+        filteredTrendPoints.compactMap {
+            guard let value = $0.nasdaqEquivalent else { return nil }
+            return TimeMachineValuePoint(date: $0.date, value: value)
+        }
+    }
+
+    private var goldPoints: [TimeMachineValuePoint] {
+        filteredTrendPoints.compactMap {
+            guard let value = $0.goldEquivalent else { return nil }
+            return TimeMachineValuePoint(date: $0.date, value: value)
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -769,36 +847,431 @@ private struct TimeMachineView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 18) {
-                        ATMHeader(title: "时光机")
+                        ATMHeader(title: "时光机", subtitle: "像网站趋势页一样看资产曲线和 BTC / 纳指折算。")
 
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack {
-                                Text("2026年4月26日")
-                                    .font(.headline)
-                                    .foregroundStyle(AssetTheme.textPrimary)
-                                Spacer()
-                                GoldChip(text: "预览态")
+                        TimeMachineRangePicker(selectedRange: $selectedRange)
+
+                        if let latestPoint, !filteredTrendPoints.isEmpty {
+                            VStack(alignment: .leading, spacing: 16) {
+                                HStack(alignment: .top, spacing: 12) {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text(latestPoint.date.chineseLongDateString)
+                                            .font(.headline)
+                                            .foregroundStyle(AssetTheme.textPrimary)
+
+                                        Text(latestPoint.mainAssets.currencyString())
+                                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                                            .foregroundStyle(AssetTheme.goldSoft)
+                                            .minimumScaleFactor(0.72)
+                                            .lineLimit(1)
+                                    }
+
+                                    Spacer(minLength: 12)
+
+                                    GoldChip(text: selectedRange.summaryLabel)
+                                }
+
+                                LazyVGrid(
+                                    columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
+                                    spacing: 12
+                                ) {
+                                    TimeMachineMetricCard(
+                                        title: "净资产",
+                                        value: latestPoint.netAssets.currencyString(),
+                                        detail: "负债 \(latestPoint.liabilities.currencyString())",
+                                        accent: AssetTheme.positive
+                                    )
+                                    TimeMachineMetricCard(
+                                        title: "BTC 折算",
+                                        value: latestPoint.btcEquivalent?.plainNumberString() ?? "--",
+                                        detail: "按当前 BTC 锚点",
+                                        accent: AssetTheme.accentOrange
+                                    )
+                                    TimeMachineMetricCard(
+                                        title: "纳指折算",
+                                        value: latestPoint.nasdaqEquivalent?.plainNumberString() ?? "--",
+                                        detail: "按当前 QQQ 锚点",
+                                        accent: AssetTheme.accentBlue
+                                    )
+                                    TimeMachineMetricCard(
+                                        title: "黄金折算",
+                                        value: latestPoint.goldEquivalent?.plainNumberString() ?? "--",
+                                        detail: "按当前金价折算",
+                                        accent: AssetTheme.gold
+                                    )
+                                }
+
+                            }
+                            .atmCardStyle()
+
+                            TimeMachineHeroTrendCard(points: filteredTrendPoints)
+
+                            LazyVGrid(
+                                columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
+                                spacing: 12
+                            ) {
+                                TimeMachineMiniTrendCard(
+                                    title: "BTC 折算",
+                                    subtitle: btcAnchorPrice.map { "当前 BTC ≈ \($0.currencyString())" } ?? "等待行情刷新",
+                                    points: btcPoints,
+                                    color: AssetTheme.accentOrange,
+                                    latestLabel: latestPoint.btcEquivalent.map { "\($0.plainNumberString()) BTC" } ?? "--"
+                                )
+
+                                TimeMachineMiniTrendCard(
+                                    title: "纳指锚点折算",
+                                    subtitle: nasdaqAnchorPrice.map { "当前 QQQ ≈ \($0.currencyString())" } ?? "等待行情刷新",
+                                    points: nasdaqPoints,
+                                    color: AssetTheme.accentBlue,
+                                    latestLabel: latestPoint.nasdaqEquivalent.map { "\($0.plainNumberString()) 份" } ?? "--"
+                                )
                             }
 
-                            Text("1,158,267.30")
-                                .font(.system(size: 34, weight: .bold, design: .rounded))
-                                .foregroundStyle(AssetTheme.goldSoft)
-
-                            HStack(spacing: 12) {
-                                MetricTile(title: "较昨日", value: "-3,247.10", detail: "-0.28%", accent: AssetTheme.negative)
-                                MetricTile(title: "较年初", value: "+158,267.30", detail: "+15.81%", accent: AssetTheme.positive)
-                            }
+                            TimeMachineMiniTrendCard(
+                                title: "黄金折算",
+                                subtitle: goldAnchorPrice.map { "当前金价 ≈ \($0.currencyString()) / g" } ?? "等待行情刷新",
+                                points: goldPoints,
+                                color: AssetTheme.gold,
+                                latestLabel: latestPoint.goldEquivalent.map { "\($0.plainNumberString()) g" } ?? "--"
+                            )
+                        } else {
+                            EmptyStateCard(
+                                title: "还没有趋势数据",
+                                message: "先去记录页留下一些历史资产快照，时光机这边就能长出完整趋势图。",
+                                systemImage: "chart.line.uptrend.xyaxis"
+                            )
                         }
-                        .atmCardStyle()
-
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 16)
                     .padding(.top, 12)
                     .padding(.bottom, 120)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
         }
+    }
+}
+
+private enum TimeMachineRange: String, CaseIterable, Identifiable {
+    case sixMonths
+    case oneYear
+    case all
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .sixMonths: return "6个月"
+        case .oneYear: return "1年"
+        case .all: return "全部"
+        }
+    }
+
+    var summaryLabel: String {
+        switch self {
+        case .sixMonths: return "近 6 个月"
+        case .oneYear: return "近 1 年"
+        case .all: return "全部记录"
+        }
+    }
+
+    func filter(_ points: [TimeMachineTrendPoint], calendar: Calendar = .current) -> [TimeMachineTrendPoint] {
+        guard let latestDate = points.last?.date else { return [] }
+
+        let startDate: Date?
+        switch self {
+        case .sixMonths:
+            startDate = calendar.date(byAdding: .month, value: -6, to: latestDate)
+        case .oneYear:
+            startDate = calendar.date(byAdding: .year, value: -1, to: latestDate)
+        case .all:
+            startDate = nil
+        }
+
+        guard let startDate else { return points }
+        return points.filter { $0.date >= startDate }
+    }
+}
+
+private struct TimeMachineTrendPoint: Identifiable {
+    let date: Date
+    let mainAssets: Double
+    let netAssets: Double
+    let liabilities: Double
+    let goldEquivalent: Double?
+    let btcEquivalent: Double?
+    let nasdaqEquivalent: Double?
+
+    var id: Date { date }
+}
+
+private struct TimeMachineValuePoint: Identifiable {
+    let date: Date
+    let value: Double
+
+    var id: Date { date }
+}
+
+private enum TimeMachineAssetSeries: CaseIterable, Identifiable {
+    case mainAssets
+    case netAssets
+    case liabilities
+
+    var id: String { title }
+
+    var title: String {
+        switch self {
+        case .mainAssets: return "主资产"
+        case .netAssets: return "净资产"
+        case .liabilities: return "负债"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .mainAssets: return AssetTheme.goldSoft
+        case .netAssets: return AssetTheme.positive
+        case .liabilities: return AssetTheme.negative
+        }
+    }
+
+    var strokeStyle: StrokeStyle {
+        switch self {
+        case .liabilities:
+            return StrokeStyle(lineWidth: 2, lineCap: .round, dash: [6, 5])
+        default:
+            return StrokeStyle(lineWidth: 2.5, lineCap: .round)
+        }
+    }
+
+    func value(from point: TimeMachineTrendPoint) -> Double {
+        switch self {
+        case .mainAssets: return point.mainAssets
+        case .netAssets: return point.netAssets
+        case .liabilities: return point.liabilities
+        }
+    }
+}
+
+private struct TimeMachineRangePicker: View {
+    @Binding var selectedRange: TimeMachineRange
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(TimeMachineRange.allCases) { range in
+                Button {
+                    selectedRange = range
+                } label: {
+                    Text(range.label)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(selectedRange == range ? AssetTheme.background : AssetTheme.textPrimary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(selectedRange == range ? AssetTheme.goldSoft : .white.opacity(0.03))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(AssetTheme.border.opacity(selectedRange == range ? 0 : 0.72), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+private struct TimeMachineMetricCard: View {
+    let title: String
+    let value: String
+    let detail: String
+    let accent: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(AssetTheme.textSecondary)
+
+            Text(value)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(AssetTheme.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.68)
+
+            Text(detail)
+                .font(.footnote)
+                .foregroundStyle(accent)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.78), lineWidth: 1)
+        )
+    }
+}
+
+private struct TimeMachineHeroTrendCard: View {
+    let points: [TimeMachineTrendPoint]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("资产走势")
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                    Text(dateRangeLabel)
+                        .font(.footnote)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 6) {
+                    ForEach(TimeMachineAssetSeries.allCases) { series in
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(series.color)
+                                .frame(width: 7, height: 7)
+                            Text(series.title)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(AssetTheme.textSecondary)
+                        }
+                    }
+                }
+            }
+
+            Chart {
+                ForEach(TimeMachineAssetSeries.allCases) { series in
+                    ForEach(points) { point in
+                        LineMark(
+                            x: .value("日期", point.date),
+                            y: .value(series.title, series.value(from: point))
+                        )
+                        .foregroundStyle(series.color)
+                        .lineStyle(series.strokeStyle)
+                        .interpolationMethod(.catmullRom)
+                    }
+                }
+            }
+            .frame(height: 260)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 4)) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                        .foregroundStyle(.white.opacity(0.08))
+                    AxisTick().foregroundStyle(.white.opacity(0.15))
+                    AxisValueLabel(format: .dateTime.month(.defaultDigits).day(), centered: true)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
+            }
+            .chartYAxis {
+                AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                        .foregroundStyle(.white.opacity(0.08))
+                    AxisValueLabel(format: FloatingPointFormatStyle<Double>.number.notation(.compactName))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
+            }
+            .chartLegend(.hidden)
+            .chartPlotStyle { plot in
+                plot
+                    .background(.white.opacity(0.015))
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            }
+        }
+        .atmCardStyle()
+    }
+
+    private var dateRangeLabel: String {
+        guard let first = points.first?.date, let last = points.last?.date else { return "暂无范围" }
+        return "\(first.recordDateString) - \(last.recordDateString)"
+    }
+}
+
+private struct TimeMachineMiniTrendCard: View {
+    let title: String
+    let subtitle: String
+    let points: [TimeMachineValuePoint]
+    let color: Color
+    let latestLabel: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundStyle(AssetTheme.textPrimary)
+                    Text(subtitle)
+                        .font(.footnote)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                Text(latestLabel)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
+
+            if points.count >= 2 {
+                Chart(points) { point in
+                    AreaMark(
+                        x: .value("日期", point.date),
+                        y: .value(title, point.value)
+                    )
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [color.opacity(0.24), color.opacity(0.02)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .interpolationMethod(.catmullRom)
+
+                    LineMark(
+                        x: .value("日期", point.date),
+                        y: .value(title, point.value)
+                    )
+                    .foregroundStyle(color)
+                    .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round))
+                    .interpolationMethod(.catmullRom)
+                }
+                .frame(height: 156)
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 3)) { value in
+                        AxisValueLabel(format: .dateTime.month().day())
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(values: .automatic(desiredCount: 3)) { _ in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                            .foregroundStyle(.white.opacity(0.07))
+                        AxisValueLabel(format: FloatingPointFormatStyle<Double>.number.notation(.compactName))
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                }
+                .chartLegend(.hidden)
+                .chartPlotStyle { plot in
+                    plot
+                        .background(.white.opacity(0.015))
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+            } else {
+                Text("等待更多历史记录，折线图才会更像网站趋势页。")
+                    .font(.footnote)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)
+            }
+        }
+        .atmCardStyle()
     }
 }
 
@@ -1294,6 +1767,13 @@ private extension Date {
 
     var longDateString: String {
         formatted(date: .long, time: .omitted)
+    }
+
+    var chineseLongDateString: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "yyyy年M月d日"
+        return formatter.string(from: self)
     }
 
     var recordDateString: String {
