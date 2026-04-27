@@ -96,7 +96,8 @@ struct ContentView: View {
 private struct DashboardView: View {
     @AppStorage("dashboard.monthlyExpense") private var monthlyExpense: Double = 3000
     @AppStorage("dashboard.monthlyExpenseSeedVersion") private var monthlyExpenseSeedVersion: Int = 0
-    @AppStorage("dashboard.inflationRate") private var inflationRate: Double = 0.03
+    @AppStorage("dashboard.inflationRate") private var inflationRate: Double = 0.05
+    @AppStorage("dashboard.inflationRateSeedVersion") private var inflationRateSeedVersion: Int = 0
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
 
     private var latestSnapshot: AssetSnapshot? { snapshots.first }
@@ -210,17 +211,25 @@ private struct DashboardView: View {
             }
             .toolbar(.hidden, for: .navigationBar)
             .task {
-                migrateMonthlyExpenseDefaultIfNeeded()
+                migrateDashboardDefaultsIfNeeded()
             }
         }
     }
 
-    private func migrateMonthlyExpenseDefaultIfNeeded() {
-        guard monthlyExpenseSeedVersion < 1 else { return }
-        if abs(monthlyExpense - 8000) < 0.5 {
-            monthlyExpense = 3000
+    private func migrateDashboardDefaultsIfNeeded() {
+        if monthlyExpenseSeedVersion < 1 {
+            if abs(monthlyExpense - 8000) < 0.5 {
+                monthlyExpense = 3000
+            }
+            monthlyExpenseSeedVersion = 1
         }
-        monthlyExpenseSeedVersion = 1
+
+        if inflationRateSeedVersion < 1 {
+            if abs(inflationRate - 0.03) < 0.0005 {
+                inflationRate = 0.05
+            }
+            inflationRateSeedVersion = 1
+        }
     }
 
     private var summaryStrip: some View {
