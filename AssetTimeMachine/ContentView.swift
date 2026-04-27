@@ -1066,20 +1066,7 @@ private struct DashboardTrendCard: View {
     let latestPoint: TimeMachineTrendPoint
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Text("资产走势")
-                    .font(AppTypography.sectionTitle)
-                    .foregroundStyle(AssetTheme.textPrimary)
-
-                Spacer(minLength: 12)
-
-                Text(dateRangeLabel)
-                    .font(AppTypography.meta)
-                    .foregroundStyle(AssetTheme.textSecondary)
-                    .lineLimit(1)
-            }
-
+        VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 14) {
                 ForEach(TimeMachineAssetSeries.allCases) { series in
                     HStack(spacing: 6) {
@@ -1149,7 +1136,12 @@ private struct DashboardTrendCard: View {
                 }
             }
             .chartLegend(.hidden)
-            .padding(.top, 4)
+            .padding(.top, 2)
+
+            Text(dateRangeLabel)
+                .font(AppTypography.meta)
+                .foregroundStyle(AssetTheme.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(.top, 8)
     }
