@@ -1293,13 +1293,18 @@ private struct DashboardFreedomSection: View {
     @Binding var monthlyExpense: Double
     @Binding var inflationRate: Double
 
+    @State private var isEditingMonthlyExpense = false
+    @State private var isEditingInflationRate = false
+    @State private var monthlyExpenseDraft = ""
+    @State private var inflationRateDraft = ""
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             Rectangle()
                 .fill(AssetTheme.border.opacity(0.55))
                 .frame(height: 1)
 
-            Text("财富自由预期")
+            Text("财富自由预测")
                 .font(AppTypography.sectionTitle)
                 .foregroundStyle(AssetTheme.textPrimary)
 
@@ -1307,22 +1312,104 @@ private struct DashboardFreedomSection: View {
                 .font(.system(size: 28, weight: .bold, design: .rounded))
                 .foregroundStyle(statusColor)
 
-            HStack(alignment: .top, spacing: 12) {
-                FreedomAdjustCard(
-                    title: "月开销",
-                    value: monthlyExpense.currencyString(),
-                    onDecrease: { monthlyExpense = max(1000, monthlyExpense - 1000) },
-                    onIncrease: { monthlyExpense += 1000 }
-                )
+            if let reasonText {
+                Text(reasonText)
+                    .font(AppTypography.meta)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
-                FreedomAdjustCard(
-                    title: "通胀率",
-                    value: inflationRate.formatted(.percent.precision(.fractionLength(1))),
-                    onDecrease: { inflationRate = max(0, inflationRate - 0.005) },
-                    onIncrease: { inflationRate = min(0.2, inflationRate + 0.005) }
-                )
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) {
+                    Text("月开销")
+                    valueButton(title: monthlyExpense.currencyString(), action: openMonthlyExpenseEditor)
+                    Text("，通胀率")
+                    valueButton(title: inflationRate.formatted(.percent.precision(.fractionLength(1))), action: openInflationRateEditor)
+                }
+                .font(AppTypography.meta)
+                .foregroundStyle(AssetTheme.textSecondary)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Text("月开销")
+                        valueButton(title: monthlyExpense.currencyString(), action: openMonthlyExpenseEditor)
+                    }
+
+                    HStack(spacing: 6) {
+                        Text("通胀率")
+                        valueButton(title: inflationRate.formatted(.percent.precision(.fractionLength(1))), action: openInflationRateEditor)
+                    }
+                }
+                .font(AppTypography.meta)
+                .foregroundStyle(AssetTheme.textSecondary)
             }
         }
+        .alert("修改月开销", isPresented: $isEditingMonthlyExpense) {
+            TextField("例如 8000", text: $monthlyExpenseDraft)
+                .keyboardType(.decimalPad)
+            Button("取消", role: .cancel) {}
+            Button("确定") {
+                applyMonthlyExpenseDraft()
+            }
+        } message: {
+            Text("输入每月开销金额，用来计算财富自由目标。")
+        }
+        .alert("修改通胀率", isPresented: $isEditingInflationRate) {
+            TextField("例如 3.0", text: $inflationRateDraft)
+                .keyboardType(.decimalPad)
+            Button("取消", role: .cancel) {}
+            Button("确定") {
+                applyInflationRateDraft()
+            }
+        } message: {
+            Text("输入百分比数值，例如 3 代表 3%。")
+        }
+    }
+
+    private func valueButton(title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(AssetTheme.textPrimary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.white.opacity(0.04), in: Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func openMonthlyExpenseEditor() {
+        monthlyExpenseDraft = String(Int(monthlyExpense.rounded()))
+        isEditingMonthlyExpense = true
+    }
+
+    private func openInflationRateEditor() {
+        inflationRateDraft = String(format: "%.1f", inflationRate * 100)
+        isEditingInflationRate = true
+    }
+
+    private func applyMonthlyExpenseDraft() {
+        let sanitized = monthlyExpenseDraft
+            .replacingOccurrences(of: ",", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let value = Double(sanitized), value.isFinite else { return }
+        monthlyExpense = max(1000, value)
+    }
+
+    private func applyInflationRateDraft() {
+        let sanitized = inflationRateDraft
+            .replacingOccurrences(of: "%", with: "")
+            .replacingOccurrences(of: ",", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let percent = Double(sanitized), percent.isFinite else { return }
+        inflationRate = min(max(percent / 100, 0), 0.2)
     }
 
     private var statusText: String {
@@ -1346,6 +1433,23 @@ private struct DashboardFreedomSection: View {
         }
     }
 
+    private var reasonText: String? {
+        guard let projection else {
+            return "至少要有两条快照，才能开始估算。"
+        }
+
+        switch projection.status {
+        case .alreadyFree, .projected:
+            return nil
+        case .unreachable:
+            if projection.monthlyGrowth > 0 {
+                return "按当前月均净资产增长 \(projection.monthlyGrowth.currencyString()) 估算，暂时还追不上通胀后的目标线。"
+            } else {
+                return "近一年的净资产趋势还没形成持续增长，所以目前先算不出时间。"
+            }
+        }
+    }
+
     private var statusColor: Color {
         guard let projection else { return AssetTheme.textPrimary }
         switch projection.status {
@@ -1356,58 +1460,6 @@ private struct DashboardFreedomSection: View {
         case .unreachable:
             return AssetTheme.accentOrange
         }
-    }
-}
-
-private struct FreedomAdjustCard: View {
-    let title: String
-    let value: String
-    let onDecrease: () -> Void
-    let onIncrease: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(AppTypography.eyebrow)
-                .foregroundStyle(AssetTheme.textSecondary)
-
-            HStack(spacing: 10) {
-                Button(action: onDecrease) {
-                    Image(systemName: "minus")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .frame(width: 28, height: 28)
-                        .background(.white.opacity(0.04), in: Circle())
-                        .overlay(Circle().stroke(AssetTheme.border.opacity(0.75), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-
-                Text(value)
-                    .font(AppTypography.metricValue)
-                    .monospacedDigit()
-                    .foregroundStyle(AssetTheme.textPrimary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
-
-                Button(action: onIncrease) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .frame(width: 28, height: 28)
-                        .background(.white.opacity(0.04), in: Circle())
-                        .overlay(Circle().stroke(AssetTheme.border.opacity(0.75), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.8), lineWidth: 1)
-        )
     }
 }
 
