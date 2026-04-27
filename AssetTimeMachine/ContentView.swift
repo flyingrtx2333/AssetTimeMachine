@@ -94,6 +94,8 @@ struct ContentView: View {
 }
 
 private struct DashboardView: View {
+    @AppStorage("dashboard.monthlyExpense") private var monthlyExpense: Double = 8000
+    @AppStorage("dashboard.inflationRate") private var inflationRate: Double = 0.03
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
 
     private var latestSnapshot: AssetSnapshot? { snapshots.first }
@@ -181,6 +183,14 @@ private struct DashboardView: View {
         trendPoints.last
     }
 
+    private var freedomProjection: FinancialFreedomProjection? {
+        FinancialFreedomEstimator.estimate(
+            points: trendPoints,
+            monthlyExpense: monthlyExpense,
+            annualInflationRate: inflationRate
+        )
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -190,6 +200,7 @@ private struct DashboardView: View {
                     VStack(alignment: .leading, spacing: 22) {
                         summaryStrip
                         trendSection
+                        freedomSection
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 28)
@@ -267,6 +278,14 @@ private struct DashboardView: View {
                 systemImage: "chart.line.uptrend.xyaxis"
             )
         }
+    }
+
+    private var freedomSection: some View {
+        DashboardFreedomSection(
+            projection: freedomProjection,
+            monthlyExpense: $monthlyExpense,
+            inflationRate: $inflationRate
+        )
     }
 }
 
@@ -1177,6 +1196,235 @@ private struct DashboardAllocationChart: View {
     private func percentageText(for slice: DashboardAllocationSlice) -> String {
         guard totalAmount > 0 else { return "0%" }
         return (slice.amount / totalAmount).formatted(.percent.precision(.fractionLength(0)))
+    }
+}
+
+private struct FinancialFreedomProjection {
+    enum Status {
+        case alreadyFree
+        case projected(months: Int)
+        case unreachable
+    }
+
+    let status: Status
+    let monthlyGrowth: Double
+    let currentTarget: Double
+}
+
+private enum FinancialFreedomEstimator {
+    private static let safeWithdrawalMultiple = 25.0
+    private static let maxProjectionMonths = 100 * 12
+
+    static func estimate(
+        points: [TimeMachineTrendPoint],
+        monthlyExpense: Double,
+        annualInflationRate: Double
+    ) -> FinancialFreedomProjection? {
+        guard points.count >= 2 else { return nil }
+
+        let regressionPoints = points.enumerated().compactMap { _, point -> (x: Double, y: Double)? in
+            guard point.netAssets.isFinite else { return nil }
+            return (0, point.netAssets)
+        }
+        guard !regressionPoints.isEmpty else { return nil }
+
+        let origin = points[0].date
+        let series = points.compactMap { point -> (x: Double, y: Double)? in
+            guard point.netAssets.isFinite else { return nil }
+            let days = point.date.timeIntervalSince(origin) / 86_400
+            return (days / 30.4375, point.netAssets)
+        }
+        guard series.count >= 2 else { return nil }
+
+        let slope = linearRegressionSlope(for: series)
+        let currentNetAssets = points.last?.netAssets ?? 0
+        let currentTarget = monthlyExpense * 12 * safeWithdrawalMultiple
+
+        if currentNetAssets >= currentTarget {
+            return FinancialFreedomProjection(
+                status: .alreadyFree,
+                monthlyGrowth: slope,
+                currentTarget: currentTarget
+            )
+        }
+
+        guard slope > 0, monthlyExpense > 0 else {
+            return FinancialFreedomProjection(
+                status: .unreachable,
+                monthlyGrowth: slope,
+                currentTarget: currentTarget
+            )
+        }
+
+        for month in 1...maxProjectionMonths {
+            let projectedAssets = currentNetAssets + slope * Double(month)
+            let projectedTarget = currentTarget * pow(1 + annualInflationRate, Double(month) / 12)
+            if projectedAssets >= projectedTarget {
+                return FinancialFreedomProjection(
+                    status: .projected(months: month),
+                    monthlyGrowth: slope,
+                    currentTarget: currentTarget
+                )
+            }
+        }
+
+        return FinancialFreedomProjection(
+            status: .unreachable,
+            monthlyGrowth: slope,
+            currentTarget: currentTarget
+        )
+    }
+
+    private static func linearRegressionSlope(for points: [(x: Double, y: Double)]) -> Double {
+        let count = Double(points.count)
+        let sumX = points.reduce(0) { $0 + $1.x }
+        let sumY = points.reduce(0) { $0 + $1.y }
+        let sumXY = points.reduce(0) { $0 + $1.x * $1.y }
+        let sumX2 = points.reduce(0) { $0 + $1.x * $1.x }
+        let denominator = count * sumX2 - sumX * sumX
+
+        guard abs(denominator) > .ulpOfOne else { return 0 }
+        return (count * sumXY - sumX * sumY) / denominator
+    }
+}
+
+private struct DashboardFreedomSection: View {
+    let projection: FinancialFreedomProjection?
+    @Binding var monthlyExpense: Double
+    @Binding var inflationRate: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Rectangle()
+                .fill(AssetTheme.border.opacity(0.55))
+                .frame(height: 1)
+
+            Text("财富自由预期")
+                .font(AppTypography.sectionTitle)
+                .foregroundStyle(AssetTheme.textPrimary)
+
+            Text(statusText)
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .foregroundStyle(statusColor)
+
+            Text(detailText)
+                .font(AppTypography.meta)
+                .foregroundStyle(AssetTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(alignment: .top, spacing: 12) {
+                FreedomAdjustCard(
+                    title: "月开销",
+                    value: monthlyExpense.currencyString(),
+                    onDecrease: { monthlyExpense = max(1000, monthlyExpense - 1000) },
+                    onIncrease: { monthlyExpense += 1000 }
+                )
+
+                FreedomAdjustCard(
+                    title: "通胀率",
+                    value: inflationRate.formatted(.percent.precision(.fractionLength(1))),
+                    onDecrease: { inflationRate = max(0, inflationRate - 0.005) },
+                    onIncrease: { inflationRate = min(0.2, inflationRate + 0.005) }
+                )
+            }
+        }
+    }
+
+    private var statusText: String {
+        guard let projection else { return "还不能估算" }
+
+        switch projection.status {
+        case .alreadyFree:
+            return "已经财富自由"
+        case let .projected(months):
+            let years = months / 12
+            let remainingMonths = months % 12
+            if years > 0, remainingMonths > 0 {
+                return "剩余 \(years) 年 \(remainingMonths) 月"
+            } else if years > 0 {
+                return "剩余 \(years) 年"
+            } else {
+                return "剩余 \(remainingMonths) 月"
+            }
+        case .unreachable:
+            return "暂未测算到财富自由时间"
+        }
+    }
+
+    private var detailText: String {
+        guard let projection else {
+            return "至少需要两条快照，才能按资产趋势拟合财富自由时间。"
+        }
+
+        let monthlyGrowthText = projection.monthlyGrowth > 0
+            ? "月均净资产增长约 \(projection.monthlyGrowth.currencyString())"
+            : "当前净资产趋势未体现正增长"
+
+        return "按近一年净资产线性拟合，默认使用 4% 法则（25 倍年开销）估算。\(monthlyGrowthText)，当前目标约 \(projection.currentTarget.currencyString())。"
+    }
+
+    private var statusColor: Color {
+        guard let projection else { return AssetTheme.textPrimary }
+        switch projection.status {
+        case .alreadyFree:
+            return AssetTheme.goldSoft
+        case .projected:
+            return AssetTheme.textPrimary
+        case .unreachable:
+            return AssetTheme.accentOrange
+        }
+    }
+}
+
+private struct FreedomAdjustCard: View {
+    let title: String
+    let value: String
+    let onDecrease: () -> Void
+    let onIncrease: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(AppTypography.eyebrow)
+                .foregroundStyle(AssetTheme.textSecondary)
+
+            HStack(spacing: 10) {
+                Button(action: onDecrease) {
+                    Image(systemName: "minus")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .frame(width: 28, height: 28)
+                        .background(.white.opacity(0.04), in: Circle())
+                        .overlay(Circle().stroke(AssetTheme.border.opacity(0.75), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+
+                Text(value)
+                    .font(AppTypography.metricValue)
+                    .monospacedDigit()
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+
+                Button(action: onIncrease) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .frame(width: 28, height: 28)
+                        .background(.white.opacity(0.04), in: Circle())
+                        .overlay(Circle().stroke(AssetTheme.border.opacity(0.75), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.8), lineWidth: 1)
+        )
     }
 }
 
