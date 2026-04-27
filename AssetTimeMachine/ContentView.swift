@@ -1146,14 +1146,6 @@ private struct DashboardAllocationChart: View {
                     Text("资产构成")
                         .font(AppTypography.eyebrow)
                         .foregroundStyle(AssetTheme.textSecondary)
-
-                    Text(totalAmount.currencyString())
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .minimumScaleFactor(0.72)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 24)
             }
