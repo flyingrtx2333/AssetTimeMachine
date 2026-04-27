@@ -1307,11 +1307,6 @@ private struct DashboardFreedomSection: View {
                 .font(.system(size: 28, weight: .bold, design: .rounded))
                 .foregroundStyle(statusColor)
 
-            Text(detailText)
-                .font(AppTypography.meta)
-                .foregroundStyle(AssetTheme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-
             HStack(alignment: .top, spacing: 12) {
                 FreedomAdjustCard(
                     title: "月开销",
@@ -1349,18 +1344,6 @@ private struct DashboardFreedomSection: View {
         case .unreachable:
             return "暂未测算到财富自由时间"
         }
-    }
-
-    private var detailText: String {
-        guard let projection else {
-            return "至少需要两条快照，才能按资产趋势拟合财富自由时间。"
-        }
-
-        let monthlyGrowthText = projection.monthlyGrowth > 0
-            ? "月均净资产增长约 \(projection.monthlyGrowth.currencyString())"
-            : "当前净资产趋势未体现正增长"
-
-        return "按近一年净资产线性拟合，默认使用 4% 法则（25 倍年开销）估算。\(monthlyGrowthText)，当前目标约 \(projection.currentTarget.currencyString())。"
     }
 
     private var statusColor: Color {
