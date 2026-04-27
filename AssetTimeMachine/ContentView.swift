@@ -25,7 +25,7 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            DashboardView(marketStore: marketStore)
+            DashboardView()
                 .tabItem {
                     Label("首页", systemImage: "house")
                 }
@@ -94,26 +94,57 @@ struct ContentView: View {
 }
 
 private struct DashboardView: View {
-    @ObservedObject var marketStore: RemoteMarketStore
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
-    @Query private var entries: [AssetEntry]
 
     private var latestSnapshot: AssetSnapshot? { snapshots.first }
 
     private var totalAssets: Double {
-        entries
-            .filter { ($0.item?.category?.group ?? .financial) != .liability }
-            .reduce(0) { $0 + $1.resolvedAmount }
+        latestSnapshot.map { PortfolioCalculator.totalAssets(for: $0) } ?? 0
     }
 
     private var totalLiabilities: Double {
-        entries
-            .filter { ($0.item?.category?.group ?? .financial) == .liability }
-            .reduce(0) { $0 + $1.resolvedAmount }
+        latestSnapshot.map { PortfolioCalculator.totalLiabilities(for: $0) } ?? 0
     }
 
     private var netAssets: Double {
         totalAssets - totalLiabilities
+    }
+
+    private var latestEntryCount: Int {
+        latestSnapshot?.entries.count ?? 0
+    }
+
+    private var trendPoints: [TimeMachineTrendPoint] {
+        let basePoints = snapshots.reversed().map { snapshot in
+            let mainAssets = PortfolioCalculator.totalAssets(for: snapshot)
+            let liabilities = PortfolioCalculator.totalLiabilities(for: snapshot)
+            let netAssets = mainAssets - liabilities
+
+            return TimeMachineTrendPoint(
+                date: snapshot.date,
+                mainAssets: mainAssets,
+                netAssets: netAssets,
+                liabilities: liabilities,
+                goldEquivalent: snapshot.goldAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
+                btcEquivalent: snapshot.btcAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
+                nasdaqEquivalent: snapshot.nasdaqAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
+                goldAnchorPriceCNY: snapshot.goldAnchorPriceCNY,
+                goldAnchorDate: snapshot.goldAnchorPriceDate,
+                btcAnchorPriceUSD: snapshot.btcAnchorPriceUSD,
+                btcAnchorPriceCNY: snapshot.btcAnchorPriceCNY,
+                btcAnchorDate: snapshot.btcAnchorPriceDate,
+                nasdaqAnchorPriceUSD: snapshot.nasdaqAnchorPriceUSD,
+                nasdaqAnchorPriceCNY: snapshot.nasdaqAnchorPriceCNY,
+                nasdaqAnchorDate: snapshot.nasdaqAnchorPriceDate
+            )
+        }
+
+        let filteredPoints = TimeMachineRange.oneYear.filter(basePoints)
+        return filteredPoints.count >= 2 ? filteredPoints : basePoints
+    }
+
+    private var latestTrendPoint: TimeMachineTrendPoint? {
+        trendPoints.last
     }
 
     var body: some View {
@@ -124,8 +155,7 @@ private struct DashboardView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 22) {
                         summaryStrip
-                        marketSection
-                        recentSection
+                        trendSection
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 28)
@@ -138,38 +168,22 @@ private struct DashboardView: View {
 
     private var summaryStrip: some View {
         VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("净资产")
-                        .font(AppTypography.eyebrow)
-                        .foregroundStyle(AssetTheme.textSecondary)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("净资产")
+                    .font(AppTypography.eyebrow)
+                    .foregroundStyle(AssetTheme.textSecondary)
 
-                    Text(netAssets.currencyString())
-                        .font(AppTypography.heroValue)
-                        .monospacedDigit()
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .minimumScaleFactor(0.72)
-                        .lineLimit(2)
+                Text(netAssets.currencyString())
+                    .font(AppTypography.heroValue)
+                    .monospacedDigit()
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .minimumScaleFactor(0.72)
+                    .lineLimit(2)
 
-                    HStack(spacing: 10) {
-                        InlineStat(text: "已记录 \(snapshots.count.formatted()) 天", color: AssetTheme.textSecondary)
-                        InlineStat(text: latestSnapshot.map { "最近更新 \($0.date.shortDateString)" } ?? "还没有快照", color: AssetTheme.goldSoft)
-                    }
+                HStack(spacing: 10) {
+                    InlineStat(text: "已记录 \(snapshots.count.formatted()) 天", color: AssetTheme.textSecondary)
+                    InlineStat(text: latestSnapshot.map { "最近更新 \($0.date.shortDateString)" } ?? "还没有快照", color: AssetTheme.goldSoft)
                 }
-
-                Spacer(minLength: 12)
-
-                Button {
-                    Task { await marketStore.refresh() }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(AssetTheme.gold)
-                        .frame(width: 42, height: 42)
-                        .background(.white.opacity(0.04), in: Circle())
-                        .overlay(Circle().stroke(AssetTheme.border, lineWidth: 1))
-                }
-                .buttonStyle(.plain)
             }
 
             HStack(alignment: .top, spacing: 18) {
@@ -187,7 +201,7 @@ private struct DashboardView: View {
 
                 SummaryColumnMetric(
                     title: "条目",
-                    value: entries.count.formatted(),
+                    value: latestEntryCount.formatted(),
                     accent: AssetTheme.accentBlue
                 )
             }
@@ -198,66 +212,19 @@ private struct DashboardView: View {
         }
     }
 
-    private var marketSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            SectionTitle(title: "市场锚点")
-
-            Group {
-                if let overview = marketStore.overview {
-                    VStack(spacing: 0) {
-                        ForEach(Array(overview.markets.enumerated()), id: \.element.id) { index, market in
-                            MarketPriceRow(market: market)
-
-                            if index < overview.markets.count - 1 {
-                                Divider().overlay(AssetTheme.border.opacity(0.6))
-                            }
-                        }
-
-                    }
-                    .atmCardStyle()
-                } else if marketStore.isLoading {
-                    VStack(spacing: 14) {
-                        SkeletonLine(width: 130)
-                        SkeletonLine(width: 240)
-                        SkeletonLine(width: 210)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .atmCardStyle()
-                } else {
-                    EmptyStateCard(
-                        title: marketStore.errorMessage ?? "行情暂不可用",
-                        systemImage: "wifi.exclamationmark"
-                    )
-                }
-            }
-        }
-    }
-
-    private var recentSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            SectionTitle(title: "最近记录")
-
-            if let latestSnapshot {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text(latestSnapshot.date.longDateString)
-                            .font(AppTypography.rowTitle)
-                            .foregroundStyle(AssetTheme.textPrimary)
-                        Spacer()
-                        GoldChip(text: "\(latestSnapshot.entries.count.formatted()) 项")
-                    }
-
-                    Text("\(latestSnapshot.entries.count.formatted()) 项")
-                        .font(AppTypography.meta)
-                        .foregroundStyle(AssetTheme.textSecondary)
-                }
-                .atmCardStyle()
-            } else {
-                EmptyStateCard(
-                    title: "暂无记录",
-                    systemImage: "tray"
-                )
-            }
+    @ViewBuilder
+    private var trendSection: some View {
+        if let latestTrendPoint, trendPoints.count >= 2 {
+            DashboardTrendCard(
+                points: trendPoints,
+                latestPoint: latestTrendPoint
+            )
+        } else {
+            EmptyStateCard(
+                title: "还没有趋势数据",
+                message: "至少需要两条资产快照，首页这里才会长出走势折线图。",
+                systemImage: "chart.line.uptrend.xyaxis"
+            )
         }
     }
 }
@@ -1062,9 +1029,9 @@ private enum TimeMachineAssetSeries: CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .mainAssets: return "主资产"
+        case .mainAssets: return "总资产"
         case .netAssets: return "净资产"
-        case .liabilities: return "负债"
+        case .liabilities: return "总负债"
         }
     }
 
@@ -1091,6 +1058,104 @@ private enum TimeMachineAssetSeries: CaseIterable, Identifiable {
         case .netAssets: return point.netAssets
         case .liabilities: return point.liabilities
         }
+    }
+}
+
+private struct DashboardTrendCard: View {
+    let points: [TimeMachineTrendPoint]
+    let latestPoint: TimeMachineTrendPoint
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text("资产走势")
+                    .font(AppTypography.sectionTitle)
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                Spacer(minLength: 12)
+
+                Text(dateRangeLabel)
+                    .font(AppTypography.meta)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .lineLimit(1)
+            }
+
+            HStack(spacing: 14) {
+                ForEach(TimeMachineAssetSeries.allCases) { series in
+                    HStack(spacing: 6) {
+                        RoundedRectangle(cornerRadius: 999, style: .continuous)
+                            .fill(series.color)
+                            .frame(width: 16, height: 3)
+                            .overlay {
+                                if series == .liabilities {
+                                    HStack(spacing: 3) {
+                                        ForEach(0..<3, id: \.self) { _ in
+                                            Capsule()
+                                                .fill(series.color)
+                                                .frame(width: 4, height: 3)
+                                        }
+                                    }
+                                }
+                            }
+
+                        Text(series.title)
+                            .font(AppTypography.meta)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                }
+            }
+
+            Chart {
+                ForEach(TimeMachineAssetSeries.allCases) { series in
+                    ForEach(points) { point in
+                        LineMark(
+                            x: .value("日期", point.date),
+                            y: .value(series.title, series.value(from: point))
+                        )
+                        .foregroundStyle(by: .value("序列", series.title))
+                        .lineStyle(series.strokeStyle)
+                        .interpolationMethod(.catmullRom)
+                    }
+
+                    PointMark(
+                        x: .value("日期", latestPoint.date),
+                        y: .value(series.title, series.value(from: latestPoint))
+                    )
+                    .foregroundStyle(series.color)
+                    .symbolSize(44)
+                }
+            }
+            .chartForegroundStyleScale([
+                TimeMachineAssetSeries.mainAssets.title: TimeMachineAssetSeries.mainAssets.color,
+                TimeMachineAssetSeries.netAssets.title: TimeMachineAssetSeries.netAssets.color,
+                TimeMachineAssetSeries.liabilities.title: TimeMachineAssetSeries.liabilities.color,
+            ])
+            .frame(height: 248)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 4)) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                        .foregroundStyle(.white.opacity(0.08))
+                    AxisTick().foregroundStyle(.white.opacity(0.15))
+                    AxisValueLabel(format: .dateTime.month(.defaultDigits).day(), centered: true)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
+            }
+            .chartYAxis {
+                AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                        .foregroundStyle(.white.opacity(0.08))
+                    AxisValueLabel(format: FloatingPointFormatStyle<Double>.number.notation(.compactName))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
+            }
+            .chartLegend(.hidden)
+        }
+        .atmCardStyle()
+    }
+
+    private var dateRangeLabel: String {
+        guard let first = points.first?.date else { return "暂无范围" }
+        return "\(first.recordDateString) - \(latestPoint.date.recordDateString)"
     }
 }
 
