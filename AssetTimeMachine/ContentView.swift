@@ -1130,7 +1130,7 @@ private struct DashboardTrendCard: View {
                 TimeMachineAssetSeries.netAssets.title: TimeMachineAssetSeries.netAssets.color,
                 TimeMachineAssetSeries.liabilities.title: TimeMachineAssetSeries.liabilities.color,
             ])
-            .frame(height: 248)
+            .frame(height: 256)
             .chartXAxis {
                 AxisMarks(values: .automatic(desiredCount: 4)) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
@@ -1149,8 +1149,9 @@ private struct DashboardTrendCard: View {
                 }
             }
             .chartLegend(.hidden)
+            .padding(.top, 4)
         }
-        .atmCardStyle()
+        .padding(.top, 8)
     }
 
     private var dateRangeLabel: String {
