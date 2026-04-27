@@ -1354,10 +1354,6 @@ private struct DashboardFreedomSection: View {
                 .fill(AssetTheme.border.opacity(0.55))
                 .frame(height: 1)
 
-            Text("财富自由预测")
-                .font(AppTypography.sectionTitle)
-                .foregroundStyle(AssetTheme.textPrimary)
-
             Text(statusText)
                 .font(.system(size: 28, weight: .bold, design: .rounded))
                 .foregroundStyle(statusColor)
