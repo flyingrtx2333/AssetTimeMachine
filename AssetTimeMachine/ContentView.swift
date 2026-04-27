@@ -1230,6 +1230,7 @@ private struct FinancialFreedomProjection {
     let status: Status
     let monthlyGrowth: Double
     let currentTarget: Double
+    let maximumReachableMonthlyExpense: Double
 }
 
 private enum FinancialFreedomEstimator {
@@ -1260,12 +1261,18 @@ private enum FinancialFreedomEstimator {
         let slope = linearRegressionSlope(for: series)
         let currentNetAssets = points.last?.netAssets ?? 0
         let currentTarget = monthlyExpense * 12 * safeWithdrawalMultiple
+        let maximumReachableMonthlyExpense = maximumReachableMonthlyExpense(
+            currentNetAssets: currentNetAssets,
+            monthlyGrowth: slope,
+            annualInflationRate: annualInflationRate
+        )
 
         if currentNetAssets >= currentTarget {
             return FinancialFreedomProjection(
                 status: .alreadyFree,
                 monthlyGrowth: slope,
-                currentTarget: currentTarget
+                currentTarget: currentTarget,
+                maximumReachableMonthlyExpense: maximumReachableMonthlyExpense
             )
         }
 
@@ -1273,7 +1280,8 @@ private enum FinancialFreedomEstimator {
             return FinancialFreedomProjection(
                 status: .unreachable,
                 monthlyGrowth: slope,
-                currentTarget: currentTarget
+                currentTarget: currentTarget,
+                maximumReachableMonthlyExpense: maximumReachableMonthlyExpense
             )
         }
 
@@ -1284,7 +1292,8 @@ private enum FinancialFreedomEstimator {
                 return FinancialFreedomProjection(
                     status: .projected(months: month),
                     monthlyGrowth: slope,
-                    currentTarget: currentTarget
+                    currentTarget: currentTarget,
+                    maximumReachableMonthlyExpense: maximumReachableMonthlyExpense
                 )
             }
         }
@@ -1292,8 +1301,28 @@ private enum FinancialFreedomEstimator {
         return FinancialFreedomProjection(
             status: .unreachable,
             monthlyGrowth: slope,
-            currentTarget: currentTarget
+            currentTarget: currentTarget,
+            maximumReachableMonthlyExpense: maximumReachableMonthlyExpense
         )
+    }
+
+    private static func maximumReachableMonthlyExpense(
+        currentNetAssets: Double,
+        monthlyGrowth: Double,
+        annualInflationRate: Double
+    ) -> Double {
+        var bestExpense = max(0, currentNetAssets / (safeWithdrawalMultiple * 12))
+
+        for month in 1...maxProjectionMonths {
+            let projectedAssets = currentNetAssets + monthlyGrowth * Double(month)
+            guard projectedAssets > 0 else { continue }
+
+            let inflationFactor = pow(1 + annualInflationRate, Double(month) / 12)
+            let allowedExpense = projectedAssets / (safeWithdrawalMultiple * 12 * inflationFactor)
+            bestExpense = max(bestExpense, allowedExpense)
+        }
+
+        return max(0, bestExpense)
     }
 
     private static func linearRegressionSlope(for points: [(x: Double, y: Double)]) -> Double {
@@ -1450,7 +1479,7 @@ private struct DashboardFreedomSection: View {
                 return "剩余 \(remainingMonths) 月"
             }
         case .unreachable:
-            return "暂未测算到财富自由时间"
+            return "永远无法财富自由"
         }
     }
 
@@ -1463,10 +1492,11 @@ private struct DashboardFreedomSection: View {
         case .alreadyFree, .projected:
             return nil
         case .unreachable:
-            if projection.monthlyGrowth > 0 {
-                return "按当前月均净资产增长 \(projection.monthlyGrowth.currencyString()) 估算，暂时还追不上通胀后的目标线。"
+            let inflationText = inflationRate.formatted(.percent.precision(.fractionLength(1)))
+            if projection.maximumReachableMonthlyExpense > 0 {
+                return "按当前月均净资产增长 \(projection.monthlyGrowth.currencyString()) 估算，若通胀率维持 \(inflationText)，月开销需降到 \(projection.maximumReachableMonthlyExpense.currencyString()) 以内。"
             } else {
-                return "近一年的净资产趋势还没形成持续增长，所以目前先算不出时间。"
+                return "按当前趋势估算，若通胀率维持 \(inflationText)，就算把月开销降到 0 也追不上目标线。"
             }
         }
     }
