@@ -114,6 +114,40 @@ private struct DashboardView: View {
         latestSnapshot?.entries.count ?? 0
     }
 
+    private var allocationSlices: [DashboardAllocationSlice] {
+        guard let latestSnapshot else { return [] }
+
+        let grouped = Dictionary(grouping: latestSnapshot.entries.filter {
+            ($0.item?.category?.group ?? .financial) != .liability && $0.resolvedAmount > 0
+        }) { entry in
+            entry.item?.name ?? "未命名"
+        }
+
+        let sorted = grouped
+            .map { name, entries in
+                (name: name, amount: entries.reduce(0) { $0 + $1.resolvedAmount })
+            }
+            .sorted { $0.amount > $1.amount }
+
+        let topLimit = 5
+        var slices = Array(sorted.prefix(topLimit))
+
+        if sorted.count > topLimit {
+            let otherAmount = sorted.dropFirst(topLimit).reduce(0) { $0 + $1.amount }
+            if otherAmount > 0 {
+                slices.append((name: "其他", amount: otherAmount))
+            }
+        }
+
+        return slices.enumerated().map { index, element in
+            DashboardAllocationSlice(
+                title: element.name,
+                amount: element.amount,
+                color: DashboardAllocationPalette.colors[index % DashboardAllocationPalette.colors.count]
+            )
+        }
+    }
+
     private var trendPoints: [TimeMachineTrendPoint] {
         let basePoints = snapshots.reversed().map { snapshot in
             let mainAssets = PortfolioCalculator.totalAssets(for: snapshot)
@@ -159,7 +193,7 @@ private struct DashboardView: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 28)
-                    .padding(.bottom, 120)
+                    .padding(.bottom, 172)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -169,11 +203,11 @@ private struct DashboardView: View {
     private var summaryStrip: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("净资产")
+                Text("总资产")
                     .font(AppTypography.eyebrow)
                     .foregroundStyle(AssetTheme.textSecondary)
 
-                Text(netAssets.currencyString())
+                Text(totalAssets.currencyString())
                     .font(AppTypography.heroValue)
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.textPrimary)
@@ -188,9 +222,9 @@ private struct DashboardView: View {
 
             HStack(alignment: .top, spacing: 18) {
                 SummaryColumnMetric(
-                    title: "总资产",
-                    value: totalAssets.currencyString(),
-                    accent: AssetTheme.gold
+                    title: "净资产",
+                    value: netAssets.currencyString(),
+                    accent: AssetTheme.positive
                 )
 
                 SummaryColumnMetric(
@@ -203,6 +237,13 @@ private struct DashboardView: View {
                     title: "条目",
                     value: latestEntryCount.formatted(),
                     accent: AssetTheme.accentBlue
+                )
+            }
+
+            if !allocationSlices.isEmpty {
+                DashboardAllocationChart(
+                    slices: allocationSlices,
+                    totalAmount: totalAssets
                 )
             }
 
@@ -1058,6 +1099,92 @@ private enum TimeMachineAssetSeries: CaseIterable, Identifiable {
         case .netAssets: return point.netAssets
         case .liabilities: return point.liabilities
         }
+    }
+}
+
+private struct DashboardAllocationSlice: Identifiable {
+    let title: String
+    let amount: Double
+    let color: Color
+
+    var id: String { title }
+}
+
+private enum DashboardAllocationPalette {
+    static let colors: [Color] = [
+        AssetTheme.goldSoft,
+        AssetTheme.accentBlue,
+        AssetTheme.positive,
+        AssetTheme.accentOrange,
+        Color(red: 173 / 255, green: 132 / 255, blue: 255 / 255),
+        Color(red: 105 / 255, green: 196 / 255, blue: 219 / 255)
+    ]
+}
+
+private struct DashboardAllocationChart: View {
+    let slices: [DashboardAllocationSlice]
+    let totalAmount: Double
+
+    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            ZStack {
+                Chart(slices) { slice in
+                    SectorMark(
+                        angle: .value("金额", slice.amount),
+                        innerRadius: .ratio(0.62),
+                        angularInset: 2.5
+                    )
+                    .cornerRadius(6)
+                    .foregroundStyle(slice.color)
+                }
+                .chartLegend(.hidden)
+                .frame(height: 176)
+
+                VStack(spacing: 4) {
+                    Text("资产构成")
+                        .font(AppTypography.eyebrow)
+                        .foregroundStyle(AssetTheme.textSecondary)
+
+                    Text(totalAmount.currencyString())
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .minimumScaleFactor(0.72)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
+            }
+
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
+                ForEach(slices) { slice in
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(slice.color)
+                            .frame(width: 8, height: 8)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(slice.title)
+                                .font(AppTypography.meta)
+                                .foregroundStyle(AssetTheme.textPrimary)
+                                .lineLimit(1)
+
+                            Text(percentageText(for: slice))
+                                .font(AppTypography.eyebrow)
+                                .foregroundStyle(AssetTheme.textSecondary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+    }
+
+    private func percentageText(for slice: DashboardAllocationSlice) -> String {
+        guard totalAmount > 0 else { return "0%" }
+        return (slice.amount / totalAmount).formatted(.percent.precision(.fractionLength(0)))
     }
 }
 
