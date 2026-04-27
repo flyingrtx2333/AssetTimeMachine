@@ -1033,12 +1033,7 @@ private enum TimeMachineRange: String, CaseIterable, Identifiable {
     }
 
     private var detailAggregationComponent: Calendar.Component {
-        switch self {
-        case .sixMonths:
-            return .weekOfYear
-        case .oneYear, .all:
-            return .month
-        }
+        .day
     }
 
     func filter(_ points: [TimeMachineTrendPoint], calendar: Calendar = .current) -> [TimeMachineTrendPoint] {
@@ -1063,6 +1058,9 @@ private enum TimeMachineRange: String, CaseIterable, Identifiable {
         calendar: Calendar = .current
     ) -> [TimeMachineDualAxisPoint] {
         guard !points.isEmpty else { return [] }
+        guard detailAggregationComponent != .day else {
+            return points.sorted { $0.date < $1.date }
+        }
 
         let grouped = Dictionary(grouping: points) { point in
             calendar.dateInterval(of: detailAggregationComponent, for: point.date)?.start ?? calendar.startOfDay(for: point.date)
