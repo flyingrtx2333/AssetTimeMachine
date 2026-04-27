@@ -1952,21 +1952,8 @@ private struct TimeMachineMiniTrendChart: View {
     let dashed: Bool
     let showsXAxis: Bool
 
-    private var valueRange: ClosedRange<Double> {
-        paddedRange(for: points.map(\.value))
-    }
-
-    private var normalizedPoints: [TimeMachineSingleAxisPoint] {
-        points.map { point in
-            TimeMachineSingleAxisPoint(
-                date: point.date,
-                value: normalize(point.value, in: valueRange)
-            )
-        }
-    }
-
     private var latestPoint: TimeMachineSingleAxisPoint? {
-        normalizedPoints.last
+        points.last
     }
 
     var body: some View {
@@ -1975,80 +1962,44 @@ private struct TimeMachineMiniTrendChart: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(AssetTheme.textSecondary)
 
-            HStack(spacing: 10) {
-                TimeMachineAxisStrip(
-                    topLabel: axisStyle.compactLabel(for: valueRange.upperBound),
-                    middleLabel: axisStyle.compactLabel(for: (valueRange.upperBound + valueRange.lowerBound) / 2),
-                    bottomLabel: axisStyle.compactLabel(for: valueRange.lowerBound),
-                    alignment: .leading,
-                    color: color
-                )
-
-                Chart(normalizedPoints) { point in
-                    LineMark(
-                        x: .value("日期", point.date),
-                        y: .value(title, point.value)
-                    )
-                    .foregroundStyle(color)
-                    .lineStyle(
-                        StrokeStyle(
-                            lineWidth: dashed ? 1.5 : 1.8,
-                            lineCap: .round,
-                            lineJoin: .round,
-                            dash: dashed ? [6, 5] : []
-                        )
-                    )
-                    .interpolationMethod(.linear)
-
-                    if let latestPoint,
-                       latestPoint.date == point.date {
-                        PointMark(
-                            x: .value("日期", latestPoint.date),
-                            y: .value(title, latestPoint.value)
-                        )
-                        .foregroundStyle(color)
-                        .symbolSize(40)
-                    }
-                }
-                .frame(height: 104)
-                .chartYScale(domain: 0 ... 1)
-                .chartXAxis {
-                    if showsXAxis {
-                        AxisMarks(values: .automatic(desiredCount: 4)) { _ in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
-                                .foregroundStyle(.white.opacity(0.06))
-                            AxisTick().foregroundStyle(.white.opacity(0.12))
-                            AxisValueLabel(format: .dateTime.month(.defaultDigits), centered: true)
-                                .foregroundStyle(AssetTheme.textSecondary)
-                        }
-                    }
-                }
-                .chartYAxis {
-                    AxisMarks(values: [0, 0.5, 1.0]) { _ in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
-                            .foregroundStyle(.white.opacity(0.05))
-                        AxisTick().foregroundStyle(.clear)
-                        AxisValueLabel("")
-                    }
-                }
-                .chartLegend(.hidden)
+            if showsXAxis {
+                chartBody
+            } else {
+                chartBody
+                    .chartXAxis(.hidden)
             }
         }
     }
 
-    private func paddedRange(for values: [Double]) -> ClosedRange<Double> {
-        let minValue = values.min() ?? 0
-        let maxValue = values.max() ?? 1
-        if abs(maxValue - minValue) < 0.0001 {
-            return (minValue - 1) ... (maxValue + 1)
-        }
-        let padding = (maxValue - minValue) * 0.08
-        return (minValue - padding) ... (maxValue + padding)
-    }
+    private var chartBody: some View {
+        Chart(points) { point in
+            LineMark(
+                x: .value("日期", point.date),
+                y: .value(title, point.value)
+            )
+            .foregroundStyle(color)
+            .lineStyle(
+                StrokeStyle(
+                    lineWidth: dashed ? 1.5 : 1.8,
+                    lineCap: .round,
+                    lineJoin: .round,
+                    dash: dashed ? [6, 5] : []
+                )
+            )
+            .interpolationMethod(.linear)
 
-    private func normalize(_ value: Double, in range: ClosedRange<Double>) -> Double {
-        let span = max(range.upperBound - range.lowerBound, 0.0001)
-        return (value - range.lowerBound) / span
+            if let latestPoint,
+               latestPoint.date == point.date {
+                PointMark(
+                    x: .value("日期", latestPoint.date),
+                    y: .value(title, latestPoint.value)
+                )
+                .foregroundStyle(color)
+                .symbolSize(40)
+            }
+        }
+        .frame(height: 104)
+        .chartLegend(.hidden)
     }
 }
 
