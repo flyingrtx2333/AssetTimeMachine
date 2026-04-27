@@ -891,7 +891,7 @@ private struct TimeMachineView: View {
                 title: "黄金",
                 leftTitle: "价格",
                 rightTitle: "折算",
-                points: pairedPoints(for: filteredTrendPoints, left: \.goldAnchorPriceCNY, right: \.goldEquivalent),
+                points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.goldAnchorPriceCNY, right: \.goldEquivalent),
                 leftColor: AssetTheme.gold,
                 rightColor: AssetTheme.positive,
                 leftLatestLabel: latestPoint?.goldAnchorPriceCNY.map { "\($0.currencyString())/g" } ?? "--",
@@ -903,7 +903,7 @@ private struct TimeMachineView: View {
                 title: "纳指",
                 leftTitle: "价格",
                 rightTitle: "折算",
-                points: pairedPoints(for: filteredTrendPoints, left: \.nasdaqAnchorPriceUSD, right: \.nasdaqEquivalent),
+                points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.nasdaqAnchorPriceUSD, right: \.nasdaqEquivalent),
                 leftColor: AssetTheme.accentBlue,
                 rightColor: AssetTheme.positive,
                 leftLatestLabel: latestPoint?.nasdaqAnchorPriceUSD.map { $0.currencyString(code: "USD") } ?? "--",
@@ -915,7 +915,7 @@ private struct TimeMachineView: View {
                 title: "BTC",
                 leftTitle: "价格",
                 rightTitle: "折算",
-                points: pairedPoints(for: filteredTrendPoints, left: \.btcAnchorPriceUSD, right: \.btcEquivalent),
+                points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.btcAnchorPriceUSD, right: \.btcEquivalent),
                 leftColor: AssetTheme.accentOrange,
                 rightColor: AssetTheme.positive,
                 leftLatestLabel: latestPoint?.btcAnchorPriceUSD.map { $0.currencyString(code: "USD") } ?? "--",
@@ -952,16 +952,23 @@ private struct TimeMachineView: View {
 
     private func pairedPoints(
         for source: [TimeMachineTrendPoint],
+        range: TimeMachineRange,
         left leftKeyPath: KeyPath<TimeMachineTrendPoint, Double?>,
         right rightKeyPath: KeyPath<TimeMachineTrendPoint, Double?>
     ) -> [TimeMachineDualAxisPoint] {
-        source.compactMap { point in
+        let cleanedPoints = source.compactMap { point -> TimeMachineDualAxisPoint? in
             guard let leftValue = point[keyPath: leftKeyPath],
-                  let rightValue = point[keyPath: rightKeyPath] else {
+                  let rightValue = point[keyPath: rightKeyPath],
+                  leftValue.isFinite,
+                  rightValue.isFinite,
+                  leftValue > 0,
+                  rightValue > 0 else {
                 return nil
             }
             return TimeMachineDualAxisPoint(date: point.date, leftValue: leftValue, rightValue: rightValue)
         }
+
+        return range.aggregateDetailChartPoints(cleanedPoints)
     }
 
     var body: some View {
@@ -1025,6 +1032,15 @@ private enum TimeMachineRange: String, CaseIterable, Identifiable {
         }
     }
 
+    private var detailAggregationComponent: Calendar.Component {
+        switch self {
+        case .sixMonths:
+            return .weekOfYear
+        case .oneYear, .all:
+            return .month
+        }
+    }
+
     func filter(_ points: [TimeMachineTrendPoint], calendar: Calendar = .current) -> [TimeMachineTrendPoint] {
         guard let latestDate = points.last?.date else { return [] }
 
@@ -1040,6 +1056,32 @@ private enum TimeMachineRange: String, CaseIterable, Identifiable {
 
         guard let startDate else { return points }
         return points.filter { $0.date >= startDate }
+    }
+
+    func aggregateDetailChartPoints(
+        _ points: [TimeMachineDualAxisPoint],
+        calendar: Calendar = .current
+    ) -> [TimeMachineDualAxisPoint] {
+        guard !points.isEmpty else { return [] }
+
+        let grouped = Dictionary(grouping: points) { point in
+            calendar.dateInterval(of: detailAggregationComponent, for: point.date)?.start ?? calendar.startOfDay(for: point.date)
+        }
+
+        return grouped
+            .compactMap { _, values in
+                let sortedValues = values.sorted { $0.date < $1.date }
+                guard let representativePoint = sortedValues.last else { return nil }
+                let count = Double(sortedValues.count)
+                let leftAverage = sortedValues.reduce(0) { $0 + $1.leftValue } / count
+                let rightAverage = sortedValues.reduce(0) { $0 + $1.rightValue } / count
+                return TimeMachineDualAxisPoint(
+                    date: representativePoint.date,
+                    leftValue: leftAverage,
+                    rightValue: rightAverage
+                )
+            }
+            .sorted { $0.date < $1.date }
     }
 }
 
@@ -1833,26 +1875,12 @@ private struct TimeMachineCurrentAnchorCard: View {
 private struct TimeMachineDualAxisTrendCard: View {
     let descriptor: TimeMachineCombinedTrendDescriptor
 
-    private var leftRange: ClosedRange<Double> {
-        paddedRange(for: descriptor.points.map(\.leftValue))
+    private var leftPoints: [TimeMachineSingleAxisPoint] {
+        descriptor.points.map { .init(date: $0.date, value: $0.leftValue) }
     }
 
-    private var rightRange: ClosedRange<Double> {
-        paddedRange(for: descriptor.points.map(\.rightValue))
-    }
-
-    private var normalizedPoints: [TimeMachineDualAxisNormalizedPoint] {
-        descriptor.points.map { point in
-            .init(
-                date: point.date,
-                leftNormalized: normalize(point.leftValue, in: leftRange),
-                rightNormalized: normalize(point.rightValue, in: rightRange)
-            )
-        }
-    }
-
-    private var latestNormalizedPoint: TimeMachineDualAxisNormalizedPoint? {
-        normalizedPoints.last
+    private var rightPoints: [TimeMachineSingleAxisPoint] {
+        descriptor.points.map { .init(date: $0.date, value: $0.rightValue) }
     }
 
     var body: some View {
@@ -1880,77 +1908,24 @@ private struct TimeMachineDualAxisTrendCard: View {
                 }
             }
 
-            if normalizedPoints.count >= 2 {
-                HStack(spacing: 10) {
-                    TimeMachineAxisStrip(
-                        topLabel: descriptor.leftAxisStyle.compactLabel(for: leftRange.upperBound),
-                        middleLabel: descriptor.leftAxisStyle.compactLabel(for: (leftRange.upperBound + leftRange.lowerBound) / 2),
-                        bottomLabel: descriptor.leftAxisStyle.compactLabel(for: leftRange.lowerBound),
-                        alignment: .leading,
-                        color: descriptor.leftColor
+            if leftPoints.count >= 2, rightPoints.count >= 2 {
+                VStack(spacing: 14) {
+                    TimeMachineMiniTrendChart(
+                        title: descriptor.leftTitle,
+                        points: leftPoints,
+                        color: descriptor.leftColor,
+                        axisStyle: descriptor.leftAxisStyle,
+                        dashed: false,
+                        showsXAxis: false
                     )
 
-                    Chart(normalizedPoints) { point in
-                        LineMark(
-                            x: .value("日期", point.date),
-                            y: .value("价格", point.leftNormalized)
-                        )
-                        .foregroundStyle(descriptor.leftColor)
-                        .lineStyle(StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
-                        .interpolationMethod(.linear)
-
-                        LineMark(
-                            x: .value("日期", point.date),
-                            y: .value("折算", point.rightNormalized)
-                        )
-                        .foregroundStyle(descriptor.rightColor)
-                        .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round, dash: [8, 5]))
-                        .interpolationMethod(.linear)
-
-                        if let latest = latestNormalizedPoint,
-                           latest.date == point.date {
-                            PointMark(
-                                x: .value("日期", latest.date),
-                                y: .value("价格", latest.leftNormalized)
-                            )
-                            .foregroundStyle(descriptor.leftColor)
-                            .symbolSize(42)
-
-                            PointMark(
-                                x: .value("日期", latest.date),
-                                y: .value("折算", latest.rightNormalized)
-                            )
-                            .foregroundStyle(descriptor.rightColor)
-                            .symbolSize(38)
-                        }
-                    }
-                    .frame(height: 164)
-                    .chartYScale(domain: 0 ... 1)
-                    .chartXAxis {
-                        AxisMarks(values: .automatic(desiredCount: 4)) { value in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
-                                .foregroundStyle(.white.opacity(0.06))
-                            AxisTick().foregroundStyle(.white.opacity(0.12))
-                            AxisValueLabel(format: .dateTime.month(.defaultDigits), centered: true)
-                                .foregroundStyle(AssetTheme.textSecondary)
-                        }
-                    }
-                    .chartYAxis {
-                        AxisMarks(values: [0, 0.5, 1.0]) { value in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
-                                .foregroundStyle(.white.opacity(0.05))
-                            AxisTick().foregroundStyle(.clear)
-                            AxisValueLabel("")
-                        }
-                    }
-                    .chartLegend(.hidden)
-
-                    TimeMachineAxisStrip(
-                        topLabel: descriptor.rightAxisStyle.compactLabel(for: rightRange.upperBound),
-                        middleLabel: descriptor.rightAxisStyle.compactLabel(for: (rightRange.upperBound + rightRange.lowerBound) / 2),
-                        bottomLabel: descriptor.rightAxisStyle.compactLabel(for: rightRange.lowerBound),
-                        alignment: .trailing,
-                        color: descriptor.rightColor
+                    TimeMachineMiniTrendChart(
+                        title: descriptor.rightTitle,
+                        points: rightPoints,
+                        color: descriptor.rightColor,
+                        axisStyle: descriptor.rightAxisStyle,
+                        dashed: true,
+                        showsXAxis: true
                     )
                 }
             } else {
@@ -1961,6 +1936,106 @@ private struct TimeMachineDualAxisTrendCard: View {
             }
         }
         .atmCardStyle()
+    }
+}
+
+private struct TimeMachineSingleAxisPoint: Identifiable {
+    let date: Date
+    let value: Double
+
+    var id: Date { date }
+}
+
+private struct TimeMachineMiniTrendChart: View {
+    let title: String
+    let points: [TimeMachineSingleAxisPoint]
+    let color: Color
+    let axisStyle: TimeMachineAxisValueStyle
+    let dashed: Bool
+    let showsXAxis: Bool
+
+    private var valueRange: ClosedRange<Double> {
+        paddedRange(for: points.map(\.value))
+    }
+
+    private var normalizedPoints: [TimeMachineSingleAxisPoint] {
+        points.map { point in
+            TimeMachineSingleAxisPoint(
+                date: point.date,
+                value: normalize(point.value, in: valueRange)
+            )
+        }
+    }
+
+    private var latestPoint: TimeMachineSingleAxisPoint? {
+        normalizedPoints.last
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(AssetTheme.textSecondary)
+
+            HStack(spacing: 10) {
+                TimeMachineAxisStrip(
+                    topLabel: axisStyle.compactLabel(for: valueRange.upperBound),
+                    middleLabel: axisStyle.compactLabel(for: (valueRange.upperBound + valueRange.lowerBound) / 2),
+                    bottomLabel: axisStyle.compactLabel(for: valueRange.lowerBound),
+                    alignment: .leading,
+                    color: color
+                )
+
+                Chart(normalizedPoints) { point in
+                    LineMark(
+                        x: .value("日期", point.date),
+                        y: .value(title, point.value)
+                    )
+                    .foregroundStyle(color)
+                    .lineStyle(
+                        StrokeStyle(
+                            lineWidth: dashed ? 1.5 : 1.8,
+                            lineCap: .round,
+                            lineJoin: .round,
+                            dash: dashed ? [6, 5] : []
+                        )
+                    )
+                    .interpolationMethod(.linear)
+
+                    if let latestPoint,
+                       latestPoint.date == point.date {
+                        PointMark(
+                            x: .value("日期", latestPoint.date),
+                            y: .value(title, latestPoint.value)
+                        )
+                        .foregroundStyle(color)
+                        .symbolSize(40)
+                    }
+                }
+                .frame(height: 104)
+                .chartYScale(domain: 0 ... 1)
+                .chartXAxis {
+                    if showsXAxis {
+                        AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                            AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                                .foregroundStyle(.white.opacity(0.06))
+                            AxisTick().foregroundStyle(.white.opacity(0.12))
+                            AxisValueLabel(format: .dateTime.month(.defaultDigits), centered: true)
+                                .foregroundStyle(AssetTheme.textSecondary)
+                        }
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(values: [0, 0.5, 1.0]) { _ in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                            .foregroundStyle(.white.opacity(0.05))
+                        AxisTick().foregroundStyle(.clear)
+                        AxisValueLabel("")
+                    }
+                }
+                .chartLegend(.hidden)
+            }
+        }
     }
 
     private func paddedRange(for values: [Double]) -> ClosedRange<Double> {
@@ -1977,14 +2052,6 @@ private struct TimeMachineDualAxisTrendCard: View {
         let span = max(range.upperBound - range.lowerBound, 0.0001)
         return (value - range.lowerBound) / span
     }
-}
-
-private struct TimeMachineDualAxisNormalizedPoint: Identifiable {
-    let date: Date
-    let leftNormalized: Double
-    let rightNormalized: Double
-
-    var id: Date { date }
 }
 
 private struct TimeMachineLegendMetric: View {
