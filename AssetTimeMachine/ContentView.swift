@@ -141,18 +141,19 @@ private struct DashboardView: View {
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("净资产")
-                        .font(.caption.weight(.semibold))
+                        .font(AppTypography.eyebrow)
                         .foregroundStyle(AssetTheme.textSecondary)
 
                     Text(netAssets.currencyString())
-                        .font(.system(size: 42, weight: .bold, design: .rounded))
+                        .font(AppTypography.heroValue)
+                        .monospacedDigit()
                         .foregroundStyle(AssetTheme.textPrimary)
                         .minimumScaleFactor(0.72)
                         .lineLimit(2)
 
                     HStack(spacing: 10) {
-                        InlineStat(text: "记录天数 \(snapshots.count)", color: AssetTheme.textSecondary)
-                        InlineStat(text: latestSnapshot.map { "最近 \($0.date.shortDateString)" } ?? "还没有快照", color: AssetTheme.goldSoft)
+                        InlineStat(text: "已记录 \(snapshots.count.formatted()) 天", color: AssetTheme.textSecondary)
+                        InlineStat(text: latestSnapshot.map { "最近更新 \($0.date.shortDateString)" } ?? "还没有快照", color: AssetTheme.goldSoft)
                     }
                 }
 
@@ -186,7 +187,7 @@ private struct DashboardView: View {
 
                 SummaryColumnMetric(
                     title: "条目",
-                    value: "\(entries.count)",
+                    value: entries.count.formatted(),
                     accent: AssetTheme.accentBlue
                 )
             }
@@ -240,14 +241,14 @@ private struct DashboardView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         Text(latestSnapshot.date.longDateString)
-                            .font(.headline)
+                            .font(AppTypography.rowTitle)
                             .foregroundStyle(AssetTheme.textPrimary)
                         Spacer()
-                        GoldChip(text: "\(latestSnapshot.entries.count) 项")
+                        GoldChip(text: "\(latestSnapshot.entries.count.formatted()) 项")
                     }
 
-                    Text("\(latestSnapshot.entries.count) 项")
-                        .font(.subheadline)
+                    Text("\(latestSnapshot.entries.count.formatted()) 项")
+                        .font(AppTypography.meta)
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
                 .atmCardStyle()
@@ -616,12 +617,13 @@ private struct SummaryColumnMetric: View {
     let accent: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.caption)
+                .font(AppTypography.eyebrow)
                 .foregroundStyle(AssetTheme.textSecondary)
             Text(value)
-                .font(.subheadline.weight(.semibold))
+                .font(AppTypography.metricValue)
+                .monospacedDigit()
                 .foregroundStyle(AssetTheme.textPrimary)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
@@ -1630,6 +1632,16 @@ private struct ATMHeader<Trailing: View>: View {
     }
 }
 
+private enum AppTypography {
+    static let eyebrow = Font.system(size: 13, weight: .semibold, design: .rounded)
+    static let meta = Font.system(size: 14, weight: .medium, design: .rounded)
+    static let sectionTitle = Font.system(size: 20, weight: .bold, design: .rounded)
+    static let heroValue = Font.system(size: 40, weight: .bold, design: .rounded)
+    static let rowTitle = Font.system(size: 18, weight: .semibold, design: .rounded)
+    static let rowValue = Font.system(size: 20, weight: .semibold, design: .rounded)
+    static let metricValue = Font.system(size: 18, weight: .semibold, design: .rounded)
+}
+
 private struct SectionTitle: View {
     let title: String
     let subtitle: String?
@@ -1642,12 +1654,12 @@ private struct SectionTitle: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.title3.weight(.bold))
+                .font(AppTypography.sectionTitle)
                 .foregroundStyle(AssetTheme.textPrimary)
 
             if let subtitle, !subtitle.isEmpty {
                 Text(subtitle)
-                    .font(.subheadline)
+                    .font(AppTypography.meta)
                     .foregroundStyle(AssetTheme.textSecondary)
             }
         }
@@ -1659,7 +1671,7 @@ private struct GoldChip: View {
 
     var body: some View {
         Text(text)
-            .font(.caption.weight(.semibold))
+            .font(AppTypography.eyebrow)
             .foregroundStyle(AssetTheme.goldSoft)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
@@ -1678,7 +1690,7 @@ private struct InlineStat: View {
                 .fill(color)
                 .frame(width: 5, height: 5)
             Text(text)
-                .font(.footnote)
+                .font(AppTypography.meta)
                 .foregroundStyle(color)
         }
     }
@@ -1692,11 +1704,14 @@ private struct CompactStat: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.caption)
+                .font(AppTypography.eyebrow)
                 .foregroundStyle(AssetTheme.textSecondary)
             Text(value)
-                .font(.subheadline.weight(.semibold))
+                .font(AppTypography.metricValue)
+                .monospacedDigit()
                 .foregroundStyle(AssetTheme.textPrimary)
+                .minimumScaleFactor(0.72)
+                .lineLimit(1)
             RoundedRectangle(cornerRadius: 999)
                 .fill(accent)
                 .frame(width: 28, height: 3)
@@ -1721,17 +1736,18 @@ private struct MarketPriceRow: View {
                 .frame(width: 10, height: 10)
 
             Text(displayName)
-                .font(.title3.weight(.semibold))
+                .font(AppTypography.rowTitle)
                 .foregroundStyle(AssetTheme.textPrimary)
 
             Spacer()
 
             VStack(alignment: .trailing, spacing: 6) {
                 Text(market.price.formatted(.number.precision(.fractionLength(2))))
-                    .font(.title2.weight(.bold))
+                    .font(AppTypography.rowValue)
+                    .monospacedDigit()
                     .foregroundStyle(AssetTheme.textPrimary)
                 Text(market.currency)
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.meta)
                     .foregroundStyle(AssetTheme.goldSoft)
             }
         }
@@ -1957,11 +1973,17 @@ private extension AssetGroup {
 
 private extension Date {
     var shortDateString: String {
-        formatted(date: .abbreviated, time: .omitted)
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "M月d日"
+        return formatter.string(from: self)
     }
 
     var longDateString: String {
-        formatted(date: .long, time: .omitted)
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "yyyy年M月d日"
+        return formatter.string(from: self)
     }
 
     var chineseLongDateString: String {
