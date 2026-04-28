@@ -6,6 +6,7 @@ private enum AppTab: Hashable {
     case dashboard
     case snapshots
     case timeMachine
+    case backtest
 }
 
 struct ContentView: View {
@@ -18,6 +19,9 @@ struct ContentView: View {
         }
         if arguments.contains("-openSnapshotsTab") {
             return .snapshots
+        }
+        if arguments.contains("-openBacktestTab") {
+            return .backtest
         }
         return .dashboard
     }()
@@ -42,6 +46,12 @@ struct ContentView: View {
                     Label("时光机", systemImage: "clock.arrow.circlepath")
                 }
                 .tag(AppTab.timeMachine)
+
+            BacktestView(marketStore: marketStore)
+                .tabItem {
+                    Label("回测", systemImage: "chart.xyaxis.line")
+                }
+                .tag(AppTab.backtest)
         }
         .tint(AssetTheme.gold)
         .task {
@@ -1063,6 +1073,327 @@ private struct TimeMachineView: View {
     }
 }
 
+private struct BacktestSeriesPoint: Identifiable {
+    let date: Date
+    let portfolioValue: Double
+
+    var id: Date { date }
+}
+
+private struct BacktestReport {
+    let points: [BacktestSeriesPoint]
+    let totalReturn: Double
+    let annualizedReturn: Double?
+    let maxDrawdown: Double
+    let annualizedVolatility: Double?
+    let sharpeRatio: Double?
+}
+
+private enum BacktestEngine {
+    static func run(cashWeight: Double, goldWeight: Double, indexWeight: Double, goldSeries: PublicHistorySeries?, indexSeries: PublicHistorySeries?) -> BacktestReport? {
+        guard let goldSeries, let indexSeries else { return nil }
+
+        let goldMap = Dictionary(uniqueKeysWithValues: zip(goldSeries.dates, goldSeries.prices))
+        let indexMap = Dictionary(uniqueKeysWithValues: zip(indexSeries.dates, indexSeries.prices))
+        let sharedDates = Array(Set(goldMap.keys).intersection(indexMap.keys)).sorted()
+        guard sharedDates.count >= 2 else { return nil }
+
+        let normalizedCash = max(cashWeight, 0)
+        let normalizedGold = max(goldWeight, 0)
+        let normalizedIndex = max(indexWeight, 0)
+        let totalWeight = normalizedCash + normalizedGold + normalizedIndex
+        guard totalWeight > 0 else { return nil }
+
+        let cw = normalizedCash / totalWeight
+        let gw = normalizedGold / totalWeight
+        let iw = normalizedIndex / totalWeight
+
+        guard let firstGold = goldMap[sharedDates[0]], let firstIndex = indexMap[sharedDates[0]], firstGold > 0, firstIndex > 0 else {
+            return nil
+        }
+
+        var points: [BacktestSeriesPoint] = []
+        var returns: [Double] = []
+        var previousValue: Double?
+        var peakValue: Double = 1
+        var maxDrawdown: Double = 0
+
+        for dateText in sharedDates {
+            guard let goldPrice = goldMap[dateText], let indexPrice = indexMap[dateText], let date = historicalSeriesDateStatic(from: dateText) else { continue }
+            let portfolioValue = cw * 1 + gw * (goldPrice / firstGold) + iw * (indexPrice / firstIndex)
+            points.append(.init(date: date, portfolioValue: portfolioValue))
+
+            if let previousValue, previousValue > 0 {
+                returns.append((portfolioValue / previousValue) - 1)
+            }
+            previousValue = portfolioValue
+            peakValue = max(peakValue, portfolioValue)
+            if peakValue > 0 {
+                maxDrawdown = max(maxDrawdown, (peakValue - portfolioValue) / peakValue)
+            }
+        }
+
+        guard let first = points.first, let last = points.last, first.portfolioValue > 0 else { return nil }
+        let totalReturn = (last.portfolioValue / first.portfolioValue) - 1
+        let daySpan = max(Calendar.current.dateComponents([.day], from: first.date, to: last.date).day ?? 0, 1)
+        let years = Double(daySpan) / 365.25
+        let annualizedReturn = years > 0 ? pow(last.portfolioValue / first.portfolioValue, 1 / years) - 1 : nil
+
+        let mean = returns.isEmpty ? nil : returns.reduce(0, +) / Double(returns.count)
+        let variance = returns.count > 1 && mean != nil
+            ? returns.reduce(0) { $0 + pow($1 - mean!, 2) } / Double(returns.count - 1)
+            : nil
+        let dailyVolatility = variance.map { sqrt($0) }
+        let annualizedVolatility = dailyVolatility.map { $0 * sqrt(252) }
+        let sharpeRatio: Double?
+        if let mean, let dailyVolatility, dailyVolatility > 0 {
+            sharpeRatio = (mean * 252) / (dailyVolatility * sqrt(252))
+        } else {
+            sharpeRatio = nil
+        }
+
+        return BacktestReport(
+            points: points,
+            totalReturn: totalReturn,
+            annualizedReturn: annualizedReturn,
+            maxDrawdown: maxDrawdown,
+            annualizedVolatility: annualizedVolatility,
+            sharpeRatio: sharpeRatio
+        )
+    }
+
+    private static func historicalSeriesDateStatic(from text: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: text)
+    }
+}
+
+private struct BacktestView: View {
+    @ObservedObject var marketStore: RemoteMarketStore
+    @State private var cashWeight: Double = 30
+    @State private var goldWeight: Double = 20
+    @State private var indexWeight: Double = 50
+    @State private var selectedIndexSymbol: String = "sp500"
+    @State private var animationProgress: Double = 0
+
+    private let indexOptions: [(symbol: String, title: String)] = [
+        ("sp500", "标普500"),
+        ("nasdaq", "纳指"),
+        ("dowjones", "道指"),
+        ("hsi", "恒生"),
+        ("nikkei", "日经225"),
+        ("csi300", "沪深300"),
+        ("shanghai_composite", "上证综指")
+    ]
+
+    private var report: BacktestReport? {
+        BacktestEngine.run(
+            cashWeight: cashWeight,
+            goldWeight: goldWeight,
+            indexWeight: indexWeight,
+            goldSeries: marketStore.history(for: "gold_cny"),
+            indexSeries: marketStore.history(for: selectedIndexSymbol)
+        )
+    }
+
+    private var animatedPoints: [BacktestSeriesPoint] {
+        guard let report else { return [] }
+        let count = max(Int(Double(report.points.count) * animationProgress), min(report.points.count, 2))
+        return Array(report.points.prefix(count))
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AssetTheme.pageGradient.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        ATMHeader(title: "量化回测", subtitle: "简易版，按现金 + 黄金 + 指数持仓比例，回看从 2000 年到今天的资产曲线。")
+
+                        VStack(alignment: .leading, spacing: 14) {
+                            BacktestWeightRow(title: "现金", value: $cashWeight)
+                            BacktestWeightRow(title: "黄金", value: $goldWeight)
+                            BacktestWeightRow(title: "指数", value: $indexWeight)
+
+                            Picker("指数", selection: $selectedIndexSymbol) {
+                                ForEach(indexOptions, id: \.symbol) { option in
+                                    Text(option.title).tag(option.symbol)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                        .atmCardStyle()
+
+                        if let report {
+                            VStack(alignment: .leading, spacing: 14) {
+                                HStack {
+                                    Text("组合净值")
+                                        .font(.headline.weight(.bold))
+                                        .foregroundStyle(AssetTheme.textPrimary)
+                                    Spacer()
+                                    Text(indexOptions.first(where: { $0.symbol == selectedIndexSymbol })?.title ?? selectedIndexSymbol)
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(AssetTheme.goldSoft)
+                                }
+
+                                Chart(animatedPoints) { point in
+                                    AreaMark(
+                                        x: .value("日期", point.date),
+                                        y: .value("组合净值", point.portfolioValue)
+                                    )
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            colors: [AssetTheme.gold.opacity(0.32), AssetTheme.gold.opacity(0.04)],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
+
+                                    LineMark(
+                                        x: .value("日期", point.date),
+                                        y: .value("组合净值", point.portfolioValue)
+                                    )
+                                    .foregroundStyle(AssetTheme.gold)
+                                    .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                                }
+                                .frame(height: 220)
+                                .chartXAxis {
+                                    AxisMarks(values: .automatic(desiredCount: 4)) {
+                                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                                            .foregroundStyle(AssetTheme.border.opacity(0.35))
+                                        AxisValueLabel(format: .dateTime.year())
+                                            .foregroundStyle(AssetTheme.textSecondary)
+                                    }
+                                }
+                                .chartYAxis {
+                                    AxisMarks(position: .leading) { value in
+                                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                                            .foregroundStyle(AssetTheme.border.opacity(0.35))
+                                        AxisValueLabel {
+                                            if let doubleValue = value.as(Double.self) {
+                                                Text(String(format: "%.2fx", doubleValue))
+                                                    .foregroundStyle(AssetTheme.textSecondary)
+                                            }
+                                        }
+                                    }
+                                }
+                                .chartLegend(.hidden)
+                            }
+                            .atmCardStyle()
+                            .onAppear { restartAnimation() }
+                            .onChange(of: selectedIndexSymbol) { _, _ in restartAnimation() }
+                            .onChange(of: cashWeight) { _, _ in restartAnimation() }
+                            .onChange(of: goldWeight) { _, _ in restartAnimation() }
+                            .onChange(of: indexWeight) { _, _ in restartAnimation() }
+
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("分析报告")
+                                    .font(.headline.weight(.bold))
+                                    .foregroundStyle(AssetTheme.textPrimary)
+
+                                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                                    BacktestMetricCard(title: "总收益", value: report.totalReturn.percentString())
+                                    BacktestMetricCard(title: "年化收益", value: report.annualizedReturn?.percentString() ?? "--")
+                                    BacktestMetricCard(title: "最大回撤", value: report.maxDrawdown.percentString(), accent: AssetTheme.negative)
+                                    BacktestMetricCard(title: "年化波动", value: report.annualizedVolatility?.percentString() ?? "--")
+                                    BacktestMetricCard(title: "夏普比率", value: report.sharpeRatio.map { String(format: "%.2f", $0) } ?? "--")
+                                    BacktestMetricCard(title: "区间", value: intervalLabel(for: report))
+                                }
+
+                                Text(reportSummary(for: report))
+                                    .font(.footnote)
+                                    .foregroundStyle(AssetTheme.textSecondary)
+                                    .lineSpacing(4)
+                            }
+                            .atmCardStyle()
+                        } else {
+                            EmptyStateCard(
+                                title: "回测数据还没齐",
+                                message: "需要黄金和指数的完整历史数据才能跑这个简易回测。",
+                                systemImage: "chart.line.text.clipboard"
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
+                    .padding(.bottom, 136)
+                }
+            }
+            .toolbar(.hidden, for: .navigationBar)
+        }
+    }
+
+    private func restartAnimation() {
+        animationProgress = 0.02
+        withAnimation(.easeOut(duration: 1.6)) {
+            animationProgress = 1
+        }
+    }
+
+    private func intervalLabel(for report: BacktestReport) -> String {
+        guard let first = report.points.first?.date, let last = report.points.last?.date else { return "--" }
+        return "\(first.shortDateString) - \(last.shortDateString)"
+    }
+
+    private func reportSummary(for report: BacktestReport) -> String {
+        let indexName = indexOptions.first(where: { $0.symbol == selectedIndexSymbol })?.title ?? selectedIndexSymbol
+        return "这个简易回测假设从 2000-01-01 起按固定权重长期持有，不做再平衡摩擦、税费和滑点处理。当前组合是现金 \(Int(cashWeight))%、黄金 \(Int(goldWeight))%、\(indexName) \(Int(indexWeight))%。它更适合做方向判断和长期感受，不适合当成真实交易收益承诺。"
+    }
+}
+
+private struct BacktestWeightRow: View {
+    let title: String
+    @Binding var value: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+                Spacer()
+                Text("\(Int(value))%")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(AssetTheme.goldSoft)
+            }
+
+            Slider(value: $value, in: 0...100, step: 1)
+                .tint(AssetTheme.gold)
+        }
+    }
+}
+
+private struct BacktestMetricCard: View {
+    let title: String
+    let value: String
+    var accent: Color = AssetTheme.gold
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(AssetTheme.textSecondary)
+            Text(value)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(accent)
+                .minimumScaleFactor(0.72)
+                .lineLimit(1)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.7), lineWidth: 1)
+        )
+    }
+}
+
 private enum TimeMachineRange: String, CaseIterable, Identifiable {
     case sixMonths
     case oneYear
@@ -1943,130 +2274,10 @@ private struct TimeMachineDualAxisTrendCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(descriptor.title)
-                        .font(.headline.weight(.bold))
-                        .foregroundStyle(AssetTheme.textPrimary)
-
-                    if let subtitle = descriptor.subtitle {
-                        Text(subtitle)
-                            .font(.caption)
-                            .foregroundStyle(AssetTheme.textSecondary)
-                    }
-                }
-
-                Spacer(minLength: 12)
-
-                VStack(alignment: .trailing, spacing: 8) {
-                    TimeMachineLegendMetric(
-                        title: descriptor.leftTitle,
-                        value: descriptor.leftLatestLabel,
-                        color: descriptor.leftColor,
-                        dashed: false
-                    )
-                    if descriptor.showsComparisonLine {
-                        TimeMachineLegendMetric(
-                            title: descriptor.rightTitle,
-                            value: descriptor.rightLatestLabel,
-                            color: descriptor.rightColor,
-                            dashed: true
-                        )
-                    }
-                }
-            }
+            header
 
             if descriptor.points.count >= 2 {
-                Chart(descriptor.points) { point in
-                    LineMark(
-                        x: .value("日期", point.date),
-                        y: .value(descriptor.leftTitle, point.leftValue)
-                    )
-                    .foregroundStyle(descriptor.leftColor)
-                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                    .interpolationMethod(.linear)
-
-                    if descriptor.showsComparisonLine {
-                        LineMark(
-                            x: .value("日期", point.date),
-                            y: .value(descriptor.rightTitle, point.rightValue)
-                        )
-                        .foregroundStyle(descriptor.rightColor)
-                        .lineStyle(StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round, dash: [6, 5]))
-                        .interpolationMethod(.linear)
-                    }
-
-                    if let latestPoint, latestPoint.date == point.date {
-                        PointMark(
-                            x: .value("日期", latestPoint.date),
-                            y: .value(descriptor.leftTitle, latestPoint.leftValue)
-                        )
-                        .foregroundStyle(descriptor.leftColor)
-                        .symbolSize(42)
-
-                        if descriptor.showsComparisonLine {
-                            PointMark(
-                                x: .value("日期", latestPoint.date),
-                                y: .value(descriptor.rightTitle, latestPoint.rightValue)
-                            )
-                            .foregroundStyle(descriptor.rightColor)
-                            .symbolSize(36)
-                        }
-                    }
-                }
-                .frame(height: 180)
-                .chartYAxis {
-                    AxisMarks(position: .leading, values: axisTickValues(for: leftDomain)) { value in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
-                            .foregroundStyle(AssetTheme.border.opacity(0.45))
-                        AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
-                            .foregroundStyle(descriptor.leftColor.opacity(0.9))
-                        AxisValueLabel {
-                            if let doubleValue = value.as(Double.self) {
-                                Text(descriptor.leftAxisStyle.compactLabel(for: doubleValue))
-                                    .foregroundStyle(descriptor.leftColor)
-                            }
-                        }
-                    }
-                }
-                .chartYAxis(.trailing) {
-                    if descriptor.showsComparisonLine {
-                        AxisMarks(position: .trailing, values: axisTickValues(for: rightDomain)) { value in
-                            AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
-                                .foregroundStyle(descriptor.rightColor.opacity(0.9))
-                            AxisValueLabel {
-                                if let doubleValue = value.as(Double.self) {
-                                    Text(descriptor.rightAxisStyle.compactLabel(for: doubleValue))
-                                        .foregroundStyle(descriptor.rightColor)
-                                }
-                            }
-                        }
-                    }
-                }
-                .chartYScale(domain: leftDomain)
-                .chartXAxis {
-                    AxisMarks(values: .automatic(desiredCount: 4)) { value in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
-                            .foregroundStyle(AssetTheme.border.opacity(0.35))
-                        AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
-                            .foregroundStyle(AssetTheme.border.opacity(0.7))
-                        AxisValueLabel(format: .dateTime.month().day())
-                            .foregroundStyle(AssetTheme.textSecondary)
-                    }
-                }
-                .chartLegend(.hidden)
-                .chartOverlay { proxy in
-                    GeometryReader { geometry in
-                        if descriptor.showsComparisonLine {
-                            Path { path in
-                                let frame = geometry[proxy.plotAreaFrame]
-                                path.move(to: CGPoint(x: frame.maxX + 8, y: frame.minY))
-                                path.addLine(to: CGPoint(x: frame.maxX + 8, y: frame.maxY))
-                            }
-                            .stroke(descriptor.rightColor.opacity(0.15), style: StrokeStyle(lineWidth: 1))
-                        }
-                    }
-                }
+                dualAxisChart
             } else {
                 Text("记录不足")
                     .font(.caption)
@@ -2075,11 +2286,157 @@ private struct TimeMachineDualAxisTrendCard: View {
             }
         }
         .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
         )
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(descriptor.title)
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                if let subtitle = descriptor.subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
+            }
+
+            Spacer(minLength: 12)
+
+            VStack(alignment: .trailing, spacing: 8) {
+                TimeMachineLegendMetric(
+                    title: descriptor.leftTitle,
+                    value: descriptor.leftLatestLabel,
+                    color: descriptor.leftColor,
+                    dashed: false
+                )
+                if descriptor.showsComparisonLine {
+                    TimeMachineLegendMetric(
+                        title: descriptor.rightTitle,
+                        value: descriptor.rightLatestLabel,
+                        color: descriptor.rightColor,
+                        dashed: true
+                    )
+                }
+            }
+        }
+    }
+
+    private var dualAxisChart: some View {
+        GeometryReader { geometry in
+            let leftWidth: CGFloat = descriptor.showsComparisonLine ? 44 : 36
+            let rightWidth: CGFloat = descriptor.showsComparisonLine ? 44 : 0
+            let chartWidth = max(geometry.size.width - leftWidth - rightWidth - 8, 120)
+
+            HStack(spacing: 4) {
+                TimeMachineAxisStrip(
+                    topLabel: descriptor.leftAxisStyle.compactLabel(for: leftDomain.upperBound),
+                    middleLabel: descriptor.leftAxisStyle.compactLabel(for: (leftDomain.lowerBound + leftDomain.upperBound) / 2),
+                    bottomLabel: descriptor.leftAxisStyle.compactLabel(for: leftDomain.lowerBound),
+                    alignment: .leading,
+                    color: descriptor.leftColor
+                )
+                .frame(width: leftWidth)
+
+                Chart {
+                    leftSeriesMarks
+                    if descriptor.showsComparisonLine {
+                        rightSeriesMarksNormalized
+                    }
+                    latestPointMarksNormalized
+                }
+                .frame(width: chartWidth, height: 180)
+                .clipped()
+                .chartYScale(domain: 0...1)
+                .chartYAxis(.hidden)
+                .chartXAxis { bottomAxisMarks }
+                .chartLegend(.hidden)
+
+                if descriptor.showsComparisonLine {
+                    TimeMachineAxisStrip(
+                        topLabel: descriptor.rightAxisStyle.compactLabel(for: rightDomain.upperBound),
+                        middleLabel: descriptor.rightAxisStyle.compactLabel(for: (rightDomain.lowerBound + rightDomain.upperBound) / 2),
+                        bottomLabel: descriptor.rightAxisStyle.compactLabel(for: rightDomain.lowerBound),
+                        alignment: .trailing,
+                        color: descriptor.rightColor
+                    )
+                    .frame(width: rightWidth)
+                }
+            }
+        }
+        .frame(height: 180)
+    }
+
+    @ChartContentBuilder
+    private var leftSeriesMarks: some ChartContent {
+        ForEach(descriptor.points) { point in
+            LineMark(
+                x: .value("日期", point.date),
+                y: .value(descriptor.leftTitle, point.leftValue)
+            )
+            .foregroundStyle(descriptor.leftColor)
+            .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            .interpolationMethod(.linear)
+        }
+    }
+
+    @ChartContentBuilder
+    private var rightSeriesMarksNormalized: some ChartContent {
+        ForEach(descriptor.points) { point in
+            LineMark(
+                x: .value("日期", point.date),
+                y: .value(descriptor.rightTitle, normalized(point.rightValue, in: rightDomain))
+            )
+            .foregroundStyle(descriptor.rightColor)
+            .lineStyle(StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round, dash: [6, 5]))
+            .interpolationMethod(.linear)
+        }
+    }
+
+    @ChartContentBuilder
+    private var latestPointMarksNormalized: some ChartContent {
+        if let latestPoint {
+            PointMark(
+                x: .value("日期", latestPoint.date),
+                y: .value(descriptor.leftTitle, normalized(latestPoint.leftValue, in: leftDomain))
+            )
+            .foregroundStyle(descriptor.leftColor)
+            .symbolSize(42)
+
+            if descriptor.showsComparisonLine {
+                PointMark(
+                    x: .value("日期", latestPoint.date),
+                    y: .value(descriptor.rightTitle, normalized(latestPoint.rightValue, in: rightDomain))
+                )
+                .foregroundStyle(descriptor.rightColor)
+                .symbolSize(36)
+            }
+        }
+    }
+
+    private var bottomAxisMarks: some AxisContent {
+        AxisMarks(values: .automatic(desiredCount: 4)) { value in
+            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                .foregroundStyle(AssetTheme.border.opacity(0.35))
+            AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
+                .foregroundStyle(AssetTheme.border.opacity(0.7))
+            AxisValueLabel(format: .dateTime.month().day())
+                .foregroundStyle(AssetTheme.textSecondary)
+        }
+    }
+
+    private func normalized(_ value: Double, in domain: ClosedRange<Double>) -> Double {
+        let span = domain.upperBound - domain.lowerBound
+        guard span.isFinite, span > 0 else { return 0.5 }
+        return (value - domain.lowerBound) / span
     }
 
     private func paddedDomain(values: [Double]) -> ClosedRange<Double> {
@@ -2554,6 +2911,15 @@ private extension Double {
         default:
             return formatter.string(from: NSNumber(value: self)) ?? String(self)
         }
+    }
+
+    func percentString(maxFractionDigits: Int = 2) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .percent
+        formatter.maximumFractionDigits = maxFractionDigits
+        formatter.minimumFractionDigits = 0
+        formatter.locale = Locale(identifier: "zh_CN")
+        return formatter.string(from: NSNumber(value: self)) ?? String(format: "%.2f%%", self * 100)
     }
 }
 

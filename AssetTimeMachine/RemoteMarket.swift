@@ -251,7 +251,7 @@ final class RemoteMarketStore: ObservableObject {
         }
 
         do {
-            let history = try await RemoteMarketClient.fetchHistory(symbols: ["nasdaq", "sp500", "dowjones", "hsi", "nikkei", "csi300", "shanghai_composite"], period: "1year")
+            let history = try await RemoteMarketClient.fetchHistory(symbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "hsi", "nikkei", "csi300", "shanghai_composite"], period: "all")
             self.historySeries = Dictionary(uniqueKeysWithValues: history.series.map { ($0.symbol, $0) })
         } catch {
             if errorMessage == nil {
