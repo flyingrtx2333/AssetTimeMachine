@@ -1085,6 +1085,7 @@ private struct BacktestReport {
     let totalReturn: Double
     let annualizedReturn: Double?
     let maxDrawdown: Double
+    let maxDrawdownRecoveryDays: Int?
     let annualizedVolatility: Double?
     let sharpeRatio: Double?
 }
@@ -1130,7 +1131,10 @@ private enum BacktestEngine {
         var returns: [Double] = []
         var previousValue: Double?
         var peakValue: Double = 1
+        var peakDate: Date?
         var maxDrawdown: Double = 0
+        var maxDrawdownPeakValue: Double?
+        var maxDrawdownPeakDate: Date?
 
         for dateText in sharedDates {
             guard let date = historicalSeriesDateStatic(from: dateText) else { continue }
@@ -1158,9 +1162,19 @@ private enum BacktestEngine {
                 returns.append((portfolioValue / previousValue) - 1)
             }
             previousValue = portfolioValue
-            peakValue = max(peakValue, portfolioValue)
+
+            if peakDate == nil || portfolioValue >= peakValue {
+                peakValue = portfolioValue
+                peakDate = date
+            }
+
             if peakValue > 0 {
-                maxDrawdown = max(maxDrawdown, (peakValue - portfolioValue) / peakValue)
+                let drawdown = (peakValue - portfolioValue) / peakValue
+                if drawdown > maxDrawdown {
+                    maxDrawdown = drawdown
+                    maxDrawdownPeakValue = peakValue
+                    maxDrawdownPeakDate = peakDate
+                }
             }
         }
 
@@ -1183,11 +1197,22 @@ private enum BacktestEngine {
             sharpeRatio = nil
         }
 
+        let maxDrawdownRecoveryDays: Int?
+        if maxDrawdown > 0,
+           let maxDrawdownPeakValue,
+           let maxDrawdownPeakDate,
+           let recoveryPoint = points.first(where: { $0.date > maxDrawdownPeakDate && $0.portfolioValue >= maxDrawdownPeakValue }) {
+            maxDrawdownRecoveryDays = Calendar.current.dateComponents([.day], from: maxDrawdownPeakDate, to: recoveryPoint.date).day
+        } else {
+            maxDrawdownRecoveryDays = nil
+        }
+
         return BacktestReport(
             points: points,
             totalReturn: totalReturn,
             annualizedReturn: annualizedReturn,
             maxDrawdown: maxDrawdown,
+            maxDrawdownRecoveryDays: maxDrawdownRecoveryDays,
             annualizedVolatility: annualizedVolatility,
             sharpeRatio: sharpeRatio
         )
@@ -1385,6 +1410,7 @@ private struct BacktestView: View {
                                         BacktestMetricCard(title: "总收益", value: report.totalReturn.percentString())
                                         BacktestMetricCard(title: "年化收益", value: report.annualizedReturn?.percentString() ?? "--")
                                         BacktestMetricCard(title: "最大回撤", value: report.maxDrawdown.percentString(), accent: AssetTheme.negative)
+                                        BacktestMetricCard(title: "修复时间", value: recoveryTimeLabel(for: report))
                                         BacktestMetricCard(title: "年化波动", value: report.annualizedVolatility?.percentString() ?? "--")
                                         BacktestMetricCard(title: "夏普比率", value: report.sharpeRatio.map { String(format: "%.2f", $0) } ?? "--")
                                         BacktestMetricCard(title: "区间", value: intervalLabel(for: report))
@@ -1425,6 +1451,16 @@ private struct BacktestView: View {
     private func intervalLabel(for report: BacktestReport) -> String {
         guard let first = report.points.first?.date, let last = report.points.last?.date else { return "--" }
         return "\(first.shortDateString) - \(last.shortDateString)"
+    }
+
+    private func recoveryTimeLabel(for report: BacktestReport) -> String {
+        guard report.maxDrawdown > 0 else { return "--" }
+        guard let days = report.maxDrawdownRecoveryDays else { return "未修复" }
+        if days >= 365 {
+            let years = Double(days) / 365.25
+            return String(format: "%.1f年", years)
+        }
+        return "\(days)天"
     }
 
     @ViewBuilder
