@@ -251,11 +251,23 @@ final class RemoteMarketStore: ObservableObject {
         }
 
         do {
-            let history = try await RemoteMarketClient.fetchHistory(symbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "hsi", "nikkei", "csi300", "shanghai_composite"], period: "all")
-            self.historySeries = Dictionary(uniqueKeysWithValues: history.series.map { ($0.symbol, $0) })
-        } catch {
-            if errorMessage == nil {
-                errorMessage = error.localizedDescription
+            let historyBatches = [
+                ["gold_cny", "nasdaq", "sp500"],
+                ["hsi", "nikkei", "csi300", "shanghai_composite"],
+                ["dowjones"]
+            ]
+
+            var mergedSeries: [PublicHistorySeries] = []
+            for batch in historyBatches {
+                if let response = try? await RemoteMarketClient.fetchHistory(symbols: batch, period: "all") {
+                    mergedSeries.append(contentsOf: response.series)
+                }
+            }
+
+            if !mergedSeries.isEmpty {
+                self.historySeries = Dictionary(uniqueKeysWithValues: mergedSeries.map { ($0.symbol, $0) })
+            } else if errorMessage == nil {
+                errorMessage = "历史数据加载失败"
             }
         }
     }

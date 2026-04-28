@@ -1091,13 +1091,6 @@ private struct BacktestReport {
 
 private enum BacktestEngine {
     static func run(cashWeight: Double, goldWeight: Double, indexWeight: Double, goldSeries: PublicHistorySeries?, indexSeries: PublicHistorySeries?) -> BacktestReport? {
-        guard let goldSeries, let indexSeries else { return nil }
-
-        let goldMap = Dictionary(uniqueKeysWithValues: zip(goldSeries.dates, goldSeries.prices))
-        let indexMap = Dictionary(uniqueKeysWithValues: zip(indexSeries.dates, indexSeries.prices))
-        let sharedDates = Array(Set(goldMap.keys).intersection(indexMap.keys)).sorted()
-        guard sharedDates.count >= 2 else { return nil }
-
         let normalizedCash = max(cashWeight, 0)
         let normalizedGold = max(goldWeight, 0)
         let normalizedIndex = max(indexWeight, 0)
@@ -1108,9 +1101,30 @@ private enum BacktestEngine {
         let gw = normalizedGold / totalWeight
         let iw = normalizedIndex / totalWeight
 
-        guard let firstGold = goldMap[sharedDates[0]], let firstIndex = indexMap[sharedDates[0]], firstGold > 0, firstIndex > 0 else {
-            return nil
+        if gw > 0, goldSeries == nil { return nil }
+        if iw > 0, indexSeries == nil { return nil }
+
+        let goldMap = goldSeries.map { Dictionary(uniqueKeysWithValues: zip($0.dates, $0.prices)) } ?? [:]
+        let indexMap = indexSeries.map { Dictionary(uniqueKeysWithValues: zip($0.dates, $0.prices)) } ?? [:]
+
+        let sharedDates: [String]
+        if gw > 0, iw > 0 {
+            sharedDates = Array(Set(goldMap.keys).intersection(indexMap.keys)).sorted()
+        } else if gw > 0 {
+            sharedDates = goldMap.keys.sorted()
+        } else if iw > 0 {
+            sharedDates = indexMap.keys.sorted()
+        } else if !goldMap.isEmpty {
+            sharedDates = goldMap.keys.sorted()
+        } else {
+            sharedDates = indexMap.keys.sorted()
         }
+        guard sharedDates.count >= 2 else { return nil }
+
+        let firstGold = gw > 0 ? goldMap[sharedDates[0]] : 1
+        let firstIndex = iw > 0 ? indexMap[sharedDates[0]] : 1
+        if gw > 0, firstGold == nil || firstGold ?? 0 <= 0 { return nil }
+        if iw > 0, firstIndex == nil || firstIndex ?? 0 <= 0 { return nil }
 
         var points: [BacktestSeriesPoint] = []
         var returns: [Double] = []
@@ -1119,8 +1133,25 @@ private enum BacktestEngine {
         var maxDrawdown: Double = 0
 
         for dateText in sharedDates {
-            guard let goldPrice = goldMap[dateText], let indexPrice = indexMap[dateText], let date = historicalSeriesDateStatic(from: dateText) else { continue }
-            let portfolioValue = cw * 1 + gw * (goldPrice / firstGold) + iw * (indexPrice / firstIndex)
+            guard let date = historicalSeriesDateStatic(from: dateText) else { continue }
+
+            let goldComponent: Double
+            if gw > 0 {
+                guard let goldPrice = goldMap[dateText], let firstGold, firstGold > 0 else { continue }
+                goldComponent = gw * (goldPrice / firstGold)
+            } else {
+                goldComponent = 0
+            }
+
+            let indexComponent: Double
+            if iw > 0 {
+                guard let indexPrice = indexMap[dateText], let firstIndex, firstIndex > 0 else { continue }
+                indexComponent = iw * (indexPrice / firstIndex)
+            } else {
+                indexComponent = 0
+            }
+
+            let portfolioValue = cw + goldComponent + indexComponent
             points.append(.init(date: date, portfolioValue: portfolioValue))
 
             if let previousValue, previousValue > 0 {
@@ -1188,6 +1219,7 @@ private struct BacktestView: View {
     @State private var selectedIndexSymbol: String = "sp500"
     @State private var animationProgress: Double = 0
     @State private var showsAllocationSheet = false
+    @State private var hasStartedBacktest = ProcessInfo.processInfo.arguments.contains("-autoStartBacktest")
 
     private let indexOptions: [(symbol: String, title: String)] = [
         ("sp500", "标普500"),
@@ -1200,7 +1232,8 @@ private struct BacktestView: View {
     ]
 
     private var report: BacktestReport? {
-        BacktestEngine.run(
+        guard hasStartedBacktest else { return nil }
+        return BacktestEngine.run(
             cashWeight: cashWeight,
             goldWeight: goldWeight,
             indexWeight: indexWeight,
@@ -1228,140 +1261,139 @@ private struct BacktestView: View {
             ZStack {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Button {
-                            showsAllocationSheet = true
-                        } label: {
-                            VStack(alignment: .leading, spacing: 14) {
-                                HStack {
-                                    Text("当前配置")
-                                        .font(.headline.weight(.bold))
-                                        .foregroundStyle(AssetTheme.textPrimary)
-                                    Spacer()
-                                    Text("点击调整")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(AssetTheme.goldSoft)
-                                }
+                GeometryReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 14) {
+                            if report == nil {
+                                Spacer(minLength: 0)
+                            }
 
-                                HStack(spacing: 18) {
-                                    Chart(allocationSlices) { slice in
-                                        SectorMark(
-                                            angle: .value("占比", slice.amount),
-                                            innerRadius: .ratio(0.58),
-                                            angularInset: 2
-                                        )
-                                        .foregroundStyle(slice.color)
+                            VStack(spacing: 20) {
+                                Button {
+                                    showsAllocationSheet = true
+                                } label: {
+                                    HStack(alignment: .center, spacing: 18) {
+                                        backtestLegendColumn(Array(allocationSlices.prefix(2)), alignment: .trailing)
+
+                                        Chart(allocationSlices) { slice in
+                                            SectorMark(
+                                                angle: .value("占比", slice.amount),
+                                                innerRadius: .ratio(0.58),
+                                                angularInset: 2
+                                            )
+                                            .foregroundStyle(slice.color)
+                                        }
+                                        .frame(width: 176, height: 176)
+                                        .chartLegend(.hidden)
+
+                                        backtestLegendColumn(Array(allocationSlices.dropFirst(2)), alignment: .leading)
                                     }
-                                    .frame(width: 132, height: 132)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(minHeight: 200)
+                                }
+                                .buttonStyle(.plain)
+
+                                if report == nil {
+                                    Button {
+                                        hasStartedBacktest = true
+                                        restartAnimation()
+                                    } label: {
+                                        Text("开始回测")
+                                            .font(.subheadline.weight(.bold))
+                                            .foregroundStyle(.black)
+                                            .padding(.horizontal, 22)
+                                            .padding(.vertical, 12)
+                                            .background(AssetTheme.gold, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+
+                            if report == nil {
+                                Spacer(minLength: 0)
+                            }
+
+                            if let report {
+                                VStack(alignment: .leading, spacing: 14) {
+                                    HStack {
+                                        Text("组合净值")
+                                            .font(.headline.weight(.bold))
+                                            .foregroundStyle(AssetTheme.textPrimary)
+                                        Spacer()
+                                        Text(indexOptions.first(where: { $0.symbol == selectedIndexSymbol })?.title ?? selectedIndexSymbol)
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(AssetTheme.goldSoft)
+                                    }
+
+                                    Chart(animatedPoints) { point in
+                                        AreaMark(
+                                            x: .value("日期", point.date),
+                                            y: .value("组合净值", point.portfolioValue)
+                                        )
+                                        .foregroundStyle(
+                                            LinearGradient(
+                                                colors: [AssetTheme.gold.opacity(0.32), AssetTheme.gold.opacity(0.04)],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            )
+                                        )
+
+                                        LineMark(
+                                            x: .value("日期", point.date),
+                                            y: .value("组合净值", point.portfolioValue)
+                                        )
+                                        .foregroundStyle(AssetTheme.gold)
+                                        .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                                    }
+                                    .frame(height: 220)
+                                    .chartXAxis {
+                                        AxisMarks(values: .automatic(desiredCount: 4)) {
+                                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                                                .foregroundStyle(AssetTheme.border.opacity(0.35))
+                                            AxisValueLabel(format: .dateTime.year())
+                                                .foregroundStyle(AssetTheme.textSecondary)
+                                        }
+                                    }
+                                    .chartYAxis {
+                                        AxisMarks(position: .leading) { value in
+                                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                                                .foregroundStyle(AssetTheme.border.opacity(0.35))
+                                            AxisValueLabel {
+                                                if let doubleValue = value.as(Double.self) {
+                                                    Text(String(format: "%.2fx", doubleValue))
+                                                        .foregroundStyle(AssetTheme.textSecondary)
+                                                }
+                                            }
+                                        }
+                                    }
                                     .chartLegend(.hidden)
+                                }
+                                .atmCardStyle()
+                                .onAppear { restartAnimation() }
+                                .onChange(of: selectedIndexSymbol) { _, _ in restartAnimation() }
+                                .onChange(of: cashWeight) { _, _ in restartAnimation() }
+                                .onChange(of: goldWeight) { _, _ in restartAnimation() }
+                                .onChange(of: indexWeight) { _, _ in restartAnimation() }
 
-                                    VStack(alignment: .leading, spacing: 10) {
-                                        ForEach(allocationSlices) { slice in
-                                            HStack(spacing: 8) {
-                                                Circle()
-                                                    .fill(slice.color)
-                                                    .frame(width: 8, height: 8)
-                                                Text(slice.title)
-                                                    .font(.subheadline.weight(.semibold))
-                                                    .foregroundStyle(AssetTheme.textPrimary)
-                                                Spacer()
-                                                Text("\(Int(slice.amount.rounded()))%")
-                                                    .font(.caption.weight(.bold))
-                                                    .foregroundStyle(AssetTheme.goldSoft)
-                                            }
-                                        }
+                                VStack(alignment: .leading, spacing: 12) {
+                                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                                        BacktestMetricCard(title: "总收益", value: report.totalReturn.percentString())
+                                        BacktestMetricCard(title: "年化收益", value: report.annualizedReturn?.percentString() ?? "--")
+                                        BacktestMetricCard(title: "最大回撤", value: report.maxDrawdown.percentString(), accent: AssetTheme.negative)
+                                        BacktestMetricCard(title: "年化波动", value: report.annualizedVolatility?.percentString() ?? "--")
+                                        BacktestMetricCard(title: "夏普比率", value: report.sharpeRatio.map { String(format: "%.2f", $0) } ?? "--")
+                                        BacktestMetricCard(title: "区间", value: intervalLabel(for: report))
                                     }
                                 }
+                                .atmCardStyle()
                             }
-                            .atmCardStyle()
                         }
-                        .buttonStyle(.plain)
-
-                        if let report {
-                            VStack(alignment: .leading, spacing: 14) {
-                                HStack {
-                                    Text("组合净值")
-                                        .font(.headline.weight(.bold))
-                                        .foregroundStyle(AssetTheme.textPrimary)
-                                    Spacer()
-                                    Text(indexOptions.first(where: { $0.symbol == selectedIndexSymbol })?.title ?? selectedIndexSymbol)
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(AssetTheme.goldSoft)
-                                }
-
-                                Chart(animatedPoints) { point in
-                                    AreaMark(
-                                        x: .value("日期", point.date),
-                                        y: .value("组合净值", point.portfolioValue)
-                                    )
-                                    .foregroundStyle(
-                                        LinearGradient(
-                                            colors: [AssetTheme.gold.opacity(0.32), AssetTheme.gold.opacity(0.04)],
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
-                                    )
-
-                                    LineMark(
-                                        x: .value("日期", point.date),
-                                        y: .value("组合净值", point.portfolioValue)
-                                    )
-                                    .foregroundStyle(AssetTheme.gold)
-                                    .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
-                                }
-                                .frame(height: 220)
-                                .chartXAxis {
-                                    AxisMarks(values: .automatic(desiredCount: 4)) {
-                                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
-                                            .foregroundStyle(AssetTheme.border.opacity(0.35))
-                                        AxisValueLabel(format: .dateTime.year())
-                                            .foregroundStyle(AssetTheme.textSecondary)
-                                    }
-                                }
-                                .chartYAxis {
-                                    AxisMarks(position: .leading) { value in
-                                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
-                                            .foregroundStyle(AssetTheme.border.opacity(0.35))
-                                        AxisValueLabel {
-                                            if let doubleValue = value.as(Double.self) {
-                                                Text(String(format: "%.2fx", doubleValue))
-                                                    .foregroundStyle(AssetTheme.textSecondary)
-                                            }
-                                        }
-                                    }
-                                }
-                                .chartLegend(.hidden)
-                            }
-                            .atmCardStyle()
-                            .onAppear { restartAnimation() }
-                            .onChange(of: selectedIndexSymbol) { _, _ in restartAnimation() }
-                            .onChange(of: cashWeight) { _, _ in restartAnimation() }
-                            .onChange(of: goldWeight) { _, _ in restartAnimation() }
-                            .onChange(of: indexWeight) { _, _ in restartAnimation() }
-
-                            VStack(alignment: .leading, spacing: 12) {
-                                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                                    BacktestMetricCard(title: "总收益", value: report.totalReturn.percentString())
-                                    BacktestMetricCard(title: "年化收益", value: report.annualizedReturn?.percentString() ?? "--")
-                                    BacktestMetricCard(title: "最大回撤", value: report.maxDrawdown.percentString(), accent: AssetTheme.negative)
-                                    BacktestMetricCard(title: "年化波动", value: report.annualizedVolatility?.percentString() ?? "--")
-                                    BacktestMetricCard(title: "夏普比率", value: report.sharpeRatio.map { String(format: "%.2f", $0) } ?? "--")
-                                    BacktestMetricCard(title: "区间", value: intervalLabel(for: report))
-                                }
-                            }
-                            .atmCardStyle()
-                        } else {
-                            EmptyStateCard(
-                                title: "回测数据还没齐",
-                                message: "需要黄金和指数的完整历史数据才能跑这个简易回测。",
-                                systemImage: "chart.line.text.clipboard"
-                            )
-                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 10)
+                        .padding(.bottom, report == nil ? 10 : 136)
+                        .frame(minHeight: proxy.size.height)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 10)
-                    .padding(.bottom, 136)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -1389,6 +1421,34 @@ private struct BacktestView: View {
     private func intervalLabel(for report: BacktestReport) -> String {
         guard let first = report.points.first?.date, let last = report.points.last?.date else { return "--" }
         return "\(first.shortDateString) - \(last.shortDateString)"
+    }
+
+    @ViewBuilder
+    private func backtestLegendColumn(_ slices: [BacktestAllocationSlice], alignment: HorizontalAlignment) -> some View {
+        VStack(alignment: alignment, spacing: 12) {
+            ForEach(slices) { slice in
+                HStack(spacing: 8) {
+                    if alignment == .trailing {
+                        Text("\(slice.title) \(Int(slice.amount.rounded()))%")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(AssetTheme.textPrimary)
+                            .multilineTextAlignment(.trailing)
+                        Circle()
+                            .fill(slice.color)
+                            .frame(width: 8, height: 8)
+                    } else {
+                        Circle()
+                            .fill(slice.color)
+                            .frame(width: 8, height: 8)
+                        Text("\(slice.title) \(Int(slice.amount.rounded()))%")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(AssetTheme.textPrimary)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: alignment == .trailing ? .trailing : .leading)
     }
 }
 
