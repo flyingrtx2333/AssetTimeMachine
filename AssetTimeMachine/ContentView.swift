@@ -1297,42 +1297,86 @@ private struct BacktestReport {
     let sharpeRatio: Double?
 }
 
+private struct BacktestIndexOption: Identifiable {
+    let symbol: String
+    let title: String
+    let color: Color
+
+    var id: String { symbol }
+}
+
+private enum BacktestDefaults {
+    static let cashWeight: Double = 50
+    static let goldWeight: Double = 25
+    static let indexOptions: [BacktestIndexOption] = [
+        .init(symbol: "sp500", title: "标普500", color: AssetTheme.goldSoft),
+        .init(symbol: "nasdaq", title: "纳指", color: AssetTheme.accentBlue),
+        .init(symbol: "dowjones", title: "道指", color: AssetTheme.accentOrange),
+        .init(symbol: "hsi", title: "恒生", color: AssetTheme.accentRed),
+        .init(symbol: "nikkei", title: "日经225", color: AssetTheme.positive),
+        .init(symbol: "csi300", title: "沪深300", color: AssetTheme.textPrimary),
+        .init(symbol: "shanghai_composite", title: "上证综指", color: AssetTheme.textSecondary),
+    ]
+    static let indexWeights: [String: Double] = {
+        Dictionary(uniqueKeysWithValues: indexOptions.map { option in
+            (option.symbol, option.symbol == "nasdaq" ? 25 : 0)
+        })
+    }()
+}
+
 private enum BacktestEngine {
-    static func run(cashWeight: Double, goldWeight: Double, indexWeight: Double, goldSeries: PublicHistorySeries?, indexSeries: PublicHistorySeries?) -> BacktestReport? {
+    static func run(
+        cashWeight: Double,
+        goldWeight: Double,
+        goldSeries: PublicHistorySeries?,
+        indexWeights: [String: Double],
+        indexSeriesBySymbol: [String: PublicHistorySeries]
+    ) -> BacktestReport? {
         let normalizedCash = max(cashWeight, 0)
         let normalizedGold = max(goldWeight, 0)
-        let normalizedIndex = max(indexWeight, 0)
-        let totalWeight = normalizedCash + normalizedGold + normalizedIndex
+        let normalizedIndices = indexWeights
+            .mapValues { max($0, 0) }
+            .filter { $0.value > 0 }
+        let totalWeight = normalizedCash + normalizedGold + normalizedIndices.values.reduce(0, +)
         guard totalWeight > 0 else { return nil }
 
         let cw = normalizedCash / totalWeight
         let gw = normalizedGold / totalWeight
-        let iw = normalizedIndex / totalWeight
+        let indexRatios = normalizedIndices.mapValues { $0 / totalWeight }
 
         if gw > 0, goldSeries == nil { return nil }
-        if iw > 0, indexSeries == nil { return nil }
+        for symbol in indexRatios.keys where indexSeriesBySymbol[symbol] == nil {
+            return nil
+        }
 
         let goldMap = goldSeries.map { Dictionary(uniqueKeysWithValues: zip($0.dates, $0.prices)) } ?? [:]
-        let indexMap = indexSeries.map { Dictionary(uniqueKeysWithValues: zip($0.dates, $0.prices)) } ?? [:]
+        let indexMaps: [String: [String: Double]] = Dictionary(uniqueKeysWithValues: indexRatios.keys.compactMap { symbol in
+            guard let series = indexSeriesBySymbol[symbol] else { return nil }
+            return (symbol, Dictionary(uniqueKeysWithValues: zip(series.dates, series.prices)))
+        })
 
+        let selectedDateSets = (gw > 0 ? [Set(goldMap.keys)] : []) + indexMaps.values.map { Set($0.keys) }
         let sharedDates: [String]
-        if gw > 0, iw > 0 {
-            sharedDates = Array(Set(goldMap.keys).intersection(indexMap.keys)).sorted()
-        } else if gw > 0 {
-            sharedDates = goldMap.keys.sorted()
-        } else if iw > 0 {
-            sharedDates = indexMap.keys.sorted()
-        } else if !goldMap.isEmpty {
-            sharedDates = goldMap.keys.sorted()
+        if let firstSet = selectedDateSets.first {
+            sharedDates = selectedDateSets
+                .dropFirst()
+                .reduce(firstSet) { partial, next in partial.intersection(next) }
+                .sorted()
         } else {
-            sharedDates = indexMap.keys.sorted()
+            sharedDates = goldSeries?.dates
+                ?? indexSeriesBySymbol.values.first(where: { !$0.dates.isEmpty })?.dates
+                ?? []
         }
         guard sharedDates.count >= 2 else { return nil }
 
         let firstGold = gw > 0 ? goldMap[sharedDates[0]] : 1
-        let firstIndex = iw > 0 ? indexMap[sharedDates[0]] : 1
         if gw > 0, firstGold == nil || firstGold ?? 0 <= 0 { return nil }
-        if iw > 0, firstIndex == nil || firstIndex ?? 0 <= 0 { return nil }
+
+        let firstIndexPrices: [String: Double] = Dictionary(uniqueKeysWithValues: indexRatios.keys.compactMap { symbol in
+            guard let price = indexMaps[symbol]?[sharedDates[0]], price > 0 else { return nil }
+            return (symbol, price)
+        })
+        guard firstIndexPrices.count == indexRatios.count else { return nil }
 
         var points: [BacktestSeriesPoint] = []
         var returns: [Double] = []
@@ -1343,7 +1387,7 @@ private enum BacktestEngine {
         var maxDrawdownPeakValue: Double?
         var maxDrawdownPeakDate: Date?
 
-        for dateText in sharedDates {
+        dateLoop: for dateText in sharedDates {
             guard let date = historicalSeriesDateStatic(from: dateText) else { continue }
 
             let goldComponent: Double
@@ -1354,12 +1398,14 @@ private enum BacktestEngine {
                 goldComponent = 0
             }
 
-            let indexComponent: Double
-            if iw > 0 {
-                guard let indexPrice = indexMap[dateText], let firstIndex, firstIndex > 0 else { continue }
-                indexComponent = iw * (indexPrice / firstIndex)
-            } else {
-                indexComponent = 0
+            var indexComponent: Double = 0
+            for (symbol, weight) in indexRatios {
+                guard let indexPrice = indexMaps[symbol]?[dateText],
+                      let firstPrice = firstIndexPrices[symbol],
+                      firstPrice > 0 else {
+                    continue dateLoop
+                }
+                indexComponent += weight * (indexPrice / firstPrice)
             }
 
             let portfolioValue = cw + goldComponent + indexComponent
@@ -1480,35 +1526,35 @@ private enum BacktestRange: String, CaseIterable, Identifiable {
 
 private struct BacktestView: View {
     @ObservedObject var marketStore: RemoteMarketStore
-    @State private var cashWeight: Double = 50
-    @State private var goldWeight: Double = 25
-    @State private var indexWeight: Double = 25
-    @State private var selectedIndexSymbol: String = "nasdaq"
+    @State private var cashWeight: Double = BacktestDefaults.cashWeight
+    @State private var goldWeight: Double = BacktestDefaults.goldWeight
+    @State private var indexWeights: [String: Double] = BacktestDefaults.indexWeights
     @State private var selectedRange: BacktestRange = .all
     @State private var animationProgress: Double = 1
     @State private var showsAllocationSheet = false
     @State private var showsRangeSheet = false
     @State private var hasStartedBacktest = ProcessInfo.processInfo.arguments.contains("-autoStartBacktest")
     @State private var hasPlayedInitialBacktestAnimation = false
+    @State private var isBacktestLoading = false
+    @State private var backtestRefreshToken = 0
     @State private var report: BacktestReport?
     @State private var displayPoints: [BacktestSeriesPoint] = []
 
-    private let indexOptions: [(symbol: String, title: String)] = [
-        ("sp500", "标普500"),
-        ("nasdaq", "纳指"),
-        ("dowjones", "道指"),
-        ("hsi", "恒生"),
-        ("nikkei", "日经225"),
-        ("csi300", "沪深300"),
-        ("shanghai_composite", "上证综指")
-    ]
+    private let indexOptions = BacktestDefaults.indexOptions
 
     private var filteredGoldSeries: PublicHistorySeries? {
         filteredHistorySeries(marketStore.history(for: "gold_cny"))
     }
 
-    private var filteredIndexSeries: PublicHistorySeries? {
-        filteredHistorySeries(marketStore.history(for: selectedIndexSymbol))
+    private var filteredIndexSeriesBySymbol: [String: PublicHistorySeries] {
+        Dictionary(uniqueKeysWithValues: indexOptions.compactMap { option in
+            guard let series = filteredHistorySeries(marketStore.history(for: option.symbol)) else { return nil }
+            return (option.symbol, series)
+        })
+    }
+
+    private var positiveIndexOptions: [BacktestIndexOption] {
+        indexOptions.filter { indexWeights[$0.symbol, default: 0] > 0 }
     }
 
     private var animatedPoints: [BacktestSeriesPoint] {
@@ -1520,9 +1566,27 @@ private struct BacktestView: View {
     private var allocationSlices: [BacktestAllocationSlice] {
         [
             BacktestAllocationSlice(title: "现金", amount: cashWeight, color: AssetTheme.textSecondary),
-            BacktestAllocationSlice(title: "黄金", amount: goldWeight, color: AssetTheme.gold),
-            BacktestAllocationSlice(title: indexOptions.first(where: { $0.symbol == selectedIndexSymbol })?.title ?? "指数", amount: indexWeight, color: AssetTheme.accentBlue)
-        ].filter { $0.amount > 0 }
+            BacktestAllocationSlice(title: "黄金", amount: goldWeight, color: AssetTheme.gold)
+        ] + positiveIndexOptions.map { option in
+            BacktestAllocationSlice(title: option.title, amount: indexWeights[option.symbol, default: 0], color: option.color)
+        }
+        .filter { $0.amount > 0 }
+    }
+
+    private var allocationSplitIndex: Int {
+        max(1, Int(ceil(Double(allocationSlices.count) / 2)))
+    }
+
+    private var activeAllocationSummary: String {
+        let titles = allocationSlices.map(\.title)
+        switch titles.count {
+        case 0:
+            return "未配置"
+        case 1, 2:
+            return titles.joined(separator: " + ")
+        default:
+            return "\(titles.count)类资产"
+        }
     }
 
     var body: some View {
@@ -1542,7 +1606,7 @@ private struct BacktestView: View {
                                     showsAllocationSheet = true
                                 } label: {
                                     HStack(alignment: .center, spacing: 18) {
-                                        backtestLegendColumn(Array(allocationSlices.prefix(2)), alignment: .trailing)
+                                        backtestLegendColumn(Array(allocationSlices.prefix(allocationSplitIndex)), alignment: .trailing)
 
                                         Chart(allocationSlices) { slice in
                                             SectorMark(
@@ -1555,7 +1619,7 @@ private struct BacktestView: View {
                                         .frame(width: 176, height: 176)
                                         .chartLegend(.hidden)
 
-                                        backtestLegendColumn(Array(allocationSlices.dropFirst(2)), alignment: .leading)
+                                        backtestLegendColumn(Array(allocationSlices.dropFirst(allocationSplitIndex)), alignment: .leading)
                                     }
                                     .frame(maxWidth: .infinity)
                                     .frame(minHeight: 200)
@@ -1578,10 +1642,10 @@ private struct BacktestView: View {
                                     }
                                 }
 
-                                if report == nil {
+                                if report == nil && !isBacktestLoading {
                                     Button {
                                         hasStartedBacktest = true
-                                        recomputeReport(animated: true)
+                                        scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
                                     } label: {
                                         Text("开始回测")
                                             .font(.subheadline.weight(.bold))
@@ -1599,7 +1663,12 @@ private struct BacktestView: View {
                                 Spacer(minLength: 0)
                             }
 
-                            if let report {
+                            if isBacktestLoading {
+                                BacktestLoadingView()
+                                    .padding(.top, 8)
+                            }
+
+                            if let report, !isBacktestLoading {
                                 VStack(alignment: .leading, spacing: 14) {
                                     HStack {
                                         Text("组合净值")
@@ -1609,7 +1678,7 @@ private struct BacktestView: View {
                                         Text(selectedRange.label)
                                             .font(.caption.weight(.semibold))
                                             .foregroundStyle(AssetTheme.textSecondary)
-                                        Text(indexOptions.first(where: { $0.symbol == selectedIndexSymbol })?.title ?? selectedIndexSymbol)
+                                        Text(activeAllocationSummary)
                                             .font(.caption.weight(.semibold))
                                             .foregroundStyle(AssetTheme.goldSoft)
                                     }
@@ -1687,13 +1756,18 @@ private struct BacktestView: View {
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showsAllocationSheet) {
                 BacktestAllocationSheet(
-                    cashWeight: $cashWeight,
-                    goldWeight: $goldWeight,
-                    indexWeight: $indexWeight,
-                    selectedIndexSymbol: $selectedIndexSymbol,
+                    cashWeight: cashWeight,
+                    goldWeight: goldWeight,
+                    indexWeights: indexWeights,
                     indexOptions: indexOptions
-                )
-                .presentationDetents([.medium])
+                ) { updatedCashWeight, updatedGoldWeight, updatedIndexWeights in
+                    applyAllocation(
+                        cashWeight: updatedCashWeight,
+                        goldWeight: updatedGoldWeight,
+                        indexWeights: updatedIndexWeights
+                    )
+                }
+                .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showsRangeSheet) {
@@ -1704,47 +1778,65 @@ private struct BacktestView: View {
         }
         .onAppear {
             if hasStartedBacktest, report == nil {
-                recomputeReport(animated: !hasPlayedInitialBacktestAnimation)
+                scheduleBacktestRefresh(animated: !hasPlayedInitialBacktestAnimation)
             }
-        }
-        .onChange(of: selectedIndexSymbol) { _, _ in
-            guard hasStartedBacktest else { return }
-            recomputeReport(animated: false)
-        }
-        .onChange(of: cashWeight) { _, _ in
-            guard hasStartedBacktest else { return }
-            recomputeReport(animated: false)
-        }
-        .onChange(of: goldWeight) { _, _ in
-            guard hasStartedBacktest else { return }
-            recomputeReport(animated: false)
-        }
-        .onChange(of: indexWeight) { _, _ in
-            guard hasStartedBacktest else { return }
-            recomputeReport(animated: false)
         }
         .onChange(of: selectedRange) { _, _ in
             guard hasStartedBacktest else { return }
-            recomputeReport(animated: false)
+            scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
         }
         .onReceive(marketStore.$historySeries) { _ in
             guard hasStartedBacktest else { return }
-            recomputeReport(animated: report == nil && !hasPlayedInitialBacktestAnimation)
+            scheduleBacktestRefresh(animated: report == nil && !hasPlayedInitialBacktestAnimation)
+        }
+    }
+
+    private func applyAllocation(cashWeight: Double, goldWeight: Double, indexWeights: [String: Double]) {
+        self.cashWeight = cashWeight
+        self.goldWeight = goldWeight
+        self.indexWeights = indexWeights
+
+        guard hasStartedBacktest else { return }
+        scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
+    }
+
+    private func scheduleBacktestRefresh(
+        animated: Bool,
+        forceAnimation: Bool = false,
+        showLoading: Bool = false
+    ) {
+        backtestRefreshToken += 1
+        let currentToken = backtestRefreshToken
+
+        if showLoading {
+            isBacktestLoading = true
+        }
+
+        let performRefresh = {
+            guard currentToken == backtestRefreshToken else { return }
+            recomputeReport(animated: animated, forceAnimation: forceAnimation)
+            isBacktestLoading = false
+        }
+
+        if showLoading {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: performRefresh)
+        } else {
+            performRefresh()
         }
     }
 
     @MainActor
-    private func recomputeReport(animated: Bool) {
+    private func recomputeReport(animated: Bool, forceAnimation: Bool = false) {
         report = BacktestEngine.run(
             cashWeight: cashWeight,
             goldWeight: goldWeight,
-            indexWeight: indexWeight,
             goldSeries: filteredGoldSeries,
-            indexSeries: filteredIndexSeries
+            indexWeights: indexWeights,
+            indexSeriesBySymbol: filteredIndexSeriesBySymbol
         )
         displayPoints = sampledChartPoints(from: report?.points ?? [])
 
-        let shouldAnimate = animated && !hasPlayedInitialBacktestAnimation && !displayPoints.isEmpty
+        let shouldAnimate = animated && !displayPoints.isEmpty && (forceAnimation || !hasPlayedInitialBacktestAnimation)
         guard shouldAnimate else {
             animationProgress = 1
             return
@@ -1755,12 +1847,13 @@ private struct BacktestView: View {
     }
 
     private func resetBacktest() {
+        backtestRefreshToken += 1
         hasStartedBacktest = false
         hasPlayedInitialBacktestAnimation = false
-        cashWeight = 50
-        goldWeight = 25
-        indexWeight = 25
-        selectedIndexSymbol = "nasdaq"
+        isBacktestLoading = false
+        cashWeight = BacktestDefaults.cashWeight
+        goldWeight = BacktestDefaults.goldWeight
+        indexWeights = BacktestDefaults.indexWeights
         selectedRange = .all
         report = nil
         displayPoints = []
@@ -1945,13 +2038,45 @@ private struct BacktestRangeSheet: View {
     }
 }
 
+private struct BacktestLoadingView: View {
+    var body: some View {
+        VStack(spacing: 14) {
+            ProgressView()
+                .tint(AssetTheme.gold)
+                .scaleEffect(1.15)
+            Text("正在重新回测...")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(AssetTheme.textPrimary)
+            Text("点完成后再统一计算，这次不让它边拖边抖了。")
+                .font(.caption)
+                .foregroundStyle(AssetTheme.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+    }
+}
+
 private struct BacktestAllocationSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @Binding var cashWeight: Double
-    @Binding var goldWeight: Double
-    @Binding var indexWeight: Double
-    @Binding var selectedIndexSymbol: String
-    let indexOptions: [(symbol: String, title: String)]
+    @State private var cashWeight: Double
+    @State private var goldWeight: Double
+    @State private var indexWeights: [String: Double]
+    let indexOptions: [BacktestIndexOption]
+    let onApply: (Double, Double, [String: Double]) -> Void
+
+    init(
+        cashWeight: Double,
+        goldWeight: Double,
+        indexWeights: [String: Double],
+        indexOptions: [BacktestIndexOption],
+        onApply: @escaping (Double, Double, [String: Double]) -> Void
+    ) {
+        _cashWeight = State(initialValue: cashWeight)
+        _goldWeight = State(initialValue: goldWeight)
+        _indexWeights = State(initialValue: indexWeights)
+        self.indexOptions = indexOptions
+        self.onApply = onApply
+    }
 
     var body: some View {
         NavigationStack {
@@ -1960,16 +2085,20 @@ private struct BacktestAllocationSheet: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 16) {
-                        BacktestWeightRow(title: "现金", value: $cashWeight)
-                        BacktestWeightRow(title: "黄金", value: $goldWeight)
-                        BacktestWeightRow(title: "指数", value: $indexWeight)
+                        Text("先在这里调整，点完成后再统一回测。")
+                            .font(.caption)
+                            .foregroundStyle(AssetTheme.textSecondary)
 
-                        Picker("指数", selection: $selectedIndexSymbol) {
-                            ForEach(indexOptions, id: \.symbol) { option in
-                                Text(option.title).tag(option.symbol)
-                            }
+                        BacktestWeightRow(title: "现金", value: $cashWeight, tint: AssetTheme.textSecondary)
+                        BacktestWeightRow(title: "黄金", value: $goldWeight, tint: AssetTheme.gold)
+
+                        ForEach(indexOptions) { option in
+                            BacktestWeightRow(
+                                title: option.title,
+                                value: binding(for: option.symbol),
+                                tint: option.color
+                            )
                         }
-                        .pickerStyle(.segmented)
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 20)
@@ -1979,10 +2108,7 @@ private struct BacktestAllocationSheet: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("重置") {
-                        cashWeight = 50
-                        goldWeight = 25
-                        indexWeight = 25
-                        selectedIndexSymbol = "nasdaq"
+                        resetDraft()
                     }
                     .tint(AssetTheme.textSecondary)
                 }
@@ -1994,6 +2120,7 @@ private struct BacktestAllocationSheet: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("完成") {
                         normalizeWeights()
+                        onApply(cashWeight, goldWeight, indexWeights)
                         dismiss()
                     }
                     .tint(AssetTheme.gold)
@@ -2002,24 +2129,61 @@ private struct BacktestAllocationSheet: View {
         }
     }
 
+    private func binding(for symbol: String) -> Binding<Double> {
+        Binding(
+            get: { indexWeights[symbol, default: 0] },
+            set: { indexWeights[symbol] = $0 }
+        )
+    }
+
+    private func resetDraft() {
+        cashWeight = BacktestDefaults.cashWeight
+        goldWeight = BacktestDefaults.goldWeight
+        indexWeights = BacktestDefaults.indexWeights
+    }
+
     private func normalizeWeights() {
-        let total = max(cashWeight + goldWeight + indexWeight, 0)
+        cashWeight = max(cashWeight, 0)
+        goldWeight = max(goldWeight, 0)
+
+        let clampedIndexWeights = Dictionary(uniqueKeysWithValues: indexOptions.map { option in
+            (option.symbol, max(indexWeights[option.symbol, default: 0], 0))
+        })
+        let total = cashWeight + goldWeight + clampedIndexWeights.values.reduce(0, +)
         guard total > 0 else {
-            cashWeight = 50
-            goldWeight = 25
-            indexWeight = 25
-            selectedIndexSymbol = "nasdaq"
+            resetDraft()
             return
         }
+
         cashWeight = (cashWeight / total) * 100
         goldWeight = (goldWeight / total) * 100
-        indexWeight = 100 - cashWeight - goldWeight
+
+        let indexBudget = max(0, 100 - cashWeight - goldWeight)
+        let totalIndexWeight = clampedIndexWeights.values.reduce(0, +)
+        guard totalIndexWeight > 0 else {
+            indexWeights = Dictionary(uniqueKeysWithValues: indexOptions.map { ($0.symbol, 0) })
+            return
+        }
+
+        var normalizedIndexWeights: [String: Double] = [:]
+        var allocated: Double = 0
+        for option in indexOptions.dropLast() {
+            let base = clampedIndexWeights[option.symbol, default: 0]
+            let normalized = (base / totalIndexWeight) * indexBudget
+            normalizedIndexWeights[option.symbol] = normalized
+            allocated += normalized
+        }
+        if let lastOption = indexOptions.last {
+            normalizedIndexWeights[lastOption.symbol] = max(0, indexBudget - allocated)
+        }
+        indexWeights = normalizedIndexWeights
     }
 }
 
 private struct BacktestWeightRow: View {
     let title: String
     @Binding var value: Double
+    var tint: Color = AssetTheme.gold
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -2030,11 +2194,11 @@ private struct BacktestWeightRow: View {
                 Spacer()
                 Text("\(Int(value.rounded()))%")
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(AssetTheme.goldSoft)
+                    .foregroundStyle(tint)
             }
 
             Slider(value: $value, in: 0...100, step: 1)
-                .tint(AssetTheme.gold)
+                .tint(tint)
         }
         .padding(14)
         .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
