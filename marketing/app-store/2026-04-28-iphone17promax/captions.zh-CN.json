@@ -1,0 +1,30 @@
+[
+  {
+    "file": "01-home-dashboard.png",
+    "page": "首页总览",
+    "headline": "一眼看清你的资产全貌",
+    "subheadline": "总资产、净资产、负债和配置结构，同屏掌握。",
+    "altHeadline": "不只是记账，是看清全局"
+  },
+  {
+    "file": "02-records-editor.png",
+    "page": "记录页",
+    "headline": "资产、负债，都能统一记录",
+    "subheadline": "现金、基金、黄金、房产，一套页面持续维护。",
+    "altHeadline": "把资产变化记成习惯"
+  },
+  {
+    "file": "03-time-machine.png",
+    "page": "时光机页",
+    "headline": "回看你的财富增长轨迹",
+    "subheadline": "净资产、负债、黄金购买力、纳指折算，一路看清楚。",
+    "altHeadline": "时间拉长，趋势就会说话"
+  },
+  {
+    "file": "04-backtest.png",
+    "page": "回测页",
+    "headline": "先设配置，再一键回测",
+    "subheadline": "现金、黄金、指数权重自由组合，快速验证你的想法。",
+    "altHeadline": "让历史帮你验证配置"
+  }
+]

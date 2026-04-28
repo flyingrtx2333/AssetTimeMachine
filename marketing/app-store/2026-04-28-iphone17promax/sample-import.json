@@ -1,0 +1,1125 @@
+{
+  "exportedAt": "2026-04-28T12:00:00Z",
+  "categories": [
+    {
+      "id": "6c9c5bfb-3d44-499c-8927-523fc6c1b721",
+      "name": "现金与储蓄",
+      "group": "financial",
+      "createdAt": "2026-04-28T12:00:00Z"
+    },
+    {
+      "id": "59e82e5c-33a6-44a9-b992-ba57c3de2dbd",
+      "name": "证券投资",
+      "group": "financial",
+      "createdAt": "2026-04-28T12:00:00Z"
+    },
+    {
+      "id": "b589084f-1cce-4179-936e-74ab490078ce",
+      "name": "贵金属",
+      "group": "physical",
+      "createdAt": "2026-04-28T12:00:00Z"
+    },
+    {
+      "id": "62c02dd8-b3fd-4433-b154-73fa04614f4f",
+      "name": "房产",
+      "group": "physical",
+      "createdAt": "2026-04-28T12:00:00Z"
+    },
+    {
+      "id": "61dc8111-0deb-4cb4-8446-ebe41ee5e210",
+      "name": "长期负债",
+      "group": "liability",
+      "createdAt": "2026-04-28T12:00:00Z"
+    },
+    {
+      "id": "e28ec39c-4075-47a4-9821-05de6346cd7b",
+      "name": "短期负债",
+      "group": "liability",
+      "createdAt": "2026-04-28T12:00:00Z"
+    }
+  ],
+  "items": [
+    {
+      "id": "7436ddf8-bb87-4851-813f-520f3a333f7a",
+      "name": "现金储备",
+      "note": "样例数据",
+      "valuationMethod": "directAmount",
+      "sortOrder": 0,
+      "isActive": true,
+      "createdAt": "2026-04-28T12:00:00Z",
+      "updatedAt": "2026-04-28T12:00:00Z",
+      "categoryID": "6c9c5bfb-3d44-499c-8927-523fc6c1b721"
+    },
+    {
+      "id": "7cc8c6b4-f93e-461f-867e-43f809438ac2",
+      "name": "指数基金账户",
+      "note": "样例数据",
+      "valuationMethod": "directAmount",
+      "sortOrder": 1,
+      "isActive": true,
+      "createdAt": "2026-04-28T12:00:00Z",
+      "updatedAt": "2026-04-28T12:00:00Z",
+      "categoryID": "59e82e5c-33a6-44a9-b992-ba57c3de2dbd"
+    },
+    {
+      "id": "83550812-2533-4ca9-9e01-6e67acc40e93",
+      "name": "黄金持仓",
+      "note": "样例数据",
+      "valuationMethod": "quantityAndUnitPrice",
+      "sortOrder": 2,
+      "isActive": true,
+      "createdAt": "2026-04-28T12:00:00Z",
+      "updatedAt": "2026-04-28T12:00:00Z",
+      "categoryID": "b589084f-1cce-4179-936e-74ab490078ce"
+    },
+    {
+      "id": "c00c0efc-fd33-43b6-a3db-353eb4bee4b9",
+      "name": "自住房估值",
+      "note": "样例数据",
+      "valuationMethod": "directAmount",
+      "sortOrder": 3,
+      "isActive": true,
+      "createdAt": "2026-04-28T12:00:00Z",
+      "updatedAt": "2026-04-28T12:00:00Z",
+      "categoryID": "62c02dd8-b3fd-4433-b154-73fa04614f4f"
+    },
+    {
+      "id": "10252e64-1e7a-4cf7-80ef-840e2bc76b12",
+      "name": "房贷余额",
+      "note": "样例数据",
+      "valuationMethod": "directAmount",
+      "sortOrder": 4,
+      "isActive": true,
+      "createdAt": "2026-04-28T12:00:00Z",
+      "updatedAt": "2026-04-28T12:00:00Z",
+      "categoryID": "61dc8111-0deb-4cb4-8446-ebe41ee5e210"
+    },
+    {
+      "id": "eb6c5313-26bf-47e4-81a1-c0d785a5bb24",
+      "name": "消费贷",
+      "note": "样例数据",
+      "valuationMethod": "directAmount",
+      "sortOrder": 5,
+      "isActive": true,
+      "createdAt": "2026-04-28T12:00:00Z",
+      "updatedAt": "2026-04-28T12:00:00Z",
+      "categoryID": "e28ec39c-4075-47a4-9821-05de6346cd7b"
+    }
+  ],
+  "snapshots": [
+    {
+      "id": "0a8148f3-8655-40e1-b09a-37ba052011a9",
+      "date": "2025-04-28T12:00:00Z",
+      "note": "样例快照",
+      "createdAt": "2025-04-28T12:00:00Z",
+      "updatedAt": "2025-04-28T12:00:00Z",
+      "goldAnchorPriceCNY": 560.0,
+      "goldAnchorPriceDate": "2025-04-28T12:00:00Z",
+      "btcAnchorPriceUSD": 64000.0,
+      "btcAnchorPriceDate": "2025-04-28T12:00:00Z",
+      "nasdaqAnchorPriceUSD": 17600.0,
+      "nasdaqAnchorPriceDate": "2025-04-28T12:00:00Z",
+      "usdPerCNY": 7.28,
+      "usdPerCNYDate": "2025-04-28T12:00:00Z",
+      "marketAnchorsUpdatedAt": "2025-04-28T12:00:00Z",
+      "entries": [
+        {
+          "id": "ff3912fc-6f1e-4bd3-9221-793a58ea980b",
+          "amount": 58000.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-04-28T12:00:00Z",
+          "updatedAt": "2025-04-28T12:00:00Z",
+          "itemID": "7436ddf8-bb87-4851-813f-520f3a333f7a"
+        },
+        {
+          "id": "d7dedc8e-9019-4a02-b454-39f33df764d0",
+          "amount": 118000.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-04-28T12:00:00Z",
+          "updatedAt": "2025-04-28T12:00:00Z",
+          "itemID": "7cc8c6b4-f93e-461f-867e-43f809438ac2"
+        },
+        {
+          "id": "3085a701-53c0-4659-a03a-6057312c92f7",
+          "amount": null,
+          "quantity": 90.0,
+          "unitPrice": 560.0,
+          "note": "",
+          "createdAt": "2025-04-28T12:00:00Z",
+          "updatedAt": "2025-04-28T12:00:00Z",
+          "itemID": "83550812-2533-4ca9-9e01-6e67acc40e93"
+        },
+        {
+          "id": "53f257aa-d4c3-483d-927c-7a7eae2789f7",
+          "amount": 820000.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-04-28T12:00:00Z",
+          "updatedAt": "2025-04-28T12:00:00Z",
+          "itemID": "c00c0efc-fd33-43b6-a3db-353eb4bee4b9"
+        },
+        {
+          "id": "f50e1f60-42ac-4cc1-a23b-2b40d0951516",
+          "amount": 545000.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-04-28T12:00:00Z",
+          "updatedAt": "2025-04-28T12:00:00Z",
+          "itemID": "10252e64-1e7a-4cf7-80ef-840e2bc76b12"
+        },
+        {
+          "id": "ea37db0e-9115-4965-b92e-f04615cc1d60",
+          "amount": 36000.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-04-28T12:00:00Z",
+          "updatedAt": "2025-04-28T12:00:00Z",
+          "itemID": "eb6c5313-26bf-47e4-81a1-c0d785a5bb24"
+        }
+      ]
+    },
+    {
+      "id": "cb1211bf-4d96-41bd-9f79-e805b8556302",
+      "date": "2025-05-28T12:00:00Z",
+      "note": "样例快照",
+      "createdAt": "2025-05-28T12:00:00Z",
+      "updatedAt": "2025-05-28T12:00:00Z",
+      "goldAnchorPriceCNY": 570.67,
+      "goldAnchorPriceDate": "2025-05-28T12:00:00Z",
+      "btcAnchorPriceUSD": 66541.67,
+      "btcAnchorPriceDate": "2025-05-28T12:00:00Z",
+      "nasdaqAnchorPriceUSD": 18006.67,
+      "nasdaqAnchorPriceDate": "2025-05-28T12:00:00Z",
+      "usdPerCNY": 7.27,
+      "usdPerCNYDate": "2025-05-28T12:00:00Z",
+      "marketAnchorsUpdatedAt": "2025-05-28T12:00:00Z",
+      "entries": [
+        {
+          "id": "2e7a7431-5ff2-4f4c-ac91-c36727186c14",
+          "amount": 63166.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-05-28T12:00:00Z",
+          "updatedAt": "2025-05-28T12:00:00Z",
+          "itemID": "7436ddf8-bb87-4851-813f-520f3a333f7a"
+        },
+        {
+          "id": "1bdf30ae-062b-449f-8cfd-e731efcd537b",
+          "amount": 128166.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-05-28T12:00:00Z",
+          "updatedAt": "2025-05-28T12:00:00Z",
+          "itemID": "7cc8c6b4-f93e-461f-867e-43f809438ac2"
+        },
+        {
+          "id": "ad05dae9-fb3d-43f4-8bfb-4837bca3d097",
+          "amount": null,
+          "quantity": 92.08,
+          "unitPrice": 570.67,
+          "note": "",
+          "createdAt": "2025-05-28T12:00:00Z",
+          "updatedAt": "2025-05-28T12:00:00Z",
+          "itemID": "83550812-2533-4ca9-9e01-6e67acc40e93"
+        },
+        {
+          "id": "255ab5e6-01af-4bb2-9529-f809935c929b",
+          "amount": 825833.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-05-28T12:00:00Z",
+          "updatedAt": "2025-05-28T12:00:00Z",
+          "itemID": "c00c0efc-fd33-43b6-a3db-353eb4bee4b9"
+        },
+        {
+          "id": "7d08d458-1437-4d8d-8354-cfb8c2a1f86e",
+          "amount": 540416.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-05-28T12:00:00Z",
+          "updatedAt": "2025-05-28T12:00:00Z",
+          "itemID": "10252e64-1e7a-4cf7-80ef-840e2bc76b12"
+        },
+        {
+          "id": "622b313a-8ad5-45be-9bf5-d7298bcc5453",
+          "amount": 33833.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-05-28T12:00:00Z",
+          "updatedAt": "2025-05-28T12:00:00Z",
+          "itemID": "eb6c5313-26bf-47e4-81a1-c0d785a5bb24"
+        }
+      ]
+    },
+    {
+      "id": "1879b1d6-07ce-4f4b-8379-2fa8201dcc54",
+      "date": "2025-06-28T12:00:00Z",
+      "note": "样例快照",
+      "createdAt": "2025-06-28T12:00:00Z",
+      "updatedAt": "2025-06-28T12:00:00Z",
+      "goldAnchorPriceCNY": 581.33,
+      "goldAnchorPriceDate": "2025-06-28T12:00:00Z",
+      "btcAnchorPriceUSD": 69083.33,
+      "btcAnchorPriceDate": "2025-06-28T12:00:00Z",
+      "nasdaqAnchorPriceUSD": 18413.33,
+      "nasdaqAnchorPriceDate": "2025-06-28T12:00:00Z",
+      "usdPerCNY": 7.26,
+      "usdPerCNYDate": "2025-06-28T12:00:00Z",
+      "marketAnchorsUpdatedAt": "2025-06-28T12:00:00Z",
+      "entries": [
+        {
+          "id": "6295f588-5581-40d6-b5c4-2d8e4fcfc18b",
+          "amount": 68333.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-06-28T12:00:00Z",
+          "updatedAt": "2025-06-28T12:00:00Z",
+          "itemID": "7436ddf8-bb87-4851-813f-520f3a333f7a"
+        },
+        {
+          "id": "0ef6d3ef-3b25-4a00-b75b-d437a2a8d183",
+          "amount": 138333.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-06-28T12:00:00Z",
+          "updatedAt": "2025-06-28T12:00:00Z",
+          "itemID": "7cc8c6b4-f93e-461f-867e-43f809438ac2"
+        },
+        {
+          "id": "609ca107-06ce-48c9-b8d4-778cbf71aac3",
+          "amount": null,
+          "quantity": 94.17,
+          "unitPrice": 581.33,
+          "note": "",
+          "createdAt": "2025-06-28T12:00:00Z",
+          "updatedAt": "2025-06-28T12:00:00Z",
+          "itemID": "83550812-2533-4ca9-9e01-6e67acc40e93"
+        },
+        {
+          "id": "16919451-8600-4d82-874b-6acbc52426bf",
+          "amount": 831666.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-06-28T12:00:00Z",
+          "updatedAt": "2025-06-28T12:00:00Z",
+          "itemID": "c00c0efc-fd33-43b6-a3db-353eb4bee4b9"
+        },
+        {
+          "id": "0ebd1bf8-82b8-482f-a070-c27e10448a19",
+          "amount": 535833.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-06-28T12:00:00Z",
+          "updatedAt": "2025-06-28T12:00:00Z",
+          "itemID": "10252e64-1e7a-4cf7-80ef-840e2bc76b12"
+        },
+        {
+          "id": "47b5c28b-6ee7-4f53-bc17-335cfae33e91",
+          "amount": 31666.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-06-28T12:00:00Z",
+          "updatedAt": "2025-06-28T12:00:00Z",
+          "itemID": "eb6c5313-26bf-47e4-81a1-c0d785a5bb24"
+        }
+      ]
+    },
+    {
+      "id": "77abcbb4-8569-4e0d-aab8-87baa6e6503a",
+      "date": "2025-07-28T12:00:00Z",
+      "note": "样例快照",
+      "createdAt": "2025-07-28T12:00:00Z",
+      "updatedAt": "2025-07-28T12:00:00Z",
+      "goldAnchorPriceCNY": 592.0,
+      "goldAnchorPriceDate": "2025-07-28T12:00:00Z",
+      "btcAnchorPriceUSD": 71625.0,
+      "btcAnchorPriceDate": "2025-07-28T12:00:00Z",
+      "nasdaqAnchorPriceUSD": 18820.0,
+      "nasdaqAnchorPriceDate": "2025-07-28T12:00:00Z",
+      "usdPerCNY": 7.25,
+      "usdPerCNYDate": "2025-07-28T12:00:00Z",
+      "marketAnchorsUpdatedAt": "2025-07-28T12:00:00Z",
+      "entries": [
+        {
+          "id": "bc7e57c0-fe66-487e-86be-a0804f84dcbe",
+          "amount": 73500.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-07-28T12:00:00Z",
+          "updatedAt": "2025-07-28T12:00:00Z",
+          "itemID": "7436ddf8-bb87-4851-813f-520f3a333f7a"
+        },
+        {
+          "id": "8f6948d5-14ec-4a5b-84ab-c796cf89d913",
+          "amount": 148500.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-07-28T12:00:00Z",
+          "updatedAt": "2025-07-28T12:00:00Z",
+          "itemID": "7cc8c6b4-f93e-461f-867e-43f809438ac2"
+        },
+        {
+          "id": "70fa6603-bc61-4649-8e59-2986105d1482",
+          "amount": null,
+          "quantity": 96.25,
+          "unitPrice": 592.0,
+          "note": "",
+          "createdAt": "2025-07-28T12:00:00Z",
+          "updatedAt": "2025-07-28T12:00:00Z",
+          "itemID": "83550812-2533-4ca9-9e01-6e67acc40e93"
+        },
+        {
+          "id": "fda7a333-6e83-4545-a348-6feb5ea92fc8",
+          "amount": 837500.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-07-28T12:00:00Z",
+          "updatedAt": "2025-07-28T12:00:00Z",
+          "itemID": "c00c0efc-fd33-43b6-a3db-353eb4bee4b9"
+        },
+        {
+          "id": "8fd6b843-f111-43fe-8dc7-1a87d4a1fe50",
+          "amount": 531250.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-07-28T12:00:00Z",
+          "updatedAt": "2025-07-28T12:00:00Z",
+          "itemID": "10252e64-1e7a-4cf7-80ef-840e2bc76b12"
+        },
+        {
+          "id": "dacf3189-f98d-49e7-9f35-11bf672c3d46",
+          "amount": 29500.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-07-28T12:00:00Z",
+          "updatedAt": "2025-07-28T12:00:00Z",
+          "itemID": "eb6c5313-26bf-47e4-81a1-c0d785a5bb24"
+        }
+      ]
+    },
+    {
+      "id": "45f60b70-7750-42d4-aa3a-4af06f480d51",
+      "date": "2025-08-28T12:00:00Z",
+      "note": "样例快照",
+      "createdAt": "2025-08-28T12:00:00Z",
+      "updatedAt": "2025-08-28T12:00:00Z",
+      "goldAnchorPriceCNY": 602.67,
+      "goldAnchorPriceDate": "2025-08-28T12:00:00Z",
+      "btcAnchorPriceUSD": 74166.67,
+      "btcAnchorPriceDate": "2025-08-28T12:00:00Z",
+      "nasdaqAnchorPriceUSD": 19226.67,
+      "nasdaqAnchorPriceDate": "2025-08-28T12:00:00Z",
+      "usdPerCNY": 7.24,
+      "usdPerCNYDate": "2025-08-28T12:00:00Z",
+      "marketAnchorsUpdatedAt": "2025-08-28T12:00:00Z",
+      "entries": [
+        {
+          "id": "39366dc1-44bc-440d-91b3-bd30530f4633",
+          "amount": 78666.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-08-28T12:00:00Z",
+          "updatedAt": "2025-08-28T12:00:00Z",
+          "itemID": "7436ddf8-bb87-4851-813f-520f3a333f7a"
+        },
+        {
+          "id": "1a83849c-e6f5-4f25-8618-bbecc124703b",
+          "amount": 158666.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-08-28T12:00:00Z",
+          "updatedAt": "2025-08-28T12:00:00Z",
+          "itemID": "7cc8c6b4-f93e-461f-867e-43f809438ac2"
+        },
+        {
+          "id": "56068cec-577e-4e74-a790-a2ab990ddf85",
+          "amount": null,
+          "quantity": 98.33,
+          "unitPrice": 602.67,
+          "note": "",
+          "createdAt": "2025-08-28T12:00:00Z",
+          "updatedAt": "2025-08-28T12:00:00Z",
+          "itemID": "83550812-2533-4ca9-9e01-6e67acc40e93"
+        },
+        {
+          "id": "fa1938c7-efc9-4fc3-8cd7-ac5031b9ec1d",
+          "amount": 843333.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-08-28T12:00:00Z",
+          "updatedAt": "2025-08-28T12:00:00Z",
+          "itemID": "c00c0efc-fd33-43b6-a3db-353eb4bee4b9"
+        },
+        {
+          "id": "6af77b19-9e43-4b47-a776-53706a708502",
+          "amount": 526666.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-08-28T12:00:00Z",
+          "updatedAt": "2025-08-28T12:00:00Z",
+          "itemID": "10252e64-1e7a-4cf7-80ef-840e2bc76b12"
+        },
+        {
+          "id": "cb3c5f1e-a827-41d4-9866-17a57d6f89d5",
+          "amount": 27333.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-08-28T12:00:00Z",
+          "updatedAt": "2025-08-28T12:00:00Z",
+          "itemID": "eb6c5313-26bf-47e4-81a1-c0d785a5bb24"
+        }
+      ]
+    },
+    {
+      "id": "3d1ac627-fcfe-43bf-a51f-b77063ad0404",
+      "date": "2025-09-28T12:00:00Z",
+      "note": "样例快照",
+      "createdAt": "2025-09-28T12:00:00Z",
+      "updatedAt": "2025-09-28T12:00:00Z",
+      "goldAnchorPriceCNY": 613.33,
+      "goldAnchorPriceDate": "2025-09-28T12:00:00Z",
+      "btcAnchorPriceUSD": 76708.33,
+      "btcAnchorPriceDate": "2025-09-28T12:00:00Z",
+      "nasdaqAnchorPriceUSD": 19633.33,
+      "nasdaqAnchorPriceDate": "2025-09-28T12:00:00Z",
+      "usdPerCNY": 7.23,
+      "usdPerCNYDate": "2025-09-28T12:00:00Z",
+      "marketAnchorsUpdatedAt": "2025-09-28T12:00:00Z",
+      "entries": [
+        {
+          "id": "7e5b27fa-460c-45e1-9581-cc00ccf72b77",
+          "amount": 83833.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-09-28T12:00:00Z",
+          "updatedAt": "2025-09-28T12:00:00Z",
+          "itemID": "7436ddf8-bb87-4851-813f-520f3a333f7a"
+        },
+        {
+          "id": "f38d86b0-026b-4737-a21b-26736381368d",
+          "amount": 168833.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-09-28T12:00:00Z",
+          "updatedAt": "2025-09-28T12:00:00Z",
+          "itemID": "7cc8c6b4-f93e-461f-867e-43f809438ac2"
+        },
+        {
+          "id": "536b00c3-9743-43a7-a80b-83b13561fc69",
+          "amount": null,
+          "quantity": 100.42,
+          "unitPrice": 613.33,
+          "note": "",
+          "createdAt": "2025-09-28T12:00:00Z",
+          "updatedAt": "2025-09-28T12:00:00Z",
+          "itemID": "83550812-2533-4ca9-9e01-6e67acc40e93"
+        },
+        {
+          "id": "14f28cdd-3920-49ba-82de-9dfaa47aad5a",
+          "amount": 849166.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-09-28T12:00:00Z",
+          "updatedAt": "2025-09-28T12:00:00Z",
+          "itemID": "c00c0efc-fd33-43b6-a3db-353eb4bee4b9"
+        },
+        {
+          "id": "b4ca79a1-9c3e-432f-9926-a7fc1415c3cf",
+          "amount": 522083.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-09-28T12:00:00Z",
+          "updatedAt": "2025-09-28T12:00:00Z",
+          "itemID": "10252e64-1e7a-4cf7-80ef-840e2bc76b12"
+        },
+        {
+          "id": "703ed8f2-ea89-410b-a339-d0b2b49cab25",
+          "amount": 25166.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-09-28T12:00:00Z",
+          "updatedAt": "2025-09-28T12:00:00Z",
+          "itemID": "eb6c5313-26bf-47e4-81a1-c0d785a5bb24"
+        }
+      ]
+    },
+    {
+      "id": "d2d1ec94-e0ca-4252-a95f-ffe84848b501",
+      "date": "2025-10-28T12:00:00Z",
+      "note": "样例快照",
+      "createdAt": "2025-10-28T12:00:00Z",
+      "updatedAt": "2025-10-28T12:00:00Z",
+      "goldAnchorPriceCNY": 624.0,
+      "goldAnchorPriceDate": "2025-10-28T12:00:00Z",
+      "btcAnchorPriceUSD": 79250.0,
+      "btcAnchorPriceDate": "2025-10-28T12:00:00Z",
+      "nasdaqAnchorPriceUSD": 20040.0,
+      "nasdaqAnchorPriceDate": "2025-10-28T12:00:00Z",
+      "usdPerCNY": 7.22,
+      "usdPerCNYDate": "2025-10-28T12:00:00Z",
+      "marketAnchorsUpdatedAt": "2025-10-28T12:00:00Z",
+      "entries": [
+        {
+          "id": "4eafa9bf-07c5-4b4c-b4c5-89479f3a933b",
+          "amount": 89000.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-10-28T12:00:00Z",
+          "updatedAt": "2025-10-28T12:00:00Z",
+          "itemID": "7436ddf8-bb87-4851-813f-520f3a333f7a"
+        },
+        {
+          "id": "33d43333-7b51-4ce5-a772-322c7105f063",
+          "amount": 179000.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-10-28T12:00:00Z",
+          "updatedAt": "2025-10-28T12:00:00Z",
+          "itemID": "7cc8c6b4-f93e-461f-867e-43f809438ac2"
+        },
+        {
+          "id": "e39066f2-0802-448f-8199-7a80465118cf",
+          "amount": null,
+          "quantity": 102.5,
+          "unitPrice": 624.0,
+          "note": "",
+          "createdAt": "2025-10-28T12:00:00Z",
+          "updatedAt": "2025-10-28T12:00:00Z",
+          "itemID": "83550812-2533-4ca9-9e01-6e67acc40e93"
+        },
+        {
+          "id": "07fbf32d-abdf-4b01-a689-4e39dd5532df",
+          "amount": 855000.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-10-28T12:00:00Z",
+          "updatedAt": "2025-10-28T12:00:00Z",
+          "itemID": "c00c0efc-fd33-43b6-a3db-353eb4bee4b9"
+        },
+        {
+          "id": "a13e8542-ffa2-4b26-a209-5a525928e2b1",
+          "amount": 517500.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-10-28T12:00:00Z",
+          "updatedAt": "2025-10-28T12:00:00Z",
+          "itemID": "10252e64-1e7a-4cf7-80ef-840e2bc76b12"
+        },
+        {
+          "id": "b153cd35-4397-4d32-87ac-d3b487571c34",
+          "amount": 23000.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-10-28T12:00:00Z",
+          "updatedAt": "2025-10-28T12:00:00Z",
+          "itemID": "eb6c5313-26bf-47e4-81a1-c0d785a5bb24"
+        }
+      ]
+    },
+    {
+      "id": "000c7b64-1f3c-4e05-962e-ab318d1419b2",
+      "date": "2025-11-28T12:00:00Z",
+      "note": "样例快照",
+      "createdAt": "2025-11-28T12:00:00Z",
+      "updatedAt": "2025-11-28T12:00:00Z",
+      "goldAnchorPriceCNY": 634.67,
+      "goldAnchorPriceDate": "2025-11-28T12:00:00Z",
+      "btcAnchorPriceUSD": 81791.67,
+      "btcAnchorPriceDate": "2025-11-28T12:00:00Z",
+      "nasdaqAnchorPriceUSD": 20446.67,
+      "nasdaqAnchorPriceDate": "2025-11-28T12:00:00Z",
+      "usdPerCNY": 7.21,
+      "usdPerCNYDate": "2025-11-28T12:00:00Z",
+      "marketAnchorsUpdatedAt": "2025-11-28T12:00:00Z",
+      "entries": [
+        {
+          "id": "138059c4-25a1-4f38-b778-fc1855447486",
+          "amount": 94166.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-11-28T12:00:00Z",
+          "updatedAt": "2025-11-28T12:00:00Z",
+          "itemID": "7436ddf8-bb87-4851-813f-520f3a333f7a"
+        },
+        {
+          "id": "1c56e35a-9d9d-47ef-b366-79d5863103a6",
+          "amount": 189166.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-11-28T12:00:00Z",
+          "updatedAt": "2025-11-28T12:00:00Z",
+          "itemID": "7cc8c6b4-f93e-461f-867e-43f809438ac2"
+        },
+        {
+          "id": "7be70dee-fada-485c-854b-34ddbe478302",
+          "amount": null,
+          "quantity": 104.58,
+          "unitPrice": 634.67,
+          "note": "",
+          "createdAt": "2025-11-28T12:00:00Z",
+          "updatedAt": "2025-11-28T12:00:00Z",
+          "itemID": "83550812-2533-4ca9-9e01-6e67acc40e93"
+        },
+        {
+          "id": "09a108e3-b824-4da5-a028-e3ee8d909f04",
+          "amount": 860833.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-11-28T12:00:00Z",
+          "updatedAt": "2025-11-28T12:00:00Z",
+          "itemID": "c00c0efc-fd33-43b6-a3db-353eb4bee4b9"
+        },
+        {
+          "id": "fc538bf2-c32b-4aa9-9d3d-0a3982c4731a",
+          "amount": 512916.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-11-28T12:00:00Z",
+          "updatedAt": "2025-11-28T12:00:00Z",
+          "itemID": "10252e64-1e7a-4cf7-80ef-840e2bc76b12"
+        },
+        {
+          "id": "4550c394-7b15-48ea-bdc0-265ca7044dfb",
+          "amount": 20833.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-11-28T12:00:00Z",
+          "updatedAt": "2025-11-28T12:00:00Z",
+          "itemID": "eb6c5313-26bf-47e4-81a1-c0d785a5bb24"
+        }
+      ]
+    },
+    {
+      "id": "c09b9243-a533-4239-a80b-613c83f96956",
+      "date": "2025-12-28T12:00:00Z",
+      "note": "样例快照",
+      "createdAt": "2025-12-28T12:00:00Z",
+      "updatedAt": "2025-12-28T12:00:00Z",
+      "goldAnchorPriceCNY": 645.33,
+      "goldAnchorPriceDate": "2025-12-28T12:00:00Z",
+      "btcAnchorPriceUSD": 84333.33,
+      "btcAnchorPriceDate": "2025-12-28T12:00:00Z",
+      "nasdaqAnchorPriceUSD": 20853.33,
+      "nasdaqAnchorPriceDate": "2025-12-28T12:00:00Z",
+      "usdPerCNY": 7.2,
+      "usdPerCNYDate": "2025-12-28T12:00:00Z",
+      "marketAnchorsUpdatedAt": "2025-12-28T12:00:00Z",
+      "entries": [
+        {
+          "id": "2b7ff86c-2781-4db7-afdd-9878a6443c86",
+          "amount": 99333.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-12-28T12:00:00Z",
+          "updatedAt": "2025-12-28T12:00:00Z",
+          "itemID": "7436ddf8-bb87-4851-813f-520f3a333f7a"
+        },
+        {
+          "id": "6e2ed7e8-9aaf-4d72-a5f3-5f39e7d3b14e",
+          "amount": 199333.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-12-28T12:00:00Z",
+          "updatedAt": "2025-12-28T12:00:00Z",
+          "itemID": "7cc8c6b4-f93e-461f-867e-43f809438ac2"
+        },
+        {
+          "id": "52f59938-3683-49b9-937e-82054b361b66",
+          "amount": null,
+          "quantity": 106.67,
+          "unitPrice": 645.33,
+          "note": "",
+          "createdAt": "2025-12-28T12:00:00Z",
+          "updatedAt": "2025-12-28T12:00:00Z",
+          "itemID": "83550812-2533-4ca9-9e01-6e67acc40e93"
+        },
+        {
+          "id": "3f8b851e-b367-4257-8d1b-06afc004c12a",
+          "amount": 866666.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-12-28T12:00:00Z",
+          "updatedAt": "2025-12-28T12:00:00Z",
+          "itemID": "c00c0efc-fd33-43b6-a3db-353eb4bee4b9"
+        },
+        {
+          "id": "00b54e9e-04f8-45f5-bda8-85ac3962f9a8",
+          "amount": 508333.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-12-28T12:00:00Z",
+          "updatedAt": "2025-12-28T12:00:00Z",
+          "itemID": "10252e64-1e7a-4cf7-80ef-840e2bc76b12"
+        },
+        {
+          "id": "d1c644d5-92da-43ab-b531-6289b6ed90fb",
+          "amount": 18666.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2025-12-28T12:00:00Z",
+          "updatedAt": "2025-12-28T12:00:00Z",
+          "itemID": "eb6c5313-26bf-47e4-81a1-c0d785a5bb24"
+        }
+      ]
+    },
+    {
+      "id": "cb62d0e6-4fea-4dd6-8706-6c0473d2ac57",
+      "date": "2026-01-28T12:00:00Z",
+      "note": "样例快照",
+      "createdAt": "2026-01-28T12:00:00Z",
+      "updatedAt": "2026-01-28T12:00:00Z",
+      "goldAnchorPriceCNY": 656.0,
+      "goldAnchorPriceDate": "2026-01-28T12:00:00Z",
+      "btcAnchorPriceUSD": 86875.0,
+      "btcAnchorPriceDate": "2026-01-28T12:00:00Z",
+      "nasdaqAnchorPriceUSD": 21260.0,
+      "nasdaqAnchorPriceDate": "2026-01-28T12:00:00Z",
+      "usdPerCNY": 7.19,
+      "usdPerCNYDate": "2026-01-28T12:00:00Z",
+      "marketAnchorsUpdatedAt": "2026-01-28T12:00:00Z",
+      "entries": [
+        {
+          "id": "8b496430-2b24-4a10-8686-a3b622989141",
+          "amount": 104500.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-01-28T12:00:00Z",
+          "updatedAt": "2026-01-28T12:00:00Z",
+          "itemID": "7436ddf8-bb87-4851-813f-520f3a333f7a"
+        },
+        {
+          "id": "f59f12b4-ebdc-4c54-8aea-a9f864959242",
+          "amount": 209500.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-01-28T12:00:00Z",
+          "updatedAt": "2026-01-28T12:00:00Z",
+          "itemID": "7cc8c6b4-f93e-461f-867e-43f809438ac2"
+        },
+        {
+          "id": "f7b2b30b-7fd3-4290-9253-c93c1e026b5c",
+          "amount": null,
+          "quantity": 108.75,
+          "unitPrice": 656.0,
+          "note": "",
+          "createdAt": "2026-01-28T12:00:00Z",
+          "updatedAt": "2026-01-28T12:00:00Z",
+          "itemID": "83550812-2533-4ca9-9e01-6e67acc40e93"
+        },
+        {
+          "id": "3b433d58-abe9-4c6e-bcf1-5f1938be56b2",
+          "amount": 872500.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-01-28T12:00:00Z",
+          "updatedAt": "2026-01-28T12:00:00Z",
+          "itemID": "c00c0efc-fd33-43b6-a3db-353eb4bee4b9"
+        },
+        {
+          "id": "0a863c50-e5aa-4fbe-ac63-a04167b15d0d",
+          "amount": 503750.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-01-28T12:00:00Z",
+          "updatedAt": "2026-01-28T12:00:00Z",
+          "itemID": "10252e64-1e7a-4cf7-80ef-840e2bc76b12"
+        },
+        {
+          "id": "b0b88340-0319-42c9-9b69-d57fc1cf8637",
+          "amount": 16500.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-01-28T12:00:00Z",
+          "updatedAt": "2026-01-28T12:00:00Z",
+          "itemID": "eb6c5313-26bf-47e4-81a1-c0d785a5bb24"
+        }
+      ]
+    },
+    {
+      "id": "41fbd5d7-71ef-436f-9a4f-fb83c5b3ce3b",
+      "date": "2026-02-28T12:00:00Z",
+      "note": "样例快照",
+      "createdAt": "2026-02-28T12:00:00Z",
+      "updatedAt": "2026-02-28T12:00:00Z",
+      "goldAnchorPriceCNY": 666.67,
+      "goldAnchorPriceDate": "2026-02-28T12:00:00Z",
+      "btcAnchorPriceUSD": 89416.67,
+      "btcAnchorPriceDate": "2026-02-28T12:00:00Z",
+      "nasdaqAnchorPriceUSD": 21666.67,
+      "nasdaqAnchorPriceDate": "2026-02-28T12:00:00Z",
+      "usdPerCNY": 7.18,
+      "usdPerCNYDate": "2026-02-28T12:00:00Z",
+      "marketAnchorsUpdatedAt": "2026-02-28T12:00:00Z",
+      "entries": [
+        {
+          "id": "cfd63f83-33c1-4294-b04a-eef62d2cc105",
+          "amount": 109666.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-02-28T12:00:00Z",
+          "updatedAt": "2026-02-28T12:00:00Z",
+          "itemID": "7436ddf8-bb87-4851-813f-520f3a333f7a"
+        },
+        {
+          "id": "20e8bd13-44c0-4646-8e77-57c2a90bc5ae",
+          "amount": 219666.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-02-28T12:00:00Z",
+          "updatedAt": "2026-02-28T12:00:00Z",
+          "itemID": "7cc8c6b4-f93e-461f-867e-43f809438ac2"
+        },
+        {
+          "id": "348cf993-bd37-46be-b251-ad750a9ee807",
+          "amount": null,
+          "quantity": 110.83,
+          "unitPrice": 666.67,
+          "note": "",
+          "createdAt": "2026-02-28T12:00:00Z",
+          "updatedAt": "2026-02-28T12:00:00Z",
+          "itemID": "83550812-2533-4ca9-9e01-6e67acc40e93"
+        },
+        {
+          "id": "6d4bff4c-0152-4782-99da-8fa79eaf84c8",
+          "amount": 878333.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-02-28T12:00:00Z",
+          "updatedAt": "2026-02-28T12:00:00Z",
+          "itemID": "c00c0efc-fd33-43b6-a3db-353eb4bee4b9"
+        },
+        {
+          "id": "586a4392-7f0a-40e6-9892-176ea4891429",
+          "amount": 499166.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-02-28T12:00:00Z",
+          "updatedAt": "2026-02-28T12:00:00Z",
+          "itemID": "10252e64-1e7a-4cf7-80ef-840e2bc76b12"
+        },
+        {
+          "id": "ac5ef309-2f28-4199-b50c-12ff6fb4c398",
+          "amount": 14333.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-02-28T12:00:00Z",
+          "updatedAt": "2026-02-28T12:00:00Z",
+          "itemID": "eb6c5313-26bf-47e4-81a1-c0d785a5bb24"
+        }
+      ]
+    },
+    {
+      "id": "d33f91b5-4352-48ff-a665-e0b30530bb7f",
+      "date": "2026-03-28T12:00:00Z",
+      "note": "样例快照",
+      "createdAt": "2026-03-28T12:00:00Z",
+      "updatedAt": "2026-03-28T12:00:00Z",
+      "goldAnchorPriceCNY": 677.33,
+      "goldAnchorPriceDate": "2026-03-28T12:00:00Z",
+      "btcAnchorPriceUSD": 91958.33,
+      "btcAnchorPriceDate": "2026-03-28T12:00:00Z",
+      "nasdaqAnchorPriceUSD": 22073.33,
+      "nasdaqAnchorPriceDate": "2026-03-28T12:00:00Z",
+      "usdPerCNY": 7.17,
+      "usdPerCNYDate": "2026-03-28T12:00:00Z",
+      "marketAnchorsUpdatedAt": "2026-03-28T12:00:00Z",
+      "entries": [
+        {
+          "id": "721ae6cd-3e61-4f7e-abe6-ff83605d6b46",
+          "amount": 114833.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-03-28T12:00:00Z",
+          "updatedAt": "2026-03-28T12:00:00Z",
+          "itemID": "7436ddf8-bb87-4851-813f-520f3a333f7a"
+        },
+        {
+          "id": "14e84127-d9a9-411a-8a3f-a9636c82e535",
+          "amount": 229833.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-03-28T12:00:00Z",
+          "updatedAt": "2026-03-28T12:00:00Z",
+          "itemID": "7cc8c6b4-f93e-461f-867e-43f809438ac2"
+        },
+        {
+          "id": "3e16d6df-d5e3-4b29-af0b-c1e6625cb40e",
+          "amount": null,
+          "quantity": 112.92,
+          "unitPrice": 677.33,
+          "note": "",
+          "createdAt": "2026-03-28T12:00:00Z",
+          "updatedAt": "2026-03-28T12:00:00Z",
+          "itemID": "83550812-2533-4ca9-9e01-6e67acc40e93"
+        },
+        {
+          "id": "8ba2211d-1362-488e-b603-e05fe8198c04",
+          "amount": 884166.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-03-28T12:00:00Z",
+          "updatedAt": "2026-03-28T12:00:00Z",
+          "itemID": "c00c0efc-fd33-43b6-a3db-353eb4bee4b9"
+        },
+        {
+          "id": "809dbcd7-c052-4203-8717-1e0675d4b25c",
+          "amount": 494583.33,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-03-28T12:00:00Z",
+          "updatedAt": "2026-03-28T12:00:00Z",
+          "itemID": "10252e64-1e7a-4cf7-80ef-840e2bc76b12"
+        },
+        {
+          "id": "eba9b5c8-ef13-495c-ba3d-8f9a0de00225",
+          "amount": 12166.67,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-03-28T12:00:00Z",
+          "updatedAt": "2026-03-28T12:00:00Z",
+          "itemID": "eb6c5313-26bf-47e4-81a1-c0d785a5bb24"
+        }
+      ]
+    },
+    {
+      "id": "be88d3d7-6e50-4a2d-8d14-8402b5ace563",
+      "date": "2026-04-28T12:00:00Z",
+      "note": "样例快照",
+      "createdAt": "2026-04-28T12:00:00Z",
+      "updatedAt": "2026-04-28T12:00:00Z",
+      "goldAnchorPriceCNY": 688.0,
+      "goldAnchorPriceDate": "2026-04-28T12:00:00Z",
+      "btcAnchorPriceUSD": 94500.0,
+      "btcAnchorPriceDate": "2026-04-28T12:00:00Z",
+      "nasdaqAnchorPriceUSD": 22480.0,
+      "nasdaqAnchorPriceDate": "2026-04-28T12:00:00Z",
+      "usdPerCNY": 7.16,
+      "usdPerCNYDate": "2026-04-28T12:00:00Z",
+      "marketAnchorsUpdatedAt": "2026-04-28T12:00:00Z",
+      "entries": [
+        {
+          "id": "c454c2a0-896c-46c8-8d14-bc9d7e7f1e54",
+          "amount": 120000.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-04-28T12:00:00Z",
+          "updatedAt": "2026-04-28T12:00:00Z",
+          "itemID": "7436ddf8-bb87-4851-813f-520f3a333f7a"
+        },
+        {
+          "id": "7b449e45-f033-466b-8bc6-33871afd6bd5",
+          "amount": 240000.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-04-28T12:00:00Z",
+          "updatedAt": "2026-04-28T12:00:00Z",
+          "itemID": "7cc8c6b4-f93e-461f-867e-43f809438ac2"
+        },
+        {
+          "id": "2d3583c2-ec84-42ab-b395-e8f0dbfb8109",
+          "amount": null,
+          "quantity": 115.0,
+          "unitPrice": 688.0,
+          "note": "",
+          "createdAt": "2026-04-28T12:00:00Z",
+          "updatedAt": "2026-04-28T12:00:00Z",
+          "itemID": "83550812-2533-4ca9-9e01-6e67acc40e93"
+        },
+        {
+          "id": "706c7aad-47c8-4900-b180-3e23d367a273",
+          "amount": 890000.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-04-28T12:00:00Z",
+          "updatedAt": "2026-04-28T12:00:00Z",
+          "itemID": "c00c0efc-fd33-43b6-a3db-353eb4bee4b9"
+        },
+        {
+          "id": "fdad4455-62b7-4baa-a08d-3ffbdfb31815",
+          "amount": 490000.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-04-28T12:00:00Z",
+          "updatedAt": "2026-04-28T12:00:00Z",
+          "itemID": "10252e64-1e7a-4cf7-80ef-840e2bc76b12"
+        },
+        {
+          "id": "397eca68-5dab-4621-a9ef-6145194f2f80",
+          "amount": 10000.0,
+          "quantity": null,
+          "unitPrice": null,
+          "note": "",
+          "createdAt": "2026-04-28T12:00:00Z",
+          "updatedAt": "2026-04-28T12:00:00Z",
+          "itemID": "eb6c5313-26bf-47e4-81a1-c0d785a5bb24"
+        }
+      ]
+    }
+  ]
+}
