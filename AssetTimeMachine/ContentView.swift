@@ -1172,13 +1172,22 @@ private enum BacktestEngine {
     }
 }
 
+private struct BacktestAllocationSlice: Identifiable {
+    let title: String
+    let amount: Double
+    let color: Color
+
+    var id: String { title }
+}
+
 private struct BacktestView: View {
     @ObservedObject var marketStore: RemoteMarketStore
-    @State private var cashWeight: Double = 30
-    @State private var goldWeight: Double = 20
-    @State private var indexWeight: Double = 50
+    @State private var cashWeight: Double = 100
+    @State private var goldWeight: Double = 0
+    @State private var indexWeight: Double = 0
     @State private var selectedIndexSymbol: String = "sp500"
     @State private var animationProgress: Double = 0
+    @State private var showsAllocationSheet = false
 
     private let indexOptions: [(symbol: String, title: String)] = [
         ("sp500", "标普500"),
@@ -1206,6 +1215,14 @@ private struct BacktestView: View {
         return Array(report.points.prefix(count))
     }
 
+    private var allocationSlices: [BacktestAllocationSlice] {
+        [
+            BacktestAllocationSlice(title: "现金", amount: cashWeight, color: AssetTheme.textSecondary),
+            BacktestAllocationSlice(title: "黄金", amount: goldWeight, color: AssetTheme.gold),
+            BacktestAllocationSlice(title: indexOptions.first(where: { $0.symbol == selectedIndexSymbol })?.title ?? "指数", amount: indexWeight, color: AssetTheme.accentBlue)
+        ].filter { $0.amount > 0 }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -1213,19 +1230,53 @@ private struct BacktestView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 14) {
-                        VStack(alignment: .leading, spacing: 14) {
-                            BacktestWeightRow(title: "现金", value: $cashWeight)
-                            BacktestWeightRow(title: "黄金", value: $goldWeight)
-                            BacktestWeightRow(title: "指数", value: $indexWeight)
+                        Button {
+                            showsAllocationSheet = true
+                        } label: {
+                            VStack(alignment: .leading, spacing: 14) {
+                                HStack {
+                                    Text("当前配置")
+                                        .font(.headline.weight(.bold))
+                                        .foregroundStyle(AssetTheme.textPrimary)
+                                    Spacer()
+                                    Text("点击调整")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(AssetTheme.goldSoft)
+                                }
 
-                            Picker("指数", selection: $selectedIndexSymbol) {
-                                ForEach(indexOptions, id: \.symbol) { option in
-                                    Text(option.title).tag(option.symbol)
+                                HStack(spacing: 18) {
+                                    Chart(allocationSlices) { slice in
+                                        SectorMark(
+                                            angle: .value("占比", slice.amount),
+                                            innerRadius: .ratio(0.58),
+                                            angularInset: 2
+                                        )
+                                        .foregroundStyle(slice.color)
+                                    }
+                                    .frame(width: 132, height: 132)
+                                    .chartLegend(.hidden)
+
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        ForEach(allocationSlices) { slice in
+                                            HStack(spacing: 8) {
+                                                Circle()
+                                                    .fill(slice.color)
+                                                    .frame(width: 8, height: 8)
+                                                Text(slice.title)
+                                                    .font(.subheadline.weight(.semibold))
+                                                    .foregroundStyle(AssetTheme.textPrimary)
+                                                Spacer()
+                                                Text("\(Int(slice.amount.rounded()))%")
+                                                    .font(.caption.weight(.bold))
+                                                    .foregroundStyle(AssetTheme.goldSoft)
+                                            }
+                                        }
+                                    }
                                 }
                             }
-                            .pickerStyle(.segmented)
+                            .atmCardStyle()
                         }
-                        .atmCardStyle()
+                        .buttonStyle(.plain)
 
                         if let report {
                             VStack(alignment: .leading, spacing: 14) {
@@ -1298,7 +1349,6 @@ private struct BacktestView: View {
                                     BacktestMetricCard(title: "夏普比率", value: report.sharpeRatio.map { String(format: "%.2f", $0) } ?? "--")
                                     BacktestMetricCard(title: "区间", value: intervalLabel(for: report))
                                 }
-
                             }
                             .atmCardStyle()
                         } else {
@@ -1315,6 +1365,17 @@ private struct BacktestView: View {
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
+            .sheet(isPresented: $showsAllocationSheet) {
+                BacktestAllocationSheet(
+                    cashWeight: $cashWeight,
+                    goldWeight: $goldWeight,
+                    indexWeight: $indexWeight,
+                    selectedIndexSymbol: $selectedIndexSymbol,
+                    indexOptions: indexOptions
+                )
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+            }
         }
     }
 
@@ -1329,7 +1390,76 @@ private struct BacktestView: View {
         guard let first = report.points.first?.date, let last = report.points.last?.date else { return "--" }
         return "\(first.shortDateString) - \(last.shortDateString)"
     }
+}
 
+private struct BacktestAllocationSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var cashWeight: Double
+    @Binding var goldWeight: Double
+    @Binding var indexWeight: Double
+    @Binding var selectedIndexSymbol: String
+    let indexOptions: [(symbol: String, title: String)]
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AssetTheme.pageGradient.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        BacktestWeightRow(title: "现金", value: $cashWeight)
+                        BacktestWeightRow(title: "黄金", value: $goldWeight)
+                        BacktestWeightRow(title: "指数", value: $indexWeight)
+
+                        Picker("指数", selection: $selectedIndexSymbol) {
+                            ForEach(indexOptions, id: \.symbol) { option in
+                                Text(option.title).tag(option.symbol)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 20)
+                    .padding(.bottom, 32)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("重置") {
+                        cashWeight = 100
+                        goldWeight = 0
+                        indexWeight = 0
+                    }
+                    .tint(AssetTheme.textSecondary)
+                }
+                ToolbarItem(placement: .principal) {
+                    Text("调整配置")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("完成") {
+                        normalizeWeights()
+                        dismiss()
+                    }
+                    .tint(AssetTheme.gold)
+                }
+            }
+        }
+    }
+
+    private func normalizeWeights() {
+        let total = max(cashWeight + goldWeight + indexWeight, 0)
+        guard total > 0 else {
+            cashWeight = 100
+            goldWeight = 0
+            indexWeight = 0
+            return
+        }
+        cashWeight = (cashWeight / total) * 100
+        goldWeight = (goldWeight / total) * 100
+        indexWeight = 100 - cashWeight - goldWeight
+    }
 }
 
 private struct BacktestWeightRow: View {
@@ -1343,7 +1473,7 @@ private struct BacktestWeightRow: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(AssetTheme.textPrimary)
                 Spacer()
-                Text("\(Int(value))%")
+                Text("\(Int(value.rounded()))%")
                     .font(.caption.weight(.bold))
                     .foregroundStyle(AssetTheme.goldSoft)
             }
@@ -1351,6 +1481,12 @@ private struct BacktestWeightRow: View {
             Slider(value: $value, in: 0...100, step: 1)
                 .tint(AssetTheme.gold)
         }
+        .padding(14)
+        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.7), lineWidth: 1)
+        )
     }
 }
 
