@@ -1425,7 +1425,7 @@ private enum BacktestEngine {
         )
     }
 
-    private static func historicalSeriesDateStatic(from text: String) -> Date? {
+    fileprivate static func historicalSeriesDateStatic(from text: String) -> Date? {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -1443,15 +1443,54 @@ private struct BacktestAllocationSlice: Identifiable {
     var id: String { title }
 }
 
+private enum BacktestRange: String, CaseIterable, Identifiable {
+    case sixMonths
+    case oneYear
+    case threeYears
+    case fiveYears
+    case all
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .sixMonths: return "6个月"
+        case .oneYear: return "1年"
+        case .threeYears: return "3年"
+        case .fiveYears: return "5年"
+        case .all: return "全部"
+        }
+    }
+
+    func startDate(from latestDate: Date, calendar: Calendar = .current) -> Date? {
+        switch self {
+        case .sixMonths:
+            return calendar.date(byAdding: .month, value: -6, to: latestDate)
+        case .oneYear:
+            return calendar.date(byAdding: .year, value: -1, to: latestDate)
+        case .threeYears:
+            return calendar.date(byAdding: .year, value: -3, to: latestDate)
+        case .fiveYears:
+            return calendar.date(byAdding: .year, value: -5, to: latestDate)
+        case .all:
+            return nil
+        }
+    }
+}
+
 private struct BacktestView: View {
     @ObservedObject var marketStore: RemoteMarketStore
     @State private var cashWeight: Double = 50
     @State private var goldWeight: Double = 25
     @State private var indexWeight: Double = 25
     @State private var selectedIndexSymbol: String = "nasdaq"
-    @State private var animationProgress: Double = 0
+    @State private var selectedRange: BacktestRange = .all
+    @State private var animationProgress: Double = 1
     @State private var showsAllocationSheet = false
+    @State private var showsRangeSheet = false
     @State private var hasStartedBacktest = ProcessInfo.processInfo.arguments.contains("-autoStartBacktest")
+    @State private var report: BacktestReport?
+    @State private var displayPoints: [BacktestSeriesPoint] = []
 
     private let indexOptions: [(symbol: String, title: String)] = [
         ("sp500", "标普500"),
@@ -1463,21 +1502,18 @@ private struct BacktestView: View {
         ("shanghai_composite", "上证综指")
     ]
 
-    private var report: BacktestReport? {
-        guard hasStartedBacktest else { return nil }
-        return BacktestEngine.run(
-            cashWeight: cashWeight,
-            goldWeight: goldWeight,
-            indexWeight: indexWeight,
-            goldSeries: marketStore.history(for: "gold_cny"),
-            indexSeries: marketStore.history(for: selectedIndexSymbol)
-        )
+    private var filteredGoldSeries: PublicHistorySeries? {
+        filteredHistorySeries(marketStore.history(for: "gold_cny"))
+    }
+
+    private var filteredIndexSeries: PublicHistorySeries? {
+        filteredHistorySeries(marketStore.history(for: selectedIndexSymbol))
     }
 
     private var animatedPoints: [BacktestSeriesPoint] {
-        guard let report else { return [] }
-        let count = max(Int(Double(report.points.count) * animationProgress), min(report.points.count, 2))
-        return Array(report.points.prefix(count))
+        guard !displayPoints.isEmpty else { return [] }
+        let count = max(Int(Double(displayPoints.count) * animationProgress), min(displayPoints.count, 2))
+        return Array(displayPoints.prefix(count))
     }
 
     private var allocationSlices: [BacktestAllocationSlice] {
@@ -1525,10 +1561,20 @@ private struct BacktestView: View {
                                 }
                                 .buttonStyle(.plain)
 
+                                HStack(spacing: 10) {
+                                    BacktestActionChip(title: "调整配置", systemImage: "slider.horizontal.3") {
+                                        showsAllocationSheet = true
+                                    }
+
+                                    BacktestActionChip(title: "调整时间 · \(selectedRange.label)", systemImage: "calendar") {
+                                        showsRangeSheet = true
+                                    }
+                                }
+
                                 if report == nil {
                                     Button {
                                         hasStartedBacktest = true
-                                        restartAnimation()
+                                        recomputeReport(animated: true)
                                     } label: {
                                         Text("开始回测")
                                             .font(.subheadline.weight(.bold))
@@ -1553,6 +1599,9 @@ private struct BacktestView: View {
                                             .font(.headline.weight(.bold))
                                             .foregroundStyle(AssetTheme.textPrimary)
                                         Spacer()
+                                        Text(selectedRange.label)
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(AssetTheme.textSecondary)
                                         Text(indexOptions.first(where: { $0.symbol == selectedIndexSymbol })?.title ?? selectedIndexSymbol)
                                             .font(.caption.weight(.semibold))
                                             .foregroundStyle(AssetTheme.goldSoft)
@@ -1602,11 +1651,6 @@ private struct BacktestView: View {
                                     .chartLegend(.hidden)
                                 }
                                 .padding(.top, 8)
-                                .onAppear { restartAnimation() }
-                                .onChange(of: selectedIndexSymbol) { _, _ in restartAnimation() }
-                                .onChange(of: cashWeight) { _, _ in restartAnimation() }
-                                .onChange(of: goldWeight) { _, _ in restartAnimation() }
-                                .onChange(of: indexWeight) { _, _ in restartAnimation() }
 
                                 VStack(alignment: .leading, spacing: 12) {
                                     Text("分析报告")
@@ -1645,7 +1689,59 @@ private struct BacktestView: View {
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
             }
+            .sheet(isPresented: $showsRangeSheet) {
+                BacktestRangeSheet(selectedRange: $selectedRange)
+                    .presentationDetents([.fraction(0.42)])
+                    .presentationDragIndicator(.visible)
+            }
         }
+        .onAppear {
+            if hasStartedBacktest, report == nil {
+                recomputeReport(animated: true)
+            }
+        }
+        .onChange(of: selectedIndexSymbol) { _, _ in
+            guard hasStartedBacktest else { return }
+            recomputeReport(animated: true)
+        }
+        .onChange(of: cashWeight) { _, _ in
+            guard hasStartedBacktest else { return }
+            recomputeReport(animated: true)
+        }
+        .onChange(of: goldWeight) { _, _ in
+            guard hasStartedBacktest else { return }
+            recomputeReport(animated: true)
+        }
+        .onChange(of: indexWeight) { _, _ in
+            guard hasStartedBacktest else { return }
+            recomputeReport(animated: true)
+        }
+        .onChange(of: selectedRange) { _, _ in
+            guard hasStartedBacktest else { return }
+            recomputeReport(animated: true)
+        }
+        .onReceive(marketStore.$historySeries) { _ in
+            guard hasStartedBacktest else { return }
+            recomputeReport(animated: report == nil)
+        }
+    }
+
+    @MainActor
+    private func recomputeReport(animated: Bool) {
+        report = BacktestEngine.run(
+            cashWeight: cashWeight,
+            goldWeight: goldWeight,
+            indexWeight: indexWeight,
+            goldSeries: filteredGoldSeries,
+            indexSeries: filteredIndexSeries
+        )
+        displayPoints = sampledChartPoints(from: report?.points ?? [])
+
+        guard animated, !displayPoints.isEmpty else {
+            animationProgress = 1
+            return
+        }
+        restartAnimation()
     }
 
     private func restartAnimation() {
@@ -1658,6 +1754,57 @@ private struct BacktestView: View {
     private func intervalLabel(for report: BacktestReport) -> String {
         guard let first = report.points.first?.date, let last = report.points.last?.date else { return "--" }
         return "\(first.shortDateString) - \(last.shortDateString)"
+    }
+
+    private func filteredHistorySeries(_ series: PublicHistorySeries?) -> PublicHistorySeries? {
+        guard let series, selectedRange != .all else { return series }
+        guard let latestText = series.dates.last,
+              let latestDate = BacktestEngine.historicalSeriesDateStatic(from: latestText),
+              let startDate = selectedRange.startDate(from: latestDate) else {
+            return series
+        }
+
+        let filteredPairs = zip(series.dates, series.prices).filter { dateText, _ in
+            guard let date = BacktestEngine.historicalSeriesDateStatic(from: dateText) else { return false }
+            return date >= startDate
+        }
+        let filteredDates = filteredPairs.map { $0.0 }
+        let filteredPrices = filteredPairs.map { $0.1 }
+        guard filteredDates.count >= 2 else { return nil }
+
+        return PublicHistorySeries(
+            symbol: series.symbol,
+            category: series.category,
+            label: series.label,
+            currency: series.currency,
+            unit: series.unit,
+            source: series.source,
+            dates: filteredDates,
+            prices: filteredPrices
+        )
+    }
+
+    private func sampledChartPoints(from points: [BacktestSeriesPoint], maxCount: Int = 180) -> [BacktestSeriesPoint] {
+        guard points.count > maxCount else { return points }
+
+        let step = Double(points.count - 1) / Double(maxCount - 1)
+        var sampled: [BacktestSeriesPoint] = []
+        sampled.reserveCapacity(maxCount)
+
+        for index in 0 ..< maxCount {
+            let rawIndex = Int((Double(index) * step).rounded())
+            let safeIndex = min(max(rawIndex, 0), points.count - 1)
+            let point = points[safeIndex]
+            if sampled.last?.date != point.date {
+                sampled.append(point)
+            }
+        }
+
+        if sampled.last?.date != points.last?.date, let last = points.last {
+            sampled.append(last)
+        }
+
+        return sampled
     }
 
     private func recoveryTimeLabel(for report: BacktestReport) -> String {
@@ -1696,6 +1843,82 @@ private struct BacktestView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: alignment == .trailing ? .trailing : .leading)
+    }
+}
+
+private struct BacktestActionChip: View {
+    let title: String
+    let systemImage: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .font(.footnote.weight(.bold))
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(AssetTheme.textPrimary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(.white.opacity(0.04), in: Capsule())
+            .overlay(Capsule().stroke(AssetTheme.border.opacity(0.7), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct BacktestRangeSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var selectedRange: BacktestRange
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AssetTheme.pageGradient.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 12) {
+                        ForEach(BacktestRange.allCases) { range in
+                            Button {
+                                selectedRange = range
+                                dismiss()
+                            } label: {
+                                HStack {
+                                    Text(range.label)
+                                        .font(.headline.weight(.semibold))
+                                        .foregroundStyle(AssetTheme.textPrimary)
+                                    Spacer()
+                                    if selectedRange == range {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(AssetTheme.gold)
+                                    }
+                                }
+                                .padding(16)
+                                .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                        .stroke(selectedRange == range ? AssetTheme.gold.opacity(0.75) : AssetTheme.border.opacity(0.7), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 20)
+                    .padding(.bottom, 32)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("调整时间")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                }
+            }
+        }
     }
 }
 
