@@ -1489,6 +1489,7 @@ private struct BacktestView: View {
     @State private var showsAllocationSheet = false
     @State private var showsRangeSheet = false
     @State private var hasStartedBacktest = ProcessInfo.processInfo.arguments.contains("-autoStartBacktest")
+    @State private var hasPlayedInitialBacktestAnimation = false
     @State private var report: BacktestReport?
     @State private var displayPoints: [BacktestSeriesPoint] = []
 
@@ -1561,13 +1562,19 @@ private struct BacktestView: View {
                                 }
                                 .buttonStyle(.plain)
 
-                                HStack(spacing: 10) {
-                                    BacktestActionChip(title: "调整配置", systemImage: "slider.horizontal.3") {
-                                        showsAllocationSheet = true
+                                VStack(spacing: 10) {
+                                    HStack(spacing: 10) {
+                                        BacktestActionChip(title: "调整配置", systemImage: "slider.horizontal.3") {
+                                            showsAllocationSheet = true
+                                        }
+
+                                        BacktestActionChip(title: "调整时间 · \(selectedRange.label)", systemImage: "calendar") {
+                                            showsRangeSheet = true
+                                        }
                                     }
 
-                                    BacktestActionChip(title: "调整时间 · \(selectedRange.label)", systemImage: "calendar") {
-                                        showsRangeSheet = true
+                                    BacktestActionChip(title: "重置回测", systemImage: "arrow.counterclockwise") {
+                                        resetBacktest()
                                     }
                                 }
 
@@ -1697,32 +1704,32 @@ private struct BacktestView: View {
         }
         .onAppear {
             if hasStartedBacktest, report == nil {
-                recomputeReport(animated: true)
+                recomputeReport(animated: !hasPlayedInitialBacktestAnimation)
             }
         }
         .onChange(of: selectedIndexSymbol) { _, _ in
             guard hasStartedBacktest else { return }
-            recomputeReport(animated: true)
+            recomputeReport(animated: false)
         }
         .onChange(of: cashWeight) { _, _ in
             guard hasStartedBacktest else { return }
-            recomputeReport(animated: true)
+            recomputeReport(animated: false)
         }
         .onChange(of: goldWeight) { _, _ in
             guard hasStartedBacktest else { return }
-            recomputeReport(animated: true)
+            recomputeReport(animated: false)
         }
         .onChange(of: indexWeight) { _, _ in
             guard hasStartedBacktest else { return }
-            recomputeReport(animated: true)
+            recomputeReport(animated: false)
         }
         .onChange(of: selectedRange) { _, _ in
             guard hasStartedBacktest else { return }
-            recomputeReport(animated: true)
+            recomputeReport(animated: false)
         }
         .onReceive(marketStore.$historySeries) { _ in
             guard hasStartedBacktest else { return }
-            recomputeReport(animated: report == nil)
+            recomputeReport(animated: report == nil && !hasPlayedInitialBacktestAnimation)
         }
     }
 
@@ -1737,11 +1744,27 @@ private struct BacktestView: View {
         )
         displayPoints = sampledChartPoints(from: report?.points ?? [])
 
-        guard animated, !displayPoints.isEmpty else {
+        let shouldAnimate = animated && !hasPlayedInitialBacktestAnimation && !displayPoints.isEmpty
+        guard shouldAnimate else {
             animationProgress = 1
             return
         }
+
+        hasPlayedInitialBacktestAnimation = true
         restartAnimation()
+    }
+
+    private func resetBacktest() {
+        hasStartedBacktest = false
+        hasPlayedInitialBacktestAnimation = false
+        cashWeight = 50
+        goldWeight = 25
+        indexWeight = 25
+        selectedIndexSymbol = "nasdaq"
+        selectedRange = .all
+        report = nil
+        displayPoints = []
+        animationProgress = 1
     }
 
     private func restartAnimation() {
