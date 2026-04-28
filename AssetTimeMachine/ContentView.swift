@@ -1213,8 +1213,6 @@ private struct BacktestView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 14) {
-                        ATMHeader(title: "量化回测", subtitle: "简易版，按现金 + 黄金 + 指数持仓比例，回看从 2000 年到今天的资产曲线。")
-
                         VStack(alignment: .leading, spacing: 14) {
                             BacktestWeightRow(title: "现金", value: $cashWeight)
                             BacktestWeightRow(title: "黄金", value: $goldWeight)
@@ -1292,10 +1290,6 @@ private struct BacktestView: View {
                             .onChange(of: indexWeight) { _, _ in restartAnimation() }
 
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("分析报告")
-                                    .font(.headline.weight(.bold))
-                                    .foregroundStyle(AssetTheme.textPrimary)
-
                                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                                     BacktestMetricCard(title: "总收益", value: report.totalReturn.percentString())
                                     BacktestMetricCard(title: "年化收益", value: report.annualizedReturn?.percentString() ?? "--")
@@ -1305,10 +1299,6 @@ private struct BacktestView: View {
                                     BacktestMetricCard(title: "区间", value: intervalLabel(for: report))
                                 }
 
-                                Text(reportSummary(for: report))
-                                    .font(.footnote)
-                                    .foregroundStyle(AssetTheme.textSecondary)
-                                    .lineSpacing(4)
                             }
                             .atmCardStyle()
                         } else {
@@ -1340,10 +1330,6 @@ private struct BacktestView: View {
         return "\(first.shortDateString) - \(last.shortDateString)"
     }
 
-    private func reportSummary(for report: BacktestReport) -> String {
-        let indexName = indexOptions.first(where: { $0.symbol == selectedIndexSymbol })?.title ?? selectedIndexSymbol
-        return "这个简易回测假设从 2000-01-01 起按固定权重长期持有，不做再平衡摩擦、税费和滑点处理。当前组合是现金 \(Int(cashWeight))%、黄金 \(Int(goldWeight))%、\(indexName) \(Int(indexWeight))%。它更适合做方向判断和长期感受，不适合当成真实交易收益承诺。"
-    }
 }
 
 private struct BacktestWeightRow: View {
