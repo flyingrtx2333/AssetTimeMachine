@@ -762,7 +762,7 @@ private struct AddAssetItemSheet: View {
                                 .font(.headline)
                                 .foregroundStyle(AssetTheme.textPrimary)
 
-                            TextField("例如：A股账户、BTC、车位", text: $name)
+                            TextField("例如：A股账户、指数账户、车位", text: $name)
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()
                                 .font(.body.weight(.semibold))
@@ -1130,20 +1130,6 @@ private struct TimeMachineView: View {
                 rightLatestLabel: latestPoint?.nasdaqEquivalent.map { "\($0.plainNumberString()) 份" } ?? "--",
                 leftAxisStyle: .currency(code: "USD"),
                 rightAxisStyle: .quantity(unit: "份", maxFractionDigits: 2),
-                showsComparisonLine: true
-            ),
-            TimeMachineCombinedTrendDescriptor(
-                title: "BTC",
-                subtitle: nil,
-                leftTitle: "价格",
-                rightTitle: "折算",
-                points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.btcAnchorPriceUSD, right: \.btcEquivalent),
-                leftColor: AssetTheme.accentOrange,
-                rightColor: AssetTheme.positive,
-                leftLatestLabel: latestPoint?.btcAnchorPriceUSD.map { $0.currencyString(code: "USD") } ?? "--",
-                rightLatestLabel: latestPoint?.btcEquivalent.map { "\($0.plainNumberString()) BTC" } ?? "--",
-                leftAxisStyle: .currency(code: "USD"),
-                rightAxisStyle: .quantity(unit: "BTC", maxFractionDigits: 4),
                 showsComparisonLine: true
             ),
         ] + publicIndexTrendCards
@@ -2958,9 +2944,9 @@ private struct TimeMachineHeroTrendCard: View {
                         accent: AssetTheme.negative
                     )
                     TimeMachineInlineMetric(
-                        title: "BTC 折算",
-                        value: latestPoint.btcEquivalent?.plainNumberString() ?? "--",
-                        accent: AssetTheme.accentOrange
+                        title: "黄金折算",
+                        value: latestPoint.goldEquivalent?.plainNumberString() ?? "--",
+                        accent: AssetTheme.gold
                     )
                     TimeMachineInlineMetric(
                         title: "纳指折算",
@@ -3588,7 +3574,6 @@ private struct MarketPriceRow: View {
     private var displayName: String {
         switch market.symbol {
         case "gold": return "黄金"
-        case "btc": return "BTC"
         case "nasdaq": return "纳指锚点"
         default: return market.symbol.uppercased()
         }
@@ -3597,7 +3582,6 @@ private struct MarketPriceRow: View {
     private var color: Color {
         switch market.symbol {
         case "gold": return AssetTheme.gold
-        case "btc": return AssetTheme.accentOrange
         case "nasdaq": return AssetTheme.accentBlue
         default: return AssetTheme.textSecondary
         }

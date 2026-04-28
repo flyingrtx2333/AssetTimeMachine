@@ -102,12 +102,6 @@ enum RemoteMarketClient {
             symbol: "gold"
         ),
         .init(
-            title: "BTC 价格",
-            path: "/api/v1/money/public/btc-price",
-            description: "返回 Binance 的 BTCUSDT 最新价格。",
-            symbol: "btc"
-        ),
-        .init(
             title: "纳指参考价格",
             path: "/api/v1/money/public/nasdaq-price",
             description: "当前使用 QQQ 作为纳指代理锚点，返回美元价格。",
@@ -116,7 +110,7 @@ enum RemoteMarketClient {
         .init(
             title: "行情概览",
             path: "/api/v1/money/public/market-overview",
-            description: "汇总返回 gold、btc、nasdaq 三个锚点。",
+            description: "汇总返回 gold、nasdaq 两个锚点。",
             symbol: nil
         ),
         .init(
