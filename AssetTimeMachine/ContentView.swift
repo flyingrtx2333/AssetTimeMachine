@@ -2722,7 +2722,7 @@ private struct DashboardFreedomSection: View {
     }
 
     private var statusText: String {
-        guard let projection else { return "还不能估算" }
+        guard let projection else { return "还不能估算财富自由时间，至少两条才能开始估算财富自由时间" }
 
         switch projection.status {
         case .alreadyFree:
