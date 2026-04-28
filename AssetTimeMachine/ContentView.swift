@@ -3211,7 +3211,7 @@ private struct TimeMachineDualAxisTrendCard: View {
         ForEach(descriptor.points) { point in
             LineMark(
                 x: .value("日期", point.date),
-                y: .value(descriptor.leftTitle, point.leftValue)
+                y: .value(descriptor.leftTitle, normalized(point.leftValue, in: leftDomain))
             )
             .foregroundStyle(descriptor.leftColor)
             .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
