@@ -331,6 +331,8 @@ private struct SnapshotListView: View {
     @State private var quantityInputs: [UUID: String] = [:]
     @State private var unitPriceInputs: [UUID: String] = [:]
     @State private var didPrepare = false
+    @State private var showsAddAssetItemSheet = false
+    @FocusState private var focusedField: RecordInputField?
 
     private var currentSnapshot: AssetSnapshot? {
         if let currentSnapshotID,
@@ -395,12 +397,35 @@ private struct SnapshotListView: View {
                                 .frame(width: 128, alignment: .leading)
                             }
 
+                            HStack(spacing: 12) {
+                                Button {
+                                    focusedField = nil
+                                    showsAddAssetItemSheet = true
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "plus.circle.fill")
+                                            .foregroundStyle(AssetTheme.gold)
+                                        Text("添加资产类型")
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(AssetTheme.textPrimary)
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 10)
+                                    .background(.white.opacity(0.04), in: Capsule())
+                                    .overlay(Capsule().stroke(AssetTheme.border.opacity(0.7), lineWidth: 1))
+                                }
+                                .buttonStyle(.plain)
+
+                                Spacer(minLength: 0)
+                            }
+
                             ForEach(visibleCategories) { category in
                                 RecordCategoryCard(
                                     category: category,
                                     amountInputs: $amountInputs,
                                     quantityInputs: $quantityInputs,
                                     unitPriceInputs: $unitPriceInputs,
+                                    focusedField: $focusedField,
                                     onChanged: { item in
                                         persist(item: item)
                                     }
@@ -440,8 +465,17 @@ private struct SnapshotListView: View {
                     .padding(.top, 28)
                     .padding(.bottom, 120)
                 }
+                .scrollDismissesKeyboard(.immediately)
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                        focusedField = nil
+                    }
+                )
             }
             .toolbar(.hidden, for: .navigationBar)
+        }
+        .sheet(isPresented: $showsAddAssetItemSheet) {
+            AddAssetItemSheet()
         }
         .task {
             await prepareSnapshotIfNeeded()
@@ -548,11 +582,18 @@ private struct SnapshotListView: View {
     }
 }
 
+private enum RecordInputField: Hashable {
+    case amount(UUID)
+    case quantity(UUID)
+    case unitPrice(UUID)
+}
+
 private struct RecordCategoryCard: View {
     let category: AssetCategory
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
     @Binding var unitPriceInputs: [UUID: String]
+    var focusedField: FocusState<RecordInputField?>.Binding
     let onChanged: (AssetItem) -> Void
 
     private var items: [AssetItem] {
@@ -599,7 +640,8 @@ private struct RecordCategoryCard: View {
                                 unitPriceInputs[item.id] = newValue
                                 onChanged(item)
                             }
-                        )
+                        ),
+                        focusedField: focusedField
                     )
 
                     if index < items.count - 1 {
@@ -619,6 +661,7 @@ private struct AssetEntryInputRow: View {
     @Binding var amountText: String
     @Binding var quantityText: String
     @Binding var unitPriceText: String
+    var focusedField: FocusState<RecordInputField?>.Binding
 
     private let labelWidth: CGFloat = 116
 
@@ -631,13 +674,13 @@ private struct AssetEntryInputRow: View {
                 .frame(width: labelWidth, alignment: .leading)
 
             if item.valuationMethod == .directAmount {
-                ATMInputField(text: $amountText, placeholder: "0")
+                ATMInputField(text: $amountText, placeholder: "0", focusedField: focusedField, focusValue: .amount(item.id))
             } else if let currencyCode = item.autoExchangeRateCurrencyCode {
-                ATMInputField(text: $quantityText, placeholder: currencyCode)
+                ATMInputField(text: $quantityText, placeholder: currencyCode, focusedField: focusedField, focusValue: .quantity(item.id))
             } else {
                 HStack(spacing: 8) {
-                    ATMInputField(text: $quantityText, placeholder: "数量", width: 82)
-                    ATMInputField(text: $unitPriceText, placeholder: "单价")
+                    ATMInputField(text: $quantityText, placeholder: "数量", width: 82, focusedField: focusedField, focusValue: .quantity(item.id))
+                    ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: focusedField, focusValue: .unitPrice(item.id))
                 }
             }
         }
@@ -649,10 +692,13 @@ private struct ATMInputField: View {
     @Binding var text: String
     let placeholder: String
     var width: CGFloat? = nil
+    var focusedField: FocusState<RecordInputField?>.Binding
+    let focusValue: RecordInputField
 
     var body: some View {
         TextField("", text: $text, prompt: Text(placeholder).foregroundStyle(AssetTheme.textSecondary))
             .keyboardType(.decimalPad)
+            .focused(focusedField, equals: focusValue)
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
             .multilineTextAlignment(.trailing)
@@ -666,6 +712,157 @@ private struct ATMInputField: View {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .stroke(AssetTheme.border.opacity(0.52), lineWidth: 1)
             )
+    }
+}
+
+private struct AddAssetItemSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @Query private var categories: [AssetCategory]
+
+    @State private var name = ""
+    @State private var selectedCategoryID: UUID?
+    @State private var selectedValuationMethod: ValuationMethod = .directAmount
+    @State private var errorMessage: String?
+
+    private var sortedCategories: [AssetCategory] {
+        categories.sorted {
+            if $0.group.sortPriority == $1.group.sortPriority {
+                return $0.createdAt < $1.createdAt
+            }
+            return $0.group.sortPriority < $1.group.sortPriority
+        }
+    }
+
+    private var canSave: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedCategory != nil
+    }
+
+    private var selectedCategory: AssetCategory? {
+        guard let selectedCategoryID else { return sortedCategories.first }
+        return sortedCategories.first(where: { $0.id == selectedCategoryID })
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AssetTheme.pageGradient.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("新增一个可录入的资产类型，比如股票、基金、车位、消费贷。")
+                                .font(.subheadline)
+                                .foregroundStyle(AssetTheme.textSecondary)
+                        }
+                        .atmCardStyle()
+
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("名称")
+                                .font(.headline)
+                                .foregroundStyle(AssetTheme.textPrimary)
+
+                            TextField("例如：A股账户、BTC、车位", text: $name)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(AssetTheme.textPrimary)
+                                .padding(.horizontal, 14)
+                                .frame(height: 48)
+                                .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(AssetTheme.border.opacity(0.52), lineWidth: 1)
+                                )
+                        }
+                        .atmCardStyle()
+
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("归类")
+                                .font(.headline)
+                                .foregroundStyle(AssetTheme.textPrimary)
+
+                            Picker("归类", selection: Binding(
+                                get: { selectedCategoryID ?? sortedCategories.first?.id },
+                                set: { selectedCategoryID = $0 }
+                            )) {
+                                ForEach(sortedCategories) { category in
+                                    Text(category.name).tag(Optional.some(category.id))
+                                }
+                            }
+                            .pickerStyle(.menu)
+
+                            Text("估值方式")
+                                .font(.headline)
+                                .foregroundStyle(AssetTheme.textPrimary)
+
+                            Picker("估值方式", selection: $selectedValuationMethod) {
+                                ForEach(ValuationMethod.allCases) { method in
+                                    Text(method.displayName).tag(method)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                        .atmCardStyle()
+
+                        if let errorMessage {
+                            Text(errorMessage)
+                                .font(.footnote)
+                                .foregroundStyle(AssetTheme.negative)
+                                .padding(.horizontal, 4)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 36)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("取消") {
+                        dismiss()
+                    }
+                    .foregroundStyle(AssetTheme.textSecondary)
+                }
+
+                ToolbarItem(placement: .principal) {
+                    Text("添加资产类型")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("保存") {
+                        save()
+                    }
+                    .disabled(!canSave)
+                    .foregroundStyle(canSave ? AssetTheme.gold : AssetTheme.textSecondary)
+                }
+            }
+            .task {
+                if selectedCategoryID == nil {
+                    selectedCategoryID = sortedCategories.first?.id
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private func save() {
+        guard let selectedCategory else { return }
+
+        do {
+            try AssetItemService.createItem(
+                name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+                category: selectedCategory,
+                valuationMethod: selectedValuationMethod,
+                in: modelContext
+            )
+            dismiss()
+        } catch {
+            errorMessage = "保存失败，请稍后再试"
+            print("[AssetTimeMachine] create item failed: \(error)")
+        }
     }
 }
 
@@ -693,6 +890,7 @@ private struct SummaryColumnMetric: View {
 }
 
 private struct SnapshotArchiveView: View {
+    @Environment(\.dismiss) private var dismiss
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
 
     var body: some View {
@@ -701,7 +899,11 @@ private struct SnapshotArchiveView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
-                    ATMHeader(title: "全部记录")
+                    ATMHeader(title: "全部记录") {
+                        ATMBackButton {
+                            dismiss()
+                        }
+                    }
 
                     ForEach(snapshots) { snapshot in
                         NavigationLink {
@@ -736,6 +938,7 @@ private struct SnapshotArchiveView: View {
 }
 
 private struct SnapshotDetailView: View {
+    @Environment(\.dismiss) private var dismiss
     let snapshot: AssetSnapshot
 
     private var groupedEntries: [(group: AssetGroup, entries: [AssetEntry])] {
@@ -756,7 +959,11 @@ private struct SnapshotDetailView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
-                    ATMHeader(title: snapshot.date.longDateString)
+                    ATMHeader(title: snapshot.date.longDateString) {
+                        ATMBackButton {
+                            dismiss()
+                        }
+                    }
 
                     VStack(alignment: .leading, spacing: 12) {
                         Text(PortfolioCalculator.netAssets(for: snapshot).currencyString())
@@ -2781,6 +2988,27 @@ private struct APIDocumentationView: View {
             }
             .toolbar(.hidden, for: .navigationBar)
         }
+    }
+}
+
+private struct ATMBackButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: "chevron.left")
+                    .font(.footnote.weight(.bold))
+                Text("返回")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .foregroundStyle(AssetTheme.textPrimary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(.white.opacity(0.04), in: Capsule())
+            .overlay(Capsule().stroke(AssetTheme.border.opacity(0.7), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 }
 
