@@ -1626,35 +1626,32 @@ private struct BacktestView: View {
                                 }
                                 .buttonStyle(.plain)
 
-                                VStack(spacing: 10) {
-                                    HStack(spacing: 10) {
-                                        BacktestActionChip(title: "调整配置", systemImage: "slider.horizontal.3") {
-                                            showsAllocationSheet = true
+                                VStack(spacing: 12) {
+                                    BacktestActionChip(title: "调整时间 · \(selectedRange.label)", systemImage: "calendar") {
+                                        showsRangeSheet = true
+                                    }
+
+                                    if !isBacktestLoading {
+                                        HStack(spacing: 10) {
+                                            BacktestActionChip(title: "重置回测", systemImage: "arrow.counterclockwise") {
+                                                resetBacktest()
+                                            }
+
+                                            Button {
+                                                hasStartedBacktest = true
+                                                scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
+                                            } label: {
+                                                Text(report == nil ? "开始回测" : "重新回测")
+                                                    .font(.subheadline.weight(.bold))
+                                                    .foregroundStyle(.black)
+                                                    .frame(maxWidth: .infinity)
+                                                    .padding(.horizontal, 22)
+                                                    .padding(.vertical, 12)
+                                                    .background(AssetTheme.gold, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                            }
+                                            .buttonStyle(.plain)
                                         }
-
-                                        BacktestActionChip(title: "调整时间 · \(selectedRange.label)", systemImage: "calendar") {
-                                            showsRangeSheet = true
-                                        }
                                     }
-
-                                    BacktestActionChip(title: "重置回测", systemImage: "arrow.counterclockwise") {
-                                        resetBacktest()
-                                    }
-                                }
-
-                                if report == nil && !isBacktestLoading {
-                                    Button {
-                                        hasStartedBacktest = true
-                                        scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
-                                    } label: {
-                                        Text("开始回测")
-                                            .font(.subheadline.weight(.bold))
-                                            .foregroundStyle(.black)
-                                            .padding(.horizontal, 22)
-                                            .padding(.vertical, 12)
-                                            .background(AssetTheme.gold, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                    }
-                                    .buttonStyle(.plain)
                                 }
                             }
                             .frame(maxWidth: .infinity)
