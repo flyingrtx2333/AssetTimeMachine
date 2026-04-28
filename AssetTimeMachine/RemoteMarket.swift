@@ -265,10 +265,19 @@ final class RemoteMarketStore: ObservableObject {
             }
 
             if !mergedSeries.isEmpty {
-                self.historySeries = Dictionary(uniqueKeysWithValues: mergedSeries.map { ($0.symbol, $0) })
+                self.historySeries = Dictionary(uniqueKeysWithValues: mergedSeries.map { (Self.normalizedHistorySymbol($0.symbol), $0) })
             } else if errorMessage == nil {
                 errorMessage = "历史数据加载失败"
             }
+        }
+    }
+
+    private static func normalizedHistorySymbol(_ symbol: String) -> String {
+        switch symbol {
+        case "nasdaq_composite":
+            return "nasdaq"
+        default:
+            return symbol
         }
     }
 

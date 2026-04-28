@@ -1369,7 +1369,7 @@ private struct BacktestView: View {
                                     }
                                     .chartLegend(.hidden)
                                 }
-                                .atmCardStyle()
+                                .padding(.top, 8)
                                 .onAppear { restartAnimation() }
                                 .onChange(of: selectedIndexSymbol) { _, _ in restartAnimation() }
                                 .onChange(of: cashWeight) { _, _ in restartAnimation() }
@@ -1377,7 +1377,11 @@ private struct BacktestView: View {
                                 .onChange(of: indexWeight) { _, _ in restartAnimation() }
 
                                 VStack(alignment: .leading, spacing: 12) {
-                                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                                    Text("分析报告")
+                                        .font(.headline.weight(.bold))
+                                        .foregroundStyle(AssetTheme.textPrimary)
+
+                                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
                                         BacktestMetricCard(title: "总收益", value: report.totalReturn.percentString())
                                         BacktestMetricCard(title: "年化收益", value: report.annualizedReturn?.percentString() ?? "--")
                                         BacktestMetricCard(title: "最大回撤", value: report.maxDrawdown.percentString(), accent: AssetTheme.negative)
@@ -1386,7 +1390,7 @@ private struct BacktestView: View {
                                         BacktestMetricCard(title: "区间", value: intervalLabel(for: report))
                                     }
                                 }
-                                .atmCardStyle()
+                                .padding(.top, 8)
                             }
                         }
                         .padding(.horizontal, 16)
@@ -1558,7 +1562,7 @@ private struct BacktestMetricCard: View {
     var accent: Color = AssetTheme.gold
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(AssetTheme.textSecondary)
@@ -1568,13 +1572,8 @@ private struct BacktestMetricCard: View {
                 .minimumScaleFactor(0.72)
                 .lineLimit(1)
         }
-        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.7), lineWidth: 1)
-        )
+        .padding(.vertical, 4)
     }
 }
 
