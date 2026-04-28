@@ -1929,12 +1929,16 @@ private struct TimeMachineCurrentAnchorCard: View {
 private struct TimeMachineDualAxisTrendCard: View {
     let descriptor: TimeMachineCombinedTrendDescriptor
 
-    private var leftPoints: [TimeMachineSingleAxisPoint] {
-        descriptor.points.map { .init(date: $0.date, value: $0.leftValue) }
+    private var latestPoint: TimeMachineDualAxisPoint? {
+        descriptor.points.last
     }
 
-    private var rightPoints: [TimeMachineSingleAxisPoint] {
-        descriptor.points.map { .init(date: $0.date, value: $0.rightValue) }
+    private var leftDomain: ClosedRange<Double> {
+        paddedDomain(values: descriptor.points.map(\.leftValue))
+    }
+
+    private var rightDomain: ClosedRange<Double> {
+        paddedDomain(values: descriptor.points.map(\.rightValue))
     }
 
     var body: some View {
@@ -1961,35 +1965,106 @@ private struct TimeMachineDualAxisTrendCard: View {
                         color: descriptor.leftColor,
                         dashed: false
                     )
-                    TimeMachineLegendMetric(
-                        title: descriptor.rightTitle,
-                        value: descriptor.rightLatestLabel,
-                        color: descriptor.rightColor,
-                        dashed: true
-                    )
+                    if descriptor.showsComparisonLine {
+                        TimeMachineLegendMetric(
+                            title: descriptor.rightTitle,
+                            value: descriptor.rightLatestLabel,
+                            color: descriptor.rightColor,
+                            dashed: true
+                        )
+                    }
                 }
             }
 
-            if leftPoints.count >= 2, rightPoints.count >= 2 {
-                VStack(spacing: 14) {
-                    TimeMachineMiniTrendChart(
-                        title: descriptor.leftTitle,
-                        points: leftPoints,
-                        color: descriptor.leftColor,
-                        axisStyle: descriptor.leftAxisStyle,
-                        dashed: false,
-                        showsXAxis: !descriptor.showsComparisonLine
+            if descriptor.points.count >= 2 {
+                Chart(descriptor.points) { point in
+                    LineMark(
+                        x: .value("日期", point.date),
+                        y: .value(descriptor.leftTitle, point.leftValue)
                     )
+                    .foregroundStyle(descriptor.leftColor)
+                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                    .interpolationMethod(.linear)
 
                     if descriptor.showsComparisonLine {
-                        TimeMachineMiniTrendChart(
-                            title: descriptor.rightTitle,
-                            points: rightPoints,
-                            color: descriptor.rightColor,
-                            axisStyle: descriptor.rightAxisStyle,
-                            dashed: true,
-                            showsXAxis: true
+                        LineMark(
+                            x: .value("日期", point.date),
+                            y: .value(descriptor.rightTitle, point.rightValue)
                         )
+                        .foregroundStyle(descriptor.rightColor)
+                        .lineStyle(StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round, dash: [6, 5]))
+                        .interpolationMethod(.linear)
+                    }
+
+                    if let latestPoint, latestPoint.date == point.date {
+                        PointMark(
+                            x: .value("日期", latestPoint.date),
+                            y: .value(descriptor.leftTitle, latestPoint.leftValue)
+                        )
+                        .foregroundStyle(descriptor.leftColor)
+                        .symbolSize(42)
+
+                        if descriptor.showsComparisonLine {
+                            PointMark(
+                                x: .value("日期", latestPoint.date),
+                                y: .value(descriptor.rightTitle, latestPoint.rightValue)
+                            )
+                            .foregroundStyle(descriptor.rightColor)
+                            .symbolSize(36)
+                        }
+                    }
+                }
+                .frame(height: 180)
+                .chartYAxis {
+                    AxisMarks(position: .leading, values: axisTickValues(for: leftDomain)) { value in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                            .foregroundStyle(AssetTheme.border.opacity(0.45))
+                        AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
+                            .foregroundStyle(descriptor.leftColor.opacity(0.9))
+                        AxisValueLabel {
+                            if let doubleValue = value.as(Double.self) {
+                                Text(descriptor.leftAxisStyle.compactLabel(for: doubleValue))
+                                    .foregroundStyle(descriptor.leftColor)
+                            }
+                        }
+                    }
+                }
+                .chartYAxis(.trailing) {
+                    if descriptor.showsComparisonLine {
+                        AxisMarks(position: .trailing, values: axisTickValues(for: rightDomain)) { value in
+                            AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
+                                .foregroundStyle(descriptor.rightColor.opacity(0.9))
+                            AxisValueLabel {
+                                if let doubleValue = value.as(Double.self) {
+                                    Text(descriptor.rightAxisStyle.compactLabel(for: doubleValue))
+                                        .foregroundStyle(descriptor.rightColor)
+                                }
+                            }
+                        }
+                    }
+                }
+                .chartYScale(domain: leftDomain)
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 4)) { value in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                            .foregroundStyle(AssetTheme.border.opacity(0.35))
+                        AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
+                            .foregroundStyle(AssetTheme.border.opacity(0.7))
+                        AxisValueLabel(format: .dateTime.month().day())
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                }
+                .chartLegend(.hidden)
+                .chartOverlay { proxy in
+                    GeometryReader { geometry in
+                        if descriptor.showsComparisonLine {
+                            Path { path in
+                                let frame = geometry[proxy.plotAreaFrame]
+                                path.move(to: CGPoint(x: frame.maxX + 8, y: frame.minY))
+                                path.addLine(to: CGPoint(x: frame.maxX + 8, y: frame.maxY))
+                            }
+                            .stroke(descriptor.rightColor.opacity(0.15), style: StrokeStyle(lineWidth: 1))
+                        }
                     }
                 }
             } else {
@@ -1999,73 +2074,31 @@ private struct TimeMachineDualAxisTrendCard: View {
                     .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)
             }
         }
-        .atmCardStyle()
-    }
-}
-
-private struct TimeMachineSingleAxisPoint: Identifiable {
-    let date: Date
-    let value: Double
-
-    var id: Date { date }
-}
-
-private struct TimeMachineMiniTrendChart: View {
-    let title: String
-    let points: [TimeMachineSingleAxisPoint]
-    let color: Color
-    let axisStyle: TimeMachineAxisValueStyle
-    let dashed: Bool
-    let showsXAxis: Bool
-
-    private var latestPoint: TimeMachineSingleAxisPoint? {
-        points.last
+        .padding(18)
+        .background(.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
+        )
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(AssetTheme.textSecondary)
-
-            if showsXAxis {
-                chartBody
-            } else {
-                chartBody
-                    .chartXAxis(.hidden)
-            }
+    private func paddedDomain(values: [Double]) -> ClosedRange<Double> {
+        let filtered = values.filter { $0.isFinite }
+        guard let minValue = filtered.min(), let maxValue = filtered.max() else {
+            return 0...1
         }
+        if abs(maxValue - minValue) < .ulpOfOne {
+            let padding = max(abs(maxValue) * 0.08, 1)
+            return (minValue - padding)...(maxValue + padding)
+        }
+        let padding = max((maxValue - minValue) * 0.12, abs(maxValue) * 0.02)
+        return (minValue - padding)...(maxValue + padding)
     }
 
-    private var chartBody: some View {
-        Chart(points) { point in
-            LineMark(
-                x: .value("日期", point.date),
-                y: .value(title, point.value)
-            )
-            .foregroundStyle(color)
-            .lineStyle(
-                StrokeStyle(
-                    lineWidth: dashed ? 1.5 : 1.8,
-                    lineCap: .round,
-                    lineJoin: .round,
-                    dash: dashed ? [6, 5] : []
-                )
-            )
-            .interpolationMethod(.linear)
-
-            if let latestPoint,
-               latestPoint.date == point.date {
-                PointMark(
-                    x: .value("日期", latestPoint.date),
-                    y: .value(title, latestPoint.value)
-                )
-                .foregroundStyle(color)
-                .symbolSize(40)
-            }
-        }
-        .frame(height: 104)
-        .chartLegend(.hidden)
+    private func axisTickValues(for domain: ClosedRange<Double>) -> [Double] {
+        let step = (domain.upperBound - domain.lowerBound) / 2
+        guard step.isFinite, step > 0 else { return [domain.lowerBound] }
+        return [domain.lowerBound, domain.lowerBound + step, domain.upperBound]
     }
 }
 
