@@ -1106,7 +1106,7 @@ private struct TimeMachineView: View {
         [
             TimeMachineCombinedTrendDescriptor(
                 title: "黄金",
-                subtitle: "用你的总资产回看黄金购买力",
+                subtitle: nil,
                 leftTitle: "价格",
                 rightTitle: "折算",
                 points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.goldAnchorPriceCNY, right: \.goldEquivalent),
@@ -1120,7 +1120,7 @@ private struct TimeMachineView: View {
             ),
             TimeMachineCombinedTrendDescriptor(
                 title: "纳指",
-                subtitle: "当前按 QQQ 代理纳指锚点",
+                subtitle: nil,
                 leftTitle: "价格",
                 rightTitle: "折算",
                 points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.nasdaqAnchorPriceUSD, right: \.nasdaqEquivalent),
@@ -1134,7 +1134,7 @@ private struct TimeMachineView: View {
             ),
             TimeMachineCombinedTrendDescriptor(
                 title: "BTC",
-                subtitle: "看波动，也看你的资产能换多少 BTC",
+                subtitle: nil,
                 leftTitle: "价格",
                 rightTitle: "折算",
                 points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.btcAnchorPriceUSD, right: \.btcEquivalent),
@@ -1166,7 +1166,7 @@ private struct TimeMachineView: View {
             let latest = points.last
             return TimeMachineCombinedTrendDescriptor(
                 title: config.title,
-                subtitle: "先看指数趋势，后面再决定要不要接购买力折算",
+                subtitle: nil,
                 leftTitle: "指数",
                 rightTitle: "趋势镜像",
                 points: points,
