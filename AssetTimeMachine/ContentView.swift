@@ -1213,10 +1213,10 @@ private struct BacktestAllocationSlice: Identifiable {
 
 private struct BacktestView: View {
     @ObservedObject var marketStore: RemoteMarketStore
-    @State private var cashWeight: Double = 100
-    @State private var goldWeight: Double = 0
-    @State private var indexWeight: Double = 0
-    @State private var selectedIndexSymbol: String = "sp500"
+    @State private var cashWeight: Double = 50
+    @State private var goldWeight: Double = 25
+    @State private var indexWeight: Double = 25
+    @State private var selectedIndexSymbol: String = "nasdaq"
     @State private var animationProgress: Double = 0
     @State private var showsAllocationSheet = false
     @State private var hasStartedBacktest = ProcessInfo.processInfo.arguments.contains("-autoStartBacktest")
@@ -1486,9 +1486,10 @@ private struct BacktestAllocationSheet: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("重置") {
-                        cashWeight = 100
-                        goldWeight = 0
-                        indexWeight = 0
+                        cashWeight = 50
+                        goldWeight = 25
+                        indexWeight = 25
+                        selectedIndexSymbol = "nasdaq"
                     }
                     .tint(AssetTheme.textSecondary)
                 }
@@ -1511,9 +1512,10 @@ private struct BacktestAllocationSheet: View {
     private func normalizeWeights() {
         let total = max(cashWeight + goldWeight + indexWeight, 0)
         guard total > 0 else {
-            cashWeight = 100
-            goldWeight = 0
-            indexWeight = 0
+            cashWeight = 50
+            goldWeight = 25
+            indexWeight = 25
+            selectedIndexSymbol = "nasdaq"
             return
         }
         cashWeight = (cashWeight / total) * 100
