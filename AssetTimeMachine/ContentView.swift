@@ -923,7 +923,53 @@ private struct TimeMachineView: View {
                 leftAxisStyle: .currency(code: "USD"),
                 rightAxisStyle: .quantity(unit: "BTC", maxFractionDigits: 4)
             ),
+        ] + publicIndexTrendCards
+    }
+
+    private var publicIndexTrendCards: [TimeMachineCombinedTrendDescriptor] {
+        let configs: [(symbol: String, title: String, color: Color)] = [
+            ("sp500", "标普500", AssetTheme.goldSoft),
+            ("dowjones", "道指", AssetTheme.accentOrange),
+            ("hsi", "恒生", AssetTheme.accentBlue),
+            ("nikkei", "日经225", AssetTheme.positive),
+            ("csi300", "沪深300", AssetTheme.textPrimary),
+            ("shanghai_composite", "上证综指", AssetTheme.textSecondary)
         ]
+
+        return configs.compactMap { config in
+            guard let series = marketStore.history(for: config.symbol) else { return nil }
+            let points = historySeriesPoints(series)
+            guard points.count >= 2 else { return nil }
+            let latest = points.last
+            return TimeMachineCombinedTrendDescriptor(
+                title: config.title,
+                leftTitle: "指数",
+                rightTitle: "仅观察",
+                points: points,
+                leftColor: config.color,
+                rightColor: config.color.opacity(0.45),
+                leftLatestLabel: latest.map { $0.leftValue.currencyString(code: series.currency) } ?? "--",
+                rightLatestLabel: latest.map { $0.rightValue.plainNumberString() } ?? "--",
+                leftAxisStyle: .currency(code: series.currency),
+                rightAxisStyle: .quantity(unit: "", maxFractionDigits: 2)
+            )
+        }
+    }
+
+    private func historySeriesPoints(_ series: PublicHistorySeries) -> [TimeMachineDualAxisPoint] {
+        zip(series.dates, series.prices).compactMap { dateText, price in
+            guard let date = historicalSeriesDate(from: dateText), price.isFinite, price > 0 else { return nil }
+            return TimeMachineDualAxisPoint(date: date, leftValue: price, rightValue: price)
+        }
+    }
+
+    private func historicalSeriesDate(from text: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: text)
     }
 
     private func liveGoldAnchorPriceIfToday(for snapshot: AssetSnapshot) -> Double? {

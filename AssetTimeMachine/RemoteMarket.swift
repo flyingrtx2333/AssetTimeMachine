@@ -64,6 +64,24 @@ struct PublicExchangeRates: Codable {
     }
 }
 
+struct PublicHistorySeries: Codable, Identifiable {
+    let symbol: String
+    let category: String
+    let label: String
+    let currency: String
+    let unit: String
+    let source: String
+    let dates: [String]
+    let prices: [Double]
+
+    var id: String { symbol }
+}
+
+struct PublicHistoryResponse: Codable {
+    let success: Bool
+    let series: [PublicHistorySeries]
+}
+
 struct MarketEndpointDoc: Identifiable {
     let title: String
     let path: String
@@ -101,6 +119,12 @@ enum RemoteMarketClient {
             description: "汇总返回 gold、btc、nasdaq 三个锚点。",
             symbol: nil
         ),
+        .init(
+            title: "公共历史走势",
+            path: "/api/v1/money/public/history?symbols=nasdaq,sp500,hsi&period=1year",
+            description: "统一返回指数、黄金、原油等公共历史序列，适合 App 直接消费。",
+            symbol: nil
+        ),
     ]
 
     static func fetchOverview() async throws -> PublicMarketOverview {
@@ -115,6 +139,29 @@ enum RemoteMarketClient {
         let (data, response) = try await URLSession.shared.data(from: url)
         try validate(response: response, data: data)
         return try decoder().decode(PublicExchangeRates.self, from: data)
+    }
+
+    static func fetchHistory(symbols: [String], period: String? = nil, startDate: String? = nil, endDate: String? = nil) async throws -> PublicHistoryResponse {
+        var components = URLComponents(url: baseURL.appendingPathComponent("/api/v1/money/public/history"), resolvingAgainstBaseURL: false)!
+        var queryItems: [URLQueryItem] = []
+
+        if !symbols.isEmpty {
+            queryItems.append(.init(name: "symbols", value: symbols.joined(separator: ",")))
+        }
+        if let period, !period.isEmpty {
+            queryItems.append(.init(name: "period", value: period))
+        }
+        if let startDate, !startDate.isEmpty {
+            queryItems.append(.init(name: "start_date", value: startDate))
+        }
+        if let endDate, !endDate.isEmpty {
+            queryItems.append(.init(name: "end_date", value: endDate))
+        }
+        components.queryItems = queryItems.isEmpty ? nil : queryItems
+
+        let (data, response) = try await URLSession.shared.data(from: components.url!)
+        try validate(response: response, data: data)
+        return try decoder().decode(PublicHistoryResponse.self, from: data)
     }
 
     static func url(for path: String) -> URL {
@@ -177,6 +224,7 @@ enum RemoteMarketClient {
 final class RemoteMarketStore: ObservableObject {
     @Published var overview: PublicMarketOverview?
     @Published var exchangeRates: [String: Double] = [:]
+    @Published var historySeries: [String: PublicHistorySeries] = [:]
     @Published var isLoading = false
     @Published var errorMessage: String?
 
@@ -201,6 +249,15 @@ final class RemoteMarketStore: ObservableObject {
                 errorMessage = error.localizedDescription
             }
         }
+
+        do {
+            let history = try await RemoteMarketClient.fetchHistory(symbols: ["nasdaq", "sp500", "dowjones", "hsi", "nikkei", "csi300", "shanghai_composite"], period: "1year")
+            self.historySeries = Dictionary(uniqueKeysWithValues: history.series.map { ($0.symbol, $0) })
+        } catch {
+            if errorMessage == nil {
+                errorMessage = error.localizedDescription
+            }
+        }
     }
 
     func market(for symbol: String) -> PublicMarketPrice? {
@@ -209,6 +266,10 @@ final class RemoteMarketStore: ObservableObject {
 
     func exchangeRate(for currency: String) -> Double? {
         exchangeRates[currency.uppercased()]
+    }
+
+    func history(for symbol: String) -> PublicHistorySeries? {
+        historySeries[symbol]
     }
 }
 
