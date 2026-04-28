@@ -889,6 +889,7 @@ private struct TimeMachineView: View {
         [
             TimeMachineCombinedTrendDescriptor(
                 title: "黄金",
+                subtitle: "用你的总资产回看黄金购买力",
                 leftTitle: "价格",
                 rightTitle: "折算",
                 points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.goldAnchorPriceCNY, right: \.goldEquivalent),
@@ -897,10 +898,12 @@ private struct TimeMachineView: View {
                 leftLatestLabel: latestPoint?.goldAnchorPriceCNY.map { "\($0.currencyString())/g" } ?? "--",
                 rightLatestLabel: latestPoint?.goldEquivalent.map { "\($0.plainNumberString()) g" } ?? "--",
                 leftAxisStyle: .currency(code: "CNY"),
-                rightAxisStyle: .quantity(unit: "g", maxFractionDigits: 2)
+                rightAxisStyle: .quantity(unit: "g", maxFractionDigits: 2),
+                showsComparisonLine: true
             ),
             TimeMachineCombinedTrendDescriptor(
                 title: "纳指",
+                subtitle: "当前按 QQQ 代理纳指锚点",
                 leftTitle: "价格",
                 rightTitle: "折算",
                 points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.nasdaqAnchorPriceUSD, right: \.nasdaqEquivalent),
@@ -909,10 +912,12 @@ private struct TimeMachineView: View {
                 leftLatestLabel: latestPoint?.nasdaqAnchorPriceUSD.map { $0.currencyString(code: "USD") } ?? "--",
                 rightLatestLabel: latestPoint?.nasdaqEquivalent.map { "\($0.plainNumberString()) 份" } ?? "--",
                 leftAxisStyle: .currency(code: "USD"),
-                rightAxisStyle: .quantity(unit: "份", maxFractionDigits: 2)
+                rightAxisStyle: .quantity(unit: "份", maxFractionDigits: 2),
+                showsComparisonLine: true
             ),
             TimeMachineCombinedTrendDescriptor(
                 title: "BTC",
+                subtitle: "看波动，也看你的资产能换多少 BTC",
                 leftTitle: "价格",
                 rightTitle: "折算",
                 points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.btcAnchorPriceUSD, right: \.btcEquivalent),
@@ -921,7 +926,8 @@ private struct TimeMachineView: View {
                 leftLatestLabel: latestPoint?.btcAnchorPriceUSD.map { $0.currencyString(code: "USD") } ?? "--",
                 rightLatestLabel: latestPoint?.btcEquivalent.map { "\($0.plainNumberString()) BTC" } ?? "--",
                 leftAxisStyle: .currency(code: "USD"),
-                rightAxisStyle: .quantity(unit: "BTC", maxFractionDigits: 4)
+                rightAxisStyle: .quantity(unit: "BTC", maxFractionDigits: 4),
+                showsComparisonLine: true
             ),
         ] + publicIndexTrendCards
     }
@@ -943,15 +949,17 @@ private struct TimeMachineView: View {
             let latest = points.last
             return TimeMachineCombinedTrendDescriptor(
                 title: config.title,
+                subtitle: "先看指数趋势，后面再决定要不要接购买力折算",
                 leftTitle: "指数",
-                rightTitle: "仅观察",
+                rightTitle: "趋势镜像",
                 points: points,
                 leftColor: config.color,
                 rightColor: config.color.opacity(0.45),
                 leftLatestLabel: latest.map { $0.leftValue.currencyString(code: series.currency) } ?? "--",
                 rightLatestLabel: latest.map { $0.rightValue.plainNumberString() } ?? "--",
                 leftAxisStyle: .currency(code: series.currency),
-                rightAxisStyle: .quantity(unit: "", maxFractionDigits: 2)
+                rightAxisStyle: .quantity(unit: "", maxFractionDigits: 2),
+                showsComparisonLine: false
             )
         }
     }
@@ -1151,6 +1159,7 @@ private struct TimeMachineTrendPoint: Identifiable {
 
 private struct TimeMachineCombinedTrendDescriptor: Identifiable {
     let title: String
+    let subtitle: String?
     let leftTitle: String
     let rightTitle: String
     let points: [TimeMachineDualAxisPoint]
@@ -1160,6 +1169,7 @@ private struct TimeMachineCombinedTrendDescriptor: Identifiable {
     let rightLatestLabel: String
     let leftAxisStyle: TimeMachineAxisValueStyle
     let rightAxisStyle: TimeMachineAxisValueStyle
+    let showsComparisonLine: Bool
 
     var id: String { title }
 }
@@ -1930,9 +1940,17 @@ private struct TimeMachineDualAxisTrendCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
-                Text(descriptor.title)
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(AssetTheme.textPrimary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(descriptor.title)
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+
+                    if let subtitle = descriptor.subtitle {
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                }
 
                 Spacer(minLength: 12)
 
@@ -1960,17 +1978,19 @@ private struct TimeMachineDualAxisTrendCard: View {
                         color: descriptor.leftColor,
                         axisStyle: descriptor.leftAxisStyle,
                         dashed: false,
-                        showsXAxis: false
+                        showsXAxis: !descriptor.showsComparisonLine
                     )
 
-                    TimeMachineMiniTrendChart(
-                        title: descriptor.rightTitle,
-                        points: rightPoints,
-                        color: descriptor.rightColor,
-                        axisStyle: descriptor.rightAxisStyle,
-                        dashed: true,
-                        showsXAxis: true
-                    )
+                    if descriptor.showsComparisonLine {
+                        TimeMachineMiniTrendChart(
+                            title: descriptor.rightTitle,
+                            points: rightPoints,
+                            color: descriptor.rightColor,
+                            axisStyle: descriptor.rightAxisStyle,
+                            dashed: true,
+                            showsXAxis: true
+                        )
+                    }
                 }
             } else {
                 Text("记录不足")
