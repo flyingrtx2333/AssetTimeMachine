@@ -1484,6 +1484,85 @@ private enum BacktestEngine {
     }
 }
 
+private struct InteractiveBacktestChart: View {
+    let points: [BacktestSeriesPoint]
+    @State private var selectedDate: Date?
+
+    private var selectedPoint: BacktestSeriesPoint? {
+        guard let selectedDate else { return points.last }
+        return points.min { abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate)) }
+    }
+
+    var body: some View {
+        Chart {
+            ForEach(points) { point in
+                AreaMark(
+                    x: .value("日期", point.date),
+                    y: .value("组合净值", point.portfolioValue)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [AssetTheme.gold.opacity(0.32), AssetTheme.gold.opacity(0.04)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+
+                LineMark(
+                    x: .value("日期", point.date),
+                    y: .value("组合净值", point.portfolioValue)
+                )
+                .foregroundStyle(AssetTheme.gold)
+                .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+            }
+
+            if let selectedPoint {
+                PointMark(
+                    x: .value("日期", selectedPoint.date),
+                    y: .value("组合净值", selectedPoint.portfolioValue)
+                )
+                .foregroundStyle(AssetTheme.gold)
+                .symbolSize(44)
+            }
+
+            if selectedDate != nil, let selectedPoint {
+                RuleMark(x: .value("选中日期", selectedPoint.date))
+                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.45))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+            }
+        }
+        .frame(height: 220)
+        .chartXAxis {
+            AxisMarks(values: .automatic(desiredCount: 4)) {
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                    .foregroundStyle(AssetTheme.border.opacity(0.35))
+                AxisValueLabel(format: .dateTime.year())
+                    .foregroundStyle(AssetTheme.textSecondary)
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                    .foregroundStyle(AssetTheme.border.opacity(0.35))
+                AxisValueLabel {
+                    if let doubleValue = value.as(Double.self) {
+                        Text(String(format: "%.2fx", doubleValue))
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                }
+            }
+        }
+        .chartLegend(.hidden)
+        .chartOverlay { proxy in
+            TimeMachineDragOverlay(proxy: proxy) { date in
+                selectedDate = date
+            } onEnded: {
+                selectedDate = nil
+            }
+        }
+    }
+}
+
 private struct BacktestAllocationSlice: Identifiable {
     let title: String
     let amount: Double
@@ -1681,26 +1760,7 @@ private struct BacktestView: View {
                                             .foregroundStyle(AssetTheme.goldSoft)
                                     }
 
-                                    Chart(animatedPoints) { point in
-                                        AreaMark(
-                                            x: .value("日期", point.date),
-                                            y: .value("组合净值", point.portfolioValue)
-                                        )
-                                        .foregroundStyle(
-                                            LinearGradient(
-                                                colors: [AssetTheme.gold.opacity(0.32), AssetTheme.gold.opacity(0.04)],
-                                                startPoint: .top,
-                                                endPoint: .bottom
-                                            )
-                                        )
-
-                                        LineMark(
-                                            x: .value("日期", point.date),
-                                            y: .value("组合净值", point.portfolioValue)
-                                        )
-                                        .foregroundStyle(AssetTheme.gold)
-                                        .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
-                                    }
+                                    InteractiveBacktestChart(points: animatedPoints)
                                     .frame(height: 220)
                                     .chartXAxis {
                                         AxisMarks(values: .automatic(desiredCount: 4)) {
@@ -2782,6 +2842,12 @@ private struct DashboardFreedomSection: View {
 private struct DashboardTrendCard: View {
     let points: [TimeMachineTrendPoint]
     let latestPoint: TimeMachineTrendPoint
+    @State private var selectedDate: Date?
+
+    private var selectedPoint: TimeMachineTrendPoint {
+        guard let selectedDate else { return latestPoint }
+        return nearestTrendPoint(to: selectedDate, in: points) ?? latestPoint
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -2823,11 +2889,17 @@ private struct DashboardTrendCard: View {
                     }
 
                     PointMark(
-                        x: .value("日期", latestPoint.date),
-                        y: .value(series.title, series.value(from: latestPoint))
+                        x: .value("日期", selectedPoint.date),
+                        y: .value(series.title, series.value(from: selectedPoint))
                     )
                     .foregroundStyle(series.color)
                     .symbolSize(44)
+                }
+
+                if selectedDate != nil {
+                    RuleMark(x: .value("选中日期", selectedPoint.date))
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.45))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                 }
             }
             .chartForegroundStyleScale([
@@ -2854,9 +2926,16 @@ private struct DashboardTrendCard: View {
                 }
             }
             .chartLegend(.hidden)
+            .chartOverlay { proxy in
+                TimeMachineDragOverlay(proxy: proxy) { date in
+                    selectedDate = date
+                } onEnded: {
+                    selectedDate = nil
+                }
+            }
             .padding(.top, 2)
 
-            Text(dateRangeLabel)
+            Text(selectedDate == nil ? dateRangeLabel : selectedPoint.date.recordDateString)
                 .font(AppTypography.meta)
                 .foregroundStyle(AssetTheme.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -2931,6 +3010,12 @@ private struct TimeMachineCurrentAnchorItem: Identifiable {
 private struct TimeMachineHeroTrendCard: View {
     let points: [TimeMachineTrendPoint]
     let latestPoint: TimeMachineTrendPoint
+    @State private var selectedDate: Date?
+
+    private var selectedPoint: TimeMachineTrendPoint {
+        guard let selectedDate else { return latestPoint }
+        return nearestTrendPoint(to: selectedDate, in: points) ?? latestPoint
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -2942,13 +3027,13 @@ private struct TimeMachineHeroTrendCard: View {
 
                     Spacer()
 
-                    Text(dateRangeLabel)
+                    Text(selectedDate == nil ? dateRangeLabel : selectedPoint.date.recordDateString)
                         .font(.caption)
                         .foregroundStyle(AssetTheme.textSecondary)
                         .lineLimit(1)
                 }
 
-                Text(latestPoint.mainAssets.currencyString())
+                Text(selectedPoint.mainAssets.currencyString())
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundStyle(AssetTheme.goldSoft)
                     .lineLimit(1)
@@ -2960,22 +3045,22 @@ private struct TimeMachineHeroTrendCard: View {
                 ) {
                     TimeMachineInlineMetric(
                         title: "净资产",
-                        value: latestPoint.netAssets.currencyString(),
+                        value: selectedPoint.netAssets.currencyString(),
                         accent: AssetTheme.textPrimary
                     )
                     TimeMachineInlineMetric(
                         title: "负债",
-                        value: latestPoint.liabilities.currencyString(),
+                        value: selectedPoint.liabilities.currencyString(),
                         accent: AssetTheme.negative
                     )
                     TimeMachineInlineMetric(
                         title: "黄金折算",
-                        value: latestPoint.goldEquivalent?.plainNumberString() ?? "--",
+                        value: selectedPoint.goldEquivalent?.plainNumberString() ?? "--",
                         accent: AssetTheme.gold
                     )
                     TimeMachineInlineMetric(
                         title: "纳指折算",
-                        value: latestPoint.nasdaqEquivalent?.plainNumberString() ?? "--",
+                        value: selectedPoint.nasdaqEquivalent?.plainNumberString() ?? "--",
                         accent: AssetTheme.accentBlue
                     )
                 }
@@ -3017,14 +3102,18 @@ private struct TimeMachineHeroTrendCard: View {
                         .interpolationMethod(.catmullRom)
                     }
 
-                    if let lastPoint = points.last {
-                        PointMark(
-                            x: .value("日期", lastPoint.date),
-                            y: .value(series.title, series.value(from: lastPoint))
-                        )
-                        .foregroundStyle(series.color)
-                        .symbolSize(46)
-                    }
+                    PointMark(
+                        x: .value("日期", selectedPoint.date),
+                        y: .value(series.title, series.value(from: selectedPoint))
+                    )
+                    .foregroundStyle(series.color)
+                    .symbolSize(46)
+                }
+
+                if selectedDate != nil {
+                    RuleMark(x: .value("选中日期", selectedPoint.date))
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.45))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                 }
             }
             .chartForegroundStyleScale([
@@ -3051,6 +3140,13 @@ private struct TimeMachineHeroTrendCard: View {
                 }
             }
             .chartLegend(.hidden)
+            .chartOverlay { proxy in
+                TimeMachineDragOverlay(proxy: proxy) { date in
+                    selectedDate = date
+                } onEnded: {
+                    selectedDate = nil
+                }
+            }
         }
         .atmCardStyle()
     }
@@ -3059,6 +3155,10 @@ private struct TimeMachineHeroTrendCard: View {
         guard let first = points.first?.date, let last = points.last?.date else { return "暂无范围" }
         return "\(first.recordDateString) - \(last.recordDateString)"
     }
+}
+
+private func nearestTrendPoint(to date: Date, in points: [TimeMachineTrendPoint]) -> TimeMachineTrendPoint? {
+    points.min { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) }
 }
 
 private struct TimeMachineCurrentAnchorCard: View {
@@ -3101,13 +3201,24 @@ private struct TimeMachineCurrentAnchorCard: View {
 
 private struct TimeMachineDualAxisTrendCard: View {
     let descriptor: TimeMachineCombinedTrendDescriptor
+    @State private var selectedDate: Date?
 
     private var latestPoint: TimeMachineDualAxisPoint? {
         descriptor.points.last
     }
 
+    private var selectedDualPoint: TimeMachineDualAxisPoint? {
+        guard let selectedDate else { return latestPoint }
+        return nearestDualAxisPoint(to: selectedDate, in: descriptor.points) ?? latestPoint
+    }
+
     private var latestLeftOnlyPoint: TimeMachineSingleAxisPoint? {
         descriptor.leftOnlyPoints.last
+    }
+
+    private var selectedLeftOnlyPoint: TimeMachineSingleAxisPoint? {
+        guard let selectedDate else { return latestLeftOnlyPoint }
+        return nearestSingleAxisPoint(to: selectedDate, in: descriptor.leftOnlyPoints) ?? latestLeftOnlyPoint
     }
 
     private var leftDomain: ClosedRange<Double> {
@@ -3171,14 +3282,14 @@ private struct TimeMachineDualAxisTrendCard: View {
             VStack(alignment: .trailing, spacing: 8) {
                 TimeMachineLegendMetric(
                     title: descriptor.leftTitle,
-                    value: descriptor.leftLatestLabel,
+                    value: selectedLeftLabel,
                     color: descriptor.leftColor,
                     dashed: false
                 )
                 if descriptor.showsComparisonLine {
                     TimeMachineLegendMetric(
                         title: descriptor.rightTitle,
-                        value: descriptor.rightLatestLabel,
+                        value: selectedRightLabel,
                         color: descriptor.rightColor,
                         dashed: true
                     )
@@ -3209,6 +3320,11 @@ private struct TimeMachineDualAxisTrendCard: View {
                         rightSeriesMarksNormalized
                     }
                     latestPointMarksNormalized
+                    if selectedDate != nil, let selectedDualPoint {
+                        RuleMark(x: .value("选中日期", selectedDualPoint.date))
+                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.45))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                    }
                 }
                 .frame(width: chartWidth, height: 180)
                 .clipped()
@@ -3216,6 +3332,13 @@ private struct TimeMachineDualAxisTrendCard: View {
                 .chartYAxis(.hidden)
                 .chartXAxis { bottomAxisMarks }
                 .chartLegend(.hidden)
+                .chartOverlay { proxy in
+                    TimeMachineDragOverlay(proxy: proxy) { date in
+                        selectedDate = date
+                    } onEnded: {
+                        selectedDate = nil
+                    }
+                }
 
                 if descriptor.showsComparisonLine {
                     TimeMachineAxisStrip(
@@ -3250,6 +3373,11 @@ private struct TimeMachineDualAxisTrendCard: View {
                 Chart {
                     leftOnlySeriesMarks
                     leftOnlyLatestPointMarks
+                    if selectedDate != nil, let selectedLeftOnlyPoint {
+                        RuleMark(x: .value("选中日期", selectedLeftOnlyPoint.date))
+                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.45))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                    }
                 }
                 .frame(width: chartWidth, height: 180)
                 .clipped()
@@ -3257,6 +3385,13 @@ private struct TimeMachineDualAxisTrendCard: View {
                 .chartYAxis(.hidden)
                 .chartXAxis { bottomAxisMarks }
                 .chartLegend(.hidden)
+                .chartOverlay { proxy in
+                    TimeMachineDragOverlay(proxy: proxy) { date in
+                        selectedDate = date
+                    } onEnded: {
+                        selectedDate = nil
+                    }
+                }
             }
         }
         .frame(height: 180)
@@ -3306,18 +3441,18 @@ private struct TimeMachineDualAxisTrendCard: View {
 
     @ChartContentBuilder
     private var latestPointMarksNormalized: some ChartContent {
-        if let latestPoint {
+        if let selectedDualPoint {
             PointMark(
-                x: .value("日期", latestPoint.date),
-                y: .value(descriptor.leftTitle, normalized(latestPoint.leftValue, in: leftDomain))
+                x: .value("日期", selectedDualPoint.date),
+                y: .value(descriptor.leftTitle, normalized(selectedDualPoint.leftValue, in: leftDomain))
             )
             .foregroundStyle(descriptor.leftColor)
             .symbolSize(42)
 
             if descriptor.showsComparisonLine {
                 PointMark(
-                    x: .value("日期", latestPoint.date),
-                    y: .value(descriptor.rightTitle, normalized(latestPoint.rightValue, in: rightDomain))
+                    x: .value("日期", selectedDualPoint.date),
+                    y: .value(descriptor.rightTitle, normalized(selectedDualPoint.rightValue, in: rightDomain))
                 )
                 .foregroundStyle(descriptor.rightColor)
                 .symbolSize(36)
@@ -3327,10 +3462,10 @@ private struct TimeMachineDualAxisTrendCard: View {
 
     @ChartContentBuilder
     private var leftOnlyLatestPointMarks: some ChartContent {
-        if let latestLeftOnlyPoint {
+        if let selectedLeftOnlyPoint {
             PointMark(
-                x: .value("日期", latestLeftOnlyPoint.date),
-                y: .value(descriptor.leftTitle, normalized(latestLeftOnlyPoint.value, in: leftDomain))
+                x: .value("日期", selectedLeftOnlyPoint.date),
+                y: .value(descriptor.leftTitle, normalized(selectedLeftOnlyPoint.value, in: leftDomain))
             )
             .foregroundStyle(descriptor.leftColor)
             .symbolSize(42)
@@ -3367,10 +3502,63 @@ private struct TimeMachineDualAxisTrendCard: View {
         return (minValue - padding)...(maxValue + padding)
     }
 
+    private var selectedLeftLabel: String {
+        if let selectedDualPoint {
+            return descriptor.leftAxisStyle.compactLabel(for: selectedDualPoint.leftValue)
+        }
+        if let selectedLeftOnlyPoint {
+            return descriptor.leftAxisStyle.compactLabel(for: selectedLeftOnlyPoint.value)
+        }
+        return descriptor.leftLatestLabel
+    }
+
+    private var selectedRightLabel: String {
+        if let selectedDualPoint {
+            return descriptor.rightAxisStyle.compactLabel(for: selectedDualPoint.rightValue)
+        }
+        return descriptor.rightLatestLabel
+    }
+
     private func axisTickValues(for domain: ClosedRange<Double>) -> [Double] {
         let step = (domain.upperBound - domain.lowerBound) / 2
         guard step.isFinite, step > 0 else { return [domain.lowerBound] }
         return [domain.lowerBound, domain.lowerBound + step, domain.upperBound]
+    }
+}
+
+private func nearestDualAxisPoint(to date: Date, in points: [TimeMachineDualAxisPoint]) -> TimeMachineDualAxisPoint? {
+    points.min { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) }
+}
+
+private func nearestSingleAxisPoint(to date: Date, in points: [TimeMachineSingleAxisPoint]) -> TimeMachineSingleAxisPoint? {
+    points.min { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) }
+}
+
+private struct TimeMachineDragOverlay: View {
+    let proxy: ChartProxy
+    let onChanged: (Date) -> Void
+    let onEnded: () -> Void
+
+    var body: some View {
+        GeometryReader { geometry in
+            Rectangle()
+                .fill(.clear)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            guard let plotFrame = proxy.plotFrame else { return }
+                            let frame = geometry[plotFrame]
+                            let locationX = min(max(value.location.x - frame.origin.x, 0), frame.size.width)
+                            if let date: Date = proxy.value(atX: locationX) {
+                                onChanged(date)
+                            }
+                        }
+                        .onEnded { _ in
+                            onEnded()
+                        }
+                )
+        }
     }
 }
 
