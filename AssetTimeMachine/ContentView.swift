@@ -1105,6 +1105,7 @@ private struct TimeMachineView: View {
                 leftTitle: "价格",
                 rightTitle: "折算",
                 points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.goldAnchorPriceCNY, right: \.goldEquivalent),
+                leftOnlyPoints: singleAxisPoints(for: filteredTrendPoints, range: selectedRange, left: \.goldAnchorPriceCNY),
                 leftColor: AssetTheme.gold,
                 rightColor: AssetTheme.positive,
                 leftLatestLabel: latestPoint?.goldAnchorPriceCNY.map { "\($0.currencyString())/g" } ?? "--",
@@ -1119,6 +1120,7 @@ private struct TimeMachineView: View {
                 leftTitle: "价格",
                 rightTitle: "折算",
                 points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.nasdaqAnchorPriceUSD, right: \.nasdaqEquivalent),
+                leftOnlyPoints: singleAxisPoints(for: filteredTrendPoints, range: selectedRange, left: \.nasdaqAnchorPriceUSD),
                 leftColor: AssetTheme.accentBlue,
                 rightColor: AssetTheme.positive,
                 leftLatestLabel: latestPoint?.nasdaqAnchorPriceUSD.map { $0.currencyString(code: "USD") } ?? "--",
@@ -1151,6 +1153,7 @@ private struct TimeMachineView: View {
                 leftTitle: "指数",
                 rightTitle: "趋势镜像",
                 points: points,
+                leftOnlyPoints: points.map { TimeMachineSingleAxisPoint(date: $0.date, value: $0.leftValue) },
                 leftColor: config.color,
                 rightColor: config.color.opacity(0.45),
                 leftLatestLabel: latest.map { $0.leftValue.currencyString(code: series.currency) } ?? "--",
@@ -1221,6 +1224,25 @@ private struct TimeMachineView: View {
         }
 
         return range.aggregateDetailChartPoints(cleanedPoints)
+    }
+
+    private func singleAxisPoints(
+        for source: [TimeMachineTrendPoint],
+        range: TimeMachineRange,
+        left leftKeyPath: KeyPath<TimeMachineTrendPoint, Double?>
+    ) -> [TimeMachineSingleAxisPoint] {
+        let cleanedPoints = source.compactMap { point -> TimeMachineSingleAxisPoint? in
+            guard let value = point[keyPath: leftKeyPath], value.isFinite, value > 0 else {
+                return nil
+            }
+            return TimeMachineSingleAxisPoint(date: point.date, value: value)
+        }
+
+        let aggregated = range.aggregateDetailChartPoints(cleanedPoints.map {
+            TimeMachineDualAxisPoint(date: $0.date, leftValue: $0.value, rightValue: $0.value)
+        })
+
+        return aggregated.map { TimeMachineSingleAxisPoint(date: $0.date, value: $0.leftValue) }
     }
 
     var body: some View {
@@ -2306,6 +2328,7 @@ private struct TimeMachineCombinedTrendDescriptor: Identifiable {
     let leftTitle: String
     let rightTitle: String
     let points: [TimeMachineDualAxisPoint]
+    let leftOnlyPoints: [TimeMachineSingleAxisPoint]
     let leftColor: Color
     let rightColor: Color
     let leftLatestLabel: String
@@ -2336,6 +2359,13 @@ private struct TimeMachineDualAxisPoint: Identifiable {
     let date: Date
     let leftValue: Double
     let rightValue: Double
+
+    var id: Date { date }
+}
+
+private struct TimeMachineSingleAxisPoint: Identifiable {
+    let date: Date
+    let value: Double
 
     var id: Date { date }
 }
@@ -3076,20 +3106,35 @@ private struct TimeMachineDualAxisTrendCard: View {
         descriptor.points.last
     }
 
+    private var latestLeftOnlyPoint: TimeMachineSingleAxisPoint? {
+        descriptor.leftOnlyPoints.last
+    }
+
     private var leftDomain: ClosedRange<Double> {
-        paddedDomain(values: descriptor.points.map(\.leftValue))
+        let values = descriptor.points.map(\.leftValue) + descriptor.leftOnlyPoints.map(\.value)
+        return paddedDomain(values: values)
     }
 
     private var rightDomain: ClosedRange<Double> {
         paddedDomain(values: descriptor.points.map(\.rightValue))
     }
 
+    private var canShowDualAxisChart: Bool {
+        descriptor.points.count >= 2
+    }
+
+    private var canShowLeftOnlyChart: Bool {
+        descriptor.leftOnlyPoints.count >= 2
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
 
-            if descriptor.points.count >= 2 {
+            if canShowDualAxisChart {
                 dualAxisChart
+            } else if canShowLeftOnlyChart {
+                leftOnlyChart
             } else {
                 Text("记录不足")
                     .font(.caption)
@@ -3187,6 +3232,36 @@ private struct TimeMachineDualAxisTrendCard: View {
         .frame(height: 180)
     }
 
+    private var leftOnlyChart: some View {
+        GeometryReader { geometry in
+            let leftWidth: CGFloat = 36
+            let chartWidth = max(geometry.size.width - leftWidth - 4, 120)
+
+            HStack(spacing: 4) {
+                TimeMachineAxisStrip(
+                    topLabel: descriptor.leftAxisStyle.compactLabel(for: leftDomain.upperBound),
+                    middleLabel: descriptor.leftAxisStyle.compactLabel(for: (leftDomain.lowerBound + leftDomain.upperBound) / 2),
+                    bottomLabel: descriptor.leftAxisStyle.compactLabel(for: leftDomain.lowerBound),
+                    alignment: .leading,
+                    color: descriptor.leftColor
+                )
+                .frame(width: leftWidth)
+
+                Chart {
+                    leftOnlySeriesMarks
+                    leftOnlyLatestPointMarks
+                }
+                .frame(width: chartWidth, height: 180)
+                .clipped()
+                .chartYScale(domain: 0...1)
+                .chartYAxis(.hidden)
+                .chartXAxis { bottomAxisMarks }
+                .chartLegend(.hidden)
+            }
+        }
+        .frame(height: 180)
+    }
+
     @ChartContentBuilder
     private var leftSeriesMarks: some ChartContent {
         ForEach(descriptor.points) { point in
@@ -3216,6 +3291,20 @@ private struct TimeMachineDualAxisTrendCard: View {
     }
 
     @ChartContentBuilder
+    private var leftOnlySeriesMarks: some ChartContent {
+        ForEach(descriptor.leftOnlyPoints) { point in
+            LineMark(
+                x: .value("日期", point.date),
+                y: .value(descriptor.leftTitle, normalized(point.value, in: leftDomain)),
+                series: .value("系列", descriptor.leftTitle)
+            )
+            .foregroundStyle(descriptor.leftColor)
+            .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            .interpolationMethod(.linear)
+        }
+    }
+
+    @ChartContentBuilder
     private var latestPointMarksNormalized: some ChartContent {
         if let latestPoint {
             PointMark(
@@ -3233,6 +3322,18 @@ private struct TimeMachineDualAxisTrendCard: View {
                 .foregroundStyle(descriptor.rightColor)
                 .symbolSize(36)
             }
+        }
+    }
+
+    @ChartContentBuilder
+    private var leftOnlyLatestPointMarks: some ChartContent {
+        if let latestLeftOnlyPoint {
+            PointMark(
+                x: .value("日期", latestLeftOnlyPoint.date),
+                y: .value(descriptor.leftTitle, normalized(latestLeftOnlyPoint.value, in: leftDomain))
+            )
+            .foregroundStyle(descriptor.leftColor)
+            .symbolSize(42)
         }
     }
 
