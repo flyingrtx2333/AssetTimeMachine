@@ -36,6 +36,82 @@ enum ValuationMethod: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum AutoPricedAssetKind: String, Codable, CaseIterable, Identifiable {
+    case gold
+    case btc
+    case eth
+    case bnb
+    case sol
+    case xrp
+    case doge
+    case usd
+    case eur
+    case gbp
+    case jpy
+    case hkd
+    case sgd
+    case aud
+    case cad
+    case krw
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .gold: return "黄金"
+        case .btc: return "比特币 BTC"
+        case .eth: return "以太坊 ETH"
+        case .bnb: return "BNB"
+        case .sol: return "Solana SOL"
+        case .xrp: return "XRP"
+        case .doge: return "Dogecoin DOGE"
+        case .usd: return "美元 USD"
+        case .eur: return "欧元 EUR"
+        case .gbp: return "英镑 GBP"
+        case .jpy: return "日元 JPY"
+        case .hkd: return "港币 HKD"
+        case .sgd: return "新加坡元 SGD"
+        case .aud: return "澳元 AUD"
+        case .cad: return "加元 CAD"
+        case .krw: return "韩元 KRW"
+        }
+    }
+
+    var defaultName: String {
+        switch self {
+        case .gold: return "黄金"
+        case .btc: return "BTC"
+        case .eth: return "ETH"
+        case .bnb: return "BNB"
+        case .sol: return "SOL"
+        case .xrp: return "XRP"
+        case .doge: return "DOGE"
+        case .usd: return "USD"
+        case .eur: return "EUR"
+        case .gbp: return "GBP"
+        case .jpy: return "JPY"
+        case .hkd: return "HKD"
+        case .sgd: return "SGD"
+        case .aud: return "AUD"
+        case .cad: return "CAD"
+        case .krw: return "KRW"
+        }
+    }
+
+    var isCurrency: Bool {
+        switch self {
+        case .usd, .eur, .gbp, .jpy, .hkd, .sgd, .aud, .cad, .krw:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var marketSymbol: String {
+        rawValue
+    }
+}
+
 @Model
 final class AssetCategory {
     var id: UUID
@@ -69,6 +145,7 @@ final class AssetItem {
     var name: String
     var note: String
     var valuationMethodRawValue: String
+    var autoPricedAssetKindRawValue: String
     var sortOrder: Int
     var isActive: Bool
     var createdAt: Date
@@ -82,6 +159,7 @@ final class AssetItem {
         name: String,
         note: String = "",
         valuationMethod: ValuationMethod = .directAmount,
+        autoPricedAssetKind: AutoPricedAssetKind? = nil,
         sortOrder: Int = 0,
         isActive: Bool = true,
         createdAt: Date = .now,
@@ -92,6 +170,7 @@ final class AssetItem {
         self.name = name
         self.note = note
         self.valuationMethodRawValue = valuationMethod.rawValue
+        self.autoPricedAssetKindRawValue = autoPricedAssetKind?.rawValue ?? ""
         self.sortOrder = sortOrder
         self.isActive = isActive
         self.createdAt = createdAt
@@ -103,6 +182,11 @@ final class AssetItem {
     var valuationMethod: ValuationMethod {
         get { ValuationMethod(rawValue: valuationMethodRawValue) ?? .directAmount }
         set { valuationMethodRawValue = newValue.rawValue }
+    }
+
+    var autoPricedAssetKind: AutoPricedAssetKind? {
+        get { AutoPricedAssetKind(rawValue: autoPricedAssetKindRawValue) }
+        set { autoPricedAssetKindRawValue = newValue?.rawValue ?? "" }
     }
 }
 

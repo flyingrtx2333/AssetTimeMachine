@@ -519,9 +519,20 @@ private struct SnapshotListView: View {
         guard let snapshot = currentSnapshot else { return }
 
         for entry in snapshot.entries {
-            guard let item = entry.item,
-                  let currencyCode = item.autoExchangeRateCurrencyCode,
-                  let rate = marketStore.exchangeRate(for: currencyCode) else {
+            guard let item = entry.item else {
+                continue
+            }
+
+            let liveUnitPrice: Double?
+            if let currencyCode = item.autoExchangeRateCurrencyCode {
+                liveUnitPrice = marketStore.exchangeRate(for: currencyCode)
+            } else if let marketSymbol = item.autoPricedMarketSymbol {
+                liveUnitPrice = marketStore.market(for: marketSymbol)?.price
+            } else {
+                liveUnitPrice = nil
+            }
+
+            guard let rate = liveUnitPrice else {
                 continue
             }
 
@@ -561,6 +572,7 @@ private struct SnapshotListView: View {
             case .quantityAndUnitPrice:
                 let quantity = normalizedNumber(from: quantityInputs[item.id])
                 let autoRate = item.autoExchangeRateCurrencyCode.flatMap { marketStore.exchangeRate(for: $0) }
+                    ?? item.autoPricedMarketSymbol.flatMap { marketStore.market(for: $0)?.price }
                 let unitPrice = autoRate ?? normalizedNumber(from: unitPriceInputs[item.id])
                 if let autoRate {
                     unitPriceInputs[item.id] = autoRate.plainNumberString()
@@ -675,6 +687,8 @@ private struct AssetEntryInputRow: View {
 
             if item.valuationMethod == .directAmount {
                 ATMInputField(text: $amountText, placeholder: "0", focusedField: focusedField, focusValue: .amount(item.id))
+            } else if let autoKind = item.autoPricedAssetKind {
+                ATMInputField(text: $quantityText, placeholder: autoKind.defaultName, focusedField: focusedField, focusValue: .quantity(item.id))
             } else if let currencyCode = item.autoExchangeRateCurrencyCode {
                 ATMInputField(text: $quantityText, placeholder: currencyCode, focusedField: focusedField, focusValue: .quantity(item.id))
             } else {
@@ -723,6 +737,7 @@ private struct AddAssetItemSheet: View {
     @State private var name = ""
     @State private var selectedCategoryID: UUID?
     @State private var selectedValuationMethod: ValuationMethod = .directAmount
+    @State private var selectedAutoPricedAssetKind: AutoPricedAssetKind?
     @State private var errorMessage: String?
 
     private var sortedCategories: [AssetCategory] {
@@ -735,12 +750,24 @@ private struct AddAssetItemSheet: View {
     }
 
     private var canSave: Bool {
-        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedCategory != nil
+        !resolvedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedCategory != nil
     }
 
     private var selectedCategory: AssetCategory? {
         guard let selectedCategoryID else { return sortedCategories.first }
         return sortedCategories.first(where: { $0.id == selectedCategoryID })
+    }
+
+    private var resolvedName: String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            return trimmed
+        }
+        return selectedAutoPricedAssetKind?.defaultName ?? ""
+    }
+
+    private var autoPricedOptions: [AutoPricedAssetKind] {
+        AutoPricedAssetKind.allCases
     }
 
     var body: some View {
@@ -751,7 +778,7 @@ private struct AddAssetItemSheet: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 18) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("新增一个可录入的资产类型，比如股票、基金、车位、消费贷。")
+                            Text("新增一个可录入的资产类型。自动更新目前只开放给黄金、主流数字货币和外汇。")
                                 .font(.subheadline)
                                 .foregroundStyle(AssetTheme.textSecondary)
                         }
@@ -762,7 +789,7 @@ private struct AddAssetItemSheet: View {
                                 .font(.headline)
                                 .foregroundStyle(AssetTheme.textPrimary)
 
-                            TextField("例如：A股账户、指数账户、车位", text: $name)
+                            TextField("例如：银行卡、房产、消费贷，或留空直接选自动更新资产", text: $name)
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()
                                 .font(.body.weight(.semibold))
@@ -774,6 +801,26 @@ private struct AddAssetItemSheet: View {
                                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                                         .stroke(AssetTheme.border.opacity(0.52), lineWidth: 1)
                                 )
+
+                            Text("自动更新资产")
+                                .font(.headline)
+                                .foregroundStyle(AssetTheme.textPrimary)
+
+                            Picker("自动更新资产", selection: Binding(
+                                get: { selectedAutoPricedAssetKind },
+                                set: { newValue in
+                                    selectedAutoPricedAssetKind = newValue
+                                    if newValue != nil {
+                                        selectedValuationMethod = .quantityAndUnitPrice
+                                    }
+                                }
+                            )) {
+                                Text("不启用").tag(Optional<AutoPricedAssetKind>.none)
+                                ForEach(autoPricedOptions) { kind in
+                                    Text(kind.displayName).tag(Optional.some(kind))
+                                }
+                            }
+                            .pickerStyle(.menu)
                         }
                         .atmCardStyle()
 
@@ -796,12 +843,26 @@ private struct AddAssetItemSheet: View {
                                 .font(.headline)
                                 .foregroundStyle(AssetTheme.textPrimary)
 
-                            Picker("估值方式", selection: $selectedValuationMethod) {
+                            Picker("估值方式", selection: Binding(
+                                get: { selectedValuationMethod },
+                                set: { newValue in
+                                    selectedValuationMethod = newValue
+                                    if newValue != .quantityAndUnitPrice {
+                                        selectedAutoPricedAssetKind = nil
+                                    }
+                                }
+                            )) {
                                 ForEach(ValuationMethod.allCases) { method in
                                     Text(method.displayName).tag(method)
                                 }
                             }
                             .pickerStyle(.segmented)
+
+                            if let selectedAutoPricedAssetKind {
+                                Text("已启用自动价格：\(selectedAutoPricedAssetKind.displayName)，录入时只填数量，单价会自动刷新。")
+                                    .font(.footnote)
+                                    .foregroundStyle(AssetTheme.textSecondary)
+                            }
                         }
                         .atmCardStyle()
 
@@ -853,9 +914,10 @@ private struct AddAssetItemSheet: View {
 
         do {
             try AssetItemService.createItem(
-                name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+                name: resolvedName,
                 category: selectedCategory,
-                valuationMethod: selectedValuationMethod,
+                valuationMethod: selectedAutoPricedAssetKind == nil ? selectedValuationMethod : .quantityAndUnitPrice,
+                autoPricedAssetKind: selectedAutoPricedAssetKind,
                 in: modelContext
             )
             dismiss()
@@ -4059,15 +4121,44 @@ private extension AssetCategory {
 }
 
 private extension AssetItem {
-    var autoExchangeRateCurrencyCode: String? {
+    var autoPricedMarketSymbol: String? {
         guard valuationMethod == .quantityAndUnitPrice else { return nil }
+        if let autoPricedAssetKind {
+            return autoPricedAssetKind.marketSymbol
+        }
         let uppercasedName = name.uppercased()
         for currencyCode in ["USD", "EUR", "GBP", "JPY", "HKD", "SGD", "AUD", "CAD", "KRW"] {
             if uppercasedName.hasSuffix(" \(currencyCode)") || uppercasedName == currencyCode {
-                return currencyCode
+                return currencyCode.lowercased()
             }
         }
+        if uppercasedName == "BTC" {
+            return "btc"
+        }
         return nil
+    }
+
+    var autoExchangeRateCurrencyCode: String? {
+        guard let autoPricedAssetKind, autoPricedAssetKind.isCurrency else {
+            let uppercasedName = name.uppercased()
+            for currencyCode in ["USD", "EUR", "GBP", "JPY", "HKD", "SGD", "AUD", "CAD", "KRW"] {
+                if uppercasedName.hasSuffix(" \(currencyCode)") || uppercasedName == currencyCode {
+                    return currencyCode
+                }
+            }
+            return nil
+        }
+        return autoPricedAssetKind.rawValue.uppercased()
+    }
+
+    var autoMarketUnitPrice: Double? {
+        guard let symbol = autoPricedMarketSymbol else { return nil }
+        switch symbol {
+        case "usd", "eur", "gbp", "jpy", "hkd", "sgd", "aud", "cad", "krw":
+            return nil
+        default:
+            return nil
+        }
     }
 }
 

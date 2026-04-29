@@ -107,6 +107,7 @@ enum AssetItemService {
         name: String,
         category: AssetCategory,
         valuationMethod: ValuationMethod = .directAmount,
+        autoPricedAssetKind: AutoPricedAssetKind? = nil,
         note: String = "",
         in context: ModelContext
     ) throws -> AssetItem {
@@ -115,6 +116,7 @@ enum AssetItemService {
             name: name,
             note: note,
             valuationMethod: valuationMethod,
+            autoPricedAssetKind: autoPricedAssetKind,
             sortOrder: nextSortOrder,
             category: category
         )
@@ -129,6 +131,7 @@ enum AssetItemService {
         name: String? = nil,
         note: String? = nil,
         valuationMethod: ValuationMethod? = nil,
+        autoPricedAssetKind: AutoPricedAssetKind?? = nil,
         isActive: Bool? = nil,
         category: AssetCategory? = nil,
         in context: ModelContext
@@ -136,6 +139,7 @@ enum AssetItemService {
         if let name { item.name = name }
         if let note { item.note = note }
         if let valuationMethod { item.valuationMethod = valuationMethod }
+        if let autoPricedAssetKind { item.autoPricedAssetKind = autoPricedAssetKind }
         if let isActive { item.isActive = isActive }
         if let category { item.category = category }
         item.updatedAt = .now

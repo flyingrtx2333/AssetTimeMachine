@@ -19,6 +19,7 @@ struct ExportPayload: Codable {
         let name: String
         let note: String
         let valuationMethod: String
+        let autoPricedAssetKind: String?
         let sortOrder: Int
         let isActive: Bool
         let createdAt: Date
@@ -79,6 +80,7 @@ enum ImportExportService {
                     name: $0.name,
                     note: $0.note,
                     valuationMethod: $0.valuationMethod.rawValue,
+                    autoPricedAssetKind: $0.autoPricedAssetKind?.rawValue,
                     sortOrder: $0.sortOrder,
                     isActive: $0.isActive,
                     createdAt: $0.createdAt,
@@ -168,6 +170,7 @@ enum ImportExportService {
                 name: itemPayload.name,
                 note: itemPayload.note,
                 valuationMethod: ValuationMethod(rawValue: itemPayload.valuationMethod) ?? .directAmount,
+                autoPricedAssetKind: itemPayload.autoPricedAssetKind.flatMap(AutoPricedAssetKind.init(rawValue:)),
                 sortOrder: itemPayload.sortOrder,
                 isActive: itemPayload.isActive,
                 createdAt: itemPayload.createdAt,
