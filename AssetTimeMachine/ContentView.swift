@@ -890,7 +890,6 @@ private struct SummaryColumnMetric: View {
 }
 
 private struct SnapshotArchiveView: View {
-    @Environment(\.dismiss) private var dismiss
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
 
     var body: some View {
@@ -899,12 +898,6 @@ private struct SnapshotArchiveView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
-                    ATMHeader(title: "全部记录") {
-                        ATMBackButton {
-                            dismiss()
-                        }
-                    }
-
                     ForEach(snapshots) { snapshot in
                         NavigationLink {
                             SnapshotDetailView(snapshot: snapshot)
@@ -933,7 +926,9 @@ private struct SnapshotArchiveView: View {
                 .padding(.bottom, 120)
             }
         }
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarRole(.editor)
     }
 }
 
