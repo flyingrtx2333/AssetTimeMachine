@@ -1199,19 +1199,18 @@ private struct TimeMachineView: View {
             guard let series = marketStore.history(for: config.symbol) else { return nil }
             let leftOnlyPoints = historySeriesPoints(series)
             guard leftOnlyPoints.count >= 2 else { return nil }
-            let points = leftOnlyPoints.map { TimeMachineDualAxisPoint(date: $0.date, leftValue: $0.value, rightValue: $0.value) }
             let latest = leftOnlyPoints.last
             return TimeMachineCombinedTrendDescriptor(
                 title: config.title,
                 subtitle: nil,
                 leftTitle: "指数",
                 rightTitle: "趋势镜像",
-                points: points,
+                points: [],
                 leftOnlyPoints: leftOnlyPoints,
                 leftColor: config.color,
                 rightColor: config.color.opacity(0.45),
                 leftLatestLabel: latest.map { $0.value.currencyString(code: series.currency) } ?? "--",
-                rightLatestLabel: latest.map { $0.value.plainNumberString() } ?? "--",
+                rightLatestLabel: "--",
                 leftAxisStyle: .currency(code: series.currency),
                 rightAxisStyle: .quantity(unit: "", maxFractionDigits: 2),
                 showsComparisonLine: false
@@ -1334,7 +1333,7 @@ private struct TimeMachineView: View {
                                 latestPoint: latestPoint
                             )
 
-                            VStack(spacing: 12) {
+                            LazyVStack(spacing: 12) {
                                 ForEach(detailTrendCards) { card in
                                     TimeMachineDualAxisTrendCard(descriptor: card)
                                 }
@@ -3313,7 +3312,7 @@ private struct TimeMachineDualAxisTrendCard: View {
     }
 
     private var canShowDualAxisChart: Bool {
-        descriptor.points.count >= 2
+        descriptor.showsComparisonLine && descriptor.points.count >= 2
     }
 
     private var canShowLeftOnlyChart: Bool {
