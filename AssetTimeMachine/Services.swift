@@ -147,6 +147,59 @@ enum AssetItemService {
     }
 
     @MainActor
+    static func migrateLegacyAutoPricedItemsIfNeeded(in context: ModelContext) throws {
+        let items = try context.fetch(FetchDescriptor<AssetItem>())
+        var didChange = false
+
+        for item in items {
+            guard item.autoPricedAssetKind == nil,
+                  let inferredKind = inferLegacyAutoPricedAssetKind(for: item.name) else {
+                continue
+            }
+            item.autoPricedAssetKind = inferredKind
+            item.updatedAt = .now
+            didChange = true
+        }
+
+        if didChange {
+            try context.save()
+        }
+    }
+
+    private static func inferLegacyAutoPricedAssetKind(for name: String) -> AutoPricedAssetKind? {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return nil }
+
+        if trimmedName == "黄金" || trimmedName.caseInsensitiveCompare("gold") == .orderedSame {
+            return .gold
+        }
+
+        let uppercasedName = trimmedName.uppercased()
+        let cryptoMappings: [(AutoPricedAssetKind, [String])] = [
+            (.btc, ["BTC", "BITCOIN"]),
+            (.eth, ["ETH", "ETHEREUM"]),
+            (.bnb, ["BNB"]),
+            (.sol, ["SOL", "SOLANA"]),
+            (.xrp, ["XRP"]),
+            (.doge, ["DOGE", "DOGECOIN"]),
+        ]
+
+        for (kind, candidates) in cryptoMappings {
+            if candidates.contains(uppercasedName) {
+                return kind
+            }
+        }
+
+        for currencyCode in ["USD", "EUR", "GBP", "JPY", "HKD", "SGD", "AUD", "CAD", "KRW"] {
+            if uppercasedName.hasSuffix(" \(currencyCode)") || uppercasedName == currencyCode {
+                return AutoPricedAssetKind(rawValue: currencyCode.lowercased())
+            }
+        }
+
+        return nil
+    }
+
+    @MainActor
     static func reorderItems(
         in category: AssetCategory,
         itemIDsInOrder: [UUID],

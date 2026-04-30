@@ -145,7 +145,7 @@ final class AssetItem {
     var name: String
     var note: String
     var valuationMethodRawValue: String
-    var autoPricedAssetKindRawValue: String
+    var autoPricedAssetKindRawValue: String?
     var sortOrder: Int
     var isActive: Bool
     var createdAt: Date
@@ -170,7 +170,7 @@ final class AssetItem {
         self.name = name
         self.note = note
         self.valuationMethodRawValue = valuationMethod.rawValue
-        self.autoPricedAssetKindRawValue = autoPricedAssetKind?.rawValue ?? ""
+        self.autoPricedAssetKindRawValue = autoPricedAssetKind?.rawValue
         self.sortOrder = sortOrder
         self.isActive = isActive
         self.createdAt = createdAt
@@ -185,8 +185,11 @@ final class AssetItem {
     }
 
     var autoPricedAssetKind: AutoPricedAssetKind? {
-        get { AutoPricedAssetKind(rawValue: autoPricedAssetKindRawValue) }
-        set { autoPricedAssetKindRawValue = newValue?.rawValue ?? "" }
+        get {
+            guard let rawValue = autoPricedAssetKindRawValue, !rawValue.isEmpty else { return nil }
+            return AutoPricedAssetKind(rawValue: rawValue)
+        }
+        set { autoPricedAssetKindRawValue = newValue?.rawValue }
     }
 }
 

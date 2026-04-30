@@ -90,6 +90,7 @@ struct ContentView: View {
             try? SeedDataService.seedDefaultCategoriesIfNeeded(in: modelContext)
         }
 
+        try? AssetItemService.migrateLegacyAutoPricedItemsIfNeeded(in: modelContext)
         await marketStore.refresh()
         await SnapshotAnchorService.backfillIfNeeded(in: modelContext)
     }
@@ -687,7 +688,7 @@ private struct AssetEntryInputRow: View {
 
             if item.valuationMethod == .directAmount {
                 ATMInputField(text: $amountText, placeholder: "0", focusedField: focusedField, focusValue: .amount(item.id))
-            } else if let autoKind = item.autoPricedAssetKind {
+            } else if let autoKind = item.resolvedAutoPricedAssetKind {
                 ATMInputField(text: $quantityText, placeholder: autoKind.defaultName, focusedField: focusedField, focusValue: .quantity(item.id))
             } else if let currencyCode = item.autoExchangeRateCurrencyCode {
                 ATMInputField(text: $quantityText, placeholder: currencyCode, focusedField: focusedField, focusValue: .quantity(item.id))
@@ -4121,34 +4122,53 @@ private extension AssetCategory {
 }
 
 private extension AssetItem {
-    var autoPricedMarketSymbol: String? {
-        guard valuationMethod == .quantityAndUnitPrice else { return nil }
-        if let autoPricedAssetKind {
-            return autoPricedAssetKind.marketSymbol
+    var inferredAutoPricedAssetKind: AutoPricedAssetKind? {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return nil }
+
+        if trimmedName == "黄金" || trimmedName.caseInsensitiveCompare("gold") == .orderedSame {
+            return .gold
         }
-        let uppercasedName = name.uppercased()
-        for currencyCode in ["USD", "EUR", "GBP", "JPY", "HKD", "SGD", "AUD", "CAD", "KRW"] {
-            if uppercasedName.hasSuffix(" \(currencyCode)") || uppercasedName == currencyCode {
-                return currencyCode.lowercased()
+
+        let uppercasedName = trimmedName.uppercased()
+        let legacyMappings: [(AutoPricedAssetKind, [String])] = [
+            (.btc, ["BTC", "BITCOIN"]),
+            (.eth, ["ETH", "ETHEREUM"]),
+            (.bnb, ["BNB"]),
+            (.sol, ["SOL", "SOLANA"]),
+            (.xrp, ["XRP"]),
+            (.doge, ["DOGE", "DOGECOIN"]),
+        ]
+
+        for (kind, candidates) in legacyMappings {
+            if candidates.contains(uppercasedName) {
+                return kind
             }
         }
-        if uppercasedName == "BTC" {
-            return "btc"
+
+        for currencyCode in ["USD", "EUR", "GBP", "JPY", "HKD", "SGD", "AUD", "CAD", "KRW"] {
+            if uppercasedName.hasSuffix(" \(currencyCode)") || uppercasedName == currencyCode {
+                return AutoPricedAssetKind(rawValue: currencyCode.lowercased())
+            }
         }
+
         return nil
     }
 
+    var resolvedAutoPricedAssetKind: AutoPricedAssetKind? {
+        autoPricedAssetKind ?? inferredAutoPricedAssetKind
+    }
+
+    var autoPricedMarketSymbol: String? {
+        guard valuationMethod == .quantityAndUnitPrice else { return nil }
+        return resolvedAutoPricedAssetKind?.marketSymbol
+    }
+
     var autoExchangeRateCurrencyCode: String? {
-        guard let autoPricedAssetKind, autoPricedAssetKind.isCurrency else {
-            let uppercasedName = name.uppercased()
-            for currencyCode in ["USD", "EUR", "GBP", "JPY", "HKD", "SGD", "AUD", "CAD", "KRW"] {
-                if uppercasedName.hasSuffix(" \(currencyCode)") || uppercasedName == currencyCode {
-                    return currencyCode
-                }
-            }
+        guard let kind = resolvedAutoPricedAssetKind, kind.isCurrency else {
             return nil
         }
-        return autoPricedAssetKind.rawValue.uppercased()
+        return kind.rawValue.uppercased()
     }
 
     var autoMarketUnitPrice: Double? {
