@@ -214,6 +214,7 @@ private struct DashboardView: View {
                         summaryStrip
                         trendSection
                         freedomSection
+                        cloudSyncSection
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 28)
@@ -318,6 +319,10 @@ private struct DashboardView: View {
             monthlyExpense: $monthlyExpense,
             inflationRate: $inflationRate
         )
+    }
+
+    private var cloudSyncSection: some View {
+        AssetTimeMachineCloudCard()
     }
 }
 
