@@ -524,14 +524,7 @@ private struct SnapshotListView: View {
                 continue
             }
 
-            let liveUnitPrice: Double?
-            if let currencyCode = item.autoExchangeRateCurrencyCode {
-                liveUnitPrice = marketStore.exchangeRate(for: currencyCode)
-            } else if let marketSymbol = item.autoPricedMarketSymbol {
-                liveUnitPrice = marketStore.market(for: marketSymbol)?.price
-            } else {
-                liveUnitPrice = nil
-            }
+            let liveUnitPrice = item.resolvedAutoUnitPrice(using: marketStore)
 
             guard let rate = liveUnitPrice else {
                 continue
@@ -572,8 +565,7 @@ private struct SnapshotListView: View {
                 try SnapshotService.upsertEntry(snapshot: snapshot, item: item, amount: amount, in: modelContext)
             case .quantityAndUnitPrice:
                 let quantity = normalizedNumber(from: quantityInputs[item.id])
-                let autoRate = item.autoExchangeRateCurrencyCode.flatMap { marketStore.exchangeRate(for: $0) }
-                    ?? item.autoPricedMarketSymbol.flatMap { marketStore.market(for: $0)?.price }
+                let autoRate = item.resolvedAutoUnitPrice(using: marketStore)
                 let unitPrice = autoRate ?? normalizedNumber(from: unitPriceInputs[item.id])
                 if let autoRate {
                     unitPriceInputs[item.id] = autoRate.plainNumberString()
@@ -4171,14 +4163,19 @@ private extension AssetItem {
         return kind.rawValue.uppercased()
     }
 
-    var autoMarketUnitPrice: Double? {
-        guard let symbol = autoPricedMarketSymbol else { return nil }
-        switch symbol {
-        case "usd", "eur", "gbp", "jpy", "hkd", "sgd", "aud", "cad", "krw":
-            return nil
-        default:
-            return nil
+    @MainActor
+    func resolvedAutoUnitPrice(using marketStore: RemoteMarketStore) -> Double? {
+        if let currencyCode = autoExchangeRateCurrencyCode,
+           let rate = marketStore.exchangeRate(for: currencyCode),
+           rate > 0 {
+            return 1 / rate
         }
+
+        if let symbol = autoPricedMarketSymbol {
+            return marketStore.market(for: symbol)?.price
+        }
+
+        return nil
     }
 }
 

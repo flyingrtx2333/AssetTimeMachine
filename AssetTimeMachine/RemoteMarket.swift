@@ -104,7 +104,7 @@ enum RemoteMarketClient {
         .init(
             title: "纳指参考价格",
             path: "/api/v1/money/public/nasdaq-price",
-            description: "当前使用 QQQ 作为纳指代理锚点，返回美元价格。",
+            description: "返回统一口径的纳斯达克综合指数美元价格。",
             symbol: "nasdaq"
         ),
         .init(
@@ -326,6 +326,7 @@ private struct HistoricalSeries {
 }
 
 private struct HistoricalAnchorBundle {
+    let goldCNY: HistoricalSeries
     let btcUSD: HistoricalSeries
     let nasdaqUSD: HistoricalSeries
     let usdPerCNY: HistoricalSeries
@@ -383,140 +384,27 @@ private enum MarketDay {
 
 private enum HistoricalAnchorClient {
     static func fetchBundle(startDate: Date, endDate: Date) async throws -> HistoricalAnchorBundle {
-        async let btcUSD = fetchBTCHistory(startDate: startDate, endDate: endDate)
-        async let nasdaqUSD = fetchNasdaqHistory(startDate: startDate, endDate: endDate)
-        async let usdPerCNY = fetchUSDCNYHistory(startDate: startDate, endDate: endDate)
+        let response = try await RemoteMarketClient.fetchHistory(
+            symbols: ["gold_cny", "btc", "nasdaq", "usd_per_cny"],
+            startDate: MarketDay.string(from: startDate),
+            endDate: MarketDay.string(from: endDate)
+        )
+        let seriesBySymbol = Dictionary(uniqueKeysWithValues: response.series.map { ($0.symbol, $0) })
 
-        return try await HistoricalAnchorBundle(
-            btcUSD: btcUSD,
-            nasdaqUSD: nasdaqUSD,
-            usdPerCNY: usdPerCNY
+        return HistoricalAnchorBundle(
+            goldCNY: makeSeries(from: seriesBySymbol["gold_cny"]),
+            btcUSD: makeSeries(from: seriesBySymbol["btc"]),
+            nasdaqUSD: makeSeries(from: seriesBySymbol["nasdaq"] ?? seriesBySymbol["nasdaq_composite"]),
+            usdPerCNY: makeSeries(from: seriesBySymbol["usd_per_cny"])
         )
     }
 
-    private static func fetchBTCHistory(startDate: Date, endDate: Date) async throws -> HistoricalSeries {
-        var points: [HistoricalAnchorPoint] = []
-        var cursor = MarketDay.addingDays(-1, to: startDate)
-        let end = MarketDay.addingDays(1, to: endDate)
-
-        while cursor <= end {
-            var components = URLComponents(string: "https://api.binance.com/api/v3/klines")!
-            components.queryItems = [
-                .init(name: "symbol", value: "BTCUSDT"),
-                .init(name: "interval", value: "1d"),
-                .init(name: "limit", value: "1000"),
-                .init(name: "startTime", value: String(MarketDay.utcMilliseconds(for: cursor))),
-                .init(name: "endTime", value: String(MarketDay.utcMilliseconds(for: end)))
-            ]
-
-            let (data, response) = try await URLSession.shared.data(from: components.url!)
-            try RemoteMarketClient.validate(response: response, data: data)
-
-            guard let json = try JSONSerialization.jsonObject(with: data) as? [[Any]], !json.isEmpty else {
-                break
-            }
-
-            var lastOpenTime: Int64?
-            for row in json {
-                guard row.count > 4,
-                      let openTime = row[0] as? NSNumber,
-                      let closeText = row[4] as? String,
-                      let closePrice = Double(closeText) else {
-                    continue
-                }
-
-                lastOpenTime = openTime.int64Value
-                let day = MarketDay.start(of: Date(timeIntervalSince1970: TimeInterval(openTime.int64Value) / 1000))
-                points.append(.init(day: day, price: closePrice))
-            }
-
-            guard let lastOpenTime else { break }
-            cursor = MarketDay.start(of: Date(timeIntervalSince1970: TimeInterval(lastOpenTime) / 1000 + 86_400))
+    private static func makeSeries(from series: PublicHistorySeries?) -> HistoricalSeries {
+        let points = zip(series?.dates ?? [], series?.prices ?? []).compactMap { dayText, price -> HistoricalAnchorPoint? in
+            guard let day = MarketDay.parse(dayText) else { return nil }
+            return HistoricalAnchorPoint(day: MarketDay.start(of: day), price: price)
         }
-
         return HistoricalSeries(points: points)
-    }
-
-    private static func fetchNasdaqHistory(startDate: Date, endDate: Date) async throws -> HistoricalSeries {
-        var components = URLComponents(string: "https://api.nasdaq.com/api/quote/QQQ/historical")!
-        components.queryItems = [
-            .init(name: "assetclass", value: "etf"),
-            .init(name: "fromdate", value: MarketDay.string(from: startDate)),
-            .init(name: "todate", value: MarketDay.string(from: endDate)),
-            .init(name: "limit", value: "10000")
-        ]
-
-        var request = URLRequest(url: components.url!)
-        request.setValue("Mozilla/5.0", forHTTPHeaderField: "User-Agent")
-        request.setValue("application/json, text/plain, */*", forHTTPHeaderField: "Accept")
-        request.setValue("https://www.nasdaq.com/", forHTTPHeaderField: "Referer")
-        request.setValue("https://www.nasdaq.com", forHTTPHeaderField: "Origin")
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try RemoteMarketClient.validate(response: response, data: data)
-        let payload = try JSONDecoder().decode(NasdaqHistoricalResponse.self, from: data)
-
-        let points = (payload.data?.tradesTable?.rows ?? []).compactMap { row -> HistoricalAnchorPoint? in
-            guard let day = MarketDay.parseNasdaq(row.date),
-                  let close = row.close.cleanedDecimalValue else {
-                return nil
-            }
-            return .init(day: MarketDay.start(of: day), price: close)
-        }
-
-        return HistoricalSeries(points: points)
-    }
-
-    private static func fetchUSDCNYHistory(startDate: Date, endDate: Date) async throws -> HistoricalSeries {
-        let url = URL(string: "https://api.frankfurter.app/\(MarketDay.string(from: startDate))..\(MarketDay.string(from: endDate))?from=USD&to=CNY")!
-        var request = URLRequest(url: url)
-        request.setValue("Mozilla/5.0", forHTTPHeaderField: "User-Agent")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try RemoteMarketClient.validate(response: response, data: data)
-        let payload = try JSONDecoder().decode(FrankfurterRangeResponse.self, from: data)
-
-        let points = payload.rates.compactMap { key, value -> HistoricalAnchorPoint? in
-            guard let cnyPerUSD = value["CNY"], cnyPerUSD > 0, let day = MarketDay.parse(key) else {
-                return nil
-            }
-            return .init(day: MarketDay.start(of: day), price: 1 / cnyPerUSD)
-        }
-
-        return HistoricalSeries(points: points)
-    }
-}
-
-private struct NasdaqHistoricalResponse: Decodable {
-    let data: NasdaqHistoricalData?
-}
-
-private struct NasdaqHistoricalData: Decodable {
-    let tradesTable: NasdaqTradesTable?
-}
-
-private struct NasdaqTradesTable: Decodable {
-    let rows: [NasdaqTradeRow]
-}
-
-private struct NasdaqTradeRow: Decodable {
-    let date: String
-    let close: String
-
-    enum CodingKeys: String, CodingKey {
-        case date
-        case close = "close"
-    }
-}
-
-private struct FrankfurterRangeResponse: Decodable {
-    let rates: [String: [String: Double]]
-}
-
-private extension String {
-    var cleanedDecimalValue: Double? {
-        Double(replacingOccurrences(of: ",", with: "").replacingOccurrences(of: "$", with: ""))
     }
 }
 
@@ -525,15 +413,14 @@ enum SnapshotAnchorService {
     static func backfillIfNeeded(in context: ModelContext) async {
         do {
             let snapshots = try context.fetch(FetchDescriptor<AssetSnapshot>(sortBy: [SortDescriptor(\.date)]))
-            let pending = snapshots.filter { $0.marketAnchorsUpdatedAt == nil }
-            guard let first = pending.first, let last = pending.last else { return }
+            guard let first = snapshots.first, let last = snapshots.last else { return }
 
             let bundle = try await HistoricalAnchorClient.fetchBundle(
                 startDate: first.date,
                 endDate: last.date
             )
 
-            for snapshot in pending {
+            for snapshot in snapshots {
                 applyHistoricalAnchors(to: snapshot, bundle: bundle)
             }
 
@@ -551,7 +438,7 @@ enum SnapshotAnchorService {
         let day = MarketDay.start(of: snapshot.date)
         var didChange = false
 
-        let goldPrice = snapshot.derivedGoldAnchorPriceCNY ?? marketStore.market(for: "gold")?.price
+        let goldPrice = marketStore.market(for: "gold")?.price
         if snapshot.goldAnchorPriceCNY != goldPrice {
             snapshot.goldAnchorPriceCNY = goldPrice
             snapshot.goldAnchorPriceDate = goldPrice == nil ? nil : day
@@ -592,9 +479,9 @@ enum SnapshotAnchorService {
     private static func applyHistoricalAnchors(to snapshot: AssetSnapshot, bundle: HistoricalAnchorBundle) {
         let day = MarketDay.start(of: snapshot.date)
 
-        if let goldPrice = snapshot.derivedGoldAnchorPriceCNY {
-            snapshot.goldAnchorPriceCNY = goldPrice
-            snapshot.goldAnchorPriceDate = day
+        if let goldPoint = bundle.goldCNY.point(onOrBefore: day) {
+            snapshot.goldAnchorPriceCNY = goldPoint.price
+            snapshot.goldAnchorPriceDate = goldPoint.day
         }
 
         if let btcPoint = bundle.btcUSD.point(onOrBefore: day) {
@@ -616,8 +503,3 @@ enum SnapshotAnchorService {
     }
 }
 
-private extension AssetSnapshot {
-    var derivedGoldAnchorPriceCNY: Double? {
-        entries.first(where: { $0.item?.name == "黄金" })?.unitPrice
-    }
-}
