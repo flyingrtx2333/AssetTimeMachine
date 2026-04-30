@@ -41,7 +41,7 @@ struct ContentView: View {
                 }
                 .tag(AppTab.snapshots)
 
-            TimeMachineView(marketStore: marketStore)
+            TimeMachineView(marketStore: marketStore, isActive: selectedTab == .timeMachine)
                 .tabItem {
                     Label("时光机", systemImage: "clock.arrow.circlepath")
                 }
@@ -1070,47 +1070,24 @@ private struct SnapshotDetailView: View {
 
 private struct TimeMachineView: View {
     @ObservedObject var marketStore: RemoteMarketStore
+    let isActive: Bool
     @Query(sort: \AssetSnapshot.date, order: .forward) private var snapshots: [AssetSnapshot]
     @State private var selectedRange: TimeMachineRange = .oneYear
+    @State private var cachedTrendPoints: [TimeMachineTrendPoint] = []
+    @State private var cachedFilteredTrendPoints: [TimeMachineTrendPoint] = []
+    @State private var cachedHistoryPointsBySymbol: [String: [TimeMachineSingleAxisPoint]] = [:]
+    @State private var cachedDetailTrendCards: [TimeMachineCombinedTrendDescriptor] = []
 
     private var trendPoints: [TimeMachineTrendPoint] {
-        snapshots.map { snapshot in
-            let mainAssets = PortfolioCalculator.totalAssets(for: snapshot)
-            let liabilities = PortfolioCalculator.totalLiabilities(for: snapshot)
-            let netAssets = mainAssets - liabilities
-
-            let goldAnchorPrice = snapshot.goldAnchorPriceCNY ?? liveGoldAnchorPriceIfToday(for: snapshot)
-            let btcAnchorPriceCNY = snapshot.btcAnchorPriceCNY ?? liveBTCAnchorPriceCNYIfToday(for: snapshot)
-            let nasdaqAnchorPriceCNY = snapshot.nasdaqAnchorPriceCNY ?? liveNasdaqAnchorPriceCNYIfToday(for: snapshot)
-            let btcAnchorPriceUSD = snapshot.btcAnchorPriceUSD ?? liveBTCAnchorPriceUSDIfToday(for: snapshot)
-            let nasdaqAnchorPriceUSD = snapshot.nasdaqAnchorPriceUSD ?? liveNasdaqAnchorPriceUSDIfToday(for: snapshot)
-
-            return TimeMachineTrendPoint(
-                date: snapshot.date,
-                mainAssets: mainAssets,
-                netAssets: netAssets,
-                liabilities: liabilities,
-                goldEquivalent: goldAnchorPrice.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-                btcEquivalent: btcAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-                nasdaqEquivalent: nasdaqAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-                goldAnchorPriceCNY: goldAnchorPrice,
-                goldAnchorDate: snapshot.goldAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: goldAnchorPrice != nil),
-                btcAnchorPriceUSD: btcAnchorPriceUSD,
-                btcAnchorPriceCNY: btcAnchorPriceCNY,
-                btcAnchorDate: snapshot.btcAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: btcAnchorPriceUSD != nil),
-                nasdaqAnchorPriceUSD: nasdaqAnchorPriceUSD,
-                nasdaqAnchorPriceCNY: nasdaqAnchorPriceCNY,
-                nasdaqAnchorDate: snapshot.nasdaqAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: nasdaqAnchorPriceUSD != nil)
-            )
-        }
+        cachedTrendPoints
     }
 
     private var filteredTrendPoints: [TimeMachineTrendPoint] {
-        selectedRange.filter(trendPoints)
+        cachedFilteredTrendPoints
     }
 
     private var latestPoint: TimeMachineTrendPoint? {
-        filteredTrendPoints.last ?? trendPoints.last
+        cachedFilteredTrendPoints.last ?? cachedTrendPoints.last
     }
 
     private var liveUSDPerCNY: Double? {
@@ -1148,89 +1125,17 @@ private struct TimeMachineView: View {
     }
 
     private var detailTrendCards: [TimeMachineCombinedTrendDescriptor] {
-        let goldLeftOnlyPoints = goldHistoryPoints
-        let nasdaqLeftOnlyPoints = nasdaqHistoryPoints
-
-        return [
-            TimeMachineCombinedTrendDescriptor(
-                title: "黄金",
-                subtitle: nil,
-                leftTitle: "价格",
-                rightTitle: "折算",
-                points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.goldAnchorPriceCNY, right: \.goldEquivalent),
-                leftOnlyPoints: goldLeftOnlyPoints,
-                leftColor: AssetTheme.gold,
-                rightColor: AssetTheme.positive,
-                leftLatestLabel: goldLeftOnlyPoints.last.map { "\($0.value.currencyString())/g" } ?? "--",
-                rightLatestLabel: latestPoint?.goldEquivalent.map { "\($0.plainNumberString()) g" } ?? "--",
-                leftAxisStyle: .currency(code: "CNY"),
-                rightAxisStyle: .quantity(unit: "g", maxFractionDigits: 2),
-                showsComparisonLine: true
-            ),
-            TimeMachineCombinedTrendDescriptor(
-                title: "纳指",
-                subtitle: nil,
-                leftTitle: "价格",
-                rightTitle: "折算",
-                points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.nasdaqAnchorPriceUSD, right: \.nasdaqEquivalent),
-                leftOnlyPoints: nasdaqLeftOnlyPoints,
-                leftColor: AssetTheme.accentBlue,
-                rightColor: AssetTheme.positive,
-                leftLatestLabel: nasdaqLeftOnlyPoints.last.map { $0.value.currencyString(code: "USD") } ?? "--",
-                rightLatestLabel: latestPoint?.nasdaqEquivalent.map { "\($0.plainNumberString()) 份" } ?? "--",
-                leftAxisStyle: .currency(code: "USD"),
-                rightAxisStyle: .quantity(unit: "份", maxFractionDigits: 2),
-                showsComparisonLine: true
-            ),
-        ] + publicIndexTrendCards
+        cachedDetailTrendCards
     }
 
-    private var publicIndexTrendCards: [TimeMachineCombinedTrendDescriptor] {
-        let configs: [(symbol: String, title: String, color: Color)] = [
-            ("sp500", "标普500", AssetTheme.goldSoft),
-            ("dowjones", "道指", AssetTheme.accentOrange),
-            ("hsi", "恒生", AssetTheme.accentBlue),
-            ("nikkei", "日经225", AssetTheme.positive),
-            ("csi300", "沪深300", AssetTheme.textPrimary),
-            ("shanghai_composite", "上证综指", AssetTheme.textSecondary)
-        ]
-
-        return configs.compactMap { config in
-            guard let series = marketStore.history(for: config.symbol) else { return nil }
-            let leftOnlyPoints = historySeriesPoints(series)
-            guard leftOnlyPoints.count >= 2 else { return nil }
-            let latest = leftOnlyPoints.last
-            return TimeMachineCombinedTrendDescriptor(
-                title: config.title,
-                subtitle: nil,
-                leftTitle: "指数",
-                rightTitle: "趋势镜像",
-                points: [],
-                leftOnlyPoints: leftOnlyPoints,
-                leftColor: config.color,
-                rightColor: config.color.opacity(0.45),
-                leftLatestLabel: latest.map { $0.value.currencyString(code: series.currency) } ?? "--",
-                rightLatestLabel: "--",
-                leftAxisStyle: .currency(code: series.currency),
-                rightAxisStyle: .quantity(unit: "", maxFractionDigits: 2),
-                showsComparisonLine: false
-            )
-        }
-    }
-
-    private var goldHistoryPoints: [TimeMachineSingleAxisPoint] {
-        if let series = marketStore.history(for: "gold_cny") {
-            return historySeriesPoints(series)
-        }
-        return singleAxisPoints(for: filteredTrendPoints, range: selectedRange, left: \.goldAnchorPriceCNY)
-    }
-
-    private var nasdaqHistoryPoints: [TimeMachineSingleAxisPoint] {
-        if let series = marketStore.history(for: "nasdaq") {
-            return historySeriesPoints(series)
-        }
-        return singleAxisPoints(for: filteredTrendPoints, range: selectedRange, left: \.nasdaqAnchorPriceUSD)
-    }
+    private static let publicIndexConfigs: [(symbol: String, title: String, color: Color)] = [
+        ("sp500", "标普500", AssetTheme.goldSoft),
+        ("dowjones", "道指", AssetTheme.accentOrange),
+        ("hsi", "恒生", AssetTheme.accentBlue),
+        ("nikkei", "日经225", AssetTheme.positive),
+        ("csi300", "沪深300", AssetTheme.textPrimary),
+        ("shanghai_composite", "上证综指", AssetTheme.textSecondary)
+    ]
 
     private func historySeriesPoints(_ series: PublicHistorySeries) -> [TimeMachineSingleAxisPoint] {
         let points: [TimeMachineSingleAxisPoint] = Array(zip(series.dates, series.prices)).compactMap { (dateText: String, price: Double) -> TimeMachineSingleAxisPoint? in
@@ -1276,6 +1181,160 @@ private struct TimeMachineView: View {
 
     private func liveAnchorDateIfToday(for snapshot: AssetSnapshot, hasValue: Bool) -> Date? {
         hasValue && Calendar.current.isDateInToday(snapshot.date) ? snapshot.date : nil
+    }
+
+    private var snapshotCacheToken: Int {
+        var hasher = Hasher()
+        hasher.combine(snapshots.count)
+
+        for snapshot in snapshots {
+            hasher.combine(snapshot.id)
+            hasher.combine(snapshot.date.timeIntervalSinceReferenceDate)
+            hasher.combine(snapshot.updatedAt.timeIntervalSinceReferenceDate)
+            hasher.combine(snapshot.goldAnchorPriceCNY)
+            hasher.combine(snapshot.goldAnchorPriceDate?.timeIntervalSinceReferenceDate)
+            hasher.combine(snapshot.btcAnchorPriceUSD)
+            hasher.combine(snapshot.btcAnchorPriceDate?.timeIntervalSinceReferenceDate)
+            hasher.combine(snapshot.nasdaqAnchorPriceUSD)
+            hasher.combine(snapshot.nasdaqAnchorPriceDate?.timeIntervalSinceReferenceDate)
+            hasher.combine(snapshot.usdPerCNY)
+            hasher.combine(snapshot.usdPerCNYDate?.timeIntervalSinceReferenceDate)
+            hasher.combine(snapshot.marketAnchorsUpdatedAt?.timeIntervalSinceReferenceDate)
+            hasher.combine(snapshot.entries.count)
+
+            for entry in snapshot.entries.sorted(by: { $0.id.uuidString < $1.id.uuidString }) {
+                hasher.combine(entry.id)
+                hasher.combine(entry.updatedAt.timeIntervalSinceReferenceDate)
+                hasher.combine(entry.amount)
+                hasher.combine(entry.quantity)
+                hasher.combine(entry.unitPrice)
+                hasher.combine(entry.item?.id)
+                hasher.combine(entry.item?.updatedAt.timeIntervalSinceReferenceDate)
+                hasher.combine(entry.item?.category?.groupRawValue)
+            }
+        }
+
+        return hasher.finalize()
+    }
+
+    @MainActor
+    private func refreshVisualizationCache() {
+        let trendPoints = snapshots.map { snapshot in
+            let mainAssets = PortfolioCalculator.totalAssets(for: snapshot)
+            let liabilities = PortfolioCalculator.totalLiabilities(for: snapshot)
+            let netAssets = mainAssets - liabilities
+
+            let goldAnchorPrice = snapshot.goldAnchorPriceCNY ?? liveGoldAnchorPriceIfToday(for: snapshot)
+            let btcAnchorPriceCNY = snapshot.btcAnchorPriceCNY ?? liveBTCAnchorPriceCNYIfToday(for: snapshot)
+            let nasdaqAnchorPriceCNY = snapshot.nasdaqAnchorPriceCNY ?? liveNasdaqAnchorPriceCNYIfToday(for: snapshot)
+            let btcAnchorPriceUSD = snapshot.btcAnchorPriceUSD ?? liveBTCAnchorPriceUSDIfToday(for: snapshot)
+            let nasdaqAnchorPriceUSD = snapshot.nasdaqAnchorPriceUSD ?? liveNasdaqAnchorPriceUSDIfToday(for: snapshot)
+
+            return TimeMachineTrendPoint(
+                date: snapshot.date,
+                mainAssets: mainAssets,
+                netAssets: netAssets,
+                liabilities: liabilities,
+                goldEquivalent: goldAnchorPrice.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
+                btcEquivalent: btcAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
+                nasdaqEquivalent: nasdaqAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
+                goldAnchorPriceCNY: goldAnchorPrice,
+                goldAnchorDate: snapshot.goldAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: goldAnchorPrice != nil),
+                btcAnchorPriceUSD: btcAnchorPriceUSD,
+                btcAnchorPriceCNY: btcAnchorPriceCNY,
+                btcAnchorDate: snapshot.btcAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: btcAnchorPriceUSD != nil),
+                nasdaqAnchorPriceUSD: nasdaqAnchorPriceUSD,
+                nasdaqAnchorPriceCNY: nasdaqAnchorPriceCNY,
+                nasdaqAnchorDate: snapshot.nasdaqAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: nasdaqAnchorPriceUSD != nil)
+            )
+        }
+
+        let filteredTrendPoints = selectedRange.filter(trendPoints)
+        let historyPointsBySymbol = buildHistoryPointsBySymbol()
+
+        cachedTrendPoints = trendPoints
+        cachedFilteredTrendPoints = filteredTrendPoints
+        cachedHistoryPointsBySymbol = historyPointsBySymbol
+        cachedDetailTrendCards = buildDetailTrendCards(
+            filteredTrendPoints: filteredTrendPoints,
+            latestPoint: filteredTrendPoints.last ?? trendPoints.last,
+            historyPointsBySymbol: historyPointsBySymbol
+        )
+    }
+
+    private func buildHistoryPointsBySymbol() -> [String: [TimeMachineSingleAxisPoint]] {
+        let symbols = ["gold_cny", "nasdaq"] + Self.publicIndexConfigs.map(\.symbol)
+        return Dictionary(uniqueKeysWithValues: symbols.compactMap { symbol in
+            guard let series = marketStore.history(for: symbol) else { return nil }
+            let points = historySeriesPoints(series)
+            guard !points.isEmpty else { return nil }
+            return (symbol, points)
+        })
+    }
+
+    private func buildDetailTrendCards(
+        filteredTrendPoints: [TimeMachineTrendPoint],
+        latestPoint: TimeMachineTrendPoint?,
+        historyPointsBySymbol: [String: [TimeMachineSingleAxisPoint]]
+    ) -> [TimeMachineCombinedTrendDescriptor] {
+        let goldLeftOnlyPoints = historyPointsBySymbol["gold_cny"] ?? singleAxisPoints(for: filteredTrendPoints, range: selectedRange, left: \.goldAnchorPriceCNY)
+        let nasdaqLeftOnlyPoints = historyPointsBySymbol["nasdaq"] ?? singleAxisPoints(for: filteredTrendPoints, range: selectedRange, left: \.nasdaqAnchorPriceUSD)
+
+        let primaryCards = [
+            TimeMachineCombinedTrendDescriptor(
+                title: "黄金",
+                subtitle: nil,
+                leftTitle: "价格",
+                rightTitle: "折算",
+                points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.goldAnchorPriceCNY, right: \.goldEquivalent),
+                leftOnlyPoints: goldLeftOnlyPoints,
+                leftColor: AssetTheme.gold,
+                rightColor: AssetTheme.positive,
+                leftLatestLabel: goldLeftOnlyPoints.last.map { "\($0.value.currencyString())/g" } ?? "--",
+                rightLatestLabel: latestPoint?.goldEquivalent.map { "\($0.plainNumberString()) g" } ?? "--",
+                leftAxisStyle: .currency(code: "CNY"),
+                rightAxisStyle: .quantity(unit: "g", maxFractionDigits: 2),
+                showsComparisonLine: true
+            ),
+            TimeMachineCombinedTrendDescriptor(
+                title: "纳指",
+                subtitle: nil,
+                leftTitle: "价格",
+                rightTitle: "折算",
+                points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.nasdaqAnchorPriceUSD, right: \.nasdaqEquivalent),
+                leftOnlyPoints: nasdaqLeftOnlyPoints,
+                leftColor: AssetTheme.accentBlue,
+                rightColor: AssetTheme.positive,
+                leftLatestLabel: nasdaqLeftOnlyPoints.last.map { $0.value.currencyString(code: "USD") } ?? "--",
+                rightLatestLabel: latestPoint?.nasdaqEquivalent.map { "\($0.plainNumberString()) 份" } ?? "--",
+                leftAxisStyle: .currency(code: "USD"),
+                rightAxisStyle: .quantity(unit: "份", maxFractionDigits: 2),
+                showsComparisonLine: true
+            )
+        ]
+
+        let publicIndexCards: [TimeMachineCombinedTrendDescriptor] = Self.publicIndexConfigs.compactMap { config -> TimeMachineCombinedTrendDescriptor? in
+            guard let leftOnlyPoints = historyPointsBySymbol[config.symbol], leftOnlyPoints.count >= 2 else { return nil }
+            let latest = leftOnlyPoints.last
+            let currency = marketStore.history(for: config.symbol)?.currency ?? "CNY"
+            return TimeMachineCombinedTrendDescriptor(
+                title: config.title,
+                subtitle: nil,
+                leftTitle: "指数",
+                rightTitle: "趋势镜像",
+                points: [],
+                leftOnlyPoints: leftOnlyPoints,
+                leftColor: config.color,
+                rightColor: config.color.opacity(0.45),
+                leftLatestLabel: latest.map { $0.value.currencyString(code: currency) } ?? "--",
+                rightLatestLabel: "--",
+                leftAxisStyle: .currency(code: currency),
+                rightAxisStyle: .quantity(unit: "", maxFractionDigits: 2),
+                showsComparisonLine: false
+            )
+        }
+
+        return primaryCards + publicIndexCards
     }
 
     private func pairedPoints(
@@ -1352,6 +1411,30 @@ private struct TimeMachineView: View {
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
+        }
+        .task(id: isActive) {
+            guard isActive else { return }
+            refreshVisualizationCache()
+        }
+        .onChange(of: selectedRange) { _, _ in
+            guard isActive else { return }
+            refreshVisualizationCache()
+        }
+        .onChange(of: snapshotCacheToken) { _, _ in
+            guard isActive else { return }
+            refreshVisualizationCache()
+        }
+        .onReceive(marketStore.$historySeries) { _ in
+            guard isActive else { return }
+            refreshVisualizationCache()
+        }
+        .onReceive(marketStore.$overview) { _ in
+            guard isActive else { return }
+            refreshVisualizationCache()
+        }
+        .onReceive(marketStore.$exchangeRates) { _ in
+            guard isActive else { return }
+            refreshVisualizationCache()
         }
     }
 }
