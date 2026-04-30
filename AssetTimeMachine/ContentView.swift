@@ -467,11 +467,6 @@ private struct SnapshotListView: View {
                     .padding(.bottom, 120)
                 }
                 .scrollDismissesKeyboard(.immediately)
-                .simultaneousGesture(
-                    TapGesture().onEnded {
-                        focusedField = nil
-                    }
-                )
             }
             .toolbar(.hidden, for: .navigationBar)
         }
@@ -1153,17 +1148,20 @@ private struct TimeMachineView: View {
     }
 
     private var detailTrendCards: [TimeMachineCombinedTrendDescriptor] {
-        [
+        let goldLeftOnlyPoints = goldHistoryPoints
+        let nasdaqLeftOnlyPoints = nasdaqHistoryPoints
+
+        return [
             TimeMachineCombinedTrendDescriptor(
                 title: "黄金",
                 subtitle: nil,
                 leftTitle: "价格",
                 rightTitle: "折算",
                 points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.goldAnchorPriceCNY, right: \.goldEquivalent),
-                leftOnlyPoints: singleAxisPoints(for: filteredTrendPoints, range: selectedRange, left: \.goldAnchorPriceCNY),
+                leftOnlyPoints: goldLeftOnlyPoints,
                 leftColor: AssetTheme.gold,
                 rightColor: AssetTheme.positive,
-                leftLatestLabel: latestPoint?.goldAnchorPriceCNY.map { "\($0.currencyString())/g" } ?? "--",
+                leftLatestLabel: goldLeftOnlyPoints.last.map { "\($0.value.currencyString())/g" } ?? "--",
                 rightLatestLabel: latestPoint?.goldEquivalent.map { "\($0.plainNumberString()) g" } ?? "--",
                 leftAxisStyle: .currency(code: "CNY"),
                 rightAxisStyle: .quantity(unit: "g", maxFractionDigits: 2),
@@ -1175,10 +1173,10 @@ private struct TimeMachineView: View {
                 leftTitle: "价格",
                 rightTitle: "折算",
                 points: pairedPoints(for: filteredTrendPoints, range: selectedRange, left: \.nasdaqAnchorPriceUSD, right: \.nasdaqEquivalent),
-                leftOnlyPoints: singleAxisPoints(for: filteredTrendPoints, range: selectedRange, left: \.nasdaqAnchorPriceUSD),
+                leftOnlyPoints: nasdaqLeftOnlyPoints,
                 leftColor: AssetTheme.accentBlue,
                 rightColor: AssetTheme.positive,
-                leftLatestLabel: latestPoint?.nasdaqAnchorPriceUSD.map { $0.currencyString(code: "USD") } ?? "--",
+                leftLatestLabel: nasdaqLeftOnlyPoints.last.map { $0.value.currencyString(code: "USD") } ?? "--",
                 rightLatestLabel: latestPoint?.nasdaqEquivalent.map { "\($0.plainNumberString()) 份" } ?? "--",
                 leftAxisStyle: .currency(code: "USD"),
                 rightAxisStyle: .quantity(unit: "份", maxFractionDigits: 2),
@@ -1199,20 +1197,21 @@ private struct TimeMachineView: View {
 
         return configs.compactMap { config in
             guard let series = marketStore.history(for: config.symbol) else { return nil }
-            let points = historySeriesPoints(series)
-            guard points.count >= 2 else { return nil }
-            let latest = points.last
+            let leftOnlyPoints = historySeriesPoints(series)
+            guard leftOnlyPoints.count >= 2 else { return nil }
+            let points = leftOnlyPoints.map { TimeMachineDualAxisPoint(date: $0.date, leftValue: $0.value, rightValue: $0.value) }
+            let latest = leftOnlyPoints.last
             return TimeMachineCombinedTrendDescriptor(
                 title: config.title,
                 subtitle: nil,
                 leftTitle: "指数",
                 rightTitle: "趋势镜像",
                 points: points,
-                leftOnlyPoints: points.map { TimeMachineSingleAxisPoint(date: $0.date, value: $0.leftValue) },
+                leftOnlyPoints: leftOnlyPoints,
                 leftColor: config.color,
                 rightColor: config.color.opacity(0.45),
-                leftLatestLabel: latest.map { $0.leftValue.currencyString(code: series.currency) } ?? "--",
-                rightLatestLabel: latest.map { $0.rightValue.plainNumberString() } ?? "--",
+                leftLatestLabel: latest.map { $0.value.currencyString(code: series.currency) } ?? "--",
+                rightLatestLabel: latest.map { $0.value.plainNumberString() } ?? "--",
                 leftAxisStyle: .currency(code: series.currency),
                 rightAxisStyle: .quantity(unit: "", maxFractionDigits: 2),
                 showsComparisonLine: false
@@ -1220,21 +1219,41 @@ private struct TimeMachineView: View {
         }
     }
 
-    private func historySeriesPoints(_ series: PublicHistorySeries) -> [TimeMachineDualAxisPoint] {
-        zip(series.dates, series.prices).compactMap { dateText, price in
-            guard let date = historicalSeriesDate(from: dateText), price.isFinite, price > 0 else { return nil }
-            return TimeMachineDualAxisPoint(date: date, leftValue: price, rightValue: price)
+    private var goldHistoryPoints: [TimeMachineSingleAxisPoint] {
+        if let series = marketStore.history(for: "gold_cny") {
+            return historySeriesPoints(series)
         }
+        return singleAxisPoints(for: filteredTrendPoints, range: selectedRange, left: \.goldAnchorPriceCNY)
+    }
+
+    private var nasdaqHistoryPoints: [TimeMachineSingleAxisPoint] {
+        if let series = marketStore.history(for: "nasdaq") {
+            return historySeriesPoints(series)
+        }
+        return singleAxisPoints(for: filteredTrendPoints, range: selectedRange, left: \.nasdaqAnchorPriceUSD)
+    }
+
+    private func historySeriesPoints(_ series: PublicHistorySeries) -> [TimeMachineSingleAxisPoint] {
+        let points: [TimeMachineSingleAxisPoint] = Array(zip(series.dates, series.prices)).compactMap { (dateText: String, price: Double) -> TimeMachineSingleAxisPoint? in
+            guard let date = historicalSeriesDate(from: dateText), price.isFinite, price > 0 else { return nil }
+            return TimeMachineSingleAxisPoint(date: date, value: price)
+        }
+        let sortedPoints = points.sorted { $0.date < $1.date }
+        return selectedRange.filter(sortedPoints)
     }
 
     private func historicalSeriesDate(from text: String) -> Date? {
+        Self.historicalSeriesDateFormatter.date(from: text)
+    }
+
+    private static let historicalSeriesDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
         formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.date(from: text)
-    }
+        return formatter
+    }()
 
     private func liveGoldAnchorPriceIfToday(for snapshot: AssetSnapshot) -> Double? {
         Calendar.current.isDateInToday(snapshot.date) ? liveGoldAnchorPrice : nil
@@ -2370,19 +2389,27 @@ private enum TimeMachineRange: String, CaseIterable, Identifiable {
         .day
     }
 
-    func filter(_ points: [TimeMachineTrendPoint], calendar: Calendar = .current) -> [TimeMachineTrendPoint] {
-        guard let latestDate = points.last?.date else { return [] }
-
-        let startDate: Date?
+    private func startDate(from latestDate: Date, calendar: Calendar = .current) -> Date? {
         switch self {
         case .sixMonths:
-            startDate = calendar.date(byAdding: .month, value: -6, to: latestDate)
+            return calendar.date(byAdding: .month, value: -6, to: latestDate)
         case .oneYear:
-            startDate = calendar.date(byAdding: .year, value: -1, to: latestDate)
+            return calendar.date(byAdding: .year, value: -1, to: latestDate)
         case .all:
-            startDate = nil
+            return nil
         }
+    }
 
+    func filter(_ points: [TimeMachineTrendPoint], calendar: Calendar = .current) -> [TimeMachineTrendPoint] {
+        guard let latestDate = points.last?.date else { return [] }
+        let startDate = startDate(from: latestDate, calendar: calendar)
+        guard let startDate else { return points }
+        return points.filter { $0.date >= startDate }
+    }
+
+    func filter(_ points: [TimeMachineSingleAxisPoint], calendar: Calendar = .current) -> [TimeMachineSingleAxisPoint] {
+        guard let latestDate = points.last?.date else { return [] }
+        let startDate = startDate(from: latestDate, calendar: calendar)
         guard let startDate else { return points }
         return points.filter { $0.date >= startDate }
     }
@@ -3454,10 +3481,10 @@ private struct TimeMachineDualAxisTrendCard: View {
 
     @ChartContentBuilder
     private var leftSeriesMarks: some ChartContent {
-        ForEach(descriptor.points) { point in
+        ForEach(descriptor.leftOnlyPoints) { point in
             LineMark(
                 x: .value("日期", point.date),
-                y: .value(descriptor.leftTitle, normalized(point.leftValue, in: leftDomain)),
+                y: .value(descriptor.leftTitle, normalized(point.value, in: leftDomain)),
                 series: .value("系列", descriptor.leftTitle)
             )
             .foregroundStyle(descriptor.leftColor)
