@@ -582,7 +582,7 @@ struct AssetTimeMachineCloudPage: View {
 
     private var statusHero: some View {
         HStack(alignment: .center, spacing: 14) {
-            ZStack(alignment: .bottomTrailing) {
+            ZStack {
                 Circle()
                     .fill(AssetTheme.surfaceRaised.opacity(0.96))
                     .frame(width: 60, height: 60)
@@ -594,21 +594,11 @@ struct AssetTimeMachineCloudPage: View {
                 Image(systemName: store.indicatorState.cloudSymbolName)
                     .font(.system(size: 24, weight: .semibold))
                     .foregroundStyle(AssetTheme.gold)
-
-                switch store.indicatorState {
-                case .healthy:
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(AssetTheme.positive)
-                        .background(Circle().fill(AssetTheme.background))
-                        .offset(x: 4, y: 4)
-                case .idle, .warning:
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(AssetTheme.accentOrange)
-                        .background(Circle().fill(AssetTheme.background))
-                        .offset(x: 4, y: 4)
-                }
+                    .frame(width: 30, height: 30)
+            }
+            .overlay(alignment: .bottomTrailing) {
+                statusBadge
+                    .offset(x: 5, y: 5)
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -624,6 +614,37 @@ struct AssetTimeMachineCloudPage: View {
             }
 
             Spacer(minLength: 0)
+        }
+    }
+
+    @ViewBuilder
+    private var statusBadge: some View {
+        switch store.indicatorState {
+        case .healthy:
+            ZStack {
+                Circle()
+                    .fill(AssetTheme.background)
+                    .frame(width: 20, height: 20)
+
+                Circle()
+                    .fill(AssetTheme.positive)
+                    .frame(width: 16, height: 16)
+
+                Image(systemName: "checkmark")
+                    .font(.system(size: 9, weight: .black))
+                    .foregroundStyle(.white)
+            }
+        case .idle, .warning:
+            ZStack {
+                Circle()
+                    .fill(AssetTheme.background)
+                    .frame(width: 22, height: 22)
+
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(AssetTheme.accentOrange)
+                    .frame(width: 18, height: 18)
+            }
         }
     }
 
