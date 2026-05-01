@@ -252,16 +252,35 @@ private struct DashboardView: View {
                     .font(AppTypography.eyebrow)
                     .foregroundStyle(AssetTheme.textSecondary)
 
-                Text(totalAssets.currencyString())
-                    .font(AppTypography.heroValue)
-                    .monospacedDigit()
-                    .foregroundStyle(AssetTheme.textPrimary)
-                    .minimumScaleFactor(0.72)
-                    .lineLimit(2)
+                HStack(alignment: .top, spacing: 16) {
+                    Text(totalAssets.currencyString())
+                        .font(AppTypography.heroValue)
+                        .monospacedDigit()
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .minimumScaleFactor(0.72)
+                        .lineLimit(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        HeroSideMetric(
+                            title: "净资产",
+                            value: netAssets.currencyString(),
+                            accent: AssetTheme.positive
+                        )
+
+                        HeroSideMetric(
+                            title: "负债",
+                            value: totalLiabilities.currencyString(),
+                            accent: AssetTheme.negative
+                        )
+                    }
+                    .frame(width: 132, alignment: .leading)
+                }
 
                 HStack(spacing: 10) {
                     InlineStat(text: "已记录 \(snapshots.count.formatted()) 天", color: AssetTheme.textSecondary)
                     InlineStat(text: latestSnapshot.map { "最近更新 \($0.date.shortDateString)" } ?? "还没有快照", color: AssetTheme.goldSoft)
+                    InlineStat(text: "条目 \(latestEntryCount.formatted())", color: AssetTheme.accentBlue)
                 }
             }
             .padding(.trailing, 64)
@@ -272,26 +291,6 @@ private struct DashboardView: View {
                     AssetTimeMachineCloudEntryButton(store: cloudStore)
                 }
                 .buttonStyle(.plain)
-            }
-
-            HStack(alignment: .top, spacing: 18) {
-                SummaryColumnMetric(
-                    title: "净资产",
-                    value: netAssets.currencyString(),
-                    accent: AssetTheme.positive
-                )
-
-                SummaryColumnMetric(
-                    title: "总负债",
-                    value: totalLiabilities.currencyString(),
-                    accent: AssetTheme.negative
-                )
-
-                SummaryColumnMetric(
-                    title: "条目",
-                    value: latestEntryCount.formatted(),
-                    accent: AssetTheme.accentBlue
-                )
             }
 
             if !allocationSlices.isEmpty {
@@ -4002,6 +4001,33 @@ private struct CompactStat: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(AssetTheme.border.opacity(0.8), lineWidth: 1)
         )
+    }
+}
+
+private struct HeroSideMetric: View {
+    let title: String
+    let value: String
+    let accent: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(accent)
+                    .frame(width: 6, height: 6)
+
+                Text(title)
+                    .font(AppTypography.eyebrow)
+                    .foregroundStyle(AssetTheme.textSecondary)
+            }
+
+            Text(value)
+                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(AssetTheme.textPrimary)
+                .minimumScaleFactor(0.72)
+                .lineLimit(1)
+        }
     }
 }
 
