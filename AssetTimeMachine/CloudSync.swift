@@ -1,4 +1,3 @@
-import AuthenticationServices
 import Combine
 import Foundation
 import SwiftData
@@ -79,20 +78,6 @@ private struct AssetTimeMachineCloudLoginRequest: Encodable {
     let password: String
 }
 
-private struct AssetTimeMachineAppleLoginRequest: Encodable {
-    let identityToken: String
-    let authorizationCode: String?
-    let userName: String?
-    let userEmail: String?
-
-    enum CodingKeys: String, CodingKey {
-        case identityToken = "identity_token"
-        case authorizationCode = "authorization_code"
-        case userName = "user_name"
-        case userEmail = "user_email"
-    }
-}
-
 private struct AssetTimeMachineCloudUploadRequest: Encodable {
     let payload: ExportPayload
     let fileName: String
@@ -123,20 +108,6 @@ enum AssetTimeMachineCloudAPI {
             path: "/api/v1/auth/login",
             method: "POST",
             body: AssetTimeMachineCloudLoginRequest(username: username, password: password)
-        )
-        return response.accessToken
-    }
-
-    static func loginWithApple(identityToken: String, authorizationCode: String?, userName: String?, userEmail: String?) async throws -> String {
-        let response: AssetTimeMachineCloudToken = try await request(
-            path: "/api/v1/auth/apple/login",
-            method: "POST",
-            body: AssetTimeMachineAppleLoginRequest(
-                identityToken: identityToken,
-                authorizationCode: authorizationCode,
-                userName: userName,
-                userEmail: userEmail
-            )
         )
         return response.accessToken
     }
@@ -318,47 +289,6 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             self.saveToken(token)
             try await self.loadSessionData()
             self.statusMessage = "登录成功，现在可以把数据丢到云端啦"
-        }
-    }
-
-    func handleAppleSignIn(_ result: Result<ASAuthorization, any Error>) async {
-        switch result {
-        case let .failure(error):
-            errorMessage = error.localizedDescription
-        case let .success(authorization):
-            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else {
-                errorMessage = "没有拿到 Apple 登录凭证"
-                return
-            }
-
-            guard let identityTokenData = credential.identityToken,
-                  let identityToken = String(data: identityTokenData, encoding: .utf8),
-                  !identityToken.isEmpty else {
-                errorMessage = "Apple 没有返回 identity token"
-                return
-            }
-
-            let authorizationCode = credential.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
-            let fullName = [credential.fullName?.familyName, credential.fullName?.givenName]
-                .compactMap { value in
-                    guard let value, !value.isEmpty else { return nil }
-                    return value
-                }
-                .joined()
-            let userName = fullName.isEmpty ? nil : fullName
-            let userEmail = credential.email
-
-            await perform { [self] in
-                let token = try await AssetTimeMachineCloudAPI.loginWithApple(
-                    identityToken: identityToken,
-                    authorizationCode: authorizationCode,
-                    userName: userName,
-                    userEmail: userEmail
-                )
-                self.saveToken(token)
-                try await self.loadSessionData()
-                self.statusMessage = "Apple 登录成功，云同步已解锁"
-            }
         }
     }
 
@@ -552,17 +482,6 @@ struct AssetTimeMachineCloudCard: View {
             .buttonStyle(.plain)
             .disabled(!canSubmitPasswordLogin || store.isWorking)
 
-            SignInWithAppleButton(.signIn) { request in
-                request.requestedScopes = [.fullName, .email]
-            } onCompletion: { result in
-                Task {
-                    await store.handleAppleSignIn(result)
-                }
-            }
-            .signInWithAppleButtonStyle(.white)
-            .frame(height: 48)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .disabled(store.isWorking)
         }
     }
 
