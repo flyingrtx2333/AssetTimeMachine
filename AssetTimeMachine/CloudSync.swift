@@ -583,48 +583,52 @@ struct AssetTimeMachineCloudPage: View {
     private var statusHero: some View {
         HStack(alignment: .center, spacing: 14) {
             ZStack(alignment: .bottomTrailing) {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(AssetTheme.surface.opacity(0.9))
-                    .frame(width: 68, height: 68)
+                Circle()
+                    .fill(AssetTheme.surfaceRaised.opacity(0.96))
+                    .frame(width: 60, height: 60)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(AssetTheme.border, lineWidth: 1)
+                        Circle()
+                            .stroke(AssetTheme.border.opacity(0.9), lineWidth: 1)
                     )
 
                 Image(systemName: store.indicatorState.cloudSymbolName)
-                    .font(.system(size: 28, weight: .semibold))
+                    .font(.system(size: 24, weight: .semibold))
                     .foregroundStyle(AssetTheme.gold)
 
                 switch store.indicatorState {
                 case .healthy:
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.system(size: 18, weight: .bold))
                         .foregroundStyle(AssetTheme.positive)
                         .background(Circle().fill(AssetTheme.background))
                         .offset(x: 4, y: 4)
                 case .idle, .warning:
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(AssetTheme.accentOrange)
+                        .background(Circle().fill(AssetTheme.background))
                         .offset(x: 4, y: 4)
                 }
             }
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(heroTitle)
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(AssetTheme.textPrimary)
 
-                Text(heroSubtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(AssetTheme.textSecondary)
+                if let heroSubtitle, !heroSubtitle.isEmpty {
+                    Text(heroSubtitle)
+                        .font(.footnote)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
             }
+
+            Spacer(minLength: 0)
         }
-        .atmCardStyle()
     }
 
     private var mainCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 18) {
             if let currentUser = store.currentUser {
                 loggedInSection(currentUser)
             } else {
@@ -643,18 +647,14 @@ struct AssetTimeMachineCloudPage: View {
                     .foregroundStyle(AssetTheme.negative)
             }
         }
-        .atmCardStyle()
+        .padding(.top, 4)
     }
 
     private var appleLoginSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("点一下就能开启云备份")
+            Text("开启云同步")
                 .font(.headline)
                 .foregroundStyle(AssetTheme.textPrimary)
-
-            Text("首页只保留云状态图标。真正登录和管理备份，都放在这里，用 Apple 一键登录就好。")
-                .font(.subheadline)
-                .foregroundStyle(AssetTheme.textSecondary)
 
             SignInWithAppleButton(.signIn) { request in
                 request.requestedScopes = [.fullName, .email]
@@ -667,10 +667,6 @@ struct AssetTimeMachineCloudPage: View {
             .frame(height: 52)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .disabled(store.isWorking)
-
-            Text("首次授权后会自动绑定到 Flyingrtx 云同步账号。")
-                .font(.footnote)
-                .foregroundStyle(AssetTheme.textSecondary)
         }
     }
 
@@ -724,23 +720,20 @@ struct AssetTimeMachineCloudPage: View {
                     await store.refreshSession()
                 }
             } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "arrow.clockwise")
-                    Text("刷新云端记录")
-                }
-                .font(.footnote.weight(.medium))
-                .foregroundStyle(AssetTheme.textSecondary)
+                Label("刷新", systemImage: "arrow.clockwise")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(AssetTheme.textSecondary)
             }
             .buttonStyle(.plain)
             .disabled(store.isWorking)
 
             if store.backups.isEmpty {
-                Text("你已经开了云备份，但云端还没有记录。先上传一次，首页右上角就会变成云 + 绿色勾。")
+                Text("还没有云端备份")
                     .font(.footnote)
                     .foregroundStyle(AssetTheme.textSecondary)
             } else {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("最近云备份")
+                    Text("云端记录")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(AssetTheme.textPrimary)
 
@@ -785,25 +778,25 @@ struct AssetTimeMachineCloudPage: View {
     private var heroTitle: String {
         switch store.indicatorState {
         case .idle:
-            return "云备份还没开启"
+            return "云同步未开启"
         case .healthy:
-            return "云备份状态正常"
+            return "云同步正常"
         case .warning:
-            return store.currentUser == nil ? "云备份需要处理一下" : "云备份已开启，但还有提醒"
+            return store.currentUser == nil ? "云同步需要处理" : "云同步有提醒"
         }
     }
 
-    private var heroSubtitle: String {
+    private var heroSubtitle: String? {
         switch store.indicatorState {
         case .idle:
-            return "首页右上角会先显示提醒，点进来登录后就能开始云备份。"
+            return nil
         case .healthy:
-            return "已经能把当前资产同步到 Flyingrtx 云端，也能把最新备份拉回来。"
+            return "最近备份已同步"
         case .warning:
             if store.currentUser != nil && store.backups.isEmpty {
-                return "你已经登录了，但还没做首次上传，所以首页会先显示云 + 警告。"
+                return "还没有云端备份"
             }
-            return store.errorMessage ?? "有点小状况，进来处理一下就行。"
+            return store.errorMessage
         }
     }
 
