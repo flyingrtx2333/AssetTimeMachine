@@ -621,6 +621,11 @@ private enum RecordInputField: Hashable {
 }
 
 private struct RecordCategoryCard: View {
+    private enum InputBlock {
+        case compact([AssetItem])
+        case expanded(AssetItem)
+    }
+
     let category: AssetCategory
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
@@ -628,8 +633,33 @@ private struct RecordCategoryCard: View {
     var focusedField: FocusState<RecordInputField?>.Binding
     let onChanged: (AssetItem) -> Void
 
+    private let compactColumns = [GridItem(.adaptive(minimum: 156, maximum: 240), spacing: 12, alignment: .top)]
+
     private var items: [AssetItem] {
         category.activeSortedItems
+    }
+
+    private var inputBlocks: [InputBlock] {
+        var blocks: [InputBlock] = []
+        var compactItems: [AssetItem] = []
+
+        func flushCompactItems() {
+            guard !compactItems.isEmpty else { return }
+            blocks.append(.compact(compactItems))
+            compactItems.removeAll()
+        }
+
+        for item in items {
+            if item.prefersCompactRecordInput {
+                compactItems.append(item)
+            } else {
+                flushCompactItems()
+                blocks.append(.expanded(item))
+            }
+        }
+
+        flushCompactItems()
+        return blocks
     }
 
     var body: some View {
@@ -648,41 +678,104 @@ private struct RecordCategoryCard: View {
                 .fill(AssetTheme.border.opacity(0.55))
                 .frame(height: 1)
 
-            VStack(spacing: 0) {
-                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                    AssetEntryInputRow(
-                        item: item,
-                        amountText: Binding(
-                            get: { amountInputs[item.id] ?? "" },
-                            set: { newValue in
-                                amountInputs[item.id] = newValue
-                                onChanged(item)
+            VStack(spacing: 12) {
+                ForEach(Array(inputBlocks.enumerated()), id: \.offset) { _, block in
+                    switch block {
+                    case let .compact(compactItems):
+                        LazyVGrid(columns: compactColumns, alignment: .leading, spacing: 12) {
+                            ForEach(compactItems) { item in
+                                AssetEntryCompactCard(
+                                    item: item,
+                                    amountText: Binding(
+                                        get: { amountInputs[item.id] ?? "" },
+                                        set: { newValue in
+                                            amountInputs[item.id] = newValue
+                                            onChanged(item)
+                                        }
+                                    ),
+                                    quantityText: Binding(
+                                        get: { quantityInputs[item.id] ?? "" },
+                                        set: { newValue in
+                                            quantityInputs[item.id] = newValue
+                                            onChanged(item)
+                                        }
+                                    ),
+                                    focusedField: focusedField
+                                )
                             }
-                        ),
-                        quantityText: Binding(
-                            get: { quantityInputs[item.id] ?? "" },
-                            set: { newValue in
-                                quantityInputs[item.id] = newValue
-                                onChanged(item)
-                            }
-                        ),
-                        unitPriceText: Binding(
-                            get: { unitPriceInputs[item.id] ?? "" },
-                            set: { newValue in
-                                unitPriceInputs[item.id] = newValue
-                                onChanged(item)
-                            }
-                        ),
-                        focusedField: focusedField
-                    )
-
-                    if index < items.count - 1 {
-                        Rectangle()
-                            .fill(AssetTheme.border.opacity(0.32))
-                            .frame(height: 1)
-                            .padding(.leading, 2)
+                        }
+                    case let .expanded(item):
+                        AssetEntryInputRow(
+                            item: item,
+                            amountText: Binding(
+                                get: { amountInputs[item.id] ?? "" },
+                                set: { newValue in
+                                    amountInputs[item.id] = newValue
+                                    onChanged(item)
+                                }
+                            ),
+                            quantityText: Binding(
+                                get: { quantityInputs[item.id] ?? "" },
+                                set: { newValue in
+                                    quantityInputs[item.id] = newValue
+                                    onChanged(item)
+                                }
+                            ),
+                            unitPriceText: Binding(
+                                get: { unitPriceInputs[item.id] ?? "" },
+                                set: { newValue in
+                                    unitPriceInputs[item.id] = newValue
+                                    onChanged(item)
+                                }
+                            ),
+                            focusedField: focusedField
+                        )
                     }
                 }
+            }
+        }
+    }
+}
+
+private struct RecordInputCard<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            content
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.72), lineWidth: 1)
+        )
+    }
+}
+
+private struct AssetEntryCompactCard: View {
+    let item: AssetItem
+    @Binding var amountText: String
+    @Binding var quantityText: String
+    var focusedField: FocusState<RecordInputField?>.Binding
+
+    var body: some View {
+        RecordInputCard {
+            Text(item.name)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(AssetTheme.textPrimary)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if item.valuationMethod == .directAmount {
+                ATMInputField(text: $amountText, placeholder: "输入金额", focusedField: focusedField, focusValue: .amount(item.id))
+            } else {
+                ATMInputField(text: $quantityText, placeholder: item.compactRecordPlaceholder, focusedField: focusedField, focusValue: .quantity(item.id))
             }
         }
     }
@@ -695,30 +788,18 @@ private struct AssetEntryInputRow: View {
     @Binding var unitPriceText: String
     var focusedField: FocusState<RecordInputField?>.Binding
 
-    private let labelWidth: CGFloat = 116
-
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
+        RecordInputCard {
             Text(item.name)
-                .font(.body.weight(.semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(AssetTheme.textPrimary)
                 .lineLimit(2)
-                .frame(width: labelWidth, alignment: .leading)
 
-            if item.valuationMethod == .directAmount {
-                ATMInputField(text: $amountText, placeholder: "0", focusedField: focusedField, focusValue: .amount(item.id))
-            } else if let autoKind = item.resolvedAutoPricedAssetKind {
-                ATMInputField(text: $quantityText, placeholder: autoKind.defaultName, focusedField: focusedField, focusValue: .quantity(item.id))
-            } else if let currencyCode = item.autoExchangeRateCurrencyCode {
-                ATMInputField(text: $quantityText, placeholder: currencyCode, focusedField: focusedField, focusValue: .quantity(item.id))
-            } else {
-                HStack(spacing: 8) {
-                    ATMInputField(text: $quantityText, placeholder: "数量", width: 82, focusedField: focusedField, focusValue: .quantity(item.id))
-                    ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: focusedField, focusValue: .unitPrice(item.id))
-                }
+            HStack(spacing: 10) {
+                ATMInputField(text: $quantityText, placeholder: "数量", focusedField: focusedField, focusValue: .quantity(item.id))
+                ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: focusedField, focusValue: .unitPrice(item.id))
             }
         }
-        .padding(.vertical, 12)
     }
 }
 
@@ -738,12 +819,12 @@ private struct ATMInputField: View {
             .multilineTextAlignment(.trailing)
             .font(.system(.body, design: .rounded).weight(.semibold))
             .foregroundStyle(AssetTheme.textPrimary)
-            .padding(.horizontal, 14)
+            .padding(.horizontal, 12)
             .frame(maxWidth: width == nil ? .infinity : nil, alignment: .trailing)
-            .frame(width: width, height: 44)
-            .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .frame(width: width, height: 42)
+            .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(AssetTheme.border.opacity(0.52), lineWidth: 1)
             )
     }
@@ -4329,6 +4410,22 @@ private extension AssetItem {
             return nil
         }
         return kind.rawValue.uppercased()
+    }
+
+    var prefersCompactRecordInput: Bool {
+        valuationMethod == .directAmount || resolvedAutoPricedAssetKind != nil || autoExchangeRateCurrencyCode != nil
+    }
+
+    var compactRecordPlaceholder: String {
+        if let currencyCode = autoExchangeRateCurrencyCode {
+            return "输入\(currencyCode) 数量"
+        }
+
+        if let autoKind = resolvedAutoPricedAssetKind {
+            return "输入\(autoKind.defaultName) 数量"
+        }
+
+        return "输入金额"
     }
 
     @MainActor
