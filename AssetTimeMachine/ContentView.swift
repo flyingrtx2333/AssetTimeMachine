@@ -105,12 +105,15 @@ struct ContentView: View {
 }
 
 private struct DashboardView: View {
+    @Environment(\.modelContext) private var modelContext
     @AppStorage("dashboard.monthlyExpense") private var monthlyExpense: Double = 3000
     @AppStorage("dashboard.monthlyExpenseSeedVersion") private var monthlyExpenseSeedVersion: Int = 0
     @AppStorage("dashboard.inflationRate") private var inflationRate: Double = 0.05
     @AppStorage("dashboard.inflationRateSeedVersion") private var inflationRateSeedVersion: Int = 0
     @StateObject private var cloudStore = AssetTimeMachineCloudStore()
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
+    @Query private var items: [AssetItem]
+    @Query private var categories: [AssetCategory]
 
     private var latestSnapshot: AssetSnapshot? { snapshots.first }
 
@@ -205,6 +208,19 @@ private struct DashboardView: View {
         )
     }
 
+    private var autoSyncTrigger: String {
+        let latestSnapshotUpdate = snapshots.map(\.updatedAt).max()?.timeIntervalSince1970 ?? 0
+        let latestItemUpdate = items.map(\.updatedAt).max()?.timeIntervalSince1970 ?? 0
+        return [
+            String(categories.count),
+            String(items.count),
+            String(snapshots.count),
+            String(latestEntryCount),
+            String(Int(latestSnapshotUpdate)),
+            String(Int(latestItemUpdate))
+        ].joined(separator: ":")
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -224,7 +240,12 @@ private struct DashboardView: View {
             .toolbar(.hidden, for: .navigationBar)
             .task {
                 migrateDashboardDefaultsIfNeeded()
-                await cloudStore.refreshIfNeeded()
+                await cloudStore.refreshIfNeeded(from: modelContext)
+            }
+            .onChange(of: autoSyncTrigger) { _, _ in
+                Task {
+                    await cloudStore.autoSyncIfNeeded(from: modelContext, quietly: true)
+                }
             }
         }
     }

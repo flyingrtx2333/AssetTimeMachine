@@ -307,10 +307,17 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     @Published var isWorking = false
     @Published var errorMessage: String?
     @Published var statusMessage: String?
+    @Published var lastSyncAt: Date?
 
     private let tokenKey = "assettimemachine.cloud.accessToken"
+    private let lastUploadedSignatureKey = "assettimemachine.cloud.lastUploadedSignature"
+    private let lastSyncAtKey = "assettimemachine.cloud.lastSyncAt"
     private let defaults = UserDefaults.standard
     private var hasLoadedInitialState = false
+
+    init() {
+        lastSyncAt = defaults.object(forKey: lastSyncAtKey) as? Date
+    }
 
     var hasToken: Bool {
         !(accessToken?.isEmpty ?? true)
@@ -338,11 +345,14 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         defaults.string(forKey: tokenKey)
     }
 
-    func refreshIfNeeded() async {
+    func refreshIfNeeded(from context: ModelContext? = nil) async {
         guard !hasLoadedInitialState else { return }
         hasLoadedInitialState = true
         guard hasToken else { return }
         await refreshSession()
+        if let context {
+            await autoSyncIfNeeded(from: context, quietly: true)
+        }
     }
 
     func login(username: String, password: String) async {
@@ -350,11 +360,11 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             let token = try await AssetTimeMachineCloudAPI.login(username: username, password: password)
             self.saveToken(token)
             try await self.loadSessionData()
-            self.statusMessage = "登录成功，现在可以把数据丢到云端啦"
+            self.statusMessage = "登录成功，自动同步已开启"
         }
     }
 
-    func handleAppleSignIn(_ result: Result<ASAuthorization, any Error>) async {
+    func handleAppleSignIn(_ result: Result<ASAuthorization, any Error>, from context: ModelContext) async {
         switch result {
         case let .failure(error):
             errorMessage = friendlyAppleSignInMessage(for: error)
@@ -390,7 +400,11 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                 )
                 self.saveToken(token)
                 try await self.loadSessionData()
-                self.statusMessage = "Apple 登录成功，云同步已解锁"
+                self.statusMessage = "Apple 登录成功，自动同步已开启"
+            }
+
+            if currentUser != nil {
+                await autoSyncIfNeeded(from: context, quietly: false)
             }
         }
     }
@@ -401,21 +415,33 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         }
     }
 
-    func uploadCurrentData(from context: ModelContext) async {
-        guard let token = accessToken else {
-            errorMessage = "请先登录，再上传云备份"
+    func autoSyncIfNeeded(from context: ModelContext, quietly: Bool) async {
+        guard let token = accessToken else { return }
+
+        let payload: ExportPayload
+        do {
+            payload = try ImportExportService.exportPayload(from: context)
+        } catch {
+            if !quietly {
+                errorMessage = "本机数据导出失败，暂时没法自动同步"
+            }
+            return
+        }
+
+        let signature = Self.syncSignature(for: payload)
+        if defaults.string(forKey: lastUploadedSignatureKey) == signature {
             return
         }
 
         await perform { [self] in
-            let payload = try ImportExportService.exportPayload(from: context)
             let backup = try await AssetTimeMachineCloudAPI.upload(
                 token: token,
                 payload: payload,
-                note: "iOS 手动云备份"
+                note: "iOS 自动云同步"
             )
             try await self.loadHistory(using: token)
-            self.statusMessage = "已上传到云端，时间：\(backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))"
+            self.rememberSync(signature: signature, at: backup.uploadedAt)
+            self.statusMessage = quietly ? "自动同步已完成" : "已自动同步到云端，时间：\(backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))"
         }
     }
 
@@ -429,14 +455,17 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             let latest = try await AssetTimeMachineCloudAPI.downloadLatest(token: token)
             try ImportExportService.importPayload(latest.payload, into: context, replaceExisting: true)
             try await self.loadHistory(using: token)
-            self.statusMessage = "已用云端最新备份覆盖本机数据"
+            self.rememberSync(signature: Self.syncSignature(for: latest.payload), at: latest.uploadedAt)
+            self.statusMessage = "已恢复最近一次云端备份"
         }
     }
 
     func logout() {
         defaults.removeObject(forKey: tokenKey)
+        defaults.removeObject(forKey: lastUploadedSignatureKey)
         currentUser = nil
         backups = []
+        lastSyncAt = nil
         statusMessage = "已退出云同步账号"
         errorMessage = nil
     }
@@ -455,6 +484,34 @@ final class AssetTimeMachineCloudStore: ObservableObject {
 
     private func loadHistory(using token: String) async throws {
         backups = try await AssetTimeMachineCloudAPI.fetchHistory(token: token, limit: 8)
+        if let latestUploadedAt = backups.first?.uploadedAt {
+            lastSyncAt = latestUploadedAt
+            defaults.set(latestUploadedAt, forKey: lastSyncAtKey)
+        }
+    }
+
+    private func rememberSync(signature: String, at date: Date) {
+        defaults.set(signature, forKey: lastUploadedSignatureKey)
+        defaults.set(date, forKey: lastSyncAtKey)
+        lastSyncAt = date
+    }
+
+    private static func syncSignature(for payload: ExportPayload) -> String {
+        let latestItemUpdate = payload.items.map(\.updatedAt).max()?.timeIntervalSince1970 ?? 0
+        let latestSnapshotUpdate = payload.snapshots.map(\.updatedAt).max()?.timeIntervalSince1970 ?? 0
+        let latestEntryUpdate = payload.snapshots
+            .flatMap(\.entries)
+            .map(\.updatedAt)
+            .max()?
+            .timeIntervalSince1970 ?? 0
+        return [
+            String(payload.categories.count),
+            String(payload.items.count),
+            String(payload.snapshots.count),
+            String(Int(latestItemUpdate)),
+            String(Int(latestSnapshotUpdate)),
+            String(Int(latestEntryUpdate))
+        ].joined(separator: ":")
     }
 
     private func perform(_ task: @escaping () async throws -> Void) async {
@@ -566,7 +623,7 @@ struct AssetTimeMachineCloudPage: View {
         .navigationTitle("云同步")
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            await store.refreshIfNeeded()
+            await store.refreshIfNeeded(from: modelContext)
         }
         .alert("确认恢复云端备份？", isPresented: $showRestoreConfirm) {
             Button("取消", role: .cancel) {}
@@ -576,7 +633,7 @@ struct AssetTimeMachineCloudPage: View {
                 }
             }
         } message: {
-            Text("会用云端最新备份替换当前本机数据。建议先点一次“上传到云端”留个保险。")
+            Text("会用云端最新备份替换当前本机数据。这个动作更适合换机或误删后的恢复场景。")
         }
     }
 
@@ -726,7 +783,7 @@ struct AssetTimeMachineCloudPage: View {
                 .font(.headline)
                 .foregroundStyle(AssetTheme.textPrimary)
 
-            Text("只同步备份，不影响本机数据。")
+            Text("开启后会自动同步备份，不需要手动上传下载。")
                 .font(.footnote)
                 .foregroundStyle(AssetTheme.textSecondary)
 
@@ -734,7 +791,7 @@ struct AssetTimeMachineCloudPage: View {
                 request.requestedScopes = [.fullName, .email]
             } onCompletion: { result in
                 Task {
-                    await store.handleAppleSignIn(result)
+                    await store.handleAppleSignIn(result, from: modelContext)
                 }
             }
             .signInWithAppleButtonStyle(.white)
@@ -775,29 +832,24 @@ struct AssetTimeMachineCloudPage: View {
                 .foregroundStyle(AssetTheme.textSecondary)
             }
 
-            VStack(spacing: 10) {
-                syncActionButton(
-                    title: store.isWorking ? "上传中..." : "上传到云端",
-                    systemImage: "arrow.up.circle.fill",
-                    fill: AssetTheme.gold,
-                    foreground: AssetTheme.background,
-                    disabled: store.isWorking
-                ) {
-                    Task {
-                        await store.uploadCurrentData(from: modelContext)
-                    }
-                }
+            VStack(alignment: .leading, spacing: 10) {
+                Label(
+                    store.lastSyncAt.map { "上次同步 \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "登录后会自动同步本机备份",
+                    systemImage: "arrow.triangle.2.circlepath.circle.fill"
+                )
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(AssetTheme.textPrimary)
 
-                syncActionButton(
-                    title: store.isWorking ? "处理中..." : "下载并覆盖",
-                    systemImage: "arrow.down.circle.fill",
-                    fill: AssetTheme.surfaceRaised,
-                    foreground: AssetTheme.textPrimary,
-                    disabled: store.isWorking
-                ) {
-                    showRestoreConfirm = true
-                }
+                Text("这里主要看同步状态和云端记录。只有换机或误删时，才需要手动从云端恢复。")
+                    .font(.footnote)
+                    .foregroundStyle(AssetTheme.textSecondary)
             }
+            .padding(16)
+            .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(AssetTheme.border.opacity(0.8), lineWidth: 1)
+            )
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
@@ -837,6 +889,16 @@ struct AssetTimeMachineCloudPage: View {
                             }
                         }
                     }
+
+                    Button {
+                        showRestoreConfirm = true
+                    } label: {
+                        Label("从云端恢复最近备份", systemImage: "arrow.clockwise.icloud")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(store.isWorking)
                 }
             }
         }
@@ -902,30 +964,12 @@ struct AssetTimeMachineCloudPage: View {
         case .idle:
             return nil
         case .healthy:
-            return "最近备份已同步"
+            return store.lastSyncAt.map { "最近同步 \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "自动同步已开启"
         case .warning:
             if store.currentUser != nil && store.backups.isEmpty {
-                return "还没有云端备份"
+                return "已登录，等待第一次自动同步"
             }
             return store.errorMessage
         }
-    }
-
-    private func syncActionButton(title: String, systemImage: String, fill: Color, foreground: Color, disabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: systemImage)
-                Text(title)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.88)
-            }
-            .font(.subheadline.weight(.semibold))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(fill.opacity(disabled ? 0.45 : 1), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .foregroundStyle(foreground.opacity(disabled ? 0.78 : 1))
-        }
-        .buttonStyle(.plain)
-        .disabled(disabled)
     }
 }
