@@ -503,38 +503,46 @@ struct AssetTimeMachineCloudEntryButton: View {
     @ObservedObject var store: AssetTimeMachineCloudStore
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            Circle()
-                .fill(AssetTheme.surfaceRaised.opacity(0.96))
-                .frame(width: 44, height: 44)
-                .overlay(
-                    Circle()
-                        .stroke(AssetTheme.border.opacity(0.9), lineWidth: 1)
-                )
-
-            Image(systemName: store.indicatorState.cloudSymbolName)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(AssetTheme.gold)
-
-            switch store.indicatorState {
-            case .idle:
-                EmptyView()
-            case .healthy:
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(AssetTheme.positive)
-                    .background(Circle().fill(AssetTheme.background))
-                    .offset(x: 3, y: 3)
-            case .warning:
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(AssetTheme.accentOrange)
-                    .background(Circle().fill(AssetTheme.background))
-                    .offset(x: 3, y: 3)
+        Circle()
+            .fill(AssetTheme.surfaceRaised.opacity(0.96))
+            .overlay(
+                Circle()
+                    .stroke(AssetTheme.border.opacity(0.9), lineWidth: 1)
+            )
+            .overlay {
+                Image(systemName: store.indicatorState.cloudSymbolName)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(AssetTheme.gold)
+                    .frame(width: 44, height: 44)
             }
+            .overlay(alignment: .bottomTrailing) {
+                statusBadge
+            }
+            .frame(width: 44, height: 44)
+            .contentShape(Circle())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(store.indicatorLabel)
+    }
+
+    @ViewBuilder
+    private var statusBadge: some View {
+        switch store.indicatorState {
+        case .idle:
+            EmptyView()
+        case .healthy:
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(AssetTheme.positive)
+                .background(Circle().fill(AssetTheme.background))
+                .offset(x: 4, y: 4)
+        case .warning:
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(AssetTheme.accentOrange)
+                .padding(1)
+                .background(Circle().fill(AssetTheme.background))
+                .offset(x: 4, y: 4)
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(store.indicatorLabel)
     }
 }
 

@@ -212,7 +212,6 @@ private struct DashboardView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 22) {
-                        dashboardHeader
                         summaryStrip
                         trendSection
                         freedomSection
@@ -249,9 +248,20 @@ private struct DashboardView: View {
     private var summaryStrip: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("总资产")
-                    .font(AppTypography.eyebrow)
-                    .foregroundStyle(AssetTheme.textSecondary)
+                HStack(alignment: .top, spacing: 12) {
+                    Text("总资产")
+                        .font(AppTypography.eyebrow)
+                        .foregroundStyle(AssetTheme.textSecondary)
+
+                    Spacer(minLength: 12)
+
+                    NavigationLink {
+                        AssetTimeMachineCloudPage(store: cloudStore)
+                    } label: {
+                        AssetTimeMachineCloudEntryButton(store: cloudStore)
+                    }
+                    .buttonStyle(.plain)
+                }
 
                 Text(totalAssets.currencyString())
                     .font(AppTypography.heroValue)
@@ -323,18 +333,6 @@ private struct DashboardView: View {
         )
     }
 
-    private var dashboardHeader: some View {
-        HStack {
-            Spacer()
-
-            NavigationLink {
-                AssetTimeMachineCloudPage(store: cloudStore)
-            } label: {
-                AssetTimeMachineCloudEntryButton(store: cloudStore)
-            }
-            .buttonStyle(.plain)
-        }
-    }
 }
 
 private struct SnapshotListView: View {
