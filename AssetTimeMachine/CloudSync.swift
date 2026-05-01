@@ -581,39 +581,53 @@ struct AssetTimeMachineCloudPage: View {
     }
 
     private var statusHero: some View {
-        HStack(alignment: .center, spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(AssetTheme.surfaceRaised.opacity(0.96))
-                    .frame(width: 60, height: 60)
-                    .overlay(
-                        Circle()
-                            .stroke(AssetTheme.border.opacity(0.9), lineWidth: 1)
-                    )
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center, spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(AssetTheme.surfaceRaised.opacity(0.96))
+                        .frame(width: 48, height: 48)
+                        .overlay(
+                            Circle()
+                                .stroke(AssetTheme.border.opacity(0.9), lineWidth: 1)
+                        )
 
-                Image(systemName: store.indicatorState.cloudSymbolName)
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundStyle(AssetTheme.gold)
-                    .frame(width: 30, height: 30)
-            }
-            .overlay(alignment: .bottomTrailing) {
-                statusBadge
-                    .offset(x: 5, y: 5)
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(heroTitle)
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(AssetTheme.textPrimary)
-
-                if let heroSubtitle, !heroSubtitle.isEmpty {
-                    Text(heroSubtitle)
-                        .font(.footnote)
-                        .foregroundStyle(AssetTheme.textSecondary)
+                    Image(systemName: store.indicatorState.cloudSymbolName)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(AssetTheme.gold)
+                        .frame(width: 24, height: 24)
                 }
+                .overlay(alignment: .bottomTrailing) {
+                    statusBadge
+                        .offset(x: 4, y: 4)
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(heroTitle)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+
+                    if let heroSubtitle, !heroSubtitle.isEmpty {
+                        Text(heroSubtitle)
+                            .font(.footnote)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                }
+
+                Spacer(minLength: 10)
+
+                statusPill
             }
 
-            Spacer(minLength: 0)
+            if let statusNotice {
+                Label(statusNotice.text, systemImage: statusNotice.systemImage)
+                    .font(.footnote)
+                    .foregroundStyle(statusNotice.color)
+            }
+
+            Rectangle()
+                .fill(AssetTheme.border.opacity(0.52))
+                .frame(height: 1)
         }
     }
 
@@ -624,58 +638,97 @@ struct AssetTimeMachineCloudPage: View {
             ZStack {
                 Circle()
                     .fill(AssetTheme.background)
-                    .frame(width: 20, height: 20)
+                    .frame(width: 18, height: 18)
 
                 Circle()
                     .fill(AssetTheme.positive)
-                    .frame(width: 16, height: 16)
+                    .frame(width: 14, height: 14)
 
                 Image(systemName: "checkmark")
-                    .font(.system(size: 9, weight: .black))
+                    .font(.system(size: 8, weight: .black))
                     .foregroundStyle(.white)
             }
         case .idle, .warning:
             ZStack {
                 Circle()
                     .fill(AssetTheme.background)
-                    .frame(width: 22, height: 22)
+                    .frame(width: 20, height: 20)
 
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(AssetTheme.accentOrange)
-                    .frame(width: 18, height: 18)
+                    .frame(width: 16, height: 16)
             }
         }
     }
 
+    private var statusPill: some View {
+        Text(statusPillTitle)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(statusPillForeground)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(statusPillBackground, in: Capsule())
+    }
+
+    private var statusPillTitle: String {
+        switch store.indicatorState {
+        case .idle:
+            return "未开启"
+        case .healthy:
+            return "正常"
+        case .warning:
+            return "提醒"
+        }
+    }
+
+    private var statusPillForeground: Color {
+        switch store.indicatorState {
+        case .idle, .warning:
+            return AssetTheme.accentOrange
+        case .healthy:
+            return AssetTheme.positive
+        }
+    }
+
+    private var statusPillBackground: Color {
+        switch store.indicatorState {
+        case .idle, .warning:
+            return AssetTheme.accentOrange.opacity(0.12)
+        case .healthy:
+            return AssetTheme.positive.opacity(0.12)
+        }
+    }
+
+    private var statusNotice: (text: String, systemImage: String, color: Color)? {
+        if let errorMessage = store.errorMessage, !errorMessage.isEmpty {
+            return (errorMessage, "exclamationmark.triangle.fill", AssetTheme.negative)
+        }
+        if let statusMessage = store.statusMessage, !statusMessage.isEmpty {
+            return (statusMessage, "checkmark.circle.fill", AssetTheme.positive)
+        }
+        return nil
+    }
+
     private var mainCard: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 22) {
             if let currentUser = store.currentUser {
                 loggedInSection(currentUser)
             } else {
                 appleLoginSection
             }
-
-            if let statusMessage = store.statusMessage, !statusMessage.isEmpty {
-                Label(statusMessage, systemImage: "checkmark.circle.fill")
-                    .font(.footnote)
-                    .foregroundStyle(AssetTheme.positive)
-            }
-
-            if let errorMessage = store.errorMessage, !errorMessage.isEmpty {
-                Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
-                    .font(.footnote)
-                    .foregroundStyle(AssetTheme.negative)
-            }
         }
-        .padding(.top, 4)
     }
 
     private var appleLoginSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("开启云同步")
+        VStack(alignment: .leading, spacing: 12) {
+            Text("使用 Apple 登录开启云同步")
                 .font(.headline)
                 .foregroundStyle(AssetTheme.textPrimary)
+
+            Text("只同步备份，不影响本机数据。")
+                .font(.footnote)
+                .foregroundStyle(AssetTheme.textSecondary)
 
             SignInWithAppleButton(.signIn) { request in
                 request.requestedScopes = [.fullName, .email]
@@ -692,13 +745,23 @@ struct AssetTimeMachineCloudPage: View {
     }
 
     private func loggedInSection(_ currentUser: AssetTimeMachineCloudUser) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .center, spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(AssetTheme.surfaceRaised.opacity(0.92))
+                        .frame(width: 36, height: 36)
+
+                    Image(systemName: "person.crop.circle.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(AssetTheme.gold)
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
                     Text(currentUser.displayName)
                         .font(.headline)
                         .foregroundStyle(AssetTheme.textPrimary)
-                    Text(currentUser.userEmail ?? "已登录 Flyingrtx 云同步")
+                    Text(currentUser.userEmail ?? "已连接 Flyingrtx 云同步")
                         .font(.footnote)
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
@@ -712,7 +775,7 @@ struct AssetTimeMachineCloudPage: View {
                 .foregroundStyle(AssetTheme.textSecondary)
             }
 
-            HStack(spacing: 10) {
+            VStack(spacing: 10) {
                 syncActionButton(
                     title: store.isWorking ? "上传中..." : "上传到云端",
                     systemImage: "arrow.up.circle.fill",
@@ -736,64 +799,91 @@ struct AssetTimeMachineCloudPage: View {
                 }
             }
 
-            Button {
-                Task {
-                    await store.refreshSession()
-                }
-            } label: {
-                Label("刷新", systemImage: "arrow.clockwise")
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(AssetTheme.textSecondary)
-            }
-            .buttonStyle(.plain)
-            .disabled(store.isWorking)
-
-            if store.backups.isEmpty {
-                Text("还没有云端备份")
-                    .font(.footnote)
-                    .foregroundStyle(AssetTheme.textSecondary)
-            } else {
-                VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
                     Text("云端记录")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(AssetTheme.textPrimary)
 
-                    ForEach(store.backups.prefix(3)) { backup in
-                        HStack(alignment: .top, spacing: 10) {
-                            Circle()
-                                .fill(backup.isLatest == 1 ? AssetTheme.gold : AssetTheme.border)
-                                .frame(width: 8, height: 8)
-                                .padding(.top, 6)
+                    Spacer(minLength: 8)
 
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(backup.fileName ?? "未命名备份")
-                                    .font(.footnote.weight(.medium))
-                                    .foregroundStyle(AssetTheme.textPrimary)
-                                Text(backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))
-                                    .font(.caption)
-                                    .foregroundStyle(AssetTheme.textSecondary)
-                                if let fileSize = backup.fileSize {
-                                    Text(ByteCountFormatter.string(fromByteCount: Int64(fileSize), countStyle: .file))
-                                        .font(.caption2)
-                                        .foregroundStyle(AssetTheme.textSecondary)
-                                }
-                            }
+                    Button {
+                        Task {
+                            await store.refreshSession()
+                        }
+                    } label: {
+                        Label("刷新", systemImage: "arrow.clockwise")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(store.isWorking)
+                }
 
-                            Spacer(minLength: 8)
+                if store.backups.isEmpty {
+                    Text("还没有云端备份")
+                        .font(.footnote)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(Array(store.backups.prefix(3).enumerated()), id: \.element.id) { index, backup in
+                            cloudBackupRow(backup)
 
-                            if backup.isLatest == 1 {
-                                Text("最新")
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(AssetTheme.goldSoft)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(AssetTheme.gold.opacity(0.12), in: Capsule())
+                            if index < min(store.backups.count, 3) - 1 {
+                                Rectangle()
+                                    .fill(AssetTheme.border.opacity(0.32))
+                                    .frame(height: 1)
+                                    .padding(.leading, 2)
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    private func cloudBackupRow(_ backup: AssetTimeMachineCloudBackup) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(AssetTheme.surfaceRaised.opacity(0.85))
+                    .frame(width: 30, height: 30)
+
+                Image(systemName: backup.isLatest == 1 ? "icloud.fill" : "clock.arrow.circlepath")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(backup.isLatest == 1 ? AssetTheme.gold : AssetTheme.textSecondary)
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(backup.fileName ?? "未命名备份")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                HStack(spacing: 8) {
+                    Text(backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption)
+                        .foregroundStyle(AssetTheme.textSecondary)
+
+                    if let fileSize = backup.fileSize {
+                        Text(ByteCountFormatter.string(fromByteCount: Int64(fileSize), countStyle: .file))
+                            .font(.caption)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            if backup.isLatest == 1 {
+                Text("最新")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(AssetTheme.goldSoft)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(AssetTheme.gold.opacity(0.12), in: Capsule())
+            }
+        }
+        .padding(.vertical, 10)
     }
 
     private var heroTitle: String {
