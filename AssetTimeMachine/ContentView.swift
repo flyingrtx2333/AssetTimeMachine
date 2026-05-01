@@ -248,20 +248,9 @@ private struct DashboardView: View {
     private var summaryStrip: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .top, spacing: 12) {
-                    Text("总资产")
-                        .font(AppTypography.eyebrow)
-                        .foregroundStyle(AssetTheme.textSecondary)
-
-                    Spacer(minLength: 12)
-
-                    NavigationLink {
-                        AssetTimeMachineCloudPage(store: cloudStore)
-                    } label: {
-                        AssetTimeMachineCloudEntryButton(store: cloudStore)
-                    }
-                    .buttonStyle(.plain)
-                }
+                Text("总资产")
+                    .font(AppTypography.eyebrow)
+                    .foregroundStyle(AssetTheme.textSecondary)
 
                 Text(totalAssets.currencyString())
                     .font(AppTypography.heroValue)
@@ -274,6 +263,15 @@ private struct DashboardView: View {
                     InlineStat(text: "已记录 \(snapshots.count.formatted()) 天", color: AssetTheme.textSecondary)
                     InlineStat(text: latestSnapshot.map { "最近更新 \($0.date.shortDateString)" } ?? "还没有快照", color: AssetTheme.goldSoft)
                 }
+            }
+            .padding(.trailing, 64)
+            .overlay(alignment: .topTrailing) {
+                NavigationLink {
+                    AssetTimeMachineCloudPage(store: cloudStore)
+                } label: {
+                    AssetTimeMachineCloudEntryButton(store: cloudStore)
+                }
+                .buttonStyle(.plain)
             }
 
             HStack(alignment: .top, spacing: 18) {

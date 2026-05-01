@@ -527,15 +527,13 @@ struct AssetTimeMachineCloudEntryButton: View {
     @ViewBuilder
     private var statusBadge: some View {
         switch store.indicatorState {
-        case .idle:
-            EmptyView()
         case .healthy:
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(AssetTheme.positive)
                 .background(Circle().fill(AssetTheme.background))
                 .offset(x: 4, y: 4)
-        case .warning:
+        case .idle, .warning:
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(AssetTheme.accentOrange)
@@ -598,15 +596,13 @@ struct AssetTimeMachineCloudPage: View {
                     .foregroundStyle(AssetTheme.gold)
 
                 switch store.indicatorState {
-                case .idle:
-                    EmptyView()
                 case .healthy:
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundStyle(AssetTheme.positive)
                         .background(Circle().fill(AssetTheme.background))
                         .offset(x: 4, y: 4)
-                case .warning:
+                case .idle, .warning:
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 18, weight: .bold))
                         .foregroundStyle(AssetTheme.accentOrange)
@@ -800,7 +796,7 @@ struct AssetTimeMachineCloudPage: View {
     private var heroSubtitle: String {
         switch store.indicatorState {
         case .idle:
-            return "首页右上角只留一朵云，点进来再一键登录。"
+            return "首页右上角会先显示提醒，点进来登录后就能开始云备份。"
         case .healthy:
             return "已经能把当前资产同步到 Flyingrtx 云端，也能把最新备份拉回来。"
         case .warning:
