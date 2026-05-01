@@ -633,7 +633,7 @@ struct AssetTimeMachineCloudPage: View {
                 }
             }
         } message: {
-            Text("会用云端最新备份替换当前本机数据。这个动作更适合换机或误删后的恢复场景。")
+            Text("会用最近的云端备份覆盖本机数据，适合换机或误删后恢复。")
         }
     }
 
@@ -672,8 +672,6 @@ struct AssetTimeMachineCloudPage: View {
                 }
 
                 Spacer(minLength: 10)
-
-                statusPill
             }
 
             if let statusNotice {
@@ -681,10 +679,6 @@ struct AssetTimeMachineCloudPage: View {
                     .font(.footnote)
                     .foregroundStyle(statusNotice.color)
             }
-
-            Rectangle()
-                .fill(AssetTheme.border.opacity(0.52))
-                .frame(height: 1)
         }
     }
 
@@ -719,49 +713,14 @@ struct AssetTimeMachineCloudPage: View {
         }
     }
 
-    private var statusPill: some View {
-        Text(statusPillTitle)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(statusPillForeground)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(statusPillBackground, in: Capsule())
-    }
-
-    private var statusPillTitle: String {
-        switch store.indicatorState {
-        case .idle:
-            return "未开启"
-        case .healthy:
-            return "正常"
-        case .warning:
-            return "提醒"
-        }
-    }
-
-    private var statusPillForeground: Color {
-        switch store.indicatorState {
-        case .idle, .warning:
-            return AssetTheme.accentOrange
-        case .healthy:
-            return AssetTheme.positive
-        }
-    }
-
-    private var statusPillBackground: Color {
-        switch store.indicatorState {
-        case .idle, .warning:
-            return AssetTheme.accentOrange.opacity(0.12)
-        case .healthy:
-            return AssetTheme.positive.opacity(0.12)
-        }
-    }
-
     private var statusNotice: (text: String, systemImage: String, color: Color)? {
         if let errorMessage = store.errorMessage, !errorMessage.isEmpty {
             return (errorMessage, "exclamationmark.triangle.fill", AssetTheme.negative)
         }
-        if let statusMessage = store.statusMessage, !statusMessage.isEmpty {
+        if let statusMessage = store.statusMessage,
+           !statusMessage.isEmpty,
+           !statusMessage.contains("同步"),
+           !statusMessage.contains("登录成功") {
             return (statusMessage, "checkmark.circle.fill", AssetTheme.positive)
         }
         return nil
@@ -782,10 +741,6 @@ struct AssetTimeMachineCloudPage: View {
             Text("使用 Apple 登录开启云同步")
                 .font(.headline)
                 .foregroundStyle(AssetTheme.textPrimary)
-
-            Text("开启后会自动同步备份，不需要手动上传下载。")
-                .font(.footnote)
-                .foregroundStyle(AssetTheme.textSecondary)
 
             SignInWithAppleButton(.signIn) { request in
                 request.requestedScopes = [.fullName, .email]
@@ -832,28 +787,16 @@ struct AssetTimeMachineCloudPage: View {
                 .foregroundStyle(AssetTheme.textSecondary)
             }
 
-            VStack(alignment: .leading, spacing: 10) {
-                Label(
-                    store.lastSyncAt.map { "上次同步 \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "登录后会自动同步本机备份",
-                    systemImage: "arrow.triangle.2.circlepath.circle.fill"
-                )
-                .font(.footnote.weight(.medium))
-                .foregroundStyle(AssetTheme.textPrimary)
-
-                Text("这里主要看同步状态和云端记录。只有换机或误删时，才需要手动从云端恢复。")
-                    .font(.footnote)
-                    .foregroundStyle(AssetTheme.textSecondary)
-            }
-            .padding(16)
-            .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(AssetTheme.border.opacity(0.8), lineWidth: 1)
+            Label(
+                store.lastSyncAt.map { "上次同步 \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "等待首次自动同步",
+                systemImage: "arrow.triangle.2.circlepath.circle.fill"
             )
+            .font(.footnote.weight(.medium))
+            .foregroundStyle(AssetTheme.textSecondary)
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("云端记录")
+                    Text("最近备份")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(AssetTheme.textPrimary)
 
@@ -873,7 +816,7 @@ struct AssetTimeMachineCloudPage: View {
                 }
 
                 if store.backups.isEmpty {
-                    Text("还没有云端备份")
+                    Text("等待首次自动同步")
                         .font(.footnote)
                         .foregroundStyle(AssetTheme.textSecondary)
                 } else {
@@ -893,7 +836,7 @@ struct AssetTimeMachineCloudPage: View {
                     Button {
                         showRestoreConfirm = true
                     } label: {
-                        Label("从云端恢复最近备份", systemImage: "arrow.clockwise.icloud")
+                        Label("恢复最近备份", systemImage: "arrow.clockwise.icloud")
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(AssetTheme.textSecondary)
                     }
@@ -951,11 +894,14 @@ struct AssetTimeMachineCloudPage: View {
     private var heroTitle: String {
         switch store.indicatorState {
         case .idle:
-            return "云同步未开启"
+            return "开启云同步"
         case .healthy:
-            return "云同步正常"
+            return "自动同步已开启"
         case .warning:
-            return store.currentUser == nil ? "云同步需要处理" : "云同步有提醒"
+            if store.currentUser != nil {
+                return store.backups.isEmpty ? "自动同步已开启" : "同步需要处理"
+            }
+            return "云同步需要处理"
         }
     }
 
@@ -964,12 +910,12 @@ struct AssetTimeMachineCloudPage: View {
         case .idle:
             return nil
         case .healthy:
-            return store.lastSyncAt.map { "最近同步 \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "自动同步已开启"
+            return store.lastSyncAt.map { "最近同步 \($0.formatted(date: .abbreviated, time: .shortened))" }
         case .warning:
             if store.currentUser != nil && store.backups.isEmpty {
-                return "已登录，等待第一次自动同步"
+                return "等待首次自动同步"
             }
-            return store.errorMessage
+            return nil
         }
     }
 }
