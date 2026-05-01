@@ -109,6 +109,7 @@ private struct DashboardView: View {
     @AppStorage("dashboard.monthlyExpenseSeedVersion") private var monthlyExpenseSeedVersion: Int = 0
     @AppStorage("dashboard.inflationRate") private var inflationRate: Double = 0.05
     @AppStorage("dashboard.inflationRateSeedVersion") private var inflationRateSeedVersion: Int = 0
+    @StateObject private var cloudStore = AssetTimeMachineCloudStore()
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
 
     private var latestSnapshot: AssetSnapshot? { snapshots.first }
@@ -211,10 +212,10 @@ private struct DashboardView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 22) {
+                        dashboardHeader
                         summaryStrip
                         trendSection
                         freedomSection
-                        cloudSyncSection
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 28)
@@ -224,6 +225,7 @@ private struct DashboardView: View {
             .toolbar(.hidden, for: .navigationBar)
             .task {
                 migrateDashboardDefaultsIfNeeded()
+                await cloudStore.refreshIfNeeded()
             }
         }
     }
@@ -321,8 +323,17 @@ private struct DashboardView: View {
         )
     }
 
-    private var cloudSyncSection: some View {
-        AssetTimeMachineCloudCard()
+    private var dashboardHeader: some View {
+        HStack {
+            Spacer()
+
+            NavigationLink {
+                AssetTimeMachineCloudPage(store: cloudStore)
+            } label: {
+                AssetTimeMachineCloudEntryButton(store: cloudStore)
+            }
+            .buttonStyle(.plain)
+        }
     }
 }
 

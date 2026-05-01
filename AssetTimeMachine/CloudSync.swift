@@ -1,3 +1,4 @@
+import AuthenticationServices
 import Combine
 import Foundation
 import SwiftData
@@ -78,6 +79,20 @@ private struct AssetTimeMachineCloudLoginRequest: Encodable {
     let password: String
 }
 
+private struct AssetTimeMachineAppleLoginRequest: Encodable {
+    let identityToken: String
+    let authorizationCode: String?
+    let userName: String?
+    let userEmail: String?
+
+    enum CodingKeys: String, CodingKey {
+        case identityToken = "identity_token"
+        case authorizationCode = "authorization_code"
+        case userName = "user_name"
+        case userEmail = "user_email"
+    }
+}
+
 private struct AssetTimeMachineCloudUploadRequest: Encodable {
     let payload: ExportPayload
     let fileName: String
@@ -108,6 +123,20 @@ enum AssetTimeMachineCloudAPI {
             path: "/api/v1/auth/login",
             method: "POST",
             body: AssetTimeMachineCloudLoginRequest(username: username, password: password)
+        )
+        return response.accessToken
+    }
+
+    static func loginWithApple(identityToken: String, authorizationCode: String?, userName: String?, userEmail: String?) async throws -> String {
+        let response: AssetTimeMachineCloudToken = try await request(
+            path: "/api/v1/auth/apple/login",
+            method: "POST",
+            body: AssetTimeMachineAppleLoginRequest(
+                identityToken: identityToken,
+                authorizationCode: authorizationCode,
+                userName: userName,
+                userEmail: userEmail
+            )
         )
         return response.accessToken
     }
@@ -256,6 +285,21 @@ enum AssetTimeMachineCloudAPI {
     }()
 }
 
+enum AssetTimeMachineCloudIndicatorState {
+    case idle
+    case healthy
+    case warning
+
+    var cloudSymbolName: String {
+        switch self {
+        case .idle:
+            return "icloud"
+        case .healthy, .warning:
+            return "icloud.fill"
+        }
+    }
+}
+
 @MainActor
 final class AssetTimeMachineCloudStore: ObservableObject {
     @Published var currentUser: AssetTimeMachineCloudUser?
@@ -270,6 +314,24 @@ final class AssetTimeMachineCloudStore: ObservableObject {
 
     var hasToken: Bool {
         !(accessToken?.isEmpty ?? true)
+    }
+
+    var indicatorState: AssetTimeMachineCloudIndicatorState {
+        if currentUser != nil {
+            return backups.isEmpty || (errorMessage?.isEmpty == false) ? .warning : .healthy
+        }
+        return errorMessage?.isEmpty == false ? .warning : .idle
+    }
+
+    var indicatorLabel: String {
+        switch indicatorState {
+        case .idle:
+            return "云备份未开启"
+        case .healthy:
+            return "云备份正常"
+        case .warning:
+            return currentUser == nil ? "云备份需要注意" : "云备份已开启，但还需要处理"
+        }
     }
 
     private var accessToken: String? {
@@ -289,6 +351,47 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             self.saveToken(token)
             try await self.loadSessionData()
             self.statusMessage = "登录成功，现在可以把数据丢到云端啦"
+        }
+    }
+
+    func handleAppleSignIn(_ result: Result<ASAuthorization, any Error>) async {
+        switch result {
+        case let .failure(error):
+            errorMessage = friendlyAppleSignInMessage(for: error)
+        case let .success(authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+                errorMessage = "没有拿到 Apple 登录凭证"
+                return
+            }
+
+            guard let identityTokenData = credential.identityToken,
+                  let identityToken = String(data: identityTokenData, encoding: .utf8),
+                  !identityToken.isEmpty else {
+                errorMessage = "Apple 没有返回 identity token"
+                return
+            }
+
+            let authorizationCode = credential.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
+            let fullName = [credential.fullName?.familyName, credential.fullName?.givenName]
+                .compactMap { value in
+                    guard let value, !value.isEmpty else { return nil }
+                    return value
+                }
+                .joined()
+            let userName = fullName.isEmpty ? nil : fullName
+            let userEmail = credential.email
+
+            await perform { [self] in
+                let token = try await AssetTimeMachineCloudAPI.loginWithApple(
+                    identityToken: identityToken,
+                    authorizationCode: authorizationCode,
+                    userName: userName,
+                    userEmail: userEmail
+                )
+                self.saveToken(token)
+                try await self.loadSessionData()
+                self.statusMessage = "Apple 登录成功，云同步已解锁"
+            }
         }
     }
 
@@ -371,54 +474,91 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             errorMessage = error.localizedDescription
         }
     }
+
+    private func friendlyAppleSignInMessage(for error: any Error) -> String {
+        let nsError = error as NSError
+        guard nsError.domain == ASAuthorizationError.errorDomain,
+              let code = ASAuthorizationError.Code(rawValue: nsError.code) else {
+            return error.localizedDescription
+        }
+
+        switch code {
+        case .canceled:
+            return "你取消了 Apple 登录"
+        case .failed:
+            return "Apple 登录失败了，请稍后再试"
+        case .invalidResponse:
+            return "Apple 登录返回的数据有点不对劲"
+        case .notHandled:
+            return "Apple 登录暂时没有被系统接住"
+        case .unknown:
+            return "Apple 一键登录暂时不可用，可能是系统能力还没配好"
+        @unknown default:
+            return error.localizedDescription
+        }
+    }
 }
 
-struct AssetTimeMachineCloudCard: View {
+struct AssetTimeMachineCloudEntryButton: View {
+    @ObservedObject var store: AssetTimeMachineCloudStore
+
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            Circle()
+                .fill(AssetTheme.surfaceRaised.opacity(0.96))
+                .frame(width: 44, height: 44)
+                .overlay(
+                    Circle()
+                        .stroke(AssetTheme.border.opacity(0.9), lineWidth: 1)
+                )
+
+            Image(systemName: store.indicatorState.cloudSymbolName)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(AssetTheme.gold)
+
+            switch store.indicatorState {
+            case .idle:
+                EmptyView()
+            case .healthy:
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(AssetTheme.positive)
+                    .background(Circle().fill(AssetTheme.background))
+                    .offset(x: 3, y: 3)
+            case .warning:
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(AssetTheme.accentOrange)
+                    .background(Circle().fill(AssetTheme.background))
+                    .offset(x: 3, y: 3)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(store.indicatorLabel)
+    }
+}
+
+struct AssetTimeMachineCloudPage: View {
     @Environment(\.modelContext) private var modelContext
-    @StateObject private var store = AssetTimeMachineCloudStore()
-    @State private var username = ""
-    @State private var password = ""
+    @ObservedObject var store: AssetTimeMachineCloudStore
     @State private var showRestoreConfirm = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("云同步")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(AssetTheme.textPrimary)
+        ZStack {
+            AssetTheme.pageGradient.ignoresSafeArea()
 
-                    Text("登录后可把当前资产数据备份到 Flyingrtx 云端，也能把最新云备份拉回本机。")
-                        .font(.subheadline)
-                        .foregroundStyle(AssetTheme.textSecondary)
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 20) {
+                    statusHero
+                    mainCard
                 }
-
-                Spacer(minLength: 12)
-
-                Image(systemName: "icloud.and.arrow.up")
-                    .font(.system(size: 26, weight: .semibold))
-                    .foregroundStyle(AssetTheme.gold)
-            }
-
-            if let currentUser = store.currentUser {
-                loggedInSection(currentUser)
-            } else {
-                loginSection
-            }
-
-            if let statusMessage = store.statusMessage, !statusMessage.isEmpty {
-                Label(statusMessage, systemImage: "checkmark.circle.fill")
-                    .font(.footnote)
-                    .foregroundStyle(AssetTheme.positive)
-            }
-
-            if let errorMessage = store.errorMessage, !errorMessage.isEmpty {
-                Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
-                    .font(.footnote)
-                    .foregroundStyle(AssetTheme.negative)
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 40)
             }
         }
-        .atmCardStyle()
+        .navigationTitle("云同步")
+        .navigationBarTitleDisplayMode(.inline)
         .task {
             await store.refreshIfNeeded()
         }
@@ -434,54 +574,99 @@ struct AssetTimeMachineCloudCard: View {
         }
     }
 
-    private var loginSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            TextField("用户名", text: $username)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(AssetTheme.border.opacity(0.6), lineWidth: 1)
-                )
-                .foregroundStyle(AssetTheme.textPrimary)
+    private var statusHero: some View {
+        HStack(alignment: .center, spacing: 14) {
+            ZStack(alignment: .bottomTrailing) {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(AssetTheme.surface.opacity(0.9))
+                    .frame(width: 68, height: 68)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(AssetTheme.border, lineWidth: 1)
+                    )
 
-            SecureField("密码", text: $password)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(AssetTheme.border.opacity(0.6), lineWidth: 1)
-                )
-                .foregroundStyle(AssetTheme.textPrimary)
+                Image(systemName: store.indicatorState.cloudSymbolName)
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundStyle(AssetTheme.gold)
 
-            Button {
-                Task {
-                    await store.login(username: username.trimmingCharacters(in: .whitespacesAndNewlines), password: password)
+                switch store.indicatorState {
+                case .idle:
+                    EmptyView()
+                case .healthy:
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(AssetTheme.positive)
+                        .background(Circle().fill(AssetTheme.background))
+                        .offset(x: 4, y: 4)
+                case .warning:
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(AssetTheme.accentOrange)
+                        .offset(x: 4, y: 4)
                 }
-            } label: {
-                HStack {
-                    if store.isWorking {
-                        ProgressView()
-                            .progressViewStyle(.circular)
-                            .tint(AssetTheme.background)
-                    }
-                    Text(store.isWorking ? "登录中..." : "账号登录")
-                        .font(.headline)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(canSubmitPasswordLogin ? AssetTheme.gold : AssetTheme.surfaceRaised, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .foregroundStyle(canSubmitPasswordLogin ? AssetTheme.background : AssetTheme.textSecondary)
             }
-            .buttonStyle(.plain)
-            .disabled(!canSubmitPasswordLogin || store.isWorking)
 
+            VStack(alignment: .leading, spacing: 6) {
+                Text(heroTitle)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                Text(heroSubtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(AssetTheme.textSecondary)
+            }
+        }
+        .atmCardStyle()
+    }
+
+    private var mainCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if let currentUser = store.currentUser {
+                loggedInSection(currentUser)
+            } else {
+                appleLoginSection
+            }
+
+            if let statusMessage = store.statusMessage, !statusMessage.isEmpty {
+                Label(statusMessage, systemImage: "checkmark.circle.fill")
+                    .font(.footnote)
+                    .foregroundStyle(AssetTheme.positive)
+            }
+
+            if let errorMessage = store.errorMessage, !errorMessage.isEmpty {
+                Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                    .font(.footnote)
+                    .foregroundStyle(AssetTheme.negative)
+            }
+        }
+        .atmCardStyle()
+    }
+
+    private var appleLoginSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("点一下就能开启云备份")
+                .font(.headline)
+                .foregroundStyle(AssetTheme.textPrimary)
+
+            Text("首页只保留云状态图标。真正登录和管理备份，都放在这里，用 Apple 一键登录就好。")
+                .font(.subheadline)
+                .foregroundStyle(AssetTheme.textSecondary)
+
+            SignInWithAppleButton(.signIn) { request in
+                request.requestedScopes = [.fullName, .email]
+            } onCompletion: { result in
+                Task {
+                    await store.handleAppleSignIn(result)
+                }
+            }
+            .signInWithAppleButtonStyle(.white)
+            .frame(height: 52)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .disabled(store.isWorking)
+
+            Text("首次授权后会自动绑定到 Flyingrtx 云同步账号。")
+                .font(.footnote)
+                .foregroundStyle(AssetTheme.textSecondary)
         }
     }
 
@@ -546,7 +731,7 @@ struct AssetTimeMachineCloudCard: View {
             .disabled(store.isWorking)
 
             if store.backups.isEmpty {
-                Text("云端还没有备份记录，先上传一次试试。")
+                Text("你已经开了云备份，但云端还没有记录。先上传一次，首页右上角就会变成云 + 绿色勾。")
                     .font(.footnote)
                     .foregroundStyle(AssetTheme.textSecondary)
             } else {
@@ -593,8 +778,29 @@ struct AssetTimeMachineCloudCard: View {
         }
     }
 
-    private var canSubmitPasswordLogin: Bool {
-        !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !password.isEmpty
+    private var heroTitle: String {
+        switch store.indicatorState {
+        case .idle:
+            return "云备份还没开启"
+        case .healthy:
+            return "云备份状态正常"
+        case .warning:
+            return store.currentUser == nil ? "云备份需要处理一下" : "云备份已开启，但还有提醒"
+        }
+    }
+
+    private var heroSubtitle: String {
+        switch store.indicatorState {
+        case .idle:
+            return "首页右上角只留一朵云，点进来再一键登录。"
+        case .healthy:
+            return "已经能把当前资产同步到 Flyingrtx 云端，也能把最新备份拉回来。"
+        case .warning:
+            if store.currentUser != nil && store.backups.isEmpty {
+                return "你已经登录了，但还没做首次上传，所以首页会先显示云 + 警告。"
+            }
+            return store.errorMessage ?? "有点小状况，进来处理一下就行。"
+        }
     }
 
     private func syncActionButton(title: String, systemImage: String, fill: Color, foreground: Color, disabled: Bool, action: @escaping () -> Void) -> some View {
