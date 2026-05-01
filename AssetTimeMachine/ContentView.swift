@@ -770,7 +770,8 @@ private struct AssetEntryCompactCard: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(AssetTheme.textPrimary)
                 .lineLimit(2)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .center)
 
             if item.valuationMethod == .directAmount {
                 ATMInputField(text: $amountText, placeholder: "输入金额", focusedField: focusedField, focusValue: .amount(item.id))
