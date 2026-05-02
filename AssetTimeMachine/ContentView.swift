@@ -1318,26 +1318,26 @@ private struct AddAssetItemSheet: View {
                                 .foregroundStyle(AssetTheme.textPrimary)
 
                             ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 10) {
+                                HStack(spacing: 8) {
                                     ForEach(iconOptions, id: \.name) { option in
                                         Button {
                                             selectedIconName = option.name
                                         } label: {
-                                            VStack(spacing: 8) {
+                                            VStack(spacing: 6) {
                                                 Image(systemName: option.symbol)
-                                                    .font(.title3.weight(.semibold))
+                                                    .font(.subheadline.weight(.semibold))
                                                     .foregroundStyle(selectedIconName == option.name ? AssetTheme.gold : AssetTheme.textPrimary)
-                                                    .frame(width: 44, height: 44)
+                                                    .frame(width: 34, height: 34)
                                                     .background(
-                                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
                                                             .fill(.white.opacity(selectedIconName == option.name ? 0.08 : 0.04))
                                                     )
                                                 Text(option.label)
                                                     .font(.caption2.weight(.medium))
-                                                    .foregroundStyle(AssetTheme.textSecondary)
+                                                    .foregroundStyle(selectedIconName == option.name ? AssetTheme.goldSoft : AssetTheme.textSecondary)
                                             }
-                                            .padding(.vertical, 4)
-                                            .frame(width: 68)
+                                            .padding(.vertical, 3)
+                                            .frame(width: 56)
                                         }
                                         .buttonStyle(.plain)
                                     }
@@ -1346,11 +1346,11 @@ private struct AddAssetItemSheet: View {
                         }
 
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("自动更新资产")
+                            Text("特殊资产")
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(AssetTheme.textSecondary)
 
-                            Text("点一个就按实时价格创建，不选就是普通资产。")
+                            Text("下列资产可填写数量，价格会自动更新。不选就是普通资产。")
                                 .font(.footnote)
                                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.8))
 
