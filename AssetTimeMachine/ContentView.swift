@@ -411,11 +411,11 @@ private struct SnapshotListView: View {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 22) {
+                    VStack(alignment: .leading, spacing: 16) {
                         if let currentSnapshot {
-                            VStack(alignment: .leading, spacing: 14) {
-                                HStack(alignment: .top, spacing: 16) {
-                                    VStack(alignment: .leading, spacing: 6) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack(alignment: .top, spacing: 10) {
+                                    VStack(alignment: .leading, spacing: 4) {
                                         Text(currentSnapshot.date.recordDateString)
                                             .font(.caption.weight(.semibold))
                                             .foregroundStyle(AssetTheme.textSecondary)
@@ -433,21 +433,21 @@ private struct SnapshotListView: View {
                                         focusedField = nil
                                         showsAddAssetItemSheet = true
                                     } label: {
-                                        HStack(spacing: 6) {
+                                        HStack(spacing: 4) {
                                             Image(systemName: "plus")
                                                 .font(.subheadline.weight(.bold))
                                             Text("资产类型")
                                                 .font(.subheadline.weight(.semibold))
                                         }
                                         .foregroundStyle(AssetTheme.textPrimary)
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 10)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
                                         .background(.white.opacity(0.05), in: Capsule())
                                     }
                                     .buttonStyle(.plain)
                                 }
 
-                                HStack(spacing: 10) {
+                                HStack(spacing: 8) {
                                     SummaryInlineMetric(
                                         title: "负债",
                                         value: PortfolioCalculator.totalLiabilities(for: currentSnapshot).currencyString(),
@@ -460,7 +460,7 @@ private struct SnapshotListView: View {
                                     )
                                 }
                             }
-                            .padding(.bottom, 2)
+                            .padding(.bottom, 0)
 
                             ForEach(nonLiabilityCategories) { category in
                                 RecordCategoryCard(
@@ -516,9 +516,9 @@ private struct SnapshotListView: View {
                             )
                         }
                     }
-                     .padding(.horizontal, 18)
-                    .padding(.top, 24)
-                    .padding(.bottom, 120)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 18)
+                    .padding(.bottom, 104)
                 }
                 .scrollDismissesKeyboard(.immediately)
             }
@@ -648,7 +648,7 @@ private struct SummaryInlineMetric: View {
     let accent: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.caption.weight(.medium))
                 .foregroundStyle(AssetTheme.textSecondary)
@@ -659,9 +659,9 @@ private struct SummaryInlineMetric: View {
                 .minimumScaleFactor(0.75)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -692,8 +692,8 @@ private struct RecordCategoryCard: View {
     let onChanged: (AssetItem) -> Void
 
     private let compactColumns = [
-        GridItem(.flexible(), spacing: 10, alignment: .top),
-        GridItem(.flexible(), spacing: 10, alignment: .top)
+        GridItem(.flexible(), spacing: 8, alignment: .top),
+        GridItem(.flexible(), spacing: 8, alignment: .top)
     ]
 
     private var items: [AssetItem] {
@@ -724,8 +724,8 @@ private struct RecordCategoryCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .center, spacing: 10) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 8) {
                 Text(category.name)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(AssetTheme.textPrimary)
@@ -737,11 +737,11 @@ private struct RecordCategoryCard: View {
                     .foregroundStyle(AssetTheme.textSecondary)
             }
 
-            VStack(spacing: 14) {
+            VStack(spacing: 10) {
                 ForEach(Array(inputBlocks.enumerated()), id: \.offset) { _, block in
                     switch block {
                     case let .compact(compactItems):
-                        LazyVGrid(columns: compactColumns, alignment: .leading, spacing: 12) {
+                        LazyVGrid(columns: compactColumns, alignment: .leading, spacing: 8) {
                             ForEach(compactItems) { item in
                                 AssetEntryCompactCard(
                                     item: item,
@@ -803,14 +803,14 @@ private struct LiabilityCategorySection: View {
     var focusedField: FocusState<RecordInputField?>.Binding
     let onChanged: (AssetItem) -> Void
 
-    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+    private let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
 
     private var items: [AssetItem] {
         category.activeSortedItems
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 Text(category.name)
                     .font(.subheadline.weight(.semibold))
@@ -821,7 +821,7 @@ private struct LiabilityCategorySection: View {
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
             }
 
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
                 ForEach(items) { item in
                     LiabilityEntryCard(
                         item: item,
@@ -854,7 +854,7 @@ private struct LiabilityEntryCard: View {
     var focusedField: FocusState<RecordInputField?>.Binding
 
     var body: some View {
-        HStack(alignment: .center, spacing: 6) {
+        HStack(alignment: .center, spacing: 4) {
             AssetItemGlyph(item: item, accent: AssetTheme.negative, size: 12)
 
             Text(item.name)
@@ -867,12 +867,12 @@ private struct LiabilityEntryCard: View {
                 ATMInputField(
                     text: $amountText,
                     placeholder: "0",
-                    width: 64,
+                    width: 60,
                     focusedField: focusedField,
                     focusValue: .amount(item.id),
                     centered: true,
                     font: .system(size: 12, weight: .semibold, design: .rounded),
-                    height: 36,
+                    height: 34,
                     backgroundOpacity: 0.54,
                     strokeOpacity: 0.18
                 )
@@ -880,18 +880,18 @@ private struct LiabilityEntryCard: View {
                 ATMInputField(
                     text: $quantityText,
                     placeholder: item.compactRecordPlaceholder,
-                    width: 64,
+                    width: 60,
                     focusedField: focusedField,
                     focusValue: .quantity(item.id),
                     centered: true,
                     font: .system(size: 12, weight: .semibold, design: .rounded),
-                    height: 36,
+                    height: 34,
                     backgroundOpacity: 0.54,
                     strokeOpacity: 0.18
                 )
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 1)
     }
 }
 
@@ -903,10 +903,10 @@ private struct RecordInputCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
             content
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -919,7 +919,7 @@ private struct AssetEntryCompactCard: View {
 
     var body: some View {
         RecordInputCard {
-            HStack(alignment: .center, spacing: 6) {
+            HStack(alignment: .center, spacing: 4) {
                 AssetItemGlyph(item: item, size: 12)
                 Text(item.name)
                     .font(.caption2.weight(.semibold))
@@ -928,9 +928,9 @@ private struct AssetEntryCompactCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 if item.valuationMethod == .directAmount {
-                    ATMInputField(text: $amountText, placeholder: "0", width: 64, focusedField: focusedField, focusValue: .amount(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 36, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    ATMInputField(text: $amountText, placeholder: "0", width: 60, focusedField: focusedField, focusValue: .amount(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 34, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                 } else {
-                    ATMInputField(text: $quantityText, placeholder: "0", width: 64, focusedField: focusedField, focusValue: .quantity(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 36, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    ATMInputField(text: $quantityText, placeholder: "0", width: 60, focusedField: focusedField, focusValue: .quantity(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 34, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                 }
             }
         }
@@ -946,19 +946,18 @@ private struct AssetEntryInputRow: View {
 
     var body: some View {
         RecordInputCard {
-            HStack(alignment: .top, spacing: 8) {
-                AssetItemGlyph(item: item, size: 14)
-                    .padding(.top, 2)
+            HStack(alignment: .top, spacing: 6) {
+                AssetItemGlyph(item: item, size: 12)
 
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(item.name)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(AssetTheme.textPrimary)
                         .lineLimit(2)
 
-                    HStack(spacing: 8) {
-                        ATMInputField(text: $quantityText, placeholder: "数量", focusedField: focusedField, focusValue: .quantity(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 36, backgroundOpacity: 0.05, strokeOpacity: 0.16)
-                        ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: focusedField, focusValue: .unitPrice(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 36, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    HStack(spacing: 6) {
+                        ATMInputField(text: $quantityText, placeholder: "数量", focusedField: focusedField, focusValue: .quantity(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 34, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                        ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: focusedField, focusValue: .unitPrice(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 34, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                     }
                 }
             }
@@ -987,12 +986,12 @@ private struct ATMInputField: View {
             .multilineTextAlignment(centered ? .center : .trailing)
             .font(font)
             .foregroundStyle(AssetTheme.textPrimary)
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 2)
             .frame(maxWidth: width == nil ? .infinity : nil, alignment: centered ? .center : .trailing)
             .frame(width: width, height: height)
-            .background(AssetTheme.background.opacity(backgroundOpacity), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .background(AssetTheme.background.opacity(backgroundOpacity), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(AssetTheme.border.opacity(strokeOpacity), lineWidth: 1)
             )
     }
