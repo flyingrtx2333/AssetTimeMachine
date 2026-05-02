@@ -867,12 +867,12 @@ private struct LiabilityEntryCard: View {
                 ATMInputField(
                     text: $amountText,
                     placeholder: "0",
-                    width: 72,
+                    width: 64,
                     focusedField: focusedField,
                     focusValue: .amount(item.id),
                     centered: true,
-                    font: .system(size: 15, weight: .bold, design: .rounded),
-                    height: 42,
+                    font: .system(size: 12, weight: .semibold, design: .rounded),
+                    height: 36,
                     backgroundOpacity: 0.54,
                     strokeOpacity: 0.18
                 )
@@ -880,12 +880,12 @@ private struct LiabilityEntryCard: View {
                 ATMInputField(
                     text: $quantityText,
                     placeholder: item.compactRecordPlaceholder,
-                    width: 72,
+                    width: 64,
                     focusedField: focusedField,
                     focusValue: .quantity(item.id),
                     centered: true,
-                    font: .system(size: 15, weight: .bold, design: .rounded),
-                    height: 42,
+                    font: .system(size: 12, weight: .semibold, design: .rounded),
+                    height: 36,
                     backgroundOpacity: 0.54,
                     strokeOpacity: 0.18
                 )
@@ -928,9 +928,9 @@ private struct AssetEntryCompactCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 if item.valuationMethod == .directAmount {
-                    ATMInputField(text: $amountText, placeholder: "0", width: 72, focusedField: focusedField, focusValue: .amount(item.id), centered: true, font: .system(size: 15, weight: .bold, design: .rounded), height: 42, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    ATMInputField(text: $amountText, placeholder: "0", width: 64, focusedField: focusedField, focusValue: .amount(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 36, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                 } else {
-                    ATMInputField(text: $quantityText, placeholder: "0", width: 72, focusedField: focusedField, focusValue: .quantity(item.id), centered: true, font: .system(size: 15, weight: .bold, design: .rounded), height: 42, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    ATMInputField(text: $quantityText, placeholder: "0", width: 64, focusedField: focusedField, focusValue: .quantity(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 36, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                 }
             }
         }
@@ -957,8 +957,8 @@ private struct AssetEntryInputRow: View {
                         .lineLimit(2)
 
                     HStack(spacing: 8) {
-                        ATMInputField(text: $quantityText, placeholder: "数量", focusedField: focusedField, focusValue: .quantity(item.id), centered: true, font: .system(size: 14, weight: .bold, design: .rounded), height: 40, backgroundOpacity: 0.05, strokeOpacity: 0.16)
-                        ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: focusedField, focusValue: .unitPrice(item.id), centered: true, font: .system(size: 14, weight: .bold, design: .rounded), height: 40, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                        ATMInputField(text: $quantityText, placeholder: "数量", focusedField: focusedField, focusValue: .quantity(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 36, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                        ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: focusedField, focusValue: .unitPrice(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 36, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                     }
                 }
             }
@@ -987,12 +987,12 @@ private struct ATMInputField: View {
             .multilineTextAlignment(centered ? .center : .trailing)
             .font(font)
             .foregroundStyle(AssetTheme.textPrimary)
-            .padding(.horizontal, 6)
+            .padding(.horizontal, 4)
             .frame(maxWidth: width == nil ? .infinity : nil, alignment: centered ? .center : .trailing)
             .frame(width: width, height: height)
-            .background(AssetTheme.background.opacity(backgroundOpacity), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(AssetTheme.background.opacity(backgroundOpacity), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(AssetTheme.border.opacity(strokeOpacity), lineWidth: 1)
             )
     }
