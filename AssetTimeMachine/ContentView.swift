@@ -367,7 +367,7 @@ private struct SnapshotListView: View {
     @State private var quantityInputs: [UUID: String] = [:]
     @State private var unitPriceInputs: [UUID: String] = [:]
     @State private var didPrepare = false
-    @State private var showsAddAssetItemSheet = false
+    @State private var showsAddAssetItemSheet = ProcessInfo.processInfo.arguments.contains("-openAddAssetItemSheet")
     @FocusState private var focusedField: RecordInputField?
 
     private let liabilitySectionTitleMap: [String: String] = [
