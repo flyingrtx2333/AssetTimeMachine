@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import Charts
 import UniformTypeIdentifiers
+import UIKit
 
 private enum AppTab: Hashable {
     case dashboard
@@ -520,6 +521,10 @@ private struct SnapshotListView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 18)
                     .padding(.bottom, 104)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        focusedField = nil
+                    }
                 }
                 .scrollDismissesKeyboard(.immediately)
             }
@@ -879,8 +884,9 @@ private struct LiabilityEntryCard: View {
                     width: 72,
                     focusedField: focusedField,
                     focusValue: .amount(item.id),
-                    centered: true,
-                    font: .system(size: 12, weight: .semibold, design: .rounded),
+                    centered: false,
+                    fontSize: 12,
+                    fontWeight: .semibold,
                     height: 30,
                     backgroundOpacity: 0.54,
                     strokeOpacity: 0.18
@@ -892,8 +898,9 @@ private struct LiabilityEntryCard: View {
                     width: 72,
                     focusedField: focusedField,
                     focusValue: .quantity(item.id),
-                    centered: true,
-                    font: .system(size: 12, weight: .semibold, design: .rounded),
+                    centered: false,
+                    fontSize: 12,
+                    fontWeight: .semibold,
                     height: 30,
                     backgroundOpacity: 0.54,
                     strokeOpacity: 0.18
@@ -1014,9 +1021,9 @@ private struct AssetEntryCompactCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 if item.valuationMethod == .directAmount {
-                    ATMInputField(text: $amountText, placeholder: "0", width: 72, focusedField: focusedField, focusValue: .amount(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    ATMInputField(text: $amountText, placeholder: "0", width: 72, focusedField: focusedField, focusValue: .amount(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                 } else {
-                    ATMInputField(text: $quantityText, placeholder: "0", width: 72, focusedField: focusedField, focusValue: .quantity(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    ATMInputField(text: $quantityText, placeholder: "0", width: 72, focusedField: focusedField, focusValue: .quantity(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                 }
             }
         }
@@ -1042,8 +1049,8 @@ private struct AssetEntryInputRow: View {
                         .lineLimit(2)
 
                     HStack(spacing: 6) {
-                        ATMInputField(text: $quantityText, placeholder: "数量", focusedField: focusedField, focusValue: .quantity(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
-                        ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: focusedField, focusValue: .unitPrice(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                        ATMInputField(text: $quantityText, placeholder: "数量", focusedField: focusedField, focusValue: .quantity(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                        ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: focusedField, focusValue: .unitPrice(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                     }
                 }
             }
@@ -1058,28 +1065,131 @@ private struct ATMInputField: View {
     var focusedField: FocusState<RecordInputField?>.Binding
     let focusValue: RecordInputField
     var centered: Bool = false
-    var font: Font = .system(.body, design: .rounded).weight(.semibold)
+    var fontSize: CGFloat = 17
+    var fontWeight: Font.Weight = .semibold
     var height: CGFloat = 42
     var backgroundOpacity: Double = 0.66
     var strokeOpacity: Double = 0.52
 
     var body: some View {
-        TextField("", text: $text, prompt: Text(placeholder).foregroundStyle(AssetTheme.textSecondary))
-            .keyboardType(.decimalPad)
-            .focused(focusedField, equals: focusValue)
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
-            .multilineTextAlignment(centered ? .center : .trailing)
-            .font(font)
-            .foregroundStyle(AssetTheme.textPrimary)
-            .padding(.horizontal, 2)
-            .frame(maxWidth: width == nil ? .infinity : nil, alignment: centered ? .center : .trailing)
-            .frame(width: width, height: height)
-            .background(AssetTheme.background.opacity(backgroundOpacity), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(AssetTheme.border.opacity(strokeOpacity), lineWidth: 1)
-            )
+        ATMUIKitInputField(
+            text: $text,
+            placeholder: placeholder,
+            focusedField: focusedField,
+            focusValue: focusValue,
+            centered: centered,
+            fontSize: fontSize,
+            fontWeight: fontWeight
+        )
+        .padding(.horizontal, 2)
+        .frame(maxWidth: width == nil ? .infinity : nil, alignment: centered ? .center : .trailing)
+        .frame(width: width, height: height)
+        .background(AssetTheme.background.opacity(backgroundOpacity), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(AssetTheme.border.opacity(strokeOpacity), lineWidth: 1)
+        )
+    }
+}
+
+private struct ATMUIKitInputField: UIViewRepresentable {
+    @Binding var text: String
+    let placeholder: String
+    var focusedField: FocusState<RecordInputField?>.Binding
+    let focusValue: RecordInputField
+    var centered: Bool = false
+    var fontSize: CGFloat = 17
+    var fontWeight: Font.Weight = .semibold
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    func makeUIView(context: Context) -> UITextField {
+        let textField = UITextField(frame: .zero)
+        textField.delegate = context.coordinator
+        textField.keyboardType = .decimalPad
+        textField.autocorrectionType = .no
+        textField.autocapitalizationType = .none
+        textField.borderStyle = .none
+        textField.backgroundColor = .clear
+        textField.tintColor = UIColor(AssetTheme.textPrimary)
+        textField.addTarget(context.coordinator, action: #selector(Coordinator.editingChanged(_:)), for: .editingChanged)
+        return textField
+    }
+
+    func updateUIView(_ uiView: UITextField, context: Context) {
+        context.coordinator.parent = self
+
+        if uiView.text != text {
+            uiView.text = text
+        }
+
+        uiView.textAlignment = centered ? .center : .right
+        uiView.font = .systemFont(ofSize: fontSize, weight: fontWeight.uiFontWeight)
+        uiView.textColor = UIColor(AssetTheme.textPrimary)
+        uiView.attributedPlaceholder = NSAttributedString(
+            string: placeholder,
+            attributes: [.foregroundColor: UIColor(AssetTheme.textSecondary)]
+        )
+
+        let shouldBeFirstResponder = focusedField.wrappedValue == focusValue
+        if shouldBeFirstResponder, !uiView.isFirstResponder {
+            DispatchQueue.main.async {
+                uiView.becomeFirstResponder()
+                context.coordinator.moveCaretToEnd(in: uiView)
+            }
+        } else if !shouldBeFirstResponder, uiView.isFirstResponder {
+            DispatchQueue.main.async {
+                uiView.resignFirstResponder()
+            }
+        }
+    }
+
+    final class Coordinator: NSObject, UITextFieldDelegate {
+        var parent: ATMUIKitInputField
+
+        init(parent: ATMUIKitInputField) {
+            self.parent = parent
+        }
+
+        @objc func editingChanged(_ textField: UITextField) {
+            parent.text = textField.text ?? ""
+        }
+
+        func textFieldDidBeginEditing(_ textField: UITextField) {
+            parent.focusedField.wrappedValue = parent.focusValue
+            moveCaretToEnd(in: textField)
+        }
+
+        func textFieldDidEndEditing(_ textField: UITextField) {
+            if parent.focusedField.wrappedValue == parent.focusValue {
+                parent.focusedField.wrappedValue = nil
+            }
+        }
+
+        func moveCaretToEnd(in textField: UITextField) {
+            let end = textField.endOfDocument
+            guard let range = textField.textRange(from: end, to: end) else { return }
+            textField.selectedTextRange = range
+        }
+    }
+}
+
+private extension Font.Weight {
+    var uiFontWeight: UIFont.Weight {
+        switch self {
+        case .ultraLight: return .ultraLight
+        case .thin: return .thin
+        case .light: return .light
+        case .regular: return .regular
+        case .medium: return .medium
+        case .semibold: return .semibold
+        case .bold: return .bold
+        case .heavy: return .heavy
+        case .black: return .black
+        default: return .regular
+        }
     }
 }
 
