@@ -367,6 +367,11 @@ private struct SnapshotListView: View {
     @State private var showsAddAssetItemSheet = false
     @FocusState private var focusedField: RecordInputField?
 
+    private let liabilitySectionTitleMap: [String: String] = [
+        "长期负债": "长期负债",
+        "短期负债": "短期负债"
+    ]
+
     private var currentSnapshot: AssetSnapshot? {
         if let currentSnapshotID,
            let snapshot = snapshots.first(where: { $0.id == currentSnapshotID }) {
@@ -375,14 +380,27 @@ private struct SnapshotListView: View {
         return snapshots.first(where: { Calendar.current.isDateInToday($0.date) }) ?? snapshots.first
     }
 
-    private var visibleCategories: [AssetCategory] {
+    private var nonLiabilityCategories: [AssetCategory] {
         categories
-            .filter { !$0.activeSortedItems.isEmpty }
+            .filter { $0.group != .liability && !$0.activeSortedItems.isEmpty }
             .sorted {
                 if $0.group.sortPriority == $1.group.sortPriority {
                     return $0.createdAt < $1.createdAt
                 }
                 return $0.group.sortPriority < $1.group.sortPriority
+            }
+    }
+
+    private var liabilityCategories: [AssetCategory] {
+        categories
+            .filter { $0.group == .liability && !$0.activeSortedItems.isEmpty }
+            .sorted {
+                let lhsPriority = $0.liabilitySortPriority(titleMap: liabilitySectionTitleMap)
+                let rhsPriority = $1.liabilitySortPriority(titleMap: liabilitySectionTitleMap)
+                if lhsPriority == rhsPriority {
+                    return $0.createdAt < $1.createdAt
+                }
+                return lhsPriority < rhsPriority
             }
     }
 
@@ -452,12 +470,24 @@ private struct SnapshotListView: View {
                                 Spacer(minLength: 0)
                             }
 
-                            ForEach(visibleCategories) { category in
+                            ForEach(nonLiabilityCategories) { category in
                                 RecordCategoryCard(
                                     category: category,
                                     amountInputs: $amountInputs,
                                     quantityInputs: $quantityInputs,
                                     unitPriceInputs: $unitPriceInputs,
+                                    focusedField: $focusedField,
+                                    onChanged: { item in
+                                        persist(item: item)
+                                    }
+                                )
+                            }
+
+                            ForEach(liabilityCategories) { category in
+                                LiabilityCategorySection(
+                                    category: category,
+                                    amountInputs: $amountInputs,
+                                    quantityInputs: $quantityInputs,
                                     focusedField: $focusedField,
                                     onChanged: { item in
                                         persist(item: item)
@@ -737,6 +767,109 @@ private struct RecordCategoryCard: View {
     }
 }
 
+private struct LiabilityCategorySection: View {
+    let category: AssetCategory
+    @Binding var amountInputs: [UUID: String]
+    @Binding var quantityInputs: [UUID: String]
+    var focusedField: FocusState<RecordInputField?>.Binding
+    let onChanged: (AssetItem) -> Void
+
+    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+
+    private var items: [AssetItem] {
+        category.activeSortedItems
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(category.name)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+                Spacer()
+                Text("\(items.count) 项")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textSecondary)
+            }
+
+            Rectangle()
+                .fill(AssetTheme.border.opacity(0.55))
+                .frame(height: 1)
+
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
+                ForEach(items) { item in
+                    LiabilityEntryCard(
+                        item: item,
+                        amountText: Binding(
+                            get: { amountInputs[item.id] ?? "" },
+                            set: { newValue in
+                                amountInputs[item.id] = newValue
+                                onChanged(item)
+                            }
+                        ),
+                        quantityText: Binding(
+                            get: { quantityInputs[item.id] ?? "" },
+                            set: { newValue in
+                                quantityInputs[item.id] = newValue
+                                onChanged(item)
+                            }
+                        ),
+                        focusedField: focusedField
+                    )
+                }
+            }
+        }
+    }
+}
+
+private struct LiabilityEntryCard: View {
+    let item: AssetItem
+    @Binding var amountText: String
+    @Binding var quantityText: String
+    var focusedField: FocusState<RecordInputField?>.Binding
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(item.name)
+                .font(.system(.headline, design: .rounded).weight(.semibold))
+                .foregroundStyle(AssetTheme.textPrimary)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if item.valuationMethod == .directAmount {
+                ATMInputField(
+                    text: $amountText,
+                    placeholder: "0",
+                    focusedField: focusedField,
+                    focusValue: .amount(item.id),
+                    centered: true,
+                    font: .system(size: 18, weight: .bold, design: .rounded),
+                    height: 58,
+                    backgroundOpacity: 0.88
+                )
+            } else {
+                ATMInputField(
+                    text: $quantityText,
+                    placeholder: item.compactRecordPlaceholder,
+                    focusedField: focusedField,
+                    focusValue: .quantity(item.id),
+                    centered: true,
+                    font: .system(size: 18, weight: .bold, design: .rounded),
+                    height: 58,
+                    backgroundOpacity: 0.88
+                )
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AssetTheme.surfaceRaised.opacity(0.82), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
+        )
+    }
+}
+
 private struct RecordInputCard<Content: View>: View {
     @ViewBuilder var content: Content
 
@@ -810,6 +943,10 @@ private struct ATMInputField: View {
     var width: CGFloat? = nil
     var focusedField: FocusState<RecordInputField?>.Binding
     let focusValue: RecordInputField
+    var centered: Bool = false
+    var font: Font = .system(.body, design: .rounded).weight(.semibold)
+    var height: CGFloat = 42
+    var backgroundOpacity: Double = 0.66
 
     var body: some View {
         TextField("", text: $text, prompt: Text(placeholder).foregroundStyle(AssetTheme.textSecondary))
@@ -817,15 +954,15 @@ private struct ATMInputField: View {
             .focused(focusedField, equals: focusValue)
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
-            .multilineTextAlignment(.trailing)
-            .font(.system(.body, design: .rounded).weight(.semibold))
+            .multilineTextAlignment(centered ? .center : .trailing)
+            .font(font)
             .foregroundStyle(AssetTheme.textPrimary)
             .padding(.horizontal, 12)
-            .frame(maxWidth: width == nil ? .infinity : nil, alignment: .trailing)
-            .frame(width: width, height: 42)
-            .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .frame(maxWidth: width == nil ? .infinity : nil, alignment: centered ? .center : .trailing)
+            .frame(width: width, height: height)
+            .background(AssetTheme.background.opacity(backgroundOpacity), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(AssetTheme.border.opacity(0.52), lineWidth: 1)
             )
     }
@@ -4452,6 +4589,16 @@ private extension AssetGroup {
         case .physical: return 1
         case .liability: return 2
         }
+    }
+}
+
+private extension AssetCategory {
+    func liabilitySortPriority(titleMap: [String: String]) -> Int {
+        let normalized = name.replacingOccurrences(of: " ", with: "")
+        if normalized.contains("长期") { return 0 }
+        if normalized.contains("短期") { return 1 }
+        if titleMap[normalized] != nil { return 0 }
+        return 2
     }
 }
 
