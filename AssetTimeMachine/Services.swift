@@ -61,6 +61,8 @@ enum SeedDataService {
         ("负债", .liability)
     ]
 
+    private static let defaultFinancialItems = ["微信", "支付宝", "银行卡", "现金"]
+
     @MainActor
     static func seedDefaultCategoriesIfNeeded(in context: ModelContext) throws {
         let descriptor = FetchDescriptor<AssetCategory>()
@@ -68,7 +70,7 @@ enum SeedDataService {
 
         guard existingCategories.isEmpty else { return }
 
-        for (index, category) in defaultCategories.enumerated() {
+        for category in defaultCategories {
             let model = AssetCategory(
                 name: category.name,
                 group: category.group,
@@ -76,17 +78,58 @@ enum SeedDataService {
             )
             context.insert(model)
 
-            let placeholderItem = AssetItem(
-                name: sampleItemName(for: category.group),
-                note: "示例项目，可后续编辑或删除",
-                valuationMethod: .directAmount,
-                sortOrder: index,
-                category: model
-            )
-            context.insert(placeholderItem)
+            switch category.group {
+            case .financial:
+                for (index, itemName) in defaultFinancialItems.enumerated() {
+                    let item = AssetItem(
+                        name: itemName,
+                        note: "默认资金项，可后续编辑或删除",
+                        valuationMethod: .directAmount,
+                        sortOrder: index,
+                        category: model
+                    )
+                    context.insert(item)
+                }
+            case .physical, .liability:
+                let placeholderItem = AssetItem(
+                    name: sampleItemName(for: category.group),
+                    note: "示例项目，可后续编辑或删除",
+                    valuationMethod: .directAmount,
+                    sortOrder: 0,
+                    category: model
+                )
+                context.insert(placeholderItem)
+            }
         }
 
         try context.save()
+    }
+
+    @MainActor
+    static func ensureDefaultFinancialItems(in context: ModelContext) throws {
+        let categories = try context.fetch(FetchDescriptor<AssetCategory>())
+        guard let financialCategory = categories.first(where: { $0.group == .financial }) else { return }
+
+        let existingNames = Set(financialCategory.items.map { $0.name.trimmingCharacters(in: .whitespacesAndNewlines) })
+        var didChange = false
+        var nextSortOrder = (financialCategory.items.map(\AssetItem.sortOrder).max() ?? -1) + 1
+
+        for itemName in defaultFinancialItems where !existingNames.contains(itemName) {
+            let item = AssetItem(
+                name: itemName,
+                note: "升级自动补齐的默认资金项，可后续编辑或删除",
+                valuationMethod: .directAmount,
+                sortOrder: nextSortOrder,
+                category: financialCategory
+            )
+            context.insert(item)
+            nextSortOrder += 1
+            didChange = true
+        }
+
+        if didChange {
+            try context.save()
+        }
     }
 
     private static func sampleItemName(for group: AssetGroup) -> String {
@@ -109,6 +152,7 @@ enum AssetItemService {
         valuationMethod: ValuationMethod = .directAmount,
         autoPricedAssetKind: AutoPricedAssetKind? = nil,
         note: String = "",
+        iconName: String? = nil,
         in context: ModelContext
     ) throws -> AssetItem {
         let nextSortOrder = (category.items.map(\AssetItem.sortOrder).max() ?? -1) + 1
@@ -130,6 +174,7 @@ enum AssetItemService {
         _ item: AssetItem,
         name: String? = nil,
         note: String? = nil,
+        iconName: String? = nil,
         valuationMethod: ValuationMethod? = nil,
         autoPricedAssetKind: AutoPricedAssetKind?? = nil,
         isActive: Bool? = nil,
@@ -163,6 +208,50 @@ enum AssetItemService {
 
         if didChange {
             try context.save()
+        }
+    }
+
+    static func suggestedIconName(for name: String, autoPricedAssetKind: AutoPricedAssetKind?) -> String {
+        if let autoPricedAssetKind {
+            switch autoPricedAssetKind {
+            case .gold: return "icon_gold"
+            case .btc: return "icon_btc"
+            default: break
+            }
+        }
+
+        let normalized = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if normalized.contains("微信") { return "icon_wechat" }
+        if normalized.contains("支付宝") { return "icon_alipay" }
+        if normalized.contains("现金") { return "icon_cash" }
+        if normalized.contains("银行卡") || normalized.contains("储蓄卡") { return "icon_bank_card" }
+        if normalized.contains("房贷") { return "icon_mortgage" }
+        if normalized.contains("车贷") { return "icon_car_loan" }
+        if normalized.contains("信用卡") { return "icon_credit_card" }
+        if normalized.contains("花呗") { return "icon_huabei" }
+        return ""
+    }
+
+    static func displaySymbolName(for item: AssetItem) -> String {
+        let key = suggestedIconName(for: item.name, autoPricedAssetKind: item.autoPricedAssetKind)
+        switch key {
+        case "icon_wechat": return "message.circle.fill"
+        case "icon_alipay": return "yensign.circle.fill"
+        case "icon_bank_card": return "creditcard.fill"
+        case "icon_cash": return "banknote.fill"
+        case "icon_btc": return "bitcoinsign.circle.fill"
+        case "icon_gold": return "seal.fill"
+        case "icon_mortgage": return "house.fill"
+        case "icon_car_loan": return "car.fill"
+        case "icon_credit_card": return "creditcard.and.123"
+        case "icon_huabei": return "sparkles"
+        default:
+            switch item.category?.group {
+            case .financial: return "wallet.pass.fill"
+            case .physical: return "shippingbox.fill"
+            case .liability: return "minus.circle.fill"
+            case nil: return "circle.fill"
+            }
         }
     }
 

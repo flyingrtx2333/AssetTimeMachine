@@ -18,6 +18,7 @@ struct ExportPayload: Codable {
         let id: UUID
         let name: String
         let note: String
+        let iconName: String?
         let valuationMethod: String
         let autoPricedAssetKind: String?
         let sortOrder: Int
@@ -79,6 +80,7 @@ enum ImportExportService {
                     id: $0.id,
                     name: $0.name,
                     note: $0.note,
+                    iconName: nil,
                     valuationMethod: $0.valuationMethod.rawValue,
                     autoPricedAssetKind: $0.autoPricedAssetKind?.rawValue,
                     sortOrder: $0.sortOrder,
