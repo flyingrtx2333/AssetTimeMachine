@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import Charts
+import UniformTypeIdentifiers
 
 private enum AppTab: Hashable {
     case dashboard
@@ -690,6 +691,7 @@ private struct RecordCategoryCard: View {
     @Binding var unitPriceInputs: [UUID: String]
     var focusedField: FocusState<RecordInputField?>.Binding
     let onChanged: (AssetItem) -> Void
+    @State private var draggedItemID: UUID?
 
     private let compactColumns = [
         GridItem(.flexible(), spacing: 8, alignment: .top),
@@ -743,52 +745,56 @@ private struct RecordCategoryCard: View {
                     case let .compact(compactItems):
                         LazyVGrid(columns: compactColumns, alignment: .leading, spacing: 8) {
                             ForEach(compactItems) { item in
-                                AssetEntryCompactCard(
-                                    item: item,
-                                    amountText: Binding(
-                                        get: { amountInputs[item.id] ?? "" },
-                                        set: { newValue in
-                                            amountInputs[item.id] = newValue
-                                            onChanged(item)
-                                        }
-                                    ),
-                                    quantityText: Binding(
-                                        get: { quantityInputs[item.id] ?? "" },
-                                        set: { newValue in
-                                            quantityInputs[item.id] = newValue
-                                            onChanged(item)
-                                        }
-                                    ),
-                                    focusedField: focusedField
-                                )
+                                ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
+                                    AssetEntryCompactCard(
+                                        item: item,
+                                        amountText: Binding(
+                                            get: { amountInputs[item.id] ?? "" },
+                                            set: { newValue in
+                                                amountInputs[item.id] = newValue
+                                                onChanged(item)
+                                            }
+                                        ),
+                                        quantityText: Binding(
+                                            get: { quantityInputs[item.id] ?? "" },
+                                            set: { newValue in
+                                                quantityInputs[item.id] = newValue
+                                                onChanged(item)
+                                            }
+                                        ),
+                                        focusedField: focusedField
+                                    )
+                                }
                             }
                         }
                     case let .expanded(item):
-                        AssetEntryInputRow(
-                            item: item,
-                            amountText: Binding(
-                                get: { amountInputs[item.id] ?? "" },
-                                set: { newValue in
-                                    amountInputs[item.id] = newValue
-                                    onChanged(item)
-                                }
-                            ),
-                            quantityText: Binding(
-                                get: { quantityInputs[item.id] ?? "" },
-                                set: { newValue in
-                                    quantityInputs[item.id] = newValue
-                                    onChanged(item)
-                                }
-                            ),
-                            unitPriceText: Binding(
-                                get: { unitPriceInputs[item.id] ?? "" },
-                                set: { newValue in
-                                    unitPriceInputs[item.id] = newValue
-                                    onChanged(item)
-                                }
-                            ),
-                            focusedField: focusedField
-                        )
+                        ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
+                            AssetEntryInputRow(
+                                item: item,
+                                amountText: Binding(
+                                    get: { amountInputs[item.id] ?? "" },
+                                    set: { newValue in
+                                        amountInputs[item.id] = newValue
+                                        onChanged(item)
+                                    }
+                                ),
+                                quantityText: Binding(
+                                    get: { quantityInputs[item.id] ?? "" },
+                                    set: { newValue in
+                                        quantityInputs[item.id] = newValue
+                                        onChanged(item)
+                                    }
+                                ),
+                                unitPriceText: Binding(
+                                    get: { unitPriceInputs[item.id] ?? "" },
+                                    set: { newValue in
+                                        unitPriceInputs[item.id] = newValue
+                                        onChanged(item)
+                                    }
+                                ),
+                                focusedField: focusedField
+                            )
+                        }
                     }
                 }
             }
@@ -802,6 +808,7 @@ private struct LiabilityCategorySection: View {
     @Binding var quantityInputs: [UUID: String]
     var focusedField: FocusState<RecordInputField?>.Binding
     let onChanged: (AssetItem) -> Void
+    @State private var draggedItemID: UUID?
 
     private let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
 
@@ -823,24 +830,26 @@ private struct LiabilityCategorySection: View {
 
             LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
                 ForEach(items) { item in
-                    LiabilityEntryCard(
-                        item: item,
-                        amountText: Binding(
-                            get: { amountInputs[item.id] ?? "" },
-                            set: { newValue in
-                                amountInputs[item.id] = newValue
-                                onChanged(item)
-                            }
-                        ),
-                        quantityText: Binding(
-                            get: { quantityInputs[item.id] ?? "" },
-                            set: { newValue in
-                                quantityInputs[item.id] = newValue
-                                onChanged(item)
-                            }
-                        ),
-                        focusedField: focusedField
-                    )
+                    ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
+                        LiabilityEntryCard(
+                            item: item,
+                            amountText: Binding(
+                                get: { amountInputs[item.id] ?? "" },
+                                set: { newValue in
+                                    amountInputs[item.id] = newValue
+                                    onChanged(item)
+                                }
+                            ),
+                            quantityText: Binding(
+                                get: { quantityInputs[item.id] ?? "" },
+                                set: { newValue in
+                                    quantityInputs[item.id] = newValue
+                                    onChanged(item)
+                                }
+                            ),
+                            focusedField: focusedField
+                        )
+                    }
                 }
             }
         }
@@ -867,12 +876,12 @@ private struct LiabilityEntryCard: View {
                 ATMInputField(
                     text: $amountText,
                     placeholder: "0",
-                    width: 60,
+                    width: 72,
                     focusedField: focusedField,
                     focusValue: .amount(item.id),
                     centered: true,
                     font: .system(size: 12, weight: .semibold, design: .rounded),
-                    height: 34,
+                    height: 30,
                     backgroundOpacity: 0.54,
                     strokeOpacity: 0.18
                 )
@@ -880,12 +889,12 @@ private struct LiabilityEntryCard: View {
                 ATMInputField(
                     text: $quantityText,
                     placeholder: item.compactRecordPlaceholder,
-                    width: 60,
+                    width: 72,
                     focusedField: focusedField,
                     focusValue: .quantity(item.id),
                     centered: true,
                     font: .system(size: 12, weight: .semibold, design: .rounded),
-                    height: 34,
+                    height: 30,
                     backgroundOpacity: 0.54,
                     strokeOpacity: 0.18
                 )
@@ -911,6 +920,83 @@ private struct RecordInputCard<Content: View>: View {
     }
 }
 
+private struct ReorderableRecordCell<Content: View>: View {
+    @Environment(\.modelContext) private var modelContext
+
+    let category: AssetCategory
+    let item: AssetItem
+    @Binding var draggedItemID: UUID?
+    @ViewBuilder var content: Content
+
+    init(
+        category: AssetCategory,
+        item: AssetItem,
+        draggedItemID: Binding<UUID?>,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.category = category
+        self.item = item
+        self._draggedItemID = draggedItemID
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .opacity(draggedItemID == item.id ? 0.55 : 1)
+            .scaleEffect(draggedItemID == item.id ? 0.98 : 1)
+            .onDrag {
+                draggedItemID = item.id
+                return NSItemProvider(object: item.id.uuidString as NSString)
+            }
+            .onDrop(of: [UTType.plainText], delegate: RecordItemDropDelegate(
+                targetItem: item,
+                category: category,
+                draggedItemID: $draggedItemID,
+                modelContext: modelContext
+            ))
+    }
+}
+
+private struct RecordItemDropDelegate: DropDelegate {
+    let targetItem: AssetItem
+    let category: AssetCategory
+    @Binding var draggedItemID: UUID?
+    let modelContext: ModelContext
+
+    func dropEntered(info: DropInfo) {
+        guard let draggedItemID,
+              draggedItemID != targetItem.id else { return }
+
+        let orderedItems = category.activeSortedItems
+        guard let fromIndex = orderedItems.firstIndex(where: { $0.id == draggedItemID }),
+              let toIndex = orderedItems.firstIndex(where: { $0.id == targetItem.id }),
+              fromIndex != toIndex else { return }
+
+        var reorderedIDs = orderedItems.map(\.id)
+        reorderedIDs.move(fromOffsets: IndexSet(integer: fromIndex), toOffset: toIndex > fromIndex ? toIndex + 1 : toIndex)
+
+        withAnimation(.easeInOut(duration: 0.16)) {
+            try? AssetItemService.reorderItems(in: category, itemIDsInOrder: reorderedIDs, context: modelContext)
+        }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggedItemID = nil
+        return true
+    }
+
+    func dropExited(info: DropInfo) {
+        if draggedItemID == targetItem.id {
+            draggedItemID = nil
+        }
+    }
+}
+
 private struct AssetEntryCompactCard: View {
     let item: AssetItem
     @Binding var amountText: String
@@ -928,9 +1014,9 @@ private struct AssetEntryCompactCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 if item.valuationMethod == .directAmount {
-                    ATMInputField(text: $amountText, placeholder: "0", width: 60, focusedField: focusedField, focusValue: .amount(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 34, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    ATMInputField(text: $amountText, placeholder: "0", width: 72, focusedField: focusedField, focusValue: .amount(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                 } else {
-                    ATMInputField(text: $quantityText, placeholder: "0", width: 60, focusedField: focusedField, focusValue: .quantity(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 34, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    ATMInputField(text: $quantityText, placeholder: "0", width: 72, focusedField: focusedField, focusValue: .quantity(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                 }
             }
         }
@@ -956,8 +1042,8 @@ private struct AssetEntryInputRow: View {
                         .lineLimit(2)
 
                     HStack(spacing: 6) {
-                        ATMInputField(text: $quantityText, placeholder: "数量", focusedField: focusedField, focusValue: .quantity(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 34, backgroundOpacity: 0.05, strokeOpacity: 0.16)
-                        ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: focusedField, focusValue: .unitPrice(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 34, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                        ATMInputField(text: $quantityText, placeholder: "数量", focusedField: focusedField, focusValue: .quantity(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                        ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: focusedField, focusValue: .unitPrice(item.id), centered: true, font: .system(size: 12, weight: .semibold, design: .rounded), height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                     }
                 }
             }
