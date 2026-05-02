@@ -1243,6 +1243,12 @@ private struct AddAssetItemSheet: View {
         ("icon_huabei", "花呗", "sparkles")
     ]
 
+    private let autoAssetGridColumns = [
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10)
+    ]
+
     private var autoPricedOptions: [AutoPricedAssetKind] {
         AutoPricedAssetKind.allCases
     }
@@ -1339,23 +1345,73 @@ private struct AddAssetItemSheet: View {
                         }
                         .atmCardStyle()
 
-                        VStack(alignment: .leading, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 12) {
                             Text("自动更新资产")
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(AssetTheme.textSecondary)
 
-                            Picker("自动更新资产", selection: $selectedAutoPricedAssetKind) {
-                                Text("不启用").tag(Optional<AutoPricedAssetKind>.none)
-                                ForEach(autoPricedOptions) { kind in
-                                    Text(kind.displayName).tag(Optional.some(kind))
-                                }
-                            }
-                            .pickerStyle(.menu)
+                            Text("点一个就按实时价格创建，不选就是普通资产。")
+                                .font(.footnote)
+                                .foregroundStyle(AssetTheme.textSecondary.opacity(0.8))
 
-                            if let selectedAutoPricedAssetKind {
-                                Text("已启用 \(selectedAutoPricedAssetKind.displayName) 自动价格")
-                                    .font(.footnote)
-                                    .foregroundStyle(AssetTheme.textSecondary)
+                            LazyVGrid(columns: autoAssetGridColumns, alignment: .leading, spacing: 10) {
+                                Button {
+                                    selectedAutoPricedAssetKind = nil
+                                } label: {
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "square.grid.2x2")
+                                            .font(.headline.weight(.semibold))
+                                            .foregroundStyle(selectedAutoPricedAssetKind == nil ? AssetTheme.gold : AssetTheme.textPrimary)
+                                            .frame(width: 38, height: 38)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                    .fill(.white.opacity(selectedAutoPricedAssetKind == nil ? 0.1 : 0.04))
+                                            )
+                                        Text("普通资产")
+                                            .font(.caption2.weight(.medium))
+                                            .foregroundStyle(selectedAutoPricedAssetKind == nil ? AssetTheme.textPrimary : AssetTheme.textSecondary)
+                                            .multilineTextAlignment(.center)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 6)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                            .stroke(selectedAutoPricedAssetKind == nil ? AssetTheme.gold.opacity(0.75) : AssetTheme.border.opacity(0.38), lineWidth: 1)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+
+                                ForEach(autoPricedOptions) { kind in
+                                    Button {
+                                        selectedAutoPricedAssetKind = kind
+                                        if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                            name = kind.defaultName
+                                        }
+                                    } label: {
+                                        VStack(spacing: 8) {
+                                            Image(systemName: symbolName(for: kind))
+                                                .font(.headline.weight(.semibold))
+                                                .foregroundStyle(selectedAutoPricedAssetKind == kind ? AssetTheme.gold : AssetTheme.textPrimary)
+                                                .frame(width: 38, height: 38)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                        .fill(.white.opacity(selectedAutoPricedAssetKind == kind ? 0.1 : 0.04))
+                                                )
+                                            Text(kind.defaultName)
+                                                .font(.caption2.weight(.medium))
+                                                .foregroundStyle(selectedAutoPricedAssetKind == kind ? AssetTheme.textPrimary : AssetTheme.textSecondary)
+                                                .multilineTextAlignment(.center)
+                                                .lineLimit(2)
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 6)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                .stroke(selectedAutoPricedAssetKind == kind ? AssetTheme.gold.opacity(0.75) : AssetTheme.border.opacity(0.38), lineWidth: 1)
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
                         }
                         .atmCardStyle()
@@ -1399,6 +1455,27 @@ private struct AddAssetItemSheet: View {
                     selectedCategoryID = sortedCategories.first?.id
                 }
             }
+        }
+    }
+
+    private func symbolName(for kind: AutoPricedAssetKind) -> String {
+        switch kind {
+        case .gold: return "seal.fill"
+        case .btc: return "bitcoinsign.circle.fill"
+        case .eth: return "e.circle.fill"
+        case .bnb: return "b.circle.fill"
+        case .sol: return "s.circle.fill"
+        case .xrp: return "x.circle.fill"
+        case .doge: return "d.circle.fill"
+        case .usd: return "dollarsign.circle.fill"
+        case .eur: return "eurosign.circle.fill"
+        case .gbp: return "sterlingsign.circle.fill"
+        case .jpy: return "yensign.circle.fill"
+        case .hkd: return "dollarsign.circle.fill"
+        case .sgd: return "dollarsign.circle.fill"
+        case .aud: return "dollarsign.circle.fill"
+        case .cad: return "dollarsign.circle.fill"
+        case .krw: return "wonsign.circle.fill"
         }
     }
 
