@@ -1343,7 +1343,6 @@ private struct AddAssetItemSheet: View {
                                 }
                             }
                         }
-                        .atmCardStyle()
 
                         VStack(alignment: .leading, spacing: 12) {
                             Text("自动更新资产")
@@ -1414,7 +1413,6 @@ private struct AddAssetItemSheet: View {
                                 }
                             }
                         }
-                        .atmCardStyle()
 
                         if let errorMessage {
                             Text(errorMessage)
