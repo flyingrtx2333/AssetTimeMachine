@@ -1244,9 +1244,10 @@ private struct AddAssetItemSheet: View {
     ]
 
     private let autoAssetGridColumns = [
-        GridItem(.flexible(), spacing: 10),
-        GridItem(.flexible(), spacing: 10),
-        GridItem(.flexible(), spacing: 10)
+        GridItem(.flexible(), spacing: 6),
+        GridItem(.flexible(), spacing: 6),
+        GridItem(.flexible(), spacing: 6),
+        GridItem(.flexible(), spacing: 6)
     ]
 
     private var autoPricedOptions: [AutoPricedAssetKind] {
@@ -1357,26 +1358,20 @@ private struct AddAssetItemSheet: View {
                                 Button {
                                     selectedAutoPricedAssetKind = nil
                                 } label: {
-                                    VStack(spacing: 8) {
+                                    VStack(spacing: 6) {
                                         Image(systemName: "square.grid.2x2")
                                             .font(.headline.weight(.semibold))
                                             .foregroundStyle(selectedAutoPricedAssetKind == nil ? AssetTheme.gold : AssetTheme.textPrimary)
-                                            .frame(width: 38, height: 38)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                                    .fill(.white.opacity(selectedAutoPricedAssetKind == nil ? 0.1 : 0.04))
-                                            )
+                                            .shadow(color: selectedAutoPricedAssetKind == nil ? AssetTheme.gold.opacity(0.45) : .clear, radius: 10)
                                         Text("普通资产")
                                             .font(.caption2.weight(.medium))
-                                            .foregroundStyle(selectedAutoPricedAssetKind == nil ? AssetTheme.textPrimary : AssetTheme.textSecondary)
+                                            .foregroundStyle(selectedAutoPricedAssetKind == nil ? AssetTheme.goldSoft : AssetTheme.textSecondary)
                                             .multilineTextAlignment(.center)
+                                            .shadow(color: selectedAutoPricedAssetKind == nil ? AssetTheme.gold.opacity(0.3) : .clear, radius: 8)
                                     }
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 6)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                            .stroke(selectedAutoPricedAssetKind == nil ? AssetTheme.gold.opacity(0.75) : AssetTheme.border.opacity(0.38), lineWidth: 1)
-                                    )
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
 
@@ -1387,27 +1382,21 @@ private struct AddAssetItemSheet: View {
                                             name = kind.defaultName
                                         }
                                     } label: {
-                                        VStack(spacing: 8) {
+                                        VStack(spacing: 6) {
                                             Image(systemName: symbolName(for: kind))
                                                 .font(.headline.weight(.semibold))
                                                 .foregroundStyle(selectedAutoPricedAssetKind == kind ? AssetTheme.gold : AssetTheme.textPrimary)
-                                                .frame(width: 38, height: 38)
-                                                .background(
-                                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                                        .fill(.white.opacity(selectedAutoPricedAssetKind == kind ? 0.1 : 0.04))
-                                                )
+                                                .shadow(color: selectedAutoPricedAssetKind == kind ? AssetTheme.gold.opacity(0.45) : .clear, radius: 10)
                                             Text(kind.defaultName)
                                                 .font(.caption2.weight(.medium))
-                                                .foregroundStyle(selectedAutoPricedAssetKind == kind ? AssetTheme.textPrimary : AssetTheme.textSecondary)
+                                                .foregroundStyle(selectedAutoPricedAssetKind == kind ? AssetTheme.goldSoft : AssetTheme.textSecondary)
                                                 .multilineTextAlignment(.center)
                                                 .lineLimit(2)
+                                                .shadow(color: selectedAutoPricedAssetKind == kind ? AssetTheme.gold.opacity(0.3) : .clear, radius: 8)
                                         }
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 6)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                                .stroke(selectedAutoPricedAssetKind == kind ? AssetTheme.gold.opacity(0.75) : AssetTheme.border.opacity(0.38), lineWidth: 1)
-                                        )
+                                        .contentShape(Rectangle())
                                     }
                                     .buttonStyle(.plain)
                                 }
