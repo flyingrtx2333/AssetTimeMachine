@@ -3542,8 +3542,8 @@ private struct DashboardAllocationChart: View {
 
                     SectorMark(
                         angle: .value("金额", slice.amount),
-                        innerRadius: .ratio(isSelected ? 0.56 : 0.62),
-                        outerRadius: .ratio(isSelected ? 1.02 : 0.94),
+                        innerRadius: .ratio(isSelected ? 0.54 : 0.62),
+                        outerRadius: .ratio(isSelected ? 0.98 : 0.9),
                         angularInset: isSelected ? 4 : 2.5
                     )
                     .cornerRadius(6)
