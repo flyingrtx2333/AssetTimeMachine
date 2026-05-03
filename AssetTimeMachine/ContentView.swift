@@ -433,7 +433,7 @@ private struct SnapshotListView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
 
                                     Button {
-                                        focusedField = nil
+                                        dismissKeyboard()
                                         showsAddAssetItemSheet = true
                                     } label: {
                                         HStack(spacing: 4) {
@@ -472,11 +472,8 @@ private struct SnapshotListView: View {
                                     quantityInputs: $quantityInputs,
                                     unitPriceInputs: $unitPriceInputs,
                                     focusedField: $focusedField,
-                                    onChanged: { item in
-                                        persist(item: item)
-                                    },
                                     onEdit: { item in
-                                        focusedField = nil
+                                        dismissKeyboard()
                                         editingAssetItem = item
                                     }
                                 )
@@ -488,11 +485,8 @@ private struct SnapshotListView: View {
                                     amountInputs: $amountInputs,
                                     quantityInputs: $quantityInputs,
                                     focusedField: $focusedField,
-                                    onChanged: { item in
-                                        persist(item: item)
-                                    },
                                     onEdit: { item in
-                                        focusedField = nil
+                                        dismissKeyboard()
                                         editingAssetItem = item
                                     }
                                 )
@@ -526,16 +520,24 @@ private struct SnapshotListView: View {
                                 systemImage: "calendar.badge.plus"
                             )
                         }
+
+                        Color.clear
+                            .frame(height: 180)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                dismissKeyboard()
+                            }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
                     .padding(.top, 18)
                     .padding(.bottom, 104)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        focusedField = nil
+                        dismissKeyboard()
                     }
                 }
-                .scrollDismissesKeyboard(.immediately)
+                .scrollDismissesKeyboard(.interactively)
             }
             .toolbar(.hidden, for: .navigationBar)
         }
@@ -554,6 +556,26 @@ private struct SnapshotListView: View {
                 await syncAutoRatesIfPossible()
             }
         }
+        .onChange(of: focusedField) { previousField, newField in
+            guard let previousField, previousField != newField,
+                  let item = item(for: previousField) else { return }
+            persist(item: item)
+        }
+    }
+
+    @MainActor
+    private func dismissKeyboard() {
+        focusedField = nil
+        dismissActiveKeyboard()
+    }
+
+    private func item(for field: RecordInputField) -> AssetItem? {
+        let itemID: UUID
+        switch field {
+        case let .amount(id), let .quantity(id), let .unitPrice(id):
+            itemID = id
+        }
+        return categories.flatMap(\.items).first(where: { $0.id == itemID })
     }
 
     @MainActor
@@ -660,6 +682,11 @@ private enum RecordInputField: Hashable {
     case unitPrice(UUID)
 }
 
+@MainActor
+private func dismissActiveKeyboard() {
+    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+}
+
 private struct SummaryInlineMetric: View {
     let title: String
     let value: String
@@ -710,7 +737,6 @@ private struct RecordCategoryCard: View {
     @Binding var quantityInputs: [UUID: String]
     @Binding var unitPriceInputs: [UUID: String]
     var focusedField: FocusState<RecordInputField?>.Binding
-    let onChanged: (AssetItem) -> Void
     let onEdit: (AssetItem) -> Void
     @State private var draggedItemID: UUID?
 
@@ -773,14 +799,12 @@ private struct RecordCategoryCard: View {
                                             get: { amountInputs[item.id] ?? "" },
                                             set: { newValue in
                                                 amountInputs[item.id] = newValue
-                                                onChanged(item)
                                             }
                                         ),
                                         quantityText: Binding(
                                             get: { quantityInputs[item.id] ?? "" },
                                             set: { newValue in
                                                 quantityInputs[item.id] = newValue
-                                                onChanged(item)
                                             }
                                         ),
                                         focusedField: focusedField,
@@ -799,21 +823,18 @@ private struct RecordCategoryCard: View {
                                     get: { amountInputs[item.id] ?? "" },
                                     set: { newValue in
                                         amountInputs[item.id] = newValue
-                                        onChanged(item)
                                     }
                                 ),
                                 quantityText: Binding(
                                     get: { quantityInputs[item.id] ?? "" },
                                     set: { newValue in
                                         quantityInputs[item.id] = newValue
-                                        onChanged(item)
                                     }
                                 ),
                                 unitPriceText: Binding(
                                     get: { unitPriceInputs[item.id] ?? "" },
                                     set: { newValue in
                                         unitPriceInputs[item.id] = newValue
-                                        onChanged(item)
                                     }
                                 ),
                                 focusedField: focusedField,
@@ -834,7 +855,6 @@ private struct LiabilityCategorySection: View {
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
     var focusedField: FocusState<RecordInputField?>.Binding
-    let onChanged: (AssetItem) -> Void
     let onEdit: (AssetItem) -> Void
     @State private var draggedItemID: UUID?
 
@@ -865,14 +885,12 @@ private struct LiabilityCategorySection: View {
                                 get: { amountInputs[item.id] ?? "" },
                                 set: { newValue in
                                     amountInputs[item.id] = newValue
-                                    onChanged(item)
                                 }
                             ),
                             quantityText: Binding(
                                 get: { quantityInputs[item.id] ?? "" },
                                 set: { newValue in
                                     quantityInputs[item.id] = newValue
-                                    onChanged(item)
                                 }
                             ),
                             focusedField: focusedField,
@@ -1538,11 +1556,24 @@ private struct AddAssetItemSheet: View {
                                 .foregroundStyle(AssetTheme.negative)
                                 .padding(.horizontal, 4)
                         }
+
+                        Color.clear
+                            .frame(height: 180)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                dismissActiveKeyboard()
+                            }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
                     .padding(.bottom, 36)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        dismissActiveKeyboard()
+                    }
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -1664,11 +1695,24 @@ private struct EditAssetItemSheet: View {
                                 .foregroundStyle(AssetTheme.negative)
                                 .padding(.horizontal, 4)
                         }
+
+                        Color.clear
+                            .frame(height: 180)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                dismissActiveKeyboard()
+                            }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
                     .padding(.bottom, 36)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        dismissActiveKeyboard()
+                    }
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
