@@ -546,10 +546,6 @@ private struct SnapshotListView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 18)
                     .padding(.bottom, 104)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        dismissKeyboard()
-                    }
                 }
                 .scrollDismissesKeyboard(.never)
             }
@@ -773,9 +769,18 @@ private struct AssetItemGlyph: View {
 }
 
 private struct RecordCategoryCard: View {
-    private enum InputBlock {
+    private enum InputBlock: Identifiable {
         case compact([AssetItem])
         case expanded(AssetItem)
+
+        var id: String {
+            switch self {
+            case let .compact(items):
+                return "compact:" + items.map(\.id.uuidString).joined(separator: ",")
+            case let .expanded(item):
+                return "expanded:" + item.id.uuidString
+            }
+        }
     }
 
     let category: AssetCategory
@@ -833,7 +838,7 @@ private struct RecordCategoryCard: View {
             }
 
             VStack(spacing: 10) {
-                ForEach(Array(inputBlocks.enumerated()), id: \.offset) { _, block in
+                ForEach(inputBlocks) { block in
                     switch block {
                     case let .compact(compactItems):
                         LazyVGrid(columns: compactColumns, alignment: .leading, spacing: 8) {
