@@ -1655,9 +1655,10 @@ private struct EditAssetItemSheet: View {
         _name = State(initialValue: item.name)
         _selectedCategoryID = State(initialValue: item.category?.id)
         _selectedAutoPricedAssetKind = State(initialValue: item.autoPricedAssetKind)
-        let initialIcon = item.iconName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let storedIconName = (item.iconName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let initialIcon = storedIconName.isEmpty
             ? AssetItemService.suggestedIconName(for: item.name, autoPricedAssetKind: item.autoPricedAssetKind)
-            : item.iconName
+            : storedIconName
         _selectedIconName = State(initialValue: initialIcon)
     }
 

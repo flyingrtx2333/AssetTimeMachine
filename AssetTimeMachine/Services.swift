@@ -238,7 +238,7 @@ enum AssetItemService {
     }
 
     static func resolvedIconKey(for item: AssetItem) -> String {
-        let explicitIcon = item.iconName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let explicitIcon = (item.iconName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         if !explicitIcon.isEmpty {
             return explicitIcon
         }

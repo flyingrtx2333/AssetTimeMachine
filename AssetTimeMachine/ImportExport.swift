@@ -80,7 +80,7 @@ enum ImportExportService {
                     id: $0.id,
                     name: $0.name,
                     note: $0.note,
-                    iconName: $0.iconName.isEmpty ? nil : $0.iconName,
+                    iconName: (($0.iconName ?? "").isEmpty ? nil : $0.iconName),
                     valuationMethod: $0.valuationMethod.rawValue,
                     autoPricedAssetKind: $0.autoPricedAssetKind?.rawValue,
                     sortOrder: $0.sortOrder,
