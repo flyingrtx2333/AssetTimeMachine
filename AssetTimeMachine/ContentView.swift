@@ -3529,35 +3529,34 @@ private struct DashboardAllocationChart: View {
 
     @State private var selectedSliceID: DashboardAllocationSlice.ID?
 
-    private var selectedSlice: DashboardAllocationSlice? {
-        guard let selectedSliceID else { return nil }
-        return slices.first(where: { $0.id == selectedSliceID })
-    }
-
-    private var maxSliceAmount: Double {
-        slices.map(\.amount).max() ?? 0
+    private var displaySlice: DashboardAllocationSlice? {
+        if let selectedSliceID,
+           let selectedSlice = slices.first(where: { $0.id == selectedSliceID }) {
+            return selectedSlice
+        }
+        return slices.first
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
-                Text(selectedSlice?.title ?? "资产构成")
+                Text(displaySlice?.title ?? "资产构成")
                     .font(AppTypography.eyebrow)
                     .foregroundStyle(AssetTheme.textSecondary)
 
-                if let selectedSlice {
-                    Text(selectedSlice.amount.currencyString())
+                if let displaySlice {
+                    Text(displaySlice.amount.currencyString())
                         .font(.system(size: 24, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(AssetTheme.textPrimary)
                         .minimumScaleFactor(0.7)
                         .lineLimit(2)
 
-                    Text(percentageText(for: selectedSlice))
+                    Text(percentageText(for: displaySlice))
                         .font(AppTypography.eyebrow)
                         .foregroundStyle(AssetTheme.goldSoft)
                 } else {
-                    Text("点下面资产条目看金额")
+                    Text("还没有可展示的资产")
                         .font(AppTypography.meta)
                         .foregroundStyle(AssetTheme.textSecondary.opacity(0.82))
                 }
@@ -3568,6 +3567,50 @@ private struct DashboardAllocationChart: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .stroke(AssetTheme.border.opacity(0.65), lineWidth: 1)
+            )
+
+            ZStack {
+                Chart(slices) { slice in
+                    SectorMark(
+                        angle: .value("占比", slice.amount),
+                        innerRadius: .ratio(0.62),
+                        angularInset: 2
+                    )
+                    .foregroundStyle(slice.color)
+                    .opacity(isHighlighted(slice) ? 1 : 0.45)
+                }
+                .chartLegend(.hidden)
+                .frame(height: 240)
+
+                VStack(spacing: 6) {
+                    Text("总资产")
+                        .font(AppTypography.eyebrow)
+                        .foregroundStyle(AssetTheme.textSecondary)
+
+                    Text(totalAmount.currencyString())
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .multilineTextAlignment(.center)
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(2)
+
+                    if let displaySlice {
+                        Text("\(displaySlice.title) · \(percentageText(for: displaySlice))")
+                            .font(AppTypography.meta)
+                            .foregroundStyle(AssetTheme.goldSoft)
+                            .lineLimit(1)
+                    }
+                }
+                .padding(.horizontal, 18)
+                .allowsHitTesting(false)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
+            .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(AssetTheme.border.opacity(0.7), lineWidth: 1)
             )
 
             VStack(spacing: 10) {
@@ -3588,53 +3631,34 @@ private struct DashboardAllocationChart: View {
 
                                 Spacer(minLength: 12)
 
-                                Text(selectedSlice?.id == slice.id ? slice.amount.currencyString() : percentageText(for: slice))
+                                Text(isHighlighted(slice) ? slice.amount.currencyString() : percentageText(for: slice))
                                     .font(AppTypography.eyebrow)
                                     .monospacedDigit()
-                                    .foregroundStyle(selectedSlice?.id == slice.id ? AssetTheme.goldSoft : AssetTheme.textSecondary)
+                                    .foregroundStyle(isHighlighted(slice) ? AssetTheme.goldSoft : AssetTheme.textSecondary)
                             }
-
-                            GeometryReader { geometry in
-                                let ratio = maxSliceAmount > 0 ? slice.amount / maxSliceAmount : 0
-                                ZStack(alignment: .leading) {
-                                    Capsule(style: .continuous)
-                                        .fill(.white.opacity(0.05))
-
-                                    Capsule(style: .continuous)
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [slice.color.opacity(0.92), slice.color.opacity(0.52)],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                        )
-                                        .frame(width: max(10, geometry.size.width * ratio))
-                                }
-                            }
-                            .frame(height: 10)
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 12)
                         .background(
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill((selectedSlice?.id == slice.id ? slice.color : Color.white).opacity(selectedSlice?.id == slice.id ? 0.14 : 0.04))
+                                .fill((isHighlighted(slice) ? slice.color : Color.white).opacity(isHighlighted(slice) ? 0.14 : 0.04))
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(selectedSlice?.id == slice.id ? slice.color.opacity(0.55) : AssetTheme.border.opacity(0.5), lineWidth: 1)
+                                .stroke(isHighlighted(slice) ? slice.color.opacity(0.55) : AssetTheme.border.opacity(0.5), lineWidth: 1)
                         )
                     }
                     .buttonStyle(.plain)
                 }
             }
 
-            if let selectedSlice, selectedSlice.details.count > 1 {
+            if let displaySlice, displaySlice.details.count > 1 {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(selectedSlice.title == "其他" ? "其他资产明细" : "资产明细")
+                    Text(displaySlice.title == "其他" ? "其他资产明细" : "资产明细")
                         .font(AppTypography.eyebrow)
                         .foregroundStyle(AssetTheme.textSecondary)
 
-                    ForEach(selectedSlice.details) { detail in
+                    ForEach(displaySlice.details) { detail in
                         HStack(spacing: 12) {
                             Text(detail.title)
                                 .font(AppTypography.meta)
@@ -3665,12 +3689,12 @@ private struct DashboardAllocationChart: View {
         return (slice.amount / totalAmount).formatted(.percent.precision(.fractionLength(0)))
     }
 
+    private func isHighlighted(_ slice: DashboardAllocationSlice) -> Bool {
+        displaySlice?.id == slice.id
+    }
+
     private func toggleSelection(for slice: DashboardAllocationSlice) {
-        if selectedSlice?.id == slice.id {
-            selectedSliceID = nil
-        } else {
-            selectedSliceID = slice.id
-        }
+        selectedSliceID = slice.id
     }
 }
 
