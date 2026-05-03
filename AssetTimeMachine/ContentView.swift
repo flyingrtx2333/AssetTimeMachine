@@ -3526,104 +3526,100 @@ private struct DashboardAllocationChart: View {
     let slices: [DashboardAllocationSlice]
     let totalAmount: Double
 
-    @State private var selectedAngleValue: Double?
-
-    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+    @State private var selectedSliceID: DashboardAllocationSlice.ID?
 
     private var selectedSlice: DashboardAllocationSlice? {
-        slice(for: selectedAngleValue)
+        guard let selectedSliceID else { return nil }
+        return slices.first(where: { $0.id == selectedSliceID })
+    }
+
+    private var maxSliceAmount: Double {
+        slices.map(\.amount).max() ?? 0
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            ZStack {
-                Chart(slices) { slice in
-                    let isSelected = selectedSlice?.id == slice.id
+            VStack(alignment: .leading, spacing: 6) {
+                Text(selectedSlice?.title ?? "资产构成")
+                    .font(AppTypography.eyebrow)
+                    .foregroundStyle(AssetTheme.textSecondary)
 
-                    SectorMark(
-                        angle: .value("金额", slice.amount),
-                        innerRadius: .ratio(isSelected ? 0.54 : 0.62),
-                        outerRadius: .ratio(isSelected ? 0.98 : 0.9),
-                        angularInset: isSelected ? 4 : 2.5
-                    )
-                    .cornerRadius(6)
-                    .foregroundStyle(slice.color)
-                    .opacity(selectedSlice == nil || isSelected ? 1 : 0.72)
+                if let selectedSlice {
+                    Text(selectedSlice.amount.currencyString())
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(2)
+
+                    Text(percentageText(for: selectedSlice))
+                        .font(AppTypography.eyebrow)
+                        .foregroundStyle(AssetTheme.goldSoft)
+                } else {
+                    Text("点下面资产条目看金额")
+                        .font(AppTypography.meta)
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.82))
                 }
-                .chartLegend(.hidden)
-                .chartAngleSelection(value: $selectedAngleValue)
-                .frame(height: 176)
-                .animation(.spring(response: 0.26, dampingFraction: 0.82), value: selectedSlice?.id)
-
-                VStack(spacing: 4) {
-                    if let selectedSlice {
-                        Text(selectedSlice.title)
-                            .font(AppTypography.eyebrow)
-                            .foregroundStyle(AssetTheme.textSecondary)
-                            .lineLimit(1)
-
-                        Text(selectedSlice.amount.currencyString())
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
-                            .monospacedDigit()
-                            .foregroundStyle(AssetTheme.textPrimary)
-                            .minimumScaleFactor(0.7)
-                            .lineLimit(2)
-
-                        Text(percentageText(for: selectedSlice))
-                            .font(AppTypography.eyebrow)
-                            .foregroundStyle(AssetTheme.goldSoft)
-                    } else {
-                        Text("资产构成")
-                            .font(AppTypography.eyebrow)
-                            .foregroundStyle(AssetTheme.textSecondary)
-
-                        Text("点扇区看金额")
-                            .font(AppTypography.meta)
-                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.82))
-                    }
-                }
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
             }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(AssetTheme.border.opacity(0.65), lineWidth: 1)
+            )
 
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
+            VStack(spacing: 10) {
                 ForEach(slices) { slice in
                     Button {
                         toggleSelection(for: slice)
                     } label: {
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(slice.color)
-                                .frame(width: 8, height: 8)
+                        VStack(alignment: .leading, spacing: 9) {
+                            HStack(spacing: 10) {
+                                Circle()
+                                    .fill(slice.color)
+                                    .frame(width: 8, height: 8)
 
-                            VStack(alignment: .leading, spacing: 2) {
                                 Text(slice.title)
                                     .font(AppTypography.meta)
                                     .foregroundStyle(AssetTheme.textPrimary)
                                     .lineLimit(1)
 
-                                if selectedSlice?.id == slice.id {
-                                    Text(slice.amount.currencyString())
-                                        .font(AppTypography.eyebrow)
-                                        .foregroundStyle(AssetTheme.goldSoft)
-                                        .monospacedDigit()
-                                } else {
-                                    Text(percentageText(for: slice))
-                                        .font(AppTypography.eyebrow)
-                                        .foregroundStyle(AssetTheme.textSecondary)
-                                }
+                                Spacer(minLength: 12)
+
+                                Text(selectedSlice?.id == slice.id ? slice.amount.currencyString() : percentageText(for: slice))
+                                    .font(AppTypography.eyebrow)
+                                    .monospacedDigit()
+                                    .foregroundStyle(selectedSlice?.id == slice.id ? AssetTheme.goldSoft : AssetTheme.textSecondary)
                             }
 
-                            Spacer(minLength: 0)
+                            GeometryReader { geometry in
+                                let ratio = maxSliceAmount > 0 ? slice.amount / maxSliceAmount : 0
+                                ZStack(alignment: .leading) {
+                                    Capsule(style: .continuous)
+                                        .fill(.white.opacity(0.05))
+
+                                    Capsule(style: .continuous)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [slice.color.opacity(0.92), slice.color.opacity(0.52)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .frame(width: max(10, geometry.size.width * ratio))
+                                }
+                            }
+                            .frame(height: 10)
                         }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 10)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 12)
                         .background(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill((selectedSlice?.id == slice.id ? slice.color : Color.white).opacity(selectedSlice?.id == slice.id ? 0.16 : 0.04))
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill((selectedSlice?.id == slice.id ? slice.color : Color.white).opacity(selectedSlice?.id == slice.id ? 0.14 : 0.04))
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
                                 .stroke(selectedSlice?.id == slice.id ? slice.color.opacity(0.55) : AssetTheme.border.opacity(0.5), lineWidth: 1)
                         )
                     }
@@ -3670,36 +3666,10 @@ private struct DashboardAllocationChart: View {
 
     private func toggleSelection(for slice: DashboardAllocationSlice) {
         if selectedSlice?.id == slice.id {
-            selectedAngleValue = nil
+            selectedSliceID = nil
         } else {
-            selectedAngleValue = midAngleValue(for: slice)
+            selectedSliceID = slice.id
         }
-    }
-
-    private func midAngleValue(for target: DashboardAllocationSlice) -> Double {
-        var cumulative = 0.0
-        for slice in slices {
-            let midpoint = cumulative + slice.amount / 2
-            if slice.id == target.id {
-                return midpoint
-            }
-            cumulative += slice.amount
-        }
-        return max(0, target.amount / 2)
-    }
-
-    private func slice(for angleValue: Double?) -> DashboardAllocationSlice? {
-        guard let angleValue else { return nil }
-
-        var cumulative = 0.0
-        for slice in slices {
-            cumulative += slice.amount
-            if angleValue <= cumulative {
-                return slice
-            }
-        }
-
-        return slices.last
     }
 }
 
