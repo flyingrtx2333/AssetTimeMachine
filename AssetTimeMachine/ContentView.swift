@@ -145,29 +145,41 @@ private struct DashboardView: View {
             entry.item?.name ?? "未命名"
         }
 
-        let sorted = grouped
+        let sortedDetails = grouped
             .map { name, entries in
-                (name: name, amount: entries.reduce(0) { $0 + $1.resolvedAmount })
+                DashboardAllocationDetail(
+                    title: name,
+                    amount: entries.reduce(0) { $0 + $1.resolvedAmount }
+                )
             }
             .sorted { $0.amount > $1.amount }
 
         let topLimit = 5
-        var slices = Array(sorted.prefix(topLimit))
+        var slices: [DashboardAllocationSlice] = Array(sortedDetails.prefix(topLimit)).enumerated().map { index, detail in
+            DashboardAllocationSlice(
+                title: detail.title,
+                amount: detail.amount,
+                color: DashboardAllocationPalette.colors[index % DashboardAllocationPalette.colors.count],
+                details: [detail]
+            )
+        }
 
-        if sorted.count > topLimit {
-            let otherAmount = sorted.dropFirst(topLimit).reduce(0) { $0 + $1.amount }
+        if sortedDetails.count > topLimit {
+            let otherDetails = Array(sortedDetails.dropFirst(topLimit))
+            let otherAmount = otherDetails.reduce(0) { $0 + $1.amount }
             if otherAmount > 0 {
-                slices.append((name: "其他", amount: otherAmount))
+                slices.append(
+                    DashboardAllocationSlice(
+                        title: "其他",
+                        amount: otherAmount,
+                        color: DashboardAllocationPalette.colors[slices.count % DashboardAllocationPalette.colors.count],
+                        details: otherDetails
+                    )
+                )
             }
         }
 
-        return slices.enumerated().map { index, element in
-            DashboardAllocationSlice(
-                title: element.name,
-                amount: element.amount,
-                color: DashboardAllocationPalette.colors[index % DashboardAllocationPalette.colors.count]
-            )
-        }
+        return slices
     }
 
     private var trendPoints: [TimeMachineTrendPoint] {
@@ -3483,10 +3495,18 @@ private enum TimeMachineAssetSeries: CaseIterable, Identifiable {
     }
 }
 
+private struct DashboardAllocationDetail: Identifiable {
+    let title: String
+    let amount: Double
+
+    var id: String { title }
+}
+
 private struct DashboardAllocationSlice: Identifiable {
     let title: String
     let amount: Double
     let color: Color
+    let details: [DashboardAllocationDetail]
 
     var id: String { title }
 }
@@ -3506,51 +3526,139 @@ private struct DashboardAllocationChart: View {
     let slices: [DashboardAllocationSlice]
     let totalAmount: Double
 
+    @State private var selectedAngleValue: Double?
+
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+
+    private var selectedSlice: DashboardAllocationSlice? {
+        slice(for: selectedAngleValue)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             ZStack {
                 Chart(slices) { slice in
+                    let isSelected = selectedSlice?.id == slice.id
+
                     SectorMark(
                         angle: .value("金额", slice.amount),
-                        innerRadius: .ratio(0.62),
-                        angularInset: 2.5
+                        innerRadius: .ratio(isSelected ? 0.56 : 0.62),
+                        outerRadius: .ratio(isSelected ? 1.02 : 0.94),
+                        angularInset: isSelected ? 4 : 2.5
                     )
                     .cornerRadius(6)
                     .foregroundStyle(slice.color)
+                    .opacity(selectedSlice == nil || isSelected ? 1 : 0.72)
                 }
                 .chartLegend(.hidden)
+                .chartAngleSelection(value: $selectedAngleValue)
                 .frame(height: 176)
+                .animation(.spring(response: 0.26, dampingFraction: 0.82), value: selectedSlice?.id)
 
                 VStack(spacing: 4) {
-                    Text("资产构成")
-                        .font(AppTypography.eyebrow)
-                        .foregroundStyle(AssetTheme.textSecondary)
+                    if let selectedSlice {
+                        Text(selectedSlice.title)
+                            .font(AppTypography.eyebrow)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                            .lineLimit(1)
+
+                        Text(selectedSlice.amount.currencyString())
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(AssetTheme.textPrimary)
+                            .minimumScaleFactor(0.7)
+                            .lineLimit(2)
+
+                        Text(percentageText(for: selectedSlice))
+                            .font(AppTypography.eyebrow)
+                            .foregroundStyle(AssetTheme.goldSoft)
+                    } else {
+                        Text("资产构成")
+                            .font(AppTypography.eyebrow)
+                            .foregroundStyle(AssetTheme.textSecondary)
+
+                        Text("点扇区看金额")
+                            .font(AppTypography.meta)
+                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.82))
+                    }
                 }
+                .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
             }
 
             LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
                 ForEach(slices) { slice in
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(slice.color)
-                            .frame(width: 8, height: 8)
+                    Button {
+                        toggleSelection(for: slice)
+                    } label: {
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(slice.color)
+                                .frame(width: 8, height: 8)
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(slice.title)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(slice.title)
+                                    .font(AppTypography.meta)
+                                    .foregroundStyle(AssetTheme.textPrimary)
+                                    .lineLimit(1)
+
+                                if selectedSlice?.id == slice.id {
+                                    Text(slice.amount.currencyString())
+                                        .font(AppTypography.eyebrow)
+                                        .foregroundStyle(AssetTheme.goldSoft)
+                                        .monospacedDigit()
+                                } else {
+                                    Text(percentageText(for: slice))
+                                        .font(AppTypography.eyebrow)
+                                        .foregroundStyle(AssetTheme.textSecondary)
+                                }
+                            }
+
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill((selectedSlice?.id == slice.id ? slice.color : Color.white).opacity(selectedSlice?.id == slice.id ? 0.16 : 0.04))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(selectedSlice?.id == slice.id ? slice.color.opacity(0.55) : AssetTheme.border.opacity(0.5), lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if let selectedSlice, selectedSlice.details.count > 1 {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(selectedSlice.title == "其他" ? "其他资产明细" : "资产明细")
+                        .font(AppTypography.eyebrow)
+                        .foregroundStyle(AssetTheme.textSecondary)
+
+                    ForEach(selectedSlice.details) { detail in
+                        HStack(spacing: 12) {
+                            Text(detail.title)
                                 .font(AppTypography.meta)
                                 .foregroundStyle(AssetTheme.textPrimary)
                                 .lineLimit(1)
 
-                            Text(percentageText(for: slice))
-                                .font(AppTypography.eyebrow)
-                                .foregroundStyle(AssetTheme.textSecondary)
+                            Spacer()
+
+                            Text(detail.amount.currencyString())
+                                .font(AppTypography.meta.weight(.semibold))
+                                .monospacedDigit()
+                                .foregroundStyle(AssetTheme.goldSoft)
                         }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .padding(14)
+                .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(AssetTheme.border.opacity(0.7), lineWidth: 1)
+                )
             }
         }
     }
@@ -3558,6 +3666,40 @@ private struct DashboardAllocationChart: View {
     private func percentageText(for slice: DashboardAllocationSlice) -> String {
         guard totalAmount > 0 else { return "0%" }
         return (slice.amount / totalAmount).formatted(.percent.precision(.fractionLength(0)))
+    }
+
+    private func toggleSelection(for slice: DashboardAllocationSlice) {
+        if selectedSlice?.id == slice.id {
+            selectedAngleValue = nil
+        } else {
+            selectedAngleValue = midAngleValue(for: slice)
+        }
+    }
+
+    private func midAngleValue(for target: DashboardAllocationSlice) -> Double {
+        var cumulative = 0.0
+        for slice in slices {
+            let midpoint = cumulative + slice.amount / 2
+            if slice.id == target.id {
+                return midpoint
+            }
+            cumulative += slice.amount
+        }
+        return max(0, target.amount / 2)
+    }
+
+    private func slice(for angleValue: Double?) -> DashboardAllocationSlice? {
+        guard let angleValue else { return nil }
+
+        var cumulative = 0.0
+        for slice in slices {
+            cumulative += slice.amount
+            if angleValue <= cumulative {
+                return slice
+            }
+        }
+
+        return slices.last
     }
 }
 
