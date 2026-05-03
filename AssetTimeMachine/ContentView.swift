@@ -1257,9 +1257,13 @@ private struct ATMUIKitInputField: UIViewRepresentable {
         }
 
         func textFieldDidEndEditing(_ textField: UITextField) {
-            if parent.focusedField.wrappedValue == parent.focusValue {
-                parent.focusedField.wrappedValue = nil
-            }
+            guard parent.focusedField.wrappedValue == parent.focusValue else { return }
+
+            // SwiftUI 在状态刷新时可能会临时替换掉底层 UITextField，
+            // 这类“被替换”不该把当前焦点清空，否则数字键盘会在输入一位后直接收起。
+            guard textField.window != nil else { return }
+
+            parent.focusedField.wrappedValue = nil
         }
 
         func moveCaretToEnd(in textField: UITextField) {
