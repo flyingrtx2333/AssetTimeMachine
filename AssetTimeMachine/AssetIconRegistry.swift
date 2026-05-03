@@ -11,16 +11,16 @@ struct AssetIconDefinition: Identifiable, Hashable {
 
 enum AssetIconRegistry {
     static let definitions: [AssetIconDefinition] = [
-        AssetIconDefinition(key: "icon_wechat", label: "微信", symbolName: "message.circle.fill", imageAssetName: "icon_wechat"),
+        AssetIconDefinition(key: "icon_wechat", label: "微信", symbolName: "bubble.left.and.bubble.right.fill", imageAssetName: "icon_wechat"),
         AssetIconDefinition(key: "icon_alipay", label: "支付宝", symbolName: "yensign.circle.fill", imageAssetName: "icon_alipay"),
         AssetIconDefinition(key: "icon_bank_card", label: "银行卡", symbolName: "creditcard.fill", imageAssetName: "icon_bank_card"),
         AssetIconDefinition(key: "icon_cash", label: "现金", symbolName: "banknote.fill", imageAssetName: "icon_cash"),
-        AssetIconDefinition(key: "icon_btc", label: "BTC", symbolName: "bitcoinsign.circle.fill", imageAssetName: nil),
-        AssetIconDefinition(key: "icon_gold", label: "黄金", symbolName: "seal.fill", imageAssetName: nil),
-        AssetIconDefinition(key: "icon_mortgage", label: "房贷", symbolName: "house.fill", imageAssetName: nil),
-        AssetIconDefinition(key: "icon_car_loan", label: "车贷", symbolName: "car.fill", imageAssetName: nil),
-        AssetIconDefinition(key: "icon_credit_card", label: "信用卡", symbolName: "creditcard.and.123", imageAssetName: nil),
-        AssetIconDefinition(key: "icon_huabei", label: "花呗", symbolName: "sparkles", imageAssetName: nil)
+        AssetIconDefinition(key: "icon_btc", label: "BTC", symbolName: "bitcoinsign.circle.fill", imageAssetName: "icon_btc"),
+        AssetIconDefinition(key: "icon_gold", label: "黄金", symbolName: "seal.fill", imageAssetName: "icon_gold"),
+        AssetIconDefinition(key: "icon_mortgage", label: "房贷", symbolName: "house.fill", imageAssetName: "icon_mortgage"),
+        AssetIconDefinition(key: "icon_car_loan", label: "车贷", symbolName: "car.fill", imageAssetName: "icon_car_loan"),
+        AssetIconDefinition(key: "icon_credit_card", label: "信用卡", symbolName: "creditcard.and.123", imageAssetName: "icon_credit_card"),
+        AssetIconDefinition(key: "icon_huabei", label: "花呗", symbolName: "wallet.pass.fill", imageAssetName: "icon_huabei")
     ]
 
     private static let definitionsByKey = Dictionary(uniqueKeysWithValues: definitions.map { ($0.key, $0) })
