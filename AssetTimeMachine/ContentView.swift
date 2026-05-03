@@ -689,10 +689,13 @@ private struct AssetItemGlyph: View {
     var size: CGFloat = 12
 
     var body: some View {
-        Image(systemName: AssetItemService.displaySymbolName(for: item))
-            .font(.system(size: size, weight: .medium))
-            .foregroundStyle(accent)
-            .frame(width: size + 2, height: size + 2)
+        AssetIconView(
+            iconKey: AssetItemService.resolvedIconKey(for: item),
+            fallbackSymbolName: AssetItemService.displaySymbolName(for: item),
+            accent: accent,
+            iconSize: size,
+            frameSize: size + 2
+        )
     }
 }
 
@@ -1254,18 +1257,7 @@ private extension Font.Weight {
     }
 }
 
-private let assetIconOptions: [(name: String, label: String, symbol: String)] = [
-    ("icon_wechat", "微信", "message.circle.fill"),
-    ("icon_alipay", "支付宝", "yensign.circle.fill"),
-    ("icon_bank_card", "银行卡", "creditcard.fill"),
-    ("icon_cash", "现金", "banknote.fill"),
-    ("icon_btc", "BTC", "bitcoinsign.circle.fill"),
-    ("icon_gold", "黄金", "seal.fill"),
-    ("icon_mortgage", "房贷", "house.fill"),
-    ("icon_car_loan", "车贷", "car.fill"),
-    ("icon_credit_card", "信用卡", "creditcard.and.123"),
-    ("icon_huabei", "花呗", "sparkles")
-]
+private let assetIconOptions = AssetIconRegistry.definitions
 
 private let autoAssetGridColumns = [
     GridItem(.flexible(), spacing: 6),
@@ -1292,6 +1284,34 @@ private func autoAssetSymbolName(for kind: AutoPricedAssetKind) -> String {
     case .aud: return "dollarsign.circle.fill"
     case .cad: return "dollarsign.circle.fill"
     case .krw: return "wonsign.circle.fill"
+    }
+}
+
+private struct AssetIconView: View {
+    let iconKey: String
+    var fallbackSymbolName: String
+    var accent: Color = AssetTheme.goldSoft
+    var iconSize: CGFloat = 14
+    var frameSize: CGFloat? = nil
+
+    private var definition: AssetIconDefinition? {
+        AssetIconRegistry.definition(for: iconKey)
+    }
+
+    var body: some View {
+        Group {
+            if let imageAssetName = definition?.imageAssetName {
+                Image(imageAssetName)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                Image(systemName: definition?.symbolName ?? fallbackSymbolName)
+                    .font(.system(size: iconSize, weight: .medium))
+                    .foregroundStyle(accent)
+            }
+        }
+        .frame(width: iconSize, height: iconSize)
+        .frame(width: frameSize ?? iconSize, height: frameSize ?? iconSize)
     }
 }
 
@@ -1357,22 +1377,25 @@ private struct AssetEditorForm: View {
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        ForEach(assetIconOptions, id: \.name) { option in
+                        ForEach(assetIconOptions) { option in
                             Button {
-                                selectedIconName = option.name
+                                selectedIconName = option.key
                             } label: {
                                 VStack(spacing: 6) {
-                                    Image(systemName: option.symbol)
-                                        .font(.subheadline.weight(.semibold))
-                                        .foregroundStyle(selectedIconName == option.name ? AssetTheme.gold : AssetTheme.textPrimary)
-                                        .frame(width: 34, height: 34)
+                                    AssetIconView(
+                                        iconKey: option.key,
+                                        fallbackSymbolName: option.symbolName,
+                                        accent: selectedIconName == option.key ? AssetTheme.gold : AssetTheme.textPrimary,
+                                        iconSize: 22,
+                                        frameSize: 34
+                                    )
                                         .background(
                                             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                                .fill(.white.opacity(selectedIconName == option.name ? 0.08 : 0.04))
+                                                .fill(.white.opacity(selectedIconName == option.key ? 0.08 : 0.04))
                                         )
                                     Text(option.label)
                                         .font(.caption2.weight(.medium))
-                                        .foregroundStyle(selectedIconName == option.name ? AssetTheme.goldSoft : AssetTheme.textSecondary)
+                                        .foregroundStyle(selectedIconName == option.key ? AssetTheme.goldSoft : AssetTheme.textSecondary)
                                 }
                                 .padding(.vertical, 3)
                                 .frame(width: 56)

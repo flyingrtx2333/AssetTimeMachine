@@ -237,28 +237,16 @@ enum AssetItemService {
         return ""
     }
 
-    static func displaySymbolName(for item: AssetItem) -> String {
+    static func resolvedIconKey(for item: AssetItem) -> String {
         let explicitIcon = item.iconName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let key = explicitIcon.isEmpty ? suggestedIconName(for: item.name, autoPricedAssetKind: item.autoPricedAssetKind) : explicitIcon
-        switch key {
-        case "icon_wechat": return "message.circle.fill"
-        case "icon_alipay": return "yensign.circle.fill"
-        case "icon_bank_card": return "creditcard.fill"
-        case "icon_cash": return "banknote.fill"
-        case "icon_btc": return "bitcoinsign.circle.fill"
-        case "icon_gold": return "seal.fill"
-        case "icon_mortgage": return "house.fill"
-        case "icon_car_loan": return "car.fill"
-        case "icon_credit_card": return "creditcard.and.123"
-        case "icon_huabei": return "sparkles"
-        default:
-            switch item.category?.group {
-            case .financial: return "wallet.pass.fill"
-            case .physical: return "shippingbox.fill"
-            case .liability: return "minus.circle.fill"
-            case nil: return "circle.fill"
-            }
+        if !explicitIcon.isEmpty {
+            return explicitIcon
         }
+        return suggestedIconName(for: item.name, autoPricedAssetKind: item.autoPricedAssetKind)
+    }
+
+    static func displaySymbolName(for item: AssetItem) -> String {
+        AssetIconRegistry.symbolName(for: resolvedIconKey(for: item), categoryGroup: item.category?.group)
     }
 
     private static func inferLegacyAutoPricedAssetKind(for name: String) -> AutoPricedAssetKind? {
