@@ -549,7 +549,7 @@ private struct SnapshotListView: View {
                         dismissKeyboard()
                     }
                 }
-                .scrollDismissesKeyboard(.interactively)
+                .scrollDismissesKeyboard(.never)
             }
             .toolbar(.hidden, for: .navigationBar)
         }
@@ -1214,6 +1214,7 @@ private struct ATMUIKitInputField: UIViewRepresentable {
 
     func updateUIView(_ uiView: UITextField, context: Context) {
         context.coordinator.parent = self
+        context.coordinator.isBeingDismantled = false
 
         if uiView.text != text {
             uiView.text = text
@@ -1229,19 +1230,28 @@ private struct ATMUIKitInputField: UIViewRepresentable {
 
         let shouldBeFirstResponder = focusedField.wrappedValue == focusValue
         if shouldBeFirstResponder, !uiView.isFirstResponder {
+            context.coordinator.isSyncingFirstResponder = true
             DispatchQueue.main.async {
                 uiView.becomeFirstResponder()
                 context.coordinator.moveCaretToEnd(in: uiView)
             }
         } else if !shouldBeFirstResponder, uiView.isFirstResponder {
+            context.coordinator.isSyncingFirstResponder = true
             DispatchQueue.main.async {
                 uiView.resignFirstResponder()
             }
         }
     }
 
+    static func dismantleUIView(_ uiView: UITextField, coordinator: Coordinator) {
+        coordinator.isBeingDismantled = true
+        uiView.delegate = nil
+    }
+
     final class Coordinator: NSObject, UITextFieldDelegate {
         var parent: ATMUIKitInputField
+        var isSyncingFirstResponder = false
+        var isBeingDismantled = false
 
         init(parent: ATMUIKitInputField) {
             self.parent = parent
@@ -1252,16 +1262,17 @@ private struct ATMUIKitInputField: UIViewRepresentable {
         }
 
         func textFieldDidBeginEditing(_ textField: UITextField) {
+            isSyncingFirstResponder = false
             parent.focusedField.wrappedValue = parent.focusValue
             moveCaretToEnd(in: textField)
         }
 
         func textFieldDidEndEditing(_ textField: UITextField) {
-            guard parent.focusedField.wrappedValue == parent.focusValue else { return }
+            defer { isSyncingFirstResponder = false }
 
-            // SwiftUI 在状态刷新时可能会临时替换掉底层 UITextField，
-            // 这类“被替换”不该把当前焦点清空，否则数字键盘会在输入一位后直接收起。
-            guard textField.window != nil else { return }
+            guard !isBeingDismantled else { return }
+            guard !isSyncingFirstResponder else { return }
+            guard parent.focusedField.wrappedValue == parent.focusValue else { return }
 
             parent.focusedField.wrappedValue = nil
         }
