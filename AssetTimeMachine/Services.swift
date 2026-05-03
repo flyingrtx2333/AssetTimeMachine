@@ -84,6 +84,7 @@ enum SeedDataService {
                     let item = AssetItem(
                         name: itemName,
                         note: "默认资金项，可后续编辑或删除",
+                        iconName: AssetItemService.suggestedIconName(for: itemName, autoPricedAssetKind: nil),
                         valuationMethod: .directAmount,
                         sortOrder: index,
                         category: model
@@ -94,6 +95,7 @@ enum SeedDataService {
                 let placeholderItem = AssetItem(
                     name: sampleItemName(for: category.group),
                     note: "示例项目，可后续编辑或删除",
+                    iconName: AssetItemService.suggestedIconName(for: sampleItemName(for: category.group), autoPricedAssetKind: nil),
                     valuationMethod: .directAmount,
                     sortOrder: 0,
                     category: model
@@ -118,6 +120,7 @@ enum SeedDataService {
             let item = AssetItem(
                 name: itemName,
                 note: "升级自动补齐的默认资金项，可后续编辑或删除",
+                iconName: AssetItemService.suggestedIconName(for: itemName, autoPricedAssetKind: nil),
                 valuationMethod: .directAmount,
                 sortOrder: nextSortOrder,
                 category: financialCategory
@@ -159,6 +162,7 @@ enum AssetItemService {
         let item = AssetItem(
             name: name,
             note: note,
+            iconName: iconName ?? suggestedIconName(for: name, autoPricedAssetKind: autoPricedAssetKind),
             valuationMethod: valuationMethod,
             autoPricedAssetKind: autoPricedAssetKind,
             sortOrder: nextSortOrder,
@@ -183,6 +187,7 @@ enum AssetItemService {
     ) throws {
         if let name { item.name = name }
         if let note { item.note = note }
+        if let iconName { item.iconName = iconName }
         if let valuationMethod { item.valuationMethod = valuationMethod }
         if let autoPricedAssetKind { item.autoPricedAssetKind = autoPricedAssetKind }
         if let isActive { item.isActive = isActive }
@@ -233,7 +238,8 @@ enum AssetItemService {
     }
 
     static func displaySymbolName(for item: AssetItem) -> String {
-        let key = suggestedIconName(for: item.name, autoPricedAssetKind: item.autoPricedAssetKind)
+        let explicitIcon = item.iconName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let key = explicitIcon.isEmpty ? suggestedIconName(for: item.name, autoPricedAssetKind: item.autoPricedAssetKind) : explicitIcon
         switch key {
         case "icon_wechat": return "message.circle.fill"
         case "icon_alipay": return "yensign.circle.fill"

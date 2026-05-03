@@ -368,6 +368,7 @@ private struct SnapshotListView: View {
     @State private var unitPriceInputs: [UUID: String] = [:]
     @State private var didPrepare = false
     @State private var showsAddAssetItemSheet = ProcessInfo.processInfo.arguments.contains("-openAddAssetItemSheet")
+    @State private var editingAssetItem: AssetItem?
     @FocusState private var focusedField: RecordInputField?
 
     private let liabilitySectionTitleMap: [String: String] = [
@@ -473,6 +474,10 @@ private struct SnapshotListView: View {
                                     focusedField: $focusedField,
                                     onChanged: { item in
                                         persist(item: item)
+                                    },
+                                    onEdit: { item in
+                                        focusedField = nil
+                                        editingAssetItem = item
                                     }
                                 )
                             }
@@ -485,6 +490,10 @@ private struct SnapshotListView: View {
                                     focusedField: $focusedField,
                                     onChanged: { item in
                                         persist(item: item)
+                                    },
+                                    onEdit: { item in
+                                        focusedField = nil
+                                        editingAssetItem = item
                                     }
                                 )
                             }
@@ -532,6 +541,9 @@ private struct SnapshotListView: View {
         }
         .sheet(isPresented: $showsAddAssetItemSheet) {
             AddAssetItemSheet()
+        }
+        .sheet(item: $editingAssetItem) { item in
+            EditAssetItemSheet(item: item)
         }
         .task {
             await prepareSnapshotIfNeeded()
@@ -696,6 +708,7 @@ private struct RecordCategoryCard: View {
     @Binding var unitPriceInputs: [UUID: String]
     var focusedField: FocusState<RecordInputField?>.Binding
     let onChanged: (AssetItem) -> Void
+    let onEdit: (AssetItem) -> Void
     @State private var draggedItemID: UUID?
 
     private let compactColumns = [
@@ -767,7 +780,10 @@ private struct RecordCategoryCard: View {
                                                 onChanged(item)
                                             }
                                         ),
-                                        focusedField: focusedField
+                                        focusedField: focusedField,
+                                        onEdit: {
+                                            onEdit(item)
+                                        }
                                     )
                                 }
                             }
@@ -797,7 +813,10 @@ private struct RecordCategoryCard: View {
                                         onChanged(item)
                                     }
                                 ),
-                                focusedField: focusedField
+                                focusedField: focusedField,
+                                onEdit: {
+                                    onEdit(item)
+                                }
                             )
                         }
                     }
@@ -813,6 +832,7 @@ private struct LiabilityCategorySection: View {
     @Binding var quantityInputs: [UUID: String]
     var focusedField: FocusState<RecordInputField?>.Binding
     let onChanged: (AssetItem) -> Void
+    let onEdit: (AssetItem) -> Void
     @State private var draggedItemID: UUID?
 
     private let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
@@ -852,7 +872,10 @@ private struct LiabilityCategorySection: View {
                                     onChanged(item)
                                 }
                             ),
-                            focusedField: focusedField
+                            focusedField: focusedField,
+                            onEdit: {
+                                onEdit(item)
+                            }
                         )
                     }
                 }
@@ -866,6 +889,7 @@ private struct LiabilityEntryCard: View {
     @Binding var amountText: String
     @Binding var quantityText: String
     var focusedField: FocusState<RecordInputField?>.Binding
+    let onEdit: () -> Void
 
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
@@ -906,6 +930,16 @@ private struct LiabilityEntryCard: View {
                     strokeOpacity: 0.18
                 )
             }
+            Button {
+                onEdit()
+            } label: {
+                Image(systemName: "paintbrush.pointed.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.9))
+                    .frame(width: 24, height: 24)
+                    .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+            .buttonStyle(.plain)
         }
         .padding(.vertical, 1)
     }
@@ -1009,6 +1043,7 @@ private struct AssetEntryCompactCard: View {
     @Binding var amountText: String
     @Binding var quantityText: String
     var focusedField: FocusState<RecordInputField?>.Binding
+    let onEdit: () -> Void
 
     var body: some View {
         RecordInputCard {
@@ -1025,6 +1060,17 @@ private struct AssetEntryCompactCard: View {
                 } else {
                     ATMInputField(text: $quantityText, placeholder: "0", width: 72, focusedField: focusedField, focusValue: .quantity(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                 }
+
+                Button {
+                    onEdit()
+                } label: {
+                    Image(systemName: "paintbrush.pointed.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.9))
+                        .frame(width: 24, height: 24)
+                        .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -1036,6 +1082,7 @@ private struct AssetEntryInputRow: View {
     @Binding var quantityText: String
     @Binding var unitPriceText: String
     var focusedField: FocusState<RecordInputField?>.Binding
+    let onEdit: () -> Void
 
     var body: some View {
         RecordInputCard {
@@ -1043,10 +1090,24 @@ private struct AssetEntryInputRow: View {
                 AssetItemGlyph(item: item, size: 12)
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(item.name)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .lineLimit(2)
+                    HStack(alignment: .center, spacing: 6) {
+                        Text(item.name)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(AssetTheme.textPrimary)
+                            .lineLimit(2)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Button {
+                            onEdit()
+                        } label: {
+                            Image(systemName: "paintbrush.pointed.fill")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(AssetTheme.textSecondary.opacity(0.9))
+                                .frame(width: 24, height: 24)
+                                .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
 
                     HStack(spacing: 6) {
                         ATMInputField(text: $quantityText, placeholder: "数量", focusedField: focusedField, focusValue: .quantity(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
@@ -1193,6 +1254,202 @@ private extension Font.Weight {
     }
 }
 
+private let assetIconOptions: [(name: String, label: String, symbol: String)] = [
+    ("icon_wechat", "微信", "message.circle.fill"),
+    ("icon_alipay", "支付宝", "yensign.circle.fill"),
+    ("icon_bank_card", "银行卡", "creditcard.fill"),
+    ("icon_cash", "现金", "banknote.fill"),
+    ("icon_btc", "BTC", "bitcoinsign.circle.fill"),
+    ("icon_gold", "黄金", "seal.fill"),
+    ("icon_mortgage", "房贷", "house.fill"),
+    ("icon_car_loan", "车贷", "car.fill"),
+    ("icon_credit_card", "信用卡", "creditcard.and.123"),
+    ("icon_huabei", "花呗", "sparkles")
+]
+
+private let autoAssetGridColumns = [
+    GridItem(.flexible(), spacing: 6),
+    GridItem(.flexible(), spacing: 6),
+    GridItem(.flexible(), spacing: 6),
+    GridItem(.flexible(), spacing: 6)
+]
+
+private func autoAssetSymbolName(for kind: AutoPricedAssetKind) -> String {
+    switch kind {
+    case .gold: return "seal.fill"
+    case .btc: return "bitcoinsign.circle.fill"
+    case .eth: return "e.circle.fill"
+    case .bnb: return "b.circle.fill"
+    case .sol: return "s.circle.fill"
+    case .xrp: return "x.circle.fill"
+    case .doge: return "d.circle.fill"
+    case .usd: return "dollarsign.circle.fill"
+    case .eur: return "eurosign.circle.fill"
+    case .gbp: return "sterlingsign.circle.fill"
+    case .jpy: return "yensign.circle.fill"
+    case .hkd: return "dollarsign.circle.fill"
+    case .sgd: return "dollarsign.circle.fill"
+    case .aud: return "dollarsign.circle.fill"
+    case .cad: return "dollarsign.circle.fill"
+    case .krw: return "wonsign.circle.fill"
+    }
+}
+
+private struct AssetEditorForm: View {
+    @Binding var name: String
+    @Binding var selectedCategoryID: UUID?
+    @Binding var selectedAutoPricedAssetKind: AutoPricedAssetKind?
+    @Binding var selectedIconName: String
+    let sortedCategories: [AssetCategory]
+    let isAutoPricedLocked: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("名称")
+                            .font(.headline)
+                            .foregroundStyle(AssetTheme.textPrimary)
+
+                        TextField("例如：银行卡、房产、消费贷", text: $name)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(AssetTheme.textPrimary)
+                            .padding(.horizontal, 14)
+                            .frame(height: 48)
+                            .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(AssetTheme.border.opacity(0.52), lineWidth: 1)
+                            )
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("归类")
+                            .font(.headline)
+                            .foregroundStyle(AssetTheme.textPrimary)
+
+                        Picker("归类", selection: Binding(
+                            get: { selectedCategoryID ?? sortedCategories.first?.id },
+                            set: { selectedCategoryID = $0 }
+                        )) {
+                            ForEach(sortedCategories) { category in
+                                Text(category.name).tag(Optional.some(category.id))
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(height: 48)
+                        .frame(maxWidth: .infinity)
+                        .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(AssetTheme.border.opacity(0.52), lineWidth: 1)
+                        )
+                    }
+                    .frame(width: 132)
+                }
+
+                Text("图标")
+                    .font(.headline)
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(assetIconOptions, id: \.name) { option in
+                            Button {
+                                selectedIconName = option.name
+                            } label: {
+                                VStack(spacing: 6) {
+                                    Image(systemName: option.symbol)
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(selectedIconName == option.name ? AssetTheme.gold : AssetTheme.textPrimary)
+                                        .frame(width: 34, height: 34)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                                .fill(.white.opacity(selectedIconName == option.name ? 0.08 : 0.04))
+                                        )
+                                    Text(option.label)
+                                        .font(.caption2.weight(.medium))
+                                        .foregroundStyle(selectedIconName == option.name ? AssetTheme.goldSoft : AssetTheme.textSecondary)
+                                }
+                                .padding(.vertical, 3)
+                                .frame(width: 56)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("特殊资产")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textSecondary)
+
+                Text(isAutoPricedLocked ? "当前资产已绑定自动价格类型，如需变更可新建一个资产类型。" : "下列资产可填写数量，价格会自动更新。不选就是普通资产。")
+                    .font(.footnote)
+                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.8))
+
+                LazyVGrid(columns: autoAssetGridColumns, alignment: .leading, spacing: 10) {
+                    Button {
+                        guard !isAutoPricedLocked else { return }
+                        selectedAutoPricedAssetKind = nil
+                    } label: {
+                        VStack(spacing: 6) {
+                            Image(systemName: "square.grid.2x2")
+                                .font(.headline.weight(.semibold))
+                                .foregroundStyle(selectedAutoPricedAssetKind == nil ? AssetTheme.gold : AssetTheme.textPrimary)
+                                .shadow(color: selectedAutoPricedAssetKind == nil ? AssetTheme.gold.opacity(0.45) : .clear, radius: 10)
+                            Text("普通资产")
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(selectedAutoPricedAssetKind == nil ? AssetTheme.goldSoft : AssetTheme.textSecondary)
+                                .multilineTextAlignment(.center)
+                                .shadow(color: selectedAutoPricedAssetKind == nil ? AssetTheme.gold.opacity(0.3) : .clear, radius: 8)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                        .contentShape(Rectangle())
+                        .opacity(isAutoPricedLocked ? 0.5 : 1)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isAutoPricedLocked)
+
+                    ForEach(AutoPricedAssetKind.allCases) { kind in
+                        Button {
+                            guard !isAutoPricedLocked else { return }
+                            selectedAutoPricedAssetKind = kind
+                            if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                name = kind.defaultName
+                            }
+                        } label: {
+                            VStack(spacing: 6) {
+                                Image(systemName: autoAssetSymbolName(for: kind))
+                                    .font(.headline.weight(.semibold))
+                                    .foregroundStyle(selectedAutoPricedAssetKind == kind ? AssetTheme.gold : AssetTheme.textPrimary)
+                                    .shadow(color: selectedAutoPricedAssetKind == kind ? AssetTheme.gold.opacity(0.45) : .clear, radius: 10)
+                                Text(kind.defaultName)
+                                    .font(.caption2.weight(.medium))
+                                    .foregroundStyle(selectedAutoPricedAssetKind == kind ? AssetTheme.goldSoft : AssetTheme.textSecondary)
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(2)
+                                    .shadow(color: selectedAutoPricedAssetKind == kind ? AssetTheme.gold.opacity(0.3) : .clear, radius: 8)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                            .contentShape(Rectangle())
+                            .opacity(isAutoPricedLocked && selectedAutoPricedAssetKind != kind ? 0.5 : 1)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isAutoPricedLocked)
+                    }
+                }
+            }
+        }
+    }
+}
+
 private struct AddAssetItemSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -1230,30 +1487,6 @@ private struct AddAssetItemSheet: View {
         return selectedAutoPricedAssetKind?.defaultName ?? ""
     }
 
-    private let iconOptions: [(name: String, label: String, symbol: String)] = [
-        ("icon_wechat", "微信", "message.circle.fill"),
-        ("icon_alipay", "支付宝", "yensign.circle.fill"),
-        ("icon_bank_card", "银行卡", "creditcard.fill"),
-        ("icon_cash", "现金", "banknote.fill"),
-        ("icon_btc", "BTC", "bitcoinsign.circle.fill"),
-        ("icon_gold", "黄金", "seal.fill"),
-        ("icon_mortgage", "房贷", "house.fill"),
-        ("icon_car_loan", "车贷", "car.fill"),
-        ("icon_credit_card", "信用卡", "creditcard.and.123"),
-        ("icon_huabei", "花呗", "sparkles")
-    ]
-
-    private let autoAssetGridColumns = [
-        GridItem(.flexible(), spacing: 6),
-        GridItem(.flexible(), spacing: 6),
-        GridItem(.flexible(), spacing: 6),
-        GridItem(.flexible(), spacing: 6)
-    ]
-
-    private var autoPricedOptions: [AutoPricedAssetKind] {
-        AutoPricedAssetKind.allCases
-    }
-
     private var resolvedIconName: String {
         let trimmed = selectedIconName.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { return trimmed }
@@ -1267,141 +1500,14 @@ private struct AddAssetItemSheet: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 18) {
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack(alignment: .top, spacing: 12) {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("名称")
-                                        .font(.headline)
-                                        .foregroundStyle(AssetTheme.textPrimary)
-
-                                    TextField("例如：银行卡、房产、消费贷", text: $name)
-                                        .textInputAutocapitalization(.never)
-                                        .autocorrectionDisabled()
-                                        .font(.body.weight(.semibold))
-                                        .foregroundStyle(AssetTheme.textPrimary)
-                                        .padding(.horizontal, 14)
-                                        .frame(height: 48)
-                                        .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                                .stroke(AssetTheme.border.opacity(0.52), lineWidth: 1)
-                                        )
-                                }
-
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("归类")
-                                        .font(.headline)
-                                        .foregroundStyle(AssetTheme.textPrimary)
-
-                                    Picker("归类", selection: Binding(
-                                        get: { selectedCategoryID ?? sortedCategories.first?.id },
-                                        set: { selectedCategoryID = $0 }
-                                    )) {
-                                        ForEach(sortedCategories) { category in
-                                            Text(category.name).tag(Optional.some(category.id))
-                                        }
-                                    }
-                                    .pickerStyle(.menu)
-                                    .frame(height: 48)
-                                    .frame(maxWidth: .infinity)
-                                    .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                            .stroke(AssetTheme.border.opacity(0.52), lineWidth: 1)
-                                    )
-                                }
-                                .frame(width: 132)
-                            }
-
-                            Text("图标")
-                                .font(.headline)
-                                .foregroundStyle(AssetTheme.textPrimary)
-
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 8) {
-                                    ForEach(iconOptions, id: \.name) { option in
-                                        Button {
-                                            selectedIconName = option.name
-                                        } label: {
-                                            VStack(spacing: 6) {
-                                                Image(systemName: option.symbol)
-                                                    .font(.subheadline.weight(.semibold))
-                                                    .foregroundStyle(selectedIconName == option.name ? AssetTheme.gold : AssetTheme.textPrimary)
-                                                    .frame(width: 34, height: 34)
-                                                    .background(
-                                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                                            .fill(.white.opacity(selectedIconName == option.name ? 0.08 : 0.04))
-                                                    )
-                                                Text(option.label)
-                                                    .font(.caption2.weight(.medium))
-                                                    .foregroundStyle(selectedIconName == option.name ? AssetTheme.goldSoft : AssetTheme.textSecondary)
-                                            }
-                                            .padding(.vertical, 3)
-                                            .frame(width: 56)
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
-                                }
-                            }
-                        }
-
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("特殊资产")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(AssetTheme.textSecondary)
-
-                            Text("下列资产可填写数量，价格会自动更新。不选就是普通资产。")
-                                .font(.footnote)
-                                .foregroundStyle(AssetTheme.textSecondary.opacity(0.8))
-
-                            LazyVGrid(columns: autoAssetGridColumns, alignment: .leading, spacing: 10) {
-                                Button {
-                                    selectedAutoPricedAssetKind = nil
-                                } label: {
-                                    VStack(spacing: 6) {
-                                        Image(systemName: "square.grid.2x2")
-                                            .font(.headline.weight(.semibold))
-                                            .foregroundStyle(selectedAutoPricedAssetKind == nil ? AssetTheme.gold : AssetTheme.textPrimary)
-                                            .shadow(color: selectedAutoPricedAssetKind == nil ? AssetTheme.gold.opacity(0.45) : .clear, radius: 10)
-                                        Text("普通资产")
-                                            .font(.caption2.weight(.medium))
-                                            .foregroundStyle(selectedAutoPricedAssetKind == nil ? AssetTheme.goldSoft : AssetTheme.textSecondary)
-                                            .multilineTextAlignment(.center)
-                                            .shadow(color: selectedAutoPricedAssetKind == nil ? AssetTheme.gold.opacity(0.3) : .clear, radius: 8)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 6)
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-
-                                ForEach(autoPricedOptions) { kind in
-                                    Button {
-                                        selectedAutoPricedAssetKind = kind
-                                        if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                            name = kind.defaultName
-                                        }
-                                    } label: {
-                                        VStack(spacing: 6) {
-                                            Image(systemName: symbolName(for: kind))
-                                                .font(.headline.weight(.semibold))
-                                                .foregroundStyle(selectedAutoPricedAssetKind == kind ? AssetTheme.gold : AssetTheme.textPrimary)
-                                                .shadow(color: selectedAutoPricedAssetKind == kind ? AssetTheme.gold.opacity(0.45) : .clear, radius: 10)
-                                            Text(kind.defaultName)
-                                                .font(.caption2.weight(.medium))
-                                                .foregroundStyle(selectedAutoPricedAssetKind == kind ? AssetTheme.goldSoft : AssetTheme.textSecondary)
-                                                .multilineTextAlignment(.center)
-                                                .lineLimit(2)
-                                                .shadow(color: selectedAutoPricedAssetKind == kind ? AssetTheme.gold.opacity(0.3) : .clear, radius: 8)
-                                        }
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 6)
-                                        .contentShape(Rectangle())
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                        }
+                        AssetEditorForm(
+                            name: $name,
+                            selectedCategoryID: $selectedCategoryID,
+                            selectedAutoPricedAssetKind: $selectedAutoPricedAssetKind,
+                            selectedIconName: $selectedIconName,
+                            sortedCategories: sortedCategories,
+                            isAutoPricedLocked: false
+                        )
 
                         if let errorMessage {
                             Text(errorMessage)
@@ -1445,27 +1551,6 @@ private struct AddAssetItemSheet: View {
         }
     }
 
-    private func symbolName(for kind: AutoPricedAssetKind) -> String {
-        switch kind {
-        case .gold: return "seal.fill"
-        case .btc: return "bitcoinsign.circle.fill"
-        case .eth: return "e.circle.fill"
-        case .bnb: return "b.circle.fill"
-        case .sol: return "s.circle.fill"
-        case .xrp: return "x.circle.fill"
-        case .doge: return "d.circle.fill"
-        case .usd: return "dollarsign.circle.fill"
-        case .eur: return "eurosign.circle.fill"
-        case .gbp: return "sterlingsign.circle.fill"
-        case .jpy: return "yensign.circle.fill"
-        case .hkd: return "dollarsign.circle.fill"
-        case .sgd: return "dollarsign.circle.fill"
-        case .aud: return "dollarsign.circle.fill"
-        case .cad: return "dollarsign.circle.fill"
-        case .krw: return "wonsign.circle.fill"
-        }
-    }
-
     @MainActor
     private func save() {
         guard let selectedCategory else { return }
@@ -1483,6 +1568,131 @@ private struct AddAssetItemSheet: View {
         } catch {
             errorMessage = "保存失败，请稍后再试"
             print("[AssetTimeMachine] create item failed: \(error)")
+        }
+    }
+}
+
+private struct EditAssetItemSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @Query private var categories: [AssetCategory]
+
+    let item: AssetItem
+    @State private var name: String
+    @State private var selectedCategoryID: UUID?
+    @State private var selectedAutoPricedAssetKind: AutoPricedAssetKind?
+    @State private var selectedIconName: String
+    @State private var errorMessage: String?
+
+    init(item: AssetItem) {
+        self.item = item
+        _name = State(initialValue: item.name)
+        _selectedCategoryID = State(initialValue: item.category?.id)
+        _selectedAutoPricedAssetKind = State(initialValue: item.autoPricedAssetKind)
+        let initialIcon = item.iconName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? AssetItemService.suggestedIconName(for: item.name, autoPricedAssetKind: item.autoPricedAssetKind)
+            : item.iconName
+        _selectedIconName = State(initialValue: initialIcon)
+    }
+
+    private var sortedCategories: [AssetCategory] {
+        categories.sorted {
+            if $0.group.sortPriority == $1.group.sortPriority {
+                return $0.createdAt < $1.createdAt
+            }
+            return $0.group.sortPriority < $1.group.sortPriority
+        }
+    }
+
+    private var canSave: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedCategory != nil
+    }
+
+    private var selectedCategory: AssetCategory? {
+        guard let selectedCategoryID else { return sortedCategories.first }
+        return sortedCategories.first(where: { $0.id == selectedCategoryID })
+    }
+
+    private var resolvedIconName: String {
+        let trimmed = selectedIconName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { return trimmed }
+        return AssetItemService.suggestedIconName(for: name, autoPricedAssetKind: selectedAutoPricedAssetKind)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AssetTheme.pageGradient.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        AssetEditorForm(
+                            name: $name,
+                            selectedCategoryID: $selectedCategoryID,
+                            selectedAutoPricedAssetKind: $selectedAutoPricedAssetKind,
+                            selectedIconName: $selectedIconName,
+                            sortedCategories: sortedCategories,
+                            isAutoPricedLocked: item.autoPricedAssetKind != nil
+                        )
+
+                        if let errorMessage {
+                            Text(errorMessage)
+                                .font(.footnote)
+                                .foregroundStyle(AssetTheme.negative)
+                                .padding(.horizontal, 4)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 36)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("取消") {
+                        dismiss()
+                    }
+                    .foregroundStyle(AssetTheme.textSecondary)
+                }
+
+                ToolbarItem(placement: .principal) {
+                    Text("编辑资产类型")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("保存") {
+                        save()
+                    }
+                    .disabled(!canSave)
+                    .foregroundStyle(canSave ? AssetTheme.gold : AssetTheme.textSecondary)
+                }
+            }
+            .task {
+                if selectedCategoryID == nil {
+                    selectedCategoryID = item.category?.id ?? sortedCategories.first?.id
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private func save() {
+        guard let selectedCategory else { return }
+
+        do {
+            try AssetItemService.updateItem(
+                item,
+                name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+                iconName: resolvedIconName,
+                category: selectedCategory,
+                in: modelContext
+            )
+            dismiss()
+        } catch {
+            errorMessage = "保存失败，请稍后再试"
+            print("[AssetTimeMachine] update item failed: \(error)")
         }
     }
 }

@@ -144,6 +144,7 @@ final class AssetItem {
     var id: UUID
     var name: String
     var note: String
+    var iconName: String
     var valuationMethodRawValue: String
     var autoPricedAssetKindRawValue: String?
     var sortOrder: Int
@@ -158,6 +159,7 @@ final class AssetItem {
         id: UUID = UUID(),
         name: String,
         note: String = "",
+        iconName: String = "",
         valuationMethod: ValuationMethod = .directAmount,
         autoPricedAssetKind: AutoPricedAssetKind? = nil,
         sortOrder: Int = 0,
@@ -169,6 +171,7 @@ final class AssetItem {
         self.id = id
         self.name = name
         self.note = note
+        self.iconName = iconName
         self.valuationMethodRawValue = valuationMethod.rawValue
         self.autoPricedAssetKindRawValue = autoPricedAssetKind?.rawValue
         self.sortOrder = sortOrder
