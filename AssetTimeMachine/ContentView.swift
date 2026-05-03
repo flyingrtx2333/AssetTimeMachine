@@ -3529,6 +3529,11 @@ private struct DashboardAllocationChart: View {
 
     @State private var selectedSliceID: DashboardAllocationSlice.ID?
 
+    private let legendColumns = [
+        GridItem(.flexible(), spacing: 16, alignment: .topLeading),
+        GridItem(.flexible(), spacing: 16, alignment: .topLeading)
+    ]
+
     private var displaySlice: DashboardAllocationSlice? {
         if let selectedSliceID,
            let selectedSlice = slices.first(where: { $0.id == selectedSliceID }) {
@@ -3538,9 +3543,9 @@ private struct DashboardAllocationChart: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 6) {
-                Text(displaySlice?.title ?? "资产构成")
+                Text("资产构成")
                     .font(AppTypography.eyebrow)
                     .foregroundStyle(AssetTheme.textSecondary)
 
@@ -3552,8 +3557,8 @@ private struct DashboardAllocationChart: View {
                         .minimumScaleFactor(0.7)
                         .lineLimit(2)
 
-                    Text(percentageText(for: displaySlice))
-                        .font(AppTypography.eyebrow)
+                    Text("\(displaySlice.title) · \(percentageText(for: displaySlice))")
+                        .font(AppTypography.meta)
                         .foregroundStyle(AssetTheme.goldSoft)
                 } else {
                     Text("还没有可展示的资产")
@@ -3561,13 +3566,6 @@ private struct DashboardAllocationChart: View {
                         .foregroundStyle(AssetTheme.textSecondary.opacity(0.82))
                 }
             }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(AssetTheme.border.opacity(0.65), lineWidth: 1)
-            )
 
             ZStack {
                 Chart(slices) { slice in
@@ -3577,10 +3575,10 @@ private struct DashboardAllocationChart: View {
                         angularInset: 2
                     )
                     .foregroundStyle(slice.color)
-                    .opacity(isHighlighted(slice) ? 1 : 0.45)
+                    .opacity(isHighlighted(slice) ? 1 : 0.42)
                 }
                 .chartLegend(.hidden)
-                .frame(height: 240)
+                .frame(height: 250)
 
                 VStack(spacing: 6) {
                     Text("总资产")
@@ -3594,59 +3592,39 @@ private struct DashboardAllocationChart: View {
                         .multilineTextAlignment(.center)
                         .minimumScaleFactor(0.7)
                         .lineLimit(2)
-
-                    if let displaySlice {
-                        Text("\(displaySlice.title) · \(percentageText(for: displaySlice))")
-                            .font(AppTypography.meta)
-                            .foregroundStyle(AssetTheme.goldSoft)
-                            .lineLimit(1)
-                    }
                 }
                 .padding(.horizontal, 18)
                 .allowsHitTesting(false)
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 8)
-            .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(AssetTheme.border.opacity(0.7), lineWidth: 1)
-            )
+            .frame(maxWidth: .infinity)
 
-            VStack(spacing: 10) {
+            LazyVGrid(columns: legendColumns, alignment: .leading, spacing: 12) {
                 ForEach(slices) { slice in
                     Button {
                         toggleSelection(for: slice)
                     } label: {
-                        VStack(alignment: .leading, spacing: 9) {
-                            HStack(spacing: 10) {
-                                Circle()
-                                    .fill(slice.color)
-                                    .frame(width: 8, height: 8)
+                        HStack(alignment: .top, spacing: 10) {
+                            Circle()
+                                .fill(slice.color)
+                                .frame(width: 8, height: 8)
+                                .padding(.top, 5)
 
+                            VStack(alignment: .leading, spacing: 3) {
                                 Text(slice.title)
-                                    .font(AppTypography.meta)
+                                    .font(AppTypography.meta.weight(isHighlighted(slice) ? .semibold : .regular))
                                     .foregroundStyle(AssetTheme.textPrimary)
                                     .lineLimit(1)
-
-                                Spacer(minLength: 12)
 
                                 Text(isHighlighted(slice) ? slice.amount.currencyString() : percentageText(for: slice))
                                     .font(AppTypography.eyebrow)
                                     .monospacedDigit()
                                     .foregroundStyle(isHighlighted(slice) ? AssetTheme.goldSoft : AssetTheme.textSecondary)
                             }
+
+                            Spacer(minLength: 0)
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill((isHighlighted(slice) ? slice.color : Color.white).opacity(isHighlighted(slice) ? 0.14 : 0.04))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(isHighlighted(slice) ? slice.color.opacity(0.55) : AssetTheme.border.opacity(0.5), lineWidth: 1)
-                        )
+                        .opacity(isHighlighted(slice) ? 1 : 0.78)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
@@ -3674,12 +3652,6 @@ private struct DashboardAllocationChart: View {
                         }
                     }
                 }
-                .padding(14)
-                .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(AssetTheme.border.opacity(0.7), lineWidth: 1)
-                )
             }
         }
     }
