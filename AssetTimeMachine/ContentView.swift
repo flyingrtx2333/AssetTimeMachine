@@ -3528,6 +3528,7 @@ private struct DashboardAllocationChart: View {
     let totalAmount: Double
 
     @State private var selectedSliceID: DashboardAllocationSlice.ID?
+    @State private var selectedAngleValue: Double?
 
     private let legendColumns = [
         GridItem(.flexible(), spacing: 16, alignment: .topLeading),
@@ -3542,31 +3543,12 @@ private struct DashboardAllocationChart: View {
         return slices.first
     }
 
+    private var totalSliceAmount: Double {
+        slices.reduce(0) { $0 + $1.amount }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("资产构成")
-                    .font(AppTypography.eyebrow)
-                    .foregroundStyle(AssetTheme.textSecondary)
-
-                if let displaySlice {
-                    Text(displaySlice.amount.currencyString())
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .minimumScaleFactor(0.7)
-                        .lineLimit(2)
-
-                    Text("\(displaySlice.title) · \(percentageText(for: displaySlice))")
-                        .font(AppTypography.meta)
-                        .foregroundStyle(AssetTheme.goldSoft)
-                } else {
-                    Text("还没有可展示的资产")
-                        .font(AppTypography.meta)
-                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.82))
-                }
-            }
-
             ZStack {
                 Chart(slices) { slice in
                     SectorMark(
@@ -3578,6 +3560,12 @@ private struct DashboardAllocationChart: View {
                     .opacity(isHighlighted(slice) ? 1 : 0.42)
                 }
                 .chartLegend(.hidden)
+                .chartAngleSelection(value: $selectedAngleValue)
+                .onChange(of: selectedAngleValue) { _, newValue in
+                    guard let newValue,
+                          let matchedSlice = slice(for: newValue) else { return }
+                    selectedSliceID = matchedSlice.id
+                }
                 .frame(height: 250)
 
                 VStack(spacing: 6) {
@@ -3667,6 +3655,37 @@ private struct DashboardAllocationChart: View {
 
     private func toggleSelection(for slice: DashboardAllocationSlice) {
         selectedSliceID = slice.id
+        selectedAngleValue = midAngleValue(for: slice)
+    }
+
+    private func slice(for angleValue: Double) -> DashboardAllocationSlice? {
+        guard totalSliceAmount > 0 else { return nil }
+
+        var currentAngle = 0.0
+        for slice in slices {
+            let nextAngle = currentAngle + slice.amount
+            if angleValue >= currentAngle && angleValue < nextAngle {
+                return slice
+            }
+            currentAngle = nextAngle
+        }
+
+        return slices.last
+    }
+
+    private func midAngleValue(for slice: DashboardAllocationSlice) -> Double? {
+        guard totalSliceAmount > 0 else { return nil }
+
+        var currentAngle = 0.0
+        for candidate in slices {
+            let nextAngle = currentAngle + candidate.amount
+            if candidate.id == slice.id {
+                return (currentAngle + nextAngle) / 2
+            }
+            currentAngle = nextAngle
+        }
+
+        return nil
     }
 }
 
