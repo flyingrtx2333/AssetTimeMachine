@@ -381,7 +381,9 @@ private struct SnapshotListView: View {
     @State private var didPrepare = false
     @State private var showsAddAssetItemSheet = ProcessInfo.processInfo.arguments.contains("-openAddAssetItemSheet")
     @State private var editingAssetItem: AssetItem?
-    @FocusState private var focusedField: RecordInputField?
+    @State private var focusedField: RecordInputField?
+
+    private let recordKeyboardSelfTestEnabled = ProcessInfo.processInfo.arguments.contains("-recordKeyboardSelfTest")
 
     private let liabilitySectionTitleMap: [String: String] = [
         "长期负债": "长期负债",
@@ -600,6 +602,12 @@ private struct SnapshotListView: View {
             let snapshot = try SnapshotService.createSnapshot(on: .now, inheritPrevious: true, createMissingEntries: true, in: modelContext)
             currentSnapshotID = snapshot.id
             hydrateInputs(from: snapshot)
+            if recordKeyboardSelfTestEnabled, let selfTestField = recordKeyboardSelfTestField() {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    focusedField = selfTestField
+                    NSLog("[ATMKeyboardSelfTest] primed focus for %@", String(describing: selfTestField))
+                }
+            }
             await SnapshotAnchorService.captureLiveAnchorsIfPossible(for: snapshot, marketStore: marketStore, in: modelContext)
         } catch {
             print("[AssetTimeMachine] prepare snapshot failed: \(error)")
@@ -686,6 +694,32 @@ private struct SnapshotListView: View {
         }
         return forcePositive ? abs(value) : value
     }
+
+    private func recordKeyboardSelfTestField() -> RecordInputField? {
+        for category in nonLiabilityCategories {
+            for item in category.activeSortedItems {
+                switch item.valuationMethod {
+                case .directAmount:
+                    return .amount(item.id)
+                case .quantityAndUnitPrice:
+                    return .quantity(item.id)
+                }
+            }
+        }
+
+        for category in liabilityCategories {
+            for item in category.activeSortedItems {
+                switch item.valuationMethod {
+                case .directAmount:
+                    return .amount(item.id)
+                case .quantityAndUnitPrice:
+                    return .quantity(item.id)
+                }
+            }
+        }
+
+        return nil
+    }
 }
 
 private enum RecordInputField: Hashable {
@@ -748,7 +782,7 @@ private struct RecordCategoryCard: View {
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
     @Binding var unitPriceInputs: [UUID: String]
-    var focusedField: FocusState<RecordInputField?>.Binding
+    @Binding var focusedField: RecordInputField?
     let onEdit: (AssetItem) -> Void
     @State private var draggedItemID: UUID?
 
@@ -819,7 +853,7 @@ private struct RecordCategoryCard: View {
                                                 quantityInputs[item.id] = newValue
                                             }
                                         ),
-                                        focusedField: focusedField,
+                                        focusedField: $focusedField,
                                         onEdit: {
                                             onEdit(item)
                                         }
@@ -849,7 +883,7 @@ private struct RecordCategoryCard: View {
                                         unitPriceInputs[item.id] = newValue
                                     }
                                 ),
-                                focusedField: focusedField,
+                                focusedField: $focusedField,
                                 onEdit: {
                                     onEdit(item)
                                 }
@@ -866,7 +900,7 @@ private struct LiabilityCategorySection: View {
     let category: AssetCategory
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
-    var focusedField: FocusState<RecordInputField?>.Binding
+    @Binding var focusedField: RecordInputField?
     let onEdit: (AssetItem) -> Void
     @State private var draggedItemID: UUID?
 
@@ -905,7 +939,7 @@ private struct LiabilityCategorySection: View {
                                     quantityInputs[item.id] = newValue
                                 }
                             ),
-                            focusedField: focusedField,
+                            focusedField: $focusedField,
                             onEdit: {
                                 onEdit(item)
                             }
@@ -921,7 +955,7 @@ private struct LiabilityEntryCard: View {
     let item: AssetItem
     @Binding var amountText: String
     @Binding var quantityText: String
-    var focusedField: FocusState<RecordInputField?>.Binding
+    @Binding var focusedField: RecordInputField?
     let onEdit: () -> Void
 
     var body: some View {
@@ -939,7 +973,7 @@ private struct LiabilityEntryCard: View {
                     text: $amountText,
                     placeholder: "0",
                     width: 72,
-                    focusedField: focusedField,
+                    focusedField: $focusedField,
                     focusValue: .amount(item.id),
                     centered: false,
                     fontSize: 12,
@@ -953,7 +987,7 @@ private struct LiabilityEntryCard: View {
                     text: $quantityText,
                     placeholder: item.compactRecordPlaceholder,
                     width: 72,
-                    focusedField: focusedField,
+                    focusedField: $focusedField,
                     focusValue: .quantity(item.id),
                     centered: false,
                     fontSize: 12,
@@ -1075,7 +1109,7 @@ private struct AssetEntryCompactCard: View {
     let item: AssetItem
     @Binding var amountText: String
     @Binding var quantityText: String
-    var focusedField: FocusState<RecordInputField?>.Binding
+    @Binding var focusedField: RecordInputField?
     let onEdit: () -> Void
 
     var body: some View {
@@ -1089,9 +1123,9 @@ private struct AssetEntryCompactCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 if item.valuationMethod == .directAmount {
-                    ATMInputField(text: $amountText, placeholder: "0", width: 72, focusedField: focusedField, focusValue: .amount(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    ATMInputField(text: $amountText, placeholder: "0", width: 72, focusedField: $focusedField, focusValue: .amount(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                 } else {
-                    ATMInputField(text: $quantityText, placeholder: "0", width: 72, focusedField: focusedField, focusValue: .quantity(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    ATMInputField(text: $quantityText, placeholder: "0", width: 72, focusedField: $focusedField, focusValue: .quantity(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                 }
 
                 Button {
@@ -1114,7 +1148,7 @@ private struct AssetEntryInputRow: View {
     @Binding var amountText: String
     @Binding var quantityText: String
     @Binding var unitPriceText: String
-    var focusedField: FocusState<RecordInputField?>.Binding
+    @Binding var focusedField: RecordInputField?
     let onEdit: () -> Void
 
     var body: some View {
@@ -1143,8 +1177,8 @@ private struct AssetEntryInputRow: View {
                     }
 
                     HStack(spacing: 6) {
-                        ATMInputField(text: $quantityText, placeholder: "数量", focusedField: focusedField, focusValue: .quantity(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
-                        ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: focusedField, focusValue: .unitPrice(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                        ATMInputField(text: $quantityText, placeholder: "数量", focusedField: $focusedField, focusValue: .quantity(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                        ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: $focusedField, focusValue: .unitPrice(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                     }
                 }
             }
@@ -1156,7 +1190,7 @@ private struct ATMInputField: View {
     @Binding var text: String
     let placeholder: String
     var width: CGFloat? = nil
-    var focusedField: FocusState<RecordInputField?>.Binding
+    @Binding var focusedField: RecordInputField?
     let focusValue: RecordInputField
     var centered: Bool = false
     var fontSize: CGFloat = 17
@@ -1169,7 +1203,7 @@ private struct ATMInputField: View {
         ATMUIKitInputField(
             text: $text,
             placeholder: placeholder,
-            focusedField: focusedField,
+            focusedField: $focusedField,
             focusValue: focusValue,
             centered: centered,
             fontSize: fontSize,
@@ -1189,11 +1223,13 @@ private struct ATMInputField: View {
 private struct ATMUIKitInputField: UIViewRepresentable {
     @Binding var text: String
     let placeholder: String
-    var focusedField: FocusState<RecordInputField?>.Binding
+    @Binding var focusedField: RecordInputField?
     let focusValue: RecordInputField
     var centered: Bool = false
     var fontSize: CGFloat = 17
     var fontWeight: Font.Weight = .semibold
+
+    private static let recordKeyboardSelfTestEnabled = ProcessInfo.processInfo.arguments.contains("-recordKeyboardSelfTest")
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -1228,13 +1264,16 @@ private struct ATMUIKitInputField: UIViewRepresentable {
             attributes: [.foregroundColor: UIColor(AssetTheme.textSecondary)]
         )
 
-        let shouldBeFirstResponder = focusedField.wrappedValue == focusValue
+        let shouldBeFirstResponder = focusedField == focusValue
         if shouldBeFirstResponder, !uiView.isFirstResponder {
             context.coordinator.isSyncingFirstResponder = true
             DispatchQueue.main.async {
                 uiView.becomeFirstResponder()
                 context.coordinator.moveCaretToEnd(in: uiView)
+                context.coordinator.maybeRunSelfTest(on: uiView)
             }
+        } else if shouldBeFirstResponder {
+            context.coordinator.maybeRunSelfTest(on: uiView)
         } else if !shouldBeFirstResponder, uiView.isFirstResponder {
             context.coordinator.isSyncingFirstResponder = true
             DispatchQueue.main.async {
@@ -1252,6 +1291,8 @@ private struct ATMUIKitInputField: UIViewRepresentable {
         var parent: ATMUIKitInputField
         var isSyncingFirstResponder = false
         var isBeingDismantled = false
+        var didRunSelfTestInsertion = false
+        var didScheduleSelfTestInsertion = false
 
         init(parent: ATMUIKitInputField) {
             self.parent = parent
@@ -1263,8 +1304,9 @@ private struct ATMUIKitInputField: UIViewRepresentable {
 
         func textFieldDidBeginEditing(_ textField: UITextField) {
             isSyncingFirstResponder = false
-            parent.focusedField.wrappedValue = parent.focusValue
+            parent.focusedField = parent.focusValue
             moveCaretToEnd(in: textField)
+            maybeRunSelfTest(on: textField)
         }
 
         func textFieldDidEndEditing(_ textField: UITextField) {
@@ -1272,9 +1314,36 @@ private struct ATMUIKitInputField: UIViewRepresentable {
 
             guard !isBeingDismantled else { return }
             guard !isSyncingFirstResponder else { return }
-            guard parent.focusedField.wrappedValue == parent.focusValue else { return }
+            guard parent.focusedField == parent.focusValue else { return }
 
-            parent.focusedField.wrappedValue = nil
+            parent.focusedField = nil
+        }
+
+        func maybeRunSelfTest(on textField: UITextField) {
+            guard ATMUIKitInputField.recordKeyboardSelfTestEnabled, !didScheduleSelfTestInsertion, !didRunSelfTestInsertion else { return }
+            didScheduleSelfTestInsertion = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                guard textField.window != nil else {
+                    NSLog("[ATMKeyboardSelfTest] skipped insert because textField left window for %@", String(describing: self.parent.focusValue))
+                    self.didScheduleSelfTestInsertion = false
+                    return
+                }
+                if !textField.isFirstResponder {
+                    textField.becomeFirstResponder()
+                }
+                self.didRunSelfTestInsertion = true
+                textField.insertText("1")
+                NSLog("[ATMKeyboardSelfTest] inserted digit into %@, text=%@", String(describing: self.parent.focusValue), textField.text ?? "")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    NSLog("[ATMKeyboardSelfTest] after first insert focus=%@ firstResponder=%@ text=%@ inWindow=%@", String(describing: self.parent.focusedField), textField.isFirstResponder ? "true" : "false", textField.text ?? "", textField.window != nil ? "true" : "false")
+                    guard textField.window != nil, textField.isFirstResponder else { return }
+                    textField.insertText("2")
+                    NSLog("[ATMKeyboardSelfTest] inserted second digit into %@, text=%@", String(describing: self.parent.focusValue), textField.text ?? "")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                        NSLog("[ATMKeyboardSelfTest] after second insert focus=%@ firstResponder=%@ text=%@ inWindow=%@", String(describing: self.parent.focusedField), textField.isFirstResponder ? "true" : "false", textField.text ?? "", textField.window != nil ? "true" : "false")
+                    }
+                }
+            }
         }
 
         func moveCaretToEnd(in textField: UITextField) {
