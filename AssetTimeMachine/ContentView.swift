@@ -751,18 +751,6 @@ private struct RecordPageHero: View {
                 .buttonStyle(.plain)
             }
 
-            HStack(spacing: 8) {
-                SummaryInlineMetric(
-                    title: "负债",
-                    value: totalLiabilities.currencyString(),
-                    accent: AssetTheme.negative
-                )
-                SummaryInlineMetric(
-                    title: "净资产",
-                    value: netAssets.currencyString(),
-                    accent: AssetTheme.gold
-                )
-            }
         }
         .padding(16)
         .background(
