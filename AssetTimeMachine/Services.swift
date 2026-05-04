@@ -62,6 +62,8 @@ enum SeedDataService {
     ]
 
     private static let defaultFinancialItems = ["微信", "支付宝", "银行卡", "现金"]
+    private static let defaultPhysicalItems = ["房产"]
+    private static let defaultLiabilityItems = ["花呗", "白条", "房贷"]
 
     @MainActor
     static func seedDefaultCategoriesIfNeeded(in context: ModelContext) throws {
@@ -78,29 +80,16 @@ enum SeedDataService {
             )
             context.insert(model)
 
-            switch category.group {
-            case .financial:
-                for (index, itemName) in defaultFinancialItems.enumerated() {
-                    let item = AssetItem(
-                        name: itemName,
-                        note: "默认资金项，可后续编辑或删除",
-                        iconName: AssetItemService.suggestedIconName(for: itemName, autoPricedAssetKind: nil),
-                        valuationMethod: .directAmount,
-                        sortOrder: index,
-                        category: model
-                    )
-                    context.insert(item)
-                }
-            case .physical, .liability:
-                let placeholderItem = AssetItem(
-                    name: sampleItemName(for: category.group),
-                    note: "示例项目，可后续编辑或删除",
-                    iconName: AssetItemService.suggestedIconName(for: sampleItemName(for: category.group), autoPricedAssetKind: nil),
+            for (index, config) in defaultItems(for: category.group).enumerated() {
+                let item = AssetItem(
+                    name: config.name,
+                    note: config.note,
+                    iconName: AssetItemService.suggestedIconName(for: config.name, autoPricedAssetKind: nil),
                     valuationMethod: .directAmount,
-                    sortOrder: 0,
+                    sortOrder: index,
                     category: model
                 )
-                context.insert(placeholderItem)
+                context.insert(item)
             }
         }
 
@@ -110,24 +99,25 @@ enum SeedDataService {
     @MainActor
     static func ensureDefaultFinancialItems(in context: ModelContext) throws {
         let categories = try context.fetch(FetchDescriptor<AssetCategory>())
-        guard let financialCategory = categories.first(where: { $0.group == .financial }) else { return }
-
-        let existingNames = Set(financialCategory.items.map { $0.name.trimmingCharacters(in: .whitespacesAndNewlines) })
         var didChange = false
-        var nextSortOrder = (financialCategory.items.map(\AssetItem.sortOrder).max() ?? -1) + 1
 
-        for itemName in defaultFinancialItems where !existingNames.contains(itemName) {
-            let item = AssetItem(
-                name: itemName,
-                note: "升级自动补齐的默认资金项，可后续编辑或删除",
-                iconName: AssetItemService.suggestedIconName(for: itemName, autoPricedAssetKind: nil),
-                valuationMethod: .directAmount,
-                sortOrder: nextSortOrder,
-                category: financialCategory
-            )
-            context.insert(item)
-            nextSortOrder += 1
-            didChange = true
+        for category in categories {
+            let existingNames = Set(category.items.map { $0.name.trimmingCharacters(in: .whitespacesAndNewlines) })
+            var nextSortOrder = (category.items.map(\AssetItem.sortOrder).max() ?? -1) + 1
+
+            for config in defaultItems(for: category.group) where !existingNames.contains(config.name) {
+                let item = AssetItem(
+                    name: config.name,
+                    note: config.upgradeNote,
+                    iconName: AssetItemService.suggestedIconName(for: config.name, autoPricedAssetKind: nil),
+                    valuationMethod: .directAmount,
+                    sortOrder: nextSortOrder,
+                    category: category
+                )
+                context.insert(item)
+                nextSortOrder += 1
+                didChange = true
+            }
         }
 
         if didChange {
@@ -135,16 +125,28 @@ enum SeedDataService {
         }
     }
 
-    private static func sampleItemName(for group: AssetGroup) -> String {
+    private static func defaultItems(for group: AssetGroup) -> [DefaultItemConfig] {
         switch group {
         case .financial:
-            return "银行卡"
+            return defaultFinancialItems.map {
+                DefaultItemConfig(name: $0, note: "默认资金项，可后续编辑或删除", upgradeNote: "升级自动补齐的默认资金项，可后续编辑或删除")
+            }
         case .physical:
-            return "房产"
+            return defaultPhysicalItems.map {
+                DefaultItemConfig(name: $0, note: "示例项目，可后续编辑或删除", upgradeNote: "升级自动补齐的默认实物项，可后续编辑或删除")
+            }
         case .liability:
-            return "房贷"
+            return defaultLiabilityItems.map {
+                DefaultItemConfig(name: $0, note: "默认负债项，可后续编辑或删除", upgradeNote: "升级自动补齐的默认负债项，可后续编辑或删除")
+            }
         }
     }
+}
+
+private struct DefaultItemConfig {
+    let name: String
+    let note: String
+    let upgradeNote: String
 }
 
 enum AssetItemService {
@@ -230,10 +232,11 @@ enum AssetItemService {
         if normalized.contains("支付宝") { return "icon_alipay" }
         if normalized.contains("现金") { return "icon_cash" }
         if normalized.contains("银行卡") || normalized.contains("储蓄卡") { return "icon_bank_card" }
-        if normalized.contains("房贷") { return "icon_mortgage" }
+        if normalized.contains("房贷") || normalized.contains("贷款") { return "icon_mortgage" }
         if normalized.contains("车贷") { return "icon_car_loan" }
         if normalized.contains("信用卡") { return "icon_credit_card" }
         if normalized.contains("花呗") { return "icon_huabei" }
+        if normalized.contains("白条") { return "icon_credit_card" }
         return ""
     }
 

@@ -430,54 +430,14 @@ private struct SnapshotListView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 16) {
                         if let currentSnapshot {
-                            VStack(alignment: .leading, spacing: 10) {
-                                HStack(alignment: .top, spacing: 10) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(currentSnapshot.date.recordDateString)
-                                            .font(.caption.weight(.semibold))
-                                            .foregroundStyle(AssetTheme.textSecondary)
-
-                                        Text(PortfolioCalculator.totalAssets(for: currentSnapshot).currencyString())
-                                            .font(.system(size: 34, weight: .bold, design: .rounded))
-                                            .foregroundStyle(AssetTheme.textPrimary)
-                                            .minimumScaleFactor(0.6)
-                                            .lineLimit(1)
-
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                                    Button {
-                                        dismissKeyboard()
-                                        showsAddAssetItemSheet = true
-                                    } label: {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "plus")
-                                                .font(.subheadline.weight(.bold))
-                                            Text("资产类型")
-                                                .font(.subheadline.weight(.semibold))
-                                        }
-                                        .foregroundStyle(AssetTheme.textPrimary)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 8)
-                                        .background(.white.opacity(0.05), in: Capsule())
-                                    }
-                                    .buttonStyle(.plain)
+                            RecordPageHero(
+                                snapshot: currentSnapshot,
+                                onAddAsset: {
+                                    dismissKeyboard()
+                                    showsAddAssetItemSheet = true
                                 }
-
-                                HStack(spacing: 8) {
-                                    SummaryInlineMetric(
-                                        title: "负债",
-                                        value: PortfolioCalculator.totalLiabilities(for: currentSnapshot).currencyString(),
-                                        accent: AssetTheme.negative
-                                    )
-                                    SummaryInlineMetric(
-                                        title: "净资产",
-                                        value: PortfolioCalculator.netAssets(for: currentSnapshot).currencyString(),
-                                        accent: AssetTheme.gold
-                                    )
-                                }
-                            }
-                            .padding(.bottom, 0)
+                            )
+                            .padding(.bottom, 2)
 
                             ForEach(nonLiabilityCategories) { category in
                                 RecordCategoryCard(
@@ -729,6 +689,107 @@ private func dismissActiveKeyboard() {
     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
 }
 
+private struct RecordPageHero: View {
+    let snapshot: AssetSnapshot
+    let onAddAsset: () -> Void
+
+    private var totalAssets: Double {
+        PortfolioCalculator.totalAssets(for: snapshot)
+    }
+
+    private var totalLiabilities: Double {
+        PortfolioCalculator.totalLiabilities(for: snapshot)
+    }
+
+    private var netAssets: Double {
+        PortfolioCalculator.netAssets(for: snapshot)
+    }
+
+    private var itemCount: Int {
+        snapshot.entries.filter { entry in
+            guard let item = entry.item else { return false }
+            if item.valuationMethod == .directAmount {
+                return (entry.amount ?? 0) != 0
+            }
+            return (entry.quantity ?? 0) != 0 || (entry.unitPrice ?? 0) != 0
+        }.count
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(snapshot.date.recordDateString)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(AssetTheme.textSecondary)
+
+                    Text(totalAssets.currencyString())
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
+
+                    HStack(spacing: 8) {
+                        RecordPageBadge(text: "已录入 \(itemCount) 项", tint: AssetTheme.textSecondary)
+                        RecordPageBadge(text: totalLiabilities > 0 ? "含负债" : "纯资产", tint: totalLiabilities > 0 ? AssetTheme.negative : AssetTheme.positive)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button(action: onAddAsset) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                            .font(.subheadline.weight(.bold))
+                        Text("资产类型")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(.white.opacity(0.08), in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+
+            HStack(spacing: 8) {
+                SummaryInlineMetric(
+                    title: "负债",
+                    value: totalLiabilities.currencyString(),
+                    accent: AssetTheme.negative
+                )
+                SummaryInlineMetric(
+                    title: "净资产",
+                    value: netAssets.currencyString(),
+                    accent: AssetTheme.gold
+                )
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(AssetTheme.cardGradient)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.85), lineWidth: 1)
+        )
+    }
+}
+
+private struct RecordPageBadge: View {
+    let text: String
+    let tint: Color
+
+    var body: some View {
+        Text(text)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(.white.opacity(0.05), in: Capsule())
+    }
+}
+
 private struct SummaryInlineMetric: View {
     let title: String
     let value: String
@@ -964,26 +1025,33 @@ private struct LiabilityEntryCard: View {
     let onEdit: () -> Void
 
     var body: some View {
-        HStack(alignment: .center, spacing: 4) {
+        HStack(alignment: .center, spacing: 6) {
             AssetItemGlyph(item: item, accent: AssetTheme.negative, size: 12)
 
-            Text(item.name)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(AssetTheme.textSecondary)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.name)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .lineLimit(1)
+
+                Text("默认按负债计入")
+                    .font(.caption2)
+                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             if item.valuationMethod == .directAmount {
                 ATMInputField(
                     text: $amountText,
                     placeholder: "0",
-                    width: 72,
+                    width: 86,
                     focusedField: $focusedField,
                     focusValue: .amount(item.id),
                     centered: false,
                     fontSize: 12,
                     fontWeight: .semibold,
-                    height: 30,
+                    height: 32,
                     backgroundOpacity: 0.54,
                     strokeOpacity: 0.18
                 )
@@ -991,13 +1059,13 @@ private struct LiabilityEntryCard: View {
                 ATMInputField(
                     text: $quantityText,
                     placeholder: item.compactRecordPlaceholder,
-                    width: 72,
+                    width: 86,
                     focusedField: $focusedField,
                     focusValue: .quantity(item.id),
                     centered: false,
                     fontSize: 12,
                     fontWeight: .semibold,
-                    height: 30,
+                    height: 32,
                     backgroundOpacity: 0.54,
                     strokeOpacity: 0.18
                 )
@@ -1013,7 +1081,7 @@ private struct LiabilityEntryCard: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.vertical, 1)
+        .padding(.vertical, 2)
     }
 }
 
