@@ -288,30 +288,13 @@ private struct DashboardView: View {
                     .font(AppTypography.eyebrow)
                     .foregroundStyle(AssetTheme.textSecondary)
 
-                HStack(alignment: .top, spacing: 16) {
-                    Text(totalAssets.currencyString())
-                        .font(AppTypography.heroValue)
-                        .monospacedDigit()
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .minimumScaleFactor(0.72)
-                        .lineLimit(2)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        HeroSideMetric(
-                            title: "净资产",
-                            value: netAssets.currencyString(),
-                            accent: AssetTheme.positive
-                        )
-
-                        HeroSideMetric(
-                            title: "负债",
-                            value: totalLiabilities.currencyString(),
-                            accent: AssetTheme.negative
-                        )
-                    }
-                    .frame(width: 132, alignment: .leading)
-                }
+                Text(totalAssets.currencyString())
+                    .font(AppTypography.heroValue)
+                    .monospacedDigit()
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .minimumScaleFactor(0.72)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 HStack(spacing: 10) {
                     InlineStat(text: "已记录 \(snapshots.count.formatted()) 天", color: AssetTheme.textSecondary)
