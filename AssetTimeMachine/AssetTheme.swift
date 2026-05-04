@@ -82,10 +82,6 @@ struct ATMCardModifier: ViewModifier {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(AssetTheme.cardGradient)
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(AssetTheme.border, lineWidth: 1)
-            )
             .shadow(color: .black.opacity(0.22), radius: 24, x: 0, y: 12)
     }
 }
