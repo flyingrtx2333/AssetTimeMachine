@@ -1012,11 +1012,6 @@ private struct LiabilityEntryCard: View {
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
-
-                Text("默认按负债计入")
-                    .font(.caption2)
-                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-                    .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
