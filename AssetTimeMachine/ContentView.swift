@@ -425,6 +425,7 @@ private struct SnapshotListView: View {
                             ForEach(nonLiabilityCategories) { category in
                                 RecordCategoryCard(
                                     category: category,
+                                    marketStore: marketStore,
                                     amountInputs: $amountInputs,
                                     quantityInputs: $quantityInputs,
                                     unitPriceInputs: $unitPriceInputs,
@@ -824,6 +825,7 @@ private struct RecordCategoryCard: View {
     }
 
     let category: AssetCategory
+    @ObservedObject var marketStore: RemoteMarketStore
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
     @Binding var unitPriceInputs: [UUID: String]
@@ -886,6 +888,7 @@ private struct RecordCategoryCard: View {
                                 ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
                                     AssetEntryCompactCard(
                                         item: item,
+                                        marketStore: marketStore,
                                         amountText: Binding(
                                             get: { amountInputs[item.id] ?? "" },
                                             set: { newValue in
@@ -910,6 +913,7 @@ private struct RecordCategoryCard: View {
                         ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
                             AssetEntryInputRow(
                                 item: item,
+                                marketStore: marketStore,
                                 amountText: Binding(
                                     get: { amountInputs[item.id] ?? "" },
                                     set: { newValue in
@@ -1154,6 +1158,7 @@ private struct RecordItemDropDelegate: DropDelegate {
 
 private struct AssetEntryCompactCard: View {
     let item: AssetItem
+    @ObservedObject var marketStore: RemoteMarketStore
     @Binding var amountText: String
     @Binding var quantityText: String
     @Binding var focusedField: RecordInputField?
@@ -1163,11 +1168,16 @@ private struct AssetEntryCompactCard: View {
         RecordInputCard {
             HStack(alignment: .center, spacing: 4) {
                 AssetItemGlyph(item: item, size: 12)
-                Text(item.name)
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(AssetTheme.textSecondary)
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(item.name)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .lineLimit(1)
+
+                    AutoPriceInlineLabel(item: item, marketStore: marketStore)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 if item.valuationMethod == .directAmount {
                     ATMInputField(text: $amountText, placeholder: "0", width: 72, focusedField: $focusedField, focusValue: .amount(item.id), centered: true, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
@@ -1192,6 +1202,7 @@ private struct AssetEntryCompactCard: View {
 
 private struct AssetEntryInputRow: View {
     let item: AssetItem
+    @ObservedObject var marketStore: RemoteMarketStore
     @Binding var amountText: String
     @Binding var quantityText: String
     @Binding var unitPriceText: String
@@ -1211,6 +1222,8 @@ private struct AssetEntryInputRow: View {
                             .lineLimit(2)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
+                        AutoPriceInlineLabel(item: item, marketStore: marketStore)
+
                         Button {
                             onEdit()
                         } label: {
@@ -1229,6 +1242,28 @@ private struct AssetEntryInputRow: View {
                     }
                 }
             }
+        }
+    }
+}
+
+private struct AutoPriceInlineLabel: View {
+    let item: AssetItem
+    @ObservedObject var marketStore: RemoteMarketStore
+
+    private var priceText: String? {
+        item.autoPriceDisplayText(using: marketStore)
+    }
+
+    var body: some View {
+        if let priceText {
+            Text(priceText)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(AssetTheme.goldSoft)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(.white.opacity(0.04), in: Capsule())
         }
     }
 }
@@ -5440,6 +5475,34 @@ private extension AssetItem {
         }
 
         return nil
+    }
+
+    @MainActor
+    func autoPriceDisplayText(using marketStore: RemoteMarketStore) -> String? {
+        if let currencyCode = autoExchangeRateCurrencyCode,
+           let rate = marketStore.exchangeRate(for: currencyCode),
+           rate > 0 {
+            return "现价 \((1 / rate).currencyString())"
+        }
+
+        guard let symbol = autoPricedMarketSymbol,
+              let market = marketStore.market(for: symbol) else {
+            return nil
+        }
+
+        let currencyCode = market.currency.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let priceText: String
+        if currencyCode.count == 3 {
+            priceText = market.price.currencyString(code: currencyCode)
+        } else if currencyCode.isEmpty {
+            priceText = market.price.plainNumberString()
+        } else {
+            priceText = "\(market.price.plainNumberString()) \(currencyCode)"
+        }
+
+        let unit = market.unit.trimmingCharacters(in: .whitespacesAndNewlines)
+        let unitSuffix = unit.isEmpty ? "" : "/\(unit)"
+        return "现价 \(priceText)\(unitSuffix)"
     }
 }
 
