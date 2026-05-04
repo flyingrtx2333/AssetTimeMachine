@@ -1048,7 +1048,7 @@ private struct LiabilityEntryCard: View {
                     width: 86,
                     focusedField: $focusedField,
                     focusValue: .amount(item.id),
-                    centered: false,
+                    centered: true,
                     fontSize: 12,
                     fontWeight: .semibold,
                     height: 32,
@@ -1062,7 +1062,7 @@ private struct LiabilityEntryCard: View {
                     width: 86,
                     focusedField: $focusedField,
                     focusValue: .quantity(item.id),
-                    centered: false,
+                    centered: true,
                     fontSize: 12,
                     fontWeight: .semibold,
                     height: 32,
@@ -1196,9 +1196,9 @@ private struct AssetEntryCompactCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 if item.valuationMethod == .directAmount {
-                    ATMInputField(text: $amountText, placeholder: "0", width: 72, focusedField: $focusedField, focusValue: .amount(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    ATMInputField(text: $amountText, placeholder: "0", width: 72, focusedField: $focusedField, focusValue: .amount(item.id), centered: true, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                 } else {
-                    ATMInputField(text: $quantityText, placeholder: "0", width: 72, focusedField: $focusedField, focusValue: .quantity(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    ATMInputField(text: $quantityText, placeholder: "0", width: 72, focusedField: $focusedField, focusValue: .quantity(item.id), centered: true, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                 }
 
                 Button {
@@ -1250,8 +1250,8 @@ private struct AssetEntryInputRow: View {
                     }
 
                     HStack(spacing: 6) {
-                        ATMInputField(text: $quantityText, placeholder: "数量", focusedField: $focusedField, focusValue: .quantity(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
-                        ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: $focusedField, focusValue: .unitPrice(item.id), centered: false, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                        ATMInputField(text: $quantityText, placeholder: "数量", focusedField: $focusedField, focusValue: .quantity(item.id), centered: true, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                        ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: $focusedField, focusValue: .unitPrice(item.id), centered: true, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                     }
                 }
             }
@@ -1373,6 +1373,7 @@ private struct ATMUIKitInputField: UIViewRepresentable {
 
         @objc func editingChanged(_ textField: UITextField) {
             parent.text = textField.text ?? ""
+            moveCaretToEnd(in: textField)
         }
 
         func textFieldDidBeginEditing(_ textField: UITextField) {
@@ -1380,6 +1381,10 @@ private struct ATMUIKitInputField: UIViewRepresentable {
             parent.focusedField = parent.focusValue
             moveCaretToEnd(in: textField)
             maybeRunSelfTest(on: textField)
+        }
+
+        func textFieldDidChangeSelection(_ textField: UITextField) {
+            moveCaretToEnd(in: textField)
         }
 
         func textFieldDidEndEditing(_ textField: UITextField) {
