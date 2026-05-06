@@ -810,6 +810,8 @@ private struct AssetItemGlyph: View {
 }
 
 private struct RecordCategoryCard: View {
+    private let inputWidth: CGFloat = 80
+
     private enum InputBlock: Identifiable {
         case compact([AssetItem])
         case expanded(AssetItem)
@@ -865,18 +867,25 @@ private struct RecordCategoryCard: View {
         return blocks
     }
 
+    private var categoryTotal: Double {
+        items.reduce(0) { partialResult, item in
+            partialResult + item.entries.reduce(0) { $0 + $1.resolvedAmount }
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(category.name)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(AssetTheme.textPrimary)
-                Rectangle()
-                    .fill(AssetTheme.border.opacity(0.35))
-                    .frame(height: 1)
-                Text("\(items.count)")
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(AssetTheme.textSecondary)
+                Spacer(minLength: 8)
+                Text(categoryTotal.currencyString())
+                    .font(.subheadline.weight(.medium))
+                    .monospacedDigit()
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
 
             VStack(spacing: 10) {
@@ -902,6 +911,7 @@ private struct RecordCategoryCard: View {
                                             }
                                         ),
                                         focusedField: $focusedField,
+                                        inputWidth: inputWidth,
                                         onEdit: {
                                             onEdit(item)
                                         }
@@ -933,6 +943,7 @@ private struct RecordCategoryCard: View {
                                     }
                                 ),
                                 focusedField: $focusedField,
+                                inputWidth: inputWidth,
                                 onEdit: {
                                     onEdit(item)
                                 }
@@ -946,6 +957,8 @@ private struct RecordCategoryCard: View {
 }
 
 private struct LiabilityCategorySection: View {
+    private let inputWidth: CGFloat = 80
+
     let category: AssetCategory
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
@@ -959,16 +972,25 @@ private struct LiabilityCategorySection: View {
         category.activeSortedItems
     }
 
+    private var categoryTotal: Double {
+        items.reduce(0) { partialResult, item in
+            partialResult + item.entries.reduce(0) { $0 + $1.resolvedAmount }
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(category.name)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(AssetTheme.textSecondary)
-                Spacer()
-                Text("\(items.count)")
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                Spacer(minLength: 8)
+                Text(categoryTotal.currencyString())
+                    .font(.subheadline.weight(.medium))
+                    .monospacedDigit()
+                    .foregroundStyle(AssetTheme.negative)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
 
             LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
@@ -989,6 +1011,7 @@ private struct LiabilityCategorySection: View {
                                 }
                             ),
                             focusedField: $focusedField,
+                            inputWidth: inputWidth,
                             onEdit: {
                                 onEdit(item)
                             }
@@ -1005,7 +1028,16 @@ private struct LiabilityEntryCard: View {
     @Binding var amountText: String
     @Binding var quantityText: String
     @Binding var focusedField: RecordInputField?
+    let inputWidth: CGFloat
     let onEdit: () -> Void
+
+    private var activeField: RecordInputField {
+        item.valuationMethod == .directAmount ? .amount(item.id) : .quantity(item.id)
+    }
+
+    private var isEditing: Bool {
+        focusedField == activeField
+    }
 
     var body: some View {
         HStack(alignment: .center, spacing: 6) {
@@ -1013,46 +1045,54 @@ private struct LiabilityEntryCard: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.name)
-                    .font(.caption2.weight(.semibold))
+                    .font(.caption2.weight(.medium))
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            if item.valuationMethod == .directAmount {
-                ATMInputField(
-                    text: $amountText,
-                    placeholder: "0",
-                    width: 86,
-                    focusedField: $focusedField,
-                    focusValue: .amount(item.id),
-                    centered: true,
-                    fontSize: 12,
-                    fontWeight: .semibold,
-                    height: 32,
-                    backgroundOpacity: 0.54,
-                    strokeOpacity: 0.18
-                )
+            if isEditing {
+                if item.valuationMethod == .directAmount {
+                    ATMInputField(
+                        text: $amountText,
+                        placeholder: "0",
+                        width: inputWidth,
+                        focusedField: $focusedField,
+                        focusValue: .amount(item.id),
+                        centered: true,
+                        fontSize: 12,
+                        fontWeight: .medium,
+                        height: 32,
+                        backgroundOpacity: 0.54,
+                        strokeOpacity: 0.18
+                    )
+                } else {
+                    ATMInputField(
+                        text: $quantityText,
+                        placeholder: item.compactRecordPlaceholder,
+                        width: inputWidth,
+                        focusedField: $focusedField,
+                        focusValue: .quantity(item.id),
+                        centered: true,
+                        fontSize: 12,
+                        fontWeight: .medium,
+                        height: 32,
+                        backgroundOpacity: 0.54,
+                        strokeOpacity: 0.18
+                    )
+                }
             } else {
-                ATMInputField(
-                    text: $quantityText,
-                    placeholder: item.compactRecordPlaceholder,
-                    width: 86,
-                    focusedField: $focusedField,
-                    focusValue: .quantity(item.id),
-                    centered: true,
-                    fontSize: 12,
-                    fontWeight: .semibold,
-                    height: 32,
-                    backgroundOpacity: 0.54,
-                    strokeOpacity: 0.18
-                )
+                Text(displayValue)
+                    .font(.caption.weight(.medium))
+                    .monospacedDigit()
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .frame(width: inputWidth, alignment: .trailing)
             }
             Button {
                 onEdit()
             } label: {
                 Image(systemName: "paintbrush.pointed.fill")
-                    .font(.caption.weight(.semibold))
+                    .font(.caption.weight(.medium))
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.9))
                     .frame(width: 24, height: 24)
                     .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -1060,6 +1100,11 @@ private struct LiabilityEntryCard: View {
             .buttonStyle(.plain)
         }
         .padding(.vertical, 2)
+    }
+
+    private var displayValue: String {
+        let rawValue = item.valuationMethod == .directAmount ? amountText : quantityText
+        return rawValue.isEmpty ? "--" : rawValue
     }
 }
 
@@ -1162,7 +1207,16 @@ private struct AssetEntryCompactCard: View {
     @Binding var amountText: String
     @Binding var quantityText: String
     @Binding var focusedField: RecordInputField?
+    let inputWidth: CGFloat
     let onEdit: () -> Void
+
+    private var activeField: RecordInputField {
+        item.valuationMethod == .directAmount ? .amount(item.id) : .quantity(item.id)
+    }
+
+    private var isEditing: Bool {
+        focusedField == activeField
+    }
 
     var body: some View {
         RecordInputCard {
@@ -1171,7 +1225,7 @@ private struct AssetEntryCompactCard: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(item.name)
-                        .font(.caption2.weight(.semibold))
+                        .font(.caption2.weight(.medium))
                         .foregroundStyle(AssetTheme.textSecondary)
                         .lineLimit(1)
 
@@ -1179,17 +1233,25 @@ private struct AssetEntryCompactCard: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                if item.valuationMethod == .directAmount {
-                    ATMInputField(text: $amountText, placeholder: "0", width: 72, focusedField: $focusedField, focusValue: .amount(item.id), centered: true, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                if isEditing {
+                    if item.valuationMethod == .directAmount {
+                        ATMInputField(text: $amountText, placeholder: "0", width: inputWidth, focusedField: $focusedField, focusValue: .amount(item.id), centered: true, fontSize: 12, fontWeight: .medium, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    } else {
+                        ATMInputField(text: $quantityText, placeholder: "0", width: inputWidth, focusedField: $focusedField, focusValue: .quantity(item.id), centered: true, fontSize: 12, fontWeight: .medium, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    }
                 } else {
-                    ATMInputField(text: $quantityText, placeholder: "0", width: 72, focusedField: $focusedField, focusValue: .quantity(item.id), centered: true, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    Text(displayValue)
+                        .font(.caption.weight(.medium))
+                        .monospacedDigit()
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .frame(width: inputWidth, alignment: .trailing)
                 }
 
                 Button {
                     onEdit()
                 } label: {
                     Image(systemName: "paintbrush.pointed.fill")
-                        .font(.caption.weight(.semibold))
+                        .font(.caption.weight(.medium))
                         .foregroundStyle(AssetTheme.textSecondary.opacity(0.9))
                         .frame(width: 24, height: 24)
                         .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -1197,6 +1259,11 @@ private struct AssetEntryCompactCard: View {
                 .buttonStyle(.plain)
             }
         }
+    }
+
+    private var displayValue: String {
+        let rawValue = item.valuationMethod == .directAmount ? amountText : quantityText
+        return rawValue.isEmpty ? "--" : rawValue
     }
 }
 
@@ -1207,7 +1274,12 @@ private struct AssetEntryInputRow: View {
     @Binding var quantityText: String
     @Binding var unitPriceText: String
     @Binding var focusedField: RecordInputField?
+    let inputWidth: CGFloat
     let onEdit: () -> Void
+
+    private var isEditing: Bool {
+        focusedField == .quantity(item.id) || focusedField == .unitPrice(item.id)
+    }
 
     var body: some View {
         RecordInputCard {
@@ -1217,7 +1289,7 @@ private struct AssetEntryInputRow: View {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .center, spacing: 6) {
                         Text(item.name)
-                            .font(.caption.weight(.semibold))
+                            .font(.caption.weight(.medium))
                             .foregroundStyle(AssetTheme.textPrimary)
                             .lineLimit(2)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1228,7 +1300,7 @@ private struct AssetEntryInputRow: View {
                             onEdit()
                         } label: {
                             Image(systemName: "paintbrush.pointed.fill")
-                                .font(.caption.weight(.semibold))
+                                .font(.caption.weight(.medium))
                                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.9))
                                 .frame(width: 24, height: 24)
                                 .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -1236,13 +1308,34 @@ private struct AssetEntryInputRow: View {
                         .buttonStyle(.plain)
                     }
 
-                    HStack(spacing: 6) {
-                        ATMInputField(text: $quantityText, placeholder: "数量", focusedField: $focusedField, focusValue: .quantity(item.id), centered: true, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
-                        ATMInputField(text: $unitPriceText, placeholder: "单价", focusedField: $focusedField, focusValue: .unitPrice(item.id), centered: true, fontSize: 12, fontWeight: .semibold, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                    if isEditing {
+                        HStack(spacing: 6) {
+                            ATMInputField(text: $quantityText, placeholder: "数量", width: inputWidth, focusedField: $focusedField, focusValue: .quantity(item.id), centered: true, fontSize: 12, fontWeight: .medium, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                            ATMInputField(text: $unitPriceText, placeholder: "单价", width: inputWidth, focusedField: $focusedField, focusValue: .unitPrice(item.id), centered: true, fontSize: 12, fontWeight: .medium, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                        }
+                    } else {
+                        HStack(spacing: 12) {
+                            recordValueLabel(title: "数量", value: quantityText)
+                            recordValueLabel(title: "单价", value: unitPriceText)
+                        }
                     }
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func recordValueLabel(title: String, value: String) -> some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            Text(title)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(AssetTheme.textSecondary)
+            Text(value.isEmpty ? "--" : value)
+                .font(.caption.weight(.medium))
+                .monospacedDigit()
+                .foregroundStyle(AssetTheme.textPrimary)
+        }
+        .frame(width: inputWidth, alignment: .trailing)
     }
 }
 
@@ -1257,7 +1350,7 @@ private struct AutoPriceInlineLabel: View {
     var body: some View {
         if let priceText {
             Text(priceText)
-                .font(.caption2.weight(.medium))
+                .font(.caption2.weight(.regular))
                 .foregroundStyle(AssetTheme.goldSoft)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
@@ -1276,7 +1369,7 @@ private struct ATMInputField: View {
     let focusValue: RecordInputField
     var centered: Bool = false
     var fontSize: CGFloat = 17
-    var fontWeight: Font.Weight = .semibold
+    var fontWeight: Font.Weight = .medium
     var height: CGFloat = 42
     var backgroundOpacity: Double = 0.66
     var strokeOpacity: Double = 0.52

@@ -48,6 +48,8 @@ enum AssetTheme {
         let normalColor = UIColor(textSecondary)
         let selectedColor = UIColor(gold)
 
+        tabBarAppearance.selectionIndicatorTintColor = UIColor(gold.opacity(0.18))
+
         [tabBarAppearance.stackedLayoutAppearance,
          tabBarAppearance.inlineLayoutAppearance,
          tabBarAppearance.compactInlineLayoutAppearance].forEach { appearance in
