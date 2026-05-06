@@ -413,30 +413,9 @@ private struct SettingsView: View {
     }
 
     private var notificationPreview: String {
-        guard let latestSnapshot else { return "还没有可播报的资产记录" }
+        guard let latestSnapshot else { return "暂无资产记录" }
 
-        let summary = "总资产 \(PortfolioCalculator.totalAssets(for: latestSnapshot).currencyString()) · 净资产 \(PortfolioCalculator.netAssets(for: latestSnapshot).currencyString()) · 负债 \(PortfolioCalculator.totalLiabilities(for: latestSnapshot).currencyString())"
-        if notificationEnabled {
-            return summary
-        }
-        return "开启后会按「\(intervalLabel(notificationIntervalHours))」播报：\n\(summary)"
-    }
-
-    private var notificationStatusText: String {
-        switch notificationStatus {
-        case .authorized:
-            return notificationEnabled ? "通知已开启" : "通知已授权，当前未开启"
-        case .provisional:
-            return notificationEnabled ? "通知已开启" : "通知已授权，当前未开启"
-        case .ephemeral:
-            return notificationEnabled ? "通知已开启" : "通知已授权，当前未开启"
-        case .denied:
-            return "通知权限未开启"
-        case .notDetermined:
-            return notificationEnabled ? "正在请求通知权限" : "通知已关闭，首次开启时将请求通知权限"
-        @unknown default:
-            return "通知状态未知"
-        }
+        return "总资产 \(PortfolioCalculator.totalAssets(for: latestSnapshot).currencyString()) · 净资产 \(PortfolioCalculator.netAssets(for: latestSnapshot).currencyString()) · 负债 \(PortfolioCalculator.totalLiabilities(for: latestSnapshot).currencyString())"
     }
 
     var body: some View {
@@ -457,23 +436,14 @@ private struct SettingsView: View {
                                 }
                             }
                             .pickerStyle(.segmented)
-
-                            Text("可以跟随系统，也可以固定为浅色或深色。")
-                                .font(.footnote)
-                                .foregroundStyle(AssetTheme.textSecondary)
                         }
                         .atmCardStyle()
 
                         VStack(alignment: .leading, spacing: 14) {
                             HStack(alignment: .center, spacing: 12) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("定时资产播报")
-                                        .font(.headline.weight(.bold))
-                                        .foregroundStyle(AssetTheme.textPrimary)
-                                    Text(notificationStatusText)
-                                        .font(.footnote)
-                                        .foregroundStyle(notificationStatus == .denied ? AssetTheme.negative : AssetTheme.textSecondary)
-                                }
+                                Text("定时资产播报")
+                                    .font(.headline.weight(.bold))
+                                    .foregroundStyle(AssetTheme.textPrimary)
 
                                 Spacer(minLength: 12)
 
@@ -509,10 +479,6 @@ private struct SettingsView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                             }
-
-                            Text("开启后会按你设定的间隔重复提醒，播报内容会在你打开 App 时自动刷新到最新资产摘要。")
-                                .font(.footnote)
-                                .foregroundStyle(AssetTheme.textSecondary)
 
                             if notificationStatus == .denied {
                                 Button("打开系统通知设置") {
