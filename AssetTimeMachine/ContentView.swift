@@ -723,22 +723,28 @@ private struct RecordPageHero: View {
     let totalLiabilities: Double
     let onAddAsset: () -> Void
 
+    private var netAssetColor: Color {
+        netAssets < 0 ? AssetTheme.negative : AssetTheme.textPrimary
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 5) {
-                Text(snapshot.date.recordDateString)
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(AssetTheme.textSecondary)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text("总资产")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(AssetTheme.textSecondary)
 
-                Text("总资产 \(totalAssets.currencyString())")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(AssetTheme.textPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.82)
-                    .monospacedDigit()
+                    Text(totalAssets.currencyString())
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.76)
+                        .monospacedDigit()
+                }
 
                 HStack(spacing: 8) {
-                    heroSummaryText(title: "净资产", value: netAssets.currencyString(), valueColor: AssetTheme.textPrimary)
+                    heroSummaryText(title: "净资产", value: netAssets.currencyString(), valueColor: netAssetColor)
 
                     Circle()
                         .fill(AssetTheme.border.opacity(0.8))
@@ -748,7 +754,11 @@ private struct RecordPageHero: View {
                 }
                 .font(.caption.weight(.medium))
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.72)
+
+                Text(snapshot.date.recordDateString)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(AssetTheme.textSecondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -762,7 +772,11 @@ private struct RecordPageHero: View {
                 .foregroundStyle(AssetTheme.textPrimary)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 7)
-                .background(AssetTheme.overlayMedium, in: Capsule())
+                .background(AssetTheme.overlaySoft, in: Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(AssetTheme.border.opacity(0.55), lineWidth: 1)
+                )
             }
             .buttonStyle(.plain)
         }
