@@ -406,6 +406,22 @@ private struct SnapshotListView: View {
             }
     }
 
+    private var displayedTotalAssets: Double {
+        nonLiabilityCategories
+            .flatMap(\.activeSortedItems)
+            .reduce(0) { $0 + (displayEntry(for: $1)?.resolvedAmount ?? 0) }
+    }
+
+    private var displayedTotalLiabilities: Double {
+        liabilityCategories
+            .flatMap(\.activeSortedItems)
+            .reduce(0) { $0 + (displayEntry(for: $1)?.resolvedAmount ?? 0) }
+    }
+
+    private var displayedNetAssets: Double {
+        displayedTotalAssets - displayedTotalLiabilities
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -416,6 +432,9 @@ private struct SnapshotListView: View {
                         if let currentSnapshot {
                             RecordPageHero(
                                 snapshot: currentSnapshot,
+                                totalAssets: displayedTotalAssets,
+                                netAssets: displayedNetAssets,
+                                totalLiabilities: displayedTotalLiabilities,
                                 onAddAsset: {
                                     dismissKeyboard()
                                     showsAddAssetItemSheet = true
@@ -674,6 +693,16 @@ private struct SnapshotListView: View {
         ?? nonLiabilityCategories.flatMap(\.activeSortedItems).first
         ?? liabilityCategories.flatMap(\.activeSortedItems).first
     }
+
+    private func displayEntry(for item: AssetItem) -> AssetEntry? {
+        if let currentSnapshot,
+           let snapshotEntry = currentSnapshot.entries.first(where: { $0.item?.id == item.id }),
+           snapshotEntry.amount != nil || snapshotEntry.quantity != nil || snapshotEntry.unitPrice != nil {
+            return snapshotEntry
+        }
+
+        return item.entries.sorted(by: { ($0.snapshot?.date ?? .distantPast) > ($1.snapshot?.date ?? .distantPast) }).first
+    }
 }
 
 private enum RecordInputField: Hashable {
@@ -689,23 +718,14 @@ private func dismissActiveKeyboard() {
 
 private struct RecordPageHero: View {
     let snapshot: AssetSnapshot
+    let totalAssets: Double
+    let netAssets: Double
+    let totalLiabilities: Double
     let onAddAsset: () -> Void
-
-    private var totalAssets: Double {
-        PortfolioCalculator.totalAssets(for: snapshot)
-    }
-
-    private var netAssets: Double {
-        PortfolioCalculator.netAssets(for: snapshot)
-    }
-
-    private var totalLiabilities: Double {
-        PortfolioCalculator.totalLiabilities(for: snapshot)
-    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(snapshot.date.recordDateString)
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(AssetTheme.textSecondary)
@@ -717,16 +737,18 @@ private struct RecordPageHero: View {
                     .minimumScaleFactor(0.82)
                     .monospacedDigit()
 
-                HStack(spacing: 10) {
-                    Text("净资产 \(netAssets.currencyString())")
-                        .foregroundStyle(AssetTheme.textSecondary)
-                    Text("负债 \(totalLiabilities.currencyString())")
-                        .foregroundStyle(AssetTheme.negative.opacity(0.9))
+                HStack(spacing: 8) {
+                    heroSummaryText(title: "净资产", value: netAssets.currencyString(), valueColor: AssetTheme.textPrimary)
+
+                    Circle()
+                        .fill(AssetTheme.border.opacity(0.8))
+                        .frame(width: 3, height: 3)
+
+                    heroSummaryText(title: "负债", value: totalLiabilities.currencyString(), valueColor: AssetTheme.negative.opacity(0.9))
                 }
                 .font(.caption.weight(.medium))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-                .monospacedDigit()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -745,6 +767,16 @@ private struct RecordPageHero: View {
             .buttonStyle(.plain)
         }
         .padding(.vertical, 4)
+    }
+
+    private func heroSummaryText(title: String, value: String, valueColor: Color) -> some View {
+        HStack(spacing: 3) {
+            Text(title)
+                .foregroundStyle(AssetTheme.textSecondary)
+            Text(value)
+                .foregroundStyle(valueColor)
+                .monospacedDigit()
+        }
     }
 }
 
