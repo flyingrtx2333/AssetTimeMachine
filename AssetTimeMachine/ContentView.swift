@@ -695,17 +695,38 @@ private struct RecordPageHero: View {
         PortfolioCalculator.totalAssets(for: snapshot)
     }
 
+    private var netAssets: Double {
+        PortfolioCalculator.netAssets(for: snapshot)
+    }
+
+    private var totalLiabilities: Double {
+        PortfolioCalculator.totalLiabilities(for: snapshot)
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(snapshot.date.recordDateString)
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(AssetTheme.textSecondary)
 
-                Text("资产记录")
+                Text("总资产 \(totalAssets.currencyString())")
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+                    .monospacedDigit()
+
+                HStack(spacing: 10) {
+                    Text("净资产 \(netAssets.currencyString())")
+                        .foregroundStyle(AssetTheme.textSecondary)
+                    Text("负债 \(totalLiabilities.currencyString())")
+                        .foregroundStyle(AssetTheme.negative.opacity(0.9))
+                }
+                .font(.caption.weight(.medium))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .monospacedDigit()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
