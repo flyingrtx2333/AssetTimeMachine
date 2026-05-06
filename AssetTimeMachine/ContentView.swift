@@ -1543,19 +1543,12 @@ private struct AssetIconView: View {
     }
 
     var body: some View {
-        Group {
-            if let imageAssetName = definition?.imageAssetName {
-                Image(imageAssetName)
-                    .resizable()
-                    .scaledToFit()
-            } else {
-                Image(systemName: definition?.symbolName ?? fallbackSymbolName)
-                    .font(.system(size: iconSize, weight: .medium))
-                    .foregroundStyle(accent)
-            }
-        }
-        .frame(width: iconSize, height: iconSize)
-        .frame(width: frameSize ?? iconSize, height: frameSize ?? iconSize)
+        Image(systemName: definition?.symbolName ?? fallbackSymbolName)
+            .font(.system(size: iconSize, weight: .medium))
+            .symbolRenderingMode(.hierarchical)
+            .foregroundStyle(accent)
+            .frame(width: iconSize, height: iconSize)
+            .frame(width: frameSize ?? iconSize, height: frameSize ?? iconSize)
     }
 }
 
@@ -1792,7 +1785,7 @@ private struct AddAssetItemSheet: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
-                    .padding(.top, 20)
+                    .padding(.top, 8)
                     .padding(.bottom, 36)
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -1979,7 +1972,7 @@ private struct EditAssetItemSheet: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
-                    .padding(.top, 20)
+                    .padding(.top, 8)
                     .padding(.bottom, 36)
                     .contentShape(Rectangle())
                     .onTapGesture {
