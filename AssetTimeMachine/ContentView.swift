@@ -1655,7 +1655,7 @@ private struct AssetEditorForm: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(AssetTheme.textSecondary)
 
-                Text(isAutoPricedLocked ? "当前资产已绑定自动价格类型，如需变更可新建一个资产类型。" : "下列资产可填写数量，价格会自动更新。不选就是普通资产。")
+                Text(isAutoPricedLocked ? "当前资产已绑定自动价格类型，如需变更可新建一个资产类型。" : "下列资产可填写数量，价格会自动更新。")
                     .font(.footnote)
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.8))
 
