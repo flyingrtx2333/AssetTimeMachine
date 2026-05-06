@@ -1041,15 +1041,24 @@ private struct LiabilityEntryCard: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 6) {
-            AssetItemGlyph(item: item, accent: AssetTheme.negative, size: 12)
+            Button {
+                onEdit()
+            } label: {
+                HStack(alignment: .center, spacing: 6) {
+                    AssetItemGlyph(item: item, accent: AssetTheme.negative, size: 12)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.name)
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(AssetTheme.textPrimary)
-                    .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.name)
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(AssetTheme.textPrimary)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .contentShape(Rectangle())
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .buttonStyle(.plain)
 
             if isEditing {
                 if item.valuationMethod == .directAmount {
@@ -1088,23 +1097,23 @@ private struct LiabilityEntryCard: View {
                     .foregroundStyle(AssetTheme.textPrimary)
                     .frame(width: inputWidth, alignment: .trailing)
             }
-            Button {
-                onEdit()
-            } label: {
-                Image(systemName: "paintbrush.pointed.fill")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.9))
-                    .frame(width: 24, height: 24)
-                    .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            }
-            .buttonStyle(.plain)
         }
         .padding(.vertical, 2)
     }
 
     private var displayValue: String {
-        let rawValue = item.valuationMethod == .directAmount ? amountText : quantityText
-        return rawValue.isEmpty ? "--" : rawValue
+        if item.valuationMethod == .directAmount {
+            if !amountText.isEmpty { return amountText }
+            if let latestAmount = item.entries.sorted(by: { ($0.snapshot?.date ?? .distantPast) > ($1.snapshot?.date ?? .distantPast) }).first?.amount {
+                return latestAmount.plainNumberString()
+            }
+        } else {
+            if !quantityText.isEmpty { return quantityText }
+            if let latestQuantity = item.entries.sorted(by: { ($0.snapshot?.date ?? .distantPast) > ($1.snapshot?.date ?? .distantPast) }).first?.quantity {
+                return latestQuantity.plainNumberString()
+            }
+        }
+        return "--"
     }
 }
 
@@ -1221,17 +1230,26 @@ private struct AssetEntryCompactCard: View {
     var body: some View {
         RecordInputCard {
             HStack(alignment: .center, spacing: 4) {
-                AssetItemGlyph(item: item, size: 12)
+                Button {
+                    onEdit()
+                } label: {
+                    HStack(alignment: .center, spacing: 4) {
+                        AssetItemGlyph(item: item, size: 12)
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(item.name)
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(AssetTheme.textSecondary)
-                        .lineLimit(1)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(item.name)
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(AssetTheme.textSecondary)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
 
-                    AutoPriceInlineLabel(item: item, marketStore: marketStore)
+                            AutoPriceInlineLabel(item: item, marketStore: marketStore)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .contentShape(Rectangle())
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .buttonStyle(.plain)
 
                 if isEditing {
                     if item.valuationMethod == .directAmount {
@@ -1246,24 +1264,23 @@ private struct AssetEntryCompactCard: View {
                         .foregroundStyle(AssetTheme.textPrimary)
                         .frame(width: inputWidth, alignment: .trailing)
                 }
-
-                Button {
-                    onEdit()
-                } label: {
-                    Image(systemName: "paintbrush.pointed.fill")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.9))
-                        .frame(width: 24, height: 24)
-                        .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                }
-                .buttonStyle(.plain)
             }
         }
     }
 
     private var displayValue: String {
-        let rawValue = item.valuationMethod == .directAmount ? amountText : quantityText
-        return rawValue.isEmpty ? "--" : rawValue
+        if item.valuationMethod == .directAmount {
+            if !amountText.isEmpty { return amountText }
+            if let latestAmount = item.entries.sorted(by: { ($0.snapshot?.date ?? .distantPast) > ($1.snapshot?.date ?? .distantPast) }).first?.amount {
+                return latestAmount.plainNumberString()
+            }
+        } else {
+            if !quantityText.isEmpty { return quantityText }
+            if let latestQuantity = item.entries.sorted(by: { ($0.snapshot?.date ?? .distantPast) > ($1.snapshot?.date ?? .distantPast) }).first?.quantity {
+                return latestQuantity.plainNumberString()
+            }
+        }
+        return "--"
     }
 }
 
@@ -1284,29 +1301,28 @@ private struct AssetEntryInputRow: View {
     var body: some View {
         RecordInputCard {
             HStack(alignment: .top, spacing: 6) {
-                AssetItemGlyph(item: item, size: 12)
+                Button {
+                    onEdit()
+                } label: {
+                    HStack(alignment: .top, spacing: 6) {
+                        AssetItemGlyph(item: item, size: 12)
+
+                        HStack(alignment: .center, spacing: 6) {
+                            Text(item.name)
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(AssetTheme.textPrimary)
+                                .lineLimit(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                            AutoPriceInlineLabel(item: item, marketStore: marketStore)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
 
                 VStack(alignment: .leading, spacing: 6) {
-                    HStack(alignment: .center, spacing: 6) {
-                        Text(item.name)
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(AssetTheme.textPrimary)
-                            .lineLimit(2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                        AutoPriceInlineLabel(item: item, marketStore: marketStore)
-
-                        Button {
-                            onEdit()
-                        } label: {
-                            Image(systemName: "paintbrush.pointed.fill")
-                                .font(.caption.weight(.medium))
-                                .foregroundStyle(AssetTheme.textSecondary.opacity(0.9))
-                                .frame(width: 24, height: 24)
-                                .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-                    }
 
                     if isEditing {
                         HStack(spacing: 6) {
@@ -1324,13 +1340,21 @@ private struct AssetEntryInputRow: View {
         }
     }
 
+    private var latestEntry: AssetEntry? {
+        item.entries.sorted(by: { ($0.snapshot?.date ?? .distantPast) > ($1.snapshot?.date ?? .distantPast) }).first
+    }
+
     @ViewBuilder
     private func recordValueLabel(title: String, value: String) -> some View {
+        let fallbackValue = title == "数量"
+            ? (latestEntry?.quantity?.plainNumberString() ?? "--")
+            : (latestEntry?.unitPrice?.plainNumberString() ?? "--")
+
         VStack(alignment: .trailing, spacing: 2) {
             Text(title)
                 .font(.caption2.weight(.medium))
                 .foregroundStyle(AssetTheme.textSecondary)
-            Text(value.isEmpty ? "--" : value)
+            Text(value.isEmpty ? fallbackValue : value)
                 .font(.caption.weight(.medium))
                 .monospacedDigit()
                 .foregroundStyle(AssetTheme.textPrimary)
