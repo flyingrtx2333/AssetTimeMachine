@@ -19,6 +19,7 @@ struct ContentView: View {
     @AppStorage("app.notifications.enabled") private var notificationEnabled = false
     @AppStorage("app.notifications.intervalHours") private var notificationIntervalHours: Double = 1
     @StateObject private var marketStore = RemoteMarketStore()
+    @StateObject private var cloudStore = AssetTimeMachineCloudStore()
     @State private var selectedTab: AppTab = {
         let arguments = ProcessInfo.processInfo.arguments
         if arguments.contains("-openTimeMachineTab") {
@@ -48,7 +49,7 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            DashboardView()
+            DashboardView(cloudStore: cloudStore)
                 .tabItem {
                     Label("首页", systemImage: "house")
                 }
@@ -72,7 +73,7 @@ struct ContentView: View {
                 }
                 .tag(AppTab.backtest)
 
-            SettingsView()
+            SettingsView(cloudStore: cloudStore)
                 .tabItem {
                     Label("设置", systemImage: "gearshape")
                 }
@@ -81,6 +82,7 @@ struct ContentView: View {
         .tint(AssetTheme.gold)
         .task {
             await runStartupIfNeeded()
+            await cloudStore.refreshIfNeeded(from: modelContext)
             await refreshAssetNotifications()
         }
         .onChange(of: notificationEnabled) { _, _ in
@@ -162,7 +164,7 @@ private struct DashboardView: View {
     @AppStorage("dashboard.monthlyExpenseSeedVersion") private var monthlyExpenseSeedVersion: Int = 0
     @AppStorage("dashboard.inflationRate") private var inflationRate: Double = 0.05
     @AppStorage("dashboard.inflationRateSeedVersion") private var inflationRateSeedVersion: Int = 0
-    @StateObject private var cloudStore = AssetTimeMachineCloudStore()
+    @ObservedObject var cloudStore: AssetTimeMachineCloudStore
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
     @Query private var items: [AssetItem]
     @Query private var categories: [AssetCategory]
@@ -405,8 +407,10 @@ private struct SettingsView: View {
     @AppStorage("app.appearanceMode") private var appearanceModeRawValue: String = AppAppearanceMode.system.rawValue
     @AppStorage("app.notifications.enabled") private var notificationEnabled = false
     @AppStorage("app.notifications.intervalHours") private var notificationIntervalHours: Double = 1
+    @ObservedObject var cloudStore: AssetTimeMachineCloudStore
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
     @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
+    @State private var showsLogoutConfirmation = false
 
     private var latestSnapshot: AssetSnapshot? {
         snapshots.first(where: { Calendar.current.isDateInToday($0.date) }) ?? snapshots.first
@@ -416,6 +420,10 @@ private struct SettingsView: View {
         guard let latestSnapshot else { return "暂无资产记录" }
 
         return "总资产 \(PortfolioCalculator.totalAssets(for: latestSnapshot).currencyString()) · 净资产 \(PortfolioCalculator.netAssets(for: latestSnapshot).currencyString()) · 负债 \(PortfolioCalculator.totalLiabilities(for: latestSnapshot).currencyString())"
+    }
+
+    private var canLogout: Bool {
+        cloudStore.currentUser != nil || cloudStore.hasToken
     }
 
     var body: some View {
@@ -493,6 +501,26 @@ private struct SettingsView: View {
                             }
                         }
                         .atmCardStyle()
+
+                        if canLogout {
+                            VStack(alignment: .leading, spacing: 0) {
+                                Button(role: .destructive) {
+                                    showsLogoutConfirmation = true
+                                } label: {
+                                    HStack {
+                                        Text("退出登录")
+                                            .font(.headline.weight(.bold))
+                                        Spacer()
+                                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                                            .font(.system(size: 16, weight: .semibold))
+                                    }
+                                    .foregroundStyle(AssetTheme.negative)
+                                    .padding(.horizontal, 2)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .atmCardStyle()
+                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 18)
@@ -509,6 +537,14 @@ private struct SettingsView: View {
                     try? await Task.sleep(nanoseconds: 300_000_000)
                     await reloadNotificationStatus()
                 }
+            }
+            .alert("退出登录", isPresented: $showsLogoutConfirmation) {
+                Button("取消", role: .cancel) {}
+                Button("退出", role: .destructive) {
+                    cloudStore.logout()
+                }
+            } message: {
+                Text("退出后将停止云同步。")
             }
         }
     }
