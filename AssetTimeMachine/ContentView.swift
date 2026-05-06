@@ -1636,7 +1636,7 @@ private struct AssetEditorForm: View {
                             .font(.headline)
                             .foregroundStyle(AssetTheme.textPrimary)
 
-                        TextField("例如：银行卡、房产、消费贷", text: $name)
+                        TextField("例如：银行卡、房产、车辆", text: $name)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .font(.body.weight(.semibold))

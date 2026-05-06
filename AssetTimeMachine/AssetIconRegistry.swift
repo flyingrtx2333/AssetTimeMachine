@@ -17,6 +17,8 @@ enum AssetIconRegistry {
         AssetIconDefinition(key: "icon_cash", label: "现金", symbolName: "banknote.fill", imageAssetName: "icon_cash"),
         AssetIconDefinition(key: "icon_btc", label: "BTC", symbolName: "bitcoinsign.circle.fill", imageAssetName: "icon_btc"),
         AssetIconDefinition(key: "icon_gold", label: "黄金", symbolName: "seal.fill", imageAssetName: "icon_gold"),
+        AssetIconDefinition(key: "icon_house", label: "房产", symbolName: "house.fill", imageAssetName: nil),
+        AssetIconDefinition(key: "icon_car", label: "车辆", symbolName: "car.fill", imageAssetName: nil),
         AssetIconDefinition(key: "icon_mortgage", label: "房贷", symbolName: "house.fill", imageAssetName: "icon_mortgage"),
         AssetIconDefinition(key: "icon_car_loan", label: "车贷", symbolName: "car.fill", imageAssetName: "icon_car_loan"),
         AssetIconDefinition(key: "icon_credit_card", label: "信用卡", symbolName: "creditcard.and.123", imageAssetName: "icon_credit_card"),
