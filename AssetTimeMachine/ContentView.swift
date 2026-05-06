@@ -875,11 +875,11 @@ private struct RecordCategoryCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(category.name)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(AssetTheme.textPrimary)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(AssetTheme.textSecondary)
                 Spacer(minLength: 8)
                 Text(categoryTotal.currencyString())
-                    .font(.subheadline.weight(.medium))
+                    .font(.system(size: 16, weight: .semibold))
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
@@ -980,11 +980,11 @@ private struct LiabilityCategorySection: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(category.name)
-                    .font(.subheadline.weight(.medium))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(AssetTheme.textSecondary)
                 Spacer(minLength: 8)
                 Text(categoryTotal.currencyString())
-                    .font(.subheadline.weight(.medium))
+                    .font(.system(size: 16, weight: .semibold))
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.negative)
                     .lineLimit(1)
@@ -1047,7 +1047,7 @@ private struct LiabilityEntryCard: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(item.name)
-                            .font(.caption2.weight(.medium))
+                            .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(AssetTheme.textPrimary)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
@@ -1090,7 +1090,7 @@ private struct LiabilityEntryCard: View {
                 }
             } else {
                 Text(displayValue)
-                    .font(.caption2.weight(.medium))
+                    .font(.system(size: 13, weight: .semibold))
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.textPrimary)
                     .frame(width: inputWidth, alignment: .trailing)
@@ -1236,7 +1236,7 @@ private struct AssetEntryCompactCard: View {
 
                         VStack(alignment: .leading, spacing: 3) {
                             Text(item.name)
-                                .font(.caption2.weight(.medium))
+                                .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(AssetTheme.textPrimary)
                                 .lineLimit(2)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -1255,7 +1255,7 @@ private struct AssetEntryCompactCard: View {
                     }
                 } else {
                     Text(displayValue)
-                        .font(.caption2.weight(.medium))
+                        .font(.system(size: 13, weight: .semibold))
                         .monospacedDigit()
                         .foregroundStyle(AssetTheme.textPrimary)
                         .frame(width: inputWidth, alignment: .trailing)
@@ -1305,7 +1305,7 @@ private struct AssetEntryInputRow: View {
 
                         HStack(alignment: .center, spacing: 6) {
                             Text(item.name)
-                                .font(.caption2.weight(.medium))
+                                .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(AssetTheme.textPrimary)
                                 .lineLimit(3)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -1344,10 +1344,10 @@ private struct AssetEntryInputRow: View {
 
         VStack(alignment: .trailing, spacing: 2) {
             Text(title)
-                .font(.caption2.weight(.regular))
+                .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(AssetTheme.textSecondary)
             Text(value.isEmpty ? fallbackValue : value)
-                .font(.caption2.weight(.medium))
+                .font(.system(size: 13, weight: .semibold))
                 .monospacedDigit()
                 .foregroundStyle(AssetTheme.textPrimary)
         }
