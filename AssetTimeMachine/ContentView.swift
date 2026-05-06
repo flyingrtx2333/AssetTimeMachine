@@ -367,6 +367,7 @@ private struct SnapshotListView: View {
     @State private var focusedField: RecordInputField?
 
     private let recordKeyboardSelfTestEnabled = ProcessInfo.processInfo.arguments.contains("-recordKeyboardSelfTest")
+    private let recordEditPreviewEnabled = ProcessInfo.processInfo.arguments.contains("-openRecordEditPreview")
 
     private let liabilitySectionTitleMap: [String: String] = [
         "长期负债": "长期负债",
@@ -548,6 +549,11 @@ private struct SnapshotListView: View {
                     NSLog("[ATMKeyboardSelfTest] primed focus for %@", String(describing: selfTestField))
                 }
             }
+            if recordEditPreviewEnabled, let previewItem = recordEditPreviewItem() {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    editingAssetItem = previewItem
+                }
+            }
             await SnapshotAnchorService.captureLiveAnchorsIfPossible(for: snapshot, marketStore: marketStore, in: modelContext)
         } catch {
             print("[AssetTimeMachine] prepare snapshot failed: \(error)")
@@ -659,6 +665,14 @@ private struct SnapshotListView: View {
         }
 
         return nil
+    }
+
+    private func recordEditPreviewItem() -> AssetItem? {
+        nonLiabilityCategories
+            .flatMap(\.activeSortedItems)
+            .first(where: { $0.valuationMethod == .quantityAndUnitPrice })
+        ?? nonLiabilityCategories.flatMap(\.activeSortedItems).first
+        ?? liabilityCategories.flatMap(\.activeSortedItems).first
     }
 }
 
