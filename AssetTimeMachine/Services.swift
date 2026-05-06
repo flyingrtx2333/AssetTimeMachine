@@ -62,7 +62,7 @@ enum SeedDataService {
     ]
 
     private static let defaultFinancialItems = ["微信", "支付宝", "银行卡", "现金"]
-    private static let defaultPhysicalItems = ["房产", "车辆"]
+    private static let defaultPhysicalItems = ["房产", "车辆", "车位"]
     private static let defaultLiabilityItems = ["花呗", "白条", "房贷"]
 
     @MainActor
@@ -236,6 +236,9 @@ enum AssetItemService {
             return "icon_house"
         }
         if normalized.contains("房贷") || normalized.contains("贷款") { return "icon_mortgage" }
+        if normalized.contains("车位") || normalized.contains("停车位") {
+            return "icon_parking"
+        }
         if normalized.contains("车辆") || normalized.contains("汽车") || normalized.contains("车子") {
             return "icon_car"
         }
