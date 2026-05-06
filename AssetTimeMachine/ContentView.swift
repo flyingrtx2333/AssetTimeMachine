@@ -499,7 +499,7 @@ private struct SnapshotListView: View {
             AddAssetItemSheet()
         }
         .sheet(item: $editingAssetItem) { item in
-            EditAssetItemSheet(item: item)
+            EditAssetItemSheet(item: item, snapshot: currentSnapshot)
         }
         .task {
             await prepareSnapshotIfNeeded()
@@ -681,131 +681,48 @@ private struct RecordPageHero: View {
         PortfolioCalculator.totalAssets(for: snapshot)
     }
 
-    private var totalLiabilities: Double {
-        PortfolioCalculator.totalLiabilities(for: snapshot)
-    }
-
-    private var netAssets: Double {
-        PortfolioCalculator.netAssets(for: snapshot)
-    }
-
-    private var itemCount: Int {
-        snapshot.entries.filter { entry in
-            guard let item = entry.item else { return false }
-            if item.valuationMethod == .directAmount {
-                return (entry.amount ?? 0) != 0
-            }
-            return (entry.quantity ?? 0) != 0 || (entry.unitPrice ?? 0) != 0
-        }.count
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(snapshot.date.recordDateString)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(AssetTheme.textSecondary)
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(snapshot.date.recordDateString)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(AssetTheme.textSecondary)
 
-                    Text(totalAssets.currencyString())
-                        .font(.system(size: 34, weight: .bold, design: .rounded))
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .minimumScaleFactor(0.6)
-                        .lineLimit(1)
-
-                    HStack(spacing: 8) {
-                        RecordPageBadge(text: "已录入 \(itemCount) 项", tint: AssetTheme.textSecondary)
-                        RecordPageBadge(text: totalLiabilities > 0 ? "含负债" : "纯资产", tint: totalLiabilities > 0 ? AssetTheme.negative : AssetTheme.positive)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                Button(action: onAddAsset) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus")
-                            .font(.subheadline.weight(.bold))
-                        Text("资产类型")
-                            .font(.subheadline.weight(.semibold))
-                    }
+                Text("资产记录")
+                    .font(.title3.weight(.semibold))
                     .foregroundStyle(AssetTheme.textPrimary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(.white.opacity(0.08), in: Capsule())
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button(action: onAddAsset) {
+                HStack(spacing: 4) {
+                    Image(systemName: "plus")
+                        .font(.caption.weight(.semibold))
+                    Text("资产类型")
+                        .font(.caption.weight(.medium))
                 }
-                .buttonStyle(.plain)
+                .foregroundStyle(AssetTheme.textPrimary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(.white.opacity(0.05), in: Capsule())
             }
-
-            HStack(spacing: 8) {
-                SummaryInlineMetric(
-                    title: "负债",
-                    value: totalLiabilities.currencyString(),
-                    accent: AssetTheme.negative
-                )
-                SummaryInlineMetric(
-                    title: "净资产",
-                    value: netAssets.currencyString(),
-                    accent: AssetTheme.gold
-                )
-            }
+            .buttonStyle(.plain)
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(AssetTheme.cardGradient)
-        )
-    }
-}
-
-private struct RecordPageBadge: View {
-    let text: String
-    let tint: Color
-
-    var body: some View {
-        Text(text)
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(tint)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(.white.opacity(0.05), in: Capsule())
-    }
-}
-
-private struct SummaryInlineMetric: View {
-    let title: String
-    let value: String
-    let accent: Color
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(AssetTheme.textSecondary)
-            Text(value)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(accent)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(.vertical, 4)
     }
 }
 
 private struct AssetItemGlyph: View {
     let item: AssetItem
     var accent: Color = AssetTheme.goldSoft
-    var size: CGFloat = 12
+    var size: CGFloat = 11
 
     var body: some View {
-        AssetIconView(
-            iconKey: AssetItemService.resolvedIconKey(for: item),
-            fallbackSymbolName: AssetItemService.displaySymbolName(for: item),
-            accent: accent,
-            iconSize: size,
-            frameSize: size + 2
-        )
+        Image(systemName: AssetItemService.displaySymbolName(for: item))
+            .font(.system(size: size, weight: .medium))
+            .foregroundStyle(accent)
+            .frame(width: size + 3, height: size + 3)
     }
 }
 
@@ -877,7 +794,7 @@ private struct RecordCategoryCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(category.name)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(AssetTheme.textPrimary)
                 Spacer(minLength: 8)
                 Text(categoryTotal.currencyString())
@@ -982,7 +899,7 @@ private struct LiabilityCategorySection: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(category.name)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(AssetTheme.textSecondary)
                 Spacer(minLength: 8)
                 Text(categoryTotal.currencyString())
@@ -1092,7 +1009,7 @@ private struct LiabilityEntryCard: View {
                 }
             } else {
                 Text(displayValue)
-                    .font(.caption.weight(.medium))
+                    .font(.caption2.weight(.medium))
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.textPrimary)
                     .frame(width: inputWidth, alignment: .trailing)
@@ -1239,11 +1156,9 @@ private struct AssetEntryCompactCard: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(item.name)
                                 .font(.caption2.weight(.medium))
-                                .foregroundStyle(AssetTheme.textSecondary)
+                                .foregroundStyle(AssetTheme.textPrimary)
                                 .lineLimit(2)
                                 .fixedSize(horizontal: false, vertical: true)
-
-                            AutoPriceInlineLabel(item: item, marketStore: marketStore)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -1259,7 +1174,7 @@ private struct AssetEntryCompactCard: View {
                     }
                 } else {
                     Text(displayValue)
-                        .font(.caption.weight(.medium))
+                        .font(.caption2.weight(.medium))
                         .monospacedDigit()
                         .foregroundStyle(AssetTheme.textPrimary)
                         .frame(width: inputWidth, alignment: .trailing)
@@ -1309,13 +1224,11 @@ private struct AssetEntryInputRow: View {
 
                         HStack(alignment: .center, spacing: 6) {
                             Text(item.name)
-                                .font(.caption.weight(.medium))
+                                .font(.caption2.weight(.medium))
                                 .foregroundStyle(AssetTheme.textPrimary)
                                 .lineLimit(3)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-
-                            AutoPriceInlineLabel(item: item, marketStore: marketStore)
                         }
                     }
                     .contentShape(Rectangle())
@@ -1326,13 +1239,11 @@ private struct AssetEntryInputRow: View {
 
                     if isEditing {
                         HStack(spacing: 6) {
-                            ATMInputField(text: $quantityText, placeholder: "数量", width: inputWidth, focusedField: $focusedField, focusValue: .quantity(item.id), centered: true, fontSize: 12, fontWeight: .medium, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
-                            ATMInputField(text: $unitPriceText, placeholder: "单价", width: inputWidth, focusedField: $focusedField, focusValue: .unitPrice(item.id), centered: true, fontSize: 12, fontWeight: .medium, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
+                            ATMInputField(text: $quantityText, placeholder: item.autoPricedAssetKind == nil ? "数量" : "金额", width: inputWidth, focusedField: $focusedField, focusValue: .quantity(item.id), centered: true, fontSize: 12, fontWeight: .medium, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                         }
                     } else {
                         HStack(spacing: 12) {
-                            recordValueLabel(title: "数量", value: quantityText)
-                            recordValueLabel(title: "单价", value: unitPriceText)
+                            recordValueLabel(title: item.autoPricedAssetKind == nil ? "数量" : "金额", value: quantityText)
                         }
                     }
                 }
@@ -1346,16 +1257,16 @@ private struct AssetEntryInputRow: View {
 
     @ViewBuilder
     private func recordValueLabel(title: String, value: String) -> some View {
-        let fallbackValue = title == "数量"
+        let fallbackValue = (title == "数量" || title == "金额")
             ? (latestEntry?.quantity?.plainNumberString() ?? "--")
             : (latestEntry?.unitPrice?.plainNumberString() ?? "--")
 
         VStack(alignment: .trailing, spacing: 2) {
             Text(title)
-                .font(.caption2.weight(.medium))
+                .font(.caption2.weight(.regular))
                 .foregroundStyle(AssetTheme.textSecondary)
             Text(value.isEmpty ? fallbackValue : value)
-                .font(.caption.weight(.medium))
+                .font(.caption2.weight(.medium))
                 .monospacedDigit()
                 .foregroundStyle(AssetTheme.textPrimary)
         }
@@ -1375,6 +1286,7 @@ private struct AutoPriceInlineLabel: View {
         if let priceText {
             Text(priceText)
                 .font(.caption2.weight(.regular))
+                .monospacedDigit()
                 .foregroundStyle(AssetTheme.goldSoft)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
@@ -1932,14 +1844,18 @@ private struct EditAssetItemSheet: View {
     @Query private var categories: [AssetCategory]
 
     let item: AssetItem
+    let snapshot: AssetSnapshot?
     @State private var name: String
     @State private var selectedCategoryID: UUID?
     @State private var selectedAutoPricedAssetKind: AutoPricedAssetKind?
     @State private var selectedIconName: String
+    @State private var recordQuantityText: String
+    @State private var recordUnitPriceText: String
     @State private var errorMessage: String?
 
-    init(item: AssetItem) {
+    init(item: AssetItem, snapshot: AssetSnapshot?) {
         self.item = item
+        self.snapshot = snapshot
         _name = State(initialValue: item.name)
         _selectedCategoryID = State(initialValue: item.category?.id)
         _selectedAutoPricedAssetKind = State(initialValue: item.autoPricedAssetKind)
@@ -1948,6 +1864,9 @@ private struct EditAssetItemSheet: View {
             ? AssetItemService.suggestedIconName(for: item.name, autoPricedAssetKind: item.autoPricedAssetKind)
             : storedIconName
         _selectedIconName = State(initialValue: initialIcon)
+        let currentEntry = snapshot?.entries.first(where: { $0.item?.id == item.id })
+        _recordQuantityText = State(initialValue: currentEntry?.quantity?.plainNumberString() ?? "")
+        _recordUnitPriceText = State(initialValue: currentEntry?.unitPrice?.plainNumberString() ?? "")
     }
 
     private var sortedCategories: [AssetCategory] {
@@ -1974,6 +1893,10 @@ private struct EditAssetItemSheet: View {
         return AssetItemService.suggestedIconName(for: name, autoPricedAssetKind: selectedAutoPricedAssetKind)
     }
 
+    private var showsRecordPricingEditor: Bool {
+        item.valuationMethod == .quantityAndUnitPrice
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -1989,6 +1912,42 @@ private struct EditAssetItemSheet: View {
                             sortedCategories: sortedCategories,
                             isAutoPricedLocked: item.autoPricedAssetKind != nil
                         )
+
+                        if showsRecordPricingEditor {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("本次记录")
+                                    .font(.headline)
+                                    .foregroundStyle(AssetTheme.textPrimary)
+
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("数量")
+                                        .font(.caption.weight(.medium))
+                                        .foregroundStyle(AssetTheme.textSecondary)
+                                    TextField("输入数量", text: $recordQuantityText)
+                                        .keyboardType(.decimalPad)
+                                        .textFieldStyle(.plain)
+                                        .font(.body.weight(.medium))
+                                        .foregroundStyle(AssetTheme.textPrimary)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 10)
+                                        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                }
+
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("单价")
+                                        .font(.caption.weight(.medium))
+                                        .foregroundStyle(AssetTheme.textSecondary)
+                                    TextField("输入单价", text: $recordUnitPriceText)
+                                        .keyboardType(.decimalPad)
+                                        .textFieldStyle(.plain)
+                                        .font(.body.weight(.medium))
+                                        .foregroundStyle(AssetTheme.textPrimary)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 10)
+                                        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                }
+                            }
+                        }
 
                         if let errorMessage {
                             Text(errorMessage)
@@ -2057,11 +2016,28 @@ private struct EditAssetItemSheet: View {
                 category: selectedCategory,
                 in: modelContext
             )
+
+            if showsRecordPricingEditor, let snapshot {
+                try SnapshotService.upsertEntry(
+                    snapshot: snapshot,
+                    item: item,
+                    quantity: normalizedNumber(from: recordQuantityText),
+                    unitPrice: normalizedNumber(from: recordUnitPriceText),
+                    in: modelContext
+                )
+            }
+
             dismiss()
         } catch {
             errorMessage = "保存失败，请稍后再试"
             print("[AssetTimeMachine] update item failed: \(error)")
         }
+    }
+
+    private func normalizedNumber(from text: String) -> Double? {
+        let raw = text.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty, let value = Double(raw) else { return nil }
+        return value
     }
 }
 
@@ -5564,16 +5540,20 @@ private extension AssetItem {
     }
 
     var prefersCompactRecordInput: Bool {
-        valuationMethod == .directAmount || resolvedAutoPricedAssetKind != nil || autoExchangeRateCurrencyCode != nil
+        true
     }
 
     var compactRecordPlaceholder: String {
-        if let currencyCode = autoExchangeRateCurrencyCode {
-            return "输入\(currencyCode) 数量"
-        }
+        if valuationMethod == .quantityAndUnitPrice {
+            if let currencyCode = autoExchangeRateCurrencyCode {
+                return "输入\(currencyCode) 数量"
+            }
 
-        if let autoKind = resolvedAutoPricedAssetKind {
-            return "输入\(autoKind.defaultName) 数量"
+            if let autoKind = resolvedAutoPricedAssetKind {
+                return "输入\(autoKind.defaultName) 数量"
+            }
+
+            return "输入数量"
         }
 
         return "输入金额"
