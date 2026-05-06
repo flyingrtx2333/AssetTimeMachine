@@ -603,6 +603,7 @@ struct AssetTimeMachineCloudEntryButton: View {
 
 struct AssetTimeMachineCloudPage: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var store: AssetTimeMachineCloudStore
     @State private var showRestoreConfirm = false
 
@@ -749,7 +750,7 @@ struct AssetTimeMachineCloudPage: View {
                     await store.handleAppleSignIn(result, from: modelContext)
                 }
             }
-            .signInWithAppleButtonStyle(.white)
+            .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
             .frame(height: 52)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .disabled(store.isWorking)

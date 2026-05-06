@@ -719,7 +719,7 @@ private struct RecordPageHero: View {
                 .foregroundStyle(AssetTheme.textPrimary)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 7)
-                .background(.white.opacity(0.05), in: Capsule())
+                .background(AssetTheme.overlayMedium, in: Capsule())
             }
             .buttonStyle(.plain)
         }
@@ -1306,7 +1306,7 @@ private struct AutoPriceInlineLabel: View {
                 .fixedSize(horizontal: true, vertical: false)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 3)
-                .background(.white.opacity(0.04), in: Capsule())
+                .background(AssetTheme.overlaySubtle, in: Capsule())
         }
     }
 }
@@ -1628,7 +1628,7 @@ private struct AssetEditorForm: View {
                                     )
                                         .background(
                                             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                                .fill(.white.opacity(selectedIconName == option.key ? 0.08 : 0.04))
+                                                .fill(selectedIconName == option.key ? AssetTheme.overlayStrong : AssetTheme.overlaySubtle)
                                         )
                                     Text(option.label)
                                         .font(.caption2.weight(.medium))
@@ -1937,7 +1937,7 @@ private struct EditAssetItemSheet: View {
                                         .foregroundStyle(AssetTheme.textPrimary)
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 10)
-                                        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                        .background(AssetTheme.overlayMedium, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                                 }
 
                                 VStack(alignment: .leading, spacing: 8) {
@@ -1951,7 +1951,7 @@ private struct EditAssetItemSheet: View {
                                         .foregroundStyle(AssetTheme.textPrimary)
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 10)
-                                        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                        .background(AssetTheme.overlayMedium, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                                 }
                             }
                         }
@@ -2181,7 +2181,7 @@ private struct SnapshotDetailView: View {
                                         .foregroundStyle(section.group == .liability ? AssetTheme.negative : AssetTheme.goldSoft)
                                 }
                                 .padding(14)
-                                .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                                         .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
@@ -3325,7 +3325,7 @@ private struct BacktestActionChip: View {
             .foregroundStyle(AssetTheme.textPrimary)
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(.white.opacity(0.04), in: Capsule())
+            .background(AssetTheme.overlaySubtle, in: Capsule())
             .overlay(Capsule().stroke(AssetTheme.border.opacity(0.7), lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -3359,7 +3359,7 @@ private struct BacktestRangeSheet: View {
                                     }
                                 }
                                 .padding(16)
-                                .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                                .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 20, style: .continuous)
                                         .stroke(selectedRange == range ? AssetTheme.gold.opacity(0.75) : AssetTheme.border.opacity(0.7), lineWidth: 1)
@@ -3547,7 +3547,7 @@ private struct BacktestWeightRow: View {
                 .tint(tint)
         }
         .padding(14)
-        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(AssetTheme.border.opacity(0.7), lineWidth: 1)
@@ -4160,7 +4160,7 @@ private struct DashboardFreedomSection: View {
                 .foregroundStyle(AssetTheme.textPrimary)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(.white.opacity(0.04), in: Capsule())
+                .background(AssetTheme.overlaySubtle, in: Capsule())
                 .overlay(
                     Capsule()
                         .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
@@ -4322,8 +4322,8 @@ private struct DashboardTrendCard: View {
             .chartXAxis {
                 AxisMarks(values: .automatic(desiredCount: 4)) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
-                        .foregroundStyle(.white.opacity(0.08))
-                    AxisTick().foregroundStyle(.white.opacity(0.15))
+                        .foregroundStyle(AssetTheme.chartGrid)
+                    AxisTick().foregroundStyle(AssetTheme.chartTick)
                     AxisValueLabel(format: .dateTime.month(.defaultDigits).day(), centered: true)
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
@@ -4331,7 +4331,7 @@ private struct DashboardTrendCard: View {
             .chartYAxis {
                 AxisMarks(values: .automatic(desiredCount: 4)) { _ in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
-                        .foregroundStyle(.white.opacity(0.08))
+                        .foregroundStyle(AssetTheme.chartGrid)
                     AxisValueLabel(format: FloatingPointFormatStyle<Double>.number.notation(.compactName))
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
@@ -4376,7 +4376,7 @@ private struct TimeMachineRangePicker: View {
                         .padding(.vertical, 9)
                         .background(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(selectedRange == range ? AssetTheme.goldSoft : .white.opacity(0.03))
+                                .fill(selectedRange == range ? AssetTheme.goldSoft : AssetTheme.overlaySoft)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -4536,8 +4536,8 @@ private struct TimeMachineHeroTrendCard: View {
             .chartXAxis {
                 AxisMarks(values: .automatic(desiredCount: 4)) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
-                        .foregroundStyle(.white.opacity(0.08))
-                    AxisTick().foregroundStyle(.white.opacity(0.15))
+                        .foregroundStyle(AssetTheme.chartGrid)
+                    AxisTick().foregroundStyle(AssetTheme.chartTick)
                     AxisValueLabel(format: .dateTime.month(.defaultDigits).day(), centered: true)
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
@@ -4545,7 +4545,7 @@ private struct TimeMachineHeroTrendCard: View {
             .chartYAxis {
                 AxisMarks(values: .automatic(desiredCount: 4)) { _ in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
-                        .foregroundStyle(.white.opacity(0.08))
+                        .foregroundStyle(AssetTheme.chartGrid)
                     AxisValueLabel(format: FloatingPointFormatStyle<Double>.number.notation(.compactName))
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
@@ -4666,7 +4666,7 @@ private struct TimeMachineDualAxisTrendCard: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(AssetTheme.overlayFaint, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
@@ -5093,7 +5093,7 @@ private struct ATMBackButton: View {
             .foregroundStyle(AssetTheme.textPrimary)
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(.white.opacity(0.04), in: Capsule())
+            .background(AssetTheme.overlaySubtle, in: Capsule())
             .overlay(Capsule().stroke(AssetTheme.border.opacity(0.7), lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -5117,7 +5117,7 @@ private struct ATMHeader<Trailing: View>: View {
                 HStack(spacing: 12) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(.white.opacity(0.04))
+                            .fill(AssetTheme.overlaySubtle)
                             .frame(width: 40, height: 40)
                         Image(systemName: "hourglass")
                             .foregroundStyle(AssetTheme.gold)
@@ -5232,7 +5232,7 @@ private struct CompactStat: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(AssetTheme.border.opacity(0.8), lineWidth: 1)
@@ -5348,7 +5348,7 @@ private struct EndpointCard: View {
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(AssetTheme.goldSoft)
                 .padding(12)
-                .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
         }
         .atmCardStyle()
@@ -5373,7 +5373,7 @@ private struct CapabilityRow: View {
                 .foregroundStyle(AssetTheme.textSecondary)
         }
         .padding(14)
-        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
@@ -5422,7 +5422,7 @@ private struct SkeletonLine: View {
 
     var body: some View {
         RoundedRectangle(cornerRadius: 999, style: .continuous)
-            .fill(.white.opacity(0.08))
+            .fill(AssetTheme.overlayStrong)
             .frame(width: width, height: 14)
     }
 }
