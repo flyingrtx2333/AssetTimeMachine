@@ -3,16 +3,21 @@ import SwiftData
 import Charts
 import UniformTypeIdentifiers
 import UIKit
+import UserNotifications
 
 private enum AppTab: Hashable {
     case dashboard
     case snapshots
     case timeMachine
     case backtest
+    case settings
 }
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
+    @AppStorage("app.notifications.enabled") private var notificationEnabled = false
+    @AppStorage("app.notifications.intervalHours") private var notificationIntervalHours: Double = 1
     @StateObject private var marketStore = RemoteMarketStore()
     @State private var selectedTab: AppTab = {
         let arguments = ProcessInfo.processInfo.arguments
@@ -25,9 +30,21 @@ struct ContentView: View {
         if arguments.contains("-openBacktestTab") {
             return .backtest
         }
+        if arguments.contains("-openSettingsTab") {
+            return .settings
+        }
         return .dashboard
     }()
     @State private var didRunStartup = false
+
+    private var notificationSnapshot: AssetSnapshot? {
+        snapshots.first(where: { Calendar.current.isDateInToday($0.date) }) ?? snapshots.first
+    }
+
+    private var notificationRefreshToken: String {
+        guard let notificationSnapshot else { return "empty" }
+        return "\(notificationSnapshot.id.uuidString)-\(notificationSnapshot.updatedAt.timeIntervalSinceReferenceDate)"
+    }
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -54,10 +71,26 @@ struct ContentView: View {
                     Label("回测", systemImage: "chart.xyaxis.line")
                 }
                 .tag(AppTab.backtest)
+
+            SettingsView()
+                .tabItem {
+                    Label("设置", systemImage: "gearshape")
+                }
+                .tag(AppTab.settings)
         }
         .tint(AssetTheme.gold)
         .task {
             await runStartupIfNeeded()
+            await refreshAssetNotifications()
+        }
+        .onChange(of: notificationEnabled) { _, _ in
+            Task { await refreshAssetNotifications() }
+        }
+        .onChange(of: notificationIntervalHours) { _, _ in
+            Task { await refreshAssetNotifications() }
+        }
+        .onChange(of: notificationRefreshToken) { _, _ in
+            Task { await refreshAssetNotifications() }
         }
     }
 
@@ -96,6 +129,22 @@ struct ContentView: View {
         try? AssetItemService.migrateLegacyAutoPricedItemsIfNeeded(in: modelContext)
         await marketStore.refresh()
         await SnapshotAnchorService.backfillIfNeeded(in: modelContext)
+    }
+
+    @MainActor
+    private func refreshAssetNotifications() async {
+        do {
+            let granted = try await AssetNotificationService.refreshSchedule(
+                isEnabled: notificationEnabled,
+                intervalHours: notificationIntervalHours,
+                snapshot: notificationSnapshot
+            )
+            if notificationEnabled && !granted {
+                notificationEnabled = false
+            }
+        } catch {
+            print("[AssetTimeMachine] refresh notifications failed: \(error)")
+        }
     }
 
     private func launchArgumentValue(after flag: String) -> String? {
@@ -349,6 +398,163 @@ private struct DashboardView: View {
         )
     }
 
+}
+
+private struct SettingsView: View {
+    @Environment(\.openURL) private var openURL
+    @AppStorage("app.appearanceMode") private var appearanceModeRawValue: String = AppAppearanceMode.system.rawValue
+    @AppStorage("app.notifications.enabled") private var notificationEnabled = false
+    @AppStorage("app.notifications.intervalHours") private var notificationIntervalHours: Double = 1
+    @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
+    @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
+
+    private var latestSnapshot: AssetSnapshot? {
+        snapshots.first(where: { Calendar.current.isDateInToday($0.date) }) ?? snapshots.first
+    }
+
+    private var notificationPreview: String {
+        guard let latestSnapshot else { return "还没有可播报的资产记录" }
+
+        let summary = "总资产 \(PortfolioCalculator.totalAssets(for: latestSnapshot).currencyString()) · 净资产 \(PortfolioCalculator.netAssets(for: latestSnapshot).currencyString()) · 负债 \(PortfolioCalculator.totalLiabilities(for: latestSnapshot).currencyString())"
+        if notificationEnabled {
+            return summary
+        }
+        return "开启后会按「\(intervalLabel(notificationIntervalHours))」播报：\n\(summary)"
+    }
+
+    private var notificationStatusText: String {
+        switch notificationStatus {
+        case .authorized:
+            return notificationEnabled ? "通知已开启" : "通知已授权，当前未开启"
+        case .provisional:
+            return notificationEnabled ? "通知已开启" : "通知已授权，当前未开启"
+        case .ephemeral:
+            return notificationEnabled ? "通知已开启" : "通知已授权，当前未开启"
+        case .denied:
+            return "通知权限未开启"
+        case .notDetermined:
+            return notificationEnabled ? "正在请求通知权限" : "通知已关闭，首次开启时将请求通知权限"
+        @unknown default:
+            return "通知状态未知"
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AssetTheme.pageGradient.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("外观")
+                                .font(.headline.weight(.bold))
+                                .foregroundStyle(AssetTheme.textPrimary)
+
+                            Picker("外观", selection: $appearanceModeRawValue) {
+                                ForEach(AppAppearanceMode.allCases) { mode in
+                                    Text(mode.title).tag(mode.rawValue)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+
+                            Text("可以跟随系统，也可以固定为浅色或深色。")
+                                .font(.footnote)
+                                .foregroundStyle(AssetTheme.textSecondary)
+                        }
+                        .atmCardStyle()
+
+                        VStack(alignment: .leading, spacing: 14) {
+                            HStack(alignment: .center, spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("定时资产播报")
+                                        .font(.headline.weight(.bold))
+                                        .foregroundStyle(AssetTheme.textPrimary)
+                                    Text(notificationStatusText)
+                                        .font(.footnote)
+                                        .foregroundStyle(notificationStatus == .denied ? AssetTheme.negative : AssetTheme.textSecondary)
+                                }
+
+                                Spacer(minLength: 12)
+
+                                Toggle("定时资产播报", isOn: $notificationEnabled)
+                                    .labelsHidden()
+                                    .tint(AssetTheme.gold)
+                            }
+
+                            HStack {
+                                Text("播报间隔")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(AssetTheme.textPrimary)
+                                Spacer()
+                                Picker("播报间隔", selection: $notificationIntervalHours) {
+                                    ForEach(AssetNotificationService.intervalOptions, id: \.self) { hours in
+                                        Text(intervalLabel(hours)).tag(hours)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .tint(AssetTheme.gold)
+                            }
+
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("播报预览")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(AssetTheme.textPrimary)
+                                Text(notificationPreview)
+                                    .font(.footnote.weight(.medium))
+                                    .foregroundStyle(AssetTheme.textSecondary)
+                                    .monospacedDigit()
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .padding(12)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            }
+
+                            Text("开启后会按你设定的间隔重复提醒，播报内容会在你打开 App 时自动刷新到最新资产摘要。")
+                                .font(.footnote)
+                                .foregroundStyle(AssetTheme.textSecondary)
+
+                            if notificationStatus == .denied {
+                                Button("打开系统通知设置") {
+                                    guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+                                    openURL(url)
+                                }
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(AssetTheme.textPrimary)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 10)
+                                .background(AssetTheme.overlayMedium, in: Capsule())
+                            }
+                        }
+                        .atmCardStyle()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 18)
+                    .padding(.bottom, 32)
+                }
+            }
+            .navigationTitle("设置")
+            .navigationBarTitleDisplayMode(.inline)
+            .task {
+                await reloadNotificationStatus()
+            }
+            .onChange(of: notificationEnabled) { _, _ in
+                Task {
+                    try? await Task.sleep(nanoseconds: 300_000_000)
+                    await reloadNotificationStatus()
+                }
+            }
+        }
+    }
+
+    private func intervalLabel(_ hours: Double) -> String {
+        let integer = Int(hours)
+        return integer == 24 ? "每天一次" : "每 \(integer) 小时"
+    }
+
+    private func reloadNotificationStatus() async {
+        notificationStatus = await AssetNotificationService.authorizationStatus()
+    }
 }
 
 private struct SnapshotListView: View {

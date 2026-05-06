@@ -10,8 +10,14 @@ import SwiftData
 
 @main
 struct AssetTimeMachineApp: App {
+    @AppStorage("app.appearanceMode") private var appearanceModeRawValue: String = AppAppearanceMode.system.rawValue
+
     init() {
         AssetTheme.configureSystemAppearance()
+    }
+
+    private var appearanceMode: AppAppearanceMode {
+        AppAppearanceMode(rawValue: appearanceModeRawValue) ?? .system
     }
 
     var sharedModelContainer: ModelContainer = {
@@ -33,6 +39,7 @@ struct AssetTimeMachineApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .preferredColorScheme(appearanceMode.colorScheme)
         }
         .modelContainer(sharedModelContainer)
     }

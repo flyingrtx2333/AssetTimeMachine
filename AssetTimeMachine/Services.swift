@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import UserNotifications
 
 struct SnapshotMetrics {
     let date: Date
@@ -441,6 +442,86 @@ enum SnapshotService {
         snapshot.updatedAt = .now
         item.updatedAt = .now
         try context.save()
+    }
+}
+
+enum AssetNotificationService {
+    static let notificationIdentifier = "assettimemachine.asset-report"
+    static let intervalOptions: [Double] = [1, 2, 4, 6, 8, 12, 24]
+
+    static func refreshSchedule(isEnabled: Bool, intervalHours: Double, snapshot: AssetSnapshot?) async throws -> Bool {
+        let center = UNUserNotificationCenter.current()
+
+        if !isEnabled {
+            center.removePendingNotificationRequests(withIdentifiers: [notificationIdentifier])
+            center.removeDeliveredNotifications(withIdentifiers: [notificationIdentifier])
+            return true
+        }
+
+        let granted = try await ensureAuthorization(for: center)
+        guard granted else {
+            center.removePendingNotificationRequests(withIdentifiers: [notificationIdentifier])
+            return false
+        }
+
+        guard let snapshot else { return true }
+
+        center.removePendingNotificationRequests(withIdentifiers: [notificationIdentifier])
+        center.removeDeliveredNotifications(withIdentifiers: [notificationIdentifier])
+
+        let content = UNMutableNotificationContent()
+        content.title = "资产播报"
+        content.subtitle = subtitle(for: snapshot)
+        content.body = body(for: snapshot)
+        content.sound = .default
+
+        let interval = max(3600, intervalHours * 3600)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: true)
+        let request = UNNotificationRequest(identifier: notificationIdentifier, content: content, trigger: trigger)
+        try await center.add(request)
+        return true
+    }
+
+    static func authorizationStatus() async -> UNAuthorizationStatus {
+        await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+    }
+
+    private static func ensureAuthorization(for center: UNUserNotificationCenter) async throws -> Bool {
+        let status = await center.notificationSettings().authorizationStatus
+        switch status {
+        case .authorized, .provisional, .ephemeral:
+            return true
+        case .notDetermined:
+            return try await center.requestAuthorization(options: [.alert, .sound, .badge])
+        case .denied:
+            return false
+        @unknown default:
+            return false
+        }
+    }
+
+    private static func subtitle(for snapshot: AssetSnapshot) -> String {
+        let totalAssets = PortfolioCalculator.totalAssets(for: snapshot)
+        let netAssets = PortfolioCalculator.netAssets(for: snapshot)
+        return "总资产 \(currencyString(totalAssets)) · 净资产 \(currencyString(netAssets))"
+    }
+
+    private static func body(for snapshot: AssetSnapshot) -> String {
+        let liabilities = PortfolioCalculator.totalLiabilities(for: snapshot)
+        let breakdown = PortfolioCalculator.breakdown(for: snapshot)
+        let financial = breakdown[.financial] ?? 0
+        let physical = breakdown[.physical] ?? 0
+        return "负债 \(currencyString(liabilities))。金融 \(currencyString(financial)) · 实物 \(currencyString(physical))"
+    }
+
+    private static func currencyString(_ value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "CNY"
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.maximumFractionDigits = 2
+        formatter.minimumFractionDigits = 2
+        return formatter.string(from: NSNumber(value: value)) ?? "¥0.00"
     }
 }
 
