@@ -2734,9 +2734,9 @@ private struct TimeMachineView: View {
             let latestComparisonPoint = comparisonPoints.last
             return TimeMachineCombinedTrendDescriptor(
                 title: config.title,
-                subtitle: currency == "CNY" ? nil : "折算按当前汇率估算",
-                leftTitle: "指数",
-                rightTitle: "折算",
+                subtitle: currency == "CNY" ? "按当前总资产折算" : "按当前总资产、当前汇率估算",
+                leftTitle: "指数现价",
+                rightTitle: "资产折算",
                 points: comparisonPoints,
                 leftOnlyPoints: displayedLeftPoints,
                 leftColor: config.color,
@@ -5339,8 +5339,8 @@ private struct TimeMachineDualAxisTrendCard: View {
 
     private var dualAxisChart: some View {
         GeometryReader { geometry in
-            let leftWidth: CGFloat = descriptor.showsComparisonLine ? 44 : 36
-            let rightWidth: CGFloat = descriptor.showsComparisonLine ? 44 : 0
+            let leftWidth: CGFloat = descriptor.showsComparisonLine ? 56 : 44
+            let rightWidth: CGFloat = descriptor.showsComparisonLine ? 60 : 0
             let chartWidth = max(geometry.size.width - leftWidth - rightWidth - 8, 120)
 
             HStack(spacing: 4) {
@@ -5395,7 +5395,7 @@ private struct TimeMachineDualAxisTrendCard: View {
 
     private var leftOnlyChart: some View {
         GeometryReader { geometry in
-            let leftWidth: CGFloat = 36
+            let leftWidth: CGFloat = 44
             let chartWidth = max(geometry.size.width - leftWidth - 4, 120)
 
             HStack(spacing: 4) {
@@ -5511,28 +5511,12 @@ private struct TimeMachineDualAxisTrendCard: View {
 
     private var bottomAxisMarks: some AxisContent {
         let axisDates = detailCardAxisDates(descriptor.leftOnlyPoints.map(\.date) + descriptor.points.map(\.date))
-        return AxisMarks(values: axisDates) { value in
+        return AxisMarks(values: axisDates) { _ in
             AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
                 .foregroundStyle(AssetTheme.border.opacity(0.35))
             AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
                 .foregroundStyle(AssetTheme.border.opacity(0.7))
-            AxisValueLabel(anchor: .top, verticalSpacing: 8) {
-                if let date = value.as(Date.self) {
-                    TimeMachineAxisDateLabel(date: date, position: axisLabelPosition(for: date, in: axisDates))
-                }
-            }
         }
-    }
-
-    private func axisLabelPosition(for date: Date, in axisDates: [Date]) -> TimeMachineAxisDateLabel.Position {
-        guard let first = axisDates.first, let last = axisDates.last else { return .middle }
-        if Calendar.current.isDate(date, inSameDayAs: first) {
-            return .leading
-        }
-        if Calendar.current.isDate(date, inSameDayAs: last) {
-            return .trailing
-        }
-        return .middle
     }
 
     private var selectedAxisDateLabel: String {
