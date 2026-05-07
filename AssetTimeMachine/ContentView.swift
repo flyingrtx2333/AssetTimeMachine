@@ -3223,6 +3223,13 @@ private struct BacktestView: View {
                 GeometryReader { proxy in
                     ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 14) {
+                            HStack {
+                                Spacer()
+                                BacktestActionChip(title: "调整时间 · \(selectedRange.label)", systemImage: "calendar") {
+                                    showsRangeSheet = true
+                                }
+                            }
+
                             if report == nil {
                                 Spacer(minLength: 0)
                             }
@@ -3254,12 +3261,10 @@ private struct BacktestView: View {
 
                                 if !isBacktestLoading {
                                     HStack(spacing: 10) {
-                                        BacktestActionChip(title: "重置回测", systemImage: "arrow.counterclockwise") {
-                                            resetBacktest()
-                                        }
-
-                                        BacktestActionChip(title: "调整时间 · \(selectedRange.label)", systemImage: "calendar") {
-                                            showsRangeSheet = true
+                                        if report != nil {
+                                            BacktestActionChip(title: "重置回测", systemImage: "arrow.counterclockwise") {
+                                                resetBacktest()
+                                            }
                                         }
 
                                         Button {
