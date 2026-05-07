@@ -4769,19 +4769,15 @@ private struct DashboardTrendCard: View {
                 TimeMachineAssetSeries.netAssets.title: TimeMachineAssetSeries.netAssets.color,
                 TimeMachineAssetSeries.liabilities.title: TimeMachineAssetSeries.liabilities.color,
             ])
-            .frame(height: 256)
+            .frame(height: 290)
             .chartXAxis {
                 AxisMarks(values: chartAxisDates(points.map(\.date))) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
                         .foregroundStyle(AssetTheme.chartGrid)
                     AxisTick().foregroundStyle(AssetTheme.chartTick)
-                    AxisValueLabel(centered: true) {
+                    AxisValueLabel(anchor: .top, verticalSpacing: 8) {
                         if let date = value.as(Date.self) {
-                            Text(date.chartAxisDateString)
-                                .font(.caption2)
-                                .foregroundStyle(AssetTheme.textSecondary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.72)
+                            TimeMachineAxisDateLabel(date: date)
                         }
                     }
                 }
@@ -4999,19 +4995,15 @@ private struct TimeMachineHeroTrendCard: View {
                 TimeMachineAssetSeries.netAssets.title: TimeMachineAssetSeries.netAssets.color,
                 TimeMachineAssetSeries.liabilities.title: TimeMachineAssetSeries.liabilities.color,
             ])
-            .frame(height: 238)
+            .frame(height: 272)
             .chartXAxis {
                 AxisMarks(values: chartAxisDates(points.map(\.date))) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
                         .foregroundStyle(AssetTheme.chartGrid)
                     AxisTick().foregroundStyle(AssetTheme.chartTick)
-                    AxisValueLabel(centered: true) {
+                    AxisValueLabel(anchor: .top, verticalSpacing: 8) {
                         if let date = value.as(Date.self) {
-                            Text(date.chartAxisDateString)
-                                .font(.caption2)
-                                .foregroundStyle(AssetTheme.textSecondary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.72)
+                            TimeMachineAxisDateLabel(date: date)
                         }
                     }
                 }
@@ -5053,6 +5045,18 @@ private func chartAxisDates(_ dates: [Date]) -> [Date] {
 
     let middle = sortedDates[sortedDates.count / 2]
     return Array(Set([first, middle, last])).sorted()
+}
+
+private struct TimeMachineAxisDateLabel: View {
+    let date: Date
+
+    var body: some View {
+        Text(date.chartAxisDateString)
+            .font(.system(size: 10, weight: .medium, design: .rounded))
+            .foregroundStyle(AssetTheme.textSecondary)
+            .fixedSize()
+            .rotationEffect(.degrees(-28), anchor: .top)
+    }
 }
 
 private struct TimeMachineCurrentAnchorCard: View {
@@ -5220,7 +5224,7 @@ private struct TimeMachineDualAxisTrendCard: View {
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                     }
                 }
-                .frame(width: chartWidth, height: 180)
+                .frame(width: chartWidth, height: 210)
                 .clipped()
                 .chartYScale(domain: 0...1)
                 .chartYAxis(.hidden)
@@ -5246,7 +5250,7 @@ private struct TimeMachineDualAxisTrendCard: View {
                 }
             }
         }
-        .frame(height: 180)
+        .frame(height: 210)
     }
 
     private var leftOnlyChart: some View {
@@ -5273,7 +5277,7 @@ private struct TimeMachineDualAxisTrendCard: View {
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                     }
                 }
-                .frame(width: chartWidth, height: 180)
+                .frame(width: chartWidth, height: 210)
                 .clipped()
                 .chartYScale(domain: 0...1)
                 .chartYAxis(.hidden)
@@ -5288,7 +5292,7 @@ private struct TimeMachineDualAxisTrendCard: View {
                 }
             }
         }
-        .frame(height: 180)
+        .frame(height: 210)
     }
 
     @ChartContentBuilder
@@ -5372,13 +5376,9 @@ private struct TimeMachineDualAxisTrendCard: View {
                 .foregroundStyle(AssetTheme.border.opacity(0.35))
             AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
                 .foregroundStyle(AssetTheme.border.opacity(0.7))
-            AxisValueLabel(centered: true) {
+            AxisValueLabel(anchor: .top, verticalSpacing: 8) {
                 if let date = value.as(Date.self) {
-                    Text(date.chartAxisDateString)
-                        .font(.caption2)
-                        .foregroundStyle(AssetTheme.textSecondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+                    TimeMachineAxisDateLabel(date: date)
                 }
             }
         }
