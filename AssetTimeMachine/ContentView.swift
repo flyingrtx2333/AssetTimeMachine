@@ -2720,22 +2720,32 @@ private struct TimeMachineView: View {
 
         let publicIndexCards: [TimeMachineCombinedTrendDescriptor] = Self.publicIndexConfigs.compactMap { config -> TimeMachineCombinedTrendDescriptor? in
             guard let leftOnlyPoints = historyPointsBySymbol[config.symbol], leftOnlyPoints.count >= 2 else { return nil }
-            let latest = leftOnlyPoints.last
             let currency = marketStore.history(for: config.symbol)?.currency ?? "CNY"
+            let comparisonPoints = pairedPublicIndexPoints(
+                historyPoints: leftOnlyPoints,
+                against: filteredTrendPoints,
+                range: selectedRange,
+                currency: currency
+            )
+            let displayedLeftPoints = comparisonPoints.isEmpty
+                ? leftOnlyPoints
+                : comparisonPoints.map { TimeMachineSingleAxisPoint(date: $0.date, value: $0.leftValue) }
+            let latestLeftPoint = displayedLeftPoints.last
+            let latestComparisonPoint = comparisonPoints.last
             return TimeMachineCombinedTrendDescriptor(
                 title: config.title,
-                subtitle: nil,
+                subtitle: currency == "CNY" ? nil : "折算按当前汇率估算",
                 leftTitle: "指数",
-                rightTitle: "趋势镜像",
-                points: [],
-                leftOnlyPoints: leftOnlyPoints,
+                rightTitle: "折算",
+                points: comparisonPoints,
+                leftOnlyPoints: displayedLeftPoints,
                 leftColor: config.color,
-                rightColor: config.color.opacity(0.45),
-                leftLatestLabel: latest.map { $0.value.currencyString(code: currency) } ?? "--",
-                rightLatestLabel: "--",
+                rightColor: AssetTheme.positive,
+                leftLatestLabel: latestLeftPoint.map { $0.value.currencyString(code: currency) } ?? "--",
+                rightLatestLabel: latestComparisonPoint.map { "\($0.rightValue.plainNumberString()) 份" } ?? "--",
                 leftAxisStyle: .currency(code: currency),
-                rightAxisStyle: .quantity(unit: "", maxFractionDigits: 2),
-                showsComparisonLine: false
+                rightAxisStyle: .quantity(unit: "份", maxFractionDigits: 2),
+                showsComparisonLine: comparisonPoints.count >= 2
             )
         }
 
@@ -2761,6 +2771,41 @@ private struct TimeMachineView: View {
         }
 
         return range.aggregateDetailChartPoints(cleanedPoints)
+    }
+
+    private func pairedPublicIndexPoints(
+        historyPoints: [TimeMachineSingleAxisPoint],
+        against trendPoints: [TimeMachineTrendPoint],
+        range: TimeMachineRange,
+        currency: String
+    ) -> [TimeMachineDualAxisPoint] {
+        let cleanedPoints = historyPoints.compactMap { point -> TimeMachineDualAxisPoint? in
+            guard let nearestTrendPoint = nearestTrendPoint(to: point.date, in: trendPoints),
+                  let priceInCNY = convertedPriceToCNY(point.value, currency: currency),
+                  priceInCNY.isFinite,
+                  priceInCNY > 0 else {
+                return nil
+            }
+
+            let equivalent = nearestTrendPoint.mainAssets / priceInCNY
+            guard equivalent.isFinite, equivalent > 0 else { return nil }
+
+            return TimeMachineDualAxisPoint(
+                date: point.date,
+                leftValue: point.value,
+                rightValue: equivalent
+            )
+        }
+
+        return range.aggregateDetailChartPoints(cleanedPoints)
+    }
+
+    private func convertedPriceToCNY(_ price: Double, currency: String) -> Double? {
+        guard price.isFinite, price > 0 else { return nil }
+        let code = currency.uppercased()
+        guard code != "CNY" else { return price }
+        guard let rate = marketStore.exchangeRate(for: code), rate.isFinite, rate > 0 else { return nil }
+        return price / rate
     }
 
     private func singleAxisPoints(
@@ -4172,10 +4217,26 @@ private enum TimeMachineAxisValueStyle {
     func compactLabel(for value: Double) -> String {
         switch self {
         case let .currency(code, suffix):
-            let symbol = code == "USD" ? "$" : "¥"
-            return "\(symbol)\(value.compactNumberString())\(suffix)"
+            return "\(currencySymbol(for: code))\(value.compactNumberString())\(suffix)"
         case let .quantity(unit, maxFractionDigits):
             return "\(value.compactNumberString(maxFractionDigits: maxFractionDigits))\(unit)"
+        }
+    }
+
+    private func currencySymbol(for code: String) -> String {
+        switch code.uppercased() {
+        case "USD":
+            return "$"
+        case "HKD":
+            return "HK$"
+        case "JPY":
+            return "¥"
+        case "GBP":
+            return "£"
+        case "EUR":
+            return "€"
+        default:
+            return "¥"
         }
     }
 }
@@ -4789,13 +4850,14 @@ private struct DashboardTrendCard: View {
             ])
             .frame(height: 290)
             .chartXAxis {
-                AxisMarks(values: chartAxisDates(points.map(\.date))) { value in
+                let axisDates = chartAxisDates(points.map(\.date))
+                AxisMarks(values: axisDates) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
                         .foregroundStyle(AssetTheme.chartGrid)
                     AxisTick().foregroundStyle(AssetTheme.chartTick)
                     AxisValueLabel(anchor: .top, verticalSpacing: 8) {
                         if let date = value.as(Date.self) {
-                            TimeMachineAxisDateLabel(date: date)
+                            TimeMachineAxisDateLabel(date: date, position: axisLabelPosition(for: date, in: axisDates))
                         }
                     }
                 }
@@ -4829,6 +4891,17 @@ private struct DashboardTrendCard: View {
     private var dateRangeLabel: String {
         guard let first = points.first?.date else { return "暂无范围" }
         return "\(first.chartAxisDateString) - \(latestPoint.date.chartAxisDateString)"
+    }
+
+    private func axisLabelPosition(for date: Date, in axisDates: [Date]) -> TimeMachineAxisDateLabel.Position {
+        guard let first = axisDates.first, let last = axisDates.last else { return .middle }
+        if Calendar.current.isDate(date, inSameDayAs: first) {
+            return .leading
+        }
+        if Calendar.current.isDate(date, inSameDayAs: last) {
+            return .trailing
+        }
+        return .middle
     }
 }
 
@@ -5015,13 +5088,14 @@ private struct TimeMachineHeroTrendCard: View {
             ])
             .frame(height: 272)
             .chartXAxis {
-                AxisMarks(values: chartAxisDates(points.map(\.date))) { value in
+                let axisDates = chartAxisDates(points.map(\.date))
+                AxisMarks(values: axisDates) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
                         .foregroundStyle(AssetTheme.chartGrid)
                     AxisTick().foregroundStyle(AssetTheme.chartTick)
                     AxisValueLabel(anchor: .top, verticalSpacing: 8) {
                         if let date = value.as(Date.self) {
-                            TimeMachineAxisDateLabel(date: date)
+                            TimeMachineAxisDateLabel(date: date, position: axisLabelPosition(for: date, in: axisDates))
                         }
                     }
                 }
@@ -5050,6 +5124,17 @@ private struct TimeMachineHeroTrendCard: View {
         guard let first = points.first?.date, let last = points.last?.date else { return "暂无范围" }
         return "\(first.chartAxisDateString) - \(last.chartAxisDateString)"
     }
+
+    private func axisLabelPosition(for date: Date, in axisDates: [Date]) -> TimeMachineAxisDateLabel.Position {
+        guard let first = axisDates.first, let last = axisDates.last else { return .middle }
+        if Calendar.current.isDate(date, inSameDayAs: first) {
+            return .leading
+        }
+        if Calendar.current.isDate(date, inSameDayAs: last) {
+            return .trailing
+        }
+        return .middle
+    }
 }
 
 private func nearestTrendPoint(to date: Date, in points: [TimeMachineTrendPoint]) -> TimeMachineTrendPoint? {
@@ -5066,14 +5151,44 @@ private func chartAxisDates(_ dates: [Date]) -> [Date] {
 }
 
 private struct TimeMachineAxisDateLabel: View {
+    enum Position {
+        case leading
+        case middle
+        case trailing
+    }
+
     let date: Date
+    var position: Position = .middle
+
+    private var anchor: UnitPoint {
+        switch position {
+        case .leading:
+            return .topLeading
+        case .middle:
+            return .top
+        case .trailing:
+            return .topTrailing
+        }
+    }
+
+    private var xOffset: CGFloat {
+        switch position {
+        case .leading:
+            return 14
+        case .middle:
+            return 0
+        case .trailing:
+            return -14
+        }
+    }
 
     var body: some View {
         Text(date.chartAxisDateString)
             .font(.system(size: 10, weight: .medium, design: .rounded))
             .foregroundStyle(AssetTheme.textSecondary)
             .fixedSize()
-            .rotationEffect(.degrees(-28), anchor: .top)
+            .rotationEffect(.degrees(-28), anchor: anchor)
+            .offset(x: xOffset)
     }
 }
 
@@ -5243,7 +5358,6 @@ private struct TimeMachineDualAxisTrendCard: View {
                     }
                 }
                 .frame(width: chartWidth, height: 210)
-                .clipped()
                 .chartYScale(domain: 0...1)
                 .chartYAxis(.hidden)
                 .chartXAxis { bottomAxisMarks }
@@ -5296,7 +5410,6 @@ private struct TimeMachineDualAxisTrendCard: View {
                     }
                 }
                 .frame(width: chartWidth, height: 210)
-                .clipped()
                 .chartYScale(domain: 0...1)
                 .chartYAxis(.hidden)
                 .chartXAxis { bottomAxisMarks }
@@ -5389,17 +5502,29 @@ private struct TimeMachineDualAxisTrendCard: View {
     }
 
     private var bottomAxisMarks: some AxisContent {
-        AxisMarks(values: chartAxisDates(descriptor.leftOnlyPoints.map(\.date) + descriptor.points.map(\.date))) { value in
+        let axisDates = chartAxisDates(descriptor.leftOnlyPoints.map(\.date) + descriptor.points.map(\.date))
+        return AxisMarks(values: axisDates) { value in
             AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
                 .foregroundStyle(AssetTheme.border.opacity(0.35))
             AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
                 .foregroundStyle(AssetTheme.border.opacity(0.7))
             AxisValueLabel(anchor: .top, verticalSpacing: 8) {
                 if let date = value.as(Date.self) {
-                    TimeMachineAxisDateLabel(date: date)
+                    TimeMachineAxisDateLabel(date: date, position: axisLabelPosition(for: date, in: axisDates))
                 }
             }
         }
+    }
+
+    private func axisLabelPosition(for date: Date, in axisDates: [Date]) -> TimeMachineAxisDateLabel.Position {
+        guard let first = axisDates.first, let last = axisDates.last else { return .middle }
+        if Calendar.current.isDate(date, inSameDayAs: first) {
+            return .leading
+        }
+        if Calendar.current.isDate(date, inSameDayAs: last) {
+            return .trailing
+        }
+        return .middle
     }
 
     private func normalized(_ value: Double, in domain: ClosedRange<Double>) -> Double {
