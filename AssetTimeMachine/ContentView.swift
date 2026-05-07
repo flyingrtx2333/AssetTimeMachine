@@ -2262,16 +2262,18 @@ private struct QuickRecordValueSheet: View {
         return trimmed
     }
 
-    private var autoPriceHint: String? {
+    private var trailingUnitPriceTitle: String? {
+        guard item.valuationMethod == .quantityAndUnitPrice else { return nil }
+        return item.autoPricedAssetKind == nil ? "单价" : "参考单价"
+    }
+
+    private var trailingUnitPriceValue: String? {
         guard item.valuationMethod == .quantityAndUnitPrice else { return nil }
         if item.autoPricedAssetKind != nil,
            let rate = item.resolvedAutoUnitPrice(using: marketStore) {
-            return "当前参考单价 \(rate.currencyString())"
+            return rate.currencyString()
         }
-        if let displayedUnitPriceText {
-            return "当前单价 \(displayedUnitPriceText)"
-        }
-        return nil
+        return displayedUnitPriceText
     }
 
     var body: some View {
@@ -2291,12 +2293,27 @@ private struct QuickRecordValueSheet: View {
                 chromeButton(title: "保存", tint: AssetTheme.gold, action: save)
             }
 
-            HStack(spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
                 AssetItemGlyph(item: item, accent: isLiability ? AssetTheme.negative : AssetTheme.gold, size: 18)
 
                 Text(item.name)
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(AssetTheme.textPrimary)
+
+                Spacer(minLength: 8)
+
+                if let trailingUnitPriceTitle,
+                   let trailingUnitPriceValue {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(trailingUnitPriceTitle)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(AssetTheme.textSecondary)
+                        Text(trailingUnitPriceValue)
+                            .font(.subheadline.weight(.semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(AssetTheme.textPrimary)
+                    }
+                }
             }
 
             quickEditField(
@@ -2305,10 +2322,6 @@ private struct QuickRecordValueSheet: View {
                 placeholder: "输入\(primaryFieldTitle)",
                 focus: .primary
             )
-
-            if let autoPriceHint {
-                quickReadonlyField(title: item.autoPricedAssetKind == nil ? "单价" : "参考单价", value: autoPriceHint.replacingOccurrences(of: item.autoPricedAssetKind == nil ? "当前单价 " : "当前参考单价 ", with: ""))
-            }
 
             if let errorMessage {
                 Text(errorMessage)
@@ -2369,22 +2382,6 @@ private struct QuickRecordValueSheet: View {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .stroke(Color.white.opacity(0.05), lineWidth: 1)
                 }
-        }
-    }
-
-    @ViewBuilder
-    private func quickReadonlyField(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(AssetTheme.textSecondary)
-
-            Text(value)
-                .font(.body.weight(.semibold))
-                .monospacedDigit()
-                .foregroundStyle(AssetTheme.textPrimary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 6)
         }
     }
 
