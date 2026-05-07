@@ -15,6 +15,7 @@ private enum AppTab: Hashable {
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
     @AppStorage("app.notifications.enabled") private var notificationEnabled = false
     @AppStorage("app.notifications.intervalHours") private var notificationIntervalHours: Double = 1
@@ -37,6 +38,9 @@ struct ContentView: View {
         return .dashboard
     }()
     @State private var didRunStartup = false
+    @State private var lastMarketRefreshAt: Date?
+
+    private static let foregroundMarketRefreshInterval: TimeInterval = 3600
 
     private var notificationSnapshot: AssetSnapshot? {
         snapshots.first(where: { Calendar.current.isDateInToday($0.date) }) ?? snapshots.first
@@ -45,6 +49,21 @@ struct ContentView: View {
     private var notificationRefreshToken: String {
         guard let notificationSnapshot else { return "empty" }
         return "\(notificationSnapshot.id.uuidString)-\(notificationSnapshot.updatedAt.timeIntervalSinceReferenceDate)"
+    }
+
+    private var shouldRefreshLiveMarketData: Bool {
+        guard let lastMarketRefreshAt else { return true }
+        return Date().timeIntervalSince(lastMarketRefreshAt) >= Self.foregroundMarketRefreshInterval
+    }
+
+    private var nextMarketRefreshDelayNanoseconds: UInt64 {
+        guard let lastMarketRefreshAt else {
+            return UInt64(Self.foregroundMarketRefreshInterval * 1_000_000_000)
+        }
+
+        let elapsed = Date().timeIntervalSince(lastMarketRefreshAt)
+        let remaining = max(60, Self.foregroundMarketRefreshInterval - elapsed)
+        return UInt64(remaining * 1_000_000_000)
     }
 
     var body: some View {
@@ -84,6 +103,22 @@ struct ContentView: View {
             await runStartupIfNeeded()
             await cloudStore.refreshIfNeeded(from: modelContext)
             await refreshAssetNotifications()
+        }
+        .task(id: scenePhase) {
+            guard scenePhase == .active else { return }
+
+            while !didRunStartup && !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 200_000_000)
+            }
+            guard !Task.isCancelled else { return }
+
+            await refreshLiveMarketDataIfNeeded(force: false)
+
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: nextMarketRefreshDelayNanoseconds)
+                guard !Task.isCancelled else { return }
+                await refreshLiveMarketDataIfNeeded(force: true)
+            }
         }
         .onChange(of: notificationEnabled) { _, _ in
             Task { await refreshAssetNotifications() }
@@ -130,7 +165,59 @@ struct ContentView: View {
         try? SeedDataService.ensureDefaultFinancialItems(in: modelContext)
         try? AssetItemService.migrateLegacyAutoPricedItemsIfNeeded(in: modelContext)
         await marketStore.refresh()
+        lastMarketRefreshAt = .now
         await SnapshotAnchorService.backfillIfNeeded(in: modelContext)
+        await syncTodaySnapshotWithLatestMarketData()
+    }
+
+    @MainActor
+    private func refreshLiveMarketDataIfNeeded(force: Bool) async {
+        guard force || shouldRefreshLiveMarketData else { return }
+        await marketStore.refresh()
+        lastMarketRefreshAt = .now
+        await syncTodaySnapshotWithLatestMarketData()
+        await refreshAssetNotifications()
+    }
+
+    @MainActor
+    private func syncTodaySnapshotWithLatestMarketData() async {
+        do {
+            let snapshot = try SnapshotService.createSnapshot(
+                on: .now,
+                inheritPrevious: true,
+                createMissingEntries: true,
+                in: modelContext
+            )
+            try syncAutoPricedEntries(in: snapshot)
+            await SnapshotAnchorService.captureLiveAnchorsIfPossible(for: snapshot, marketStore: marketStore, in: modelContext)
+        } catch {
+            print("[AssetTimeMachine] sync today snapshot failed: \(error)")
+        }
+    }
+
+    @MainActor
+    private func syncAutoPricedEntries(in snapshot: AssetSnapshot) throws {
+        var didChange = false
+
+        for entry in snapshot.entries {
+            guard let item = entry.item,
+                  item.valuationMethod == .quantityAndUnitPrice,
+                  let liveUnitPrice = item.resolvedAutoUnitPrice(using: marketStore) else {
+                continue
+            }
+
+            if entry.unitPrice == nil || abs((entry.unitPrice ?? 0) - liveUnitPrice) > 0.0001 {
+                entry.unitPrice = liveUnitPrice
+                entry.updatedAt = .now
+                item.updatedAt = .now
+                didChange = true
+            }
+        }
+
+        if didChange {
+            snapshot.updatedAt = .now
+            try modelContext.save()
+        }
     }
 
     @MainActor
