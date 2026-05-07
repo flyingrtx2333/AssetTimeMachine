@@ -554,6 +554,7 @@ private struct SnapshotListView: View {
     @State private var didPrepare = false
     @State private var showsAddAssetItemSheet = ProcessInfo.processInfo.arguments.contains("-openAddAssetItemSheet")
     @State private var editingAssetItem: AssetItem?
+    @State private var quickEditingAssetItem: AssetItem?
     @State private var focusedField: RecordInputField?
 
     private let recordKeyboardSelfTestEnabled = ProcessInfo.processInfo.arguments.contains("-recordKeyboardSelfTest")
@@ -643,6 +644,10 @@ private struct SnapshotListView: View {
                                     onEdit: { item in
                                         dismissKeyboard()
                                         editingAssetItem = item
+                                    },
+                                    onEditValue: { item in
+                                        dismissKeyboard()
+                                        quickEditingAssetItem = item
                                     }
                                 )
                             }
@@ -656,6 +661,10 @@ private struct SnapshotListView: View {
                                     onEdit: { item in
                                         dismissKeyboard()
                                         editingAssetItem = item
+                                    },
+                                    onEditValue: { item in
+                                        dismissKeyboard()
+                                        quickEditingAssetItem = item
                                     }
                                 )
                             }
@@ -710,6 +719,13 @@ private struct SnapshotListView: View {
         }
         .sheet(item: $editingAssetItem) { item in
             EditAssetItemSheet(item: item, snapshot: currentSnapshot)
+        }
+        .sheet(item: $quickEditingAssetItem) { item in
+            QuickRecordValueSheet(item: item, snapshot: currentSnapshot, marketStore: marketStore) {
+                if let snapshot = currentSnapshot {
+                    hydrateInputs(from: snapshot)
+                }
+            }
         }
         .task {
             await prepareSnapshotIfNeeded()
@@ -1021,6 +1037,7 @@ private struct RecordCategoryCard: View {
     @Binding var unitPriceInputs: [UUID: String]
     @Binding var focusedField: RecordInputField?
     let onEdit: (AssetItem) -> Void
+    let onEditValue: (AssetItem) -> Void
     @State private var draggedItemID: UUID?
 
     private let compactColumns = [
@@ -1102,6 +1119,9 @@ private struct RecordCategoryCard: View {
                                         inputWidth: inputWidth,
                                         onEdit: {
                                             onEdit(item)
+                                        },
+                                        onEditValue: {
+                                            onEditValue(item)
                                         }
                                     )
                                 }
@@ -1134,6 +1154,9 @@ private struct RecordCategoryCard: View {
                                 inputWidth: inputWidth,
                                 onEdit: {
                                     onEdit(item)
+                                },
+                                onEditValue: {
+                                    onEditValue(item)
                                 }
                             )
                         }
@@ -1152,6 +1175,7 @@ private struct LiabilityCategorySection: View {
     @Binding var quantityInputs: [UUID: String]
     @Binding var focusedField: RecordInputField?
     let onEdit: (AssetItem) -> Void
+    let onEditValue: (AssetItem) -> Void
     @State private var draggedItemID: UUID?
 
     private let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
@@ -1202,6 +1226,9 @@ private struct LiabilityCategorySection: View {
                             inputWidth: inputWidth,
                             onEdit: {
                                 onEdit(item)
+                            },
+                            onEditValue: {
+                                onEditValue(item)
                             }
                         )
                     }
@@ -1218,6 +1245,7 @@ private struct LiabilityEntryCard: View {
     @Binding var focusedField: RecordInputField?
     let inputWidth: CGFloat
     let onEdit: () -> Void
+    let onEditValue: () -> Void
 
     private var activeField: RecordInputField {
         item.valuationMethod == .directAmount ? .amount(item.id) : .quantity(item.id)
@@ -1279,11 +1307,16 @@ private struct LiabilityEntryCard: View {
                     )
                 }
             } else {
-                Text(displayValue)
-                    .font(.system(size: 13, weight: .semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(AssetTheme.textPrimary)
-                    .frame(width: inputWidth, alignment: .trailing)
+                Button {
+                    onEditValue()
+                } label: {
+                    Text(displayValue)
+                        .font(.system(size: 13, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .frame(width: inputWidth, alignment: .trailing)
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(.vertical, 2)
@@ -1406,6 +1439,7 @@ private struct AssetEntryCompactCard: View {
     @Binding var focusedField: RecordInputField?
     let inputWidth: CGFloat
     let onEdit: () -> Void
+    let onEditValue: () -> Void
 
     private var activeField: RecordInputField {
         item.valuationMethod == .directAmount ? .amount(item.id) : .quantity(item.id)
@@ -1444,11 +1478,16 @@ private struct AssetEntryCompactCard: View {
                         ATMInputField(text: $quantityText, placeholder: "0", width: inputWidth, focusedField: $focusedField, focusValue: .quantity(item.id), centered: true, fontSize: 12, fontWeight: .medium, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
                     }
                 } else {
-                    Text(displayValue)
-                        .font(.system(size: 13, weight: .semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .frame(width: inputWidth, alignment: .trailing)
+                    Button {
+                        onEditValue()
+                    } label: {
+                        Text(displayValue)
+                            .font(.system(size: 13, weight: .semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(AssetTheme.textPrimary)
+                            .frame(width: inputWidth, alignment: .trailing)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -1479,6 +1518,7 @@ private struct AssetEntryInputRow: View {
     @Binding var focusedField: RecordInputField?
     let inputWidth: CGFloat
     let onEdit: () -> Void
+    let onEditValue: () -> Void
 
     private var isEditing: Bool {
         focusedField == .quantity(item.id) || focusedField == .unitPrice(item.id)
@@ -1514,7 +1554,12 @@ private struct AssetEntryInputRow: View {
                         }
                     } else {
                         HStack(spacing: 12) {
-                            recordValueLabel(title: item.autoPricedAssetKind == nil ? "数量" : "金额", value: quantityText)
+                            Button {
+                                onEditValue()
+                            } label: {
+                                recordValueLabel(title: item.autoPricedAssetKind == nil ? "数量" : "金额", value: quantityText)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -2100,6 +2145,208 @@ private struct AddAssetItemSheet: View {
             print("[AssetTimeMachine] create item failed: \(error)")
         }
     }
+}
+
+private struct QuickRecordValueSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+
+    let item: AssetItem
+    let snapshot: AssetSnapshot?
+    @ObservedObject var marketStore: RemoteMarketStore
+    let onSaved: () -> Void
+
+    @State private var amountText: String
+    @State private var quantityText: String
+    @State private var unitPriceText: String
+    @State private var errorMessage: String?
+
+    init(item: AssetItem, snapshot: AssetSnapshot?, marketStore: RemoteMarketStore, onSaved: @escaping () -> Void) {
+        self.item = item
+        self.snapshot = snapshot
+        self.marketStore = marketStore
+        self.onSaved = onSaved
+
+        let currentEntry = snapshot?.entries.first(where: { $0.item?.id == item.id })
+        _amountText = State(initialValue: currentEntry?.amount?.plainNumberString() ?? "")
+        _quantityText = State(initialValue: currentEntry?.quantity?.plainNumberString() ?? "")
+        _unitPriceText = State(initialValue: currentEntry?.unitPrice?.plainNumberString() ?? item.resolvedAutoUnitPrice(using: marketStore)?.plainNumberString() ?? "")
+    }
+
+    private var isLiability: Bool {
+        item.category?.group == .liability
+    }
+
+    private var primaryFieldTitle: String {
+        switch item.valuationMethod {
+        case .directAmount:
+            return isLiability ? "负债数额" : "资产数额"
+        case .quantityAndUnitPrice:
+            return item.autoPricedAssetKind == nil ? "数量" : "金额"
+        }
+    }
+
+    private var showsUnitPriceField: Bool {
+        item.valuationMethod == .quantityAndUnitPrice && item.autoPricedAssetKind == nil
+    }
+
+    private var autoPriceHint: String? {
+        guard item.valuationMethod == .quantityAndUnitPrice,
+              item.autoPricedAssetKind != nil,
+              let rate = item.resolvedAutoUnitPrice(using: marketStore) else { return nil }
+        return "当前参考单价 \(rate.currencyString())"
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AssetTheme.pageGradient.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        HStack(spacing: 12) {
+                            AssetItemGlyph(item: item, accent: isLiability ? AssetTheme.negative : AssetTheme.gold, size: 18)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(item.name)
+                                    .font(.headline.weight(.semibold))
+                                    .foregroundStyle(AssetTheme.textPrimary)
+                                Text("点击数字后，直接改这条记录")
+                                    .font(.footnote)
+                                    .foregroundStyle(AssetTheme.textSecondary)
+                            }
+                        }
+
+                        quickEditField(title: primaryFieldTitle, text: bindingForPrimaryField(), placeholder: "输入\(primaryFieldTitle)")
+
+                        if showsUnitPriceField {
+                            quickEditField(title: "单价", text: $unitPriceText, placeholder: "输入单价")
+                        }
+
+                        if let autoPriceHint {
+                            Text(autoPriceHint)
+                                .font(.footnote)
+                                .foregroundStyle(AssetTheme.textSecondary)
+                                .padding(.horizontal, 4)
+                        }
+
+                        if let errorMessage {
+                            Text(errorMessage)
+                                .font(.footnote)
+                                .foregroundStyle(AssetTheme.negative)
+                                .padding(.horizontal, 4)
+                        }
+
+                        Color.clear
+                            .frame(height: 120)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                dismissActiveKeyboard()
+                            }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 28)
+                }
+                .scrollDismissesKeyboard(.interactively)
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("取消") {
+                        dismiss()
+                    }
+                    .foregroundStyle(AssetTheme.textSecondary)
+                }
+
+                ToolbarItem(placement: .principal) {
+                    Text("修改本次记录")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("保存") {
+                        save()
+                    }
+                    .foregroundStyle(AssetTheme.gold)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func quickEditField(title: String, text: Binding<String>, placeholder: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(AssetTheme.textSecondary)
+            TextField(placeholder, text: text)
+                .keyboardType(.decimalPad)
+                .textFieldStyle(.plain)
+                .font(.body.weight(.medium))
+                .foregroundStyle(AssetTheme.textPrimary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(AssetTheme.overlayMedium, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
+    private func bindingForPrimaryField() -> Binding<String> {
+        switch item.valuationMethod {
+        case .directAmount:
+            return $amountText
+        case .quantityAndUnitPrice:
+            return $quantityText
+        }
+    }
+
+    @MainActor
+    private func save() {
+        guard let snapshot else {
+            errorMessage = "还没拿到今天这条记录，稍后再试"
+            return
+        }
+
+        do {
+            switch item.valuationMethod {
+            case .directAmount:
+                let amount = try validatedNumber(from: amountText, forcePositive: isLiability, fieldName: primaryFieldTitle)
+                try SnapshotService.upsertEntry(snapshot: snapshot, item: item, amount: amount, in: modelContext)
+            case .quantityAndUnitPrice:
+                let quantity = try validatedNumber(from: quantityText, fieldName: primaryFieldTitle)
+                let unitPrice: Double?
+                if let autoRate = item.resolvedAutoUnitPrice(using: marketStore), item.autoPricedAssetKind != nil {
+                    unitPrice = autoRate
+                    unitPriceText = autoRate.plainNumberString()
+                } else {
+                    unitPrice = try validatedNumber(from: unitPriceText, fieldName: "单价")
+                }
+                try SnapshotService.upsertEntry(snapshot: snapshot, item: item, quantity: quantity, unitPrice: unitPrice, in: modelContext)
+            }
+
+            onSaved()
+            dismiss()
+        } catch let error as QuickRecordValueValidationError {
+            errorMessage = error.message
+        } catch {
+            errorMessage = "保存失败，请稍后再试"
+            print("[AssetTimeMachine] quick record save failed: \(error)")
+        }
+    }
+
+    private func validatedNumber(from text: String, forcePositive: Bool = false, fieldName: String) throws -> Double? {
+        let raw = text.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty else { return nil }
+        guard let value = Double(raw) else {
+            throw QuickRecordValueValidationError(message: "\(fieldName)请输入有效数字")
+        }
+        return forcePositive ? abs(value) : value
+    }
+}
+
+private struct QuickRecordValueValidationError: Error {
+    let message: String
 }
 
 private struct EditAssetItemSheet: View {
