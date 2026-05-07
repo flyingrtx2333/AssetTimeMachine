@@ -2773,12 +2773,11 @@ private struct TimeMachineView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 10) {
-                        TimeMachineRangePicker(selectedRange: $selectedRange)
-
                         if let latestPoint, !filteredTrendPoints.isEmpty {
                             TimeMachineHeroTrendCard(
                                 points: filteredTrendPoints,
-                                latestPoint: latestPoint
+                                latestPoint: latestPoint,
+                                selectedRange: $selectedRange
                             )
 
                             LazyVStack(spacing: 12) {
@@ -4617,31 +4616,41 @@ private struct DashboardTrendCard: View {
     }
 }
 
-private struct TimeMachineRangePicker: View {
+private struct TimeMachineRangeSelector: View {
     @Binding var selectedRange: TimeMachineRange
 
     var body: some View {
-        HStack(spacing: 6) {
+        Menu {
             ForEach(TimeMachineRange.allCases) { range in
                 Button {
                     selectedRange = range
                 } label: {
-                    Text(range.label)
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(selectedRange == range ? AssetTheme.background : AssetTheme.textPrimary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(selectedRange == range ? AssetTheme.goldSoft : AssetTheme.overlaySoft)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(AssetTheme.border.opacity(selectedRange == range ? 0 : 0.72), lineWidth: 1)
-                        )
+                    if selectedRange == range {
+                        Label(range.summaryLabel, systemImage: "checkmark")
+                    } else {
+                        Text(range.summaryLabel)
+                    }
                 }
-                .buttonStyle(.plain)
             }
+        } label: {
+            HStack(spacing: 8) {
+                Text(selectedRange.summaryLabel)
+                    .font(.headline.weight(.bold))
+                    .lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption.weight(.bold))
+            }
+            .foregroundStyle(AssetTheme.textPrimary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(AssetTheme.overlaySoft)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(AssetTheme.border.opacity(0.72), lineWidth: 1)
+            )
         }
     }
 }
@@ -4678,6 +4687,7 @@ private struct TimeMachineCurrentAnchorItem: Identifiable {
 private struct TimeMachineHeroTrendCard: View {
     let points: [TimeMachineTrendPoint]
     let latestPoint: TimeMachineTrendPoint
+    @Binding var selectedRange: TimeMachineRange
     @State private var selectedDate: Date?
 
     private var selectedPoint: TimeMachineTrendPoint {
@@ -4688,10 +4698,8 @@ private struct TimeMachineHeroTrendCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text("资产走势")
-                        .font(.headline.weight(.bold))
-                        .foregroundStyle(AssetTheme.textPrimary)
+                HStack(alignment: .center, spacing: 10) {
+                    TimeMachineRangeSelector(selectedRange: $selectedRange)
 
                     Spacer()
 
