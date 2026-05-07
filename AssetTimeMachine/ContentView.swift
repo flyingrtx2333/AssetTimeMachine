@@ -454,7 +454,7 @@ private struct DashboardView: View {
             )
         } else {
             EmptyStateCard(
-                title: "还没有趋势数据",
+                title: "暂无趋势数据",
                 message: "至少需要两条资产快照才能显示走势折线图。",
                 systemImage: "chart.line.uptrend.xyaxis"
             )
@@ -2523,7 +2523,7 @@ private struct QuickRecordValueSheet: View {
     @MainActor
     private func save() {
         guard let snapshot else {
-            errorMessage = "还没拿到今天这条记录，稍后再试"
+            errorMessage = "今日记录尚未加载，请稍后再试"
             return
         }
 
@@ -3323,7 +3323,7 @@ private struct TimeMachineView: View {
                             }
                         } else {
                             EmptyStateCard(
-                                title: "还没有趋势数据",
+                                title: "暂无趋势数据",
                                 message: "请先在记录页保存历史资产快照，再查看趋势图。",
                                 systemImage: "chart.line.uptrend.xyaxis"
                             )
@@ -5195,11 +5195,11 @@ private struct DashboardFreedomSection: View {
     }
 
     private var statusText: String {
-        guard let projection else { return "还不能估算财富自由时间，至少两条才能开始估算财富自由时间" }
+        guard let projection else { return "至少需要两条快照才能估算财富自由时间" }
 
         switch projection.status {
         case .alreadyFree:
-            return "已经财富自由"
+            return "已达到财富自由"
         case let .projected(months):
             let years = months / 12
             let remainingMonths = months % 12
@@ -5211,13 +5211,13 @@ private struct DashboardFreedomSection: View {
                 return "剩余 \(remainingMonths) 月"
             }
         case .unreachable:
-            return "永远无法财富自由"
+            return "按当前趋势无法达到财富自由"
         }
     }
 
     private var reasonText: String? {
         guard let projection else {
-            return "至少要有两条快照，才能开始估算。"
+            return "至少需要两条快照才能开始估算。"
         }
 
         switch projection.status {
@@ -5228,7 +5228,7 @@ private struct DashboardFreedomSection: View {
             if projection.maximumReachableMonthlyExpense > 0 {
                 return "按当前月均净资产增长 \(projection.monthlyGrowth.currencyString()) 估算，若通胀率维持 \(inflationText)，月开销需降到 \(projection.maximumReachableMonthlyExpense.currencyString()) 以内。"
             } else {
-                return "按当前趋势估算，若通胀率维持 \(inflationText)，就算把月开销降到 0 也追不上目标线。"
+                return "按当前趋势估算，若通胀率维持 \(inflationText)，即使将月开销降至 0，也无法达到目标线。"
             }
         }
     }

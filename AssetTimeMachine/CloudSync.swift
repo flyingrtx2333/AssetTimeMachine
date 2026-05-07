@@ -370,14 +370,14 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             errorMessage = friendlyAppleSignInMessage(for: error)
         case let .success(authorization):
             guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else {
-                errorMessage = "没有拿到 Apple 登录凭证"
+                errorMessage = "未获取到 Apple 登录凭证"
                 return
             }
 
             guard let identityTokenData = credential.identityToken,
                   let identityToken = String(data: identityTokenData, encoding: .utf8),
                   !identityToken.isEmpty else {
-                errorMessage = "Apple 没有返回 identity token"
+                errorMessage = "Apple 未返回 identity token"
                 return
             }
 
