@@ -721,13 +721,41 @@ private struct SnapshotListView: View {
         .sheet(item: $editingAssetItem) { item in
             EditAssetItemSheet(item: item, snapshot: currentSnapshot)
         }
-        .sheet(item: $quickEditingAssetItem) { item in
-            QuickRecordValueSheet(item: item, snapshot: currentSnapshot, marketStore: marketStore) {
-                if let snapshot = currentSnapshot {
-                    hydrateInputs(from: snapshot)
+        .overlay {
+            if let item = quickEditingAssetItem {
+                ZStack {
+                    Rectangle()
+                        .fill(.black.opacity(0.42))
+                        .ignoresSafeArea()
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            dismissKeyboard()
+                            quickEditingAssetItem = nil
+                        }
+
+                    QuickRecordValueSheet(
+                        item: item,
+                        snapshot: currentSnapshot,
+                        marketStore: marketStore,
+                        onCancel: {
+                            dismissKeyboard()
+                            quickEditingAssetItem = nil
+                        },
+                        onSaved: {
+                            if let snapshot = currentSnapshot {
+                                hydrateInputs(from: snapshot)
+                            }
+                            dismissKeyboard()
+                            quickEditingAssetItem = nil
+                        }
+                    )
+                    .padding(.horizontal, 24)
+                    .transition(.scale(scale: 0.94).combined(with: .opacity))
                 }
+                .zIndex(10)
             }
         }
+        .animation(.spring(response: 0.28, dampingFraction: 0.88), value: quickEditingAssetItem?.id)
         .task {
             await prepareSnapshotIfNeeded()
             await syncAutoRatesIfPossible()
@@ -2183,23 +2211,30 @@ private struct AddAssetItemSheet: View {
 }
 
 private struct QuickRecordValueSheet: View {
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+
+    private enum QuickRecordValueField: Hashable {
+        case primary
+        case unitPrice
+    }
 
     let item: AssetItem
     let snapshot: AssetSnapshot?
     @ObservedObject var marketStore: RemoteMarketStore
+    let onCancel: () -> Void
     let onSaved: () -> Void
 
     @State private var amountText: String
     @State private var quantityText: String
     @State private var unitPriceText: String
     @State private var errorMessage: String?
+    @FocusState private var focusedField: QuickRecordValueField?
 
-    init(item: AssetItem, snapshot: AssetSnapshot?, marketStore: RemoteMarketStore, onSaved: @escaping () -> Void) {
+    init(item: AssetItem, snapshot: AssetSnapshot?, marketStore: RemoteMarketStore, onCancel: @escaping () -> Void, onSaved: @escaping () -> Void) {
         self.item = item
         self.snapshot = snapshot
         self.marketStore = marketStore
+        self.onCancel = onCancel
         self.onSaved = onSaved
 
         let currentEntry = snapshot?.entries.first(where: { $0.item?.id == item.id })
@@ -2233,85 +2268,97 @@ private struct QuickRecordValueSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AssetTheme.pageGradient.ignoresSafeArea()
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 12) {
+                chromeButton(title: "取消", tint: AssetTheme.textSecondary, action: onCancel)
 
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        HStack(spacing: 12) {
-                            AssetItemGlyph(item: item, accent: isLiability ? AssetTheme.negative : AssetTheme.gold, size: 18)
+                Spacer(minLength: 8)
 
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(item.name)
-                                    .font(.headline.weight(.semibold))
-                                    .foregroundStyle(AssetTheme.textPrimary)
-                                Text("点击数字后，直接改这条记录")
-                                    .font(.footnote)
-                                    .foregroundStyle(AssetTheme.textSecondary)
-                            }
-                        }
+                Text("修改本次记录")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .lineLimit(1)
 
-                        quickEditField(title: primaryFieldTitle, text: bindingForPrimaryField(), placeholder: "输入\(primaryFieldTitle)")
+                Spacer(minLength: 8)
 
-                        if showsUnitPriceField {
-                            quickEditField(title: "单价", text: $unitPriceText, placeholder: "输入单价")
-                        }
-
-                        if let autoPriceHint {
-                            Text(autoPriceHint)
-                                .font(.footnote)
-                                .foregroundStyle(AssetTheme.textSecondary)
-                                .padding(.horizontal, 4)
-                        }
-
-                        if let errorMessage {
-                            Text(errorMessage)
-                                .font(.footnote)
-                                .foregroundStyle(AssetTheme.negative)
-                                .padding(.horizontal, 4)
-                        }
-
-                        Color.clear
-                            .frame(height: 120)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                dismissActiveKeyboard()
-                            }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, 28)
-                }
-                .scrollDismissesKeyboard(.interactively)
+                chromeButton(title: "保存", tint: AssetTheme.gold, action: save)
             }
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("取消") {
-                        dismiss()
-                    }
-                    .foregroundStyle(AssetTheme.textSecondary)
-                }
 
-                ToolbarItem(placement: .principal) {
-                    Text("修改本次记录")
-                        .font(.headline.weight(.bold))
+            HStack(spacing: 12) {
+                AssetItemGlyph(item: item, accent: isLiability ? AssetTheme.negative : AssetTheme.gold, size: 18)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.name)
+                        .font(.headline.weight(.semibold))
                         .foregroundStyle(AssetTheme.textPrimary)
+                    Text("点数字就地改这一条记录")
+                        .font(.footnote)
+                        .foregroundStyle(AssetTheme.textSecondary)
                 }
+            }
 
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("保存") {
-                        save()
-                    }
-                    .foregroundStyle(AssetTheme.gold)
-                }
+            quickEditField(
+                title: primaryFieldTitle,
+                text: bindingForPrimaryField(),
+                placeholder: "输入\(primaryFieldTitle)",
+                focus: .primary
+            )
+
+            if showsUnitPriceField {
+                quickEditField(
+                    title: "单价",
+                    text: $unitPriceText,
+                    placeholder: "输入单价",
+                    focus: .unitPrice
+                )
+            }
+
+            if let autoPriceHint {
+                Text(autoPriceHint)
+                    .font(.footnote)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .padding(.horizontal, 2)
+            }
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(AssetTheme.negative)
+                    .padding(.horizontal, 2)
+            }
+        }
+        .frame(maxWidth: 360)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 18)
+        .background(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(.ultraThinMaterial)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.18), AssetTheme.gold.opacity(0.14)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        }
+        .shadow(color: .black.opacity(0.28), radius: 30, x: 0, y: 18)
+        .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .onTapGesture {
+            dismissActiveKeyboard()
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                focusedField = .primary
             }
         }
     }
 
     @ViewBuilder
-    private func quickEditField(title: String, text: Binding<String>, placeholder: String) -> some View {
+    private func quickEditField(title: String, text: Binding<String>, placeholder: String, focus: QuickRecordValueField) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.caption.weight(.medium))
@@ -2321,10 +2368,27 @@ private struct QuickRecordValueSheet: View {
                 .textFieldStyle(.plain)
                 .font(.body.weight(.medium))
                 .foregroundStyle(AssetTheme.textPrimary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(AssetTheme.overlayMedium, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .focused($focusedField, equals: focus)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(AssetTheme.overlayMedium.opacity(0.9))
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                }
         }
+    }
+
+    private func chromeButton(title: String, tint: Color, action: @escaping () -> Void) -> some View {
+        Button(title, action: action)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Color.white.opacity(0.06), in: Capsule())
     }
 
     private func bindingForPrimaryField() -> Binding<String> {
@@ -2361,7 +2425,6 @@ private struct QuickRecordValueSheet: View {
             }
 
             onSaved()
-            dismiss()
         } catch let error as QuickRecordValueValidationError {
             errorMessage = error.message
         } catch {
