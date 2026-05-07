@@ -3238,24 +3238,10 @@ private struct BacktestView: View {
                                 Button {
                                     showsAllocationSheet = true
                                 } label: {
-                                    HStack(alignment: .center, spacing: 18) {
-                                        backtestLegendColumn(Array(allocationSlices.prefix(allocationSplitIndex)), alignment: .trailing)
-
-                                        Chart(allocationSlices) { slice in
-                                            SectorMark(
-                                                angle: .value("占比", slice.amount),
-                                                innerRadius: .ratio(0.58),
-                                                angularInset: 2
-                                            )
-                                            .foregroundStyle(slice.color)
-                                        }
-                                        .frame(width: 176, height: 176)
-                                        .chartLegend(.hidden)
-
-                                        backtestLegendColumn(Array(allocationSlices.dropFirst(allocationSplitIndex)), alignment: .leading)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .frame(minHeight: 200)
+                                    BacktestAllocationCard(
+                                        slices: allocationSlices,
+                                        activeAllocationSummary: activeAllocationSummary
+                                    )
                                 }
                                 .buttonStyle(.plain)
 
@@ -3271,13 +3257,29 @@ private struct BacktestView: View {
                                             hasStartedBacktest = true
                                             scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
                                         } label: {
-                                            Text(report == nil ? "开始回测" : "重新回测")
-                                                .font(.subheadline.weight(.bold))
-                                                .foregroundStyle(.black)
-                                                .frame(maxWidth: .infinity)
-                                                .padding(.horizontal, 22)
-                                                .padding(.vertical, 12)
-                                                .background(AssetTheme.gold, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                            HStack(spacing: 8) {
+                                                Image(systemName: report == nil ? "play.fill" : "arrow.clockwise")
+                                                    .font(.footnote.weight(.bold))
+                                                Text(report == nil ? "开始回测" : "重新回测")
+                                                    .font(.subheadline.weight(.bold))
+                                            }
+                                            .foregroundStyle(Color.black.opacity(0.88))
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.horizontal, 18)
+                                            .padding(.vertical, 14)
+                                            .background(
+                                                LinearGradient(
+                                                    colors: [AssetTheme.goldSoft, AssetTheme.gold],
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                ),
+                                                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                            )
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                                    .stroke(AssetTheme.gold.opacity(0.32), lineWidth: 1)
+                                            )
+                                            .shadow(color: AssetTheme.gold.opacity(0.18), radius: 12, y: 6)
                                         }
                                         .buttonStyle(.plain)
                                     }
@@ -3540,32 +3542,105 @@ private struct BacktestView: View {
         return "\(days)天"
     }
 
-    @ViewBuilder
-    private func backtestLegendColumn(_ slices: [BacktestAllocationSlice], alignment: HorizontalAlignment) -> some View {
-        VStack(alignment: alignment, spacing: 12) {
-            ForEach(slices) { slice in
-                HStack(spacing: 8) {
-                    if alignment == .trailing {
-                        Text("\(slice.title) \(Int(slice.amount.rounded()))%")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(AssetTheme.textPrimary)
-                            .multilineTextAlignment(.trailing)
-                        Circle()
-                            .fill(slice.color)
-                            .frame(width: 8, height: 8)
-                    } else {
-                        Circle()
-                            .fill(slice.color)
-                            .frame(width: 8, height: 8)
-                        Text("\(slice.title) \(Int(slice.amount.rounded()))%")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(AssetTheme.textPrimary)
-                            .multilineTextAlignment(.leading)
-                    }
+}
+
+private struct BacktestAllocationCard: View {
+    let slices: [BacktestAllocationSlice]
+    let activeAllocationSummary: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .center, spacing: 12) {
+                Text("资产配置")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                Spacer(minLength: 12)
+
+                Image(systemName: "slider.horizontal.3")
+                    .font(.footnote.weight(.bold))
+                    .foregroundStyle(AssetTheme.textSecondary)
+            }
+
+            ZStack {
+                Chart(slices) { slice in
+                    SectorMark(
+                        angle: .value("占比", slice.amount),
+                        innerRadius: .ratio(0.68),
+                        angularInset: 2
+                    )
+                    .foregroundStyle(slice.color)
+                }
+                .frame(width: 188, height: 188)
+                .chartLegend(.hidden)
+
+                VStack(spacing: 6) {
+                    Text("当前配置")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                    Text(activeAllocationSummary)
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.78)
+                }
+                .padding(.horizontal, 18)
+            }
+            .frame(maxWidth: .infinity)
+
+            VStack(spacing: 0) {
+                ForEach(Array(slices.enumerated()), id: \.element.id) { index, slice in
+                    BacktestAllocationRow(slice: slice, showsDivider: index < slices.count - 1)
                 }
             }
+            .background(AssetTheme.surfaceRaised.opacity(0.72), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(AssetTheme.border.opacity(0.5), lineWidth: 1)
+            )
         }
-        .frame(maxWidth: .infinity, alignment: alignment == .trailing ? .trailing : .leading)
+        .padding(20)
+        .frame(maxWidth: .infinity)
+        .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.72), lineWidth: 1)
+        )
+    }
+}
+
+private struct BacktestAllocationRow: View {
+    let slice: BacktestAllocationSlice
+    let showsDivider: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Circle()
+                    .fill(slice.color)
+                    .frame(width: 10, height: 10)
+
+                Text(slice.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                Spacer()
+
+                Text("\(Int(slice.amount.rounded()))%")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(AssetTheme.textSecondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+
+            if showsDivider {
+                Rectangle()
+                    .fill(AssetTheme.border.opacity(0.45))
+                    .frame(height: 1)
+                    .padding(.leading, 38)
+            }
+        }
     }
 }
 
@@ -3579,15 +3654,19 @@ private struct BacktestActionChip: View {
             HStack(spacing: 8) {
                 Image(systemName: systemImage)
                     .font(.footnote.weight(.bold))
+                    .foregroundStyle(AssetTheme.goldSoft)
                 Text(title)
-                    .font(.caption.weight(.semibold))
+                    .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
             }
             .foregroundStyle(AssetTheme.textPrimary)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .background(AssetTheme.overlaySubtle, in: Capsule())
-            .overlay(Capsule().stroke(AssetTheme.border.opacity(0.7), lineWidth: 1))
+            .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(AssetTheme.border.opacity(0.68), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
     }
