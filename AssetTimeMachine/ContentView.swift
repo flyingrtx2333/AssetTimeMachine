@@ -3018,6 +3018,26 @@ private enum BacktestEngine {
         )
     }
 
+    static func availableDateBounds(for seriesList: [PublicHistorySeries]) -> ClosedRange<Date>? {
+        let seriesBounds = seriesList.compactMap { series -> ClosedRange<Date>? in
+            guard let firstText = series.dates.first,
+                  let lastText = series.dates.last,
+                  let firstDate = historicalSeriesDateStatic(from: firstText),
+                  let lastDate = historicalSeriesDateStatic(from: lastText) else {
+                return nil
+            }
+            return firstDate...lastDate
+        }
+
+        guard let lowerBound = seriesBounds.map(\.lowerBound).max(),
+              let upperBound = seriesBounds.map(\.upperBound).min(),
+              lowerBound <= upperBound else {
+            return nil
+        }
+
+        return lowerBound...upperBound
+    }
+
     fileprivate static func historicalSeriesDateStatic(from text: String) -> Date? {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
@@ -3115,47 +3135,13 @@ private struct BacktestAllocationSlice: Identifiable {
     var id: String { title }
 }
 
-private enum BacktestRange: String, CaseIterable, Identifiable {
-    case sixMonths
-    case oneYear
-    case threeYears
-    case fiveYears
-    case all
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .sixMonths: return "6个月"
-        case .oneYear: return "1年"
-        case .threeYears: return "3年"
-        case .fiveYears: return "5年"
-        case .all: return "全部"
-        }
-    }
-
-    func startDate(from latestDate: Date, calendar: Calendar = .current) -> Date? {
-        switch self {
-        case .sixMonths:
-            return calendar.date(byAdding: .month, value: -6, to: latestDate)
-        case .oneYear:
-            return calendar.date(byAdding: .year, value: -1, to: latestDate)
-        case .threeYears:
-            return calendar.date(byAdding: .year, value: -3, to: latestDate)
-        case .fiveYears:
-            return calendar.date(byAdding: .year, value: -5, to: latestDate)
-        case .all:
-            return nil
-        }
-    }
-}
-
 private struct BacktestView: View {
     @ObservedObject var marketStore: RemoteMarketStore
     @State private var cashWeight: Double = BacktestDefaults.cashWeight
     @State private var goldWeight: Double = BacktestDefaults.goldWeight
     @State private var indexWeights: [String: Double] = BacktestDefaults.indexWeights
-    @State private var selectedRange: BacktestRange = .all
+    @State private var selectedStartDate: Date?
+    @State private var selectedEndDate: Date?
     @State private var animationProgress: Double = 1
     @State private var showsAllocationSheet = false
     @State private var showsRangeSheet = false
@@ -3211,6 +3197,60 @@ private struct BacktestView: View {
         }
     }
 
+    private var activeBacktestSourceSeries: [PublicHistorySeries] {
+        var series: [PublicHistorySeries] = []
+
+        if goldWeight > 0, let goldSeries = marketStore.history(for: "gold_cny") {
+            series.append(goldSeries)
+        }
+
+        series.append(contentsOf: positiveIndexOptions.compactMap { option in
+            marketStore.history(for: option.symbol)
+        })
+
+        if !series.isEmpty {
+            return series
+        }
+
+        if let goldSeries = marketStore.history(for: "gold_cny") {
+            series.append(goldSeries)
+        }
+
+        series.append(contentsOf: indexOptions.compactMap { option in
+            marketStore.history(for: option.symbol)
+        })
+
+        return series
+    }
+
+    private var availableBacktestBounds: ClosedRange<Date>? {
+        BacktestEngine.availableDateBounds(for: activeBacktestSourceSeries)
+    }
+
+    private var effectiveBacktestBounds: ClosedRange<Date>? {
+        guard let availableBacktestBounds else { return nil }
+
+        let start = max(selectedStartDate ?? availableBacktestBounds.lowerBound, availableBacktestBounds.lowerBound)
+        let end = min(selectedEndDate ?? availableBacktestBounds.upperBound, availableBacktestBounds.upperBound)
+
+        guard start <= end else {
+            return availableBacktestBounds
+        }
+
+        return start...end
+    }
+
+    private var selectedDateRangeLabel: String {
+        guard let effectiveBacktestBounds else { return "调整时间" }
+        return "\(effectiveBacktestBounds.lowerBound.recordDateString) - \(effectiveBacktestBounds.upperBound.recordDateString)"
+    }
+
+    private var selectedDateFilterToken: String {
+        let startToken = selectedStartDate?.recordDateString ?? "nil"
+        let endToken = selectedEndDate?.recordDateString ?? "nil"
+        return "\(startToken)|\(endToken)"
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -3222,7 +3262,7 @@ private struct BacktestView: View {
                             BacktestAllocationCard(
                                 slices: allocationSlices,
                                 activeAllocationSummary: activeAllocationSummary,
-                                selectedRange: selectedRange,
+                                selectedDateRangeLabel: selectedDateRangeLabel,
                                 onTapRange: {
                                     showsRangeSheet = true
                                 },
@@ -3285,9 +3325,11 @@ private struct BacktestView: View {
                                         .font(.headline.weight(.bold))
                                         .foregroundStyle(AssetTheme.textPrimary)
                                     Spacer()
-                                    Text(selectedRange.label)
+                                    Text(selectedDateRangeLabel)
                                         .font(.caption.weight(.semibold))
                                         .foregroundStyle(AssetTheme.textSecondary)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.82)
                                     Text(activeAllocationSummary)
                                         .font(.caption.weight(.semibold))
                                         .foregroundStyle(AssetTheme.goldSoft)
@@ -3360,9 +3402,21 @@ private struct BacktestView: View {
                 .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showsRangeSheet) {
-                BacktestRangeSheet(selectedRange: $selectedRange)
-                    .presentationDetents([.fraction(0.42)])
+                if let availableBacktestBounds, let effectiveBacktestBounds {
+                    BacktestDateRangeSheet(
+                        availableBounds: availableBacktestBounds,
+                        selectedBounds: effectiveBacktestBounds
+                    ) { startDate, endDate in
+                        selectedStartDate = startDate
+                        selectedEndDate = endDate
+                    }
+                    .presentationDetents([.fraction(0.48)])
                     .presentationDragIndicator(.visible)
+                } else {
+                    ContentUnavailableView("暂无可用历史数据", systemImage: "calendar.badge.exclamationmark")
+                        .presentationDetents([.fraction(0.32)])
+                        .presentationDragIndicator(.visible)
+                }
             }
         }
         .onAppear {
@@ -3370,7 +3424,7 @@ private struct BacktestView: View {
                 scheduleBacktestRefresh(animated: !hasPlayedInitialBacktestAnimation)
             }
         }
-        .onChange(of: selectedRange) { _, _ in
+        .onChange(of: selectedDateFilterToken) { _, _ in
             guard hasStartedBacktest else { return }
             scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
         }
@@ -3443,7 +3497,8 @@ private struct BacktestView: View {
         cashWeight = BacktestDefaults.cashWeight
         goldWeight = BacktestDefaults.goldWeight
         indexWeights = BacktestDefaults.indexWeights
-        selectedRange = .all
+        selectedStartDate = nil
+        selectedEndDate = nil
         report = nil
         displayPoints = []
         animationProgress = 1
@@ -3462,16 +3517,12 @@ private struct BacktestView: View {
     }
 
     private func filteredHistorySeries(_ series: PublicHistorySeries?) -> PublicHistorySeries? {
-        guard let series, selectedRange != .all else { return series }
-        guard let latestText = series.dates.last,
-              let latestDate = BacktestEngine.historicalSeriesDateStatic(from: latestText),
-              let startDate = selectedRange.startDate(from: latestDate) else {
-            return series
-        }
+        guard let series else { return nil }
+        guard let effectiveBacktestBounds else { return series }
 
         let filteredPairs = zip(series.dates, series.prices).filter { dateText, _ in
             guard let date = BacktestEngine.historicalSeriesDateStatic(from: dateText) else { return false }
-            return date >= startDate
+            return date >= effectiveBacktestBounds.lowerBound && date <= effectiveBacktestBounds.upperBound
         }
         let filteredDates = filteredPairs.map { $0.0 }
         let filteredPrices = filteredPairs.map { $0.1 }
@@ -3527,7 +3578,7 @@ private struct BacktestView: View {
 private struct BacktestAllocationCard: View {
     let slices: [BacktestAllocationSlice]
     let activeAllocationSummary: String
-    let selectedRange: BacktestRange
+    let selectedDateRangeLabel: String
     let onTapRange: () -> Void
     let onTapAllocation: () -> Void
 
@@ -3536,8 +3587,10 @@ private struct BacktestAllocationCard: View {
             HStack(alignment: .center, spacing: 12) {
                 Button(action: onTapRange) {
                     HStack(spacing: 8) {
-                        Text("调整时间 · \(selectedRange.label)")
+                        Text(selectedDateRangeLabel)
                             .font(.headline.weight(.bold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.78)
                         Image(systemName: "chevron.down")
                             .font(.caption.weight(.bold))
                     }
@@ -3656,9 +3709,23 @@ private struct BacktestActionChip: View {
     }
 }
 
-private struct BacktestRangeSheet: View {
+private struct BacktestDateRangeSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @Binding var selectedRange: BacktestRange
+    @State private var startDate: Date
+    @State private var endDate: Date
+    let availableBounds: ClosedRange<Date>
+    let onApply: (Date, Date) -> Void
+
+    init(
+        availableBounds: ClosedRange<Date>,
+        selectedBounds: ClosedRange<Date>,
+        onApply: @escaping (Date, Date) -> Void
+    ) {
+        _startDate = State(initialValue: selectedBounds.lowerBound)
+        _endDate = State(initialValue: selectedBounds.upperBound)
+        self.availableBounds = availableBounds
+        self.onApply = onApply
+    }
 
     var body: some View {
         NavigationStack {
@@ -3666,31 +3733,75 @@ private struct BacktestRangeSheet: View {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 12) {
-                        ForEach(BacktestRange.allCases) { range in
-                            Button {
-                                selectedRange = range
-                                dismiss()
-                            } label: {
-                                HStack {
-                                    Text(range.label)
-                                        .font(.headline.weight(.semibold))
-                                        .foregroundStyle(AssetTheme.textPrimary)
-                                    Spacer()
-                                    if selectedRange == range {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundStyle(AssetTheme.gold)
-                                    }
-                                }
-                                .padding(16)
-                                .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                        .stroke(selectedRange == range ? AssetTheme.gold.opacity(0.75) : AssetTheme.border.opacity(0.7), lineWidth: 1)
-                                )
-                            }
-                            .buttonStyle(.plain)
+                    VStack(alignment: .leading, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("可回测区间")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(AssetTheme.textSecondary)
+                            Text("\(availableBounds.lowerBound.recordDateString) - \(availableBounds.upperBound.recordDateString)")
+                                .font(.headline.weight(.bold))
+                                .foregroundStyle(AssetTheme.textPrimary)
                         }
+
+                        VStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("开始日期")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(AssetTheme.textPrimary)
+
+                                DatePicker(
+                                    "开始日期",
+                                    selection: Binding(
+                                        get: { startDate },
+                                        set: { startDate = min($0, endDate) }
+                                    ),
+                                    in: availableBounds.lowerBound...endDate,
+                                    displayedComponents: .date
+                                )
+                                .labelsHidden()
+                                .datePickerStyle(.compact)
+                            }
+                            .padding(16)
+                            .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .stroke(AssetTheme.border.opacity(0.7), lineWidth: 1)
+                            )
+
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("结束日期")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(AssetTheme.textPrimary)
+
+                                DatePicker(
+                                    "结束日期",
+                                    selection: Binding(
+                                        get: { endDate },
+                                        set: { endDate = max($0, startDate) }
+                                    ),
+                                    in: startDate...availableBounds.upperBound,
+                                    displayedComponents: .date
+                                )
+                                .labelsHidden()
+                                .datePickerStyle(.compact)
+                            }
+                            .padding(16)
+                            .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .stroke(AssetTheme.border.opacity(0.7), lineWidth: 1)
+                            )
+                        }
+
+                        Button {
+                            startDate = availableBounds.lowerBound
+                            endDate = availableBounds.upperBound
+                        } label: {
+                            Text("使用全部历史区间")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(AssetTheme.goldSoft)
+                        }
+                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 20)
@@ -3698,10 +3809,26 @@ private struct BacktestRangeSheet: View {
                 }
             }
             .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") {
+                        dismiss()
+                    }
+                    .foregroundStyle(AssetTheme.textSecondary)
+                }
+
                 ToolbarItem(placement: .principal) {
                     Text("调整时间")
                         .font(.headline.weight(.bold))
                         .foregroundStyle(AssetTheme.textPrimary)
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("完成") {
+                        onApply(startDate, endDate)
+                        dismiss()
+                    }
+                    .fontWeight(.bold)
+                    .foregroundStyle(AssetTheme.goldSoft)
                 }
             }
         }
