@@ -5116,6 +5116,7 @@ private struct TimeMachineHeroTrendCard: View {
                     selectedDate = nil
                 }
             }
+            .padding(.bottom, 10)
         }
         .atmCardStyle()
     }
@@ -5174,17 +5175,17 @@ private struct TimeMachineAxisDateLabel: View {
     private var xOffset: CGFloat {
         switch position {
         case .leading:
-            return 14
+            return 24
         case .middle:
             return 0
         case .trailing:
-            return -14
+            return -24
         }
     }
 
     var body: some View {
-        Text(date.chartAxisDateString)
-            .font(.system(size: 10, weight: .medium, design: .rounded))
+        Text(date.chartAxisShortDateString)
+            .font(.system(size: 9, weight: .medium, design: .rounded))
             .foregroundStyle(AssetTheme.textSecondary)
             .fixedSize()
             .rotationEffect(.degrees(-28), anchor: anchor)
@@ -5275,14 +5276,21 @@ private struct TimeMachineDualAxisTrendCard: View {
 
             if canShowDualAxisChart {
                 dualAxisChart
+                    .padding(.bottom, 6)
             } else if canShowLeftOnlyChart {
                 leftOnlyChart
+                    .padding(.bottom, 6)
             } else {
                 Text("记录不足")
                     .font(.caption)
                     .foregroundStyle(AssetTheme.textSecondary)
                     .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)
             }
+
+            Text(selectedDate == nil ? dateRangeLabel : selectedAxisDateLabel)
+                .font(AppTypography.meta)
+                .foregroundStyle(AssetTheme.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -5502,7 +5510,7 @@ private struct TimeMachineDualAxisTrendCard: View {
     }
 
     private var bottomAxisMarks: some AxisContent {
-        let axisDates = chartAxisDates(descriptor.leftOnlyPoints.map(\.date) + descriptor.points.map(\.date))
+        let axisDates = detailCardAxisDates(descriptor.leftOnlyPoints.map(\.date) + descriptor.points.map(\.date))
         return AxisMarks(values: axisDates) { value in
             AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
                 .foregroundStyle(AssetTheme.border.opacity(0.35))
@@ -5525,6 +5533,28 @@ private struct TimeMachineDualAxisTrendCard: View {
             return .trailing
         }
         return .middle
+    }
+
+    private var selectedAxisDateLabel: String {
+        if let selectedDualPoint {
+            return selectedDualPoint.date.chartAxisDateString
+        }
+        if let selectedLeftOnlyPoint {
+            return selectedLeftOnlyPoint.date.chartAxisDateString
+        }
+        return dateRangeLabel
+    }
+
+    private var dateRangeLabel: String {
+        let dates = (descriptor.leftOnlyPoints.map(\.date) + descriptor.points.map(\.date)).sorted()
+        guard let first = dates.first, let last = dates.last else { return "暂无范围" }
+        return "\(first.chartAxisDateString) - \(last.chartAxisDateString)"
+    }
+
+    private func detailCardAxisDates(_ dates: [Date]) -> [Date] {
+        let sortedDates = Array(Set(dates)).sorted()
+        guard sortedDates.count > 2 else { return sortedDates }
+        return [sortedDates[sortedDates.count / 2]]
     }
 
     private func normalized(_ value: Double, in domain: ClosedRange<Double>) -> Double {
@@ -6296,6 +6326,13 @@ private extension Date {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "zh_CN")
         formatter.dateFormat = "yyyy.MM.dd"
+        return formatter.string(from: self)
+    }
+
+    var chartAxisShortDateString: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "yy.MM.dd"
         return formatter.string(from: self)
     }
 }

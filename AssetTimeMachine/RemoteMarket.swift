@@ -227,12 +227,22 @@ final class RemoteMarketStore: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
+        do {
+            let exchangeRates = try await RemoteMarketClient.fetchExchangeRates()
+            self.exchangeRates = Dictionary(uniqueKeysWithValues: exchangeRates.rates.map { ($0.currency.uppercased(), $0.rate) })
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+
         if let debugHistoryPath = Self.launchArgumentValue(after: "-marketHistoryJSONPath") {
             do {
                 let data = try Data(contentsOf: URL(fileURLWithPath: debugHistoryPath))
                 let response = try RemoteMarketClient.decoder().decode(PublicHistoryResponse.self, from: data)
                 self.historySeries = Dictionary(uniqueKeysWithValues: response.series.map { (Self.normalizedHistorySymbol($0.symbol), $0) })
-                errorMessage = nil
+                if errorMessage == nil {
+                    errorMessage = nil
+                }
             } catch {
                 errorMessage = "调试历史数据加载失败: \(error.localizedDescription)"
             }
@@ -242,14 +252,9 @@ final class RemoteMarketStore: ObservableObject {
         do {
             let overview = try await RemoteMarketClient.fetchOverview()
             self.overview = overview
-            errorMessage = nil
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-
-        do {
-            let exchangeRates = try await RemoteMarketClient.fetchExchangeRates()
-            self.exchangeRates = Dictionary(uniqueKeysWithValues: exchangeRates.rates.map { ($0.currency.uppercased(), $0.rate) })
+            if errorMessage == nil {
+                errorMessage = nil
+            }
         } catch {
             if errorMessage == nil {
                 errorMessage = error.localizedDescription
