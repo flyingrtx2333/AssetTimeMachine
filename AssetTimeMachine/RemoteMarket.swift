@@ -162,7 +162,7 @@ enum RemoteMarketClient {
         URL(string: path, relativeTo: baseURL)!.absoluteURL
     }
 
-    private static func decoder() -> JSONDecoder {
+    static func decoder() -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
@@ -227,6 +227,18 @@ final class RemoteMarketStore: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
+        if let debugHistoryPath = Self.launchArgumentValue(after: "-marketHistoryJSONPath") {
+            do {
+                let data = try Data(contentsOf: URL(fileURLWithPath: debugHistoryPath))
+                let response = try RemoteMarketClient.decoder().decode(PublicHistoryResponse.self, from: data)
+                self.historySeries = Dictionary(uniqueKeysWithValues: response.series.map { (Self.normalizedHistorySymbol($0.symbol), $0) })
+                errorMessage = nil
+            } catch {
+                errorMessage = "调试历史数据加载失败: \(error.localizedDescription)"
+            }
+            return
+        }
+
         do {
             let overview = try await RemoteMarketClient.fetchOverview()
             self.overview = overview
@@ -266,10 +278,22 @@ final class RemoteMarketStore: ObservableObject {
         }
     }
 
+    private static func launchArgumentValue(after flag: String) -> String? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: flag), index + 1 < arguments.count else {
+            return nil
+        }
+        return arguments[index + 1]
+    }
+
     private static func normalizedHistorySymbol(_ symbol: String) -> String {
         switch symbol {
         case "nasdaq_composite":
             return "nasdaq"
+        case "hang_seng":
+            return "hsi"
+        case "nikkei225":
+            return "nikkei"
         default:
             return symbol
         }

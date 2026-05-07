@@ -2467,6 +2467,16 @@ private struct TimeMachineView: View {
     @State private var cachedHistoryPointsBySymbol: [String: [TimeMachineSingleAxisPoint]] = [:]
     @State private var cachedDetailTrendCards: [TimeMachineCombinedTrendDescriptor] = []
 
+    private let debugFocusedCardIndex: Int? = {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "-timeMachineFocusCard"), index + 1 < arguments.count else {
+            return nil
+        }
+        return Int(arguments[index + 1])
+    }()
+
+    private let debugHidesHeroCard = ProcessInfo.processInfo.arguments.contains("-timeMachineHideHero")
+
     private var trendPoints: [TimeMachineTrendPoint] {
         cachedTrendPoints
     }
@@ -2515,6 +2525,12 @@ private struct TimeMachineView: View {
 
     private var detailTrendCards: [TimeMachineCombinedTrendDescriptor] {
         cachedDetailTrendCards
+    }
+
+    private var presentedDetailTrendCards: [TimeMachineCombinedTrendDescriptor] {
+        guard let debugFocusedCardIndex else { return detailTrendCards }
+        guard detailTrendCards.indices.contains(debugFocusedCardIndex) else { return detailTrendCards }
+        return [detailTrendCards[debugFocusedCardIndex]]
     }
 
     private static let publicIndexConfigs: [(symbol: String, title: String, color: Color)] = [
@@ -2774,14 +2790,16 @@ private struct TimeMachineView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 10) {
                         if let latestPoint, !filteredTrendPoints.isEmpty {
-                            TimeMachineHeroTrendCard(
-                                points: filteredTrendPoints,
-                                latestPoint: latestPoint,
-                                selectedRange: $selectedRange
-                            )
+                            if !debugHidesHeroCard {
+                                TimeMachineHeroTrendCard(
+                                    points: filteredTrendPoints,
+                                    latestPoint: latestPoint,
+                                    selectedRange: $selectedRange
+                                )
+                            }
 
                             LazyVStack(spacing: 12) {
-                                ForEach(detailTrendCards) { card in
+                                ForEach(presentedDetailTrendCards) { card in
                                     TimeMachineDualAxisTrendCard(descriptor: card)
                                 }
                             }
