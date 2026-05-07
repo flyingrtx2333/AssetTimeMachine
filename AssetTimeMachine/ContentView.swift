@@ -2256,15 +2256,22 @@ private struct QuickRecordValueSheet: View {
         }
     }
 
-    private var showsUnitPriceField: Bool {
-        item.valuationMethod == .quantityAndUnitPrice && item.autoPricedAssetKind == nil
+    private var displayedUnitPriceText: String? {
+        let trimmed = unitPriceText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return trimmed
     }
 
     private var autoPriceHint: String? {
-        guard item.valuationMethod == .quantityAndUnitPrice,
-              item.autoPricedAssetKind != nil,
-              let rate = item.resolvedAutoUnitPrice(using: marketStore) else { return nil }
-        return "当前参考单价 \(rate.currencyString())"
+        guard item.valuationMethod == .quantityAndUnitPrice else { return nil }
+        if item.autoPricedAssetKind != nil,
+           let rate = item.resolvedAutoUnitPrice(using: marketStore) {
+            return "当前参考单价 \(rate.currencyString())"
+        }
+        if let displayedUnitPriceText {
+            return "当前单价 \(displayedUnitPriceText)"
+        }
+        return nil
     }
 
     var body: some View {
@@ -2299,20 +2306,8 @@ private struct QuickRecordValueSheet: View {
                 focus: .primary
             )
 
-            if showsUnitPriceField {
-                quickEditField(
-                    title: "单价",
-                    text: $unitPriceText,
-                    placeholder: "输入单价",
-                    focus: .unitPrice
-                )
-            }
-
             if let autoPriceHint {
-                Text(autoPriceHint)
-                    .font(.footnote)
-                    .foregroundStyle(AssetTheme.textSecondary)
-                    .padding(.horizontal, 2)
+                quickReadonlyField(title: item.autoPricedAssetKind == nil ? "单价" : "参考单价", value: autoPriceHint.replacingOccurrences(of: item.autoPricedAssetKind == nil ? "当前单价 " : "当前参考单价 ", with: ""))
             }
 
             if let errorMessage {
@@ -2377,6 +2372,29 @@ private struct QuickRecordValueSheet: View {
         }
     }
 
+    @ViewBuilder
+    private func quickReadonlyField(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(AssetTheme.textSecondary)
+            Text(value)
+                .font(.body.weight(.medium))
+                .foregroundStyle(AssetTheme.textPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(AssetTheme.overlaySubtle.opacity(0.92))
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.white.opacity(0.04), lineWidth: 1)
+                }
+        }
+    }
+
     private func chromeButton(title: String, tint: Color, action: @escaping () -> Void) -> some View {
         Button(title, action: action)
             .font(.subheadline.weight(.semibold))
@@ -2414,7 +2432,9 @@ private struct QuickRecordValueSheet: View {
                     unitPrice = autoRate
                     unitPriceText = autoRate.plainNumberString()
                 } else {
-                    unitPrice = try validatedNumber(from: unitPriceText, fieldName: "单价")
+                    unitPrice = normalizedReadonlyNumber(from: unitPriceText)
+                        ?? snapshot.entries.first(where: { $0.item?.id == item.id })?.unitPrice
+                        ?? item.entries.sorted(by: { ($0.snapshot?.date ?? .distantPast) > ($1.snapshot?.date ?? .distantPast) }).first?.unitPrice
                 }
                 try SnapshotService.upsertEntry(snapshot: snapshot, item: item, quantity: quantity, unitPrice: unitPrice, in: modelContext)
             }
@@ -2435,6 +2455,12 @@ private struct QuickRecordValueSheet: View {
             throw QuickRecordValueValidationError(message: "\(fieldName)请输入有效数字")
         }
         return forcePositive ? abs(value) : value
+    }
+
+    private func normalizedReadonlyNumber(from text: String) -> Double? {
+        let raw = text.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty else { return nil }
+        return Double(raw)
     }
 }
 
