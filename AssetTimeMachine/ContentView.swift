@@ -4771,12 +4771,19 @@ private struct DashboardTrendCard: View {
             ])
             .frame(height: 256)
             .chartXAxis {
-                AxisMarks(values: .automatic(desiredCount: 4)) { value in
+                AxisMarks(values: chartAxisDates(points.map(\.date))) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
                         .foregroundStyle(AssetTheme.chartGrid)
                     AxisTick().foregroundStyle(AssetTheme.chartTick)
-                    AxisValueLabel(format: .dateTime.month(.defaultDigits).day(), centered: true)
-                        .foregroundStyle(AssetTheme.textSecondary)
+                    AxisValueLabel(centered: true) {
+                        if let date = value.as(Date.self) {
+                            Text(date.chartAxisDateString)
+                                .font(.caption2)
+                                .foregroundStyle(AssetTheme.textSecondary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.72)
+                        }
+                    }
                 }
             }
             .chartYAxis {
@@ -4797,7 +4804,7 @@ private struct DashboardTrendCard: View {
             }
             .padding(.top, 2)
 
-            Text(selectedDate == nil ? dateRangeLabel : selectedPoint.date.recordDateString)
+            Text(selectedDate == nil ? dateRangeLabel : selectedPoint.date.chartAxisDateString)
                 .font(AppTypography.meta)
                 .foregroundStyle(AssetTheme.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -4807,7 +4814,7 @@ private struct DashboardTrendCard: View {
 
     private var dateRangeLabel: String {
         guard let first = points.first?.date else { return "暂无范围" }
-        return "\(first.recordDateString) - \(latestPoint.date.recordDateString)"
+        return "\(first.chartAxisDateString) - \(latestPoint.date.chartAxisDateString)"
     }
 }
 
@@ -4898,7 +4905,7 @@ private struct TimeMachineHeroTrendCard: View {
 
                     Spacer()
 
-                    Text(selectedDate == nil ? dateRangeLabel : selectedPoint.date.recordDateString)
+                    Text(selectedDate == nil ? dateRangeLabel : selectedPoint.date.chartAxisDateString)
                         .font(.caption)
                         .foregroundStyle(AssetTheme.textSecondary)
                         .lineLimit(1)
@@ -4994,12 +5001,19 @@ private struct TimeMachineHeroTrendCard: View {
             ])
             .frame(height: 238)
             .chartXAxis {
-                AxisMarks(values: .automatic(desiredCount: 4)) { value in
+                AxisMarks(values: chartAxisDates(points.map(\.date))) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
                         .foregroundStyle(AssetTheme.chartGrid)
                     AxisTick().foregroundStyle(AssetTheme.chartTick)
-                    AxisValueLabel(format: .dateTime.month(.defaultDigits).day(), centered: true)
-                        .foregroundStyle(AssetTheme.textSecondary)
+                    AxisValueLabel(centered: true) {
+                        if let date = value.as(Date.self) {
+                            Text(date.chartAxisDateString)
+                                .font(.caption2)
+                                .foregroundStyle(AssetTheme.textSecondary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.72)
+                        }
+                    }
                 }
             }
             .chartYAxis {
@@ -5024,12 +5038,21 @@ private struct TimeMachineHeroTrendCard: View {
 
     private var dateRangeLabel: String {
         guard let first = points.first?.date, let last = points.last?.date else { return "暂无范围" }
-        return "\(first.recordDateString) - \(last.recordDateString)"
+        return "\(first.chartAxisDateString) - \(last.chartAxisDateString)"
     }
 }
 
 private func nearestTrendPoint(to date: Date, in points: [TimeMachineTrendPoint]) -> TimeMachineTrendPoint? {
     points.min { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) }
+}
+
+private func chartAxisDates(_ dates: [Date]) -> [Date] {
+    let sortedDates = Array(Set(dates)).sorted()
+    guard let first = sortedDates.first else { return [] }
+    guard sortedDates.count > 2, let last = sortedDates.last else { return sortedDates }
+
+    let middle = sortedDates[sortedDates.count / 2]
+    return Array(Set([first, middle, last])).sorted()
 }
 
 private struct TimeMachineCurrentAnchorCard: View {
@@ -5344,13 +5367,20 @@ private struct TimeMachineDualAxisTrendCard: View {
     }
 
     private var bottomAxisMarks: some AxisContent {
-        AxisMarks(values: .automatic(desiredCount: 4)) { value in
+        AxisMarks(values: chartAxisDates(descriptor.leftOnlyPoints.map(\.date) + descriptor.points.map(\.date))) { value in
             AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
                 .foregroundStyle(AssetTheme.border.opacity(0.35))
             AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
                 .foregroundStyle(AssetTheme.border.opacity(0.7))
-            AxisValueLabel(format: .dateTime.month().day())
-                .foregroundStyle(AssetTheme.textSecondary)
+            AxisValueLabel(centered: true) {
+                if let date = value.as(Date.self) {
+                    Text(date.chartAxisDateString)
+                        .font(.caption2)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+            }
         }
     }
 
@@ -6116,6 +6146,13 @@ private extension Date {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "zh_CN")
         formatter.dateFormat = "yyyy.M.d"
+        return formatter.string(from: self)
+    }
+
+    var chartAxisDateString: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "yyyy.MM.dd"
         return formatter.string(from: self)
     }
 }
