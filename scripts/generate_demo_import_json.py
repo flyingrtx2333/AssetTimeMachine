@@ -196,7 +196,7 @@ def build_payload(days: int, end_date: datetime) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate reusable demo import JSON for AssetTimeMachine.")
-    parser.add_argument("--days", type=int, default=180, help="Number of daily snapshots to generate.")
+    parser.add_argument("--days", type=int, default=365, help="Number of daily snapshots to generate.")
     parser.add_argument("--end-date", default="2026-05-06", help="Inclusive end date in YYYY-MM-DD.")
     parser.add_argument("--out", default="demo/time-machine-demo.json", help="Output JSON path.")
     args = parser.parse_args()

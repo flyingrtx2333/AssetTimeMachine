@@ -2,12 +2,12 @@
 
 ## Files
 
-- `time-machine-demo.json`: 可复用的演示导入数据，默认生成 180 天连续快照，带起伏。
+- `time-machine-demo.json`: 可复用的演示导入数据，默认生成 365 天连续快照，带起伏。
 
 ## Regenerate
 
 ```bash
-python3 scripts/generate_demo_import_json.py --days 180 --end-date 2026-05-06 --out demo/time-machine-demo.json
+python3 scripts/generate_demo_import_json.py --days 365 --end-date 2026-05-06 --out demo/time-machine-demo.json
 ```
 
 ## Import into simulator
