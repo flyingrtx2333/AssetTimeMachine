@@ -2287,14 +2287,9 @@ private struct QuickRecordValueSheet: View {
             HStack(spacing: 12) {
                 AssetItemGlyph(item: item, accent: isLiability ? AssetTheme.negative : AssetTheme.gold, size: 18)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.name)
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(AssetTheme.textPrimary)
-                    Text("点数字就地改这一条记录")
-                        .font(.footnote)
-                        .foregroundStyle(AssetTheme.textSecondary)
-                }
+                Text(item.name)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textPrimary)
             }
 
             quickEditField(
