@@ -2378,20 +2378,33 @@ private struct QuickRecordValueSheet: View {
             Text(title)
                 .font(.caption.weight(.medium))
                 .foregroundStyle(AssetTheme.textSecondary)
-            Text(value)
-                .font(.body.weight(.medium))
-                .foregroundStyle(AssetTheme.textPrimary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(AssetTheme.overlaySubtle.opacity(0.92))
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.white.opacity(0.04), lineWidth: 1)
-                }
+
+            HStack(spacing: 10) {
+                Text(value)
+                    .font(.body.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("只读")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(AssetTheme.goldSoft)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(AssetTheme.overlayMedium.opacity(0.72), in: Capsule())
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [AssetTheme.overlaySubtle.opacity(0.96), AssetTheme.overlayMedium.opacity(0.62)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            )
         }
     }
 
