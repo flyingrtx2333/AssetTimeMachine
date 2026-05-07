@@ -4380,9 +4380,6 @@ private struct BacktestLoadingView: View {
             Text("正在重新回测...")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(AssetTheme.textPrimary)
-            Text("点完成后再统一计算，这次不让它边拖边抖了。")
-                .font(.caption)
-                .foregroundStyle(AssetTheme.textSecondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 32)
@@ -4418,10 +4415,6 @@ private struct BacktestAllocationSheet: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("先在这里调整，点完成后再统一回测。")
-                            .font(.caption)
-                            .foregroundStyle(AssetTheme.textSecondary)
-
                         BacktestWeightRow(title: "现金", value: $cashWeight, tint: AssetTheme.textSecondary)
                         BacktestWeightRow(title: "黄金", value: $goldWeight, tint: AssetTheme.gold)
 
