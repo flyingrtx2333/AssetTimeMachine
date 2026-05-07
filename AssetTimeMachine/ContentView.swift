@@ -559,6 +559,7 @@ private struct SnapshotListView: View {
 
     private let recordKeyboardSelfTestEnabled = ProcessInfo.processInfo.arguments.contains("-recordKeyboardSelfTest")
     private let recordEditPreviewEnabled = ProcessInfo.processInfo.arguments.contains("-openRecordEditPreview")
+    private let recordQuickEditPreviewSelection = SnapshotListView.launchArgumentValue(after: "-openRecordQuickEditPreview")
 
     private let liabilitySectionTitleMap: [String: String] = [
         "长期负债": "长期负债",
@@ -779,6 +780,12 @@ private struct SnapshotListView: View {
                     editingAssetItem = previewItem
                 }
             }
+            if let previewSelection = recordQuickEditPreviewSelection,
+               let previewItem = recordQuickEditPreviewItem(selection: previewSelection) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.85) {
+                    quickEditingAssetItem = previewItem
+                }
+            }
             await SnapshotAnchorService.captureLiveAnchorsIfPossible(for: snapshot, marketStore: marketStore, in: modelContext)
         } catch {
             print("[AssetTimeMachine] prepare snapshot failed: \(error)")
@@ -898,6 +905,34 @@ private struct SnapshotListView: View {
             .first(where: { $0.valuationMethod == .quantityAndUnitPrice })
         ?? nonLiabilityCategories.flatMap(\.activeSortedItems).first
         ?? liabilityCategories.flatMap(\.activeSortedItems).first
+    }
+
+    private func recordQuickEditPreviewItem(selection: String) -> AssetItem? {
+        let normalized = selection.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let assetItems = nonLiabilityCategories.flatMap(\.activeSortedItems)
+        let liabilityItems = liabilityCategories.flatMap(\.activeSortedItems)
+
+        switch normalized {
+        case "amount", "asset", "direct":
+            return assetItems.first(where: { $0.valuationMethod == .directAmount })
+        case "manual", "quantity", "manualprice":
+            return assetItems.first(where: { $0.valuationMethod == .quantityAndUnitPrice && $0.resolvedAutoPricedAssetKind == nil })
+        case "auto", "autopriced", "market":
+            return assetItems.first(where: { $0.valuationMethod == .quantityAndUnitPrice && $0.resolvedAutoPricedAssetKind != nil })
+        case "liability", "debt":
+            return liabilityItems.first(where: { $0.valuationMethod == .directAmount })
+                ?? liabilityItems.first
+        default:
+            return recordEditPreviewItem()
+        }
+    }
+
+    private static func launchArgumentValue(after flag: String) -> String? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: flag), index + 1 < arguments.count else {
+            return nil
+        }
+        return arguments[index + 1]
     }
 
     private func displayEntry(for item: AssetItem) -> AssetEntry? {
