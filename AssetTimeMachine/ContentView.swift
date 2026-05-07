@@ -3199,10 +3199,6 @@ private struct BacktestView: View {
         .filter { $0.amount > 0 }
     }
 
-    private var allocationSplitIndex: Int {
-        max(1, Int(ceil(Double(allocationSlices.count) / 2)))
-    }
-
     private var activeAllocationSummary: String {
         let titles = allocationSlices.map(\.title)
         switch titles.count {
@@ -3223,27 +3219,22 @@ private struct BacktestView: View {
                 GeometryReader { proxy in
                     ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 14) {
-                            HStack {
-                                Spacer()
-                                BacktestActionChip(title: "调整时间 · \(selectedRange.label)", systemImage: "calendar") {
-                                    showsRangeSheet = true
-                                }
-                            }
-
                             if report == nil {
                                 Spacer(minLength: 0)
                             }
 
                             VStack(spacing: 20) {
-                                Button {
-                                    showsAllocationSheet = true
-                                } label: {
-                                    BacktestAllocationCard(
-                                        slices: allocationSlices,
-                                        activeAllocationSummary: activeAllocationSummary
-                                    )
-                                }
-                                .buttonStyle(.plain)
+                                BacktestAllocationCard(
+                                    slices: allocationSlices,
+                                    activeAllocationSummary: activeAllocationSummary,
+                                    selectedRange: selectedRange,
+                                    onTapRange: {
+                                        showsRangeSheet = true
+                                    },
+                                    onTapAllocation: {
+                                        showsAllocationSheet = true
+                                    }
+                                )
 
                                 if !isBacktestLoading {
                                     HStack(spacing: 10) {
@@ -3547,13 +3538,23 @@ private struct BacktestView: View {
 private struct BacktestAllocationCard: View {
     let slices: [BacktestAllocationSlice]
     let activeAllocationSummary: String
+    let selectedRange: BacktestRange
+    let onTapRange: () -> Void
+    let onTapAllocation: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .center, spacing: 12) {
-                Text("资产配置")
-                    .font(.headline.weight(.bold))
+                Button(action: onTapRange) {
+                    HStack(spacing: 8) {
+                        Text("调整时间 · \(selectedRange.label)")
+                            .font(.headline.weight(.bold))
+                        Image(systemName: "chevron.down")
+                            .font(.caption.weight(.bold))
+                    }
                     .foregroundStyle(AssetTheme.textPrimary)
+                }
+                .buttonStyle(.plain)
 
                 Spacer(minLength: 12)
 
@@ -3562,51 +3563,45 @@ private struct BacktestAllocationCard: View {
                     .foregroundStyle(AssetTheme.textSecondary)
             }
 
-            ZStack {
-                Chart(slices) { slice in
-                    SectorMark(
-                        angle: .value("占比", slice.amount),
-                        innerRadius: .ratio(0.68),
-                        angularInset: 2
-                    )
-                    .foregroundStyle(slice.color)
-                }
-                .frame(width: 188, height: 188)
-                .chartLegend(.hidden)
+            Button(action: onTapAllocation) {
+                VStack(alignment: .leading, spacing: 18) {
+                    ZStack {
+                        Chart(slices) { slice in
+                            SectorMark(
+                                angle: .value("占比", slice.amount),
+                                innerRadius: .ratio(0.72),
+                                angularInset: 2
+                            )
+                            .foregroundStyle(slice.color)
+                        }
+                        .frame(width: 188, height: 188)
+                        .chartLegend(.hidden)
 
-                VStack(spacing: 6) {
-                    Text("当前配置")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(AssetTheme.textSecondary)
-                    Text(activeAllocationSummary)
-                        .font(.headline.weight(.bold))
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.78)
-                }
-                .padding(.horizontal, 18)
-            }
-            .frame(maxWidth: .infinity)
+                        VStack(spacing: 6) {
+                            Text("当前配置")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(AssetTheme.textSecondary)
+                            Text(activeAllocationSummary)
+                                .font(.headline.weight(.bold))
+                                .foregroundStyle(AssetTheme.textPrimary)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.78)
+                        }
+                        .padding(.horizontal, 18)
+                    }
+                    .frame(maxWidth: .infinity)
 
-            VStack(spacing: 0) {
-                ForEach(Array(slices.enumerated()), id: \.element.id) { index, slice in
-                    BacktestAllocationRow(slice: slice, showsDivider: index < slices.count - 1)
+                    VStack(spacing: 0) {
+                        ForEach(Array(slices.enumerated()), id: \.element.id) { index, slice in
+                            BacktestAllocationRow(slice: slice, showsDivider: index < slices.count - 1)
+                        }
+                    }
                 }
             }
-            .background(AssetTheme.surfaceRaised.opacity(0.72), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(AssetTheme.border.opacity(0.5), lineWidth: 1)
-            )
+            .buttonStyle(.plain)
         }
-        .padding(20)
         .frame(maxWidth: .infinity)
-        .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.72), lineWidth: 1)
-        )
     }
 }
 
