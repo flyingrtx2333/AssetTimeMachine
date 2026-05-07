@@ -455,7 +455,7 @@ private struct DashboardView: View {
         } else {
             EmptyStateCard(
                 title: "还没有趋势数据",
-                message: "至少需要两条资产快照，首页这里才会长出走势折线图。",
+                message: "至少需要两条资产快照才能显示走势折线图。",
                 systemImage: "chart.line.uptrend.xyaxis"
             )
         }
@@ -3324,7 +3324,7 @@ private struct TimeMachineView: View {
                         } else {
                             EmptyStateCard(
                                 title: "还没有趋势数据",
-                                message: "先去记录页留下一些历史资产快照，时光机这边就能长出完整趋势图。",
+                                message: "请先在记录页保存历史资产快照，再查看趋势图。",
                                 systemImage: "chart.line.uptrend.xyaxis"
                             )
                         }
@@ -6157,7 +6157,7 @@ private struct APIDocumentationView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 18) {
-                        ATMHeader(title: "接口文档", subtitle: "给 App 自己看的，也给未来的分析逻辑备用。") {
+                        ATMHeader(title: "接口文档", subtitle: "供 App 和分析模块使用。") {
                             Button {
                                 Task { await marketStore.refresh() }
                             } label: {

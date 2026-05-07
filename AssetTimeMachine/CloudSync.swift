@@ -423,7 +423,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             payload = try ImportExportService.exportPayload(from: context)
         } catch {
             if !quietly {
-                errorMessage = "本机数据导出失败，暂时没法自动同步"
+                errorMessage = "本机数据导出失败，无法自动同步"
             }
             return
         }
@@ -541,15 +541,15 @@ final class AssetTimeMachineCloudStore: ObservableObject {
 
         switch code {
         case .canceled:
-            return "你取消了 Apple 登录"
+            return "已取消 Apple 登录"
         case .failed:
-            return "Apple 登录失败了，请稍后再试"
+            return "Apple 登录失败，请稍后再试"
         case .invalidResponse:
-            return "Apple 登录返回的数据有点不对劲"
+            return "Apple 登录返回的数据无效"
         case .notHandled:
-            return "Apple 登录暂时没有被系统接住"
+            return "系统未处理此次 Apple 登录请求"
         case .unknown:
-            return "Apple 一键登录暂时不可用，可能是系统能力还没配好"
+            return "Apple 一键登录当前不可用"
         @unknown default:
             return error.localizedDescription
         }
