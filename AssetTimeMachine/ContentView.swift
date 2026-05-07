@@ -408,6 +408,22 @@ private struct SettingsView: View {
         cloudStore.currentUser != nil || cloudStore.hasToken
     }
 
+    private var appVersionText: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+
+        switch (version, build) {
+        case let (.some(version), .some(build)) where !version.isEmpty && !build.isEmpty:
+            return "\(version) (\(build))"
+        case let (.some(version), _) where !version.isEmpty:
+            return version
+        case let (_, .some(build)) where !build.isEmpty:
+            return build
+        default:
+            return "未知版本"
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -503,6 +519,20 @@ private struct SettingsView: View {
                             }
                             .atmCardStyle()
                         }
+
+                        HStack(spacing: 12) {
+                            Text("当前版本")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(AssetTheme.textPrimary)
+
+                            Spacer()
+
+                            Text(appVersionText)
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(AssetTheme.textSecondary)
+                                .monospacedDigit()
+                        }
+                        .atmCardStyle()
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 18)
