@@ -3490,6 +3490,8 @@ private struct BacktestAssetOption: Identifiable {
     let symbol: String
     let title: String
     let color: Color
+    let requiresHistoricalFX: Bool
+    let historicalFXSymbol: String?
 
     var id: String { symbol }
 }
@@ -3515,13 +3517,46 @@ private enum BacktestDefaults {
         })
     }()
     static let dcaAssetOptions: [BacktestAssetOption] = [
-        .init(symbol: "gold_cny", title: "黄金", color: AssetTheme.gold),
-        .init(symbol: "csi300", title: "沪深300", color: AssetTheme.textPrimary),
-        .init(symbol: "shanghai_composite", title: "上证综指", color: AssetTheme.textSecondary),
+        .init(symbol: "gold_cny", title: "黄金", color: AssetTheme.gold, requiresHistoricalFX: false, historicalFXSymbol: nil),
+        .init(symbol: "sp500", title: "标普500", color: AssetTheme.goldSoft, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny"),
+        .init(symbol: "nasdaq", title: "纳指", color: AssetTheme.accentBlue, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny"),
+        .init(symbol: "dowjones", title: "道指", color: AssetTheme.accentOrange, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny"),
+        .init(symbol: "csi300", title: "沪深300", color: AssetTheme.textPrimary, requiresHistoricalFX: false, historicalFXSymbol: nil),
+        .init(symbol: "shanghai_composite", title: "上证综指", color: AssetTheme.textSecondary, requiresHistoricalFX: false, historicalFXSymbol: nil),
     ]
 }
 
 private enum BacktestEngine {
+    private struct HistoricalPricePoint {
+        let date: Date
+        let price: Double
+    }
+
+    private struct HistoricalLookup {
+        let points: [HistoricalPricePoint]
+
+        func price(onOrBefore targetDate: Date) -> Double? {
+            guard !points.isEmpty else { return nil }
+
+            var low = 0
+            var high = points.count - 1
+            var bestIndex: Int?
+
+            while low <= high {
+                let mid = (low + high) / 2
+                if points[mid].date <= targetDate {
+                    bestIndex = mid
+                    low = mid + 1
+                } else {
+                    high = mid - 1
+                }
+            }
+
+            guard let bestIndex else { return nil }
+            return points[bestIndex].price
+        }
+    }
+
     static func run(
         cashWeight: Double,
         goldWeight: Double,
@@ -3669,20 +3704,35 @@ private enum BacktestEngine {
     }
 
     static func runDCA(
-        series: PublicHistorySeries?,
+        assetSeries: PublicHistorySeries?,
+        assetOption: BacktestAssetOption,
+        fxSeries: PublicHistorySeries?,
         contributionAmount: Double,
         intervalDays: Int
     ) -> DCABacktestReport? {
-        guard let series else { return nil }
+        guard let assetSeries else { return nil }
         let normalizedAmount = max(contributionAmount, 0)
         let normalizedInterval = max(intervalDays, 1)
         guard normalizedAmount > 0 else { return nil }
 
-        let pricePoints: [(date: Date, price: Double)] = zip(series.dates, series.prices).compactMap { dateText, price in
+        let fxLookup: HistoricalLookup?
+        if assetOption.requiresHistoricalFX {
+            guard let lookup = makeHistoricalLookup(from: fxSeries), !lookup.points.isEmpty else { return nil }
+            fxLookup = lookup
+        } else {
+            fxLookup = nil
+        }
+
+        let assetPricePoints = zip(assetSeries.dates, assetSeries.prices).compactMap { dateText, price -> HistoricalPricePoint? in
             guard let date = historicalSeriesDateStatic(from: dateText), price.isFinite, price > 0 else { return nil }
-            return (date, price)
+            return HistoricalPricePoint(date: date, price: price)
         }
         .sorted { $0.date < $1.date }
+
+        let pricePoints: [(date: Date, cnyPrice: Double)] = assetPricePoints.compactMap { point in
+            guard let cnyPrice = cnyPrice(for: point, assetOption: assetOption, fxLookup: fxLookup) else { return nil }
+            return (date: point.date, cnyPrice: cnyPrice)
+        }
 
         guard let firstPoint = pricePoints.first, let lastPoint = pricePoints.last else { return nil }
 
@@ -3696,7 +3746,7 @@ private enum BacktestEngine {
 
         for (index, point) in pricePoints.enumerated() {
             if nextContributionIndex == index {
-                unitsHeld += normalizedAmount / point.price
+                unitsHeld += normalizedAmount / point.cnyPrice
                 totalInvested += normalizedAmount
                 contributionCount += 1
 
@@ -3715,7 +3765,7 @@ private enum BacktestEngine {
             }
 
             guard unitsHeld > 0 else { continue }
-            points.append(.init(date: point.date, portfolioValue: unitsHeld * point.price))
+            points.append(.init(date: point.date, portfolioValue: unitsHeld * point.cnyPrice))
         }
 
         guard let finalPoint = points.last, totalInvested > 0 else { return nil }
@@ -3758,6 +3808,26 @@ private enum BacktestEngine {
         formatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.date(from: text)
+    }
+
+    private static func makeHistoricalLookup(from series: PublicHistorySeries?) -> HistoricalLookup? {
+        guard let series else { return nil }
+        let points = zip(series.dates, series.prices).compactMap { dateText, price -> HistoricalPricePoint? in
+            guard let date = historicalSeriesDateStatic(from: dateText), price.isFinite, price > 0 else { return nil }
+            return HistoricalPricePoint(date: date, price: price)
+        }
+        .sorted { $0.date < $1.date }
+        return HistoricalLookup(points: points)
+    }
+
+    private static func cnyPrice(
+        for point: HistoricalPricePoint,
+        assetOption: BacktestAssetOption,
+        fxLookup: HistoricalLookup?
+    ) -> Double? {
+        guard assetOption.requiresHistoricalFX else { return point.price }
+        guard let usdPerCNY = fxLookup?.price(onOrBefore: point.date), usdPerCNY.isFinite, usdPerCNY > 0 else { return nil }
+        return point.price / usdPerCNY
     }
 }
 
@@ -3912,6 +3982,11 @@ private struct BacktestView: View {
         filteredHistorySeries(marketStore.history(for: dcaAssetSymbol))
     }
 
+    private var filteredDCAFXSeries: PublicHistorySeries? {
+        guard let fxSymbol = selectedDCAAssetOption?.historicalFXSymbol else { return nil }
+        return filteredHistorySeries(marketStore.history(for: fxSymbol))
+    }
+
     private var animatedPoints: [BacktestSeriesPoint] {
         guard !displayPoints.isEmpty else { return [] }
         let count = max(Int(Double(displayPoints.count) * animationProgress), min(displayPoints.count, 2))
@@ -3942,7 +4017,15 @@ private struct BacktestView: View {
 
     private var activeBacktestSourceSeries: [PublicHistorySeries] {
         if backtestMode == .dca {
-            return marketStore.history(for: dcaAssetSymbol).map { [$0] } ?? []
+            guard let assetSeries = marketStore.history(for: dcaAssetSymbol) else { return [] }
+            guard let option = selectedDCAAssetOption else { return [assetSeries] }
+
+            if let fxSymbol = option.historicalFXSymbol {
+                guard let fxSeries = marketStore.history(for: fxSymbol) else { return [] }
+                return [assetSeries, fxSeries]
+            }
+
+            return [assetSeries]
         }
 
         var series: [PublicHistorySeries] = []
@@ -4243,7 +4326,9 @@ private struct BacktestView: View {
             dcaReport = nil
         case .dca:
             dcaReport = BacktestEngine.runDCA(
-                series: filteredDCASeries,
+                assetSeries: filteredDCASeries,
+                assetOption: selectedDCAAssetOption ?? BacktestDefaults.dcaAssetOptions[0],
+                fxSeries: filteredDCAFXSeries,
                 contributionAmount: dcaContributionAmount,
                 intervalDays: dcaIntervalDays
             )
@@ -4886,7 +4971,7 @@ private struct BacktestDCASettingSheet: View {
                             .pickerStyle(.menu)
                             .tint(AssetTheme.textPrimary)
 
-                            Text("当前仅支持人民币计价资产，避免汇率缺失导致回测失真。")
+                            Text("每次投入固定为人民币。美元资产会按历史 USD/CNY 折算，人民币资产保持原口径。")
                                 .font(.caption)
                                 .foregroundStyle(AssetTheme.textSecondary)
                         }

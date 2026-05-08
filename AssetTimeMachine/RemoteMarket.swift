@@ -263,9 +263,8 @@ final class RemoteMarketStore: ObservableObject {
 
         do {
             let historyBatches = [
-                ["gold_cny", "nasdaq", "sp500"],
-                ["hsi", "nikkei", "csi300", "shanghai_composite"],
-                ["dowjones"]
+                ["gold_cny", "nasdaq", "sp500", "usd_per_cny"],
+                ["hsi", "nikkei", "csi300", "shanghai_composite", "dowjones"]
             ]
 
             var mergedSeries: [PublicHistorySeries] = []
@@ -531,4 +530,3 @@ enum SnapshotAnchorService {
         snapshot.marketAnchorsUpdatedAt = .now
     }
 }
-
