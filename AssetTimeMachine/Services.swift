@@ -130,15 +130,15 @@ enum SeedDataService {
         switch group {
         case .financial:
             return defaultFinancialItems.map {
-                DefaultItemConfig(name: $0, note: "默认资金项，可后续编辑或删除", upgradeNote: "升级自动补齐的默认资金项，可后续编辑或删除")
+                DefaultItemConfig(name: $0, note: "默认资金项目，可编辑或删除", upgradeNote: "系统补齐的默认资金项目，可编辑或删除")
             }
         case .physical:
             return defaultPhysicalItems.map {
-                DefaultItemConfig(name: $0, note: "示例项目，可后续编辑或删除", upgradeNote: "升级自动补齐的默认实物项，可后续编辑或删除")
+                DefaultItemConfig(name: $0, note: "示例项目，可编辑或删除", upgradeNote: "系统补齐的默认实物项目，可编辑或删除")
             }
         case .liability:
             return defaultLiabilityItems.map {
-                DefaultItemConfig(name: $0, note: "默认负债项，可后续编辑或删除", upgradeNote: "升级自动补齐的默认负债项，可后续编辑或删除")
+                DefaultItemConfig(name: $0, note: "默认负债项目，可编辑或删除", upgradeNote: "系统补齐的默认负债项目，可编辑或删除")
             }
         }
     }

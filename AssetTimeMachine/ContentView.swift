@@ -455,7 +455,7 @@ private struct DashboardView: View {
         } else {
             EmptyStateCard(
                 title: "暂无趋势数据",
-                message: "至少需要两条资产快照才能显示走势折线图。",
+                message: "至少记录两条资产快照后方可显示走势折线图。",
                 systemImage: "chart.line.uptrend.xyaxis"
             )
         }
@@ -2051,7 +2051,7 @@ private struct AssetEditorForm: View {
                             .font(.headline)
                             .foregroundStyle(AssetTheme.textPrimary)
 
-                        TextField("例如：银行卡、房产、车辆", text: $name)
+                        TextField("示例：银行卡、房产、车辆", text: $name)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .font(.body.weight(.semibold))
@@ -2130,7 +2130,7 @@ private struct AssetEditorForm: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(AssetTheme.textSecondary)
 
-                Text(isAutoPricedLocked ? "当前资产已绑定自动价格类型，如需变更可新建一个资产类型。" : "下列资产可填写数量，价格会自动更新。")
+                Text(isAutoPricedLocked ? "该资产已绑定自动定价类型。如需调整，请新建资产类型。" : "以下资产支持数量录入，价格将自动更新。")
                     .font(.footnote)
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.8))
 
@@ -3324,7 +3324,7 @@ private struct TimeMachineView: View {
                         } else {
                             EmptyStateCard(
                                 title: "暂无趋势数据",
-                                message: "请先在记录页保存历史资产快照，再查看趋势图。",
+                                message: "请先在记录页保存历史资产快照。",
                                 systemImage: "chart.line.uptrend.xyaxis"
                             )
                         }
@@ -5134,7 +5134,7 @@ private struct DashboardFreedomSection: View {
                 applyMonthlyExpenseDraft()
             }
         } message: {
-            Text("输入每月开销金额，用来计算财富自由目标。")
+            Text("用于设置财富自由测算的月开销。")
         }
         .alert("修改通胀率", isPresented: $isEditingInflationRate) {
             TextField("例如 3.0", text: $inflationRateDraft)
@@ -5144,7 +5144,7 @@ private struct DashboardFreedomSection: View {
                 applyInflationRateDraft()
             }
         } message: {
-            Text("输入百分比数值，例如 3 代表 3%。")
+            Text("请输入百分比数值，例如 3 表示 3%。")
         }
     }
 
@@ -5195,7 +5195,7 @@ private struct DashboardFreedomSection: View {
     }
 
     private var statusText: String {
-        guard let projection else { return "至少需要两条快照才能估算财富自由时间" }
+        guard let projection else { return "至少记录两条快照后方可估算财富自由时间" }
 
         switch projection.status {
         case .alreadyFree:
@@ -5204,20 +5204,20 @@ private struct DashboardFreedomSection: View {
             let years = months / 12
             let remainingMonths = months % 12
             if years > 0, remainingMonths > 0 {
-                return "剩余 \(years) 年 \(remainingMonths) 月"
+                return "预计还需 \(years) 年 \(remainingMonths) 月"
             } else if years > 0 {
-                return "剩余 \(years) 年"
+                return "预计还需 \(years) 年"
             } else {
-                return "剩余 \(remainingMonths) 月"
+                return "预计还需 \(remainingMonths) 月"
             }
         case .unreachable:
-            return "按当前趋势无法达到财富自由"
+            return "按当前参数无法达到财富自由"
         }
     }
 
     private var reasonText: String? {
         guard let projection else {
-            return "至少需要两条快照才能开始估算。"
+            return "至少记录两条快照后方可开始估算。"
         }
 
         switch projection.status {
@@ -5226,9 +5226,9 @@ private struct DashboardFreedomSection: View {
         case .unreachable:
             let inflationText = inflationRate.formatted(.percent.precision(.fractionLength(1)))
             if projection.maximumReachableMonthlyExpense > 0 {
-                return "按当前月均净资产增长 \(projection.monthlyGrowth.currencyString()) 估算，若通胀率维持 \(inflationText)，月开销需降到 \(projection.maximumReachableMonthlyExpense.currencyString()) 以内。"
+                return "按当前月均净资产增长 \(projection.monthlyGrowth.currencyString()) 估算，在通胀率维持 \(inflationText) 的条件下，月开销需控制在 \(projection.maximumReachableMonthlyExpense.currencyString()) 以内。"
             } else {
-                return "按当前趋势估算，若通胀率维持 \(inflationText)，即使将月开销降至 0，也无法达到目标线。"
+                return "按当前趋势估算，在通胀率维持 \(inflationText) 的条件下，即使将月开销降至 0，也无法达到目标线。"
             }
         }
     }
@@ -6157,7 +6157,7 @@ private struct APIDocumentationView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 18) {
-                        ATMHeader(title: "接口文档", subtitle: "供 App 和分析模块使用。") {
+                        ATMHeader(title: "接口文档", subtitle: "供应用与分析模块使用。") {
                             Button {
                                 Task { await marketStore.refresh() }
                             } label: {

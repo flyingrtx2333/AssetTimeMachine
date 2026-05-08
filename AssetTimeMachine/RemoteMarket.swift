@@ -98,7 +98,7 @@ enum RemoteMarketClient {
         .init(
             title: "黄金价格",
             path: "/api/v1/money/public/gold-price",
-            description: "返回人民币计价的黄金单价，单位 gram。",
+            description: "返回人民币计价的黄金单价，单位为 gram。",
             symbol: "gold"
         ),
         .init(
@@ -110,13 +110,13 @@ enum RemoteMarketClient {
         .init(
             title: "行情概览",
             path: "/api/v1/money/public/market-overview",
-            description: "汇总返回 gold、nasdaq 两个锚点。",
+            description: "返回 gold 与 nasdaq 锚点概览。",
             symbol: nil
         ),
         .init(
             title: "公共历史走势",
             path: "/api/v1/money/public/history?symbols=nasdaq,sp500,hsi&period=1year",
-            description: "统一返回指数、黄金、原油等公共历史序列，适合 App 直接消费。",
+            description: "返回指数、黄金与原油等公共历史序列。",
             symbol: nil
         ),
     ]

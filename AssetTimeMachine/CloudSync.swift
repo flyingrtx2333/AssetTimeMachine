@@ -360,7 +360,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             let token = try await AssetTimeMachineCloudAPI.login(username: username, password: password)
             self.saveToken(token)
             try await self.loadSessionData()
-            self.statusMessage = "登录成功，自动同步已开启"
+            self.statusMessage = "登录成功，云同步已启用"
         }
     }
 
@@ -400,7 +400,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                 )
                 self.saveToken(token)
                 try await self.loadSessionData()
-                self.statusMessage = "Apple 登录成功，自动同步已开启"
+                self.statusMessage = "Apple 登录成功，云同步已启用"
             }
 
             if currentUser != nil {
@@ -441,13 +441,13 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             )
             try await self.loadHistory(using: token)
             self.rememberSync(signature: signature, at: backup.uploadedAt)
-            self.statusMessage = quietly ? "自动同步已完成" : "已自动同步到云端，时间：\(backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))"
+            self.statusMessage = quietly ? "自动同步完成" : "云端同步完成，时间：\(backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))"
         }
     }
 
     func restoreLatestBackup(into context: ModelContext) async {
         guard let token = accessToken else {
-            errorMessage = "请先登录，再从云端恢复"
+            errorMessage = "登录后方可恢复云端备份"
             return
         }
 
@@ -456,7 +456,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             try ImportExportService.importPayload(latest.payload, into: context, replaceExisting: true)
             try await self.loadHistory(using: token)
             self.rememberSync(signature: Self.syncSignature(for: latest.payload), at: latest.uploadedAt)
-            self.statusMessage = "已恢复最近一次云端备份"
+            self.statusMessage = "最近一次云端备份已恢复"
         }
     }
 
@@ -466,7 +466,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         currentUser = nil
         backups = []
         lastSyncAt = nil
-        statusMessage = "已退出云同步账号"
+        statusMessage = "已退出云同步"
         errorMessage = nil
     }
 
@@ -634,7 +634,7 @@ struct AssetTimeMachineCloudPage: View {
                 }
             }
         } message: {
-            Text("会用最近的云端备份覆盖本机数据，适合换机或误删后恢复。")
+            Text("最近一次云端备份将覆盖本机数据，适用于换机或误删后的恢复。")
         }
     }
 
@@ -739,7 +739,7 @@ struct AssetTimeMachineCloudPage: View {
 
     private var appleLoginSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("使用 Apple 登录开启云同步")
+            Text("通过 Apple 登录启用云同步")
                 .font(.headline)
                 .foregroundStyle(AssetTheme.textPrimary)
 
@@ -774,7 +774,7 @@ struct AssetTimeMachineCloudPage: View {
                     Text(currentUser.displayName)
                         .font(.headline)
                         .foregroundStyle(AssetTheme.textPrimary)
-                    Text(currentUser.userEmail ?? "已连接 Flyingrtx 云同步")
+                    Text(currentUser.userEmail ?? "Flyingrtx 云同步已连接")
                         .font(.footnote)
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
@@ -789,7 +789,7 @@ struct AssetTimeMachineCloudPage: View {
             }
 
             Label(
-                store.lastSyncAt.map { "上次同步 \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "等待首次自动同步",
+                store.lastSyncAt.map { "最近同步 \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "尚未完成首次自动同步",
                 systemImage: "arrow.triangle.2.circlepath.circle.fill"
             )
             .font(.footnote.weight(.medium))
@@ -817,7 +817,7 @@ struct AssetTimeMachineCloudPage: View {
                 }
 
                 if store.backups.isEmpty {
-                    Text("等待首次自动同步")
+                    Text("尚未完成首次自动同步")
                         .font(.footnote)
                         .foregroundStyle(AssetTheme.textSecondary)
                 } else {
@@ -837,7 +837,7 @@ struct AssetTimeMachineCloudPage: View {
                     Button {
                         showRestoreConfirm = true
                     } label: {
-                        Label("恢复最近备份", systemImage: "arrow.clockwise.icloud")
+                        Label("恢复最近一次备份", systemImage: "arrow.clockwise.icloud")
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(AssetTheme.textSecondary)
                     }
@@ -895,14 +895,14 @@ struct AssetTimeMachineCloudPage: View {
     private var heroTitle: String {
         switch store.indicatorState {
         case .idle:
-            return "开启云同步"
+            return "启用云同步"
         case .healthy:
-            return "自动同步已开启"
+            return "云同步已启用"
         case .warning:
             if store.currentUser != nil {
-                return store.backups.isEmpty ? "自动同步已开启" : "同步需要处理"
+                return store.backups.isEmpty ? "云同步已启用" : "同步状态需处理"
             }
-            return "云同步需要处理"
+            return "云同步状态需处理"
         }
     }
 
@@ -914,7 +914,7 @@ struct AssetTimeMachineCloudPage: View {
             return store.lastSyncAt.map { "最近同步 \($0.formatted(date: .abbreviated, time: .shortened))" }
         case .warning:
             if store.currentUser != nil && store.backups.isEmpty {
-                return "等待首次自动同步"
+                return "尚未完成首次自动同步"
             }
             return nil
         }
