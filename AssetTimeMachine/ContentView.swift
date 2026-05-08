@@ -2939,6 +2939,7 @@ private struct TimeMachineView: View {
     @State private var cachedFilteredTrendPoints: [TimeMachineTrendPoint] = []
     @State private var cachedHistoryPointsBySymbol: [String: [TimeMachineSingleAxisPoint]] = [:]
     @State private var cachedDetailTrendCards: [TimeMachineCombinedTrendDescriptor] = []
+    @State private var selectedHistoryDrilldown: TimeMachineHistoryDrilldown?
 
     private let debugFocusedCardIndex: Int? = {
         let arguments = ProcessInfo.processInfo.arguments
@@ -3015,13 +3016,14 @@ private struct TimeMachineView: View {
         ("shanghai_composite", "上证综指", AssetTheme.textSecondary)
     ]
 
-    private func historySeriesPoints(_ series: PublicHistorySeries) -> [TimeMachineSingleAxisPoint] {
+    private func historySeriesPoints(_ series: PublicHistorySeries, range: TimeMachineRange? = nil) -> [TimeMachineSingleAxisPoint] {
         let points: [TimeMachineSingleAxisPoint] = Array(zip(series.dates, series.prices)).compactMap { (dateText: String, price: Double) -> TimeMachineSingleAxisPoint? in
             guard let date = historicalSeriesDate(from: dateText), price.isFinite, price > 0 else { return nil }
             return TimeMachineSingleAxisPoint(date: date, value: price)
         }
         let sortedPoints = points.sorted { $0.date < $1.date }
-        return selectedRange.filter(sortedPoints)
+        guard let range else { return sortedPoints }
+        return range.filter(sortedPoints)
     }
 
     private func historicalSeriesDate(from text: String) -> Date? {
@@ -3128,7 +3130,11 @@ private struct TimeMachineView: View {
         }
 
         let filteredTrendPoints = selectedRange.filter(trendPoints)
-        let historyPointsBySymbol = buildHistoryPointsBySymbol()
+        let fullHistoryPointsBySymbol = buildFullHistoryPointsBySymbol()
+        let historyPointsBySymbol = buildHistoryPointsBySymbol(
+            fullHistoryPointsBySymbol: fullHistoryPointsBySymbol,
+            trendPoints: filteredTrendPoints
+        )
 
         cachedTrendPoints = trendPoints
         cachedFilteredTrendPoints = filteredTrendPoints
@@ -3136,11 +3142,12 @@ private struct TimeMachineView: View {
         cachedDetailTrendCards = buildDetailTrendCards(
             filteredTrendPoints: filteredTrendPoints,
             latestPoint: filteredTrendPoints.last ?? trendPoints.last,
-            historyPointsBySymbol: historyPointsBySymbol
+            historyPointsBySymbol: historyPointsBySymbol,
+            fullHistoryPointsBySymbol: fullHistoryPointsBySymbol
         )
     }
 
-    private func buildHistoryPointsBySymbol() -> [String: [TimeMachineSingleAxisPoint]] {
+    private func buildFullHistoryPointsBySymbol() -> [String: [TimeMachineSingleAxisPoint]] {
         let symbols = ["gold_cny", "nasdaq"] + Self.publicIndexConfigs.map(\.symbol)
         return Dictionary(uniqueKeysWithValues: symbols.compactMap { symbol in
             guard let series = marketStore.history(for: symbol) else { return nil }
@@ -3150,10 +3157,27 @@ private struct TimeMachineView: View {
         })
     }
 
+    private func buildHistoryPointsBySymbol(
+        fullHistoryPointsBySymbol: [String: [TimeMachineSingleAxisPoint]],
+        trendPoints: [TimeMachineTrendPoint]
+    ) -> [String: [TimeMachineSingleAxisPoint]] {
+        guard let firstDate = trendPoints.first?.date,
+              let lastDate = trendPoints.last?.date else {
+            return [:]
+        }
+
+        return Dictionary(uniqueKeysWithValues: fullHistoryPointsBySymbol.compactMap { symbol, points in
+            let clippedPoints = points.filter { $0.date >= firstDate && $0.date <= lastDate }
+            guard !clippedPoints.isEmpty else { return nil }
+            return (symbol, clippedPoints)
+        })
+    }
+
     private func buildDetailTrendCards(
         filteredTrendPoints: [TimeMachineTrendPoint],
         latestPoint: TimeMachineTrendPoint?,
-        historyPointsBySymbol: [String: [TimeMachineSingleAxisPoint]]
+        historyPointsBySymbol: [String: [TimeMachineSingleAxisPoint]],
+        fullHistoryPointsBySymbol: [String: [TimeMachineSingleAxisPoint]]
     ) -> [TimeMachineCombinedTrendDescriptor] {
         let goldLeftOnlyPoints = historyPointsBySymbol["gold_cny"] ?? singleAxisPoints(for: filteredTrendPoints, range: selectedRange, left: \.goldAnchorPriceCNY)
         let nasdaqLeftOnlyPoints = historyPointsBySymbol["nasdaq"] ?? singleAxisPoints(for: filteredTrendPoints, range: selectedRange, left: \.nasdaqAnchorPriceUSD)
@@ -3172,7 +3196,15 @@ private struct TimeMachineView: View {
                 rightLatestLabel: latestPoint?.goldEquivalent.map { "\($0.plainNumberString()) g" } ?? "--",
                 leftAxisStyle: .currency(code: "CNY"),
                 rightAxisStyle: .quantity(unit: "g", maxFractionDigits: 2),
-                showsComparisonLine: true
+                showsComparisonLine: true,
+                historyDrilldown: historyDrilldown(
+                    symbol: "gold_cny",
+                    title: "黄金",
+                    subtitle: "人民币计价",
+                    color: AssetTheme.gold,
+                    axisStyle: .currency(code: "CNY", suffix: "/g"),
+                    fullHistoryPointsBySymbol: fullHistoryPointsBySymbol
+                )
             ),
             TimeMachineCombinedTrendDescriptor(
                 title: "纳指",
@@ -3187,7 +3219,15 @@ private struct TimeMachineView: View {
                 rightLatestLabel: latestPoint?.nasdaqEquivalent.map { "\($0.plainNumberString()) 份" } ?? "--",
                 leftAxisStyle: .currency(code: "USD"),
                 rightAxisStyle: .quantity(unit: "份", maxFractionDigits: 2),
-                showsComparisonLine: true
+                showsComparisonLine: true,
+                historyDrilldown: historyDrilldown(
+                    symbol: "nasdaq",
+                    title: "纳指",
+                    subtitle: "纳斯达克综合指数",
+                    color: AssetTheme.accentBlue,
+                    axisStyle: .currency(code: "USD"),
+                    fullHistoryPointsBySymbol: fullHistoryPointsBySymbol
+                )
             )
         ]
 
@@ -3218,11 +3258,38 @@ private struct TimeMachineView: View {
                 rightLatestLabel: latestComparisonPoint.map { "\($0.rightValue.plainNumberString()) 份" } ?? "--",
                 leftAxisStyle: .currency(code: currency),
                 rightAxisStyle: .quantity(unit: "份", maxFractionDigits: 2),
-                showsComparisonLine: comparisonPoints.count >= 2
+                showsComparisonLine: comparisonPoints.count >= 2,
+                historyDrilldown: historyDrilldown(
+                    symbol: config.symbol,
+                    title: config.title,
+                    subtitle: nil,
+                    color: config.color,
+                    axisStyle: .currency(code: currency),
+                    fullHistoryPointsBySymbol: fullHistoryPointsBySymbol
+                )
             )
         }
 
         return primaryCards + publicIndexCards
+    }
+
+    private func historyDrilldown(
+        symbol: String,
+        title: String,
+        subtitle: String?,
+        color: Color,
+        axisStyle: TimeMachineAxisValueStyle,
+        fullHistoryPointsBySymbol: [String: [TimeMachineSingleAxisPoint]]
+    ) -> TimeMachineHistoryDrilldown? {
+        guard let points = fullHistoryPointsBySymbol[symbol], points.count >= 2 else { return nil }
+        return TimeMachineHistoryDrilldown(
+            symbol: symbol,
+            title: title,
+            subtitle: subtitle,
+            points: points,
+            color: color,
+            axisStyle: axisStyle
+        )
     }
 
     private func pairedPoints(
@@ -3318,7 +3385,9 @@ private struct TimeMachineView: View {
 
                             LazyVStack(spacing: 12) {
                                 ForEach(presentedDetailTrendCards) { card in
-                                    TimeMachineDualAxisTrendCard(descriptor: card)
+                                    TimeMachineDualAxisTrendCard(descriptor: card) { history in
+                                        selectedHistoryDrilldown = history
+                                    }
                                 }
                             }
                         } else {
@@ -3335,6 +3404,9 @@ private struct TimeMachineView: View {
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
+        }
+        .sheet(item: $selectedHistoryDrilldown) { descriptor in
+            TimeMachineHistoryDrilldownSheet(descriptor: descriptor)
         }
         .task(id: isActive) {
             guard isActive else { return }
@@ -4659,6 +4731,17 @@ private struct TimeMachineTrendPoint: Identifiable {
     var id: Date { date }
 }
 
+private struct TimeMachineHistoryDrilldown: Identifiable {
+    let symbol: String
+    let title: String
+    let subtitle: String?
+    let points: [TimeMachineSingleAxisPoint]
+    let color: Color
+    let axisStyle: TimeMachineAxisValueStyle
+
+    var id: String { symbol }
+}
+
 private struct TimeMachineCombinedTrendDescriptor: Identifiable {
     let title: String
     let subtitle: String?
@@ -4673,6 +4756,7 @@ private struct TimeMachineCombinedTrendDescriptor: Identifiable {
     let leftAxisStyle: TimeMachineAxisValueStyle
     let rightAxisStyle: TimeMachineAxisValueStyle
     let showsComparisonLine: Bool
+    let historyDrilldown: TimeMachineHistoryDrilldown?
 
     var id: String { title }
 }
@@ -5700,6 +5784,7 @@ private struct TimeMachineCurrentAnchorCard: View {
 
 private struct TimeMachineDualAxisTrendCard: View {
     let descriptor: TimeMachineCombinedTrendDescriptor
+    var onTapHistory: ((TimeMachineHistoryDrilldown) -> Void)?
     @State private var selectedDate: Date?
 
     private var latestPoint: TimeMachineDualAxisPoint? {
@@ -5771,17 +5856,7 @@ private struct TimeMachineDualAxisTrendCard: View {
 
     private var header: some View {
         HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(descriptor.title)
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(AssetTheme.textPrimary)
-
-                if let subtitle = descriptor.subtitle {
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(AssetTheme.textSecondary)
-                }
-            }
+            titleSection
 
             Spacer(minLength: 12)
 
@@ -5800,6 +5875,48 @@ private struct TimeMachineDualAxisTrendCard: View {
                         dashed: true
                     )
                 }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var titleSection: some View {
+        if let historyDrilldown = descriptor.historyDrilldown {
+            Button {
+                onTapHistory?(historyDrilldown)
+            } label: {
+                titleContent(showsHistoryHint: true)
+            }
+            .buttonStyle(.plain)
+        } else {
+            titleContent(showsHistoryHint: false)
+        }
+    }
+
+    private func titleContent(showsHistoryHint: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Text(descriptor.title)
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                if showsHistoryHint {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
+            }
+
+            if let subtitle = descriptor.subtitle {
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(AssetTheme.textSecondary)
+            }
+
+            if showsHistoryHint {
+                Text("查看历史走势")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(AssetTheme.goldSoft)
             }
         }
     }
@@ -6048,6 +6165,227 @@ private struct TimeMachineDualAxisTrendCard: View {
         let step = (domain.upperBound - domain.lowerBound) / 2
         guard step.isFinite, step > 0 else { return [domain.lowerBound] }
         return [domain.lowerBound, domain.lowerBound + step, domain.upperBound]
+    }
+}
+
+private struct TimeMachineHistoryDrilldownSheet: View {
+    let descriptor: TimeMachineHistoryDrilldown
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedRange: TimeMachineRange = .all
+    @State private var selectedDate: Date?
+
+    private var filteredPoints: [TimeMachineSingleAxisPoint] {
+        selectedRange.filter(descriptor.points)
+    }
+
+    private var latestPoint: TimeMachineSingleAxisPoint? {
+        filteredPoints.last ?? descriptor.points.last
+    }
+
+    private var selectedPoint: TimeMachineSingleAxisPoint? {
+        guard let latestPoint else { return nil }
+        guard let selectedDate else { return latestPoint }
+        return nearestSingleAxisPoint(to: selectedDate, in: filteredPoints) ?? latestPoint
+    }
+
+    private var valueDomain: ClosedRange<Double> {
+        paddedDomain(values: filteredPoints.map(\.value))
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AssetTheme.pageGradient.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack(alignment: .top, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(descriptor.title)
+                                    .font(.title3.weight(.bold))
+                                    .foregroundStyle(AssetTheme.textPrimary)
+
+                                Text("历史走势")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(AssetTheme.goldSoft)
+
+                                if let subtitle = descriptor.subtitle {
+                                    Text(subtitle)
+                                        .font(.caption)
+                                        .foregroundStyle(AssetTheme.textSecondary)
+                                }
+                            }
+
+                            Spacer(minLength: 12)
+
+                            if let selectedPoint {
+                                VStack(alignment: .trailing, spacing: 4) {
+                                    Text(descriptor.axisStyle.compactLabel(for: selectedPoint.value))
+                                        .font(.title3.weight(.bold))
+                                        .foregroundStyle(descriptor.color)
+                                    Text(selectedPoint.date.chartAxisDateString)
+                                        .font(.caption)
+                                        .foregroundStyle(AssetTheme.textSecondary)
+                                }
+                            }
+                        }
+
+                        TimeMachineRangeSelector(selectedRange: $selectedRange)
+
+                        if filteredPoints.count >= 2 {
+                            historyChart
+                        } else if let latestPoint {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(descriptor.axisStyle.compactLabel(for: latestPoint.value))
+                                    .font(.title3.weight(.bold))
+                                    .foregroundStyle(descriptor.color)
+                                Text(latestPoint.date.chartAxisDateString)
+                                    .font(.caption)
+                                    .foregroundStyle(AssetTheme.textSecondary)
+                            }
+                            .padding(18)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(AssetTheme.overlayFaint, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                    .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
+                            )
+                        } else {
+                            Text("暂无历史数据")
+                                .font(.subheadline)
+                                .foregroundStyle(AssetTheme.textSecondary)
+                                .frame(maxWidth: .infinity, minHeight: 180, alignment: .center)
+                        }
+
+                        Text(selectedDate == nil ? dateRangeLabel : (selectedPoint?.date.chartAxisDateString ?? dateRangeLabel))
+                            .font(AppTypography.meta)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 24)
+                }
+            }
+            .navigationTitle("指数走势")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("关闭") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private var historyChart: some View {
+        Chart {
+            ForEach(filteredPoints) { point in
+                LineMark(
+                    x: .value("日期", point.date),
+                    y: .value(descriptor.title, point.value)
+                )
+                .foregroundStyle(descriptor.color)
+                .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                .interpolationMethod(.linear)
+            }
+
+            if let selectedPoint {
+                PointMark(
+                    x: .value("日期", selectedPoint.date),
+                    y: .value(descriptor.title, selectedPoint.value)
+                )
+                .foregroundStyle(descriptor.color)
+                .symbolSize(42)
+            }
+
+            if selectedDate != nil, let selectedPoint {
+                RuleMark(x: .value("选中日期", selectedPoint.date))
+                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.45))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+            }
+        }
+        .frame(height: 280)
+        .chartYScale(domain: valueDomain)
+        .chartXAxis {
+            let axisDates = chartAxisDates(filteredPoints.map(\.date))
+            AxisMarks(values: axisDates) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                    .foregroundStyle(AssetTheme.chartGrid)
+                AxisTick().foregroundStyle(AssetTheme.chartTick)
+                AxisValueLabel(anchor: .top, verticalSpacing: 8) {
+                    if let date = value.as(Date.self) {
+                        TimeMachineAxisDateLabel(date: date, position: axisLabelPosition(for: date, in: axisDates))
+                    }
+                }
+            }
+        }
+        .chartYAxis {
+            AxisMarks(values: axisTickValues(for: valueDomain)) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                    .foregroundStyle(AssetTheme.chartGrid)
+                AxisValueLabel {
+                    if let y = value.as(Double.self) {
+                        Text(descriptor.axisStyle.compactLabel(for: y))
+                            .font(.caption2)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                }
+            }
+        }
+        .chartLegend(.hidden)
+        .chartOverlay { proxy in
+            TimeMachineDragOverlay(proxy: proxy) { date in
+                selectedDate = date
+            } onEnded: {
+                selectedDate = nil
+            }
+        }
+        .padding(18)
+        .background(AssetTheme.overlayFaint, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
+        )
+    }
+
+    private var dateRangeLabel: String {
+        guard let first = filteredPoints.first?.date ?? descriptor.points.first?.date,
+              let last = filteredPoints.last?.date ?? descriptor.points.last?.date else {
+            return "暂无范围"
+        }
+        return "\(first.chartAxisDateString) - \(last.chartAxisDateString)"
+    }
+
+    private func axisLabelPosition(for date: Date, in axisDates: [Date]) -> TimeMachineAxisDateLabel.Position {
+        guard let first = axisDates.first, let last = axisDates.last else { return .middle }
+        if Calendar.current.isDate(date, inSameDayAs: first) {
+            return .leading
+        }
+        if Calendar.current.isDate(date, inSameDayAs: last) {
+            return .trailing
+        }
+        return .middle
+    }
+
+    private func axisTickValues(for domain: ClosedRange<Double>) -> [Double] {
+        let step = (domain.upperBound - domain.lowerBound) / 2
+        guard step.isFinite, step > 0 else { return [domain.lowerBound] }
+        return [domain.lowerBound, domain.lowerBound + step, domain.upperBound]
+    }
+
+    private func paddedDomain(values: [Double]) -> ClosedRange<Double> {
+        let filtered = values.filter { $0.isFinite }
+        guard let minValue = filtered.min(), let maxValue = filtered.max() else {
+            return 0...1
+        }
+        if abs(maxValue - minValue) < .ulpOfOne {
+            let padding = max(abs(maxValue) * 0.08, 1)
+            return (minValue - padding)...(maxValue + padding)
+        }
+        let padding = max((maxValue - minValue) * 0.12, abs(maxValue) * 0.02)
+        return (minValue - padding)...(maxValue + padding)
     }
 }
 
