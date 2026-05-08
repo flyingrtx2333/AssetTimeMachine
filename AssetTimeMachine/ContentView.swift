@@ -3815,35 +3815,37 @@ private struct BacktestView: View {
                                         }
                                     }
 
-                                    Button {
-                                        hasStartedBacktest = true
-                                        scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
-                                    } label: {
-                                        HStack(spacing: 8) {
-                                            Image(systemName: report == nil ? "play.fill" : "arrow.clockwise")
-                                                .font(.footnote.weight(.bold))
-                                            Text(report == nil ? "开始回测" : "重新回测")
-                                                .font(.subheadline.weight(.bold))
+                                    if report == nil {
+                                        Button {
+                                            hasStartedBacktest = true
+                                            scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
+                                        } label: {
+                                            HStack(spacing: 8) {
+                                                Image(systemName: "play.fill")
+                                                    .font(.footnote.weight(.bold))
+                                                Text("开始回测")
+                                                    .font(.subheadline.weight(.bold))
+                                            }
+                                            .foregroundStyle(Color.black.opacity(0.88))
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.horizontal, 18)
+                                            .padding(.vertical, 14)
+                                            .background(
+                                                LinearGradient(
+                                                    colors: [AssetTheme.goldSoft, AssetTheme.gold],
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                ),
+                                                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                            )
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                                    .stroke(AssetTheme.gold.opacity(0.32), lineWidth: 1)
+                                            )
+                                            .shadow(color: AssetTheme.gold.opacity(0.18), radius: 12, y: 6)
                                         }
-                                        .foregroundStyle(Color.black.opacity(0.88))
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.horizontal, 18)
-                                        .padding(.vertical, 14)
-                                        .background(
-                                            LinearGradient(
-                                                colors: [AssetTheme.goldSoft, AssetTheme.gold],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            ),
-                                            in: RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                        )
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                                .stroke(AssetTheme.gold.opacity(0.32), lineWidth: 1)
-                                        )
-                                        .shadow(color: AssetTheme.gold.opacity(0.18), radius: 12, y: 6)
+                                        .buttonStyle(.plain)
                                     }
-                                    .buttonStyle(.plain)
                                 }
                             }
                         }
