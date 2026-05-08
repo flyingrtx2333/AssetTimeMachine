@@ -3442,6 +3442,22 @@ private struct BacktestSeriesPoint: Identifiable {
     var id: Date { date }
 }
 
+private enum BacktestMode: String, CaseIterable, Identifiable {
+    case allocation
+    case dca
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .allocation:
+            return "配置回测"
+        case .dca:
+            return "定投回测"
+        }
+    }
+}
+
 private struct BacktestReport {
     let points: [BacktestSeriesPoint]
     let totalReturn: Double
@@ -3452,7 +3468,25 @@ private struct BacktestReport {
     let sharpeRatio: Double?
 }
 
+private struct DCABacktestReport {
+    let points: [BacktestSeriesPoint]
+    let totalInvested: Double
+    let finalPortfolioValue: Double
+    let profitLoss: Double
+    let totalReturn: Double
+    let contributionCount: Int
+    let totalUnits: Double
+}
+
 private struct BacktestIndexOption: Identifiable {
+    let symbol: String
+    let title: String
+    let color: Color
+
+    var id: String { symbol }
+}
+
+private struct BacktestAssetOption: Identifiable {
     let symbol: String
     let title: String
     let color: Color
@@ -3463,6 +3497,9 @@ private struct BacktestIndexOption: Identifiable {
 private enum BacktestDefaults {
     static let cashWeight: Double = 50
     static let goldWeight: Double = 25
+    static let dcaAssetSymbol = "gold_cny"
+    static let dcaContributionAmount: Double = 1000
+    static let dcaIntervalDays = 30
     static let indexOptions: [BacktestIndexOption] = [
         .init(symbol: "sp500", title: "标普500", color: AssetTheme.goldSoft),
         .init(symbol: "nasdaq", title: "纳指", color: AssetTheme.accentBlue),
@@ -3477,6 +3514,11 @@ private enum BacktestDefaults {
             (option.symbol, option.symbol == "nasdaq" ? 25 : 0)
         })
     }()
+    static let dcaAssetOptions: [BacktestAssetOption] = [
+        .init(symbol: "gold_cny", title: "黄金", color: AssetTheme.gold),
+        .init(symbol: "csi300", title: "沪深300", color: AssetTheme.textPrimary),
+        .init(symbol: "shanghai_composite", title: "上证综指", color: AssetTheme.textSecondary),
+    ]
 }
 
 private enum BacktestEngine {
@@ -3626,6 +3668,69 @@ private enum BacktestEngine {
         )
     }
 
+    static func runDCA(
+        series: PublicHistorySeries?,
+        contributionAmount: Double,
+        intervalDays: Int
+    ) -> DCABacktestReport? {
+        guard let series else { return nil }
+        let normalizedAmount = max(contributionAmount, 0)
+        let normalizedInterval = max(intervalDays, 1)
+        guard normalizedAmount > 0 else { return nil }
+
+        let pricePoints: [(date: Date, price: Double)] = zip(series.dates, series.prices).compactMap { dateText, price in
+            guard let date = historicalSeriesDateStatic(from: dateText), price.isFinite, price > 0 else { return nil }
+            return (date, price)
+        }
+        .sorted { $0.date < $1.date }
+
+        guard let firstPoint = pricePoints.first, let lastPoint = pricePoints.last else { return nil }
+
+        let calendar = Calendar(identifier: .gregorian)
+        var scheduledDate = firstPoint.date
+        var nextContributionIndex = pricePoints.firstIndex(where: { $0.date >= scheduledDate })
+        var unitsHeld = 0.0
+        var totalInvested = 0.0
+        var contributionCount = 0
+        var points: [BacktestSeriesPoint] = []
+
+        for (index, point) in pricePoints.enumerated() {
+            if nextContributionIndex == index {
+                unitsHeld += normalizedAmount / point.price
+                totalInvested += normalizedAmount
+                contributionCount += 1
+
+                // Use the actual execution day as the next schedule anchor when the configured day is not a trading day.
+                if let nextScheduledDate = calendar.date(byAdding: .day, value: normalizedInterval, to: point.date),
+                   nextScheduledDate <= lastPoint.date {
+                    scheduledDate = nextScheduledDate
+                    if index + 1 < pricePoints.count {
+                        nextContributionIndex = pricePoints[(index + 1)...].firstIndex(where: { $0.date >= scheduledDate })
+                    } else {
+                        nextContributionIndex = nil
+                    }
+                } else {
+                    nextContributionIndex = nil
+                }
+            }
+
+            guard unitsHeld > 0 else { continue }
+            points.append(.init(date: point.date, portfolioValue: unitsHeld * point.price))
+        }
+
+        guard let finalPoint = points.last, totalInvested > 0 else { return nil }
+        let profitLoss = finalPoint.portfolioValue - totalInvested
+        return DCABacktestReport(
+            points: points,
+            totalInvested: totalInvested,
+            finalPortfolioValue: finalPoint.portfolioValue,
+            profitLoss: profitLoss,
+            totalReturn: profitLoss / totalInvested,
+            contributionCount: contributionCount,
+            totalUnits: unitsHeld
+        )
+    }
+
     static func availableDateBounds(for seriesList: [PublicHistorySeries]) -> ClosedRange<Date>? {
         let seriesBounds = seriesList.compactMap { series -> ClosedRange<Date>? in
             guard let firstText = series.dates.first,
@@ -3656,8 +3761,23 @@ private enum BacktestEngine {
     }
 }
 
+private enum BacktestChartValueStyle {
+    case multiple
+    case currency(code: String)
+
+    func label(for value: Double) -> String {
+        switch self {
+        case .multiple:
+            return String(format: "%.2fx", value)
+        case let .currency(code):
+            return value.currencyString(code: code)
+        }
+    }
+}
+
 private struct InteractiveBacktestChart: View {
     let points: [BacktestSeriesPoint]
+    var valueStyle: BacktestChartValueStyle = .multiple
     @State private var selectedDate: Date?
 
     private var selectedPoint: BacktestSeriesPoint? {
@@ -3718,7 +3838,7 @@ private struct InteractiveBacktestChart: View {
                     .foregroundStyle(AssetTheme.border.opacity(0.35))
                 AxisValueLabel {
                     if let doubleValue = value.as(Double.self) {
-                        Text(String(format: "%.2fx", doubleValue))
+                        Text(valueStyle.label(for: doubleValue))
                             .foregroundStyle(AssetTheme.textSecondary)
                     }
                 }
@@ -3745,22 +3865,29 @@ private struct BacktestAllocationSlice: Identifiable {
 
 private struct BacktestView: View {
     @ObservedObject var marketStore: RemoteMarketStore
+    @State private var backtestMode: BacktestMode = .allocation
     @State private var cashWeight: Double = BacktestDefaults.cashWeight
     @State private var goldWeight: Double = BacktestDefaults.goldWeight
     @State private var indexWeights: [String: Double] = BacktestDefaults.indexWeights
+    @State private var dcaAssetSymbol: String = BacktestDefaults.dcaAssetSymbol
+    @State private var dcaContributionAmount: Double = BacktestDefaults.dcaContributionAmount
+    @State private var dcaIntervalDays: Int = BacktestDefaults.dcaIntervalDays
     @State private var selectedStartDate: Date?
     @State private var selectedEndDate: Date?
     @State private var animationProgress: Double = 1
     @State private var showsAllocationSheet = false
+    @State private var showsDCAConfigSheet = false
     @State private var showsRangeSheet = false
     @State private var hasStartedBacktest = ProcessInfo.processInfo.arguments.contains("-autoStartBacktest")
     @State private var hasPlayedInitialBacktestAnimation = false
     @State private var isBacktestLoading = false
     @State private var backtestRefreshToken = 0
-    @State private var report: BacktestReport?
+    @State private var allocationReport: BacktestReport?
+    @State private var dcaReport: DCABacktestReport?
     @State private var displayPoints: [BacktestSeriesPoint] = []
 
     private let indexOptions = BacktestDefaults.indexOptions
+    private let dcaAssetOptions = BacktestDefaults.dcaAssetOptions
 
     private var filteredGoldSeries: PublicHistorySeries? {
         filteredHistorySeries(marketStore.history(for: "gold_cny"))
@@ -3775,6 +3902,14 @@ private struct BacktestView: View {
 
     private var positiveIndexOptions: [BacktestIndexOption] {
         indexOptions.filter { indexWeights[$0.symbol, default: 0] > 0 }
+    }
+
+    private var selectedDCAAssetOption: BacktestAssetOption? {
+        dcaAssetOptions.first(where: { $0.symbol == dcaAssetSymbol })
+    }
+
+    private var filteredDCASeries: PublicHistorySeries? {
+        filteredHistorySeries(marketStore.history(for: dcaAssetSymbol))
     }
 
     private var animatedPoints: [BacktestSeriesPoint] {
@@ -3806,6 +3941,10 @@ private struct BacktestView: View {
     }
 
     private var activeBacktestSourceSeries: [PublicHistorySeries] {
+        if backtestMode == .dca {
+            return marketStore.history(for: dcaAssetSymbol).map { [$0] } ?? []
+        }
+
         var series: [PublicHistorySeries] = []
 
         if goldWeight > 0, let goldSeries = marketStore.history(for: "gold_cny") {
@@ -3856,7 +3995,25 @@ private struct BacktestView: View {
     private var selectedDateFilterToken: String {
         let startToken = selectedStartDate?.recordDateString ?? "nil"
         let endToken = selectedEndDate?.recordDateString ?? "nil"
-        return "\(startToken)|\(endToken)"
+        return "\(backtestMode.rawValue)|\(startToken)|\(endToken)"
+    }
+
+    private var activeReportPoints: [BacktestSeriesPoint] {
+        switch backtestMode {
+        case .allocation:
+            return allocationReport?.points ?? []
+        case .dca:
+            return dcaReport?.points ?? []
+        }
+    }
+
+    private var hasActiveReport: Bool {
+        switch backtestMode {
+        case .allocation:
+            return allocationReport != nil
+        case .dca:
+            return dcaReport != nil
+        }
     }
 
     var body: some View {
@@ -3867,27 +4024,45 @@ private struct BacktestView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 14) {
                         VStack(spacing: 20) {
-                            BacktestAllocationCard(
-                                slices: allocationSlices,
-                                activeAllocationSummary: activeAllocationSummary,
-                                selectedDateRangeLabel: selectedDateRangeLabel,
-                                onTapRange: {
-                                    showsRangeSheet = true
-                                },
-                                onTapAllocation: {
-                                    showsAllocationSheet = true
-                                }
-                            )
+                            BacktestModePicker(selectedMode: $backtestMode)
+
+                            if backtestMode == .allocation {
+                                BacktestAllocationCard(
+                                    slices: allocationSlices,
+                                    activeAllocationSummary: activeAllocationSummary,
+                                    selectedDateRangeLabel: selectedDateRangeLabel,
+                                    onTapRange: {
+                                        showsRangeSheet = true
+                                    },
+                                    onTapAllocation: {
+                                        showsAllocationSheet = true
+                                    }
+                                )
+                            } else {
+                                BacktestDCACard(
+                                    assetTitle: selectedDCAAssetOption?.title ?? "未选择资产",
+                                    amount: dcaContributionAmount,
+                                    intervalDays: dcaIntervalDays,
+                                    selectedDateRangeLabel: selectedDateRangeLabel,
+                                    accent: selectedDCAAssetOption?.color ?? AssetTheme.gold,
+                                    onTapRange: {
+                                        showsRangeSheet = true
+                                    },
+                                    onTapConfiguration: {
+                                        showsDCAConfigSheet = true
+                                    }
+                                )
+                            }
 
                             if !isBacktestLoading {
                                 HStack(spacing: 10) {
-                                    if report != nil {
+                                    if hasActiveReport {
                                         BacktestActionChip(title: "重置回测", systemImage: "arrow.counterclockwise") {
                                             resetBacktest()
                                         }
                                     }
 
-                                    if report == nil {
+                                    if !hasActiveReport {
                                         Button {
                                             hasStartedBacktest = true
                                             scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
@@ -3927,70 +4102,22 @@ private struct BacktestView: View {
                                 .padding(.top, 8)
                         }
 
-                        if let report, !isBacktestLoading {
-                            VStack(alignment: .leading, spacing: 14) {
-                                HStack {
-                                    Text("组合净值")
-                                        .font(.headline.weight(.bold))
-                                        .foregroundStyle(AssetTheme.textPrimary)
-                                    Spacer()
-                                    Text(selectedDateRangeLabel)
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(AssetTheme.textSecondary)
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.82)
-                                    Text(activeAllocationSummary)
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(AssetTheme.goldSoft)
+                        if !isBacktestLoading {
+                            switch backtestMode {
+                            case .allocation:
+                                if let allocationReport {
+                                    allocationReportSection(report: allocationReport)
                                 }
-
-                                InteractiveBacktestChart(points: animatedPoints)
-                                .frame(height: 220)
-                                .chartXAxis {
-                                    AxisMarks(values: .automatic(desiredCount: 4)) {
-                                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
-                                            .foregroundStyle(AssetTheme.border.opacity(0.35))
-                                        AxisValueLabel(format: .dateTime.year())
-                                            .foregroundStyle(AssetTheme.textSecondary)
-                                    }
-                                }
-                                .chartYAxis {
-                                    AxisMarks(position: .leading) { value in
-                                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
-                                            .foregroundStyle(AssetTheme.border.opacity(0.35))
-                                        AxisValueLabel {
-                                            if let doubleValue = value.as(Double.self) {
-                                                Text(String(format: "%.2fx", doubleValue))
-                                                    .foregroundStyle(AssetTheme.textSecondary)
-                                            }
-                                        }
-                                    }
-                                }
-                                .chartLegend(.hidden)
-                            }
-                            .padding(.top, 8)
-
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("分析报告")
-                                    .font(.headline.weight(.bold))
-                                    .foregroundStyle(AssetTheme.textPrimary)
-
-                                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
-                                    BacktestMetricCard(title: "总收益", value: report.totalReturn.percentString())
-                                    BacktestMetricCard(title: "年化收益", value: report.annualizedReturn?.percentString() ?? "--")
-                                    BacktestMetricCard(title: "最大回撤", value: report.maxDrawdown.percentString(), accent: AssetTheme.negative)
-                                    BacktestMetricCard(title: "修复时间", value: recoveryTimeLabel(for: report))
-                                    BacktestMetricCard(title: "年化波动", value: report.annualizedVolatility?.percentString() ?? "--")
-                                    BacktestMetricCard(title: "夏普比率", value: report.sharpeRatio.map { String(format: "%.2f", $0) } ?? "--")
-                                    BacktestMetricCard(title: "区间", value: intervalLabel(for: report))
+                            case .dca:
+                                if let dcaReport {
+                                    dcaReportSection(report: dcaReport)
                                 }
                             }
-                            .padding(.top, 8)
                         }
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 10)
-                    .padding(.bottom, report == nil ? 10 : 136)
+                    .padding(.bottom, hasActiveReport ? 136 : 10)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -4008,6 +4135,22 @@ private struct BacktestView: View {
                     )
                 }
                 .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
+            .sheet(isPresented: $showsDCAConfigSheet) {
+                BacktestDCASettingSheet(
+                    assetSymbol: dcaAssetSymbol,
+                    contributionAmount: dcaContributionAmount,
+                    intervalDays: dcaIntervalDays,
+                    assetOptions: dcaAssetOptions
+                ) { updatedSymbol, updatedAmount, updatedIntervalDays in
+                    applyDCAConfiguration(
+                        assetSymbol: updatedSymbol,
+                        contributionAmount: updatedAmount,
+                        intervalDays: updatedIntervalDays
+                    )
+                }
+                .presentationDetents([.fraction(0.56), .large])
                 .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showsRangeSheet) {
@@ -4029,7 +4172,7 @@ private struct BacktestView: View {
             }
         }
         .onAppear {
-            if hasStartedBacktest, report == nil {
+            if hasStartedBacktest, !hasActiveReport {
                 scheduleBacktestRefresh(animated: !hasPlayedInitialBacktestAnimation)
             }
         }
@@ -4039,7 +4182,7 @@ private struct BacktestView: View {
         }
         .onReceive(marketStore.$historySeries) { _ in
             guard hasStartedBacktest else { return }
-            scheduleBacktestRefresh(animated: report == nil && !hasPlayedInitialBacktestAnimation)
+            scheduleBacktestRefresh(animated: !hasActiveReport && !hasPlayedInitialBacktestAnimation)
         }
     }
 
@@ -4047,6 +4190,15 @@ private struct BacktestView: View {
         self.cashWeight = cashWeight
         self.goldWeight = goldWeight
         self.indexWeights = indexWeights
+
+        guard hasStartedBacktest else { return }
+        scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
+    }
+
+    private func applyDCAConfiguration(assetSymbol: String, contributionAmount: Double, intervalDays: Int) {
+        dcaAssetSymbol = assetSymbol
+        dcaContributionAmount = contributionAmount
+        dcaIntervalDays = intervalDays
 
         guard hasStartedBacktest else { return }
         scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
@@ -4079,14 +4231,25 @@ private struct BacktestView: View {
 
     @MainActor
     private func recomputeReport(animated: Bool, forceAnimation: Bool = false) {
-        report = BacktestEngine.run(
-            cashWeight: cashWeight,
-            goldWeight: goldWeight,
-            goldSeries: filteredGoldSeries,
-            indexWeights: indexWeights,
-            indexSeriesBySymbol: filteredIndexSeriesBySymbol
-        )
-        displayPoints = sampledChartPoints(from: report?.points ?? [])
+        switch backtestMode {
+        case .allocation:
+            allocationReport = BacktestEngine.run(
+                cashWeight: cashWeight,
+                goldWeight: goldWeight,
+                goldSeries: filteredGoldSeries,
+                indexWeights: indexWeights,
+                indexSeriesBySymbol: filteredIndexSeriesBySymbol
+            )
+            dcaReport = nil
+        case .dca:
+            dcaReport = BacktestEngine.runDCA(
+                series: filteredDCASeries,
+                contributionAmount: dcaContributionAmount,
+                intervalDays: dcaIntervalDays
+            )
+            allocationReport = nil
+        }
+        displayPoints = sampledChartPoints(from: activeReportPoints)
 
         let shouldAnimate = animated && !displayPoints.isEmpty && (forceAnimation || !hasPlayedInitialBacktestAnimation)
         guard shouldAnimate else {
@@ -4103,12 +4266,17 @@ private struct BacktestView: View {
         hasStartedBacktest = false
         hasPlayedInitialBacktestAnimation = false
         isBacktestLoading = false
+        backtestMode = .allocation
         cashWeight = BacktestDefaults.cashWeight
         goldWeight = BacktestDefaults.goldWeight
         indexWeights = BacktestDefaults.indexWeights
+        dcaAssetSymbol = BacktestDefaults.dcaAssetSymbol
+        dcaContributionAmount = BacktestDefaults.dcaContributionAmount
+        dcaIntervalDays = BacktestDefaults.dcaIntervalDays
         selectedStartDate = nil
         selectedEndDate = nil
-        report = nil
+        allocationReport = nil
+        dcaReport = nil
         displayPoints = []
         animationProgress = 1
     }
@@ -4180,6 +4348,100 @@ private struct BacktestView: View {
             return String(format: "%.1f年", years)
         }
         return "\(days)天"
+    }
+
+    @ViewBuilder
+    private func allocationReportSection(report: BacktestReport) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("组合净值")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+                Spacer()
+                Text(selectedDateRangeLabel)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+                Text(activeAllocationSummary)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AssetTheme.goldSoft)
+            }
+
+            InteractiveBacktestChart(points: animatedPoints)
+        }
+        .padding(.top, 8)
+
+        VStack(alignment: .leading, spacing: 12) {
+            Text("分析报告")
+                .font(.headline.weight(.bold))
+                .foregroundStyle(AssetTheme.textPrimary)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
+                BacktestMetricCard(title: "总收益", value: report.totalReturn.percentString())
+                BacktestMetricCard(title: "年化收益", value: report.annualizedReturn?.percentString() ?? "--")
+                BacktestMetricCard(title: "最大回撤", value: report.maxDrawdown.percentString(), accent: AssetTheme.negative)
+                BacktestMetricCard(title: "修复时间", value: recoveryTimeLabel(for: report))
+                BacktestMetricCard(title: "年化波动", value: report.annualizedVolatility?.percentString() ?? "--")
+                BacktestMetricCard(title: "夏普比率", value: report.sharpeRatio.map { String(format: "%.2f", $0) } ?? "--")
+                BacktestMetricCard(title: "区间", value: intervalLabel(for: report))
+            }
+        }
+        .padding(.top, 8)
+    }
+
+    @ViewBuilder
+    private func dcaReportSection(report: DCABacktestReport) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("定投市值")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+                Spacer()
+                Text(selectedDateRangeLabel)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+                Text(selectedDCAAssetOption?.title ?? "单资产")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(selectedDCAAssetOption?.color ?? AssetTheme.goldSoft)
+            }
+
+            InteractiveBacktestChart(points: animatedPoints, valueStyle: .currency(code: "CNY"))
+        }
+        .padding(.top, 8)
+
+        VStack(alignment: .leading, spacing: 12) {
+            Text("分析报告")
+                .font(.headline.weight(.bold))
+                .foregroundStyle(AssetTheme.textPrimary)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
+                BacktestMetricCard(title: "累计投入", value: report.totalInvested.currencyString())
+                BacktestMetricCard(title: "期末市值", value: report.finalPortfolioValue.currencyString())
+                BacktestMetricCard(
+                    title: "累计盈亏",
+                    value: report.profitLoss.currencyString(),
+                    accent: report.profitLoss >= 0 ? AssetTheme.positive : AssetTheme.negative
+                )
+                BacktestMetricCard(
+                    title: "收益率",
+                    value: report.totalReturn.percentString(),
+                    accent: report.totalReturn >= 0 ? AssetTheme.positive : AssetTheme.negative
+                )
+                BacktestMetricCard(title: "定投次数", value: "\(report.contributionCount)次")
+                BacktestMetricCard(title: "持有份额", value: report.totalUnits.plainNumberString())
+                BacktestMetricCard(title: "区间", value: intervalLabel(points: report.points))
+                BacktestMetricCard(title: "定投频率", value: "每\(dcaIntervalDays)天")
+            }
+        }
+        .padding(.top, 8)
+    }
+
+    private func intervalLabel(points: [BacktestSeriesPoint]) -> String {
+        guard let first = points.first?.date, let last = points.last?.date else { return "--" }
+        return "\(first.shortDateString) - \(last.shortDateString)"
     }
 
 }
@@ -4285,6 +4547,129 @@ private struct BacktestAllocationRow: View {
                     .fill(AssetTheme.border.opacity(0.45))
                     .frame(height: 1)
                     .padding(.leading, 38)
+            }
+        }
+    }
+}
+
+private struct BacktestModePicker: View {
+    @Binding var selectedMode: BacktestMode
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(BacktestMode.allCases) { mode in
+                Button {
+                    selectedMode = mode
+                } label: {
+                    Text(mode.title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(selectedMode == mode ? Color.black.opacity(0.88) : AssetTheme.textPrimary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            selectedMode == mode
+                                ? AnyShapeStyle(
+                                    LinearGradient(
+                                        colors: [AssetTheme.goldSoft, AssetTheme.gold],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                : AnyShapeStyle(AssetTheme.overlaySoft),
+                            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(
+                                    selectedMode == mode ? AssetTheme.gold.opacity(0.28) : AssetTheme.border.opacity(0.68),
+                                    lineWidth: 1
+                                )
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+private struct BacktestDCACard: View {
+    let assetTitle: String
+    let amount: Double
+    let intervalDays: Int
+    let selectedDateRangeLabel: String
+    let accent: Color
+    let onTapRange: () -> Void
+    let onTapConfiguration: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .center, spacing: 12) {
+                Button(action: onTapRange) {
+                    HStack(spacing: 8) {
+                        Text(selectedDateRangeLabel)
+                            .font(.headline.weight(.bold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.78)
+                        Image(systemName: "chevron.down")
+                            .font(.caption.weight(.bold))
+                    }
+                    .foregroundStyle(AssetTheme.textPrimary)
+                }
+                .buttonStyle(.plain)
+
+                Spacer(minLength: 12)
+
+                Image(systemName: "slider.horizontal.3")
+                    .font(.footnote.weight(.bold))
+                    .foregroundStyle(AssetTheme.textSecondary)
+            }
+
+            Button(action: onTapConfiguration) {
+                VStack(alignment: .leading, spacing: 0) {
+                    BacktestInfoRow(title: "回测资产", value: assetTitle, valueColor: accent, showsDivider: true)
+                    BacktestInfoRow(title: "每次投入", value: amount.currencyString(), valueColor: AssetTheme.textPrimary, showsDivider: true)
+                    BacktestInfoRow(title: "定投频率", value: "每\(intervalDays)天", valueColor: AssetTheme.textPrimary, showsDivider: false)
+                }
+                .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(AssetTheme.border.opacity(0.68), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+private struct BacktestInfoRow: View {
+    let title: String
+    let value: String
+    var valueColor: Color = AssetTheme.textPrimary
+    let showsDivider: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textSecondary)
+
+                Spacer()
+
+                Text(value)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(valueColor)
+                    .multilineTextAlignment(.trailing)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+
+            if showsDivider {
+                Rectangle()
+                    .fill(AssetTheme.border.opacity(0.45))
+                    .frame(height: 1)
+                    .padding(.leading, 16)
             }
         }
     }
@@ -4459,6 +4844,114 @@ private struct BacktestLoadingView: View {
     }
 }
 
+private struct BacktestDCASettingSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var assetSymbol: String
+    @State private var contributionAmount: Double
+    @State private var intervalDays: Int
+    let assetOptions: [BacktestAssetOption]
+    let onApply: (String, Double, Int) -> Void
+
+    init(
+        assetSymbol: String,
+        contributionAmount: Double,
+        intervalDays: Int,
+        assetOptions: [BacktestAssetOption],
+        onApply: @escaping (String, Double, Int) -> Void
+    ) {
+        _assetSymbol = State(initialValue: assetSymbol)
+        _contributionAmount = State(initialValue: contributionAmount)
+        _intervalDays = State(initialValue: intervalDays)
+        self.assetOptions = assetOptions
+        self.onApply = onApply
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AssetTheme.pageGradient.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("回测资产")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(AssetTheme.textPrimary)
+
+                            Picker("回测资产", selection: $assetSymbol) {
+                                ForEach(assetOptions) { option in
+                                    Text(option.title).tag(option.symbol)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .tint(AssetTheme.textPrimary)
+
+                            Text("当前仅支持人民币计价资产，避免汇率缺失导致回测失真。")
+                                .font(.caption)
+                                .foregroundStyle(AssetTheme.textSecondary)
+                        }
+                        .padding(16)
+                        .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .stroke(AssetTheme.border.opacity(0.7), lineWidth: 1)
+                        )
+
+                        BacktestStepperCard(
+                            title: "每次投入",
+                            valueText: contributionAmount.currencyString(),
+                            caption: "按人民币计价，支持按固定金额持续定投。",
+                            decrementTitle: "减少",
+                            incrementTitle: "增加"
+                        ) {
+                            contributionAmount = max(100, contributionAmount - 100)
+                        } onIncrement: {
+                            contributionAmount = min(1_000_000, contributionAmount + 100)
+                        }
+
+                        BacktestStepperCard(
+                            title: "定投间隔",
+                            valueText: "每\(intervalDays)天",
+                            caption: "若计划日无行情，则顺延到下一可用历史点执行。",
+                            decrementTitle: "缩短",
+                            incrementTitle: "拉长"
+                        ) {
+                            intervalDays = max(1, intervalDays - 1)
+                        } onIncrement: {
+                            intervalDays = min(365, intervalDays + 1)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 20)
+                    .padding(.bottom, 32)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("重置") {
+                        assetSymbol = BacktestDefaults.dcaAssetSymbol
+                        contributionAmount = BacktestDefaults.dcaContributionAmount
+                        intervalDays = BacktestDefaults.dcaIntervalDays
+                    }
+                    .tint(AssetTheme.textSecondary)
+                }
+                ToolbarItem(placement: .principal) {
+                    Text("定投参数")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("完成") {
+                        onApply(assetSymbol, contributionAmount, intervalDays)
+                        dismiss()
+                    }
+                    .tint(AssetTheme.gold)
+                }
+            }
+        }
+    }
+}
+
 private struct BacktestAllocationSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var cashWeight: Double
@@ -4576,6 +5069,79 @@ private struct BacktestAllocationSheet: View {
             normalizedIndexWeights[lastOption.symbol] = max(0, indexBudget - allocated)
         }
         indexWeights = normalizedIndexWeights
+    }
+}
+
+private struct BacktestStepperCard: View {
+    let title: String
+    let valueText: String
+    let caption: String
+    let decrementTitle: String
+    let incrementTitle: String
+    let onDecrement: () -> Void
+    let onIncrement: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+                Spacer()
+                Text(valueText)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(AssetTheme.goldSoft)
+            }
+
+            Text(caption)
+                .font(.caption)
+                .foregroundStyle(AssetTheme.textSecondary)
+
+            HStack(spacing: 10) {
+                Button(decrementTitle, action: onDecrement)
+                    .buttonStyle(BacktestMiniControlButtonStyle())
+                Button(incrementTitle, action: onIncrement)
+                    .buttonStyle(BacktestMiniControlButtonStyle(filled: true))
+            }
+        }
+        .padding(16)
+        .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.7), lineWidth: 1)
+        )
+    }
+}
+
+private struct BacktestMiniControlButtonStyle: ButtonStyle {
+    var filled = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.caption.weight(.bold))
+            .foregroundStyle(filled ? Color.black.opacity(configuration.isPressed ? 0.7 : 0.88) : AssetTheme.textPrimary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                filled
+                    ? AnyShapeStyle(
+                        LinearGradient(
+                            colors: [AssetTheme.goldSoft, AssetTheme.gold],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    : AnyShapeStyle(AssetTheme.overlaySoft),
+                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(
+                        filled ? AssetTheme.gold.opacity(0.32) : AssetTheme.border.opacity(0.7),
+                        lineWidth: 1
+                    )
+            )
+            .opacity(configuration.isPressed ? 0.86 : 1)
     }
 }
 
