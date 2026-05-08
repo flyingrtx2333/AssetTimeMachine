@@ -26,6 +26,6 @@
 
 ## 备注
 
-- `01` 到 `03` 沿用此前已整理好的商店图样例。
-- `04` 和 `05` 已补成 **结果页**。
+- `01` 到 `05` 已在 **当前 build** 基础上重新截图，不再复用旧版素材。
+- `04` 和 `05` 为当前 UI 下的回测结果页版本。
 - 当前工程已收窄为 **iPhone-only** 发布，`SUPPORTED_PLATFORMS = iphoneos iphonesimulator`，`TARGETED_DEVICE_FAMILY = 1`。
