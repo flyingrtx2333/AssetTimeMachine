@@ -107,15 +107,13 @@
 - 尺寸：**1320 x 2868**
 - 符合 6.9" iPhone 截图要求
 
-### 重要提醒
-当前工程构建设置里 `TARGETED_DEVICE_FAMILY = 1,2,7`。
+### 当前状态
+当前工程已经收窄为 **iPhone-only**：
 
-这意味着提交前你要确认：
+- `SUPPORTED_PLATFORMS = iphoneos iphonesimulator`
+- `TARGETED_DEVICE_FAMILY = 1`
 
-1. **继续保留 iPad / 其他设备支持**
-   - 那就继续补对应尺寸截图
-2. **只上 iPhone**
-   - 那就把发布设备范围收窄，避免 App Store Connect 继续要额外截图
+也就是说，这一版按 iPhone 上架即可，不需要再额外准备 iPad 截图。
 
 ---
 
@@ -189,7 +187,7 @@
 - [ ] 确认描述是否走当前版本
 - [ ] 确认是“首版说明”还是“版本更新说明”
 - [ ] 上传 5 张 iPhone 截图
-- [ ] 决定是否保留 iPad / 其他设备支持
+- [x] 已收窄为 iPhone-only 发布
 - [ ] 准备 Support URL
 - [ ] 准备 Marketing URL
 - [ ] 准备 Privacy Policy URL
@@ -207,6 +205,6 @@
 - 分类：**Finance / Productivity**
 - 关键词：直接用推荐串
 - 截图：先上传这 5 张 iPhone 图
-- 设备范围：如果暂时不想补 iPad 图，就先收窄到 iPhone
+- 设备范围：已收窄到 iPhone-only
 
 这一套最稳，也最适合首版。 

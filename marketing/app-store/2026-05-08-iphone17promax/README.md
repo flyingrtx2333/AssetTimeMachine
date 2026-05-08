@@ -28,4 +28,4 @@
 
 - `01` 到 `03` 沿用此前已整理好的商店图样例。
 - `04` 和 `05` 已补成 **结果页**。
-- 当前工程构建设置里 `TARGETED_DEVICE_FAMILY = 1,2,7`，提交前请确认是否继续保留 iPad / 其他设备支持。若 App Store Connect 要求对应设备截图，需要继续补拍，或先收窄发布设备范围。
+- 当前工程已收窄为 **iPhone-only** 发布，`SUPPORTED_PLATFORMS = iphoneos iphonesimulator`，`TARGETED_DEVICE_FAMILY = 1`。
