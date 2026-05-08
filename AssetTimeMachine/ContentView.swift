@@ -5823,7 +5823,7 @@ private struct TimeMachineDualAxisTrendCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             header
 
             if canShowDualAxisChart {
@@ -5838,33 +5838,46 @@ private struct TimeMachineDualAxisTrendCard: View {
             }
 
             Text(selectedDate == nil ? dateRangeLabel : selectedAxisDateLabel)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.system(size: 11, weight: .medium, design: .rounded))
                 .foregroundStyle(AssetTheme.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .padding(16)
+        .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AssetTheme.overlayFaint, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(
+            LinearGradient(
+                colors: [AssetTheme.surface.opacity(0.34), AssetTheme.overlaySoft.opacity(0.96)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
+                .stroke(AssetTheme.border.opacity(0.55), lineWidth: 1)
         )
+        .shadow(color: AssetTheme.cardShadow.opacity(0.35), radius: 16, x: 0, y: 8)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     private var header: some View {
-        HStack(alignment: .top, spacing: 10) {
-            titleSection
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                titleSection
 
-            Spacer(minLength: 10)
+                Spacer(minLength: 8)
 
-            VStack(alignment: .trailing, spacing: 6) {
+                historyButton
+            }
+
+            HStack(spacing: 10) {
                 TimeMachineLegendMetric(
                     title: descriptor.leftTitle,
                     value: selectedLeftLabel,
                     color: descriptor.leftColor,
                     dashed: false
                 )
+
                 if descriptor.showsComparisonLine {
                     TimeMachineLegendMetric(
                         title: descriptor.rightTitle,
@@ -5877,61 +5890,54 @@ private struct TimeMachineDualAxisTrendCard: View {
         }
     }
 
-    @ViewBuilder
     private var titleSection: some View {
-        if let historyDrilldown = descriptor.historyDrilldown {
-            Button {
-                onTapHistory?(historyDrilldown)
-            } label: {
-                titleContent(showsHistoryHint: true)
-            }
-            .buttonStyle(.plain)
-        } else {
-            titleContent(showsHistoryHint: false)
-        }
-    }
-
-    private func titleContent(showsHistoryHint: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 8) {
-                Text(descriptor.title)
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundStyle(AssetTheme.textPrimary)
-
-                if showsHistoryHint {
-                    HStack(spacing: 4) {
-                        Text("历史")
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 9, weight: .bold))
-                    }
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-                    .foregroundStyle(AssetTheme.goldSoft)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(AssetTheme.gold.opacity(0.10), in: Capsule())
-                    .overlay(
-                        Capsule()
-                            .stroke(AssetTheme.border.opacity(0.7), lineWidth: 1)
-                    )
-                }
-            }
+        VStack(alignment: .leading, spacing: 4) {
+            Text(descriptor.title)
+                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                .foregroundStyle(AssetTheme.textPrimary)
 
             if let subtitle = descriptor.subtitle {
                 Text(subtitle)
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundStyle(AssetTheme.textSecondary)
                     .lineLimit(2)
             }
         }
     }
 
+    @ViewBuilder
+    private var historyButton: some View {
+        if let historyDrilldown = descriptor.historyDrilldown {
+            Button {
+                onTapHistory?(historyDrilldown)
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(AssetTheme.goldSoft)
+                    Text("历史")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(AssetTheme.overlaySubtle, in: Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(AssetTheme.border.opacity(0.55), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
     private var dualAxisChart: some View {
         GeometryReader { geometry in
-            let leftWidth: CGFloat = descriptor.showsComparisonLine ? 48 : 40
-            let rightWidth: CGFloat = descriptor.showsComparisonLine ? 52 : 0
-            let chartWidth = max(geometry.size.width - leftWidth - rightWidth - 10, 120)
+            let leftWidth: CGFloat = descriptor.showsComparisonLine ? 42 : 36
+            let rightWidth: CGFloat = descriptor.showsComparisonLine ? 46 : 0
+            let chartWidth = max(geometry.size.width - leftWidth - rightWidth - 12, 120)
 
-            HStack(spacing: 5) {
+            HStack(spacing: 6) {
                 TimeMachineAxisStrip(
                     topLabel: descriptor.leftAxisStyle.compactLabel(for: leftDomain.upperBound),
                     middleLabel: descriptor.leftAxisStyle.compactLabel(for: (leftDomain.lowerBound + leftDomain.upperBound) / 2),
@@ -5953,7 +5959,7 @@ private struct TimeMachineDualAxisTrendCard: View {
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                     }
                 }
-                .frame(width: chartWidth, height: 194)
+                .frame(width: chartWidth, height: 202)
                 .chartYScale(domain: 0...1)
                 .chartYAxis(.hidden)
                 .chartXAxis { bottomAxisMarks }
@@ -5978,15 +5984,15 @@ private struct TimeMachineDualAxisTrendCard: View {
                 }
             }
         }
-        .frame(height: 194)
+        .frame(height: 202)
     }
 
     private var leftOnlyChart: some View {
         GeometryReader { geometry in
-            let leftWidth: CGFloat = 40
-            let chartWidth = max(geometry.size.width - leftWidth - 5, 120)
+            let leftWidth: CGFloat = 36
+            let chartWidth = max(geometry.size.width - leftWidth - 6, 120)
 
-            HStack(spacing: 5) {
+            HStack(spacing: 6) {
                 TimeMachineAxisStrip(
                     topLabel: descriptor.leftAxisStyle.compactLabel(for: leftDomain.upperBound),
                     middleLabel: descriptor.leftAxisStyle.compactLabel(for: (leftDomain.lowerBound + leftDomain.upperBound) / 2),
@@ -6436,31 +6442,47 @@ private struct TimeMachineLegendMetric: View {
     let dashed: Bool
 
     var body: some View {
-        HStack(spacing: 6) {
-            if dashed {
-                HStack(spacing: 3) {
-                    ForEach(0..<3, id: \.self) { _ in
-                        Capsule()
-                            .fill(color)
-                            .frame(width: 4, height: 2.5)
-                    }
-                }
-                .frame(width: 14, alignment: .leading)
-            } else {
-                Capsule()
-                    .fill(color)
-                    .frame(width: 14, height: 2.5)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                legendMark
+
+                Text(title)
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(AssetTheme.textSecondary)
             }
 
-            Text(title)
-                .font(.system(size: 11, weight: .medium, design: .rounded))
-                .foregroundStyle(AssetTheme.textSecondary)
             Text(value)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(color)
                 .lineLimit(1)
-                .minimumScaleFactor(0.75)
+                .minimumScaleFactor(0.72)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .background(AssetTheme.overlaySubtle, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.45), lineWidth: 1)
+        )
+    }
+
+    @ViewBuilder
+    private var legendMark: some View {
+        if dashed {
+            HStack(spacing: 3) {
+                ForEach(0..<3, id: \.self) { _ in
+                    Capsule()
+                        .fill(color)
+                        .frame(width: 4, height: 2.5)
+                }
+            }
+            .frame(width: 14, alignment: .leading)
+        } else {
+            Capsule()
+                .fill(color)
+                .frame(width: 14, height: 2.5)
         }
     }
 }
@@ -6475,22 +6497,22 @@ private struct TimeMachineAxisStrip: View {
     var body: some View {
         VStack(alignment: alignment, spacing: 0) {
             Text(topLabel)
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundStyle(color)
+                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                .foregroundStyle(color.opacity(0.9))
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            Spacer(minLength: 8)
+                .minimumScaleFactor(0.78)
+            Spacer(minLength: 10)
             Text(middleLabel)
-                .font(.system(size: 10, weight: .medium, design: .rounded))
+                .font(.system(size: 9, weight: .medium, design: .rounded))
                 .foregroundStyle(AssetTheme.textSecondary)
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            Spacer(minLength: 8)
+                .minimumScaleFactor(0.78)
+            Spacer(minLength: 10)
             Text(bottomLabel)
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundStyle(color)
+                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                .foregroundStyle(color.opacity(0.9))
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.78)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment == .leading ? .leading : .trailing)
     }
