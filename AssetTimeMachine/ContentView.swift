@@ -3827,7 +3827,6 @@ private struct BacktestView: View {
                                                     .font(.subheadline.weight(.bold))
                                             }
                                             .foregroundStyle(Color.black.opacity(0.88))
-                                            .frame(maxWidth: .infinity)
                                             .padding(.horizontal, 18)
                                             .padding(.vertical, 14)
                                             .background(
