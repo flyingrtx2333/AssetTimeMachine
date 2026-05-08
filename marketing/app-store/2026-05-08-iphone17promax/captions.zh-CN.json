@@ -1,0 +1,37 @@
+[
+  {
+    "file": "01-home-dashboard.png",
+    "page": "首页总览",
+    "headline": "一眼看清你的资产全貌",
+    "subheadline": "总资产、净资产、负债和配置结构，同屏掌握。",
+    "altHeadline": "不只是记账，是看清全局"
+  },
+  {
+    "file": "02-records-editor.png",
+    "page": "记录页",
+    "headline": "资产、负债，都能统一记录",
+    "subheadline": "现金、基金、黄金、房产，一套页面持续维护。",
+    "altHeadline": "把资产变化记成习惯"
+  },
+  {
+    "file": "03-time-machine.png",
+    "page": "时光机页",
+    "headline": "回看你的财富增长轨迹",
+    "subheadline": "净资产、负债、购买力和指数折算，拉长时间看清趋势。",
+    "altHeadline": "时间拉长，趋势就会说话"
+  },
+  {
+    "file": "04-allocation-backtest-result.png",
+    "page": "配置回测结果页",
+    "headline": "让历史帮你验证配置",
+    "subheadline": "总收益、年化收益、最大回撤等指标，一眼就能比较策略表现。",
+    "altHeadline": "先想配置，再看结果"
+  },
+  {
+    "file": "05-dca-backtest-result.png",
+    "page": "定投回测结果页",
+    "headline": "你的定投策略，结果看得见",
+    "subheadline": "累计投入、期末市值、收益率和持有份额，一屏看懂。",
+    "altHeadline": "把定投，从感觉变成数据"
+  }
+]
