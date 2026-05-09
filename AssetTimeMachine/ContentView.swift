@@ -4627,7 +4627,7 @@ private struct BacktestAllocationCard: View {
             }
 
             Button(action: onTapAllocation) {
-                HStack(alignment: .top, spacing: 12) {
+                HStack(alignment: .center, spacing: 16) {
                     ZStack {
                         Chart(slices) { slice in
                             SectorMark(
@@ -4660,10 +4660,9 @@ private struct BacktestAllocationCard: View {
                             BacktestAllocationRow(slice: slice, showsDivider: index < slices.count - 1)
                         }
                     }
-                    .frame(width: summaryCardWidth, alignment: .topLeading)
-
-                    Spacer(minLength: 0)
+                    .frame(width: summaryCardWidth, height: chartSize, alignment: .center)
                 }
+                .frame(maxWidth: .infinity, alignment: .center)
                 .padding(16)
                 .background(AssetTheme.overlaySoft.opacity(0.42), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                 .overlay(
