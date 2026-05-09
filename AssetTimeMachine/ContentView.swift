@@ -4223,21 +4223,17 @@ private struct BacktestView: View {
                                                     .font(.subheadline.weight(.bold))
                                             }
                                             .foregroundStyle(Color.black.opacity(0.88))
-                                            .padding(.horizontal, 18)
-                                            .padding(.vertical, 14)
+                                            .padding(.horizontal, 20)
+                                            .padding(.vertical, 13)
                                             .background(
-                                                LinearGradient(
-                                                    colors: [AssetTheme.goldSoft, AssetTheme.gold],
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
-                                                ),
+                                                AssetTheme.gold.opacity(0.96),
                                                 in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                                             )
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                                    .stroke(AssetTheme.gold.opacity(0.32), lineWidth: 1)
+                                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
                                             )
-                                            .shadow(color: AssetTheme.gold.opacity(0.18), radius: 12, y: 6)
+                                            .shadow(color: Color.black.opacity(0.12), radius: 10, y: 4)
                                         }
                                         .buttonStyle(.plain)
                                     }
@@ -4665,14 +4661,16 @@ private struct BacktestAllocationCard: View {
                         }
                     }
                     .frame(width: summaryCardWidth, alignment: .topLeading)
-                    .background(AssetTheme.overlaySoft.opacity(0.55), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(AssetTheme.border.opacity(0.45), lineWidth: 1)
-                    )
 
                     Spacer(minLength: 0)
                 }
+                .padding(16)
+                .background(AssetTheme.overlaySoft.opacity(0.42), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(AssetTheme.border.opacity(0.4), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
             }
             .buttonStyle(.plain)
         }
@@ -4720,7 +4718,7 @@ private struct BacktestModePicker: View {
     @Binding var selectedMode: BacktestMode
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             ForEach(BacktestMode.allCases) { mode in
                 Button {
                     selectedMode = mode
@@ -4729,30 +4727,21 @@ private struct BacktestModePicker: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(selectedMode == mode ? Color.black.opacity(0.88) : AssetTheme.textPrimary)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 10)
                         .background(
-                            selectedMode == mode
-                                ? AnyShapeStyle(
-                                    LinearGradient(
-                                        colors: [AssetTheme.goldSoft, AssetTheme.gold],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                : AnyShapeStyle(AssetTheme.overlaySoft),
-                            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(
-                                    selectedMode == mode ? AssetTheme.gold.opacity(0.28) : AssetTheme.border.opacity(0.68),
-                                    lineWidth: 1
-                                )
+                            selectedMode == mode ? AssetTheme.gold.opacity(0.96) : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
                         )
                 }
                 .buttonStyle(.plain)
             }
         }
+        .padding(4)
+        .background(AssetTheme.overlaySoft.opacity(0.72), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.52), lineWidth: 1)
+        )
     }
 }
 
