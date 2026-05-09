@@ -4165,83 +4165,94 @@ private struct BacktestView: View {
         }
     }
 
+    private var shouldCenterConfigurationHero: Bool {
+        !isBacktestLoading && !hasActiveReport
+    }
+
     var body: some View {
         NavigationStack {
-            ZStack {
-                AssetTheme.pageGradient.ignoresSafeArea()
+            GeometryReader { proxy in
+                ZStack {
+                    AssetTheme.pageGradient.ignoresSafeArea()
 
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        VStack(spacing: 16) {
-                            BacktestModePicker(selectedMode: $backtestMode)
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            VStack(spacing: 20) {
+                                BacktestModePicker(selectedMode: $backtestMode)
 
-                            if backtestMode == .allocation {
-                                BacktestAllocationCard(
-                                    slices: allocationSlices,
-                                    activeAllocationSummary: activeAllocationSummary,
-                                    selectedDateRangeLabel: selectedDateRangeLabel,
-                                    onTapRange: {
-                                        showsRangeSheet = true
-                                    },
-                                    onTapAllocation: {
-                                        showsAllocationSheet = true
-                                    },
-                                    onTapPrimaryAction: hasActiveReport ? nil : {
-                                        hasStartedBacktest = true
-                                        scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
+                                if backtestMode == .allocation {
+                                    BacktestAllocationCard(
+                                        slices: allocationSlices,
+                                        activeAllocationSummary: activeAllocationSummary,
+                                        selectedDateRangeLabel: selectedDateRangeLabel,
+                                        onTapRange: {
+                                            showsRangeSheet = true
+                                        },
+                                        onTapAllocation: {
+                                            showsAllocationSheet = true
+                                        },
+                                        onTapPrimaryAction: hasActiveReport ? nil : {
+                                            hasStartedBacktest = true
+                                            scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
+                                        }
+                                    )
+                                } else {
+                                    BacktestDCACard(
+                                        assetTitle: selectedDCAAssetOption?.title ?? "未选择资产",
+                                        amount: dcaContributionAmount,
+                                        intervalDays: dcaIntervalDays,
+                                        selectedDateRangeLabel: selectedDateRangeLabel,
+                                        accent: selectedDCAAssetOption?.color ?? AssetTheme.gold,
+                                        onTapRange: {
+                                            showsRangeSheet = true
+                                        },
+                                        onTapConfiguration: {
+                                            showsDCAConfigSheet = true
+                                        },
+                                        onTapPrimaryAction: hasActiveReport ? nil : {
+                                            hasStartedBacktest = true
+                                            scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
+                                        }
+                                    )
+                                }
+
+                                if !isBacktestLoading, hasActiveReport {
+                                    HStack(spacing: 10) {
+                                        BacktestActionChip(title: "重置回测", systemImage: "arrow.counterclockwise") {
+                                            resetBacktest()
+                                        }
                                     }
-                                )
-                            } else {
-                                BacktestDCACard(
-                                    assetTitle: selectedDCAAssetOption?.title ?? "未选择资产",
-                                    amount: dcaContributionAmount,
-                                    intervalDays: dcaIntervalDays,
-                                    selectedDateRangeLabel: selectedDateRangeLabel,
-                                    accent: selectedDCAAssetOption?.color ?? AssetTheme.gold,
-                                    onTapRange: {
-                                        showsRangeSheet = true
-                                    },
-                                    onTapConfiguration: {
-                                        showsDCAConfigSheet = true
-                                    },
-                                    onTapPrimaryAction: hasActiveReport ? nil : {
-                                        hasStartedBacktest = true
-                                        scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
-                                    }
-                                )
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(
+                                minHeight: shouldCenterConfigurationHero ? max(proxy.size.height - 140, 480) : 0,
+                                alignment: shouldCenterConfigurationHero ? .center : .top
+                            )
+
+                            if isBacktestLoading {
+                                BacktestLoadingView()
+                                    .padding(.top, 8)
                             }
 
-                            if !isBacktestLoading, hasActiveReport {
-                                HStack(spacing: 10) {
-                                    BacktestActionChip(title: "重置回测", systemImage: "arrow.counterclockwise") {
-                                        resetBacktest()
+                            if !isBacktestLoading {
+                                switch backtestMode {
+                                case .allocation:
+                                    if let allocationReport {
+                                        allocationReportSection(report: allocationReport)
+                                    }
+                                case .dca:
+                                    if let dcaReport {
+                                        dcaReportSection(report: dcaReport)
                                     }
                                 }
                             }
                         }
-                        .frame(maxWidth: .infinity)
-
-                        if isBacktestLoading {
-                            BacktestLoadingView()
-                                .padding(.top, 8)
-                        }
-
-                        if !isBacktestLoading {
-                            switch backtestMode {
-                            case .allocation:
-                                if let allocationReport {
-                                    allocationReportSection(report: allocationReport)
-                                }
-                            case .dca:
-                                if let dcaReport {
-                                    dcaReportSection(report: dcaReport)
-                                }
-                            }
-                        }
+                        .frame(maxWidth: .infinity, alignment: .top)
+                        .padding(.horizontal, 20)
+                        .padding(.top, shouldCenterConfigurationHero ? 0 : 10)
+                        .padding(.bottom, hasActiveReport ? 136 : 24)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 10)
-                    .padding(.bottom, hasActiveReport ? 136 : 10)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -4665,12 +4676,26 @@ private struct BacktestAllocationCard: View {
                     .padding(.vertical, 14)
             }
         }
-        .background(AssetTheme.overlaySoft.opacity(0.34), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.36), lineWidth: 1)
+        .background(
+            LinearGradient(
+                colors: [Color.white.opacity(0.04), AssetTheme.overlaySoft.opacity(0.3), Color.black.opacity(0.08)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(cornerRadius: 26, style: .continuous)
         )
-        .shadow(color: Color.black.opacity(0.07), radius: 10, y: 4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.1), Color.white.opacity(0.02)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+        .shadow(color: Color.black.opacity(0.1), radius: 16, y: 8)
         .frame(maxWidth: .infinity)
     }
 }
@@ -4726,22 +4751,38 @@ private struct BacktestModePicker: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                         .background(
-                            selectedMode == mode ? AssetTheme.overlayMedium.opacity(0.98) : Color.clear,
+                            selectedMode == mode
+                                ? AnyShapeStyle(
+                                    LinearGradient(
+                                        colors: [Color.white.opacity(0.1), AssetTheme.overlayMedium.opacity(0.96)],
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
+                                : AnyShapeStyle(Color.clear),
                             in: RoundedRectangle(cornerRadius: 14, style: .continuous)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
                                 .stroke(selectedMode == mode ? Color.white.opacity(0.08) : Color.clear, lineWidth: 1)
                         )
+                        .shadow(color: selectedMode == mode ? Color.black.opacity(0.16) : .clear, radius: 8, y: 4)
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(4)
-        .background(AssetTheme.overlaySoft.opacity(0.58), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(
+            LinearGradient(
+                colors: [Color.white.opacity(0.025), AssetTheme.overlaySoft.opacity(0.52)],
+                startPoint: .top,
+                endPoint: .bottom
+            ),
+            in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.42), lineWidth: 1)
+                .stroke(Color.white.opacity(0.05), lineWidth: 1)
         )
     }
 }
@@ -4807,12 +4848,26 @@ private struct BacktestDCACard: View {
                     .padding(.vertical, 14)
             }
         }
-        .background(AssetTheme.overlaySoft.opacity(0.34), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.36), lineWidth: 1)
+        .background(
+            LinearGradient(
+                colors: [Color.white.opacity(0.04), AssetTheme.overlaySoft.opacity(0.3), Color.black.opacity(0.08)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(cornerRadius: 26, style: .continuous)
         )
-        .shadow(color: Color.black.opacity(0.07), radius: 10, y: 4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.1), Color.white.opacity(0.02)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+        .shadow(color: Color.black.opacity(0.1), radius: 16, y: 8)
         .frame(maxWidth: .infinity)
     }
 }
@@ -4871,13 +4926,18 @@ private struct BacktestPrimaryActionButton: View {
             .foregroundStyle(Color.black.opacity(0.88))
             .padding(.vertical, 12)
             .background(
-                AssetTheme.gold.opacity(0.92),
+                LinearGradient(
+                    colors: [AssetTheme.gold.opacity(0.98), AssetTheme.goldSoft.opacity(0.88)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                ),
                 in: RoundedRectangle(cornerRadius: 16, style: .continuous)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
             )
+            .shadow(color: AssetTheme.gold.opacity(0.12), radius: 12, y: 6)
         }
         .buttonStyle(.plain)
     }
