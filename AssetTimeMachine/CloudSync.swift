@@ -603,8 +603,9 @@ struct AssetTimeMachineCloudEntryButton: View {
 
 struct AssetTimeMachineCloudPage: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var store: AssetTimeMachineCloudStore
+    @State private var username = ""
+    @State private var password = ""
     @State private var showRestoreConfirm = false
 
     var body: some View {
@@ -732,28 +733,71 @@ struct AssetTimeMachineCloudPage: View {
             if let currentUser = store.currentUser {
                 loggedInSection(currentUser)
             } else {
-                appleLoginSection
+                passwordLoginSection
             }
         }
     }
 
-    private var appleLoginSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("通过 Apple 登录启用云同步")
-                .font(.headline)
-                .foregroundStyle(AssetTheme.textPrimary)
+    private var passwordLoginSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("登录后会自动把当前资产数据备份到云端，也能在换机时恢复最近一次备份。")
+                .font(.subheadline)
+                .foregroundStyle(AssetTheme.textSecondary)
 
-            SignInWithAppleButton(.signIn) { request in
-                request.requestedScopes = [.fullName, .email]
-            } onCompletion: { result in
-                Task {
-                    await store.handleAppleSignIn(result, from: modelContext)
-                }
+            VStack(spacing: 12) {
+                TextField("用户名", text: $username)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(AssetTheme.surfaceRaised.opacity(0.92), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(AssetTheme.border.opacity(0.6), lineWidth: 1)
+                    )
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                SecureField("密码", text: $password)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(AssetTheme.surfaceRaised.opacity(0.92), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(AssetTheme.border.opacity(0.6), lineWidth: 1)
+                    )
+                    .foregroundStyle(AssetTheme.textPrimary)
             }
-            .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
-            .frame(height: 52)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .disabled(store.isWorking)
+
+            Button {
+                Task {
+                    await store.login(
+                        username: username.trimmingCharacters(in: .whitespacesAndNewlines),
+                        password: password
+                    )
+                    if store.currentUser != nil {
+                        await store.autoSyncIfNeeded(from: modelContext, quietly: false)
+                    }
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    if store.isWorking {
+                        ProgressView()
+                            .controlSize(.small)
+                            .tint(AssetTheme.background)
+                    }
+
+                    Text(store.isWorking ? "登录中..." : "账号登录")
+                        .font(.headline.weight(.semibold))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(canSubmitPasswordLogin ? AssetTheme.gold : AssetTheme.surfaceRaised, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .foregroundStyle(canSubmitPasswordLogin ? AssetTheme.background : AssetTheme.textSecondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(!canSubmitPasswordLogin || store.isWorking)
         }
     }
 
@@ -918,5 +962,9 @@ struct AssetTimeMachineCloudPage: View {
             }
             return nil
         }
+    }
+
+    private var canSubmitPasswordLogin: Bool {
+        !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !password.isEmpty
     }
 }
