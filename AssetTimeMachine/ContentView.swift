@@ -4165,94 +4165,84 @@ private struct BacktestView: View {
         }
     }
 
-    private var shouldCenterConfigurationHero: Bool {
-        !isBacktestLoading && !hasActiveReport
-    }
-
     var body: some View {
         NavigationStack {
-            GeometryReader { proxy in
-                ZStack {
-                    AssetTheme.pageGradient.ignoresSafeArea()
+            ZStack {
+                AssetTheme.pageGradient.ignoresSafeArea()
 
-                    ScrollView(showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            VStack(spacing: 20) {
-                                BacktestModePicker(selectedMode: $backtestMode)
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        VStack(spacing: 18) {
+                            BacktestModePicker(selectedMode: $backtestMode)
 
-                                if backtestMode == .allocation {
-                                    BacktestAllocationCard(
-                                        slices: allocationSlices,
-                                        activeAllocationSummary: activeAllocationSummary,
-                                        selectedDateRangeLabel: selectedDateRangeLabel,
-                                        onTapRange: {
-                                            showsRangeSheet = true
-                                        },
-                                        onTapAllocation: {
-                                            showsAllocationSheet = true
-                                        },
-                                        onTapPrimaryAction: hasActiveReport ? nil : {
-                                            hasStartedBacktest = true
-                                            scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
-                                        }
-                                    )
-                                } else {
-                                    BacktestDCACard(
-                                        assetTitle: selectedDCAAssetOption?.title ?? "未选择资产",
-                                        amount: dcaContributionAmount,
-                                        intervalDays: dcaIntervalDays,
-                                        selectedDateRangeLabel: selectedDateRangeLabel,
-                                        accent: selectedDCAAssetOption?.color ?? AssetTheme.gold,
-                                        onTapRange: {
-                                            showsRangeSheet = true
-                                        },
-                                        onTapConfiguration: {
-                                            showsDCAConfigSheet = true
-                                        },
-                                        onTapPrimaryAction: hasActiveReport ? nil : {
-                                            hasStartedBacktest = true
-                                            scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
-                                        }
-                                    )
-                                }
-
-                                if !isBacktestLoading, hasActiveReport {
-                                    HStack(spacing: 10) {
-                                        BacktestActionChip(title: "重置回测", systemImage: "arrow.counterclockwise") {
-                                            resetBacktest()
-                                        }
+                            if backtestMode == .allocation {
+                                BacktestAllocationCard(
+                                    slices: allocationSlices,
+                                    activeAllocationSummary: activeAllocationSummary,
+                                    selectedDateRangeLabel: selectedDateRangeLabel,
+                                    onTapRange: {
+                                        showsRangeSheet = true
+                                    },
+                                    onTapAllocation: {
+                                        showsAllocationSheet = true
+                                    },
+                                    onTapPrimaryAction: hasActiveReport ? nil : {
+                                        hasStartedBacktest = true
+                                        scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
                                     }
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(
-                                minHeight: shouldCenterConfigurationHero ? max(proxy.size.height - 140, 480) : 0,
-                                alignment: shouldCenterConfigurationHero ? .center : .top
-                            )
-
-                            if isBacktestLoading {
-                                BacktestLoadingView()
-                                    .padding(.top, 8)
+                                )
+                            } else {
+                                BacktestDCACard(
+                                    assetTitle: selectedDCAAssetOption?.title ?? "未选择资产",
+                                    amount: dcaContributionAmount,
+                                    intervalDays: dcaIntervalDays,
+                                    selectedDateRangeLabel: selectedDateRangeLabel,
+                                    accent: selectedDCAAssetOption?.color ?? AssetTheme.gold,
+                                    onTapRange: {
+                                        showsRangeSheet = true
+                                    },
+                                    onTapConfiguration: {
+                                        showsDCAConfigSheet = true
+                                    },
+                                    onTapPrimaryAction: hasActiveReport ? nil : {
+                                        hasStartedBacktest = true
+                                        scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
+                                    }
+                                )
                             }
 
-                            if !isBacktestLoading {
-                                switch backtestMode {
-                                case .allocation:
-                                    if let allocationReport {
-                                        allocationReportSection(report: allocationReport)
-                                    }
-                                case .dca:
-                                    if let dcaReport {
-                                        dcaReportSection(report: dcaReport)
+                            if !isBacktestLoading, hasActiveReport {
+                                HStack(spacing: 10) {
+                                    BacktestActionChip(title: "重置回测", systemImage: "arrow.counterclockwise") {
+                                        resetBacktest()
                                     }
                                 }
                             }
                         }
-                        .frame(maxWidth: .infinity, alignment: .top)
-                        .padding(.horizontal, 20)
-                        .padding(.top, shouldCenterConfigurationHero ? 0 : 10)
-                        .padding(.bottom, hasActiveReport ? 136 : 24)
+                        .frame(maxWidth: .infinity)
+
+                        if isBacktestLoading {
+                            BacktestLoadingView()
+                                .padding(.top, 8)
+                        }
+
+                        if !isBacktestLoading {
+                            switch backtestMode {
+                            case .allocation:
+                                if let allocationReport {
+                                    allocationReportSection(report: allocationReport)
+                                }
+                            case .dca:
+                                if let dcaReport {
+                                    dcaReportSection(report: dcaReport)
+                                }
+                            }
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .top)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 14)
+                    .padding(.bottom, hasActiveReport ? 136 : 24)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
