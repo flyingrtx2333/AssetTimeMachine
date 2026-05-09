@@ -4185,6 +4185,10 @@ private struct BacktestView: View {
                                     },
                                     onTapAllocation: {
                                         showsAllocationSheet = true
+                                    },
+                                    onTapPrimaryAction: hasActiveReport ? nil : {
+                                        hasStartedBacktest = true
+                                        scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
                                     }
                                 )
                             } else {
@@ -4199,43 +4203,18 @@ private struct BacktestView: View {
                                     },
                                     onTapConfiguration: {
                                         showsDCAConfigSheet = true
+                                    },
+                                    onTapPrimaryAction: hasActiveReport ? nil : {
+                                        hasStartedBacktest = true
+                                        scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
                                     }
                                 )
                             }
 
-                            if !isBacktestLoading {
+                            if !isBacktestLoading, hasActiveReport {
                                 HStack(spacing: 10) {
-                                    if hasActiveReport {
-                                        BacktestActionChip(title: "重置回测", systemImage: "arrow.counterclockwise") {
-                                            resetBacktest()
-                                        }
-                                    }
-
-                                    if !hasActiveReport {
-                                        Button {
-                                            hasStartedBacktest = true
-                                            scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true)
-                                        } label: {
-                                            HStack(spacing: 8) {
-                                                Image(systemName: "play.fill")
-                                                    .font(.footnote.weight(.bold))
-                                                Text("开始回测")
-                                                    .font(.subheadline.weight(.bold))
-                                            }
-                                            .foregroundStyle(Color.black.opacity(0.88))
-                                            .padding(.horizontal, 20)
-                                            .padding(.vertical, 13)
-                                            .background(
-                                                AssetTheme.gold.opacity(0.96),
-                                                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                            )
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                                            )
-                                            .shadow(color: Color.black.opacity(0.12), radius: 10, y: 4)
-                                        }
-                                        .buttonStyle(.plain)
+                                    BacktestActionChip(title: "重置回测", systemImage: "arrow.counterclockwise") {
+                                        resetBacktest()
                                     }
                                 }
                             }
@@ -4599,12 +4578,13 @@ private struct BacktestAllocationCard: View {
     let selectedDateRangeLabel: String
     let onTapRange: () -> Void
     let onTapAllocation: () -> Void
+    let onTapPrimaryAction: (() -> Void)?
 
     private let chartSize: CGFloat = 148
     private let summaryCardWidth: CGFloat = 168
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 12) {
                 Button(action: onTapRange) {
                     HStack(spacing: 8) {
@@ -4621,10 +4601,16 @@ private struct BacktestAllocationCard: View {
 
                 Spacer(minLength: 12)
 
-                Image(systemName: "slider.horizontal.3")
-                    .font(.footnote.weight(.bold))
-                    .foregroundStyle(AssetTheme.textSecondary)
+                Button(action: onTapAllocation) {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.footnote.weight(.bold))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
+                .buttonStyle(.plain)
             }
+            .padding(.horizontal, 18)
+            .padding(.top, 18)
+            .padding(.bottom, 14)
 
             Button(action: onTapAllocation) {
                 HStack(alignment: .center, spacing: 16) {
@@ -4645,7 +4631,7 @@ private struct BacktestAllocationCard: View {
                                 .font(.caption2.weight(.semibold))
                                 .foregroundStyle(AssetTheme.textSecondary)
                             Text(activeAllocationSummary)
-                                .font(.subheadline.weight(.bold))
+                                .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(AssetTheme.textPrimary)
                                 .multilineTextAlignment(.center)
                                 .lineLimit(2)
@@ -4663,16 +4649,28 @@ private struct BacktestAllocationCard: View {
                     .frame(width: summaryCardWidth, height: chartSize, alignment: .center)
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
-                .padding(16)
-                .background(AssetTheme.overlaySoft.opacity(0.42), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(AssetTheme.border.opacity(0.4), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                .padding(.horizontal, 18)
+                .padding(.bottom, 18)
             }
             .buttonStyle(.plain)
+
+            if let onTapPrimaryAction {
+                Rectangle()
+                    .fill(AssetTheme.border.opacity(0.34))
+                    .frame(height: 1)
+                    .padding(.horizontal, 18)
+
+                BacktestPrimaryActionButton(title: "开始回测", systemImage: "play.fill", action: onTapPrimaryAction)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 14)
+            }
         }
+        .background(AssetTheme.overlaySoft.opacity(0.34), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.36), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.07), radius: 10, y: 4)
         .frame(maxWidth: .infinity)
     }
 }
@@ -4689,14 +4687,14 @@ private struct BacktestAllocationRow: View {
                     .frame(width: 9, height: 9)
 
                 Text(slice.title)
-                    .font(.footnote.weight(.semibold))
+                    .font(.footnote.weight(.medium))
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
 
                 Spacer(minLength: 8)
 
                 Text("\(Int(slice.amount.rounded()))%")
-                    .font(.footnote.weight(.bold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(AssetTheme.textSecondary)
                     .monospacedDigit()
             }
@@ -4723,23 +4721,27 @@ private struct BacktestModePicker: View {
                     selectedMode = mode
                 } label: {
                     Text(mode.title)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(selectedMode == mode ? Color.black.opacity(0.88) : AssetTheme.textPrimary)
+                        .font(selectedMode == mode ? .subheadline.weight(.semibold) : .subheadline.weight(.medium))
+                        .foregroundStyle(selectedMode == mode ? AssetTheme.textPrimary : AssetTheme.textSecondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                         .background(
-                            selectedMode == mode ? AssetTheme.gold.opacity(0.96) : Color.clear,
+                            selectedMode == mode ? AssetTheme.overlayMedium.opacity(0.98) : Color.clear,
                             in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(selectedMode == mode ? Color.white.opacity(0.08) : Color.clear, lineWidth: 1)
                         )
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(4)
-        .background(AssetTheme.overlaySoft.opacity(0.72), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(AssetTheme.overlaySoft.opacity(0.58), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.52), lineWidth: 1)
+                .stroke(AssetTheme.border.opacity(0.42), lineWidth: 1)
         )
     }
 }
@@ -4752,9 +4754,10 @@ private struct BacktestDCACard: View {
     let accent: Color
     let onTapRange: () -> Void
     let onTapConfiguration: () -> Void
+    let onTapPrimaryAction: (() -> Void)?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 12) {
                 Button(action: onTapRange) {
                     HStack(spacing: 8) {
@@ -4771,10 +4774,16 @@ private struct BacktestDCACard: View {
 
                 Spacer(minLength: 12)
 
-                Image(systemName: "slider.horizontal.3")
-                    .font(.footnote.weight(.bold))
-                    .foregroundStyle(AssetTheme.textSecondary)
+                Button(action: onTapConfiguration) {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.footnote.weight(.bold))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
+                .buttonStyle(.plain)
             }
+            .padding(.horizontal, 18)
+            .padding(.top, 18)
+            .padding(.bottom, 14)
 
             Button(action: onTapConfiguration) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -4782,14 +4791,28 @@ private struct BacktestDCACard: View {
                     BacktestInfoRow(title: "每次投入", value: amount.currencyString(), valueColor: AssetTheme.textPrimary, showsDivider: true)
                     BacktestInfoRow(title: "定投频率", value: "每\(intervalDays)天", valueColor: AssetTheme.textPrimary, showsDivider: false)
                 }
-                .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(AssetTheme.border.opacity(0.68), lineWidth: 1)
-                )
+                .padding(.horizontal, 6)
+                .padding(.bottom, 18)
             }
             .buttonStyle(.plain)
+
+            if let onTapPrimaryAction {
+                Rectangle()
+                    .fill(AssetTheme.border.opacity(0.34))
+                    .frame(height: 1)
+                    .padding(.horizontal, 18)
+
+                BacktestPrimaryActionButton(title: "开始回测", systemImage: "play.fill", action: onTapPrimaryAction)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 14)
+            }
         }
+        .background(AssetTheme.overlaySoft.opacity(0.34), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.36), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.07), radius: 10, y: 4)
         .frame(maxWidth: .infinity)
     }
 }
@@ -4804,13 +4827,13 @@ private struct BacktestInfoRow: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(AssetTheme.textSecondary)
 
                 Spacer()
 
                 Text(value)
-                    .font(.subheadline.weight(.bold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(valueColor)
                     .multilineTextAlignment(.trailing)
             }
@@ -4827,6 +4850,39 @@ private struct BacktestInfoRow: View {
     }
 }
 
+private struct BacktestPrimaryActionButton: View {
+    let title: String
+    let systemImage: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Spacer(minLength: 0)
+
+                Image(systemName: systemImage)
+                    .font(.footnote.weight(.bold))
+
+                Text(title)
+                    .font(.subheadline.weight(.bold))
+
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(Color.black.opacity(0.88))
+            .padding(.vertical, 12)
+            .background(
+                AssetTheme.gold.opacity(0.92),
+                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 private struct BacktestActionChip: View {
     let title: String
     let systemImage: String
@@ -4837,9 +4893,9 @@ private struct BacktestActionChip: View {
             HStack(spacing: 8) {
                 Image(systemName: systemImage)
                     .font(.footnote.weight(.bold))
-                    .foregroundStyle(AssetTheme.goldSoft)
+                    .foregroundStyle(AssetTheme.textSecondary)
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.subheadline.weight(.medium))
                     .lineLimit(1)
             }
             .foregroundStyle(AssetTheme.textPrimary)
