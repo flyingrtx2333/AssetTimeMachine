@@ -4605,6 +4605,7 @@ private struct BacktestAllocationCard: View {
     let onTapAllocation: () -> Void
 
     private let chartSize: CGFloat = 148
+    private let summaryCardWidth: CGFloat = 168
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -4630,7 +4631,7 @@ private struct BacktestAllocationCard: View {
             }
 
             Button(action: onTapAllocation) {
-                HStack(alignment: .top, spacing: 14) {
+                HStack(alignment: .top, spacing: 12) {
                     ZStack {
                         Chart(slices) { slice in
                             SectorMark(
@@ -4663,12 +4664,14 @@ private struct BacktestAllocationCard: View {
                             BacktestAllocationRow(slice: slice, showsDivider: index < slices.count - 1)
                         }
                     }
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                    .frame(width: summaryCardWidth, alignment: .topLeading)
                     .background(AssetTheme.overlaySoft.opacity(0.55), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .stroke(AssetTheme.border.opacity(0.45), lineWidth: 1)
                     )
+
+                    Spacer(minLength: 0)
                 }
             }
             .buttonStyle(.plain)
@@ -4700,8 +4703,8 @@ private struct BacktestAllocationRow: View {
                     .foregroundStyle(AssetTheme.textSecondary)
                     .monospacedDigit()
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 11)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
 
             if showsDivider {
                 Rectangle()
