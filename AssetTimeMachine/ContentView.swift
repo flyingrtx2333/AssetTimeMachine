@@ -882,6 +882,11 @@ private struct SnapshotListView: View {
                 await syncAutoRatesIfPossible()
             }
         }
+        .onReceive(marketStore.$overview) { _ in
+            Task { @MainActor in
+                await syncAutoRatesIfPossible()
+            }
+        }
         .onChange(of: focusedField) { previousField, newField in
             guard let previousField, previousField != newField,
                   let item = item(for: previousField) else { return }
@@ -2345,6 +2350,7 @@ private struct QuickRecordValueSheet: View {
     @State private var quantityText: String
     @State private var unitPriceText: String
     @State private var errorMessage: String?
+    @State private var isRefreshingAutoPrice = false
     @FocusState private var focusedField: QuickRecordValueField?
 
     init(item: AssetItem, snapshot: AssetSnapshot?, marketStore: RemoteMarketStore, onCancel: @escaping () -> Void, onSaved: @escaping () -> Void) {
@@ -2430,6 +2436,35 @@ private struct QuickRecordValueSheet: View {
                             .monospacedDigit()
                             .foregroundStyle(AssetTheme.textPrimary)
                     }
+                }
+            }
+
+            if item.autoPricedAssetKind != nil {
+                HStack(spacing: 8) {
+                    Button {
+                        Task { await refreshAutoPriceManually() }
+                    } label: {
+                        HStack(spacing: 6) {
+                            if isRefreshingAutoPrice {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .tint(AssetTheme.gold)
+                            } else {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.caption.weight(.bold))
+                            }
+                            Text(isRefreshingAutoPrice ? "刷新中" : "手动刷新最新价格")
+                                .font(.caption.weight(.semibold))
+                        }
+                        .foregroundStyle(AssetTheme.goldSoft)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(AssetTheme.overlayMedium.opacity(0.85), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isRefreshingAutoPrice)
+
+                    Spacer(minLength: 0)
                 }
             }
 
@@ -2528,30 +2563,61 @@ private struct QuickRecordValueSheet: View {
         }
 
         do {
-            switch item.valuationMethod {
-            case .directAmount:
-                let amount = try validatedNumber(from: amountText, forcePositive: isLiability, fieldName: primaryFieldTitle)
-                try SnapshotService.upsertEntry(snapshot: snapshot, item: item, amount: amount, in: modelContext)
-            case .quantityAndUnitPrice:
-                let quantity = try validatedNumber(from: quantityText, fieldName: primaryFieldTitle)
-                let unitPrice: Double?
-                if let autoRate = item.resolvedAutoUnitPrice(using: marketStore), item.autoPricedAssetKind != nil {
-                    unitPrice = autoRate
-                    unitPriceText = autoRate.plainNumberString()
-                } else {
-                    unitPrice = normalizedReadonlyNumber(from: unitPriceText)
-                        ?? snapshot.entries.first(where: { $0.item?.id == item.id })?.unitPrice
-                        ?? item.entries.sorted(by: { ($0.snapshot?.date ?? .distantPast) > ($1.snapshot?.date ?? .distantPast) }).first?.unitPrice
-                }
-                try SnapshotService.upsertEntry(snapshot: snapshot, item: item, quantity: quantity, unitPrice: unitPrice, in: modelContext)
-            }
-
+            try saveCurrentValues(into: snapshot)
             onSaved()
         } catch let error as QuickRecordValueValidationError {
             errorMessage = error.message
         } catch {
             errorMessage = "保存失败，请稍后再试"
             print("[AssetTimeMachine] quick record save failed: \(error)")
+        }
+    }
+
+    @MainActor
+    private func saveCurrentValues(into snapshot: AssetSnapshot) throws {
+        switch item.valuationMethod {
+        case .directAmount:
+            let amount = try validatedNumber(from: amountText, forcePositive: isLiability, fieldName: primaryFieldTitle)
+            try SnapshotService.upsertEntry(snapshot: snapshot, item: item, amount: amount, in: modelContext)
+        case .quantityAndUnitPrice:
+            let quantity = try validatedNumber(from: quantityText, fieldName: primaryFieldTitle)
+            let unitPrice: Double?
+            if let autoRate = item.resolvedAutoUnitPrice(using: marketStore), item.autoPricedAssetKind != nil {
+                unitPrice = autoRate
+                unitPriceText = autoRate.plainNumberString()
+            } else {
+                unitPrice = normalizedReadonlyNumber(from: unitPriceText)
+                    ?? snapshot.entries.first(where: { $0.item?.id == item.id })?.unitPrice
+                    ?? item.entries.sorted(by: { ($0.snapshot?.date ?? .distantPast) > ($1.snapshot?.date ?? .distantPast) }).first?.unitPrice
+            }
+            try SnapshotService.upsertEntry(snapshot: snapshot, item: item, quantity: quantity, unitPrice: unitPrice, in: modelContext)
+        }
+    }
+
+    @MainActor
+    private func refreshAutoPriceManually() async {
+        guard item.autoPricedAssetKind != nil else { return }
+        isRefreshingAutoPrice = true
+        errorMessage = nil
+        defer { isRefreshingAutoPrice = false }
+
+        await marketStore.refresh()
+
+        guard let latestRate = item.resolvedAutoUnitPrice(using: marketStore) else {
+            errorMessage = "暂时没拿到最新价格，稍后再试"
+            return
+        }
+
+        unitPriceText = latestRate.plainNumberString()
+
+        guard let snapshot else { return }
+        do {
+            try saveCurrentValues(into: snapshot)
+        } catch let error as QuickRecordValueValidationError {
+            errorMessage = error.message
+        } catch {
+            errorMessage = "刷新后写入记录失败，请稍后再试"
+            print("[AssetTimeMachine] manual auto price refresh failed: \(error)")
         }
     }
 
