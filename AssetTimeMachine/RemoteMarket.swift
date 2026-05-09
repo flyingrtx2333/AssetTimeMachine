@@ -264,7 +264,7 @@ final class RemoteMarketStore: ObservableObject {
         do {
             let historyBatches = [
                 ["gold_cny", "nasdaq", "sp500", "usd_per_cny"],
-                ["hsi", "nikkei", "csi300", "shanghai_composite", "dowjones"]
+                ["hang_seng", "nikkei225", "csi300", "shanghai_composite", "dow_jones"]
             ]
 
             var mergedSeries: [PublicHistorySeries] = []
@@ -298,6 +298,8 @@ final class RemoteMarketStore: ObservableObject {
             return "hsi"
         case "nikkei225":
             return "nikkei"
+        case "dow_jones":
+            return "dowjones"
         default:
             return symbol
         }
