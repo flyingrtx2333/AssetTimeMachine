@@ -737,7 +737,7 @@ private struct SnapshotListView: View {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 20) {
                         if let currentSnapshot {
                             RecordPageHero(
                                 snapshot: currentSnapshot,
@@ -749,7 +749,7 @@ private struct SnapshotListView: View {
                                     showsAddAssetItemSheet = true
                                 }
                             )
-                            .padding(.bottom, 2)
+                            .padding(.bottom, 4)
 
                             ForEach(nonLiabilityCategories) { category in
                                 RecordCategoryCard(
@@ -790,22 +790,18 @@ private struct SnapshotListView: View {
                             NavigationLink {
                                 SnapshotArchiveView()
                             } label: {
-                                HStack(spacing: 10) {
-                                    Text("全部资产记录")
-                                        .font(.headline)
-                                        .foregroundStyle(AssetTheme.textPrimary)
+                                RecordSectionSurface {
+                                    HStack(spacing: 10) {
+                                        Text("全部资产记录")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundStyle(AssetTheme.textPrimary)
 
-                                    Spacer()
+                                        Spacer(minLength: 12)
 
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(AssetTheme.textSecondary)
-                                }
-                                .padding(.vertical, 12)
-                                .overlay(alignment: .top) {
-                                    Rectangle()
-                                        .fill(AssetTheme.border.opacity(0.55))
-                                        .frame(height: 1)
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(AssetTheme.textSecondary)
+                                    }
                                 }
                             }
                             .buttonStyle(.plain)
@@ -825,7 +821,7 @@ private struct SnapshotListView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
-                    .padding(.top, 18)
+                    .padding(.top, 20)
                     .padding(.bottom, 104)
                 }
                 .scrollDismissesKeyboard(.never)
@@ -1226,8 +1222,8 @@ private struct RecordCategoryCard: View {
     @State private var draggedItemID: UUID?
 
     private let compactColumns = [
-        GridItem(.flexible(), spacing: 8, alignment: .top),
-        GridItem(.flexible(), spacing: 8, alignment: .top)
+        GridItem(.flexible(), spacing: 10, alignment: .top),
+        GridItem(.flexible(), spacing: 10, alignment: .top)
     ]
 
     private var items: [AssetItem] {
@@ -1264,25 +1260,25 @@ private struct RecordCategoryCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        RecordSectionSurface {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(category.name)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(AssetTheme.textSecondary)
                 Spacer(minLength: 8)
                 Text(categoryTotal.currencyString())
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
 
-            VStack(spacing: 10) {
+            VStack(spacing: 12) {
                 ForEach(inputBlocks) { block in
                     switch block {
                     case let .compact(compactItems):
-                        LazyVGrid(columns: compactColumns, alignment: .leading, spacing: 8) {
+                        LazyVGrid(columns: compactColumns, alignment: .leading, spacing: 10) {
                             ForEach(compactItems) { item in
                                 ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
                                     AssetEntryCompactCard(
@@ -1363,7 +1359,7 @@ private struct LiabilityCategorySection: View {
     let onEditValue: (AssetItem) -> Void
     @State private var draggedItemID: UUID?
 
-    private let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
+    private let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
 
     private var items: [AssetItem] {
         category.activeSortedItems
@@ -1376,21 +1372,21 @@ private struct LiabilityCategorySection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        RecordSectionSurface {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(category.name)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(AssetTheme.textSecondary)
                 Spacer(minLength: 8)
                 Text(categoryTotal.currencyString())
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.negative)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
 
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
                 ForEach(items) { item in
                     ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
                         LiabilityEntryCard(
@@ -1504,7 +1500,7 @@ private struct LiabilityEntryCard: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
     }
 
     private var displayValue: String {
@@ -1523,6 +1519,36 @@ private struct LiabilityEntryCard: View {
     }
 }
 
+private struct RecordSectionSurface<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            content
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 15)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(
+                colors: [AssetTheme.surface.opacity(0.26), AssetTheme.overlaySoft.opacity(0.92)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(cornerRadius: 22, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.5), lineWidth: 1)
+        )
+        .shadow(color: AssetTheme.cardShadow.opacity(0.18), radius: 12, x: 0, y: 6)
+    }
+}
+
 private struct RecordInputCard<Content: View>: View {
     @ViewBuilder var content: Content
 
@@ -1534,7 +1560,7 @@ private struct RecordInputCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 4) {
             content
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
