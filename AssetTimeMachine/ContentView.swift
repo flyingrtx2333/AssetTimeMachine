@@ -6050,16 +6050,18 @@ private struct DashboardTrendCard: View {
                 TimeMachineAssetSeries.netAssets.title: TimeMachineAssetSeries.netAssets.color,
                 TimeMachineAssetSeries.liabilities.title: TimeMachineAssetSeries.liabilities.color,
             ])
-            .frame(height: 290)
+            .frame(height: 236)
             .chartXAxis {
                 let axisDates = chartAxisDates(points.map(\.date))
                 AxisMarks(values: axisDates) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
                         .foregroundStyle(AssetTheme.chartGrid)
                     AxisTick().foregroundStyle(AssetTheme.chartTick)
-                    AxisValueLabel(anchor: .top, verticalSpacing: 8) {
+                    AxisValueLabel(anchor: axisLabelAnchor(for: value.as(Date.self), in: axisDates), verticalSpacing: 6) {
                         if let date = value.as(Date.self) {
-                            TimeMachineAxisDateLabel(date: date, position: axisLabelPosition(for: date, in: axisDates))
+                            Text(date.dashboardAxisDateString)
+                                .font(.system(size: 8.5, weight: .medium, design: .rounded))
+                                .foregroundStyle(AssetTheme.textSecondary)
                         }
                     }
                 }
@@ -6104,6 +6106,18 @@ private struct DashboardTrendCard: View {
             return .trailing
         }
         return .middle
+    }
+
+    private func axisLabelAnchor(for date: Date?, in axisDates: [Date]) -> UnitPoint {
+        guard let date else { return .top }
+        switch axisLabelPosition(for: date, in: axisDates) {
+        case .leading:
+            return .topLeading
+        case .middle:
+            return .top
+        case .trailing:
+            return .topTrailing
+        }
     }
 }
 
@@ -7805,6 +7819,13 @@ private extension Date {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "zh_CN")
         formatter.dateFormat = "yy.MM.dd"
+        return formatter.string(from: self)
+    }
+
+    var dashboardAxisDateString: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "yy.MM"
         return formatter.string(from: self)
     }
 }
