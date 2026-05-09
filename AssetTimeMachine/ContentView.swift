@@ -4171,8 +4171,8 @@ private struct BacktestView: View {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        VStack(spacing: 20) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        VStack(spacing: 16) {
                             BacktestModePicker(selectedMode: $backtestMode)
 
                             if backtestMode == .allocation {
@@ -4604,8 +4604,10 @@ private struct BacktestAllocationCard: View {
     let onTapRange: () -> Void
     let onTapAllocation: () -> Void
 
+    private let chartSize: CGFloat = 148
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 12) {
                 Button(action: onTapRange) {
                     HStack(spacing: 8) {
@@ -4628,7 +4630,7 @@ private struct BacktestAllocationCard: View {
             }
 
             Button(action: onTapAllocation) {
-                VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top, spacing: 14) {
                     ZStack {
                         Chart(slices) { slice in
                             SectorMark(
@@ -4638,29 +4640,35 @@ private struct BacktestAllocationCard: View {
                             )
                             .foregroundStyle(slice.color)
                         }
-                        .frame(width: 188, height: 188)
+                        .frame(width: chartSize, height: chartSize)
                         .chartLegend(.hidden)
 
-                        VStack(spacing: 6) {
+                        VStack(spacing: 4) {
                             Text("当前配置")
-                                .font(.caption.weight(.semibold))
+                                .font(.caption2.weight(.semibold))
                                 .foregroundStyle(AssetTheme.textSecondary)
                             Text(activeAllocationSummary)
-                                .font(.headline.weight(.bold))
+                                .font(.subheadline.weight(.bold))
                                 .foregroundStyle(AssetTheme.textPrimary)
                                 .multilineTextAlignment(.center)
                                 .lineLimit(2)
-                                .minimumScaleFactor(0.78)
+                                .minimumScaleFactor(0.72)
                         }
-                        .padding(.horizontal, 18)
+                        .padding(.horizontal, 14)
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(width: chartSize, height: chartSize)
 
                     VStack(spacing: 0) {
                         ForEach(Array(slices.enumerated()), id: \.element.id) { index, slice in
                             BacktestAllocationRow(slice: slice, showsDivider: index < slices.count - 1)
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                    .background(AssetTheme.overlaySoft.opacity(0.55), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(AssetTheme.border.opacity(0.45), lineWidth: 1)
+                    )
                 }
             }
             .buttonStyle(.plain)
@@ -4675,29 +4683,31 @@ private struct BacktestAllocationRow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Circle()
                     .fill(slice.color)
-                    .frame(width: 10, height: 10)
+                    .frame(width: 9, height: 9)
 
                 Text(slice.title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(AssetTheme.textPrimary)
+                    .lineLimit(1)
 
-                Spacer()
+                Spacer(minLength: 8)
 
                 Text("\(Int(slice.amount.rounded()))%")
-                    .font(.subheadline.weight(.bold))
+                    .font(.footnote.weight(.bold))
                     .foregroundStyle(AssetTheme.textSecondary)
+                    .monospacedDigit()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
 
             if showsDivider {
                 Rectangle()
                     .fill(AssetTheme.border.opacity(0.45))
                     .frame(height: 1)
-                    .padding(.leading, 38)
+                    .padding(.leading, 33)
             }
         }
     }
