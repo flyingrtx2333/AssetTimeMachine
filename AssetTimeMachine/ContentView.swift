@@ -1198,6 +1198,25 @@ private struct AssetItemGlyph: View {
     }
 }
 
+private struct RecordEntryIconBadge: View {
+    let item: AssetItem
+    let tint: Color
+    var glyphSize: CGFloat = 9.5
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(tint.opacity(0.12))
+
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .stroke(tint.opacity(0.16), lineWidth: 1)
+
+            AssetItemGlyph(item: item, accent: tint, size: glyphSize)
+        }
+        .frame(width: 22, height: 22)
+    }
+}
+
 private struct RecordCategoryCard: View {
     private let inputWidth: CGFloat = 74
 
@@ -1503,7 +1522,7 @@ private struct LiabilityEntryCard: View {
                     onEdit()
                 } label: {
                     HStack(alignment: .top, spacing: 6) {
-                        AssetItemGlyph(item: item, accent: hasDisplayValue ? AssetTheme.negative : AssetTheme.negative.opacity(0.65), size: 10)
+                        RecordEntryIconBadge(item: item, tint: hasDisplayValue ? AssetTheme.negative : AssetTheme.negative.opacity(0.72))
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.name)
@@ -1592,23 +1611,35 @@ private struct RecordMatrixSurface<Content: View>: View {
     }
 
     var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
+
         VStack(spacing: 0) {
             content
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            LinearGradient(
-                colors: [AssetTheme.surface.opacity(0.16), AssetTheme.overlaySoft.opacity(0.64)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ),
-            in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+            shape
+                .fill(
+                    LinearGradient(
+                        colors: [AssetTheme.surface.opacity(0.24), AssetTheme.background.opacity(0.92)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.42), lineWidth: 1)
+            shape
+                .stroke(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.06), AssetTheme.goldSoft.opacity(0.08), AssetTheme.border.opacity(0.2)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
         )
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .shadow(color: .black.opacity(0.16), radius: 18, y: 8)
+        .clipShape(shape)
     }
 }
 
@@ -1625,7 +1656,7 @@ private struct RecordInputCard<Content: View>: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 11)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
     }
 }
 
@@ -1735,7 +1766,7 @@ private struct AssetEntryCompactCard: View {
                     onEdit()
                 } label: {
                     HStack(alignment: .top, spacing: 6) {
-                        AssetItemGlyph(item: item, accent: hasDisplayValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.7), size: 10)
+                        RecordEntryIconBadge(item: item, tint: hasDisplayValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.74))
 
                         VStack(alignment: .leading, spacing: 3) {
                             Text(item.name)
@@ -1823,7 +1854,7 @@ private struct AssetEntryInputRow: View {
                     onEdit()
                 } label: {
                     HStack(alignment: .top, spacing: 6) {
-                        AssetItemGlyph(item: item, accent: hasResolvedValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.7), size: 10)
+                        RecordEntryIconBadge(item: item, tint: hasResolvedValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.74))
 
                         HStack(alignment: .center, spacing: 6) {
                             Text(item.name)
