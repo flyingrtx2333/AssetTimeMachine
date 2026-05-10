@@ -737,7 +737,7 @@ private struct SnapshotListView: View {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 18) {
                         if let currentSnapshot {
                             RecordPageHero(
                                 snapshot: currentSnapshot,
@@ -749,7 +749,7 @@ private struct SnapshotListView: View {
                                     showsAddAssetItemSheet = true
                                 }
                             )
-                            .padding(.bottom, 4)
+                            .padding(.bottom, 2)
 
                             ForEach(nonLiabilityCategories) { category in
                                 RecordCategoryCard(
@@ -790,18 +790,22 @@ private struct SnapshotListView: View {
                             NavigationLink {
                                 SnapshotArchiveView()
                             } label: {
-                                RecordSectionSurface {
-                                    HStack(spacing: 10) {
-                                        Text("全部资产记录")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundStyle(AssetTheme.textPrimary)
+                                HStack(spacing: 10) {
+                                    Text("全部资产记录")
+                                        .font(.headline)
+                                        .foregroundStyle(AssetTheme.textPrimary)
 
-                                        Spacer(minLength: 12)
+                                    Spacer()
 
-                                        Image(systemName: "chevron.right")
-                                            .font(.caption.weight(.semibold))
-                                            .foregroundStyle(AssetTheme.textSecondary)
-                                    }
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(AssetTheme.textSecondary)
+                                }
+                                .padding(.vertical, 14)
+                                .overlay(alignment: .top) {
+                                    Rectangle()
+                                        .fill(AssetTheme.border.opacity(0.5))
+                                        .frame(height: 1)
                                 }
                             }
                             .buttonStyle(.plain)
@@ -821,7 +825,7 @@ private struct SnapshotListView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
-                    .padding(.top, 20)
+                    .padding(.top, 18)
                     .padding(.bottom, 104)
                 }
                 .scrollDismissesKeyboard(.never)
@@ -1260,14 +1264,14 @@ private struct RecordCategoryCard: View {
     }
 
     var body: some View {
-        RecordSectionSurface {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(category.name)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(AssetTheme.textSecondary)
                 Spacer(minLength: 8)
                 Text(categoryTotal.currencyString())
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
@@ -1372,14 +1376,14 @@ private struct LiabilityCategorySection: View {
     }
 
     var body: some View {
-        RecordSectionSurface {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(category.name)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(AssetTheme.textSecondary)
                 Spacer(minLength: 8)
                 Text(categoryTotal.currencyString())
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.negative)
                     .lineLimit(1)
@@ -1516,36 +1520,6 @@ private struct LiabilityEntryCard: View {
             }
         }
         return "--"
-    }
-}
-
-private struct RecordSectionSurface<Content: View>: View {
-    @ViewBuilder var content: Content
-
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            content
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 15)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            LinearGradient(
-                colors: [AssetTheme.surface.opacity(0.26), AssetTheme.overlaySoft.opacity(0.92)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ),
-            in: RoundedRectangle(cornerRadius: 22, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.5), lineWidth: 1)
-        )
-        .shadow(color: AssetTheme.cardShadow.opacity(0.18), radius: 12, x: 0, y: 6)
     }
 }
 
