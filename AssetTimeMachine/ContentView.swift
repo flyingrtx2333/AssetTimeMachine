@@ -1440,71 +1440,76 @@ private struct LiabilityEntryCard: View {
         focusedField == activeField
     }
 
+    private var hasDisplayValue: Bool {
+        displayValue != "--"
+    }
+
     var body: some View {
-        HStack(alignment: .center, spacing: 6) {
-            Button {
-                onEdit()
-            } label: {
-                HStack(alignment: .center, spacing: 6) {
-                    AssetItemGlyph(item: item, accent: AssetTheme.negative, size: 12)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(item.name)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(AssetTheme.textPrimary)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if isEditing {
-                if item.valuationMethod == .directAmount {
-                    ATMInputField(
-                        text: $amountText,
-                        placeholder: "0",
-                        width: inputWidth,
-                        focusedField: $focusedField,
-                        focusValue: .amount(item.id),
-                        centered: true,
-                        fontSize: 12,
-                        fontWeight: .medium,
-                        height: 32,
-                        backgroundOpacity: 0.54,
-                        strokeOpacity: 0.18
-                    )
-                } else {
-                    ATMInputField(
-                        text: $quantityText,
-                        placeholder: item.compactRecordPlaceholder,
-                        width: inputWidth,
-                        focusedField: $focusedField,
-                        focusValue: .quantity(item.id),
-                        centered: true,
-                        fontSize: 12,
-                        fontWeight: .medium,
-                        height: 32,
-                        backgroundOpacity: 0.54,
-                        strokeOpacity: 0.18
-                    )
-                }
-            } else {
+        RecordInputCard {
+            HStack(alignment: .center, spacing: 8) {
                 Button {
-                    onEditValue()
+                    onEdit()
                 } label: {
-                    Text(displayValue)
-                        .font(.system(size: 13, weight: .semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .frame(width: inputWidth, alignment: .trailing)
+                    HStack(alignment: .center, spacing: 8) {
+                        AssetItemGlyph(item: item, accent: hasDisplayValue ? AssetTheme.negative : AssetTheme.negative.opacity(0.65), size: 12)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.name)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+
+                if isEditing {
+                    if item.valuationMethod == .directAmount {
+                        ATMInputField(
+                            text: $amountText,
+                            placeholder: "0",
+                            width: inputWidth,
+                            focusedField: $focusedField,
+                            focusValue: .amount(item.id),
+                            centered: true,
+                            fontSize: 12,
+                            fontWeight: .medium,
+                            height: 32,
+                            backgroundOpacity: 0.54,
+                            strokeOpacity: 0.18
+                        )
+                    } else {
+                        ATMInputField(
+                            text: $quantityText,
+                            placeholder: item.compactRecordPlaceholder,
+                            width: inputWidth,
+                            focusedField: $focusedField,
+                            focusValue: .quantity(item.id),
+                            centered: true,
+                            fontSize: 12,
+                            fontWeight: .medium,
+                            height: 32,
+                            backgroundOpacity: 0.54,
+                            strokeOpacity: 0.18
+                        )
+                    }
+                } else {
+                    Button {
+                        onEditValue()
+                    } label: {
+                        Text(displayValue)
+                            .font(.system(size: 13, weight: .semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.78))
+                            .frame(width: inputWidth, alignment: .trailing)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
-        .padding(.vertical, 4)
     }
 
     private var displayValue: String {
@@ -1534,8 +1539,21 @@ private struct RecordInputCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 4) {
             content
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(
+                colors: [AssetTheme.surface.opacity(0.22), AssetTheme.overlaySoft.opacity(0.88)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.34), lineWidth: 1)
+        )
     }
 }
 
@@ -1561,7 +1579,7 @@ private struct ReorderableRecordCell<Content: View>: View {
 
     var body: some View {
         content
-            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .opacity(draggedItemID == item.id ? 0.55 : 1)
             .scaleEffect(draggedItemID == item.id ? 0.98 : 1)
             .onDrag {
@@ -1634,19 +1652,23 @@ private struct AssetEntryCompactCard: View {
         focusedField == activeField
     }
 
+    private var hasDisplayValue: Bool {
+        displayValue != "--"
+    }
+
     var body: some View {
         RecordInputCard {
-            HStack(alignment: .center, spacing: 4) {
+            HStack(alignment: .center, spacing: 8) {
                 Button {
                     onEdit()
                 } label: {
-                    HStack(alignment: .center, spacing: 4) {
-                        AssetItemGlyph(item: item, size: 12)
+                    HStack(alignment: .center, spacing: 8) {
+                        AssetItemGlyph(item: item, accent: hasDisplayValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.7), size: 12)
 
                         VStack(alignment: .leading, spacing: 3) {
                             Text(item.name)
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(AssetTheme.textPrimary)
+                                .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
                                 .lineLimit(2)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -1669,7 +1691,7 @@ private struct AssetEntryCompactCard: View {
                         Text(displayValue)
                             .font(.system(size: 13, weight: .semibold))
                             .monospacedDigit()
-                            .foregroundStyle(AssetTheme.textPrimary)
+                            .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.78))
                             .frame(width: inputWidth, alignment: .trailing)
                     }
                     .buttonStyle(.plain)
@@ -1709,19 +1731,28 @@ private struct AssetEntryInputRow: View {
         focusedField == .quantity(item.id) || focusedField == .unitPrice(item.id)
     }
 
+    private var resolvedValueText: String {
+        if !quantityText.isEmpty { return quantityText }
+        return latestEntry?.quantity?.plainNumberString() ?? "--"
+    }
+
+    private var hasResolvedValue: Bool {
+        resolvedValueText != "--"
+    }
+
     var body: some View {
         RecordInputCard {
-            HStack(alignment: .top, spacing: 6) {
+            HStack(alignment: .top, spacing: 8) {
                 Button {
                     onEdit()
                 } label: {
-                    HStack(alignment: .top, spacing: 6) {
-                        AssetItemGlyph(item: item, size: 12)
+                    HStack(alignment: .top, spacing: 8) {
+                        AssetItemGlyph(item: item, accent: hasResolvedValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.7), size: 12)
 
                         HStack(alignment: .center, spacing: 6) {
                             Text(item.name)
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(AssetTheme.textPrimary)
+                                .foregroundStyle(hasResolvedValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
                                 .lineLimit(3)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1761,15 +1792,16 @@ private struct AssetEntryInputRow: View {
         let fallbackValue = (title == "数量" || title == "金额")
             ? (latestEntry?.quantity?.plainNumberString() ?? "--")
             : (latestEntry?.unitPrice?.plainNumberString() ?? "--")
+        let resolvedValue = value.isEmpty ? fallbackValue : value
 
         VStack(alignment: .trailing, spacing: 2) {
             Text(title)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(AssetTheme.textSecondary)
-            Text(value.isEmpty ? fallbackValue : value)
+            Text(resolvedValue)
                 .font(.system(size: 13, weight: .semibold))
                 .monospacedDigit()
-                .foregroundStyle(AssetTheme.textPrimary)
+                .foregroundStyle(resolvedValue == "--" ? AssetTheme.textSecondary.opacity(0.78) : AssetTheme.textPrimary)
         }
         .frame(width: inputWidth, alignment: .trailing)
     }
