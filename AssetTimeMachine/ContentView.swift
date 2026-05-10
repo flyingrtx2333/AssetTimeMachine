@@ -1198,22 +1198,14 @@ private struct AssetItemGlyph: View {
     }
 }
 
-private struct RecordEntryIconBadge: View {
+private struct RecordEntryGlyph: View {
     let item: AssetItem
     let tint: Color
-    var glyphSize: CGFloat = 9.5
+    var glyphSize: CGFloat = 10
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(tint.opacity(0.12))
-
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .stroke(tint.opacity(0.16), lineWidth: 1)
-
-            AssetItemGlyph(item: item, accent: tint, size: glyphSize)
-        }
-        .frame(width: 22, height: 22)
+        AssetItemGlyph(item: item, accent: tint, size: glyphSize)
+            .frame(width: 16, height: 18, alignment: .center)
     }
 }
 
@@ -1522,7 +1514,7 @@ private struct LiabilityEntryCard: View {
                     onEdit()
                 } label: {
                     HStack(alignment: .top, spacing: 6) {
-                        RecordEntryIconBadge(item: item, tint: hasDisplayValue ? AssetTheme.negative : AssetTheme.negative.opacity(0.72))
+                        RecordEntryGlyph(item: item, tint: hasDisplayValue ? AssetTheme.negative : AssetTheme.negative.opacity(0.72))
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.name)
@@ -1766,7 +1758,7 @@ private struct AssetEntryCompactCard: View {
                     onEdit()
                 } label: {
                     HStack(alignment: .top, spacing: 6) {
-                        RecordEntryIconBadge(item: item, tint: hasDisplayValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.74))
+                        RecordEntryGlyph(item: item, tint: hasDisplayValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.74))
 
                         VStack(alignment: .leading, spacing: 3) {
                             Text(item.name)
@@ -1854,7 +1846,7 @@ private struct AssetEntryInputRow: View {
                     onEdit()
                 } label: {
                     HStack(alignment: .top, spacing: 6) {
-                        RecordEntryIconBadge(item: item, tint: hasResolvedValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.74))
+                        RecordEntryGlyph(item: item, tint: hasResolvedValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.74))
 
                         HStack(alignment: .center, spacing: 6) {
                             Text(item.name)
