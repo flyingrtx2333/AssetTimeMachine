@@ -737,7 +737,7 @@ private struct SnapshotListView: View {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 16) {
                         if let currentSnapshot {
                             RecordPageHero(
                                 snapshot: currentSnapshot,
@@ -1119,8 +1119,8 @@ private struct RecordPageHero: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
+        HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: 5) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text("总资产")
                         .font(.caption.weight(.semibold))
@@ -1134,7 +1134,7 @@ private struct RecordPageHero: View {
                         .monospacedDigit()
                 }
 
-                HStack(spacing: 8) {
+                HStack(spacing: 7) {
                     heroSummaryText(title: "净资产", value: netAssets.currencyString(), valueColor: netAssetColor)
 
                     Circle()
@@ -1154,15 +1154,15 @@ private struct RecordPageHero: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Button(action: onAddAsset) {
-                HStack(spacing: 4) {
+                HStack(spacing: 5) {
                     Image(systemName: "plus")
-                        .font(.caption.weight(.semibold))
+                        .font(.caption2.weight(.semibold))
                     Text("资产类型")
-                        .font(.caption.weight(.medium))
+                        .font(.caption2.weight(.semibold))
                 }
                 .foregroundStyle(AssetTheme.textPrimary)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 6)
                 .background(AssetTheme.overlaySoft, in: Capsule())
                 .overlay(
                     Capsule()
@@ -1171,7 +1171,7 @@ private struct RecordPageHero: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
     }
 
     private func heroSummaryText(title: String, value: String, valueColor: Color) -> some View {
@@ -1206,6 +1206,30 @@ private struct RecordEntryGlyph: View {
     var body: some View {
         AssetItemGlyph(item: item, accent: tint, size: glyphSize)
             .frame(width: 16, height: 18, alignment: .center)
+    }
+}
+
+private struct RecordSectionHeader: View {
+    let title: String
+    let amount: String
+    var amountColor: Color = AssetTheme.textPrimary
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(title)
+                .font(.system(size: 13.5, weight: .medium))
+                .foregroundStyle(AssetTheme.textSecondary.opacity(0.94))
+                .lineLimit(1)
+
+            Spacer(minLength: 10)
+
+            Text(amount)
+                .font(.system(size: 15.5, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(amountColor)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+        }
     }
 }
 
@@ -1284,21 +1308,14 @@ private struct RecordCategoryCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Text(category.name)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(AssetTheme.textSecondary)
-                Spacer(minLength: 8)
-                Text(categoryTotal.currencyString())
-                    .font(.system(size: 16, weight: .semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(AssetTheme.textPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
+        VStack(alignment: .leading, spacing: 10) {
+            RecordSectionHeader(
+                title: category.name,
+                amount: categoryTotal.currencyString(),
+                amountColor: AssetTheme.textPrimary
+            )
 
-            VStack(spacing: 12) {
+            VStack(spacing: 10) {
                 ForEach(inputBlocks) { block in
                     switch block {
                     case let .compact(compactItems):
@@ -1423,19 +1440,12 @@ private struct LiabilityCategorySection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Text(category.name)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(AssetTheme.textSecondary)
-                Spacer(minLength: 8)
-                Text(categoryTotal.currencyString())
-                    .font(.system(size: 16, weight: .semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(AssetTheme.negative)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
+        VStack(alignment: .leading, spacing: 10) {
+            RecordSectionHeader(
+                title: category.name,
+                amount: categoryTotal.currencyString(),
+                amountColor: AssetTheme.negative.opacity(0.94)
+            )
 
             RecordMatrixSurface {
                 LazyVGrid(columns: columns, alignment: .leading, spacing: 0) {
