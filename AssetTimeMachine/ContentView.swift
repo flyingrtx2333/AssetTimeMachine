@@ -1107,6 +1107,27 @@ private func dismissActiveKeyboard() {
     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
 }
 
+private struct RecordHeroMetric: View {
+    let title: String
+    let value: String
+    let valueColor: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.system(size: 10.5, weight: .medium))
+                .foregroundStyle(AssetTheme.textSecondary.opacity(0.86))
+
+            Text(value)
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(valueColor)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+        }
+    }
+}
+
 private struct RecordPageHero: View {
     let snapshot: AssetSnapshot
     let totalAssets: Double
@@ -1119,73 +1140,85 @@ private struct RecordPageHero: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack(alignment: .center, spacing: 10) {
-                Text("总资产")
-                    .font(.system(size: 11.5, weight: .semibold))
-                    .tracking(0.2)
-                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.94))
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
+                HStack(spacing: 8) {
+                    Text("总资产")
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .tracking(0.2)
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.94))
+
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                colors: [AssetTheme.goldSoft.opacity(0.52), AssetTheme.border.opacity(0.08)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: 36, height: 1)
+                }
 
                 Spacer(minLength: 12)
 
                 Button(action: onAddAsset) {
-                    HStack(spacing: 5) {
+                    HStack(spacing: 6) {
                         Image(systemName: "plus")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(size: 10, weight: .bold))
                         Text("新增资产")
-                            .font(.system(size: 11.5, weight: .semibold))
+                            .font(.system(size: 11, weight: .semibold))
                     }
                     .foregroundStyle(AssetTheme.textPrimary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(AssetTheme.overlaySoft.opacity(0.82), in: Capsule())
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(AssetTheme.overlaySoft.opacity(0.72), in: Capsule())
                     .overlay(
                         Capsule()
-                            .stroke(AssetTheme.border.opacity(0.42), lineWidth: 1)
+                            .stroke(AssetTheme.border.opacity(0.38), lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
             }
 
             Text(totalAssets.currencyString())
-                .font(.system(size: 31, weight: .semibold))
-                .foregroundStyle(AssetTheme.textPrimary)
+                .font(.system(size: 32, weight: .semibold))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [AssetTheme.textPrimary, AssetTheme.goldSoft.opacity(0.84)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
                 .lineLimit(1)
                 .minimumScaleFactor(0.74)
                 .monospacedDigit()
 
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
+            HStack(alignment: .bottom, spacing: 12) {
                 Text(snapshot.date.recordDateString)
-                    .font(.system(size: 11.5, weight: .medium))
-                    .foregroundStyle(AssetTheme.textSecondary)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.9))
 
                 Spacer(minLength: 12)
 
-                HStack(spacing: 7) {
-                    heroSummaryText(title: "净资产", value: netAssets.currencyString(), valueColor: netAssetColor)
-
-                    Circle()
-                        .fill(AssetTheme.border.opacity(0.78))
-                        .frame(width: 2.5, height: 2.5)
-
-                    heroSummaryText(title: "负债", value: totalLiabilities.currencyString(), valueColor: AssetTheme.negative.opacity(0.9))
+                HStack(spacing: 18) {
+                    RecordHeroMetric(title: "净资产", value: netAssets.currencyString(), valueColor: netAssetColor)
+                    RecordHeroMetric(title: "负债", value: totalLiabilities.currencyString(), valueColor: AssetTheme.negative.opacity(0.92))
                 }
-                .font(.system(size: 11.5, weight: .medium))
-                .lineLimit(1)
-                .minimumScaleFactor(0.74)
             }
-        }
-        .padding(.vertical, 2)
-    }
 
-    private func heroSummaryText(title: String, value: String, valueColor: Color) -> some View {
-        HStack(spacing: 3) {
-            Text(title)
-                .foregroundStyle(AssetTheme.textSecondary)
-            Text(value)
-                .foregroundStyle(valueColor)
-                .monospacedDigit()
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.06), AssetTheme.border.opacity(0.08)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(height: 1)
+                .padding(.top, 4)
         }
+        .padding(.top, 2)
+        .padding(.bottom, 4)
     }
 }
 
