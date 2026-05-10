@@ -1199,7 +1199,7 @@ private struct AssetItemGlyph: View {
 }
 
 private struct RecordCategoryCard: View {
-    private let inputWidth: CGFloat = 80
+    private let inputWidth: CGFloat = 76
 
     private enum InputBlock: Identifiable {
         case compact([AssetItem])
@@ -1380,7 +1380,7 @@ private struct RecordCategoryCard: View {
 }
 
 private struct LiabilityCategorySection: View {
-    private let inputWidth: CGFloat = 80
+    private let inputWidth: CGFloat = 76
 
     let category: AssetCategory
     @Binding var amountInputs: [UUID: String]
@@ -1498,19 +1498,20 @@ private struct LiabilityEntryCard: View {
 
     var body: some View {
         RecordInputCard {
-            HStack(alignment: .center, spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
                 Button {
                     onEdit()
                 } label: {
-                    HStack(alignment: .center, spacing: 8) {
-                        AssetItemGlyph(item: item, accent: hasDisplayValue ? AssetTheme.negative : AssetTheme.negative.opacity(0.65), size: 12)
+                    HStack(alignment: .top, spacing: 6) {
+                        AssetItemGlyph(item: item, accent: hasDisplayValue ? AssetTheme.negative : AssetTheme.negative.opacity(0.65), size: 11)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.name)
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
-                                .lineLimit(2)
-                                .fixedSize(horizontal: false, vertical: true)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.84)
+                                .allowsTightening(true)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -1553,8 +1554,10 @@ private struct LiabilityEntryCard: View {
                         onEditValue()
                     } label: {
                         Text(displayValue)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 12, weight: .semibold))
                             .monospacedDigit()
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.82)
                             .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.78))
                             .frame(width: inputWidth, alignment: .trailing)
                     }
@@ -1619,8 +1622,8 @@ private struct RecordInputCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 4) {
             content
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 13)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -1726,19 +1729,20 @@ private struct AssetEntryCompactCard: View {
 
     var body: some View {
         RecordInputCard {
-            HStack(alignment: .center, spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
                 Button {
                     onEdit()
                 } label: {
-                    HStack(alignment: .center, spacing: 8) {
-                        AssetItemGlyph(item: item, accent: hasDisplayValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.7), size: 12)
+                    HStack(alignment: .top, spacing: 6) {
+                        AssetItemGlyph(item: item, accent: hasDisplayValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.7), size: 11)
 
                         VStack(alignment: .leading, spacing: 3) {
                             Text(item.name)
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
-                                .lineLimit(2)
-                                .fixedSize(horizontal: false, vertical: true)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.84)
+                                .allowsTightening(true)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -1814,15 +1818,16 @@ private struct AssetEntryInputRow: View {
                 Button {
                     onEdit()
                 } label: {
-                    HStack(alignment: .top, spacing: 8) {
-                        AssetItemGlyph(item: item, accent: hasResolvedValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.7), size: 12)
+                    HStack(alignment: .top, spacing: 6) {
+                        AssetItemGlyph(item: item, accent: hasResolvedValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.7), size: 11)
 
                         HStack(alignment: .center, spacing: 6) {
                             Text(item.name)
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(hasResolvedValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
-                                .lineLimit(3)
-                                .fixedSize(horizontal: false, vertical: true)
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.84)
+                                .allowsTightening(true)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
@@ -1864,11 +1869,13 @@ private struct AssetEntryInputRow: View {
 
         VStack(alignment: .trailing, spacing: 2) {
             Text(title)
-                .font(.system(size: 11, weight: .medium))
+                .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(AssetTheme.textSecondary)
             Text(resolvedValue)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 12, weight: .semibold))
                 .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
                 .foregroundStyle(resolvedValue == "--" ? AssetTheme.textSecondary.opacity(0.78) : AssetTheme.textPrimary)
         }
         .frame(width: inputWidth, alignment: .trailing)
