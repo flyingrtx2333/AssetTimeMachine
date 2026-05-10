@@ -1119,57 +1119,61 @@ private struct RecordPageHero: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            VStack(alignment: .leading, spacing: 5) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text("总资产")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(AssetTheme.textSecondary)
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(alignment: .center, spacing: 10) {
+                Text("总资产")
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .tracking(0.2)
+                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.94))
 
-                    Text(totalAssets.currencyString())
-                        .font(.system(size: 28, weight: .semibold))
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.76)
-                        .monospacedDigit()
+                Spacer(minLength: 12)
+
+                Button(action: onAddAsset) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text("新增资产")
+                            .font(.system(size: 11.5, weight: .semibold))
+                    }
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(AssetTheme.overlaySoft.opacity(0.82), in: Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke(AssetTheme.border.opacity(0.42), lineWidth: 1)
+                    )
                 }
+                .buttonStyle(.plain)
+            }
+
+            Text(totalAssets.currencyString())
+                .font(.system(size: 31, weight: .semibold))
+                .foregroundStyle(AssetTheme.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.74)
+                .monospacedDigit()
+
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(snapshot.date.recordDateString)
+                    .font(.system(size: 11.5, weight: .medium))
+                    .foregroundStyle(AssetTheme.textSecondary)
+
+                Spacer(minLength: 12)
 
                 HStack(spacing: 7) {
                     heroSummaryText(title: "净资产", value: netAssets.currencyString(), valueColor: netAssetColor)
 
                     Circle()
-                        .fill(AssetTheme.border.opacity(0.8))
-                        .frame(width: 3, height: 3)
+                        .fill(AssetTheme.border.opacity(0.78))
+                        .frame(width: 2.5, height: 2.5)
 
                     heroSummaryText(title: "负债", value: totalLiabilities.currencyString(), valueColor: AssetTheme.negative.opacity(0.9))
                 }
-                .font(.caption.weight(.medium))
+                .font(.system(size: 11.5, weight: .medium))
                 .lineLimit(1)
-                .minimumScaleFactor(0.72)
-
-                Text(snapshot.date.recordDateString)
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(AssetTheme.textSecondary)
+                .minimumScaleFactor(0.74)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Button(action: onAddAsset) {
-                HStack(spacing: 5) {
-                    Image(systemName: "plus")
-                        .font(.caption2.weight(.semibold))
-                    Text("资产类型")
-                        .font(.caption2.weight(.semibold))
-                }
-                .foregroundStyle(AssetTheme.textPrimary)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 6)
-                .background(AssetTheme.overlaySoft, in: Capsule())
-                .overlay(
-                    Capsule()
-                        .stroke(AssetTheme.border.opacity(0.55), lineWidth: 1)
-                )
-            }
-            .buttonStyle(.plain)
         }
         .padding(.vertical, 2)
     }
