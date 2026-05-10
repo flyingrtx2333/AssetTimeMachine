@@ -1113,17 +1113,17 @@ private struct RecordHeroMetric: View {
     let valueColor: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 3) {
             Text(title)
-                .font(.system(size: 10.5, weight: .medium))
-                .foregroundStyle(AssetTheme.textSecondary.opacity(0.86))
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
 
             Text(value)
-                .font(.system(size: 12.5, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(valueColor)
                 .monospacedDigit()
                 .lineLimit(1)
-                .minimumScaleFactor(0.78)
+                .minimumScaleFactor(0.8)
         }
     }
 }
@@ -1137,6 +1137,22 @@ private struct RecordPageHero: View {
 
     private var netAssetColor: Color {
         netAssets < 0 ? AssetTheme.negative : AssetTheme.textPrimary
+    }
+
+    private var totalAssetText: Text {
+        let amount = totalAssets.currencyString()
+        guard let dotIndex = amount.lastIndex(of: ".") else {
+            return Text(amount)
+                .font(.system(size: 32, weight: .semibold))
+        }
+
+        let major = String(amount[..<dotIndex])
+        let minor = String(amount[dotIndex...])
+        return Text(major)
+            .font(.system(size: 32, weight: .semibold))
+        + Text(minor)
+            .font(.system(size: 19, weight: .semibold))
+            .baselineOffset(1)
     }
 
     var body: some View {
@@ -1156,7 +1172,7 @@ private struct RecordPageHero: View {
                                 endPoint: .trailing
                             )
                         )
-                        .frame(width: 36, height: 1)
+                        .frame(width: 28, height: 1)
                 }
 
                 Spacer(minLength: 12)
@@ -1164,24 +1180,23 @@ private struct RecordPageHero: View {
                 Button(action: onAddAsset) {
                     HStack(spacing: 6) {
                         Image(systemName: "plus")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(size: 9.5, weight: .bold))
                         Text("新增资产")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(size: 10.5, weight: .semibold))
                     }
                     .foregroundStyle(AssetTheme.textPrimary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(AssetTheme.overlaySoft.opacity(0.72), in: Capsule())
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 6.5)
+                    .background(AssetTheme.overlaySoft.opacity(0.62), in: Capsule())
                     .overlay(
                         Capsule()
-                            .stroke(AssetTheme.border.opacity(0.38), lineWidth: 1)
+                            .stroke(AssetTheme.border.opacity(0.34), lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
             }
 
-            Text(totalAssets.currencyString())
-                .font(.system(size: 32, weight: .semibold))
+            totalAssetText
                 .foregroundStyle(
                     LinearGradient(
                         colors: [AssetTheme.textPrimary, AssetTheme.goldSoft.opacity(0.84)],
@@ -1200,8 +1215,13 @@ private struct RecordPageHero: View {
 
                 Spacer(minLength: 12)
 
-                HStack(spacing: 18) {
+                HStack(spacing: 14) {
                     RecordHeroMetric(title: "净资产", value: netAssets.currencyString(), valueColor: netAssetColor)
+
+                    Rectangle()
+                        .fill(AssetTheme.border.opacity(0.18))
+                        .frame(width: 1, height: 24)
+
                     RecordHeroMetric(title: "负债", value: totalLiabilities.currencyString(), valueColor: AssetTheme.negative.opacity(0.92))
                 }
             }
