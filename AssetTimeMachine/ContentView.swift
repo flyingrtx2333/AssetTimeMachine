@@ -1226,8 +1226,8 @@ private struct RecordCategoryCard: View {
     @State private var draggedItemID: UUID?
 
     private let compactColumns = [
-        GridItem(.flexible(), spacing: 10, alignment: .top),
-        GridItem(.flexible(), spacing: 10, alignment: .top)
+        GridItem(.flexible(), spacing: 0, alignment: .top),
+        GridItem(.flexible(), spacing: 0, alignment: .top)
     ]
 
     private var items: [AssetItem] {
@@ -1263,6 +1263,15 @@ private struct RecordCategoryCard: View {
         }
     }
 
+    private func showsRightDivider(at index: Int, total: Int) -> Bool {
+        index % 2 == 0 && index + 1 < total
+    }
+
+    private func showsBottomDivider(at index: Int, total: Int) -> Bool {
+        let rowCount = Int(ceil(Double(total) / 2.0))
+        return index / 2 < rowCount - 1
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
@@ -1282,68 +1291,86 @@ private struct RecordCategoryCard: View {
                 ForEach(inputBlocks) { block in
                     switch block {
                     case let .compact(compactItems):
-                        LazyVGrid(columns: compactColumns, alignment: .leading, spacing: 10) {
-                            ForEach(compactItems) { item in
-                                ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
-                                    AssetEntryCompactCard(
-                                        item: item,
-                                        marketStore: marketStore,
-                                        amountText: Binding(
-                                            get: { amountInputs[item.id] ?? "" },
-                                            set: { newValue in
-                                                amountInputs[item.id] = newValue
+                        RecordMatrixSurface {
+                            LazyVGrid(columns: compactColumns, alignment: .leading, spacing: 0) {
+                                ForEach(Array(compactItems.enumerated()), id: \.element.id) { index, item in
+                                    ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
+                                        AssetEntryCompactCard(
+                                            item: item,
+                                            marketStore: marketStore,
+                                            amountText: Binding(
+                                                get: { amountInputs[item.id] ?? "" },
+                                                set: { newValue in
+                                                    amountInputs[item.id] = newValue
+                                                }
+                                            ),
+                                            quantityText: Binding(
+                                                get: { quantityInputs[item.id] ?? "" },
+                                                set: { newValue in
+                                                    quantityInputs[item.id] = newValue
+                                                }
+                                            ),
+                                            focusedField: $focusedField,
+                                            inputWidth: inputWidth,
+                                            onEdit: {
+                                                onEdit(item)
+                                            },
+                                            onEditValue: {
+                                                onEditValue(item)
                                             }
-                                        ),
-                                        quantityText: Binding(
-                                            get: { quantityInputs[item.id] ?? "" },
-                                            set: { newValue in
-                                                quantityInputs[item.id] = newValue
-                                            }
-                                        ),
-                                        focusedField: $focusedField,
-                                        inputWidth: inputWidth,
-                                        onEdit: {
-                                            onEdit(item)
-                                        },
-                                        onEditValue: {
-                                            onEditValue(item)
+                                        )
+                                    }
+                                    .overlay(alignment: .trailing) {
+                                        if showsRightDivider(at: index, total: compactItems.count) {
+                                            Rectangle()
+                                                .fill(AssetTheme.border.opacity(0.34))
+                                                .frame(width: 1)
                                         }
-                                    )
+                                    }
+                                    .overlay(alignment: .bottom) {
+                                        if showsBottomDivider(at: index, total: compactItems.count) {
+                                            Rectangle()
+                                                .fill(AssetTheme.border.opacity(0.34))
+                                                .frame(height: 1)
+                                        }
+                                    }
                                 }
                             }
                         }
                     case let .expanded(item):
-                        ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
-                            AssetEntryInputRow(
-                                item: item,
-                                marketStore: marketStore,
-                                amountText: Binding(
-                                    get: { amountInputs[item.id] ?? "" },
-                                    set: { newValue in
-                                        amountInputs[item.id] = newValue
+                        RecordMatrixSurface {
+                            ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
+                                AssetEntryInputRow(
+                                    item: item,
+                                    marketStore: marketStore,
+                                    amountText: Binding(
+                                        get: { amountInputs[item.id] ?? "" },
+                                        set: { newValue in
+                                            amountInputs[item.id] = newValue
+                                        }
+                                    ),
+                                    quantityText: Binding(
+                                        get: { quantityInputs[item.id] ?? "" },
+                                        set: { newValue in
+                                            quantityInputs[item.id] = newValue
+                                        }
+                                    ),
+                                    unitPriceText: Binding(
+                                        get: { unitPriceInputs[item.id] ?? "" },
+                                        set: { newValue in
+                                            unitPriceInputs[item.id] = newValue
+                                        }
+                                    ),
+                                    focusedField: $focusedField,
+                                    inputWidth: inputWidth,
+                                    onEdit: {
+                                        onEdit(item)
+                                    },
+                                    onEditValue: {
+                                        onEditValue(item)
                                     }
-                                ),
-                                quantityText: Binding(
-                                    get: { quantityInputs[item.id] ?? "" },
-                                    set: { newValue in
-                                        quantityInputs[item.id] = newValue
-                                    }
-                                ),
-                                unitPriceText: Binding(
-                                    get: { unitPriceInputs[item.id] ?? "" },
-                                    set: { newValue in
-                                        unitPriceInputs[item.id] = newValue
-                                    }
-                                ),
-                                focusedField: $focusedField,
-                                inputWidth: inputWidth,
-                                onEdit: {
-                                    onEdit(item)
-                                },
-                                onEditValue: {
-                                    onEditValue(item)
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }
@@ -1363,7 +1390,7 @@ private struct LiabilityCategorySection: View {
     let onEditValue: (AssetItem) -> Void
     @State private var draggedItemID: UUID?
 
-    private let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
+    private let columns = [GridItem(.flexible(), spacing: 0), GridItem(.flexible(), spacing: 0)]
 
     private var items: [AssetItem] {
         category.activeSortedItems
@@ -1373,6 +1400,15 @@ private struct LiabilityCategorySection: View {
         items.reduce(0) { partialResult, item in
             partialResult + item.entries.reduce(0) { $0 + $1.resolvedAmount }
         }
+    }
+
+    private func showsRightDivider(at index: Int, total: Int) -> Bool {
+        index % 2 == 0 && index + 1 < total
+    }
+
+    private func showsBottomDivider(at index: Int, total: Int) -> Bool {
+        let rowCount = Int(ceil(Double(total) / 2.0))
+        return index / 2 < rowCount - 1
     }
 
     var body: some View {
@@ -1390,32 +1426,48 @@ private struct LiabilityCategorySection: View {
                     .minimumScaleFactor(0.8)
             }
 
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
-                ForEach(items) { item in
-                    ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
-                        LiabilityEntryCard(
-                            item: item,
-                            amountText: Binding(
-                                get: { amountInputs[item.id] ?? "" },
-                                set: { newValue in
-                                    amountInputs[item.id] = newValue
+            RecordMatrixSurface {
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 0) {
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                        ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
+                            LiabilityEntryCard(
+                                item: item,
+                                amountText: Binding(
+                                    get: { amountInputs[item.id] ?? "" },
+                                    set: { newValue in
+                                        amountInputs[item.id] = newValue
+                                    }
+                                ),
+                                quantityText: Binding(
+                                    get: { quantityInputs[item.id] ?? "" },
+                                    set: { newValue in
+                                        quantityInputs[item.id] = newValue
+                                    }
+                                ),
+                                focusedField: $focusedField,
+                                inputWidth: inputWidth,
+                                onEdit: {
+                                    onEdit(item)
+                                },
+                                onEditValue: {
+                                    onEditValue(item)
                                 }
-                            ),
-                            quantityText: Binding(
-                                get: { quantityInputs[item.id] ?? "" },
-                                set: { newValue in
-                                    quantityInputs[item.id] = newValue
-                                }
-                            ),
-                            focusedField: $focusedField,
-                            inputWidth: inputWidth,
-                            onEdit: {
-                                onEdit(item)
-                            },
-                            onEditValue: {
-                                onEditValue(item)
+                            )
+                        }
+                        .overlay(alignment: .trailing) {
+                            if showsRightDivider(at: index, total: items.count) {
+                                Rectangle()
+                                    .fill(AssetTheme.border.opacity(0.34))
+                                    .frame(width: 1)
                             }
-                        )
+                        }
+                        .overlay(alignment: .bottom) {
+                            if showsBottomDivider(at: index, total: items.count) {
+                                Rectangle()
+                                    .fill(AssetTheme.border.opacity(0.34))
+                                    .frame(height: 1)
+                            }
+                        }
                     }
                 }
             }
@@ -1528,6 +1580,34 @@ private struct LiabilityEntryCard: View {
     }
 }
 
+private struct RecordMatrixSurface<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            content
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(
+                colors: [AssetTheme.surface.opacity(0.16), AssetTheme.overlaySoft.opacity(0.64)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.42), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
+
 private struct RecordInputCard<Content: View>: View {
     @ViewBuilder var content: Content
 
@@ -1539,21 +1619,9 @@ private struct RecordInputCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 4) {
             content
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 13)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            LinearGradient(
-                colors: [AssetTheme.surface.opacity(0.22), AssetTheme.overlaySoft.opacity(0.88)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ),
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.34), lineWidth: 1)
-        )
     }
 }
 
