@@ -4018,7 +4018,6 @@ private enum BacktestEngine {
                 totalInvested += normalizedAmount
                 contributionCount += 1
 
-                // Use the actual execution day as the next schedule anchor when the configured day is not a trading day.
                 if let nextScheduledDate = calendar.date(byAdding: .day, value: normalizedInterval, to: point.date),
                    nextScheduledDate <= lastPoint.date {
                     scheduledDate = nextScheduledDate

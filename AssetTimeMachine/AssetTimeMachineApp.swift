@@ -1,10 +1,3 @@
-//
-//  AssetTimeMachineApp.swift
-//  AssetTimeMachine
-//
-//  Created by 向钧升 on 4/25/26.
-//
-
 import SwiftUI
 import SwiftData
 
