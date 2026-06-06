@@ -229,9 +229,9 @@ enum AppAppearanceMode: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .system: return "跟随系统"
-        case .light: return "浅色"
-        case .dark: return "深色"
+        case .system: return AppLocalization.string("跟随系统")
+        case .light: return AppLocalization.string("浅色")
+        case .dark: return AppLocalization.string("深色")
         }
     }
 

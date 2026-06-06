@@ -3,7 +3,7 @@ import Foundation
 import SwiftData
 import SwiftUI
 
-struct PublicMarketPrice: Codable, Identifiable {
+struct PublicMarketPrice: Codable, Identifiable, Equatable {
     let success: Bool
     let symbol: String
     let price: Double
@@ -27,7 +27,7 @@ struct PublicMarketPrice: Codable, Identifiable {
     }
 }
 
-struct PublicMarketOverview: Codable {
+struct PublicMarketOverview: Codable, Equatable {
     let success: Bool
     let markets: [PublicMarketPrice]
     let updateIntervalHours: Int?
@@ -39,14 +39,14 @@ struct PublicMarketOverview: Codable {
     }
 }
 
-struct PublicExchangeRateItem: Codable, Identifiable {
+struct PublicExchangeRateItem: Codable, Identifiable, Equatable {
     let currency: String
     let rate: Double
 
     var id: String { currency }
 }
 
-struct PublicExchangeRates: Codable {
+struct PublicExchangeRates: Codable, Equatable {
     let success: Bool
     let baseCurrency: String
     let source: String
@@ -64,7 +64,7 @@ struct PublicExchangeRates: Codable {
     }
 }
 
-struct PublicHistorySeries: Codable, Identifiable {
+struct PublicHistorySeries: Codable, Identifiable, Equatable {
     let symbol: String
     let category: String
     let label: String
@@ -77,7 +77,7 @@ struct PublicHistorySeries: Codable, Identifiable {
     var id: String { symbol }
 }
 
-struct PublicHistoryResponse: Codable {
+struct PublicHistoryResponse: Codable, Equatable {
     let success: Bool
     let series: [PublicHistorySeries]
 }
@@ -208,7 +208,7 @@ enum RemoteMarketClient {
             throw NSError(
                 domain: "RemoteMarketClient",
                 code: httpResponse.statusCode,
-                userInfo: [NSLocalizedDescriptionKey: body.isEmpty ? "接口请求失败" : body]
+                userInfo: [NSLocalizedDescriptionKey: body.isEmpty ? AppLocalization.string("接口请求失败") : body]
             )
         }
     }
@@ -218,6 +218,7 @@ enum RemoteMarketClient {
 final class RemoteMarketStore: ObservableObject {
     @Published var overview: PublicMarketOverview?
     @Published var exchangeRates: [String: Double] = [:]
+    @Published var exchangeRatesFetchedAt: Date?
     @Published var historySeries: [String: PublicHistorySeries] = [:]
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -229,29 +230,23 @@ final class RemoteMarketStore: ObservableObject {
 
         do {
             let exchangeRates = try await RemoteMarketClient.fetchExchangeRates()
-            self.exchangeRates = Dictionary(uniqueKeysWithValues: exchangeRates.rates.map { ($0.currency.uppercased(), $0.rate) })
+            let mappedRates = Dictionary(uniqueKeysWithValues: exchangeRates.rates.map { ($0.currency.uppercased(), $0.rate) })
+            if self.exchangeRates != mappedRates {
+                self.exchangeRates = mappedRates
+            }
+            if self.exchangeRatesFetchedAt != exchangeRates.fetchedAt {
+                self.exchangeRatesFetchedAt = exchangeRates.fetchedAt
+            }
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
 
-        if let debugHistoryPath = Self.launchArgumentValue(after: "-marketHistoryJSONPath") {
-            do {
-                let data = try Data(contentsOf: URL(fileURLWithPath: debugHistoryPath))
-                let response = try RemoteMarketClient.decoder().decode(PublicHistoryResponse.self, from: data)
-                self.historySeries = Dictionary(uniqueKeysWithValues: response.series.map { (Self.normalizedHistorySymbol($0.symbol), $0) })
-                if errorMessage == nil {
-                    errorMessage = nil
-                }
-            } catch {
-                errorMessage = "调试历史数据加载失败: \(error.localizedDescription)"
-            }
-            return
-        }
-
         do {
             let overview = try await RemoteMarketClient.fetchOverview()
-            self.overview = overview
+            if self.overview != overview {
+                self.overview = overview
+            }
             if errorMessage == nil {
                 errorMessage = nil
             }
@@ -275,19 +270,14 @@ final class RemoteMarketStore: ObservableObject {
             }
 
             if !mergedSeries.isEmpty {
-                self.historySeries = Dictionary(uniqueKeysWithValues: mergedSeries.map { (Self.normalizedHistorySymbol($0.symbol), $0) })
+                let normalizedSeries = Dictionary(uniqueKeysWithValues: mergedSeries.map { (Self.normalizedHistorySymbol($0.symbol), $0) })
+                if self.historySeries != normalizedSeries {
+                    self.historySeries = normalizedSeries
+                }
             } else if errorMessage == nil {
-                errorMessage = "历史数据加载失败"
+                errorMessage = AppLocalization.string("历史数据加载失败")
             }
         }
-    }
-
-    private static func launchArgumentValue(after flag: String) -> String? {
-        let arguments = ProcessInfo.processInfo.arguments
-        guard let index = arguments.firstIndex(of: flag), index + 1 < arguments.count else {
-            return nil
-        }
-        return arguments[index + 1]
     }
 
     private static func normalizedHistorySymbol(_ symbol: String) -> String {

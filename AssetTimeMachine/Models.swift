@@ -11,11 +11,11 @@ enum AssetGroup: String, Codable, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .financial:
-            return "金融资产"
+            return AppLocalization.string("金融资产")
         case .physical:
-            return "实物资产"
+            return AppLocalization.string("实物资产")
         case .liability:
-            return "负债"
+            return AppLocalization.string("负债")
         }
     }
 }
@@ -29,9 +29,9 @@ enum ValuationMethod: String, Codable, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .directAmount:
-            return "直接金额"
+            return AppLocalization.string("直接金额")
         case .quantityAndUnitPrice:
-            return "数量 × 单价"
+            return AppLocalization.string("数量 × 单价")
         }
     }
 }
@@ -58,28 +58,28 @@ enum AutoPricedAssetKind: String, Codable, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .gold: return "黄金"
-        case .btc: return "比特币 BTC"
-        case .eth: return "以太坊 ETH"
+        case .gold: return AppLocalization.string("黄金")
+        case .btc: return AppLocalization.string("比特币 BTC")
+        case .eth: return AppLocalization.string("以太坊 ETH")
         case .bnb: return "BNB"
         case .sol: return "Solana SOL"
         case .xrp: return "XRP"
         case .doge: return "Dogecoin DOGE"
-        case .usd: return "美元 USD"
-        case .eur: return "欧元 EUR"
-        case .gbp: return "英镑 GBP"
-        case .jpy: return "日元 JPY"
-        case .hkd: return "港币 HKD"
-        case .sgd: return "新加坡元 SGD"
-        case .aud: return "澳元 AUD"
-        case .cad: return "加元 CAD"
-        case .krw: return "韩元 KRW"
+        case .usd: return AppLocalization.string("美元 USD")
+        case .eur: return AppLocalization.string("欧元 EUR")
+        case .gbp: return AppLocalization.string("英镑 GBP")
+        case .jpy: return AppLocalization.string("日元 JPY")
+        case .hkd: return AppLocalization.string("港币 HKD")
+        case .sgd: return AppLocalization.string("新加坡元 SGD")
+        case .aud: return AppLocalization.string("澳元 AUD")
+        case .cad: return AppLocalization.string("加元 CAD")
+        case .krw: return AppLocalization.string("韩元 KRW")
         }
     }
 
     var defaultName: String {
         switch self {
-        case .gold: return "黄金"
+        case .gold: return AppLocalization.string("黄金")
         case .btc: return "BTC"
         case .eth: return "ETH"
         case .bnb: return "BNB"

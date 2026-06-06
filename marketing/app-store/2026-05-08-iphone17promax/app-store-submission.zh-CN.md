@@ -94,13 +94,14 @@
 
 ## 6. 截图上传顺序建议
 
-建议上传以下 5 张：
+建议上传以下 6 张：
 
 1. `01-home-dashboard.png`
 2. `02-records-editor.png`
 3. `03-time-machine.png`
 4. `04-allocation-backtest-result.png`
 5. `05-dca-backtest-result.png`
+6. `06-advanced-backtest-result.png`
 
 ### 这套截图当前规格
 - 设备：**iPhone 17 Pro Max Simulator**
@@ -186,7 +187,7 @@
 - [ ] 确认关键词是否直接使用推荐串
 - [ ] 确认描述是否走当前版本
 - [ ] 确认是“首版说明”还是“版本更新说明”
-- [ ] 上传 5 张 iPhone 截图
+- [ ] 上传 6 张 iPhone 截图
 - [x] 已收窄为 iPhone-only 发布
 - [ ] 准备 Support URL
 - [ ] 准备 Marketing URL
@@ -204,7 +205,7 @@
 - 副标题：**本地优先的个人资产记录与回测**
 - 分类：**Finance / Productivity**
 - 关键词：直接用推荐串
-- 截图：先上传这 5 张 iPhone 图
+- 截图：先上传这 6 张 iPhone 图
 - 设备范围：已收窄到 iPhone-only
 
 这一套最稳，也最适合首版。 

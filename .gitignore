@@ -1,0 +1,18 @@
+# Xcode / local build products
+build/
+DerivedData/
+*.xcarchive
+*.ipa
+*.dSYM
+*.xcdistributionlogs
+
+# macOS
+.DS_Store
+
+# Private/local data
+marketing/app-store/private-backups/
+marketing/app-store/private-real-data/
+
+# Generated image batches kept local unless explicitly selected
+marketing/app-store/**/imagegen/
+marketing/app-store/**/imagegen-posters/

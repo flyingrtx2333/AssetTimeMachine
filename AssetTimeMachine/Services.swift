@@ -340,8 +340,13 @@ enum SnapshotService {
     @MainActor
     static func snapshot(on date: Date, in context: ModelContext) throws -> AssetSnapshot? {
         let dayStart = Calendar.current.startOfDay(for: date)
-        let allSnapshots = try context.fetch(FetchDescriptor<AssetSnapshot>())
-        return allSnapshots.first { Calendar.current.isDate($0.date, inSameDayAs: dayStart) }
+        let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart.addingTimeInterval(86_400)
+        let predicate = #Predicate<AssetSnapshot> { snapshot in
+            snapshot.date >= dayStart && snapshot.date < nextDay
+        }
+        var descriptor = FetchDescriptor<AssetSnapshot>(predicate: predicate)
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
     }
 
     @MainActor
@@ -421,13 +426,35 @@ enum SnapshotService {
         note: String = "",
         in context: ModelContext
     ) throws {
+        func valuesDiffer(_ lhs: Double?, _ rhs: Double?, tolerance: Double = 0.000_000_1) -> Bool {
+            switch (lhs, rhs) {
+            case (nil, nil):
+                return false
+            case let (left?, right?):
+                return abs(left - right) > tolerance
+            default:
+                return true
+            }
+        }
+
         if let existing = snapshot.entries.first(where: { $0.item?.id == item.id }) {
+            let didChange = valuesDiffer(existing.amount, amount)
+                || valuesDiffer(existing.quantity, quantity)
+                || valuesDiffer(existing.unitPrice, unitPrice)
+                || existing.note != note
+
+            guard didChange else { return }
+
             existing.amount = amount
             existing.quantity = quantity
             existing.unitPrice = unitPrice
             existing.note = note
             existing.updatedAt = .now
         } else {
+            guard amount != nil || quantity != nil || unitPrice != nil || !note.isEmpty else {
+                return
+            }
+
             let entry = AssetEntry(
                 amount: amount,
                 quantity: quantity,
@@ -470,7 +497,7 @@ enum AssetNotificationService {
         center.removeDeliveredNotifications(withIdentifiers: [notificationIdentifier])
 
         let content = UNMutableNotificationContent()
-        content.title = "资产播报"
+        content.title = AppLocalization.string("资产播报")
         content.subtitle = subtitle(for: snapshot)
         content.body = body(for: snapshot)
         content.sound = .default
@@ -503,7 +530,7 @@ enum AssetNotificationService {
     private static func subtitle(for snapshot: AssetSnapshot) -> String {
         let totalAssets = PortfolioCalculator.totalAssets(for: snapshot)
         let netAssets = PortfolioCalculator.netAssets(for: snapshot)
-        return "总资产 \(currencyString(totalAssets)) · 净资产 \(currencyString(netAssets))"
+        return AppLocalization.format("总资产 %@ · 净资产 %@", currencyString(totalAssets), currencyString(netAssets))
     }
 
     private static func body(for snapshot: AssetSnapshot) -> String {
@@ -511,7 +538,12 @@ enum AssetNotificationService {
         let breakdown = PortfolioCalculator.breakdown(for: snapshot)
         let financial = breakdown[.financial] ?? 0
         let physical = breakdown[.physical] ?? 0
-        return "负债 \(currencyString(liabilities))。金融 \(currencyString(financial)) · 实物 \(currencyString(physical))"
+        return AppLocalization.format(
+            "负债 %@。金融 %@ · 实物 %@",
+            currencyString(liabilities),
+            currencyString(financial),
+            currencyString(physical)
+        )
     }
 
     private static func currencyString(_ value: Double) -> String {

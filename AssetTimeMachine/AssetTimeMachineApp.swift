@@ -4,6 +4,7 @@ import SwiftData
 @main
 struct AssetTimeMachineApp: App {
     @AppStorage("app.appearanceMode") private var appearanceModeRawValue: String = AppAppearanceMode.system.rawValue
+    @AppStorage("app.language") private var appLanguageRawValue: String = AppLanguage.system.rawValue
 
     init() {
         AssetTheme.configureSystemAppearance()
@@ -11,6 +12,10 @@ struct AssetTimeMachineApp: App {
 
     private var appearanceMode: AppAppearanceMode {
         AppAppearanceMode(rawValue: appearanceModeRawValue) ?? .system
+    }
+
+    private var appLanguage: AppLanguage {
+        AppLanguage(rawValue: appLanguageRawValue) ?? .system
     }
 
     var sharedModelContainer: ModelContainer = {
@@ -32,6 +37,7 @@ struct AssetTimeMachineApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(\.locale, appLanguage.locale)
                 .preferredColorScheme(appearanceMode.colorScheme)
         }
         .modelContainer(sharedModelContainer)

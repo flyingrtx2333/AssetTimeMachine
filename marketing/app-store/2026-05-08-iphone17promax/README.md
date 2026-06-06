@@ -9,6 +9,7 @@
 - `03-time-machine.png` 时光机页
 - `04-allocation-backtest-result.png` 配置回测结果页
 - `05-dca-backtest-result.png` 定投回测结果页
+- `06-advanced-backtest-result.png` 高级回测结果页
 
 ## 文案与资料
 
@@ -26,6 +27,6 @@
 
 ## 备注
 
-- `01` 到 `05` 已在 **当前 build** 基础上重新截图，不再复用旧版素材。
-- `04` 和 `05` 为当前 UI 下的回测结果页版本。
+- `01` 到 `06` 已在 **当前 build** 基础上重新截图，不再复用旧版素材。
+- `04`、`05`、`06` 为当前 UI 下的回测结果页版本。
 - 当前工程已收窄为 **iPhone-only** 发布，`SUPPORTED_PLATFORMS = iphoneos iphonesimulator`，`TARGETED_DEVICE_FAMILY = 1`。
