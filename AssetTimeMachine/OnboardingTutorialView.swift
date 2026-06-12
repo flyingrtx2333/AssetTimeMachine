@@ -74,7 +74,7 @@ struct OnboardingTutorialView: View {
             tab: .dashboard,
             anchorID: .dashboardAllocation,
             titleKey: "先看总览",
-            messageKey: "首页帮你快速看清资产分布和整体变化。",
+            messageKey: "首页帮你快速看清资产分布和财富自由进度。",
             accent: AssetTheme.gold,
             placement: .below
         ),

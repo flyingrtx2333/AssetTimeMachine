@@ -270,7 +270,15 @@ final class RemoteMarketStore: ObservableObject {
             }
 
             if !mergedSeries.isEmpty {
-                let normalizedSeries = Dictionary(uniqueKeysWithValues: mergedSeries.map { (Self.normalizedHistorySymbol($0.symbol), $0) })
+                var normalizedSeries: [String: PublicHistorySeries] = [:]
+                for series in mergedSeries {
+                    let normalizedSymbol = Self.normalizedHistorySymbol(series.symbol)
+                    if let existing = normalizedSeries[normalizedSymbol], existing.dates.count >= series.dates.count {
+                        continue
+                    }
+                    normalizedSeries[normalizedSymbol] = series
+                }
+
                 if self.historySeries != normalizedSeries {
                     self.historySeries = normalizedSeries
                 }
@@ -282,16 +290,32 @@ final class RemoteMarketStore: ObservableObject {
 
     private static func normalizedHistorySymbol(_ symbol: String) -> String {
         switch symbol {
-        case "nasdaq_composite":
+        case "nasdaq_composite", "nasdaq":
             return "nasdaq"
-        case "hang_seng":
+        case "hang_seng", "hsi":
             return "hsi"
-        case "nikkei225":
+        case "nikkei225", "nikkei":
             return "nikkei"
-        case "dow_jones":
+        case "dow_jones", "dowjones":
             return "dowjones"
         default:
             return symbol
+        }
+    }
+
+    private static func historyLookupSymbols(for symbol: String) -> [String] {
+        let normalizedSymbol = normalizedHistorySymbol(symbol)
+        switch normalizedSymbol {
+        case "nasdaq":
+            return ["nasdaq", "nasdaq_composite"]
+        case "hsi":
+            return ["hsi", "hang_seng"]
+        case "nikkei":
+            return ["nikkei", "nikkei225"]
+        case "dowjones":
+            return ["dowjones", "dow_jones"]
+        default:
+            return [normalizedSymbol, symbol]
         }
     }
 
@@ -304,7 +328,12 @@ final class RemoteMarketStore: ObservableObject {
     }
 
     func history(for symbol: String) -> PublicHistorySeries? {
-        historySeries[symbol]
+        for lookupSymbol in Self.historyLookupSymbols(for: symbol) {
+            if let series = historySeries[lookupSymbol] {
+                return series
+            }
+        }
+        return nil
     }
 }
 
