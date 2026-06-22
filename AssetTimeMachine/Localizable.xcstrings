@@ -2136,6 +2136,28 @@
         }
       }
     },
+    "量化": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "量化"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "量化"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quant"
+          }
+        }
+      }
+    },
     "回测资产": {
       "localizations": {
         "zh-Hans": {

@@ -36,9 +36,9 @@
   },
   {
     "file": "06-advanced-backtest-result.png",
-    "page": "高级回测结果页",
-    "headline": "用回测验证您的买卖规则吧",
-    "subheadline": "连续涨跌信号、买卖次数和收益表现，一眼看清策略结果。",
-    "altHeadline": "让策略信号自己接受回测"
+    "page": "回测记录页",
+    "headline": "保存回测记录，比较策略表现",
+    "subheadline": "配置、定投、高级策略统一归档，收益表现和参数一眼对比。",
+    "altHeadline": "让每次回测都能沉淀下来"
   }
 ]

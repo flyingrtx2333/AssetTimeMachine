@@ -474,7 +474,9 @@ enum SnapshotService {
 
 enum AssetNotificationService {
     static let notificationIdentifier = "assettimemachine.asset-report"
+    static let strategyNotificationIdentifier = "assettimemachine.strategy-rebalance"
     static let intervalOptions: [Double] = [1, 2, 4, 6, 8, 12, 24]
+    static let strategyHourOptions: [Int] = [8, 9, 12, 18, 21]
 
     static func refreshSchedule(isEnabled: Bool, intervalHours: Double, snapshot: AssetSnapshot?) async throws -> Bool {
         let center = UNUserNotificationCenter.current()
@@ -511,6 +513,48 @@ enum AssetNotificationService {
 
     static func authorizationStatus() async -> UNAuthorizationStatus {
         await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+    }
+
+    static func refreshStrategySchedule(
+        isEnabled: Bool,
+        hour: Int,
+        strategyTitle: String,
+        body: String?
+    ) async throws -> Bool {
+        let center = UNUserNotificationCenter.current()
+
+        if !isEnabled {
+            center.removePendingNotificationRequests(withIdentifiers: [strategyNotificationIdentifier])
+            center.removeDeliveredNotifications(withIdentifiers: [strategyNotificationIdentifier])
+            return true
+        }
+
+        let granted = try await ensureAuthorization(for: center)
+        guard granted else {
+            center.removePendingNotificationRequests(withIdentifiers: [strategyNotificationIdentifier])
+            return false
+        }
+
+        center.removePendingNotificationRequests(withIdentifiers: [strategyNotificationIdentifier])
+        center.removeDeliveredNotifications(withIdentifiers: [strategyNotificationIdentifier])
+
+        let content = UNMutableNotificationContent()
+        content.title = AppLocalization.string("今日调仓提醒")
+        content.subtitle = strategyTitle
+        content.body = body ?? AppLocalization.string("打开资产时光机，更新最新策略信号。")
+        content.sound = .default
+        content.threadIdentifier = strategyNotificationIdentifier
+
+        var components = DateComponents()
+        components.calendar = Calendar(identifier: .gregorian)
+        components.timeZone = TimeZone(identifier: "Asia/Shanghai") ?? .current
+        components.hour = min(max(hour, 0), 23)
+        components.minute = 0
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        let request = UNNotificationRequest(identifier: strategyNotificationIdentifier, content: content, trigger: trigger)
+        try await center.add(request)
+        return true
     }
 
     private static func ensureAuthorization(for center: UNUserNotificationCenter) async throws -> Bool {
@@ -601,8 +645,17 @@ enum TrendAnalysisService {
 
 enum PortfolioCalculator {
     static func metrics(for snapshot: AssetSnapshot) -> SnapshotMetrics {
-        let totalAssets = totalAssets(for: snapshot)
-        let totalLiabilities = totalLiabilities(for: snapshot)
+        var totalAssets: Double = 0
+        var totalLiabilities: Double = 0
+
+        for entry in snapshot.entries {
+            if (entry.item?.category?.group ?? .financial) == .liability {
+                totalLiabilities += entry.resolvedAmount
+            } else {
+                totalAssets += entry.resolvedAmount
+            }
+        }
+
         return SnapshotMetrics(
             date: snapshot.date,
             totalAssets: totalAssets,
@@ -612,19 +665,15 @@ enum PortfolioCalculator {
     }
 
     static func totalAssets(for snapshot: AssetSnapshot) -> Double {
-        snapshot.entries
-            .filter { ($0.item?.category?.group ?? .financial) != .liability }
-            .reduce(0) { $0 + $1.resolvedAmount }
+        metrics(for: snapshot).totalAssets
     }
 
     static func totalLiabilities(for snapshot: AssetSnapshot) -> Double {
-        snapshot.entries
-            .filter { ($0.item?.category?.group ?? .financial) == .liability }
-            .reduce(0) { $0 + $1.resolvedAmount }
+        metrics(for: snapshot).totalLiabilities
     }
 
     static func netAssets(for snapshot: AssetSnapshot) -> Double {
-        totalAssets(for: snapshot) - totalLiabilities(for: snapshot)
+        metrics(for: snapshot).netAssets
     }
 
     static func breakdown(for snapshot: AssetSnapshot) -> [AssetGroup: Double] {

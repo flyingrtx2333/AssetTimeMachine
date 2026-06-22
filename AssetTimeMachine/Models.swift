@@ -303,3 +303,68 @@ final class AssetEntry {
         return 0
     }
 }
+
+@Model
+final class BacktestRecord: Identifiable {
+    var id: UUID
+    var kindRawValue: String
+    var title: String
+    var subtitle: String
+    var configSummary: String
+    var createdAt: Date
+    var startDate: Date?
+    var endDate: Date?
+    var totalReturn: Double
+    var annualizedReturn: Double?
+    var maxDrawdown: Double
+    var annualizedVolatility: Double?
+    var sharpeRatio: Double?
+    var finalValue: Double?
+    var totalInvested: Double?
+    var profitLoss: Double?
+    var tradeCount: Int
+    @Attribute(.externalStorage) var pointsJSON: Data
+    @Attribute(.externalStorage) var configJSON: Data
+
+    init(
+        id: UUID = UUID(),
+        kindRawValue: String,
+        title: String,
+        subtitle: String,
+        configSummary: String,
+        createdAt: Date = .now,
+        startDate: Date? = nil,
+        endDate: Date? = nil,
+        totalReturn: Double,
+        annualizedReturn: Double? = nil,
+        maxDrawdown: Double,
+        annualizedVolatility: Double? = nil,
+        sharpeRatio: Double? = nil,
+        finalValue: Double? = nil,
+        totalInvested: Double? = nil,
+        profitLoss: Double? = nil,
+        tradeCount: Int = 0,
+        pointsJSON: Data = Data(),
+        configJSON: Data = Data()
+    ) {
+        self.id = id
+        self.kindRawValue = kindRawValue
+        self.title = title
+        self.subtitle = subtitle
+        self.configSummary = configSummary
+        self.createdAt = createdAt
+        self.startDate = startDate
+        self.endDate = endDate
+        self.totalReturn = totalReturn
+        self.annualizedReturn = annualizedReturn
+        self.maxDrawdown = maxDrawdown
+        self.annualizedVolatility = annualizedVolatility
+        self.sharpeRatio = sharpeRatio
+        self.finalValue = finalValue
+        self.totalInvested = totalInvested
+        self.profitLoss = profitLoss
+        self.tradeCount = tradeCount
+        self.pointsJSON = pointsJSON
+        self.configJSON = configJSON
+    }
+}

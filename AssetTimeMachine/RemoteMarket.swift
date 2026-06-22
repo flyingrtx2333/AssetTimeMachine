@@ -64,6 +64,18 @@ struct PublicExchangeRates: Codable, Equatable {
     }
 }
 
+struct PublicHistoryDailyBar: Codable, Identifiable, Equatable {
+    let dateText: String
+    let date: Date
+    let open: Double
+    let high: Double
+    let low: Double
+    let close: Double
+    let volume: Double?
+
+    var id: String { dateText }
+}
+
 struct PublicHistorySeries: Codable, Identifiable, Equatable {
     let symbol: String
     let category: String
@@ -73,8 +85,83 @@ struct PublicHistorySeries: Codable, Identifiable, Equatable {
     let source: String
     let dates: [String]
     let prices: [Double]
+    let hasOHLC: Bool?
+    let ohlcSource: String?
+    let ohlcCoverageRatio: Double?
+    let openPrices: [Double?]?
+    let highPrices: [Double?]?
+    let lowPrices: [Double?]?
+    let closePrices: [Double?]?
+    let volumes: [Double?]?
 
     var id: String { symbol }
+
+    var dailyBars: [PublicHistoryDailyBar] {
+        guard
+            let openPrices,
+            let highPrices,
+            let lowPrices,
+            let closePrices,
+            !openPrices.isEmpty,
+            dates.count == openPrices.count,
+            dates.count == highPrices.count,
+            dates.count == lowPrices.count,
+            dates.count == closePrices.count
+        else { return [] }
+
+        return dates.indices.compactMap { index in
+            guard
+                let date = MarketDay.parse(dates[index]),
+                let open = openPrices[index],
+                let high = highPrices[index],
+                let low = lowPrices[index],
+                let close = closePrices[index],
+                open.isFinite,
+                high.isFinite,
+                low.isFinite,
+                close.isFinite,
+                open > 0,
+                high >= max(open, close, low),
+                low <= min(open, close, high)
+            else { return nil }
+
+            let volume: Double?
+            if let volumes, volumes.indices.contains(index), let rawVolume = volumes[index], rawVolume.isFinite, rawVolume >= 0 {
+                volume = rawVolume
+            } else {
+                volume = nil
+            }
+
+            return PublicHistoryDailyBar(
+                dateText: dates[index],
+                date: date,
+                open: open,
+                high: high,
+                low: low,
+                close: close,
+                volume: volume
+            )
+        }
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case symbol
+        case category
+        case label
+        case currency
+        case unit
+        case source
+        case dates
+        case prices
+        case hasOHLC = "has_ohlc"
+        case ohlcSource = "ohlc_source"
+        case ohlcCoverageRatio = "ohlc_coverage_ratio"
+        case openPrices = "open_prices"
+        case highPrices = "high_prices"
+        case lowPrices = "low_prices"
+        case closePrices = "close_prices"
+        case volumes
+    }
 }
 
 struct PublicHistoryResponse: Codable, Equatable {
@@ -135,7 +222,7 @@ enum RemoteMarketClient {
         return try decoder().decode(PublicExchangeRates.self, from: data)
     }
 
-    static func fetchHistory(symbols: [String], period: String? = nil, startDate: String? = nil, endDate: String? = nil) async throws -> PublicHistoryResponse {
+    static func fetchHistory(symbols: [String], period: String? = nil, startDate: String? = nil, endDate: String? = nil, includeOHLC: Bool = false) async throws -> PublicHistoryResponse {
         var components = URLComponents(url: baseURL.appendingPathComponent("/api/v1/money/public/history"), resolvingAgainstBaseURL: false)!
         var queryItems: [URLQueryItem] = []
 
@@ -150,6 +237,9 @@ enum RemoteMarketClient {
         }
         if let endDate, !endDate.isEmpty {
             queryItems.append(.init(name: "end_date", value: endDate))
+        }
+        if includeOHLC {
+            queryItems.append(.init(name: "include_ohlc", value: "true"))
         }
         components.queryItems = queryItems.isEmpty ? nil : queryItems
 
@@ -223,10 +313,36 @@ final class RemoteMarketStore: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
 
+    private static let historyRefreshInterval: TimeInterval = 12 * 60 * 60
+    private static let failedHistoryRetryInterval: TimeInterval = 5 * 60
+    private var isRefreshingLiveData = false
+    private var isRefreshingHistory = false
+    private var lastHistoryRefreshAt: Date?
+    private var lastHistoryAttemptAt: Date?
+
+    private var shouldRefreshHistory: Bool {
+        if historySeries.isEmpty {
+            guard let lastHistoryAttemptAt else { return true }
+            return Date().timeIntervalSince(lastHistoryAttemptAt) >= Self.failedHistoryRetryInterval
+        }
+
+        guard let lastHistoryRefreshAt else { return false }
+        return Date().timeIntervalSince(lastHistoryRefreshAt) >= Self.historyRefreshInterval
+    }
+
     func refresh() async {
-        guard !isLoading else { return }
-        isLoading = true
-        defer { isLoading = false }
+        await refreshLiveData()
+        await refreshHistoryIfNeeded(force: true)
+    }
+
+    func refreshLiveData() async {
+        guard !isRefreshingLiveData else { return }
+        isRefreshingLiveData = true
+        updateLoadingState()
+        defer {
+            isRefreshingLiveData = false
+            updateLoadingState()
+        }
 
         do {
             let exchangeRates = try await RemoteMarketClient.fetchExchangeRates()
@@ -255,36 +371,76 @@ final class RemoteMarketStore: ObservableObject {
                 errorMessage = error.localizedDescription
             }
         }
+    }
 
-        do {
-            let historyBatches = [
-                ["gold_cny", "nasdaq", "sp500", "usd_per_cny"],
-                ["hang_seng", "nikkei225", "csi300", "shanghai_composite", "dow_jones"]
-            ]
+    func refreshHistoryIfNeeded(force: Bool = false) async {
+        guard force || shouldRefreshHistory else { return }
+        await refreshHistory()
+    }
 
-            var mergedSeries: [PublicHistorySeries] = []
+    private func refreshHistory() async {
+        guard !isRefreshingHistory else { return }
+        isRefreshingHistory = true
+        lastHistoryAttemptAt = .now
+        updateLoadingState()
+        defer {
+            isRefreshingHistory = false
+            updateLoadingState()
+        }
+
+        let historyBatches = [
+            ["gold_cny", "nasdaq", "sp500", "usd_per_cny"],
+            ["hang_seng", "nikkei225", "csi300", "shanghai_composite", "dow_jones"]
+        ]
+        let fullHistoryStartDate = "2000-01-01"
+        let fullHistoryEndDate = MarketDay.string(from: .now)
+
+        var mergedSeries: [PublicHistorySeries] = []
+        await withTaskGroup(of: [PublicHistorySeries].self) { group in
             for batch in historyBatches {
-                if let response = try? await RemoteMarketClient.fetchHistory(symbols: batch, period: "all") {
-                    mergedSeries.append(contentsOf: response.series)
-                }
-            }
-
-            if !mergedSeries.isEmpty {
-                var normalizedSeries: [String: PublicHistorySeries] = [:]
-                for series in mergedSeries {
-                    let normalizedSymbol = Self.normalizedHistorySymbol(series.symbol)
-                    if let existing = normalizedSeries[normalizedSymbol], existing.dates.count >= series.dates.count {
-                        continue
+                group.addTask {
+                    do {
+                        let response = try await RemoteMarketClient.fetchHistory(
+                            symbols: batch,
+                            startDate: fullHistoryStartDate,
+                            endDate: fullHistoryEndDate,
+                            includeOHLC: true
+                        )
+                        return response.series
+                    } catch {
+                        return []
                     }
-                    normalizedSeries[normalizedSymbol] = series
                 }
-
-                if self.historySeries != normalizedSeries {
-                    self.historySeries = normalizedSeries
-                }
-            } else if errorMessage == nil {
-                errorMessage = AppLocalization.string("历史数据加载失败")
             }
+
+            for await series in group where !series.isEmpty {
+                mergedSeries.append(contentsOf: series)
+            }
+        }
+
+        if !mergedSeries.isEmpty {
+            var normalizedSeries: [String: PublicHistorySeries] = [:]
+            for series in mergedSeries {
+                let normalizedSymbol = Self.normalizedHistorySymbol(series.symbol)
+                if let existing = normalizedSeries[normalizedSymbol], existing.dates.count >= series.dates.count {
+                    continue
+                }
+                normalizedSeries[normalizedSymbol] = series
+            }
+
+            lastHistoryRefreshAt = .now
+            if self.historySeries != normalizedSeries {
+                self.historySeries = normalizedSeries
+            }
+        } else if errorMessage == nil {
+            errorMessage = AppLocalization.string("历史数据加载失败")
+        }
+    }
+
+    private func updateLoadingState() {
+        let nextValue = isRefreshingLiveData || isRefreshingHistory
+        if isLoading != nextValue {
+            isLoading = nextValue
         }
     }
 
@@ -461,16 +617,26 @@ private enum HistoricalAnchorClient {
 enum SnapshotAnchorService {
     static func backfillIfNeeded(in context: ModelContext) async {
         do {
-            let snapshots = try context.fetch(FetchDescriptor<AssetSnapshot>(sortBy: [SortDescriptor(\.date)]))
-            guard let first = snapshots.first, let last = snapshots.last else { return }
+            let descriptor = FetchDescriptor<AssetSnapshot>(
+                predicate: #Predicate { $0.marketAnchorsUpdatedAt == nil },
+                sortBy: [SortDescriptor(\.date)]
+            )
+            let snapshotsNeedingBackfill = try context.fetch(descriptor)
+            guard let first = snapshotsNeedingBackfill.first, let last = snapshotsNeedingBackfill.last else { return }
 
             let bundle = try await HistoricalAnchorClient.fetchBundle(
                 startDate: first.date,
                 endDate: last.date
             )
 
-            for snapshot in snapshots {
+            for (index, snapshot) in snapshotsNeedingBackfill.enumerated() {
+                guard !Task.isCancelled else { return }
                 applyHistoricalAnchors(to: snapshot, bundle: bundle)
+
+                if index > 0, index.isMultiple(of: 40) {
+                    try context.save()
+                    await Task.yield()
+                }
             }
 
             try context.save()
@@ -487,31 +653,31 @@ enum SnapshotAnchorService {
         let day = MarketDay.start(of: snapshot.date)
         var didChange = false
 
-        let goldPrice = marketStore.market(for: "gold")?.price
-        if snapshot.goldAnchorPriceCNY != goldPrice {
+        if let goldPrice = marketStore.market(for: "gold")?.price,
+           snapshot.goldAnchorPriceCNY != goldPrice {
             snapshot.goldAnchorPriceCNY = goldPrice
-            snapshot.goldAnchorPriceDate = goldPrice == nil ? nil : day
+            snapshot.goldAnchorPriceDate = day
             didChange = true
         }
 
-        let btcPrice = marketStore.market(for: "btc")?.price
-        if snapshot.btcAnchorPriceUSD != btcPrice {
+        if let btcPrice = marketStore.market(for: "btc")?.price,
+           snapshot.btcAnchorPriceUSD != btcPrice {
             snapshot.btcAnchorPriceUSD = btcPrice
-            snapshot.btcAnchorPriceDate = btcPrice == nil ? nil : day
+            snapshot.btcAnchorPriceDate = day
             didChange = true
         }
 
-        let nasdaqPrice = marketStore.market(for: "nasdaq")?.price
-        if snapshot.nasdaqAnchorPriceUSD != nasdaqPrice {
+        if let nasdaqPrice = marketStore.market(for: "nasdaq")?.price,
+           snapshot.nasdaqAnchorPriceUSD != nasdaqPrice {
             snapshot.nasdaqAnchorPriceUSD = nasdaqPrice
-            snapshot.nasdaqAnchorPriceDate = nasdaqPrice == nil ? nil : day
+            snapshot.nasdaqAnchorPriceDate = day
             didChange = true
         }
 
-        let usdPerCNY = marketStore.exchangeRate(for: "USD")
-        if snapshot.usdPerCNY != usdPerCNY {
+        if let usdPerCNY = marketStore.exchangeRate(for: "USD"),
+           snapshot.usdPerCNY != usdPerCNY {
             snapshot.usdPerCNY = usdPerCNY
-            snapshot.usdPerCNYDate = usdPerCNY == nil ? nil : day
+            snapshot.usdPerCNYDate = day
             didChange = true
         }
 

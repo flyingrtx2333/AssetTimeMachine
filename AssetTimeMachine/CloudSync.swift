@@ -353,6 +353,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     private let lastSyncAtKey = "assettimemachine.cloud.lastSyncAt"
     private let defaults = UserDefaults.standard
     private var hasLoadedInitialState = false
+    private var lastAutoSyncAttemptSignature: String?
 
     init() {
         lastSyncAt = defaults.object(forKey: lastSyncAtKey) as? Date
@@ -490,6 +491,11 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             return
         }
 
+        let localSignature = Self.syncSignature(for: localPayload)
+        if lastAutoSyncAttemptSignature == localSignature {
+            return
+        }
+
         await perform { [self] in
             let latestBackup = try await self.fetchLatestBackupIfAvailable()
             let baseBackupID = latestBackup?.id
@@ -537,6 +543,10 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             self.rememberSync(signature: signature, at: backup.uploadedAt)
             self.statusMessage = quietly ? AppLocalization.string("双向同步完成") : AppLocalization.format("云端同步完成，时间：%@", backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))
         }
+
+        if errorMessage == nil {
+            lastAutoSyncAttemptSignature = localSignature
+        }
     }
 
     func restoreLatestBackup(into context: ModelContext) async {
@@ -567,10 +577,12 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         errorMessage = nil
     }
 
-    private func saveTokens(_ token: AssetTimeMachineCloudToken) {
+    private func saveTokens(_ token: AssetTimeMachineCloudToken, fallbackRefreshToken: String? = nil) {
         defaults.set(token.accessToken, forKey: tokenKey)
         if let refreshToken = token.refreshToken, !refreshToken.isEmpty {
             defaults.set(refreshToken, forKey: refreshTokenKey)
+        } else if let fallbackRefreshToken, !fallbackRefreshToken.isEmpty {
+            defaults.set(fallbackRefreshToken, forKey: refreshTokenKey)
         } else {
             defaults.removeObject(forKey: refreshTokenKey)
         }
@@ -628,12 +640,14 @@ final class AssetTimeMachineCloudStore: ObservableObject {
 
             do {
                 let refreshedToken = try await AssetTimeMachineCloudAPI.refresh(refreshToken: refreshToken)
-                saveTokens(refreshedToken)
+                saveTokens(refreshedToken, fallbackRefreshToken: refreshToken)
                 return try await operation(refreshedToken.accessToken)
             } catch {
-                clearTokens()
-                currentUser = nil
-                backups = []
+                if (error as NSError).code == 401 {
+                    clearTokens()
+                    currentUser = nil
+                    backups = []
+                }
                 throw error
             }
         }
@@ -718,24 +732,17 @@ private struct AssetTimeMachineCloudStatusSymbol: View {
     let size: CGFloat
 
     var body: some View {
-        if state == .checking {
-            TimelineView(.animation) { timeline in
-                let seconds = timeline.date.timeIntervalSinceReferenceDate
-                ZStack {
-                    Image(systemName: "icloud")
-                        .font(.system(size: size, weight: .semibold))
-
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.system(size: size * 0.6, weight: .bold))
-                        .rotationEffect(.degrees((seconds * 240).truncatingRemainder(dividingBy: 360)))
-                }
-                .foregroundStyle(state.symbolColor)
-            }
-        } else {
-            Image(systemName: state.cloudSymbolName)
+        ZStack {
+            Image(systemName: state == .checking ? "icloud" : state.cloudSymbolName)
                 .font(.system(size: size, weight: .semibold))
-                .foregroundStyle(state.symbolColor)
+
+            if state == .checking {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .font(.system(size: size * 0.6, weight: .bold))
+                    .foregroundStyle(state.symbolColor.opacity(0.85))
+            }
         }
+        .foregroundStyle(state.symbolColor)
     }
 }
 

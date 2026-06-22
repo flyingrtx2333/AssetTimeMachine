@@ -24,6 +24,7 @@ struct AssetTimeMachineApp: App {
             AssetItem.self,
             AssetSnapshot.self,
             AssetEntry.self,
+            BacktestRecord.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
