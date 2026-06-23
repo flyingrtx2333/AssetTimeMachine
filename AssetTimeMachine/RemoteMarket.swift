@@ -374,12 +374,26 @@ final class RemoteMarketStore: ObservableObject {
     }
 
     func refreshHistoryIfNeeded(force: Bool = false) async {
+        if isRefreshingHistory {
+            await waitForHistoryRefreshToFinish()
+            return
+        }
+
         guard force || shouldRefreshHistory else { return }
         await refreshHistory()
     }
 
+    private func waitForHistoryRefreshToFinish() async {
+        while isRefreshingHistory && !Task.isCancelled {
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+    }
+
     private func refreshHistory() async {
-        guard !isRefreshingHistory else { return }
+        guard !isRefreshingHistory else {
+            await waitForHistoryRefreshToFinish()
+            return
+        }
         isRefreshingHistory = true
         lastHistoryAttemptAt = .now
         updateLoadingState()

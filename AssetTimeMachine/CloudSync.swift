@@ -367,6 +367,10 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         hasToken && currentUser == nil && (isWorking || !hasLoadedInitialState) && (errorMessage?.isEmpty ?? true)
     }
 
+    var hasCompletedInitialSync: Bool {
+        lastSyncAt != nil || !backups.isEmpty
+    }
+
     var indicatorState: AssetTimeMachineCloudIndicatorState {
         if (errorMessage?.isEmpty == false) {
             return .warning
@@ -375,7 +379,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             return .checking
         }
         if currentUser != nil {
-            return backups.isEmpty ? .warning : .healthy
+            return hasCompletedInitialSync ? .healthy : .checking
         }
         return .idle
     }
@@ -385,6 +389,9 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         case .idle:
             return AppLocalization.string("云备份未开启")
         case .checking:
+            if currentUser != nil && !hasCompletedInitialSync {
+                return AppLocalization.string("等待首次云同步")
+            }
             return AppLocalization.string("正在检查云备份")
         case .healthy:
             return AppLocalization.string("云备份正常")
@@ -423,7 +430,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             let token = try await AssetTimeMachineCloudAPI.login(username: username, password: password)
             self.saveTokens(token)
             try await self.loadSessionData()
-            self.statusMessage = AppLocalization.string("登录成功，云同步已启用")
+            self.statusMessage = AppLocalization.string("登录成功，正在准备云同步")
         }
     }
 
@@ -463,7 +470,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                 )
                 self.saveTokens(token)
                 try await self.loadSessionData()
-                self.statusMessage = AppLocalization.string("Apple 登录成功，云同步已启用")
+                self.statusMessage = AppLocalization.string("Apple 登录成功，正在准备云同步")
             }
 
             if currentUser != nil {
@@ -492,7 +499,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         }
 
         let localSignature = Self.syncSignature(for: localPayload)
-        if lastAutoSyncAttemptSignature == localSignature {
+        if hasCompletedInitialSync && lastAutoSyncAttemptSignature == localSignature {
             return
         }
 
@@ -526,7 +533,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             }
 
             let signature = Self.syncSignature(for: payloadToUpload)
-            if defaults.string(forKey: lastUploadedSignatureKey) == signature {
+            if hasCompletedInitialSync,
+               defaults.string(forKey: lastUploadedSignatureKey) == signature {
                 return
             }
             guard shouldUpload else { return }
@@ -925,9 +933,15 @@ struct AssetTimeMachineCloudPage: View {
                     Text(currentUser.displayName)
                         .font(.headline)
                         .foregroundStyle(AssetTheme.textPrimary)
-                    Text(currentUser.userEmail ?? AppLocalization.string("Flyingrtx 云同步已连接"))
+                    Text(currentUser.userEmail ?? AppLocalization.string("账号已登录"))
                         .font(.footnote)
                         .foregroundStyle(AssetTheme.textSecondary)
+
+                    if !store.hasCompletedInitialSync {
+                        Text(AppLocalization.string("等待首次云同步"))
+                            .font(.caption)
+                            .foregroundStyle(AssetTheme.goldSoft)
+                    }
                 }
 
                 Spacer(minLength: 8)
@@ -940,7 +954,7 @@ struct AssetTimeMachineCloudPage: View {
             }
 
             Label(
-                store.lastSyncAt.map { AppLocalization.format("最近同步 %@", $0.formatted(date: .abbreviated, time: .shortened)) } ?? AppLocalization.string("尚未完成首次自动同步"),
+                store.lastSyncAt.map { AppLocalization.format("最近同步 %@", $0.formatted(date: .abbreviated, time: .shortened)) } ?? AppLocalization.string("等待首次云同步"),
                 systemImage: "arrow.triangle.2.circlepath.circle.fill"
             )
             .font(.footnote.weight(.medium))
@@ -968,7 +982,7 @@ struct AssetTimeMachineCloudPage: View {
                 }
 
                 if store.backups.isEmpty {
-                    Text(AppLocalization.string("尚未完成首次自动同步"))
+                    Text(AppLocalization.string("暂无云端备份，正在准备首次同步"))
                         .font(.footnote)
                         .foregroundStyle(AssetTheme.textSecondary)
                 } else {
@@ -1048,12 +1062,15 @@ struct AssetTimeMachineCloudPage: View {
         case .idle:
             return AppLocalization.string("启用云同步")
         case .checking:
+            if store.currentUser != nil && !store.hasCompletedInitialSync {
+                return store.isWorking ? AppLocalization.string("正在首次云同步") : AppLocalization.string("等待首次云同步")
+            }
             return AppLocalization.string("正在连接云同步")
         case .healthy:
             return AppLocalization.string("云同步已启用")
         case .warning:
             if store.currentUser != nil {
-                return store.backups.isEmpty ? AppLocalization.string("云同步已启用") : AppLocalization.string("同步状态需处理")
+                return store.backups.isEmpty ? AppLocalization.string("首次同步需处理") : AppLocalization.string("同步状态需处理")
             }
             return AppLocalization.string("云同步状态需处理")
         }
@@ -1064,12 +1081,17 @@ struct AssetTimeMachineCloudPage: View {
         case .idle:
             return nil
         case .checking:
+            if store.currentUser != nil && !store.hasCompletedInitialSync {
+                return store.isWorking
+                    ? AppLocalization.string("正在上传或恢复你的资产数据")
+                    : AppLocalization.string("账号已登录，稍后会自动完成首次同步")
+            }
             return AppLocalization.string("正在验证登录态与最近备份状态")
         case .healthy:
             return store.lastSyncAt.map { AppLocalization.format("最近同步 %@", $0.formatted(date: .abbreviated, time: .shortened)) }
         case .warning:
             if store.currentUser != nil && store.backups.isEmpty {
-                return AppLocalization.string("尚未完成首次自动同步")
+                return AppLocalization.string("首次同步尚未完成")
             }
             return nil
         }
