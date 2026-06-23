@@ -36,12 +36,13 @@ struct ContentView: View {
     @State private var activeOnboardingAnchorID: OnboardingAnchorID?
     @State private var pendingActiveTabActivationTask: Task<Void, Never>?
     @State private var pendingSnapshotNotificationRefreshTask: Task<Void, Never>?
+    @State private var pendingTabPrewarmTask: Task<Void, Never>?
     #if DEBUG
     @State private var debugTabSwitchTask: Task<Void, Never>?
     #endif
 
     private static let foregroundMarketRefreshInterval: TimeInterval = 3600
-    private static let activeTabWorkActivationDelayNanoseconds: UInt64 = 260_000_000
+    private static let activeTabWorkActivationDelayNanoseconds: UInt64 = 850_000_000
 
     private var notificationSnapshot: AssetSnapshot? {
         snapshots.first(where: { Calendar.current.isDateInToday($0.date) }) ?? snapshots.first
@@ -71,7 +72,11 @@ struct ContentView: View {
         ZStack {
             TabView(selection: $selectedTab) {
                 deferredTabContent(for: .dashboard) {
-                    DashboardView(cloudStore: cloudStore, isActive: activeWorkTab == .dashboard)
+                    DashboardView(
+                        marketStore: marketStore,
+                        cloudStore: cloudStore,
+                        isActive: selectedTab == .dashboard && activeWorkTab == .dashboard
+                    )
                 }
                     .tabItem {
                         Label(AppLocalization.string("首页"), systemImage: "house")
@@ -81,7 +86,7 @@ struct ContentView: View {
                 deferredTabContent(for: .snapshots) {
                     SnapshotListView(
                         marketStore: marketStore,
-                        isActive: activeWorkTab == .snapshots,
+                        isActive: selectedTab == .snapshots && activeWorkTab == .snapshots,
                         onboardingActiveAnchorID: activeOnboardingAnchorID
                     )
                 }
@@ -91,7 +96,11 @@ struct ContentView: View {
                     .tag(AppTab.snapshots)
 
                 deferredTabContent(for: .timeMachine) {
-                    TimeMachineView(marketStore: marketStore, isActive: activeWorkTab == .timeMachine)
+                    TimeMachineView(
+                        marketStore: marketStore,
+                        isVisible: selectedTab == .timeMachine,
+                        isActive: selectedTab == .timeMachine && activeWorkTab == .timeMachine
+                    )
                 }
                     .tabItem {
                         Label(AppLocalization.string("时光机"), systemImage: "clock.arrow.circlepath")
@@ -99,7 +108,11 @@ struct ContentView: View {
                     .tag(AppTab.timeMachine)
 
                 deferredTabContent(for: .backtest) {
-                    BacktestView(marketStore: marketStore, isActive: activeWorkTab == .backtest)
+                    BacktestView(
+                        marketStore: marketStore,
+                        isVisible: selectedTab == .backtest,
+                        isActive: selectedTab == .backtest && activeWorkTab == .backtest
+                    )
                 }
                     .tabItem {
                         Label(AppLocalization.string("量化"), systemImage: "chart.xyaxis.line")
@@ -134,11 +147,11 @@ struct ContentView: View {
         }
         .tint(AssetTheme.gold)
         .onChange(of: selectedTab) { _, newValue in
-            activeWorkTab = nil
             scheduleActiveWorkTabActivation(for: newValue)
         }
         .task {
             await runStartupIfNeeded()
+            scheduleDeferredHeavyTabPrewarm()
             #if DEBUG
             scheduleDebugTabSwitchLoopIfNeeded()
             #endif
@@ -205,6 +218,7 @@ struct ContentView: View {
             loadedTabs.insert(.snapshots)
         }
 
+
         if let importPath = launchArgumentValue(after: "-importJSONPath") {
             do {
                 let data = try Data(contentsOf: URL(fileURLWithPath: importPath))
@@ -266,6 +280,28 @@ struct ContentView: View {
     }
 
     @MainActor
+    private func scheduleDeferredHeavyTabPrewarm() {
+        guard pendingTabPrewarmTask == nil else { return }
+
+        pendingTabPrewarmTask = Task {
+            let tabsToPrewarm: [AppTab] = [.timeMachine, .snapshots, .backtest]
+            try? await Task.sleep(for: .milliseconds(450))
+
+            for tab in tabsToPrewarm {
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    loadedTabs.insert(tab)
+                }
+                try? await Task.sleep(for: .milliseconds(360))
+            }
+
+            await MainActor.run {
+                pendingTabPrewarmTask = nil
+            }
+        }
+    }
+
+    @MainActor
     private func scheduleSnapshotNotificationRefresh() {
         pendingSnapshotNotificationRefreshTask?.cancel()
         pendingSnapshotNotificationRefreshTask = Task {
@@ -310,17 +346,16 @@ struct ContentView: View {
                 guard !Task.isCancelled else { return }
                 print("[tab-profile] switching to \(debugName(for: tab))")
                 await MainActor.run {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        selectedTab = tab
-                    }
+                    selectedTab = tab
                 }
-                try? await Task.sleep(for: .milliseconds(650))
+                try? await Task.sleep(for: .milliseconds(520))
             }
             await MainActor.run {
                 debugTabSwitchTask = nil
             }
         }
     }
+
     #endif
 
     @MainActor
@@ -456,7 +491,7 @@ struct ContentView: View {
             )
         }
         guard let advice = BacktestEngine.advancedRotationRebalanceAdvice(assetInputs: assetInputs, mode: template.mode) else {
-            return (template.title, AppLocalization.string("历史行情暂时不足，打开 App 后会自动重试生成今日调仓。"))
+            return (template.title, AppLocalization.string("历史行情暂时不足，今日调仓将在数据补齐后更新。"))
         }
 
         let actions = StrategyRebalanceActionBuilder.actions(
@@ -493,6 +528,7 @@ private struct DashboardView: View {
     @AppStorage("dashboard.monthlySalary") private var monthlySalary: Double = 10000
     @AppStorage("dashboard.monthlySalarySeedVersion") private var monthlySalarySeedVersion: Int = 0
     @AppStorage("dashboard.annualReturnRate") private var annualReturnRate: Double = 0.03
+    @ObservedObject var marketStore: RemoteMarketStore
     let cloudStore: AssetTimeMachineCloudStore
     let isActive: Bool
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
@@ -505,6 +541,7 @@ private struct DashboardView: View {
     @State private var lastDashboardCacheToken: Int?
     @State private var pendingDashboardRefreshTask: Task<Void, Never>?
     @State private var pendingAutoSyncTask: Task<Void, Never>?
+    @State private var showsTodayStrategyModal = false
     @State private var showsCloudSyncModal = false
 
     private var latestSnapshot: AssetSnapshot? { snapshots.first }
@@ -592,22 +629,30 @@ private struct DashboardView: View {
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
-            .onChange(of: autoSyncTrigger) { _, _ in
+            .onChange(of: isActive ? autoSyncTrigger : "inactive") { _, _ in
                 guard isActive else { return }
                 scheduleCloudAutoSync()
             }
         }
         .task(id: isActive) {
             if isActive {
-                scheduleDashboardRefresh(delayNanoseconds: 0, force: true)
+                scheduleDashboardRefresh(delayNanoseconds: 0)
             } else {
                 pendingDashboardRefreshTask?.cancel()
                 pendingAutoSyncTask?.cancel()
             }
         }
-        .onChange(of: dashboardCacheToken) { _, _ in
+        .onChange(of: isActive ? dashboardCacheToken : (lastDashboardCacheToken ?? 0)) { _, _ in
             guard isActive else { return }
             scheduleDashboardRefresh(delayNanoseconds: 40_000_000)
+        }
+        .sheet(isPresented: $showsTodayStrategyModal) {
+            TodayStrategySheet(
+                marketStore: marketStore,
+                snapshot: latestSnapshot
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showsCloudSyncModal) {
             NavigationStack {
@@ -805,7 +850,15 @@ private struct DashboardView: View {
 
     private var summaryStrip: some View {
         VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Button {
+                    showsTodayStrategyModal = true
+                } label: {
+                    DashboardTodayStrategyButton()
+                }
+                .buttonStyle(.plain)
+                .disabled(StrategyNotificationDefaults.eligibleTemplates.isEmpty)
+
                 Spacer(minLength: 0)
 
                 Button {
@@ -846,6 +899,381 @@ private struct DashboardView: View {
         .onboardingAnchor(.dashboardFreedom)
     }
 
+}
+
+private struct DashboardTodayStrategyButton: View {
+    var body: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "scope")
+                .font(.footnote.weight(.bold))
+
+            Text(AppLocalization.string("今日策略"))
+                .font(.footnote.weight(.semibold))
+        }
+        .foregroundStyle(AssetTheme.goldSoft)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 8)
+        .background(AssetTheme.overlaySoft.opacity(0.86), in: Capsule())
+        .overlay(
+            Capsule()
+                .stroke(AssetTheme.gold.opacity(0.22), lineWidth: 1)
+        )
+    }
+}
+
+private struct TodayStrategySheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("app.strategyNotifications.templateID") private var strategyNotificationTemplateID = StrategyNotificationDefaults.defaultTemplateID
+    @ObservedObject var marketStore: RemoteMarketStore
+    let snapshot: AssetSnapshot?
+    @State private var advice: StrategyRebalanceAdvice?
+    @State private var actions: [StrategyRebalanceAction] = []
+    @State private var isRefreshing = false
+    @State private var statusMessage: String?
+    @State private var hasAttemptedInitialHistoryRefresh = false
+
+    private var selectedTemplate: AdvancedBacktestStrategyTemplate? {
+        StrategyNotificationDefaults.template(for: strategyNotificationTemplateID)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AssetTheme.background.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        header
+
+                        if isRefreshing && advice == nil && statusMessage == nil {
+                            LoadingStateCard(
+                                title: AppLocalization.string("正在生成今日攻略"),
+                                message: AppLocalization.string("同步最新历史行情，按提醒策略计算目标仓位…")
+                            )
+                        } else if let statusMessage {
+                            todayStrategyStatusCard(message: statusMessage)
+                        } else if let template = selectedTemplate, let advice {
+                            todayStrategyContent(template: template, advice: advice)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 18)
+                    .padding(.bottom, 34)
+                }
+            }
+            .navigationTitle(AppLocalization.string("今日调仓攻略"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(AppLocalization.string("完成")) {
+                        dismiss()
+                    }
+                }
+
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        Task { await refreshAdvice(force: true) }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .disabled(isRefreshing)
+                }
+            }
+            .task(id: strategyNotificationTemplateID) {
+                let shouldForceRefresh = !hasAttemptedInitialHistoryRefresh
+                hasAttemptedInitialHistoryRefresh = true
+                await refreshAdvice(force: shouldForceRefresh)
+            }
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Image(systemName: "scope")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(AssetTheme.goldSoft)
+                    .frame(width: 34, height: 34)
+                    .background(AssetTheme.gold.opacity(0.12), in: Circle())
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(selectedTemplate?.title ?? AppLocalization.string("未选择策略"))
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+
+                    Text(AppLocalization.string("使用设置里的提醒策略生成"))
+                        .font(.caption)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
+
+                Spacer(minLength: 0)
+            }
+
+        }
+        .padding(16)
+        .background(AssetTheme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.45), lineWidth: 1)
+        )
+    }
+
+    @ViewBuilder
+    private func todayStrategyContent(template: AdvancedBacktestStrategyTemplate, advice: StrategyRebalanceAdvice) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(AppLocalization.string("今日建议"))
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+
+                    Spacer(minLength: 12)
+
+                    Text(AppLocalization.format("信号截至 %@", advice.asOfDate.recordDateString))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .lineLimit(1)
+                }
+
+                Text(todayStrategySummary(template: template, advice: advice))
+                    .font(.footnote)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    if actions.isEmpty {
+                        todayStrategyCashRow(weight: advice.cashWeight > 0 ? advice.cashWeight : 1)
+                    } else {
+                        ForEach(actions) { action in
+                            todayStrategyActionRow(action, lookbackSessions: advice.lookbackSessions)
+                        }
+
+                        if advice.cashWeight > 0.005 {
+                            todayStrategyCashRow(weight: advice.cashWeight)
+                        }
+                    }
+                }
+            }
+            .padding(16)
+            .background(AssetTheme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(AssetTheme.border.opacity(0.45), lineWidth: 1)
+            )
+
+            Text(AppLocalization.string("攻略仅用于历史回测口径下的调仓参考，不构成投资建议。"))
+                .font(.caption)
+                .foregroundStyle(AssetTheme.textSecondary)
+                .padding(.horizontal, 4)
+        }
+    }
+
+    private func todayStrategyStatusCard(message: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: "exclamationmark.circle.fill")
+                .font(.title3)
+                .foregroundStyle(AssetTheme.accentOrange)
+
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(AssetTheme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(AssetTheme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.45), lineWidth: 1)
+        )
+    }
+
+    private func todayStrategyActionRow(_ action: StrategyRebalanceAction, lookbackSessions: Int) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            Circle()
+                .fill(todayStrategyColor(for: action.symbol))
+                .frame(width: 9, height: 9)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(action.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                Text(todayStrategyActionDetail(action, lookbackSessions: lookbackSessions))
+                    .font(.caption)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 12)
+
+            VStack(alignment: .trailing, spacing: 3) {
+                Text(action.kind.title)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(action.kind.accent)
+
+                Text(todayStrategyActionAmountText(action))
+                    .font(.subheadline.weight(.bold).monospacedDigit())
+                    .foregroundStyle(action.kind.accent)
+                    .lineLimit(1)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    private func todayStrategyCashRow(weight: Double) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            Circle()
+                .fill(AssetTheme.textSecondary.opacity(0.7))
+                .frame(width: 9, height: 9)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(AppLocalization.string("现金/其他"))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                Text(AppLocalization.string("未投入部分保留为防守仓位"))
+                    .font(.caption)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 12)
+
+            Text(weight.percentString(maxFractionDigits: 1))
+                .font(.subheadline.weight(.bold).monospacedDigit())
+                .foregroundStyle(AssetTheme.textSecondary)
+        }
+        .padding(.vertical, 2)
+    }
+
+    @MainActor
+    private func refreshAdvice(force: Bool) async {
+        guard let template = selectedTemplate else {
+            advice = nil
+            actions = []
+            statusMessage = AppLocalization.string("设置里还没有可用的提醒策略。")
+            return
+        }
+
+        isRefreshing = true
+        statusMessage = nil
+        defer { isRefreshing = false }
+
+        let assetOptions = StrategyNotificationDefaults.assetOptions(for: template)
+        let shouldForceHistoryRefresh = force || isMissingRequiredHistory(for: assetOptions)
+        await marketStore.refreshHistoryIfNeeded(force: shouldForceHistoryRefresh)
+        if isMissingRequiredHistory(for: assetOptions) {
+            await waitForRequiredHistory(assetOptions)
+        }
+
+        let assetInputs = assetOptions.map { option in
+            (
+                assetSeries: marketStore.history(for: option.symbol),
+                assetOption: option,
+                fxSeries: option.historicalFXSymbol.flatMap { marketStore.history(for: $0) }
+            )
+        }
+
+        guard let nextAdvice = BacktestEngine.advancedRotationRebalanceAdvice(assetInputs: assetInputs, mode: template.mode) else {
+            advice = nil
+            actions = []
+            statusMessage = AppLocalization.string("历史行情暂时不足，今日调仓将在数据补齐后更新。")
+            return
+        }
+
+        let nextActions = StrategyRebalanceActionBuilder.actions(
+            for: nextAdvice,
+            snapshot: snapshot,
+            selectedAssetOptions: assetOptions,
+            allAssetOptions: BacktestDefaults.dcaAssetOptions
+        )
+        advice = nextAdvice
+        actions = nextActions
+    }
+
+    private func waitForRequiredHistory(_ assetOptions: [BacktestAssetOption]) async {
+        for _ in 0..<6 {
+            guard isMissingRequiredHistory(for: assetOptions) else { return }
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard isMissingRequiredHistory(for: assetOptions) else { return }
+            await marketStore.refreshHistoryIfNeeded(force: true)
+        }
+    }
+
+    private func isMissingRequiredHistory(for assetOptions: [BacktestAssetOption]) -> Bool {
+        assetOptions.contains { option in
+            guard hasUsableHistory(for: option.symbol) else { return true }
+            if let fxSymbol = option.historicalFXSymbol {
+                return !hasUsableHistory(for: fxSymbol)
+            }
+            return false
+        }
+    }
+
+    private func hasUsableHistory(for symbol: String) -> Bool {
+        guard let series = marketStore.history(for: symbol) else { return false }
+        return series.dates.count >= 2 && series.prices.count >= 2
+    }
+
+    private func todayStrategySummary(template: AdvancedBacktestStrategyTemplate, advice: StrategyRebalanceAdvice) -> String {
+        let preview = StrategyNotificationContentBuilder.preview(template: template, advice: advice, actions: actions)
+        if let investmentBase = actions.compactMap(\.investmentBase).first, investmentBase > 0 {
+            return AppLocalization.format("按最新记录%@估算；%@", investmentBase.currencyString(), preview)
+        }
+        if snapshot == nil {
+            return AppLocalization.format("暂无资产记录；%@", preview)
+        }
+        return preview
+    }
+
+    private func todayStrategyActionDetail(_ action: StrategyRebalanceAction, lookbackSessions: Int) -> String {
+        let currentText = action.currentWeight.map { AppLocalization.format("当前 %@", $0.percentString(maxFractionDigits: 1)) }
+            ?? (action.isMatched ? AppLocalization.string("当前 --") : AppLocalization.string("未记录"))
+        let targetText = AppLocalization.format("目标 %@", action.targetWeight.percentString(maxFractionDigits: 1))
+        let signalText: String
+        if let momentum = action.momentum {
+            signalText = AppLocalization.format(" · %d日动量 %@", lookbackSessions, momentum.percentString(maxFractionDigits: 1))
+        } else {
+            signalText = ""
+        }
+        return "\(currentText) · \(targetText)\(signalText)"
+    }
+
+    private func todayStrategyActionAmountText(_ action: StrategyRebalanceAction) -> String {
+        switch action.kind {
+        case .buy, .sell:
+            return (abs(action.deltaAmount ?? 0)).currencyString()
+        case .missingRecord:
+            if let targetAmount = action.targetAmount {
+                return AppLocalization.format("需 %@", targetAmount.currencyString())
+            }
+            return action.targetWeight.percentString(maxFractionDigits: 1)
+        case .hold:
+            return AppLocalization.string("偏离小")
+        case .targetOnly:
+            return action.targetWeight.percentString(maxFractionDigits: 1)
+        }
+    }
+
+    private func todayStrategyColor(for symbol: String) -> Color {
+        switch symbol {
+        case "gold_cny":
+            return AssetTheme.goldSoft
+        case "nasdaq":
+            return AssetTheme.accentBlue
+        case "sp500":
+            return AssetTheme.accentOrange
+        case "csi300", "shanghai_composite":
+            return AssetTheme.positive
+        case "hang_seng", "hsi":
+            return AssetTheme.accentRed
+        case "nikkei225", "nikkei":
+            return AssetTheme.accentBlue.opacity(0.78)
+        default:
+            return AssetTheme.textSecondary
+        }
+    }
 }
 
 private struct SettingsView: View {
@@ -896,7 +1324,7 @@ private struct SettingsView: View {
 
     private var strategyNotificationFooter: String {
         if strategyNotificationEnabled {
-            return AppLocalization.string("会用最近一次刷新到的行情和资产记录生成调仓提醒；打开 App 或回到前台会自动更新。")
+            return AppLocalization.string("根据最新行情和资产记录生成调仓提醒。")
         }
         return AppLocalization.string("选择一个策略后，可每天收到目标仓位和买卖金额提醒。")
     }
@@ -1139,17 +1567,27 @@ private struct SettingsView: View {
                                     VStack(alignment: .trailing, spacing: 2) {
                                         Text(currentUser.displayName)
                                             .foregroundStyle(AssetTheme.textPrimary)
-                                        if let email = currentUser.userEmail, !email.isEmpty {
-                                            Text(email)
+                                        if cloudStore.hasCompletedInitialSync {
+                                            if let email = currentUser.userEmail, !email.isEmpty {
+                                                Text(email)
+                                                    .font(.caption)
+                                                    .foregroundStyle(AssetTheme.textSecondary)
+                                            } else {
+                                                Text(AppLocalization.string("云同步已完成"))
+                                                    .font(.caption)
+                                                    .foregroundStyle(AssetTheme.textSecondary)
+                                            }
+                                        } else {
+                                            Text(AppLocalization.string("等待首次云同步"))
                                                 .font(.caption)
-                                                .foregroundStyle(AssetTheme.textSecondary)
+                                                .foregroundStyle(AssetTheme.goldSoft)
                                         }
                                     }
                                 } else {
                                     VStack(alignment: .trailing, spacing: 2) {
-                                        Text(AppLocalization.string("已连接"))
+                                        Text(cloudStore.isSessionPending ? AppLocalization.string("正在恢复登录") : AppLocalization.string("登录凭证已保存"))
                                             .foregroundStyle(AssetTheme.textPrimary)
-                                        Text(AppLocalization.string("云同步凭证已保存"))
+                                        Text(AppLocalization.string("正在验证云同步状态"))
                                             .font(.caption)
                                             .foregroundStyle(AssetTheme.textSecondary)
                                     }
@@ -1284,6 +1722,13 @@ private struct SettingsValueText: View {
     }
 }
 
+private struct SnapshotCategoryItems: Identifiable {
+    let category: AssetCategory
+    let items: [AssetItem]
+
+    var id: UUID { category.id }
+}
+
 private struct SnapshotListView: View {
     @Environment(\.modelContext) private var modelContext
     @ObservedObject var marketStore: RemoteMarketStore
@@ -1317,55 +1762,44 @@ private struct SnapshotListView: View {
         return snapshots.first(where: { Calendar.current.isDateInToday($0.date) }) ?? snapshots.first
     }
 
-    private var nonLiabilityCategories: [AssetCategory] {
-        categories
-            .filter { $0.group != .liability && !$0.activeSortedItems.isEmpty }
-            .sorted {
-                if $0.group.sortPriority == $1.group.sortPriority {
-                    return $0.createdAt < $1.createdAt
-                }
-                return $0.group.sortPriority < $1.group.sortPriority
-            }
-    }
+    private var categoryItemGroups: (nonLiability: [SnapshotCategoryItems], liability: [SnapshotCategoryItems]) {
+        let activeCategoryItems = categories.compactMap { category -> SnapshotCategoryItems? in
+            let items = category.activeSortedItems
+            guard !items.isEmpty else { return nil }
+            return SnapshotCategoryItems(category: category, items: items)
+        }
 
-    private var liabilityCategories: [AssetCategory] {
-        categories
-            .filter { $0.group == .liability && !$0.activeSortedItems.isEmpty }
+        let nonLiability = activeCategoryItems
+            .filter { $0.category.group != .liability }
             .sorted {
-                let lhsPriority = $0.liabilitySortPriority(titleMap: liabilitySectionTitleMap)
-                let rhsPriority = $1.liabilitySortPriority(titleMap: liabilitySectionTitleMap)
+                if $0.category.group.sortPriority == $1.category.group.sortPriority {
+                    return $0.category.createdAt < $1.category.createdAt
+                }
+                return $0.category.group.sortPriority < $1.category.group.sortPriority
+            }
+
+        let liability = activeCategoryItems
+            .filter { $0.category.group == .liability }
+            .sorted {
+                let lhsPriority = $0.category.liabilitySortPriority(titleMap: liabilitySectionTitleMap)
+                let rhsPriority = $1.category.liabilitySortPriority(titleMap: liabilitySectionTitleMap)
                 if lhsPriority == rhsPriority {
-                    return $0.createdAt < $1.createdAt
+                    return $0.category.createdAt < $1.category.createdAt
                 }
                 return lhsPriority < rhsPriority
             }
-    }
 
-    private var displayedTotalAssets: Double {
-        let itemsByCategoryID = Dictionary(uniqueKeysWithValues: nonLiabilityCategories.map { ($0.id, $0.activeSortedItems) })
-        return displayedTotalAmount(for: itemsByCategoryID.values, entriesByItemID: currentSnapshotEntriesByItemID)
-    }
-
-    private var displayedTotalLiabilities: Double {
-        let itemsByCategoryID = Dictionary(uniqueKeysWithValues: liabilityCategories.map { ($0.id, $0.activeSortedItems) })
-        return displayedTotalAmount(for: itemsByCategoryID.values, entriesByItemID: currentSnapshotEntriesByItemID)
-    }
-
-    private var displayedNetAssets: Double {
-        displayedTotalAssets - displayedTotalLiabilities
-    }
-
-    private var onboardingInputTargetItem: AssetItem? {
-        nonLiabilityCategories.first?.activeSortedItems.first
+        return (nonLiability, liability)
     }
 
     #if DEBUG
     private var debugAutoPricedItem: AssetItem? {
-        nonLiabilityCategories
-            .flatMap(\.activeSortedItems)
+        let groups = categoryItemGroups
+        return groups.nonLiability
+            .flatMap(\.items)
             .first(where: { $0.autoPricedAssetKind != nil })
-        ?? liabilityCategories
-            .flatMap(\.activeSortedItems)
+        ?? groups.liability
+            .flatMap(\.items)
             .first(where: { $0.autoPricedAssetKind != nil })
     }
 
@@ -1398,15 +1832,14 @@ private struct SnapshotListView: View {
 
     private var snapshotListBody: some View {
         let currentSnapshotValue = currentSnapshot
-        let nonLiabilityCategoriesValue = nonLiabilityCategories
-        let liabilityCategoriesValue = liabilityCategories
-        let nonLiabilityItemsByCategoryID = Dictionary(uniqueKeysWithValues: nonLiabilityCategoriesValue.map { ($0.id, $0.activeSortedItems) })
-        let liabilityItemsByCategoryID = Dictionary(uniqueKeysWithValues: liabilityCategoriesValue.map { ($0.id, $0.activeSortedItems) })
+        let categoryGroups = categoryItemGroups
+        let nonLiabilityCategoryItems = categoryGroups.nonLiability
+        let liabilityCategoryItems = categoryGroups.liability
         let snapshotEntriesByItemIDValue = snapshotEntriesByItemID(for: currentSnapshotValue)
-        let displayedTotalAssetsValue = displayedTotalAmount(for: nonLiabilityItemsByCategoryID.values, entriesByItemID: snapshotEntriesByItemIDValue)
-        let displayedTotalLiabilitiesValue = displayedTotalAmount(for: liabilityItemsByCategoryID.values, entriesByItemID: snapshotEntriesByItemIDValue)
+        let displayedTotalAssetsValue = displayedTotalAmount(for: nonLiabilityCategoryItems.map(\.items), entriesByItemID: snapshotEntriesByItemIDValue)
+        let displayedTotalLiabilitiesValue = displayedTotalAmount(for: liabilityCategoryItems.map(\.items), entriesByItemID: snapshotEntriesByItemIDValue)
         let displayedNetAssetsValue = displayedTotalAssetsValue - displayedTotalLiabilitiesValue
-        let onboardingInputTargetCategoryID = nonLiabilityCategoriesValue.first?.id
+        let onboardingInputTargetCategoryID = nonLiabilityCategoryItems.first?.id
 
         return NavigationStack {
             ZStack {
@@ -1427,12 +1860,12 @@ private struct SnapshotListView: View {
                             )
                             .padding(.bottom, 2)
 
-                            ForEach(nonLiabilityCategoriesValue) { category in
+                            ForEach(nonLiabilityCategoryItems) { categoryItems in
                                 RecordCategoryCard(
-                                    category: category,
-                                    items: nonLiabilityItemsByCategoryID[category.id] ?? [],
+                                    category: categoryItems.category,
+                                    items: categoryItems.items,
                                     snapshotEntriesByItemID: snapshotEntriesByItemIDValue,
-                                    onboardingInputItemID: category.id == onboardingInputTargetCategoryID ? nonLiabilityItemsByCategoryID[category.id]?.first?.id : nil,
+                                    onboardingInputItemID: categoryItems.id == onboardingInputTargetCategoryID ? categoryItems.items.first?.id : nil,
                                     onboardingActiveAnchorID: onboardingActiveAnchorID,
                                     marketStore: marketStore,
                                     amountInputs: $amountInputs,
@@ -1450,10 +1883,10 @@ private struct SnapshotListView: View {
                                 )
                             }
 
-                            ForEach(liabilityCategoriesValue) { category in
+                            ForEach(liabilityCategoryItems) { categoryItems in
                                 LiabilityCategorySection(
-                                    category: category,
-                                    items: liabilityItemsByCategoryID[category.id] ?? [],
+                                    category: categoryItems.category,
+                                    items: categoryItems.items,
                                     snapshotEntriesByItemID: snapshotEntriesByItemIDValue,
                                     amountInputs: $amountInputs,
                                     quantityInputs: $quantityInputs,
@@ -1798,7 +2231,7 @@ private struct SnapshotListView: View {
         })
     }
 
-    private func displayedTotalAmount(for itemGroups: Dictionary<UUID, [AssetItem]>.Values, entriesByItemID: [UUID: AssetEntry]) -> Double {
+    private func displayedTotalAmount(for itemGroups: [[AssetItem]], entriesByItemID: [UUID: AssetEntry]) -> Double {
         itemGroups
             .flatMap { $0 }
             .reduce(0) { partialResult, item in
@@ -4215,6 +4648,7 @@ private struct SnapshotEntryEditSheet: View {
 private struct TimeMachineView: View {
     @Environment(\.modelContext) private var modelContext
     @ObservedObject var marketStore: RemoteMarketStore
+    let isVisible: Bool
     let isActive: Bool
     @Query(sort: \AssetSnapshot.date, order: .forward) private var snapshots: [AssetSnapshot]
     @State private var selectedRange: TimeMachineRange = .sixMonths
@@ -4225,11 +4659,13 @@ private struct TimeMachineView: View {
     @State private var cachedHistoryPointsBySymbol: [String: [TimeMachineSingleAxisPoint]] = [:]
     @State private var cachedFullHistoryPointsBySymbol: [String: [TimeMachineSingleAxisPoint]] = [:]
     @State private var cachedDetailTrendCards: [TimeMachineCombinedTrendDescriptor] = []
+    @State private var cachedTrendPointBySnapshotID: [UUID: TimeMachineTrendPointCacheEntry] = [:]
     @State private var lastFullHistoryPointsCacheToken: Int?
     @State private var lastVisualizationCacheToken: Int?
     @State private var lastDetailTrendCardsCacheToken: Int?
     @State private var deferredDetailCardsTask: Task<Void, Never>?
     @State private var pendingVisualizationRefreshTask: Task<Void, Never>?
+    @State private var visibleDetailTrendSymbols: Set<String> = ["gold_cny"]
     @State private var selectedHistoryDrilldown: TimeMachineHistoryDrilldown?
 
     private var trendPoints: [TimeMachineTrendPoint] {
@@ -4298,6 +4734,17 @@ private struct TimeMachineView: View {
         ("csi300", AppLocalization.string("沪深300"), AssetTheme.textPrimary),
         ("shanghai_composite", AppLocalization.string("上证综指"), AssetTheme.textSecondary)
     ]
+
+    private static let detailComparisonOptions: [TimeMachineDetailComparisonOption] = [
+        TimeMachineDetailComparisonOption(symbol: "gold_cny", title: AppLocalization.string("黄金"), color: AssetTheme.gold),
+        TimeMachineDetailComparisonOption(symbol: "nasdaq", title: AppLocalization.string("纳指"), color: AssetTheme.accentBlue)
+    ] + publicIndexConfigs.map { config in
+        TimeMachineDetailComparisonOption(symbol: config.symbol, title: config.title, color: config.color)
+    }
+
+    private var hiddenDetailComparisonOptions: [TimeMachineDetailComparisonOption] {
+        Self.detailComparisonOptions.filter { !visibleDetailTrendSymbols.contains($0.symbol) }
+    }
 
     private func historySeriesPoints(_ series: PublicHistorySeries, range: TimeMachineRange? = nil) -> [TimeMachineSingleAxisPoint] {
         let points: [TimeMachineSingleAxisPoint] = Array(zip(series.dates, series.prices)).compactMap { (dateText: String, price: Double) -> TimeMachineSingleAxisPoint? in
@@ -4421,6 +4868,15 @@ private struct TimeMachineView: View {
         return hasher.finalize()
     }
 
+    private var detailHistoryPointsCacheToken: Int {
+        var hasher = Hasher()
+        hasher.combine(historyCacheToken)
+        for symbol in visibleDetailTrendSymbols.sorted() {
+            hasher.combine(symbol)
+        }
+        return hasher.finalize()
+    }
+
     private var overviewCacheToken: Int {
         var hasher = Hasher()
         let markets = (marketStore.overview?.markets ?? []).sorted { $0.symbol < $1.symbol }
@@ -4496,36 +4952,77 @@ private struct TimeMachineView: View {
     }
 
     @MainActor
+    private func trendPoint(for snapshot: AssetSnapshot) -> TimeMachineTrendPoint {
+        let token = snapshotTrendPointToken(for: snapshot)
+        if let cached = cachedTrendPointBySnapshotID[snapshot.id], cached.token == token {
+            return cached.point
+        }
+
+        let metrics = PortfolioCalculator.metrics(for: snapshot)
+        let mainAssets = metrics.totalAssets
+        let liabilities = metrics.totalLiabilities
+        let netAssets = metrics.netAssets
+
+        let goldAnchorPrice = snapshot.goldAnchorPriceCNY ?? liveGoldAnchorPriceIfToday(for: snapshot)
+        let btcAnchorPriceCNY = snapshot.btcAnchorPriceCNY ?? liveBTCAnchorPriceCNYIfToday(for: snapshot)
+        let nasdaqAnchorPriceCNY = snapshot.nasdaqAnchorPriceCNY ?? liveNasdaqAnchorPriceCNYIfToday(for: snapshot)
+        let btcAnchorPriceUSD = snapshot.btcAnchorPriceUSD ?? liveBTCAnchorPriceUSDIfToday(for: snapshot)
+        let nasdaqAnchorPriceUSD = snapshot.nasdaqAnchorPriceUSD ?? liveNasdaqAnchorPriceUSDIfToday(for: snapshot)
+
+        let point = TimeMachineTrendPoint(
+            date: snapshot.date,
+            mainAssets: mainAssets,
+            netAssets: netAssets,
+            liabilities: liabilities,
+            goldEquivalent: goldAnchorPrice.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
+            btcEquivalent: btcAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
+            nasdaqEquivalent: nasdaqAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
+            goldAnchorPriceCNY: goldAnchorPrice,
+            goldAnchorDate: snapshot.goldAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: goldAnchorPrice != nil),
+            btcAnchorPriceUSD: btcAnchorPriceUSD,
+            btcAnchorPriceCNY: btcAnchorPriceCNY,
+            btcAnchorDate: snapshot.btcAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: btcAnchorPriceUSD != nil),
+            nasdaqAnchorPriceUSD: nasdaqAnchorPriceUSD,
+            nasdaqAnchorPriceCNY: nasdaqAnchorPriceCNY,
+            nasdaqAnchorDate: snapshot.nasdaqAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: nasdaqAnchorPriceUSD != nil)
+        )
+        cachedTrendPointBySnapshotID[snapshot.id] = TimeMachineTrendPointCacheEntry(token: token, point: point)
+        return point
+    }
+
+    private func snapshotTrendPointToken(for snapshot: AssetSnapshot) -> Int {
+        var hasher = Hasher()
+        hasher.combine(snapshot.id)
+        hasher.combine(snapshot.date.timeIntervalSinceReferenceDate)
+        hasher.combine(snapshot.updatedAt.timeIntervalSinceReferenceDate)
+        hasher.combine(snapshot.goldAnchorPriceCNY)
+        hasher.combine(snapshot.goldAnchorPriceDate?.timeIntervalSinceReferenceDate)
+        hasher.combine(snapshot.btcAnchorPriceUSD)
+        hasher.combine(snapshot.btcAnchorPriceDate?.timeIntervalSinceReferenceDate)
+        hasher.combine(snapshot.nasdaqAnchorPriceUSD)
+        hasher.combine(snapshot.nasdaqAnchorPriceDate?.timeIntervalSinceReferenceDate)
+        hasher.combine(snapshot.usdPerCNY)
+        hasher.combine(snapshot.usdPerCNYDate?.timeIntervalSinceReferenceDate)
+        hasher.combine(snapshot.marketAnchorsUpdatedAt?.timeIntervalSinceReferenceDate)
+        hasher.combine(snapshot.entries.count)
+
+        if Calendar.current.isDateInToday(snapshot.date) {
+            hasher.combine(liveGoldAnchorPrice)
+            hasher.combine(liveBTCAnchorPriceUSD)
+            hasher.combine(liveBTCAnchorPriceCNY)
+            hasher.combine(liveNasdaqAnchorPriceUSD)
+            hasher.combine(liveNasdaqAnchorPriceCNY)
+        }
+        return hasher.finalize()
+    }
+
+    @MainActor
     private func refreshVisualizationCache(includeDetailCards: Bool = true) {
         let trendPoints = snapshots.map { snapshot in
-            let mainAssets = PortfolioCalculator.totalAssets(for: snapshot)
-            let liabilities = PortfolioCalculator.totalLiabilities(for: snapshot)
-            let netAssets = mainAssets - liabilities
-
-            let goldAnchorPrice = snapshot.goldAnchorPriceCNY ?? liveGoldAnchorPriceIfToday(for: snapshot)
-            let btcAnchorPriceCNY = snapshot.btcAnchorPriceCNY ?? liveBTCAnchorPriceCNYIfToday(for: snapshot)
-            let nasdaqAnchorPriceCNY = snapshot.nasdaqAnchorPriceCNY ?? liveNasdaqAnchorPriceCNYIfToday(for: snapshot)
-            let btcAnchorPriceUSD = snapshot.btcAnchorPriceUSD ?? liveBTCAnchorPriceUSDIfToday(for: snapshot)
-            let nasdaqAnchorPriceUSD = snapshot.nasdaqAnchorPriceUSD ?? liveNasdaqAnchorPriceUSDIfToday(for: snapshot)
-
-            return TimeMachineTrendPoint(
-                date: snapshot.date,
-                mainAssets: mainAssets,
-                netAssets: netAssets,
-                liabilities: liabilities,
-                goldEquivalent: goldAnchorPrice.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-                btcEquivalent: btcAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-                nasdaqEquivalent: nasdaqAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-                goldAnchorPriceCNY: goldAnchorPrice,
-                goldAnchorDate: snapshot.goldAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: goldAnchorPrice != nil),
-                btcAnchorPriceUSD: btcAnchorPriceUSD,
-                btcAnchorPriceCNY: btcAnchorPriceCNY,
-                btcAnchorDate: snapshot.btcAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: btcAnchorPriceUSD != nil),
-                nasdaqAnchorPriceUSD: nasdaqAnchorPriceUSD,
-                nasdaqAnchorPriceCNY: nasdaqAnchorPriceCNY,
-                nasdaqAnchorDate: snapshot.nasdaqAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: nasdaqAnchorPriceUSD != nil)
-            )
+            trendPoint(for: snapshot)
         }
+        let validSnapshotIDs = Set(snapshots.map(\.id))
+        cachedTrendPointBySnapshotID = cachedTrendPointBySnapshotID.filter { validSnapshotIDs.contains($0.key) }
 
         let filteredTrendPoints = selectedRange.filter(trendPoints)
 
@@ -4543,12 +5040,13 @@ private struct TimeMachineView: View {
         }
 
         let fullHistoryPointsBySymbol: [String: [TimeMachineSingleAxisPoint]]
-        if historyCacheToken == lastFullHistoryPointsCacheToken {
+        let fullHistoryToken = detailHistoryPointsCacheToken
+        if fullHistoryToken == lastFullHistoryPointsCacheToken {
             fullHistoryPointsBySymbol = cachedFullHistoryPointsBySymbol
         } else {
             fullHistoryPointsBySymbol = buildFullHistoryPointsBySymbol()
             cachedFullHistoryPointsBySymbol = fullHistoryPointsBySymbol
-            lastFullHistoryPointsCacheToken = historyCacheToken
+            lastFullHistoryPointsCacheToken = fullHistoryToken
         }
         let historyPointsBySymbol = buildHistoryPointsBySymbol(
             fullHistoryPointsBySymbol: fullHistoryPointsBySymbol,
@@ -4604,7 +5102,9 @@ private struct TimeMachineView: View {
     }
 
     private func buildFullHistoryPointsBySymbol() -> [String: [TimeMachineSingleAxisPoint]] {
-        let symbols = ["gold_cny", "nasdaq"] + Self.publicIndexConfigs.map(\.symbol)
+        let symbols = Self.detailComparisonOptions
+            .map(\.symbol)
+            .filter { visibleDetailTrendSymbols.contains($0) }
         return Dictionary(uniqueKeysWithValues: symbols.compactMap { symbol in
             guard let series = marketStore.history(for: symbol) else { return nil }
             let points = historySeriesPoints(series)
@@ -4745,6 +5245,7 @@ private struct TimeMachineView: View {
 
         let primaryCards = [
             TimeMachineCombinedTrendDescriptor(
+                symbol: "gold_cny",
                 title: AppLocalization.string("黄金"),
                 subtitle: nil,
                 leftTitle: AppLocalization.string("价格"),
@@ -4768,6 +5269,7 @@ private struct TimeMachineView: View {
                 )
             ),
             TimeMachineCombinedTrendDescriptor(
+                symbol: "nasdaq",
                 title: AppLocalization.string("纳指"),
                 subtitle: nil,
                 leftTitle: AppLocalization.string("价格"),
@@ -4792,7 +5294,9 @@ private struct TimeMachineView: View {
             )
         ]
 
-        let publicIndexCards: [TimeMachineCombinedTrendDescriptor] = Self.publicIndexConfigs.compactMap { config -> TimeMachineCombinedTrendDescriptor? in
+        let publicIndexCards: [TimeMachineCombinedTrendDescriptor] = Self.publicIndexConfigs
+            .filter { visibleDetailTrendSymbols.contains($0.symbol) }
+            .compactMap { config -> TimeMachineCombinedTrendDescriptor? in
             guard let leftOnlyPoints = historyPointsBySymbol[config.symbol], leftOnlyPoints.count >= 2 else { return nil }
             let currency = marketStore.history(for: config.symbol)?.currency ?? "CNY"
             let comparisonPoints = pairedPublicIndexPoints(
@@ -4807,6 +5311,7 @@ private struct TimeMachineView: View {
             let latestLeftPoint = displayedLeftPoints.last
             let latestComparisonPoint = comparisonPoints.last
             return TimeMachineCombinedTrendDescriptor(
+                symbol: config.symbol,
                 title: config.title,
                 subtitle: currency == "CNY" ? AppLocalization.string("按当前总资产折算") : AppLocalization.string("按当前总资产、当前汇率估算"),
                 leftTitle: AppLocalization.string("指数现价"),
@@ -4831,7 +5336,7 @@ private struct TimeMachineView: View {
             )
         }
 
-        return primaryCards + publicIndexCards
+        return primaryCards.filter { visibleDetailTrendSymbols.contains($0.symbol) } + publicIndexCards
     }
 
     private func historyDrilldown(
@@ -4945,51 +5450,71 @@ private struct TimeMachineView: View {
         return aggregated.map { TimeMachineSingleAxisPoint(date: $0.date, value: $0.leftValue) }
     }
 
+    @MainActor
+    private func revealDetailComparison(_ option: TimeMachineDetailComparisonOption) {
+        guard !visibleDetailTrendSymbols.contains(option.symbol) else { return }
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+            visibleDetailTrendSymbols.insert(option.symbol)
+        }
+        lastFullHistoryPointsCacheToken = nil
+        refreshVisualizationCacheIfNeeded(force: true, includeDetailCards: true)
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        if lastVisualizationCacheToken == nil {
-                            LoadingStateCard(
-                                title: AppLocalization.string("时光机加载中"),
-                                message: AppLocalization.string("正在整理历史趋势和对照数据…")
-                            )
-                        } else if let latestPoint, !filteredTrendPoints.isEmpty {
-                            TimeMachineHeroTrendCard(
-                                points: filteredTrendPoints,
-                                latestPoint: latestPoint,
-                                selectedRange: $selectedRange
-                            )
-
-                            if !monthlySurplusPoints.isEmpty || !annualSurplusPoints.isEmpty {
-                                TimeMachineMonthlySurplusCard(
-                                    points: monthlySurplusPoints,
-                                    annualPoints: annualSurplusPoints
+                if isVisible {
+                    ScrollView(showsIndicators: false) {
+                        LazyVStack(alignment: .leading, spacing: 16) {
+                            if lastVisualizationCacheToken == nil {
+                                LoadingStateCard(
+                                    title: AppLocalization.string("时光机加载中"),
+                                    message: AppLocalization.string("正在整理历史趋势和对照数据…")
                                 )
-                            }
+                            } else if let latestPoint, !filteredTrendPoints.isEmpty {
+                                TimeMachineHeroTrendCard(
+                                    points: filteredTrendPoints,
+                                    latestPoint: latestPoint,
+                                    selectedRange: $selectedRange
+                                )
 
-                            LazyVStack(spacing: 12) {
-                                ForEach(detailTrendCards) { card in
-                                    TimeMachineDualAxisTrendCard(descriptor: card) { history in
-                                        selectedHistoryDrilldown = history
+                                if !monthlySurplusPoints.isEmpty || !annualSurplusPoints.isEmpty {
+                                    TimeMachineMonthlySurplusCard(
+                                        points: monthlySurplusPoints,
+                                        annualPoints: annualSurplusPoints
+                                    )
+                                }
+
+                                LazyVStack(spacing: 12) {
+                                    ForEach(detailTrendCards) { card in
+                                        TimeMachineDualAxisTrendCard(descriptor: card) { history in
+                                            selectedHistoryDrilldown = history
+                                        }
+                                    }
+
+                                    if !hiddenDetailComparisonOptions.isEmpty {
+                                        TimeMachineComparisonRevealButtons(options: hiddenDetailComparisonOptions) { option in
+                                            revealDetailComparison(option)
+                                        }
                                     }
                                 }
+                                .onboardingAnchor(.timeMachineAnchors)
+                            } else {
+                                EmptyStateCard(
+                                    title: AppLocalization.string("暂无趋势数据"),
+                                    message: AppLocalization.string("请先在记录页保存历史资产快照。"),
+                                    systemImage: "chart.line.uptrend.xyaxis"
+                                )
                             }
-                            .onboardingAnchor(.timeMachineAnchors)
-                        } else {
-                            EmptyStateCard(
-                                title: AppLocalization.string("暂无趋势数据"),
-                                message: AppLocalization.string("请先在记录页保存历史资产快照。"),
-                                systemImage: "chart.line.uptrend.xyaxis"
-                            )
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                        .padding(.bottom, 136)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-                    .padding(.bottom, 136)
+                } else {
+                    Color.clear
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -5013,7 +5538,7 @@ private struct TimeMachineView: View {
             guard isActive else { return }
             scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 0)
         }
-        .onChange(of: snapshotCacheToken) { _, _ in
+        .onChange(of: isActive ? snapshotCacheToken : (lastVisualizationCacheToken ?? 0)) { _, _ in
             guard isActive else { return }
             scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 40_000_000)
         }
@@ -5061,20 +5586,20 @@ private enum BacktestMode: String, CaseIterable, Identifiable {
 }
 
 private enum BacktestPage: String, CaseIterable, Identifiable {
+    case home
     case standard
     case advanced
-    case history
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
+        case .home:
+            return AppLocalization.string("量化")
         case .standard:
             return AppLocalization.string("基础回测")
         case .advanced:
-            return AppLocalization.string("高级回测")
-        case .history:
-            return AppLocalization.string("回测记录")
+            return AppLocalization.string("策略回测")
         }
     }
 }
@@ -5083,7 +5608,6 @@ private enum BacktestTopTab: String, CaseIterable, Identifiable {
     case allocation
     case dca
     case advanced
-    case history
 
     var id: String { rawValue }
 
@@ -5095,8 +5619,6 @@ private enum BacktestTopTab: String, CaseIterable, Identifiable {
             return AppLocalization.string("定投")
         case .advanced:
             return AppLocalization.string("高级")
-        case .history:
-            return AppLocalization.string("记录")
         }
     }
 }
@@ -5315,6 +5837,9 @@ private enum AdvancedBacktestStrategyMode: String, Codable {
     case coreGoldSatelliteBalancedMomentum
     case coreGoldSatelliteFullMomentum
     case coreGoldSatelliteHeatCappedMomentum
+    case coreGoldSatelliteGoldHandoffMomentum
+    case coreGoldSatelliteMonthlyHeatCappedMomentum
+    case coreGoldSatelliteConfirmedExcessMomentum
     case coreGoldSatelliteAggressiveMomentum
     case canaryMomentumDefense
     case drawdownReentryMomentum
@@ -5370,6 +5895,12 @@ private enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("核心动量+黄金卫星（满核心）")
         case .coreGoldSatelliteHeatCappedMomentum:
             return AppLocalization.string("热度上限元策略")
+        case .coreGoldSatelliteGoldHandoffMomentum:
+            return AppLocalization.string("黄金交接保护")
+        case .coreGoldSatelliteMonthlyHeatCappedMomentum:
+            return AppLocalization.string("月度热度上限元")
+        case .coreGoldSatelliteConfirmedExcessMomentum:
+            return AppLocalization.string("增强热度上限元")
         case .coreGoldSatelliteAggressiveMomentum:
             return AppLocalization.string("核心动量+黄金卫星（进攻）")
         case .canaryMomentumDefense:
@@ -5426,7 +5957,7 @@ private enum AdvancedBacktestStrategyMode: String, Codable {
         case .tailBreakdownLockMomentum:
             return AppLocalization.string("防守发动机：保留双守门动量主体，并在持有期间检查高位破位、短动量转弱和相对黄金落后；多项风险同时出现时先锁盈降仓。")
         case .recentLossVolatilityMetaMomentum:
-            return AppLocalization.string("综合冠军候选：平时跟随高位短弱双守门动量；当该策略自身近期亏损和波动同时放大时，临时切到持有中破位锁盈防守发动机，恢复后再进攻。")
+            return AppLocalization.string("综合冠军候选：平时跟随高位短弱双守门动量；当该策略自身近期亏损和波动同时放大时，短期转入持有中破位锁盈防守发动机，恢复后再进攻。")
         case .coreGoldSatelliteConservativeMomentum:
             return AppLocalization.string("稳健增强候选：以近期亏损波动元策略为核心，只使用95%核心仓位；当黄金90日动量为正、站上120日均线且60日跑赢标普时，挂10%黄金卫星；2月权益走弱时压低权益仓位。")
         case .coreGoldSatelliteBalancedMomentum:
@@ -5435,6 +5966,12 @@ private enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("新冠军候选：近期亏损波动元策略保持满核心，黄金趋势和相对强度有效时挂10%黄金卫星；总仓位封顶85%，并用二月弱权益刹车和净值轻刹车控制回撤。")
         case .coreGoldSatelliteHeatCappedMomentum:
             return AppLocalization.string("上架候选：以近期亏损波动元策略为核心，黄金趋势和相对强度有效时挂10%黄金卫星；组合总仓位封顶85%，单个权益指数最多64%，并保留二月弱势刹车和净值轻刹车。")
+        case .coreGoldSatelliteGoldHandoffMomentum:
+            return AppLocalization.string("新逻辑候选：沿用热度上限元框架；当黄金短线转弱时先把黄金单仓压到45%，若美股趋势仍确认，则把释放的风险预算交接给更强的纳指或标普，否则留现金。")
+        case .coreGoldSatelliteMonthlyHeatCappedMomentum:
+            return AppLocalization.string("月度候选：沿用热度上限元策略框架，但约每30个交易日检查一次；单权益上限提高到72%，保留黄金卫星、二月弱势刹车和净值轻刹车，追求更平滑的全周期回撤。")
+        case .coreGoldSatelliteConfirmedExcessMomentum:
+            return AppLocalization.string("增强候选：沿用热度上限元框架，单权益超出上限的风险预算不直接闲置；优先转给趋势和相对强度有效的黄金，否则转给动量为正、站上MA120且波动较低的确认资产。")
         case .coreGoldSatelliteAggressiveMomentum:
             return AppLocalization.string("进取候选：核心仍为近期亏损波动元策略，核心仓位97.5%，黄金卫星提高到15%；历史收益更高，但最大回撤更接近10%。")
         case .canaryMomentumDefense:
@@ -5446,7 +5983,7 @@ private enum AdvancedBacktestStrategyMode: String, Codable {
         case .goldNasdaqSteadyRotation:
             return AppLocalization.string("黄金/纳指双资产择强：近20日涨幅需超过2%，且站上MA250；每40个交易日切到更强资产，目标波动8%，最高投入90%")
         case .goldNasdaqPortfolioScheduler:
-            return AppLocalization.string("资产只在纳指、黄金、现金之间调度；后台读取多年美股压力信号作为风控源。纳指/黄金按趋势和强弱给目标仓位，压力升温时自动降低纳指、提高黄金或现金。")
+            return AppLocalization.string("资产只在纳指、黄金、现金之间调度；参考多年美股压力信号控制风险。纳指/黄金按趋势和强弱给目标仓位，压力升温时自动降低纳指、提高黄金或现金。")
         case .strongVolControlledRotation:
             return AppLocalization.string("20日强弱排序，每20个交易日持有最强资产；目标波动12%，最高投入90%")
         case .momentumRotation:
@@ -5500,6 +6037,12 @@ private enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("核心100% · 黄金卫星10% · 净值轻刹车")
         case .coreGoldSatelliteHeatCappedMomentum:
             return AppLocalization.string("单权益64% · 黄金卫星10% · 总仓85%")
+        case .coreGoldSatelliteGoldHandoffMomentum:
+            return AppLocalization.string("黄金45%保护 · 美股确认交接 · 回撤<10%")
+        case .coreGoldSatelliteMonthlyHeatCappedMomentum:
+            return AppLocalization.string("30日调仓 · 单权益72% · 总仓85%")
+        case .coreGoldSatelliteConfirmedExcessMomentum:
+            return AppLocalization.string("单权益64% · 超额确认轮动 · 总仓85%")
         case .coreGoldSatelliteAggressiveMomentum:
             return AppLocalization.string("核心97.5% · 黄金卫星15% · 进取收益")
         case .canaryMomentumDefense:
@@ -5530,6 +6073,9 @@ private enum AdvancedBacktestStrategyMode: String, Codable {
              .coreGoldSatelliteBalancedMomentum,
              .coreGoldSatelliteFullMomentum,
              .coreGoldSatelliteHeatCappedMomentum,
+             .coreGoldSatelliteGoldHandoffMomentum,
+             .coreGoldSatelliteMonthlyHeatCappedMomentum,
+             .coreGoldSatelliteConfirmedExcessMomentum,
              .coreGoldSatelliteAggressiveMomentum:
             return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
         case .goldNasdaqPortfolioScheduler:
@@ -6350,18 +6896,65 @@ private struct AdvancedBacktestStrategyTemplate: Identifiable {
 
     static let all: [AdvancedBacktestStrategyTemplate] = [
         .init(
-            id: "gold-nasdaq-portfolio-scheduler",
-            mode: .goldNasdaqPortfolioScheduler,
-            selectedAssetSymbols: ["gold_cny", "nasdaq"],
-            category: AppLocalization.string("组合调度"),
-            title: AppLocalization.string("金纳组合调度"),
+            id: "basic-ma20-trend",
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
+            category: AppLocalization.string("基础策略"),
+            title: AppLocalization.string("MA20趋势"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceCrossesAboveMA20, days: 1),
+            sellRule: .init(direction: .priceCrossesBelowMA20, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "basic-ma60-trend",
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
+            category: AppLocalization.string("基础策略"),
+            title: AppLocalization.string("MA60趋势"),
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
             buyRule: .init(direction: .priceAboveMA60, days: 1),
             sellRule: .init(direction: .priceBelowMA60, days: 1),
             tradeAmountRatio: 1,
-            maxPositionRatio: 90,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "basic-ma-golden-cross",
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
+            category: AppLocalization.string("基础策略"),
+            title: AppLocalization.string("MA金叉死叉"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .ma20CrossesAboveMA60, days: 1),
+            sellRule: .init(direction: .ma20CrossesBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "basic-boll-mean-reversion",
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
+            category: AppLocalization.string("基础策略"),
+            title: AppLocalization.string("BOLL下轨反弹"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .touchesBollLower, days: 1),
+            sellRule: .init(direction: .priceCrossesAboveBollMiddle, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 100,
             cooldownDays: 0,
             stopLossRatio: 0,
             takeProfitRatio: 0
@@ -6370,8 +6963,59 @@ private struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "core-gold-satellite-heat-capped-momentum",
             mode: .coreGoldSatelliteHeatCappedMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("低回撤策略"),
+            category: AppLocalization.string("高级策略"),
             title: AppLocalization.string("热度上限元策略"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 85,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "core-gold-satellite-gold-handoff-momentum",
+            mode: .coreGoldSatelliteGoldHandoffMomentum,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            category: AppLocalization.string("高级策略"),
+            title: AppLocalization.string("黄金交接保护"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 85,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "core-gold-satellite-monthly-heat-capped-momentum",
+            mode: .coreGoldSatelliteMonthlyHeatCappedMomentum,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            category: AppLocalization.string("高级策略"),
+            title: AppLocalization.string("月度热度上限元"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 85,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "core-gold-satellite-confirmed-excess-momentum",
+            mode: .coreGoldSatelliteConfirmedExcessMomentum,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            category: AppLocalization.string("高级策略"),
+            title: AppLocalization.string("增强热度上限元"),
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -6387,7 +7031,7 @@ private struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "canary-momentum-defense",
             mode: .canaryMomentumDefense,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("低回撤策略"),
+            category: AppLocalization.string("高级策略"),
             title: AppLocalization.string("双金丝雀动量防守"),
             annualizedReturn: 0.0703387374544846,
             maxDrawdown: 0.09943170981525871,
@@ -6439,7 +7083,7 @@ private enum BacktestRecordKind: String, Codable, CaseIterable {
         case .dca:
             return AppLocalization.string("定投回测")
         case .advanced:
-            return AppLocalization.string("高级回测")
+            return AppLocalization.string("策略回测")
         }
     }
 
@@ -6843,7 +7487,7 @@ private enum BacktestDefaults {
 }
 
 private enum StrategyNotificationDefaults {
-    static let defaultTemplateID = "gold-nasdaq-portfolio-scheduler"
+    static let defaultTemplateID = "core-gold-satellite-heat-capped-momentum"
     static let defaultHour = 9
 
     static var eligibleTemplates: [AdvancedBacktestStrategyTemplate] {
@@ -7757,15 +8401,19 @@ private nonisolated enum BacktestEngine {
         symbol: String = "recent_loss_volatility_meta_momentum",
         coreScale: Double? = nil,
         goldSatelliteWeight: Double = 0,
+        rebalanceSessions: Int = 60,
         portfolioEquityBrake: AdvancedRotationOverlayPortfolioEquityBrake? = nil,
         singleAssetExposureCap: AdvancedRotationSingleAssetExposureCap? = nil,
+        confirmedExcessRotation: AdvancedRotationConfirmedExcessRotation? = nil,
+        goldRolloverCap: AdvancedRotationGoldRolloverCap? = nil,
+        goldRolloverConfirmedHandoff: AdvancedRotationGoldRolloverConfirmedHandoff? = nil,
         buyReason: String? = nil
     ) -> AdvancedRotationConfig {
         var config = AdvancedRotationConfig(
             symbol: symbol,
             title: mode.title,
             lookbackSessions: 180,
-            rebalanceSessions: 60,
+            rebalanceSessions: rebalanceSessions,
             maFilterPeriod: 1,
             topCount: 1,
             maxExposure: coreScale == nil ? 0.75 : 0.85,
@@ -7808,6 +8456,9 @@ private nonisolated enum BacktestEngine {
                 relativeMomentumThreshold: 0,
                 portfolioEquityBrake: portfolioEquityBrake,
                 singleAssetExposureCap: singleAssetExposureCap,
+                confirmedExcessRotation: confirmedExcessRotation,
+                goldRolloverCap: goldRolloverCap,
+                goldRolloverConfirmedHandoff: goldRolloverConfirmedHandoff,
                 weakMonthEquityBrake: .init(
                     months: [2],
                     equitySymbols: ["nasdaq", "sp500", "csi300", "shanghai_composite"],
@@ -8381,6 +9032,90 @@ private nonisolated enum BacktestEngine {
                 ),
                 buyReason: AppLocalization.string("热度上限元策略建仓")
             )
+        case .coreGoldSatelliteGoldHandoffMomentum:
+            return recentLossVolatilityMetaConfig(
+                mode: mode,
+                symbol: "core_gold_satellite_gold_handoff_momentum",
+                coreScale: 1.0,
+                goldSatelliteWeight: 0.10,
+                portfolioEquityBrake: .init(
+                    lookbackSessions: 60,
+                    drawdownThreshold: 0.065,
+                    equitySymbols: ["nasdaq", "sp500", "csi300", "shanghai_composite"],
+                    equityScale: 0.85
+                ),
+                singleAssetExposureCap: .init(
+                    symbols: ["nasdaq", "sp500", "csi300", "shanghai_composite"],
+                    maxWeight: 0.64
+                ),
+                goldRolloverCap: .init(
+                    symbol: "gold_cny",
+                    longMomentumLookbackSessions: 90,
+                    longMomentumThreshold: 0.08,
+                    shortMomentumLookbackSessions: 20,
+                    shortMomentumThreshold: 0,
+                    maxWeight: 0.45
+                ),
+                goldRolloverConfirmedHandoff: .init(
+                    candidateSymbols: ["nasdaq", "sp500"],
+                    replacementMaxAdd: 0.20,
+                    confirmationMomentumLookbackSessions: 60,
+                    confirmationMovingAveragePeriod: 120,
+                    maniaVetoSymbols: ["csi300", "shanghai_composite"],
+                    maniaMomentumLookbackSessions: 240,
+                    maniaMomentumThreshold: 1.0,
+                    maniaDonchianLookbackSessions: 240,
+                    maniaDonchianPositionThreshold: 0.95
+                ),
+                buyReason: AppLocalization.string("黄金交接保护建仓")
+            )
+        case .coreGoldSatelliteMonthlyHeatCappedMomentum:
+            return recentLossVolatilityMetaConfig(
+                mode: mode,
+                symbol: "core_gold_satellite_monthly_heat_capped_momentum",
+                coreScale: 1.0,
+                goldSatelliteWeight: 0.10,
+                rebalanceSessions: 30,
+                portfolioEquityBrake: .init(
+                    lookbackSessions: 60,
+                    drawdownThreshold: 0.065,
+                    equitySymbols: ["nasdaq", "sp500", "csi300", "shanghai_composite"],
+                    equityScale: 0.85
+                ),
+                singleAssetExposureCap: .init(
+                    symbols: ["nasdaq", "sp500", "csi300", "shanghai_composite"],
+                    maxWeight: 0.72
+                ),
+                buyReason: AppLocalization.string("月度热度上限元建仓")
+            )
+        case .coreGoldSatelliteConfirmedExcessMomentum:
+            return recentLossVolatilityMetaConfig(
+                mode: mode,
+                symbol: "core_gold_satellite_confirmed_excess_momentum",
+                coreScale: 1.0,
+                goldSatelliteWeight: 0.10,
+                portfolioEquityBrake: .init(
+                    lookbackSessions: 60,
+                    drawdownThreshold: 0.065,
+                    equitySymbols: ["nasdaq", "sp500", "csi300", "shanghai_composite"],
+                    equityScale: 0.85
+                ),
+                singleAssetExposureCap: .init(
+                    symbols: ["nasdaq", "sp500", "csi300", "shanghai_composite"],
+                    maxWeight: 0.64
+                ),
+                confirmedExcessRotation: .init(
+                    candidateSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+                    equitySymbols: ["nasdaq", "sp500", "csi300", "shanghai_composite"],
+                    maxAdd: 0.06,
+                    momentumLookbackSessions: 90,
+                    movingAveragePeriod: 120,
+                    volatilityLookbackSessions: 60,
+                    minimumMomentum: 0,
+                    volatilityFloor: 0.08
+                ),
+                buyReason: AppLocalization.string("增强热度上限元建仓")
+            )
         case .coreGoldSatelliteAggressiveMomentum:
             return recentLossVolatilityMetaConfig(
                 mode: mode,
@@ -8711,12 +9446,47 @@ private nonisolated enum BacktestEngine {
         let relativeMomentumThreshold: Double
         let portfolioEquityBrake: AdvancedRotationOverlayPortfolioEquityBrake?
         let singleAssetExposureCap: AdvancedRotationSingleAssetExposureCap?
+        let confirmedExcessRotation: AdvancedRotationConfirmedExcessRotation?
+        let goldRolloverCap: AdvancedRotationGoldRolloverCap?
+        let goldRolloverConfirmedHandoff: AdvancedRotationGoldRolloverConfirmedHandoff?
         let weakMonthEquityBrake: AdvancedRotationWeakMonthEquityBrake?
     }
 
     private struct AdvancedRotationSingleAssetExposureCap {
         let symbols: [String]
         let maxWeight: Double
+    }
+
+    private struct AdvancedRotationConfirmedExcessRotation {
+        let candidateSymbols: [String]
+        let equitySymbols: [String]
+        let maxAdd: Double
+        let momentumLookbackSessions: Int
+        let movingAveragePeriod: Int
+        let volatilityLookbackSessions: Int
+        let minimumMomentum: Double
+        let volatilityFloor: Double
+    }
+
+    private struct AdvancedRotationGoldRolloverCap {
+        let symbol: String
+        let longMomentumLookbackSessions: Int
+        let longMomentumThreshold: Double
+        let shortMomentumLookbackSessions: Int
+        let shortMomentumThreshold: Double
+        let maxWeight: Double
+    }
+
+    private struct AdvancedRotationGoldRolloverConfirmedHandoff {
+        let candidateSymbols: [String]
+        let replacementMaxAdd: Double
+        let confirmationMomentumLookbackSessions: Int
+        let confirmationMovingAveragePeriod: Int
+        let maniaVetoSymbols: [String]
+        let maniaMomentumLookbackSessions: Int
+        let maniaMomentumThreshold: Double
+        let maniaDonchianLookbackSessions: Int
+        let maniaDonchianPositionThreshold: Double
     }
 
     private struct AdvancedRotationOverlayPortfolioEquityBrake {
@@ -9244,11 +10014,100 @@ private nonisolated enum BacktestEngine {
             }
         }
 
+        var clippedExcess = 0.0
+        var cappedEquitySymbols = Set<String>()
         if let singleAssetExposureCap = overlay.singleAssetExposureCap {
             let cap = min(max(singleAssetExposureCap.maxWeight, 0), 1)
             for symbol in singleAssetExposureCap.symbols {
                 guard let originalWeight = finalWeights[symbol], originalWeight > cap else { continue }
+                clippedExcess += originalWeight - cap
                 finalWeights[symbol] = cap
+                cappedEquitySymbols.insert(symbol)
+            }
+        }
+
+        if let confirmedExcessRotation = overlay.confirmedExcessRotation,
+           clippedExcess > 0 {
+            let equitySymbols = Set(confirmedExcessRotation.equitySymbols)
+            let cap = min(max(overlay.singleAssetExposureCap?.maxWeight ?? 1, 0), 1)
+            let addBudget = min(clippedExcess, max(confirmedExcessRotation.maxAdd, 0))
+
+            if addBudget > 0, canUseSatellite {
+                let currentWeight = max(finalWeights[overlay.satelliteSymbol] ?? 0, 0)
+                let room = max(overlay.maxTotalExposure - currentWeight, 0)
+                let addition = min(addBudget, room)
+                if addition > 0 {
+                    finalWeights[overlay.satelliteSymbol, default: 0] += addition
+                }
+            } else if addBudget > 0 {
+                let scoredCandidates: [(score: Double, symbol: String, room: Double)] = confirmedExcessRotation.candidateSymbols.compactMap { symbol -> (score: Double, symbol: String, room: Double)? in
+                    guard let prices = pricesBySymbol[symbol],
+                          prices.indices.contains(signalIndex),
+                          let momentum = priceMomentum(symbol: symbol, lookback: confirmedExcessRotation.momentumLookbackSessions),
+                          momentum > confirmedExcessRotation.minimumMomentum,
+                          isAboveMovingAverage(symbol: symbol, period: confirmedExcessRotation.movingAveragePeriod) else { return nil }
+                    let currentWeight = max(finalWeights[symbol] ?? 0, 0)
+                    let room: Double
+                    if equitySymbols.contains(symbol) {
+                        guard !cappedEquitySymbols.contains(symbol), currentWeight < cap else { return nil }
+                        room = max(cap - currentWeight, 0)
+                    } else {
+                        room = max(overlay.maxTotalExposure - currentWeight, 0)
+                    }
+                    guard room > 0 else { return nil }
+                    let volatilitySeries = rollingAnnualizedVolatility(
+                        values: prices,
+                        period: confirmedExcessRotation.volatilityLookbackSessions
+                    )
+                    let volatility = volatilitySeries.indices.contains(signalIndex) ? (volatilitySeries[signalIndex] ?? 0.20) : 0.20
+                    let denominator = max(volatility, confirmedExcessRotation.volatilityFloor)
+                    guard denominator > 0 else { return nil }
+                    return (score: momentum / denominator, symbol: symbol, room: room)
+                }
+                if let winner = scoredCandidates.max(by: { lhs, rhs in lhs.score < rhs.score }) {
+                    finalWeights[winner.symbol, default: 0] += min(addBudget, winner.room)
+                }
+            }
+        }
+
+        var goldRolloverSignal = false
+        if let goldRolloverCap = overlay.goldRolloverCap,
+           let longMomentum = priceMomentum(symbol: goldRolloverCap.symbol, lookback: goldRolloverCap.longMomentumLookbackSessions),
+           let shortMomentum = priceMomentum(symbol: goldRolloverCap.symbol, lookback: goldRolloverCap.shortMomentumLookbackSessions),
+           longMomentum > goldRolloverCap.longMomentumThreshold,
+           shortMomentum < goldRolloverCap.shortMomentumThreshold {
+            goldRolloverSignal = true
+            let maxWeight = min(max(goldRolloverCap.maxWeight, 0), 1)
+            if let originalWeight = finalWeights[goldRolloverCap.symbol], originalWeight > maxWeight {
+                finalWeights[goldRolloverCap.symbol] = maxWeight
+            }
+        }
+
+        if goldRolloverSignal,
+           let handoff = overlay.goldRolloverConfirmedHandoff {
+            let maniaVetoActive = handoff.maniaVetoSymbols.contains { symbol in
+                guard let momentum = priceMomentum(symbol: symbol, lookback: handoff.maniaMomentumLookbackSessions),
+                      let prices = pricesBySymbol[symbol],
+                      prices.indices.contains(signalIndex),
+                      let donchianPosition = donchianRangePosition(
+                        values: prices,
+                        at: signalIndex,
+                        period: handoff.maniaDonchianLookbackSessions
+                      ) else { return false }
+                return momentum > handoff.maniaMomentumThreshold
+                    && donchianPosition > handoff.maniaDonchianPositionThreshold
+            }
+
+            if !maniaVetoActive {
+                let candidates: [(momentum: Double, symbol: String)] = handoff.candidateSymbols.compactMap { symbol in
+                    guard let momentum = priceMomentum(symbol: symbol, lookback: handoff.confirmationMomentumLookbackSessions),
+                          momentum > 0,
+                          isAboveMovingAverage(symbol: symbol, period: handoff.confirmationMovingAveragePeriod) else { return nil }
+                    return (momentum: momentum, symbol: symbol)
+                }
+                if let winner = candidates.max(by: { lhs, rhs in lhs.momentum < rhs.momentum }) {
+                    finalWeights[winner.symbol, default: 0] += max(handoff.replacementMaxAdd, 0)
+                }
             }
         }
 
@@ -11791,9 +12650,10 @@ private struct BacktestAllocationSlice: Identifiable {
 private struct BacktestView: View {
     @Environment(\.modelContext) private var modelContext
     @ObservedObject var marketStore: RemoteMarketStore
+    let isVisible: Bool
     let isActive: Bool
     @Query(sort: \BacktestRecord.createdAt, order: .reverse) private var backtestRecords: [BacktestRecord]
-    @State private var selectedPage: BacktestPage = .history
+    @State private var selectedPage: BacktestPage = .home
     @State private var backtestMode: BacktestMode = .allocation
     @State private var cashWeight: Double = BacktestDefaults.cashWeight
     @State private var goldWeight: Double = BacktestDefaults.goldWeight
@@ -11826,6 +12686,7 @@ private struct BacktestView: View {
     @State private var selectedBacktestRecord: BacktestRecord?
     @State private var pendingAdvancedRestoreRequest: AdvancedBacktestRestoreRequest?
     @State private var showsAdvancedStrategyLibrary = false
+    @State private var showsAllBacktestRecords = false
     @State private var lastSavedBacktestSignature: String?
     @State private var isRestoringBacktestRecord = false
 
@@ -11965,9 +12826,7 @@ private struct BacktestView: View {
         switch selectedPage {
         case .advanced:
             return .advanced
-        case .history:
-            return .history
-        case .standard:
+        case .home, .standard:
             switch backtestMode {
             case .allocation:
                 return .allocation
@@ -11990,8 +12849,6 @@ private struct BacktestView: View {
                     backtestMode = .dca
                 case .advanced:
                     selectedPage = .advanced
-                case .history:
-                    selectedPage = .history
                 }
             }
         )
@@ -11999,12 +12856,12 @@ private struct BacktestView: View {
 
     private var activeBacktestPageTitle: String {
         switch selectedPage {
+        case .home:
+            return BacktestPage.home.title
         case .standard:
             return backtestMode.title
         case .advanced:
             return BacktestRecordKind.advanced.title
-        case .history:
-            return BacktestPage.history.title
         }
     }
 
@@ -12013,120 +12870,148 @@ private struct BacktestView: View {
             ZStack {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
-                GeometryReader { geometry in
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 14) {
-                            if selectedPage == .history {
-                                BacktestHistoryView(
-                                    records: backtestRecords,
-                                    onStart: { kind in
-                                        openBacktestPage(kind)
-                                    },
-                                    onSelect: { record in
-                                        selectedBacktestRecord = record
-                                    },
-                                    onRestore: { record in
-                                        restoreBacktestRecord(record)
-                                    },
-                                    onDelete: { record in
-                                        deleteBacktestRecord(record)
-                                    }
-                                )
-                            } else {
-                                BacktestReturnHeader(title: activeBacktestPageTitle) {
-                                    selectedPage = .history
-                                }
+                if isVisible {
+                    if !isActive {
+                        BacktestEntryLoadingView()
+                            .padding(.horizontal, 20)
+                    } else {
+                        GeometryReader { geometry in
+                            ScrollView(.vertical, showsIndicators: false) {
+                                VStack(alignment: .leading, spacing: 14) {
+                                    if selectedPage == .home {
+                                        BacktestHomeView(
+                                            records: Array(backtestRecords.prefix(2)),
+                                            totalRecordCount: backtestRecords.count,
+                                            onStart: { kind in
+                                                openBacktestPage(kind)
+                                            },
+                                            onShowAllRecords: {
+                                                showsAllBacktestRecords = true
+                                            },
+                                            onSelect: { record in
+                                                selectedBacktestRecord = record
+                                            },
+                                            onRestore: { record in
+                                                restoreBacktestRecord(record)
+                                            },
+                                            onDelete: { record in
+                                                deleteBacktestRecord(record)
+                                            }
+                                        )
+                                    } else {
+                                        BacktestReturnHeader(title: activeBacktestPageTitle) {
+                                            selectedPage = .home
+                                        }
 
-                                if selectedPage == .advanced {
-                                    AdvancedBacktestView(
-                                        marketStore: marketStore,
-                                        restoreRequest: pendingAdvancedRestoreRequest,
-                                        showsStrategyLibrary: $showsAdvancedStrategyLibrary
-                                    )
-                                } else {
-                                    VStack(spacing: 18) {
-                                        if backtestMode == .allocation {
-                                            BacktestAllocationCard(
-                                                slices: allocationSlices,
-                                                activeAllocationSummary: activeAllocationSummary,
-                                                selectedDateRangeLabel: selectedDateRangeLabel,
-                                                onTapRange: {
-                                                    showsRangeSheet = true
-                                                },
-                                                onTapAllocation: {
-                                                    showsAllocationSheet = true
-                                                },
-                                                onTapPrimaryAction: hasActiveReport ? nil : {
-                                                    hasStartedBacktest = true
-                                                    scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: true)
-                                                }
+                                        if selectedPage == .advanced {
+                                            AdvancedBacktestView(
+                                                marketStore: marketStore,
+                                                isActive: isActive,
+                                                restoreRequest: pendingAdvancedRestoreRequest,
+                                                showsStrategyLibrary: $showsAdvancedStrategyLibrary
                                             )
-                                            .onboardingAnchor(.backtestConfiguration)
                                         } else {
-                                            BacktestDCACard(
-                                                assetTitle: AppLocalization.string(selectedDCAAssetOption?.title ?? "未选择资产"),
-                                                amount: dcaContributionAmount,
-                                                intervalDays: dcaIntervalDays,
-                                                selectedDateRangeLabel: selectedDateRangeLabel,
-                                                accent: selectedDCAAssetOption?.color ?? AssetTheme.gold,
-                                                onTapRange: {
-                                                    showsRangeSheet = true
-                                                },
-                                                onTapAsset: {
-                                                    activeDCAConfigSheet = .asset
-                                                },
-                                                onTapAmount: {
-                                                    activeDCAConfigSheet = .amount
-                                                },
-                                                onTapInterval: {
-                                                    activeDCAConfigSheet = .interval
-                                                },
-                                                onTapPrimaryAction: hasActiveReport ? nil : {
-                                                    hasStartedBacktest = true
-                                                    scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: true)
+                                            VStack(spacing: 18) {
+                                                if backtestMode == .allocation {
+                                                    BacktestAllocationCard(
+                                                        slices: allocationSlices,
+                                                        activeAllocationSummary: activeAllocationSummary,
+                                                        selectedDateRangeLabel: selectedDateRangeLabel,
+                                                        onTapRange: {
+                                                            showsRangeSheet = true
+                                                        },
+                                                        onTapAllocation: {
+                                                            showsAllocationSheet = true
+                                                        },
+                                                        onTapPrimaryAction: hasActiveReport ? nil : {
+                                                            hasStartedBacktest = true
+                                                            scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: true)
+                                                        }
+                                                    )
+                                                    .onboardingAnchor(.backtestConfiguration)
+                                                } else {
+                                                    BacktestDCACard(
+                                                        assetTitle: AppLocalization.string(selectedDCAAssetOption?.title ?? "未选择资产"),
+                                                        amount: dcaContributionAmount,
+                                                        intervalDays: dcaIntervalDays,
+                                                        selectedDateRangeLabel: selectedDateRangeLabel,
+                                                        accent: selectedDCAAssetOption?.color ?? AssetTheme.gold,
+                                                        onTapRange: {
+                                                            showsRangeSheet = true
+                                                        },
+                                                        onTapAsset: {
+                                                            activeDCAConfigSheet = .asset
+                                                        },
+                                                        onTapAmount: {
+                                                            activeDCAConfigSheet = .amount
+                                                        },
+                                                        onTapInterval: {
+                                                            activeDCAConfigSheet = .interval
+                                                        },
+                                                        onTapPrimaryAction: hasActiveReport ? nil : {
+                                                            hasStartedBacktest = true
+                                                            scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: true)
+                                                        }
+                                                    )
+                                                    .onboardingAnchor(.backtestConfiguration)
                                                 }
-                                            )
-                                            .onboardingAnchor(.backtestConfiguration)
-                                        }
 
-                                        if !isBacktestLoading, hasActiveReport {
-                                            HStack(spacing: 10) {
-                                                BacktestActionChip(title: AppLocalization.string("重置回测"), systemImage: "arrow.counterclockwise") {
-                                                    resetBacktest()
+                                                if !isBacktestLoading, hasActiveReport {
+                                                    HStack(spacing: 10) {
+                                                        BacktestActionChip(title: AppLocalization.string("重置回测"), systemImage: "arrow.counterclockwise") {
+                                                            resetBacktest()
+                                                        }
+                                                    }
                                                 }
                                             }
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity)
+                                            .frame(maxWidth: .infinity)
 
-                                    if isBacktestLoading {
-                                        BacktestLoadingView()
-                                            .padding(.top, 8)
-                                    }
-
-                                    if !isBacktestLoading {
-                                        switch backtestMode {
-                                        case .allocation:
-                                            if let allocationReport {
-                                                allocationReportSection(report: allocationReport)
+                                            if isBacktestLoading {
+                                                BacktestLoadingView()
+                                                    .padding(.top, 8)
                                             }
-                                        case .dca:
-                                            if let dcaReport {
-                                                dcaReportSection(report: dcaReport)
+
+                                            if !isBacktestLoading {
+                                                switch backtestMode {
+                                                case .allocation:
+                                                    if let allocationReport {
+                                                        allocationReportSection(report: allocationReport)
+                                                    }
+                                                case .dca:
+                                                    if let dcaReport {
+                                                        dcaReportSection(report: dcaReport)
+                                                    }
+                                                }
                                             }
                                         }
                                     }
                                 }
+                                .frame(width: max(0, geometry.size.width - 40), alignment: .topLeading)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 14)
+                                .padding(.bottom, selectedPage == .advanced || hasActiveReport ? 136 : 24)
                             }
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .clipped()
                         }
-                        .frame(width: max(0, geometry.size.width - 40), alignment: .topLeading)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 14)
-                        .padding(.bottom, selectedPage == .advanced || selectedPage == .history || hasActiveReport ? 136 : 24)
                     }
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .clipped()
+                } else {
+                    Color.clear
                 }
+            }
+            .navigationDestination(isPresented: $showsAllBacktestRecords) {
+                BacktestAllRecordsView(
+                    records: backtestRecords,
+                    onSelect: { record in
+                        selectedBacktestRecord = record
+                    },
+                    onRestore: { record in
+                        restoreBacktestRecord(record)
+                    },
+                    onDelete: { record in
+                        deleteBacktestRecord(record)
+                    }
+                )
             }
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showsAllocationSheet) {
@@ -12217,10 +13102,8 @@ private struct BacktestView: View {
         }
         .task(id: isActive) {
             if isActive {
-                if selectedPage != .history {
-                    await marketStore.refreshHistoryIfNeeded()
-                    guard !Task.isCancelled else { return }
-                }
+                await marketStore.refreshHistoryIfNeeded()
+                guard !Task.isCancelled else { return }
                 scheduleBacktestDataRefresh(delayNanoseconds: 0)
                 if hasStartedBacktest, !hasActiveReport {
                     scheduleBacktestRefresh(animated: !hasPlayedInitialBacktestAnimation)
@@ -12234,7 +13117,7 @@ private struct BacktestView: View {
         }
         .onChange(of: selectedPage) { _, newValue in
             guard isActive, !isRestoringBacktestRecord else { return }
-            if newValue != .history {
+            if newValue == .standard || newValue == .advanced {
                 Task { await marketStore.refreshHistoryIfNeeded() }
             }
             guard newValue == .standard else { return }
@@ -13302,6 +14185,7 @@ private struct CashYieldMetricTile: View {
 private struct AdvancedBacktestView: View {
     @Environment(\.modelContext) private var modelContext
     @ObservedObject var marketStore: RemoteMarketStore
+    let isActive: Bool
     let restoreRequest: AdvancedBacktestRestoreRequest?
     @Binding var showsStrategyLibrary: Bool
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
@@ -13327,6 +14211,7 @@ private struct AdvancedBacktestView: View {
     @State private var showsRiskSignalSheet = false
     @State private var hasStartedBacktest = false
     @State private var report: AdvancedBacktestReport?
+    @State private var cachedComparisonSeries: [BacktestChartComparisonSeries] = []
     @State private var rebalanceAdvice: StrategyRebalanceAdvice?
     @State private var bestCandidates: [AdvancedBacktestCandidate] = []
     @State private var hasOptimizedStrategies = false
@@ -13336,6 +14221,7 @@ private struct AdvancedBacktestView: View {
     @State private var pendingReportComputationTask: Task<AdvancedBacktestComputationResult, Never>?
     @State private var pendingOptimizationComputationTask: Task<[AdvancedBacktestCandidate], Never>?
     @State private var lastSavedAdvancedBacktestSignature: String?
+    @State private var showsAllRecentTrades = false
 
     private var assetOptions: [BacktestAssetOption] {
         BacktestDefaults.dcaAssetOptions
@@ -13568,16 +14454,24 @@ private struct AdvancedBacktestView: View {
             }
         }
         .onChange(of: refreshToken) { _, _ in
-            guard hasStartedBacktest else { return }
+            guard isActive, hasStartedBacktest else { return }
             scheduleRefresh(delayNanoseconds: 120_000_000)
         }
         .onReceive(marketStore.$historySeries) { _ in
-            guard hasStartedBacktest else { return }
+            guard isActive, hasStartedBacktest else { return }
             scheduleRefresh(delayNanoseconds: 80_000_000)
         }
         .onReceive(marketStore.$isLoading) { isLoading in
-            guard hasStartedBacktest, !isLoading else { return }
+            guard isActive, hasStartedBacktest, !isLoading else { return }
             scheduleRefresh(delayNanoseconds: 40_000_000)
+        }
+        .task(id: isActive) {
+            if isActive {
+                guard hasStartedBacktest, report == nil, !isRefreshingReport else { return }
+                scheduleRefresh(delayNanoseconds: 120_000_000)
+            } else {
+                cancelPendingAdvancedBacktestTasks()
+            }
         }
         .onDisappear {
             cancelPendingAdvancedBacktestTasks()
@@ -13823,7 +14717,6 @@ private struct AdvancedBacktestView: View {
     }
 
     private func resultSection(_ report: AdvancedBacktestReport) -> some View {
-        let comparisonSeries = benchmarkComparisonSeries(from: report)
         let benchmarkMetricTitle = report.benchmarkSeries.count == 1
             ? (report.benchmarkSeries.first?.title ?? AppLocalization.string("资产基准"))
             : AppLocalization.string("资产基准")
@@ -13832,7 +14725,7 @@ private struct AdvancedBacktestView: View {
             VStack(alignment: .leading, spacing: 16) {
                 BacktestValueChartSection(
                     points: report.points,
-                    comparisonSeries: comparisonSeries,
+                    comparisonSeries: cachedComparisonSeries,
                     valueStyle: .currency(code: "CNY"),
                     footnote: advancedBacktestExecutionAssumptionText
                 )
@@ -14314,7 +15207,7 @@ private struct AdvancedBacktestView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
                     if bestCandidates.isEmpty {
-                        Text(AppLocalization.string(hasOptimizedStrategies ? "暂无可用候选策略，请调整资产或区间后重试" : "需要时再扫描候选策略，避免回测结束卡顿"))
+                        Text(AppLocalization.string(hasOptimizedStrategies ? "暂无可用候选策略，请调整资产或区间后重试" : "需要时可扫描候选策略"))
                             .font(.subheadline)
                             .foregroundStyle(AssetTheme.textSecondary)
                     } else {
@@ -14410,7 +15303,11 @@ private struct AdvancedBacktestView: View {
     }
 
     private func tradeSection(_ report: AdvancedBacktestReport) -> some View {
-        let recentTrades = Array(report.trades.suffix(6).reversed())
+        let displayLimit = 6
+        let displayedTrades = showsAllRecentTrades
+            ? Array(report.trades.reversed())
+            : Array(report.trades.suffix(displayLimit).reversed())
+        let hasMoreTrades = report.trades.count > displayLimit
 
         return VStack(alignment: .leading, spacing: 8) {
             sectionHeader(AppLocalization.string("最近交易"))
@@ -14422,7 +15319,7 @@ private struct AdvancedBacktestView: View {
                         .foregroundStyle(AssetTheme.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    ForEach(Array(recentTrades.enumerated()), id: \.element.id) { index, trade in
+                    ForEach(Array(displayedTrades.enumerated()), id: \.element.id) { index, trade in
                         HStack(alignment: .top, spacing: 12) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(trade.action.title)
@@ -14456,10 +15353,29 @@ private struct AdvancedBacktestView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                        if index < recentTrades.count - 1 {
+                        if index < displayedTrades.count - 1 {
                             Divider()
                                 .overlay(AssetTheme.border.opacity(0.6))
                         }
+                    }
+
+                    if hasMoreTrades {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.18)) {
+                                showsAllRecentTrades.toggle()
+                            }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Text(showsAllRecentTrades ? AppLocalization.string("收起") : AppLocalization.format("查看更多（共%d笔）", report.trades.count))
+                                    .font(.footnote.weight(.semibold))
+                                Image(systemName: showsAllRecentTrades ? "chevron.up" : "chevron.down")
+                                    .font(.caption2.weight(.bold))
+                            }
+                            .foregroundStyle(AssetTheme.gold)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 2)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -14480,6 +15396,7 @@ private struct AdvancedBacktestView: View {
 
     @MainActor
     private func scheduleRefresh(delayNanoseconds: UInt64, saveRecord: Bool = true) {
+        guard isActive else { return }
         pendingRefreshTask?.cancel()
         pendingReportComputationTask?.cancel()
         pendingOptimizationComputationTask?.cancel()
@@ -14490,7 +15407,9 @@ private struct AdvancedBacktestView: View {
         guard !capturedAssetInputs.isEmpty,
               capturedAssetInputs.allSatisfy({ $0.assetSeries != nil && (!$0.assetOption.requiresHistoricalFX || $0.fxSeries != nil) }) else {
             report = nil
+            cachedComparisonSeries = []
             rebalanceAdvice = nil
+            showsAllRecentTrades = false
             bestCandidates = []
             hasOptimizedStrategies = false
             isRefreshingReport = false
@@ -14568,7 +15487,9 @@ private struct AdvancedBacktestView: View {
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 pendingReportComputationTask = nil
+                showsAllRecentTrades = false
                 report = refreshedResult.report
+                cachedComparisonSeries = refreshedResult.report.map { benchmarkComparisonSeries(from: $0) } ?? []
                 rebalanceAdvice = refreshedResult.rebalanceAdvice
                 if saveRecord {
                     saveAdvancedBacktestRecordIfNeeded(refreshedResult.report)
@@ -14755,7 +15676,7 @@ private struct AdvancedBacktestView: View {
         cooldownDays = Double(config.cooldownDays ?? 3)
         stopLossRatio = config.stopLossRatio ?? 0
         takeProfitRatio = config.takeProfitRatio ?? 0
-        strategyMode = .ruleBased
+        strategyMode = config.strategyModeRawValue.flatMap(AdvancedBacktestStrategyMode.init(rawValue:)) ?? .ruleBased
         buyDirection = config.buyDirectionRawValue.flatMap(AdvancedBacktestSignalDirection.init(rawValue:)) ?? .consecutiveDown
         buyDays = config.buyDays ?? 3
         sellDirection = config.sellDirectionRawValue.flatMap(AdvancedBacktestSignalDirection.init(rawValue:)) ?? .consecutiveUp
@@ -15119,6 +16040,7 @@ private struct AdvancedBacktestView: View {
             stopLossRatio = candidate.settings.stopLossRatio
             takeProfitRatio = candidate.settings.takeProfitRatio
             report = candidate.report
+            cachedComparisonSeries = benchmarkComparisonSeries(from: candidate.report)
             saveAdvancedBacktestRecordIfNeeded(candidate.report)
         }
     }
@@ -15336,9 +16258,72 @@ private struct BacktestHistorySectionHeader: View {
     }
 }
 
-private struct BacktestHistoryView: View {
+private struct BacktestEntryLoadingView: View {
+    var body: some View {
+        LoadingStateCard(
+            title: AppLocalization.string("正在准备量化回测"),
+            message: AppLocalization.string("正在加载历史行情与策略数据，请稍候")
+        )
+    }
+}
+
+private struct BacktestHomeView: View {
     let records: [BacktestRecord]
+    let totalRecordCount: Int
     let onStart: (BacktestRecordKind) -> Void
+    let onShowAllRecords: () -> Void
+    let onSelect: (BacktestRecord) -> Void
+    let onRestore: (BacktestRecord) -> Void
+    let onDelete: (BacktestRecord) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            BacktestModeEntryPanel(onStart: onStart)
+
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(AppLocalization.string("最近回测"))
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                    Text(totalRecordCount > 0 ? AppLocalization.format("共%d条记录", totalRecordCount) : AppLocalization.string("保存后的回测会出现在这里"))
+                        .font(.caption)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
+
+                Spacer(minLength: 12)
+
+                Button(action: onShowAllRecords) {
+                    HStack(spacing: 6) {
+                        Text(AppLocalization.string("全部回测记录"))
+                            .font(.caption.weight(.semibold))
+                        Image(systemName: "chevron.right")
+                            .font(.caption2.weight(.bold))
+                    }
+                    .foregroundStyle(AssetTheme.gold)
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 8)
+                    .background(AssetTheme.gold.opacity(0.1), in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 2)
+
+            if records.isEmpty {
+                BacktestHistoryEmptyCard(title: AppLocalization.string("还没有回测记录"), iconName: "tray")
+            } else {
+                BacktestRecordListCard(
+                    records: records,
+                    onSelect: onSelect,
+                    onRestore: onRestore,
+                    onDelete: onDelete
+                )
+            }
+        }
+    }
+}
+
+private struct BacktestAllRecordsView: View {
+    let records: [BacktestRecord]
     let onSelect: (BacktestRecord) -> Void
     let onRestore: (BacktestRecord) -> Void
     let onDelete: (BacktestRecord) -> Void
@@ -15355,51 +16340,90 @@ private struct BacktestHistoryView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            BacktestModeEntryPanel(onStart: onStart)
+        ZStack {
+            AssetTheme.pageGradient.ignoresSafeArea()
 
-            BacktestHistorySectionHeader(selectedFilter: $selectedFilter)
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    BacktestHistorySectionHeader(selectedFilter: $selectedFilter)
 
-            if filteredRecords.isEmpty {
-                VStack(alignment: .leading, spacing: 10) {
-                    Image(systemName: records.isEmpty ? "tray" : "line.3.horizontal.decrease.circle")
-                        .font(.title2.weight(.semibold))
-                        .foregroundStyle(AssetTheme.gold)
-                    Text(emptyTitle)
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(AssetTheme.textPrimary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(18)
-                .background(AssetTheme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(AssetTheme.border.opacity(0.65), lineWidth: 1)
-                )
-            } else {
-                VStack(spacing: 0) {
-                    ForEach(Array(filteredRecords.enumerated()), id: \.element.id) { index, record in
-                        BacktestHistoryRow(
-                            record: record,
-                            onSelect: { onSelect(record) },
-                            onRestore: { onRestore(record) },
-                            onDelete: { onDelete(record) }
+                    if filteredRecords.isEmpty {
+                        BacktestHistoryEmptyCard(
+                            title: emptyTitle,
+                            iconName: records.isEmpty ? "tray" : "line.3.horizontal.decrease.circle"
                         )
-
-                        if index < filteredRecords.count - 1 {
-                            Divider()
-                                .overlay(AssetTheme.border.opacity(0.55))
-                                .padding(.leading, 18)
-                        }
+                    } else {
+                        BacktestRecordListCard(
+                            records: filteredRecords,
+                            onSelect: onSelect,
+                            onRestore: onRestore,
+                            onDelete: onDelete
+                        )
                     }
                 }
-                .background(AssetTheme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(AssetTheme.border.opacity(0.65), lineWidth: 1)
-                )
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
+                .padding(.bottom, 32)
             }
         }
+        .navigationTitle(AppLocalization.string("全部回测记录"))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
+    }
+}
+
+private struct BacktestHistoryEmptyCard: View {
+    let title: String
+    let iconName: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: iconName)
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(AssetTheme.gold)
+            Text(title)
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(AssetTheme.textPrimary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(AssetTheme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.65), lineWidth: 1)
+        )
+    }
+}
+
+private struct BacktestRecordListCard: View {
+    let records: [BacktestRecord]
+    let onSelect: (BacktestRecord) -> Void
+    let onRestore: (BacktestRecord) -> Void
+    let onDelete: (BacktestRecord) -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(records.enumerated()), id: \.element.id) { index, record in
+                BacktestHistoryRow(
+                    record: record,
+                    onSelect: { onSelect(record) },
+                    onRestore: { onRestore(record) },
+                    onDelete: { onDelete(record) }
+                )
+
+                if index < records.count - 1 {
+                    Divider()
+                        .overlay(AssetTheme.border.opacity(0.55))
+                        .padding(.leading, 18)
+                }
+            }
+        }
+        .background(AssetTheme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.65), lineWidth: 1)
+        )
     }
 }
 
@@ -15408,6 +16432,11 @@ private struct BacktestHistoryRow: View {
     let onSelect: () -> Void
     let onRestore: () -> Void
     let onDelete: () -> Void
+
+    @State private var dragOffset: CGFloat = 0
+    @State private var isDeleteRevealed = false
+
+    private let deleteActionWidth: CGFloat = 86
 
     private var kind: BacktestRecordKind {
         BacktestRecordCodec.kind(for: record)
@@ -15467,8 +16496,81 @@ private struct BacktestHistoryRow: View {
         return AdvancedBacktestStrategyMode.ruleBased.title
     }
 
+    private var currentHorizontalOffset: CGFloat {
+        let baseOffset = isDeleteRevealed ? -deleteActionWidth : 0
+        return min(0, max(-deleteActionWidth, baseOffset + dragOffset))
+    }
+
     var body: some View {
-        Button(action: onSelect) {
+        ZStack(alignment: .trailing) {
+            Button(role: .destructive) {
+                withAnimation(.snappy(duration: 0.22)) {
+                    isDeleteRevealed = false
+                    dragOffset = 0
+                }
+                onDelete()
+            } label: {
+                VStack(spacing: 5) {
+                    Image(systemName: "trash.fill")
+                        .font(.subheadline.weight(.bold))
+                    Text(AppLocalization.string("删除"))
+                        .font(.caption2.weight(.bold))
+                }
+                .foregroundStyle(.white)
+                .frame(width: deleteActionWidth)
+                .frame(maxHeight: .infinity)
+                .background(AssetTheme.negative)
+            }
+            .buttonStyle(.plain)
+            .opacity(currentHorizontalOffset < -8 ? 1 : 0)
+
+            rowButton
+                .offset(x: currentHorizontalOffset)
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 14, coordinateSpace: .local)
+                        .onChanged { value in
+                            guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                            dragOffset = value.translation.width
+                        }
+                        .onEnded { value in
+                            guard abs(value.translation.width) > abs(value.translation.height) else {
+                                dragOffset = 0
+                                return
+                            }
+                            let predictedOffset = (isDeleteRevealed ? -deleteActionWidth : 0) + value.predictedEndTranslation.width
+                            withAnimation(.snappy(duration: 0.22)) {
+                                isDeleteRevealed = predictedOffset < -deleteActionWidth * 0.42
+                                dragOffset = 0
+                            }
+                        }
+                )
+        }
+        .contentShape(Rectangle())
+        .clipped()
+        .animation(.snappy(duration: 0.22), value: isDeleteRevealed)
+        .contextMenu {
+            Button(AppLocalization.string("恢复参数"), systemImage: "arrow.uturn.backward") {
+                onRestore()
+            }
+            Button(role: .destructive) {
+                onDelete()
+            } label: {
+                Label(AppLocalization.string("删除记录"), systemImage: "trash")
+            }
+        }
+    }
+
+    private var rowButton: some View {
+        Button {
+            if isDeleteRevealed {
+                withAnimation(.snappy(duration: 0.22)) {
+                    isDeleteRevealed = false
+                    dragOffset = 0
+                }
+            } else {
+                onSelect()
+            }
+        } label: {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: iconName)
                     .font(.headline.weight(.semibold))
@@ -15523,16 +16625,6 @@ private struct BacktestHistoryRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.plain)
-        .contextMenu {
-            Button(AppLocalization.string("恢复参数"), systemImage: "arrow.uturn.backward") {
-                onRestore()
-            }
-            Button(role: .destructive) {
-                onDelete()
-            } label: {
-                Label(AppLocalization.string("删除记录"), systemImage: "trash")
-            }
-        }
     }
 
     private func historyMetricLine(title: String, value: String, valueColor: Color) -> some View {
@@ -15553,16 +16645,29 @@ private struct BacktestRecordDetailSnapshot {
     let kind: BacktestRecordKind
     let points: [BacktestSeriesPoint]
     let detailConfig: BacktestRecordDetailConfigPayload?
-    let advancedBenchmarkSeries: [BacktestRecordAdvancedBenchmarkSeriesPayload]
+    let chartComparisonSeries: [BacktestChartComparisonSeries]
 
     var canRestore: Bool { detailConfig != nil }
 
     init(record: BacktestRecord) {
         let decodedDetailConfig = BacktestRecordCodec.decodeDetailConfig(from: record)
+        let decodedPoints = BacktestRecordCodec.decodePoints(from: record)
         self.kind = BacktestRecordCodec.kind(for: record)
-        self.points = BacktestRecordCodec.decodePoints(from: record)
+        self.points = decodedPoints
         self.detailConfig = decodedDetailConfig
-        self.advancedBenchmarkSeries = decodedDetailConfig?.advancedBenchmarkSeries ?? []
+        self.chartComparisonSeries = (decodedDetailConfig?.advancedBenchmarkSeries ?? []).enumerated().compactMap { index, series in
+            let normalizedPoints = BacktestChartData.normalizedComparisonPoints(
+                series.decodedPoints,
+                targetStartValue: decodedPoints.first?.portfolioValue
+            )
+            guard !normalizedPoints.isEmpty else { return nil }
+            return BacktestChartComparisonSeries(
+                id: "record-asset-benchmark-\(series.id)",
+                title: series.title,
+                points: normalizedPoints,
+                color: BacktestChartPalette.comparisonLine(at: index)
+            )
+        }
     }
 }
 
@@ -15606,24 +16711,8 @@ private struct BacktestRecordDetailView: View {
         advancedTrades.count > displayedAdvancedTrades.count
     }
 
-    private var advancedBenchmarkSeries: [BacktestChartComparisonSeries] {
-        snapshot.advancedBenchmarkSeries.enumerated().compactMap { index, series in
-            let normalizedPoints = BacktestChartData.normalizedComparisonPoints(
-                series.decodedPoints,
-                targetStartValue: points.first?.portfolioValue
-            )
-            guard !normalizedPoints.isEmpty else { return nil }
-            return BacktestChartComparisonSeries(
-                id: "record-asset-benchmark-\(series.id)",
-                title: series.title,
-                points: normalizedPoints,
-                color: BacktestChartPalette.comparisonLine(at: index)
-            )
-        }
-    }
-
     private var chartComparisonSeries: [BacktestChartComparisonSeries] {
-        kind == .advanced ? advancedBenchmarkSeries : []
+        kind == .advanced ? snapshot.chartComparisonSeries : []
     }
 
     private var displayTitle: String {
@@ -15696,18 +16785,14 @@ private struct BacktestRecordDetailView: View {
                                 }
 
                                 if loadedAdvancedTrades == nil {
-                                    Text(AppLocalization.string("为避免打开记录卡顿，买卖明细不会自动加载。"))
-                                        .font(.caption)
-                                        .foregroundStyle(AssetTheme.textSecondary)
-
                                     Button {
                                         loadedAdvancedTrades = BacktestRecordCodec.decodeAdvancedTrades(from: record)
                                         visibleTradeCount = 40
                                     } label: {
                                         Label(
                                             record.tradeCount > 0
-                                                ? AppLocalization.format("加载%d笔买卖明细", record.tradeCount)
-                                                : AppLocalization.string("加载买卖明细"),
+                                                ? AppLocalization.format("查看%d笔买卖明细", record.tradeCount)
+                                                : AppLocalization.string("查看买卖明细"),
                                             systemImage: "list.bullet.rectangle"
                                         )
                                         .frame(maxWidth: .infinity)
@@ -16539,32 +17624,16 @@ private struct AdvancedStrategyLibrarySheet: View {
     let activeTemplateID: String?
     let onSelect: (AdvancedBacktestStrategyTemplate) -> Void
     @State private var searchText = ""
-    @State private var selectedCategory: String? = nil
-
-    private var categoryFilters: [String] {
-        var seen = Set<String>()
-        return templates.compactMap { template in
-            guard !seen.contains(template.category) else { return nil }
-            seen.insert(template.category)
-            return template.category
-        }
-    }
 
     private var visibleTemplates: [AdvancedBacktestStrategyTemplate] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return templates.filter { template in
-            let categoryMatches = selectedCategory.map { template.category == $0 } ?? true
-            guard categoryMatches else { return false }
             guard !query.isEmpty else { return true }
             return template.title.localizedCaseInsensitiveContains(query)
                 || template.subtitle.localizedCaseInsensitiveContains(query)
                 || template.category.localizedCaseInsensitiveContains(query)
                 || template.mode.title.localizedCaseInsensitiveContains(query)
         }
-    }
-
-    private var shouldShowCategoryHeaders: Bool {
-        selectedCategory == nil && visibleTemplates.count > 1
     }
 
     var body: some View {
@@ -16584,15 +17653,7 @@ private struct AdvancedStrategyLibrarySheet: View {
                         if visibleTemplates.isEmpty {
                             strategyEmptyState
                         } else {
-                            ForEach(visibleTemplates.indices, id: \.self) { index in
-                                let template = visibleTemplates[index]
-                                if shouldShowCategoryHeaders && showsCategoryHeader(at: index, in: visibleTemplates) {
-                                    Text(template.category)
-                                        .font(.caption.weight(.bold))
-                                        .foregroundStyle(AssetTheme.textSecondary)
-                                        .padding(.top, index == visibleTemplates.startIndex ? 0 : 8)
-                                }
-
+                            ForEach(visibleTemplates) { template in
                                 AdvancedStrategyTemplateRow(
                                     template: template,
                                     isActive: template.id == activeTemplateID
@@ -16621,50 +17682,34 @@ private struct AdvancedStrategyLibrarySheet: View {
     }
 
     private var strategySearchAndFilterArea: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(AssetTheme.textSecondary)
-                TextField(AppLocalization.string("搜索策略、指标或资产"), text: $searchText)
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(AssetTheme.textPrimary)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
-                    .submitLabel(.search)
-                if !searchText.isEmpty {
-                    Button {
-                        searchText = ""
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.76))
-                    }
-                    .buttonStyle(.plain)
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(AssetTheme.textSecondary)
+            TextField(AppLocalization.string("搜索策略、指标或资产"), text: $searchText)
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(AssetTheme.textPrimary)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled(true)
+                .submitLabel(.search)
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.76))
                 }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(AssetTheme.border.opacity(0.55), lineWidth: 1)
-            )
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    strategyFilterChip(title: AppLocalization.string("全部"), isSelected: selectedCategory == nil) {
-                        selectedCategory = nil
-                    }
-                    ForEach(categoryFilters, id: \.self) { category in
-                        strategyFilterChip(title: category, isSelected: selectedCategory == category) {
-                            selectedCategory = category
-                        }
-                    }
-                }
-                .padding(.vertical, 1)
+                .buttonStyle(.plain)
             }
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.55), lineWidth: 1)
+        )
         .padding(.bottom, 2)
     }
 
@@ -16685,26 +17730,6 @@ private struct AdvancedStrategyLibrarySheet: View {
                 .stroke(AssetTheme.border.opacity(0.55), lineWidth: 1)
         )
     }
-
-    private func strategyFilterChip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(isSelected ? AssetTheme.background : AssetTheme.textSecondary)
-                .padding(.horizontal, 11)
-                .padding(.vertical, 7)
-                .background(isSelected ? AssetTheme.gold : AssetTheme.overlayFaint, in: Capsule())
-                .overlay(
-                    Capsule()
-                        .stroke(isSelected ? AssetTheme.gold.opacity(0.8) : AssetTheme.border.opacity(0.5), lineWidth: 1)
-                )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func showsCategoryHeader(at index: Int, in templates: [AdvancedBacktestStrategyTemplate]) -> Bool {
-        index == templates.startIndex || templates[index - 1].category != templates[index].category
-    }
 }
 
 private struct AdvancedStrategyTemplateRow: View {
@@ -16723,62 +17748,6 @@ private struct AdvancedStrategyTemplateRow: View {
                         Text(template.subtitle)
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(AssetTheme.gold)
-                    }
-
-                    if template.mode.isRotation {
-                        let chipTitles = rotationChipTitles(for: template.mode)
-                        ViewThatFits(in: .horizontal) {
-                            HStack(spacing: 6) {
-                                ForEach(chipTitles, id: \.self) { title in
-                                    strategyChip(title)
-                                }
-                            }
-
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack(spacing: 6) {
-                                    ForEach(Array(chipTitles.prefix(2)), id: \.self) { title in
-                                        strategyChip(title)
-                                    }
-                                }
-                                HStack(spacing: 6) {
-                                    ForEach(Array(chipTitles.dropFirst(2)), id: \.self) { title in
-                                        strategyChip(title)
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        ViewThatFits(in: .horizontal) {
-                            HStack(spacing: 6) {
-                                strategyChip(AppLocalization.format("买 %@", ruleLabel(template.buyRule)))
-                                strategyChip(AppLocalization.format("卖 %@", ruleLabel(template.sellRule)))
-                                strategyChip(AppLocalization.format("单次 %@", template.tradeAmountRatio.percentString(maxFractionDigits: 0)))
-                                strategyChip(AppLocalization.format("仓位 %@", (template.maxPositionRatio / 100).percentString(maxFractionDigits: 0)))
-                            }
-
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack(spacing: 6) {
-                                    strategyChip(AppLocalization.format("买 %@", ruleLabel(template.buyRule)))
-                                    strategyChip(AppLocalization.format("卖 %@", ruleLabel(template.sellRule)))
-                                }
-                                HStack(spacing: 6) {
-                                    strategyChip(AppLocalization.format("单次 %@", template.tradeAmountRatio.percentString(maxFractionDigits: 0)))
-                                    strategyChip(AppLocalization.format("仓位 %@", (template.maxPositionRatio / 100).percentString(maxFractionDigits: 0)))
-                                }
-                            }
-                        }
-                    }
-
-                    if template.mode == .ruleBased && (template.stopLossRatio > 0 || template.takeProfitRatio > 0) {
-                        HStack(spacing: 6) {
-                            if template.stopLossRatio > 0 {
-                                strategyChip(AppLocalization.format("止损 %@", (template.stopLossRatio / 100).percentString(maxFractionDigits: 0)))
-                            }
-                            if template.takeProfitRatio > 0 {
-                                strategyChip(AppLocalization.format("止盈 %@", (template.takeProfitRatio / 100).percentString(maxFractionDigits: 0)))
-                            }
-                            strategyChip(AppLocalization.format("冷却 %d天", template.cooldownDays))
-                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -16927,7 +17896,7 @@ private struct AdvancedStrategyTemplateRow: View {
             return [
                 AppLocalization.string("亏损监控"),
                 AppLocalization.string("波动监控"),
-                AppLocalization.string("临时防守"),
+                AppLocalization.string("短期防守"),
                 AppLocalization.string("恢复进攻")
             ]
         case .coreGoldSatelliteConservativeMomentum:
@@ -16957,6 +17926,27 @@ private struct AdvancedStrategyTemplateRow: View {
                 AppLocalization.string("黄金卫星10%"),
                 AppLocalization.string("总仓85%"),
                 AppLocalization.string("回撤优先")
+            ]
+        case .coreGoldSatelliteGoldHandoffMomentum:
+            return [
+                AppLocalization.string("黄金45%保护"),
+                AppLocalization.string("美股确认交接"),
+                AppLocalization.string("总仓85%"),
+                AppLocalization.string("回撤<10%")
+            ]
+        case .coreGoldSatelliteMonthlyHeatCappedMomentum:
+            return [
+                AppLocalization.string("30日调仓"),
+                AppLocalization.string("单权益72%"),
+                AppLocalization.string("黄金卫星10%"),
+                AppLocalization.string("总仓85%")
+            ]
+        case .coreGoldSatelliteConfirmedExcessMomentum:
+            return [
+                AppLocalization.string("单权益64%"),
+                AppLocalization.string("超额确认轮动"),
+                AppLocalization.string("黄金优先"),
+                AppLocalization.string("总仓85%")
             ]
         case .coreGoldSatelliteAggressiveMomentum:
             return [
@@ -17188,6 +18178,12 @@ private extension AdvancedBacktestStrategyTemplate {
             growth = 0.99; stability = 0.90; defense = 0.91; flexibility = 0.96
         case .coreGoldSatelliteHeatCappedMomentum:
             growth = 0.97; stability = 0.94; defense = 0.94; flexibility = 0.96
+        case .coreGoldSatelliteGoldHandoffMomentum:
+            growth = 0.99; stability = 0.95; defense = 0.96; flexibility = 0.97
+        case .coreGoldSatelliteMonthlyHeatCappedMomentum:
+            growth = 0.98; stability = 0.93; defense = 0.95; flexibility = 0.97
+        case .coreGoldSatelliteConfirmedExcessMomentum:
+            growth = 0.99; stability = 0.94; defense = 0.94; flexibility = 0.98
         case .coreGoldSatelliteAggressiveMomentum:
             growth = 0.98; stability = 0.86; defense = 0.88; flexibility = 0.95
         case .canaryMomentumDefense:
@@ -18137,6 +19133,11 @@ private struct TimeMachineTrendPoint: Identifiable {
     var id: Date { date }
 }
 
+private struct TimeMachineTrendPointCacheEntry {
+    let token: Int
+    let point: TimeMachineTrendPoint
+}
+
 private struct TimeMachineMonthlySurplusPoint: Identifiable {
     let monthStart: Date
     let date: Date
@@ -18169,6 +19170,7 @@ private struct TimeMachineHistoryDrilldown: Identifiable {
 }
 
 private struct TimeMachineCombinedTrendDescriptor: Identifiable {
+    let symbol: String
     let title: String
     let subtitle: String?
     let leftTitle: String
@@ -18183,8 +19185,120 @@ private struct TimeMachineCombinedTrendDescriptor: Identifiable {
     let rightAxisStyle: TimeMachineAxisValueStyle
     let showsComparisonLine: Bool
     let historyDrilldown: TimeMachineHistoryDrilldown?
+    let displayPoints: [TimeMachineDualAxisPoint]
+    let displayLeftOnlyPoints: [TimeMachineSingleAxisPoint]
+    let rangeFilteredCandlesticks: [TimeMachineCandlestickPoint]
+    let displayCandlesticks: [TimeMachineCandlestickPoint]
+    let leftDomain: ClosedRange<Double>
+    let rightDomain: ClosedRange<Double>
+    let canShowCandlestickChart: Bool
+    let canShowDualAxisChart: Bool
+    let canShowLeftOnlyChart: Bool
+    let bottomAxisDates: [Date]
+    let dateRangeLabel: String
 
-    var id: String { title }
+    var id: String { symbol }
+
+    init(
+        symbol: String,
+        title: String,
+        subtitle: String?,
+        leftTitle: String,
+        rightTitle: String,
+        points: [TimeMachineDualAxisPoint],
+        leftOnlyPoints: [TimeMachineSingleAxisPoint],
+        leftColor: Color,
+        rightColor: Color,
+        leftLatestLabel: String,
+        rightLatestLabel: String,
+        leftAxisStyle: TimeMachineAxisValueStyle,
+        rightAxisStyle: TimeMachineAxisValueStyle,
+        showsComparisonLine: Bool,
+        historyDrilldown: TimeMachineHistoryDrilldown?
+    ) {
+        self.symbol = symbol
+        self.title = title
+        self.subtitle = subtitle
+        self.leftTitle = leftTitle
+        self.rightTitle = rightTitle
+        self.points = points
+        self.leftOnlyPoints = leftOnlyPoints
+        self.leftColor = leftColor
+        self.rightColor = rightColor
+        self.leftLatestLabel = leftLatestLabel
+        self.rightLatestLabel = rightLatestLabel
+        self.leftAxisStyle = leftAxisStyle
+        self.rightAxisStyle = rightAxisStyle
+        self.showsComparisonLine = showsComparisonLine
+        self.historyDrilldown = historyDrilldown
+
+        let sampledDualPoints = evenlySampledItems(points, maxCount: 72)
+        let sampledLeftOnlyPoints = evenlySampledItems(leftOnlyPoints, maxCount: 72)
+        let filteredCandlesticks: [TimeMachineCandlestickPoint]
+        if let candlesticks = historyDrilldown?.candlesticks,
+           !candlesticks.isEmpty,
+           let firstDate = leftOnlyPoints.first?.date,
+           let lastDate = leftOnlyPoints.last?.date {
+            filteredCandlesticks = candlesticks.filter { $0.date >= firstDate && $0.date <= lastDate }
+        } else {
+            filteredCandlesticks = []
+        }
+        let sampledCandlesticks = evenlySampledItems(filteredCandlesticks, maxCount: 64)
+        let hasCandlesticks = sampledCandlesticks.count >= 2
+
+        self.displayPoints = sampledDualPoints
+        self.displayLeftOnlyPoints = sampledLeftOnlyPoints
+        self.rangeFilteredCandlesticks = filteredCandlesticks
+        self.displayCandlesticks = sampledCandlesticks
+        self.canShowCandlestickChart = hasCandlesticks
+        self.canShowDualAxisChart = showsComparisonLine && sampledDualPoints.count >= 2
+        self.canShowLeftOnlyChart = sampledLeftOnlyPoints.count >= 2
+        if hasCandlesticks {
+            self.leftDomain = Self.paddedDomain(values: sampledCandlesticks.flatMap { [$0.low, $0.high] })
+        } else {
+            self.leftDomain = Self.paddedDomain(values: sampledDualPoints.map(\.leftValue) + sampledLeftOnlyPoints.map(\.value))
+        }
+        self.rightDomain = Self.paddedDomain(values: sampledDualPoints.map(\.rightValue))
+        self.bottomAxisDates = Self.detailCardAxisDates(
+            sampledCandlesticks.map(\.date) + sampledLeftOnlyPoints.map(\.date) + sampledDualPoints.map(\.date)
+        )
+        self.dateRangeLabel = Self.makeDateRangeLabel(
+            dates: filteredCandlesticks.map(\.date) + leftOnlyPoints.map(\.date) + points.map(\.date)
+        )
+    }
+
+    private static func makeDateRangeLabel(dates: [Date]) -> String {
+        let sortedDates = dates.sorted()
+        guard let first = sortedDates.first, let last = sortedDates.last else { return AppLocalization.string("暂无范围") }
+        return "\(first.chartAxisDateString) - \(last.chartAxisDateString)"
+    }
+
+    private static func detailCardAxisDates(_ dates: [Date]) -> [Date] {
+        let sortedDates = Array(Set(dates)).sorted()
+        guard sortedDates.count > 2 else { return sortedDates }
+        return [sortedDates[sortedDates.count / 2]]
+    }
+
+    private static func paddedDomain(values: [Double]) -> ClosedRange<Double> {
+        let filtered = values.filter { $0.isFinite }
+        guard let minValue = filtered.min(), let maxValue = filtered.max() else {
+            return 0...1
+        }
+        if abs(maxValue - minValue) < .ulpOfOne {
+            let padding = max(abs(maxValue) * 0.08, 1)
+            return (minValue - padding)...(maxValue + padding)
+        }
+        let padding = max((maxValue - minValue) * 0.12, abs(maxValue) * 0.02)
+        return (minValue - padding)...(maxValue + padding)
+    }
+}
+
+private struct TimeMachineDetailComparisonOption: Identifiable {
+    let symbol: String
+    let title: String
+    let color: Color
+
+    var id: String { symbol }
 }
 
 private enum TimeMachineAxisValueStyle {
@@ -18981,7 +20095,7 @@ private struct DashboardFreedomSection: View {
 
         let averageMonthlySurplus = projection.projectedAnnualSurplus / 12
         return AppLocalization.format(
-            AppLocalization.string("今年需要年结余 %@ · 平均月结余 %@"),
+            AppLocalization.string("今年需要年结余 %@ · 平均月需结余 %@"),
             projection.projectedAnnualSurplus.currencyString(),
             averageMonthlySurplus.currencyString()
         )
@@ -19714,9 +20828,23 @@ private struct TimeMachineHeroTrendCard: View {
     @State private var selectedDate: Date?
     private let cardCornerRadius: CGFloat = 26
     private let plotCornerRadius: CGFloat = 20
+    private let displayPoints: [TimeMachineTrendPoint]
+    private let valueDomain: ClosedRange<Double>
+    private let dateDomain: ClosedRange<Date>
+    private let axisDates: [Date]
 
-    private var displayPoints: [TimeMachineTrendPoint] {
-        evenlySampledItems(points, maxCount: 160)
+    init(points: [TimeMachineTrendPoint], latestPoint: TimeMachineTrendPoint, selectedRange: Binding<TimeMachineRange>) {
+        self.points = points
+        self.latestPoint = latestPoint
+        self._selectedRange = selectedRange
+
+        let sampledPoints = evenlySampledItems(points, maxCount: 60)
+        self.displayPoints = sampledPoints
+        self.valueDomain = Self.paddedDomain(values: sampledPoints.flatMap { point in
+            TimeMachineAssetSeries.allCases.map { $0.value(from: point) }
+        })
+        self.dateDomain = Self.makeDateDomain(from: sampledPoints)
+        self.axisDates = chartAxisDates(sampledPoints.map(\.date))
     }
 
     private var selectedPoint: TimeMachineTrendPoint {
@@ -19724,10 +20852,15 @@ private struct TimeMachineHeroTrendCard: View {
         return nearestTrendPoint(to: selectedDate, in: displayPoints) ?? latestPoint
     }
 
-    private var valueDomain: ClosedRange<Double> {
-        paddedDomain(values: displayPoints.flatMap { point in
-            TimeMachineAssetSeries.allCases.map { $0.value(from: point) }
-        })
+    private static func makeDateDomain(from points: [TimeMachineTrendPoint]) -> ClosedRange<Date> {
+        guard let firstDate = points.first?.date,
+              let lastDate = points.last?.date else {
+            let now = Date()
+            return now.addingTimeInterval(-86_400)...now.addingTimeInterval(86_400)
+        }
+        let span = max(lastDate.timeIntervalSince(firstDate), 86_400)
+        let padding = max(span * 0.045, 43_200)
+        return firstDate.addingTimeInterval(-padding)...lastDate.addingTimeInterval(padding)
     }
 
     var body: some View {
@@ -19768,9 +20901,9 @@ private struct TimeMachineHeroTrendCard: View {
                 TimeMachineAssetSeries.liabilities.title: TimeMachineAssetSeries.liabilities.color,
             ])
             .frame(height: 226)
+            .chartXScale(domain: dateDomain)
             .chartYScale(domain: valueDomain)
             .chartXAxis {
-                let axisDates = chartAxisDates(displayPoints.map(\.date))
                 AxisMarks(values: axisDates) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
                         .foregroundStyle(AssetTheme.chartGrid.opacity(0.78))
@@ -19920,7 +21053,7 @@ private struct TimeMachineHeroTrendCard: View {
         return .middle
     }
 
-    private func paddedDomain(values: [Double]) -> ClosedRange<Double> {
+    private static func paddedDomain(values: [Double]) -> ClosedRange<Double> {
         let filtered = values.filter { $0.isFinite }
         guard let minValue = filtered.min(), let maxValue = filtered.max() else {
             return 0...1
@@ -20006,20 +21139,20 @@ private struct TimeMachineAxisDateLabel: View {
     private var xOffset: CGFloat {
         switch position {
         case .leading:
-            return 24
+            return 12
         case .middle:
             return 0
         case .trailing:
-            return -24
+            return -12
         }
     }
 
     var body: some View {
-        Text(date.chartAxisShortDateString)
-            .font(.system(size: 9, weight: .medium, design: .rounded))
+        Text(date.chartAxisCompactTickString)
+            .font(.system(size: 9.5, weight: .medium, design: .rounded))
             .foregroundStyle(AssetTheme.textSecondary)
+            .lineLimit(1)
             .fixedSize()
-            .rotationEffect(.degrees(-28), anchor: anchor)
             .offset(x: xOffset)
     }
 }
@@ -20578,31 +21711,96 @@ private struct TimeMachineCurrentAnchorCard: View {
     }
 }
 
+private struct TimeMachineComparisonRevealButtons: View {
+    let options: [TimeMachineDetailComparisonOption]
+    let onReveal: (TimeMachineDetailComparisonOption) -> Void
+
+    private let columns = [
+        GridItem(.adaptive(minimum: 118), spacing: 8, alignment: .leading)
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(AppLocalization.string("更多对照"))
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundStyle(AssetTheme.textSecondary)
+
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
+                ForEach(options) { option in
+                    Button {
+                        onReveal(option)
+                    } label: {
+                        HStack(spacing: 7) {
+                            Circle()
+                                .fill(option.color)
+                                .frame(width: 7, height: 7)
+                            Text(AppLocalization.format("显示%@", option.title))
+                                .font(.system(size: 12.5, weight: .semibold, design: .rounded))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.76)
+                        }
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
+                        .padding(.horizontal, 12)
+                        .background(AssetTheme.surface.opacity(0.62), in: Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(AssetTheme.border.opacity(0.42), lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(AssetTheme.surface.opacity(0.36))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.28), lineWidth: 1)
+        )
+    }
+}
+
 private struct TimeMachineDualAxisTrendCard: View {
     let descriptor: TimeMachineCombinedTrendDescriptor
     var onTapHistory: ((TimeMachineHistoryDrilldown) -> Void)?
     @State private var selectedDate: Date?
     private let cardCornerRadius: CGFloat = 22
     private let chartCornerRadius: CGFloat = 18
+    private let displayPoints: [TimeMachineDualAxisPoint]
+    private let displayLeftOnlyPoints: [TimeMachineSingleAxisPoint]
+    private let rangeFilteredCandlesticks: [TimeMachineCandlestickPoint]
+    private let displayCandlesticks: [TimeMachineCandlestickPoint]
+    private let leftDomain: ClosedRange<Double>
+    private let rightDomain: ClosedRange<Double>
+    private let canShowCandlestickChart: Bool
+    private let canShowDualAxisChart: Bool
+    private let canShowLeftOnlyChart: Bool
+    private let bottomAxisDates: [Date]
+    private let dateRangeLabel: String
 
-    private var displayPoints: [TimeMachineDualAxisPoint] {
-        evenlySampledItems(descriptor.points, maxCount: 120)
-    }
+    init(
+        descriptor: TimeMachineCombinedTrendDescriptor,
+        onTapHistory: ((TimeMachineHistoryDrilldown) -> Void)? = nil
+    ) {
+        self.descriptor = descriptor
+        self.onTapHistory = onTapHistory
 
-    private var displayLeftOnlyPoints: [TimeMachineSingleAxisPoint] {
-        evenlySampledItems(descriptor.leftOnlyPoints, maxCount: 120)
-    }
-
-    private var rangeFilteredCandlesticks: [TimeMachineCandlestickPoint] {
-        guard let candlesticks = descriptor.historyDrilldown?.candlesticks,
-              !candlesticks.isEmpty,
-              let firstDate = descriptor.leftOnlyPoints.first?.date,
-              let lastDate = descriptor.leftOnlyPoints.last?.date else { return [] }
-        return candlesticks.filter { $0.date >= firstDate && $0.date <= lastDate }
-    }
-
-    private var displayCandlesticks: [TimeMachineCandlestickPoint] {
-        evenlySampledItems(rangeFilteredCandlesticks, maxCount: 96)
+        self.displayPoints = descriptor.displayPoints
+        self.displayLeftOnlyPoints = descriptor.displayLeftOnlyPoints
+        self.rangeFilteredCandlesticks = descriptor.rangeFilteredCandlesticks
+        self.displayCandlesticks = descriptor.displayCandlesticks
+        self.canShowCandlestickChart = descriptor.canShowCandlestickChart
+        self.canShowDualAxisChart = descriptor.canShowDualAxisChart
+        self.canShowLeftOnlyChart = descriptor.canShowLeftOnlyChart
+        self.leftDomain = descriptor.leftDomain
+        self.rightDomain = descriptor.rightDomain
+        self.bottomAxisDates = descriptor.bottomAxisDates
+        self.dateRangeLabel = descriptor.dateRangeLabel
     }
 
     private var latestPoint: TimeMachineDualAxisPoint? {
@@ -20630,30 +21828,6 @@ private struct TimeMachineDualAxisTrendCard: View {
     private var selectedCandlestick: TimeMachineCandlestickPoint? {
         guard let selectedDate else { return latestCandlestick }
         return nearestCandlestickPoint(to: selectedDate, in: displayCandlesticks) ?? latestCandlestick
-    }
-
-    private var canShowCandlestickChart: Bool {
-        displayCandlesticks.count >= 2
-    }
-
-    private var leftDomain: ClosedRange<Double> {
-        if canShowCandlestickChart {
-            return paddedDomain(values: displayCandlesticks.flatMap { [$0.low, $0.high] })
-        }
-        let values = displayPoints.map(\.leftValue) + displayLeftOnlyPoints.map(\.value)
-        return paddedDomain(values: values)
-    }
-
-    private var rightDomain: ClosedRange<Double> {
-        paddedDomain(values: displayPoints.map(\.rightValue))
-    }
-
-    private var canShowDualAxisChart: Bool {
-        descriptor.showsComparisonLine && displayPoints.count >= 2
-    }
-
-    private var canShowLeftOnlyChart: Bool {
-        displayLeftOnlyPoints.count >= 2
     }
 
     var body: some View {
@@ -20991,8 +22165,7 @@ private struct TimeMachineDualAxisTrendCard: View {
     }
 
     private var bottomAxisMarks: some AxisContent {
-        let axisDates = detailCardAxisDates(displayCandlesticks.map(\.date) + displayLeftOnlyPoints.map(\.date) + displayPoints.map(\.date))
-        return AxisMarks(values: axisDates) { _ in
+        AxisMarks(values: bottomAxisDates) { _ in
             AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
                 .foregroundStyle(AssetTheme.border.opacity(0.28))
             AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
@@ -21018,18 +22191,6 @@ private struct TimeMachineDualAxisTrendCard: View {
         return dateRangeLabel
     }
 
-    private var dateRangeLabel: String {
-        let dates = (displayCandlesticks.map(\.date) + descriptor.leftOnlyPoints.map(\.date) + descriptor.points.map(\.date)).sorted()
-        guard let first = dates.first, let last = dates.last else { return AppLocalization.string("暂无范围") }
-        return "\(first.chartAxisDateString) - \(last.chartAxisDateString)"
-    }
-
-    private func detailCardAxisDates(_ dates: [Date]) -> [Date] {
-        let sortedDates = Array(Set(dates)).sorted()
-        guard sortedDates.count > 2 else { return sortedDates }
-        return [sortedDates[sortedDates.count / 2]]
-    }
-
     private func normalized(_ value: Double, in domain: ClosedRange<Double>) -> Double {
         let span = domain.upperBound - domain.lowerBound
         guard span.isFinite, span > 0 else { return 0.5 }
@@ -21049,19 +22210,6 @@ private struct TimeMachineDualAxisTrendCard: View {
 
     private func candlestickColor(for point: TimeMachineCandlestickPoint) -> Color {
         point.isRising ? AssetTheme.positive : AssetTheme.negative
-    }
-
-    private func paddedDomain(values: [Double]) -> ClosedRange<Double> {
-        let filtered = values.filter { $0.isFinite }
-        guard let minValue = filtered.min(), let maxValue = filtered.max() else {
-            return 0...1
-        }
-        if abs(maxValue - minValue) < .ulpOfOne {
-            let padding = max(abs(maxValue) * 0.08, 1)
-            return (minValue - padding)...(maxValue + padding)
-        }
-        let padding = max((maxValue - minValue) * 0.12, abs(maxValue) * 0.02)
-        return (minValue - padding)...(maxValue + padding)
     }
 
     private var selectedLeftLabel: String {
@@ -22374,6 +23522,10 @@ private extension Date {
 
     var chartAxisShortDateString: String {
         AppFormatterCache.dateFormatter(format: "yy.MM.dd").string(from: self)
+    }
+
+    var chartAxisCompactTickString: String {
+        AppFormatterCache.dateFormatter(format: "M.d").string(from: self)
     }
 
     var dashboardAxisDateString: String {
