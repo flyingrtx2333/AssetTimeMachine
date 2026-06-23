@@ -9,6 +9,11 @@ DerivedData/
 # macOS
 .DS_Store
 
+# Python / local script byproducts
+__pycache__/
+*.py[cod]
+*.log
+
 # Private/local data
 marketing/app-store/private-backups/
 marketing/app-store/private-real-data/
