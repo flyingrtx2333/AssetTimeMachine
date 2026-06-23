@@ -308,12 +308,64 @@ Important pitfall: this `altool` output uses `BUILD-STATUS: VALID`, not `Status:
 
 ## Backtest / Strategy Verification Rules
 
-- Do not trust one-off `/tmp` research scripts for app-facing strategy metrics.
+### Where the App backtest engine lives
+
+The production App backtest engine is currently embedded in `AssetTimeMachine/ContentView.swift`:
+
+- `BacktestEngine` around the advanced/backtest section is the source of truth for App-facing metrics.
+- `AdvancedBacktestStrategyTemplate.all` defines the strategy cards/templates shown in the App.
+- `AdvancedBacktestStrategyMode` defines strategy modes.
+- `BacktestEngine.runAdvancedStrategy(...)` handles single-asset rule based advanced backtests.
+- `BacktestEngine.runAdvancedStrategies(...)` handles multi-asset advanced backtests.
+- `BacktestEngine.runAdvancedRotationStrategy(...)` / `runAdvancedRotation(...)` handles rotation strategies.
+- `BacktestEngine.advancedRotationRebalanceAdvice(...)` powers “今日调仓 / 提醒策略” target-weight advice.
+- `BacktestRecordCodec` serializes/deserializes saved backtest records and detail payloads.
+
+Do not present strategy performance from a separate research script as product truth unless it has been replayed through these App paths or a parity script proven equivalent to them.
+
+### How to find / research strategies
+
+Use this order when looking for a new strategy candidate:
+
+1. Read the existing App strategy templates first:
+
+   ```bash
+   grep -n "AdvancedBacktestStrategyTemplate" AssetTimeMachine/ContentView.swift
+   grep -n "advancedRotationConfig" AssetTimeMachine/ContentView.swift
+   grep -n 'symbol: ".*rotation' AssetTimeMachine/ContentView.swift
+   ```
+
+2. Check reusable parity/search tools before creating new scripts:
+
+   ```bash
+   ls tools
+   sed -n '1,120p' tools/atm_app_equivalent_backtest.py
+   sed -n '1,120p' tools/atm_strategy_explorer.py
+   sed -n '1,120p' tools/search_no_btc_2002_strategies.py
+   ```
+
+3. Check previous spike writeups before repeating work:
+
+   ```bash
+   find spikes -maxdepth 2 -name README.md | sort
+   ```
+
+4. If a new experiment is needed, create a numbered folder under `spikes/NNN-short-topic/` with:
+   - `README.md`: hypothesis, data range, assets, result table, why it passed/failed.
+   - one or more `.py` scripts: deterministic, no hardcoded secrets, no `/tmp`-only dependencies.
+
+5. Promote only durable, reusable comparison/search code into `tools/`. Keep temporary dead-end probes in `spikes/`.
+
+### Strategy acceptance rules
+
+- Do not trust one-off `/tmp` research scripts for App-facing strategy metrics.
 - New strategy candidates must be replayed through the current App/backtest engine before being presented as product results.
 - For AssetTimeMachine strategy work, keep reusable comparison scripts under `tools/`.
 - For multi-asset backtests across gold/US equities/A-shares, use recent valid price forward-fill with enough holiday tolerance; do not accidentally delete dates because one market is closed.
 - K-line charts must use real OHLC data. Do not fake OHLC from close-only series.
 - User preference: no BTC in main AssetTimeMachine strategy line unless explicitly requested.
+- Main product candidates should be checked on full history plus slices such as 2020+, recent 10Y, and stress periods; do not optimize only one pretty interval.
+- Preferred direction is gold/Nasdaq-centered strategies with controlled drawdown. Avoid unrelated asset stories unless the user explicitly asks.
 
 ## UI / Copy Standards
 
