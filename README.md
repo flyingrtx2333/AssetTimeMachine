@@ -1,6 +1,6 @@
 # 资产时光机 / Asset Time Machine
 
-一个面向个人的本地资产记录与走势分析应用，支持 iPhone 与 macOS 共用一套核心代码。
+一个面向个人的 iPhone 本地资产记录与走势分析应用。
 
 > 核心目标不是做复杂记账，而是按天记录自己的总财富状态，长期观察总资产、净资产和资产构成如何变化。
 
@@ -19,10 +19,10 @@
 
 ## 平台策略
 
-- iOS + macOS 共用一套 SwiftUI 工程
-- 核心模型、存储、计算逻辑尽量共享
-- iPhone 优先优化录入体验
-- macOS 优先优化查看、分析、导入导出体验
+- 当前仅维护 iOS / iPhone 版本
+- SwiftUI + SwiftData 单端 iOS 工程
+- 优先优化 iPhone 的录入、查看、分析、导入导出体验
+- 暂不维护 macOS 目标
 
 ## 核心功能
 
@@ -243,7 +243,7 @@ xcrun swiftc \
 
 - SwiftUI
 - SwiftData
-- Xcode 多端工程（iOS + macOS）
+- Xcode iOS 工程
 
 ### 计划引入
 
@@ -258,7 +258,7 @@ xcrun swiftc \
 - [x] 创建 Xcode 工程
 - [x] 确定中文产品名：资产时光机
 - [x] 确定英文项目名：Asset Time Machine
-- [x] 确定多端路线：iOS + macOS 共用一套代码
+- [x] 确定当前路线：iOS-only，暂不维护 macOS
 - [ ] 设计 SwiftData 数据模型
 - [ ] 移除默认模板代码
 - [ ] 搭建首页 / 记录页 / 时光机页基础骨架

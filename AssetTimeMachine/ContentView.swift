@@ -255,9 +255,11 @@ struct ContentView: View {
             presentOnboarding()
         }
 
-        await marketStore.refreshLiveData()
-        lastMarketRefreshAt = .now
-        await syncTodaySnapshotWithLatestMarketData()
+        let didRefreshLiveData = await marketStore.refreshLiveData()
+        if didRefreshLiveData {
+            lastMarketRefreshAt = .now
+            await syncTodaySnapshotWithLatestMarketData()
+        }
         if strategyNotificationEnabled {
             await marketStore.refreshHistoryIfNeeded(force: false)
         }
@@ -361,9 +363,11 @@ struct ContentView: View {
     @MainActor
     private func refreshLiveMarketDataIfNeeded(force: Bool) async {
         guard force || shouldRefreshLiveMarketData else { return }
-        await marketStore.refreshLiveData()
-        lastMarketRefreshAt = .now
-        await syncTodaySnapshotWithLatestMarketData()
+        let didRefreshLiveData = await marketStore.refreshLiveData()
+        if didRefreshLiveData {
+            lastMarketRefreshAt = .now
+            await syncTodaySnapshotWithLatestMarketData()
+        }
         await refreshAssetNotifications()
         await refreshStrategyNotifications()
     }

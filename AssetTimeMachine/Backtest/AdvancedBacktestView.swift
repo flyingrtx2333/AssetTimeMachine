@@ -716,7 +716,7 @@ struct AdvancedBacktestView: View {
 
                 let advice = capturedStrategyMode.isRotation
                     ? BacktestEngine.advancedRotationRebalanceAdvice(
-                        assetInputs: capturedAssetInputs,
+                        assetInputs: filteredAssetInputs,
                         mode: capturedStrategyMode
                     )
                     : nil
@@ -724,11 +724,10 @@ struct AdvancedBacktestView: View {
                 let report: AdvancedBacktestReport?
                 if capturedStrategyMode.isRotation {
                     report = BacktestEngine.runAdvancedRotationStrategy(
-                        assetInputs: capturedAssetInputs,
+                        assetInputs: filteredAssetInputs,
                         initialCash: capturedInitialCash,
                         settings: capturedRiskSettings,
-                        mode: capturedStrategyMode,
-                        dateBounds: capturedDateBounds
+                        mode: capturedStrategyMode
                     )
                 } else {
                     report = BacktestEngine.runAdvancedStrategies(

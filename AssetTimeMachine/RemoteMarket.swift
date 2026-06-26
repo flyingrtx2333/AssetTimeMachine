@@ -304,6 +304,11 @@ enum RemoteMarketClient {
     }
 }
 
+private struct HistoryBatchFetchResult {
+    let series: [PublicHistorySeries]
+    let errorMessage: String?
+}
+
 @MainActor
 final class RemoteMarketStore: ObservableObject {
     @Published var overview: PublicMarketOverview?
@@ -324,6 +329,8 @@ final class RemoteMarketStore: ObservableObject {
     private var isRefreshingHistory = false
     private var lastHistoryRefreshAt: Date?
     private var lastHistoryAttemptAt: Date?
+    private var liveDataErrorMessage: String?
+    private var historyErrorMessage: String?
 
     private var shouldRefreshHistory: Bool {
         if historySeries.isEmpty {
@@ -336,7 +343,10 @@ final class RemoteMarketStore: ObservableObject {
             return Date().timeIntervalSince(lastHistoryAttemptAt) >= Self.failedHistoryRetryInterval
         }
 
-        guard let lastHistoryRefreshAt else { return false }
+        guard let lastHistoryRefreshAt else {
+            guard let lastHistoryAttemptAt else { return true }
+            return Date().timeIntervalSince(lastHistoryAttemptAt) >= Self.failedHistoryRetryInterval
+        }
         return Date().timeIntervalSince(lastHistoryRefreshAt) >= Self.historyRefreshInterval
     }
 
@@ -349,14 +359,19 @@ final class RemoteMarketStore: ObservableObject {
         await refreshHistoryIfNeeded(force: true)
     }
 
-    func refreshLiveData() async {
-        guard !isRefreshingLiveData else { return }
+    @discardableResult
+    func refreshLiveData() async -> Bool {
+        guard !isRefreshingLiveData else { return false }
         isRefreshingLiveData = true
         updateLoadingState()
         defer {
             isRefreshingLiveData = false
             updateLoadingState()
         }
+
+        var didRefreshExchangeRates = false
+        var didRefreshOverview = false
+        var firstErrorMessage: String?
 
         do {
             let exchangeRates = try await RemoteMarketClient.fetchExchangeRates()
@@ -367,9 +382,9 @@ final class RemoteMarketStore: ObservableObject {
             if self.exchangeRatesFetchedAt != exchangeRates.fetchedAt {
                 self.exchangeRatesFetchedAt = exchangeRates.fetchedAt
             }
-            errorMessage = nil
+            didRefreshExchangeRates = true
         } catch {
-            errorMessage = error.localizedDescription
+            firstErrorMessage = error.localizedDescription
         }
 
         do {
@@ -377,14 +392,15 @@ final class RemoteMarketStore: ObservableObject {
             if self.overview != overview {
                 self.overview = overview
             }
-            if errorMessage == nil {
-                errorMessage = nil
-            }
+            didRefreshOverview = true
         } catch {
-            if errorMessage == nil {
-                errorMessage = error.localizedDescription
-            }
+            firstErrorMessage = firstErrorMessage ?? error.localizedDescription
         }
+
+        let didRefreshAllLiveData = didRefreshExchangeRates && didRefreshOverview
+        liveDataErrorMessage = didRefreshAllLiveData ? nil : (firstErrorMessage ?? AppLocalization.string("接口请求失败"))
+        updateErrorMessage()
+        return didRefreshAllLiveData
     }
 
     func refreshHistoryIfNeeded(force: Bool = false) async {
@@ -425,7 +441,8 @@ final class RemoteMarketStore: ObservableObject {
         let fullHistoryEndDate = MarketDay.string(from: .now)
 
         var mergedSeries: [PublicHistorySeries] = []
-        await withTaskGroup(of: [PublicHistorySeries].self) { group in
+        var batchErrorMessages: [String] = []
+        await withTaskGroup(of: HistoryBatchFetchResult.self) { group in
             for batch in historyBatches {
                 group.addTask {
                     do {
@@ -435,15 +452,20 @@ final class RemoteMarketStore: ObservableObject {
                             endDate: fullHistoryEndDate,
                             includeOHLC: true
                         )
-                        return response.series
+                        return HistoryBatchFetchResult(series: response.series, errorMessage: nil)
                     } catch {
-                        return []
+                        return HistoryBatchFetchResult(series: [], errorMessage: error.localizedDescription)
                     }
                 }
             }
 
-            for await series in group where !series.isEmpty {
-                mergedSeries.append(contentsOf: series)
+            for await result in group {
+                if !result.series.isEmpty {
+                    mergedSeries.append(contentsOf: result.series)
+                }
+                if let errorMessage = result.errorMessage {
+                    batchErrorMessages.append(errorMessage)
+                }
             }
         }
 
@@ -464,19 +486,35 @@ final class RemoteMarketStore: ObservableObject {
                 normalizedSeries[normalizedSymbol] = series
             }
 
-            lastHistoryRefreshAt = .now
             if self.historySeries != normalizedSeries {
                 self.historySeries = normalizedSeries
             }
-        } else if errorMessage == nil {
-            errorMessage = AppLocalization.string("历史数据加载失败")
+
+            if batchErrorMessages.isEmpty {
+                lastHistoryRefreshAt = .now
+                historyErrorMessage = nil
+            } else {
+                lastHistoryRefreshAt = nil
+                historyErrorMessage = AppLocalization.string("部分历史行情暂时不可用，稍后会自动重试")
+            }
+        } else {
+            lastHistoryRefreshAt = nil
+            historyErrorMessage = batchErrorMessages.first ?? AppLocalization.string("历史数据加载失败")
         }
+        updateErrorMessage()
     }
 
     private func updateLoadingState() {
         let nextValue = isRefreshingLiveData || isRefreshingHistory
         if isLoading != nextValue {
             isLoading = nextValue
+        }
+    }
+
+    private func updateErrorMessage() {
+        let nextErrorMessage = liveDataErrorMessage ?? historyErrorMessage
+        if errorMessage != nextErrorMessage {
+            errorMessage = nextErrorMessage
         }
     }
 
