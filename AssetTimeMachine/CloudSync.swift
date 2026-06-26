@@ -699,6 +699,9 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         do {
             try await task()
         } catch {
+            guard !Self.isCancellation(error) else {
+                return
+            }
             if (error as NSError).code == 401 {
                 clearTokens()
                 currentUser = nil
@@ -709,6 +712,15 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             }
             errorMessage = error.localizedDescription
         }
+    }
+
+    private static func isCancellation(_ error: any Error) -> Bool {
+        if error is CancellationError {
+            return true
+        }
+
+        let nsError = error as NSError
+        return nsError.domain == NSURLErrorDomain && nsError.code == URLError.cancelled.rawValue
     }
 
     private func friendlyAppleSignInMessage(for error: any Error) -> String {

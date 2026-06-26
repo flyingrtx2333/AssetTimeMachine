@@ -6,13 +6,15 @@ This repository is the **AssetTimeMachine** SwiftUI + SwiftData iOS app. It conn
 
 - `AssetTimeMachine/` holds app source.
   - `AssetTimeMachineApp.swift`: app entry.
-  - `ContentView.swift`: most SwiftUI screens, backtest UI, strategy cards, dashboard, and sheets.
+  - `ContentView.swift`: app shell and top-level routing.
   - `Models.swift`: SwiftData/user data models.
   - `Services.swift`: notification/export/service helpers.
   - `CloudSync.swift`: AssetTimeMachine cloud sync API client.
   - `RemoteMarket.swift`: market-data API client/cache store.
   - `ImportExport.swift`: local import/export.
   - `LogicTests.swift`: lightweight in-app/preview-style logic checks, not a separate XCTest target.
+  - `Backtest/`: backtest UI, strategy templates, strategy cards, result views, and App-facing backtest engine.
+  - `Views/`: dashboard, settings, snapshots, time machine, and shared SwiftUI surfaces.
 - `AssetTimeMachine/Assets.xcassets/` stores app icons, accent colors, and asset category icons.
 - `AssetTimeMachine/Localizable.xcstrings` and related string catalogs hold localized text. Route user-visible strings through `AppLocalization` / localization catalog style already used in the code.
 - `demo/` contains sample import/history JSON files.
@@ -310,11 +312,10 @@ Important pitfall: this `altool` output uses `BUILD-STATUS: VALID`, not `Status:
 
 ### Where the App backtest engine lives
 
-The production App backtest engine is currently embedded in `AssetTimeMachine/ContentView.swift`:
+The production App backtest engine currently lives in `AssetTimeMachine/Backtest/`:
 
-- `BacktestEngine` around the advanced/backtest section is the source of truth for App-facing metrics.
-- `AdvancedBacktestStrategyTemplate.all` defines the strategy cards/templates shown in the App.
-- `AdvancedBacktestStrategyMode` defines strategy modes.
+- `AssetTimeMachine/Backtest/BacktestEngine.swift`: source of truth for App-facing metrics.
+- `AssetTimeMachine/Backtest/BacktestModels.swift`: `AdvancedBacktestStrategyTemplate.all`, `AdvancedBacktestStrategyMode`, strategy notification defaults, result payload models.
 - `BacktestEngine.runAdvancedStrategy(...)` handles single-asset rule based advanced backtests.
 - `BacktestEngine.runAdvancedStrategies(...)` handles multi-asset advanced backtests.
 - `BacktestEngine.runAdvancedRotationStrategy(...)` / `runAdvancedRotation(...)` handles rotation strategies.
@@ -323,6 +324,51 @@ The production App backtest engine is currently embedded in `AssetTimeMachine/Co
 
 Do not present strategy performance from a separate research script as product truth unless it has been replayed through these App paths or a parity script proven equivalent to them.
 
+### Current App-engine strategy metrics
+
+These are the current App-engine truth values from `tools/strategy_metric_dump.swift`, run against the production market history endpoint on 2026-06-26. Assumptions: full available history, initial cash 100,000 CNY, fee 1%, slippage 0.05%.
+
+| Strategy | Annualized | Max drawdown | Sharpe | Range |
+|---|---:|---:|---:|---|
+| 权益曲线状态机 | 11.00% | 10.24% | 1.10 | 2002-01-04..2026-06-26 |
+| 单向控波元策略 | 10.61% | 11.23% | 1.04 | 2002-01-04..2026-06-26 |
+| 动态袖套夏普策略 | 10.05% | 11.65% | 1.03 | 2002-01-04..2026-06-26 |
+| 增强热度上限元 | 9.65% | 12.04% | 0.93 | 2002-01-04..2026-06-26 |
+| 热度上限元策略 | 9.44% | 12.04% | 0.93 | 2002-01-04..2026-06-26 |
+| 黄金交接保护 | 9.39% | 11.38% | 0.92 | 2002-01-04..2026-06-26 |
+| 月度热度上限元 | 8.82% | 16.57% | 0.85 | 2002-01-04..2026-06-26 |
+| 全球修复传染控制 | 3.45% | 23.43% | 0.43 | 2002-01-04..2026-06-26 |
+| 双金丝雀动量防守 | 1.86% | 31.89% | 0.28 | 2002-01-04..2026-06-26 |
+| 美元现金修复策略 | 1.24% | 24.44% | 0.20 | 2002-01-04..2026-06-26 |
+| 黄金恐慌锁盈策略 | 1.14% | 25.29% | 0.19 | 2002-01-04..2026-06-26 |
+| 风险效率增强策略 | 1.01% | 25.76% | 0.17 | 2002-01-04..2026-06-26 |
+| MA金叉死叉 | 0.75% | 43.40% | 0.12 | 2000-01-13..2026-06-26 |
+| BOLL下轨反弹 | -5.89% | 80.30% | -0.76 | 2000-01-13..2026-06-26 |
+| MA60趋势 | -6.41% | 87.05% | -0.46 | 2000-01-13..2026-06-26 |
+| MA20趋势 | -18.78% | 99.60% | -1.48 | 2000-01-13..2026-06-26 |
+
+If this table disagrees with a research script, trust this table only until `tools/strategy_metric_dump.swift` is rerun.
+
+### Required App-engine strategy verification command
+
+Use this command before reporting or updating product-facing strategy metrics:
+
+```bash
+cd ~/Desktop/AllProjects/AssetTimeMachine
+
+xcrun swiftc \
+  -parse-as-library \
+  -module-cache-path /private/tmp/atm-swift-module-cache \
+  AssetTimeMachine/Backtest/BacktestModels.swift \
+  AssetTimeMachine/Backtest/BacktestEngine.swift \
+  tools/strategy_metric_dump.swift \
+  -o /private/tmp/strategy_metric_dump
+
+/private/tmp/strategy_metric_dump
+```
+
+The dump fetches live history from `https://api.flyingrtx.com`, so it may need network permission. Do not substitute `tools/batch_strategy_summary.py` for this command when the question is “what does the App currently show/calculate?”; that batch script may include spike runners that are not App-equivalent.
+
 ### How to find / research strategies
 
 Use this order when looking for a new strategy candidate:
@@ -330,15 +376,16 @@ Use this order when looking for a new strategy candidate:
 1. Read the existing App strategy templates first:
 
    ```bash
-   grep -n "AdvancedBacktestStrategyTemplate" AssetTimeMachine/ContentView.swift
-   grep -n "advancedRotationConfig" AssetTimeMachine/ContentView.swift
-   grep -n 'symbol: ".*rotation' AssetTimeMachine/ContentView.swift
+   rg -n "AdvancedBacktestStrategyTemplate" AssetTimeMachine/Backtest/BacktestModels.swift
+   rg -n "advancedRotationConfig" AssetTimeMachine/Backtest/BacktestEngine.swift
+   rg -n 'symbol: ".*rotation' AssetTimeMachine/Backtest
    ```
 
 2. Check reusable parity/search tools before creating new scripts:
 
    ```bash
    ls tools
+   sed -n '1,160p' tools/strategy_metric_dump.swift
    sed -n '1,120p' tools/atm_app_equivalent_backtest.py
    sed -n '1,120p' tools/atm_strategy_explorer.py
    sed -n '1,120p' tools/search_no_btc_2002_strategies.py
@@ -359,7 +406,8 @@ Use this order when looking for a new strategy candidate:
 ### Strategy acceptance rules
 
 - Do not trust one-off `/tmp` research scripts for App-facing strategy metrics.
-- New strategy candidates must be replayed through the current App/backtest engine before being presented as product results.
+- New strategy candidates must be replayed through the current App/backtest engine before being presented as product results. Prefer `tools/strategy_metric_dump.swift` for current product metrics.
+- Do not copy high-return/high-Sharpe values from spike scripts into README, AGENTS, App cards, App subtitles, release notes, or user-facing answers unless a Swift App-engine run produces the same values.
 - For AssetTimeMachine strategy work, keep reusable comparison scripts under `tools/`.
 - For multi-asset backtests across gold/US equities/A-shares, use recent valid price forward-fill with enough holiday tolerance; do not accidentally delete dates because one market is closed.
 - K-line charts must use real OHLC data. Do not fake OHLC from close-only series.

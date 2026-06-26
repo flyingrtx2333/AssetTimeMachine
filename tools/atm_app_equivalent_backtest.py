@@ -9,6 +9,9 @@ spec beside it in the same commit.
 
 Currently implemented strategy scope:
 - coreGoldSatelliteHeatCappedMomentum (热度上限元策略)
+- coreGoldSatelliteGoldHandoffMomentum (黄金交接保护)
+- coreGoldSatelliteEquityBreadthMomentum (权益宽度进攻引擎)
+- coreGoldSatelliteOneWayVolManagedMomentum (单向控波元策略)
 
 The implementation mirrors the Swift production path that matters for this
 strategy:
@@ -19,6 +22,7 @@ strategy:
 - gold satellite overlay, weak-February brake, single-equity cap
 - portfolio cash yield, fees, slippage, rebalance cadence, rebalance band
 - Swift-compatible performance metrics
+- report-window starts via `--start-date` while preserving earlier signal history
 """
 from __future__ import annotations
 
@@ -33,6 +37,7 @@ import urllib.request
 from typing import Any, Literal
 
 API_URL = "https://api.flyingrtx.com/api/v1/money/public/history"
+API_SYMBOLS = ["gold_cny", "nasdaq_composite", "sp500", "csi300", "shanghai_composite"]
 SYMBOLS = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
 EQUITY_SYMBOLS = ["nasdaq", "sp500", "csi300", "shanghai_composite"]
 USD_FX_SYMBOL = "usd_per_cny"
@@ -242,7 +247,7 @@ def clamp01(value: float) -> float:
 
 
 def fetch_public_history(end_date: date | None = None) -> dict[str, list[tuple[date, float]]]:
-    query = "%2C".join(SYMBOLS + [USD_FX_SYMBOL])
+    query = "%2C".join(API_SYMBOLS + [USD_FX_SYMBOL])
     url = f"{API_URL}?symbols={query}&period=all"
     with urllib.request.urlopen(url, timeout=60) as response:
         payload = json.load(response)
@@ -952,11 +957,28 @@ def performance_metrics(dates: list[date], values: list[float]) -> tuple[float, 
     return total, annualized, max_dd, annual_vol, sharpe
 
 
-def run_strategy(strategy: str = "coreGoldSatelliteHeatCappedMomentum", initial_cash: float = 100_000.0, fee_rate_pct: float = 0.10, slippage_rate_pct: float = 0.05, end_date: str | date | None = None) -> BacktestResult:
+def _run_strategy_core(
+    strategy: str = "coreGoldSatelliteHeatCappedMomentum",
+    initial_cash: float = 100_000.0,
+    fee_rate_pct: float = 1.0,
+    slippage_rate_pct: float = 0.05,
+    end_date: str | date | None = None,
+    start_date: str | date | None = None,
+) -> BacktestResult:
     cutoff = parse_date(end_date) if isinstance(end_date, str) else end_date
+    start_cutoff = parse_date(start_date) if isinstance(start_date, str) else start_date
     raw = fetch_public_history(end_date=cutoff)
     prepared = prepare_series(raw)
     dates, prices_by_symbol = align_rotation_price_series(prepared)
+    if start_cutoff is not None:
+        start_index = next((index for index, item in enumerate(dates) if item >= start_cutoff), None)
+    else:
+        start_index = 0
+    if start_index is None:
+        raise RuntimeError("selected start date has no aligned market data")
+    end_index = len(dates) - 1
+    if start_index >= end_index:
+        raise RuntimeError("selected date range is too short")
     symbols = [p.symbol for p in prepared]
     config = strategy_config(strategy)
     ma_by_symbol, vol_by_symbol = indicator_maps(prices_by_symbol, config)
@@ -978,6 +1000,7 @@ def run_strategy(strategy: str = "coreGoldSatelliteHeatCappedMomentum", initial_
     points: list[float] = []
     trades: list[Trade] = []
     last_rebalance_index = -10**9
+    values_by_index = [0.0 for _ in dates]
 
     def portfolio_value(index: int) -> float:
         return cash + sum(units[sym] * prices_by_symbol[sym][index] for sym in tradable_symbols)
@@ -987,20 +1010,21 @@ def run_strategy(strategy: str = "coreGoldSatelliteHeatCappedMomentum", initial_
             raw_weights = meta_rotation_target_weights(config.meta_switch, signal_index, trace_index, meta_traces)
             if raw_weights is None:
                 return {}
-            return apply_gold_satellite_overlay(raw_weights, signal_index, dates[signal_index], prices_by_symbol, points, config)
+            return apply_gold_satellite_overlay(raw_weights, signal_index, dates[signal_index], prices_by_symbol, values_by_index, config)
         return advanced_rotation_target_weights(symbols, prices_by_symbol, ma_by_symbol, vol_by_symbol, signal_index, dates[signal_index], config)
 
-    for index, current_date in enumerate(dates):
-        if index > 0 and cash > 0:
+    for index in range(start_index, end_index + 1):
+        current_date = dates[index]
+        if index > start_index and cash > 0:
             interest = cash * cash_daily_return(dates[index - 1])
             if math.isfinite(interest) and interest > 0:
                 cash += interest
 
         rebalance_sessions = max(config.rebalance_sessions, 1)
         if config.rebalances_from_first_signal:
-            should_rebalance = index > 0 and index - last_rebalance_index >= rebalance_sessions
+            should_rebalance = index == start_index or (index > 0 and index - last_rebalance_index >= rebalance_sessions)
         else:
-            should_rebalance = index == 0 or index % rebalance_sessions == 0
+            should_rebalance = index == start_index or index % rebalance_sessions == 0
 
         if should_rebalance:
             signal_index = index - 1
@@ -1063,13 +1087,16 @@ def run_strategy(strategy: str = "coreGoldSatelliteHeatCappedMomentum", initial_
                 trades.append(Trade(current_date.isoformat(), "buy", sym, execution_price, amount, bought_units))
             last_rebalance_index = index
 
-        points.append(portfolio_value(index))
+        value = portfolio_value(index)
+        points.append(value)
+        values_by_index[index] = value
 
-    total, annualized, max_dd, annual_vol, sharpe = performance_metrics(dates, points)
+    report_dates = dates[start_index : end_index + 1]
+    total, annualized, max_dd, annual_vol, sharpe = performance_metrics(report_dates, points)
     return BacktestResult(
         strategy=strategy,
-        coverage_start=dates[0].isoformat(),
-        coverage_end=dates[-1].isoformat(),
+        coverage_start=report_dates[0].isoformat(),
+        coverage_end=report_dates[-1].isoformat(),
         point_count=len(points),
         annualized_return=annualized,
         max_drawdown=max_dd,
@@ -1078,18 +1105,294 @@ def run_strategy(strategy: str = "coreGoldSatelliteHeatCappedMomentum", initial_
         sharpe_ratio=sharpe,
         final_value=points[-1],
         trades=trades,
-        dates=dates,
+        dates=report_dates,
         values=points,
     )
+
+
+def _positive_total(weights: dict[str, float]) -> float:
+    return sum(max(weight, 0.0) for weight in weights.values())
+
+
+def _normalize_weights(weights: dict[str, float], max_total: float = 1.0) -> dict[str, float]:
+    out = {symbol: max(weight, 0.0) for symbol, weight in weights.items() if weight > 0.0001}
+    total = _positive_total(out)
+    if total > max_total and total > 0:
+        scale = max_total / total
+        out = {symbol: weight * scale for symbol, weight in out.items() if weight * scale > 0.0001}
+    return out
+
+
+def _blend_weights(first: dict[str, float], second: dict[str, float], first_share: float) -> dict[str, float]:
+    share = min(max(first_share, 0.0), 1.0)
+    out: dict[str, float] = {}
+    for symbol, weight in first.items():
+        out[symbol] = out.get(symbol, 0.0) + max(weight, 0.0) * share
+    for symbol, weight in second.items():
+        out[symbol] = out.get(symbol, 0.0) + max(weight, 0.0) * (1 - share)
+    return _normalize_weights(out)
+
+
+def _overlay_gold_rollover_cap(original_overlay):
+    def overlay(raw_weights, signal_index, signal_date, prices_by_symbol, portfolio_values, config):
+        final = original_overlay(raw_weights, signal_index, signal_date, prices_by_symbol, portfolio_values, config)
+        gold_weight = final.get("gold_cny", 0.0)
+        if gold_weight > 0.45:
+            long_momentum = price_momentum(prices_by_symbol["gold_cny"], signal_index, 90)
+            short_momentum = price_momentum(prices_by_symbol["gold_cny"], signal_index, 20)
+            if long_momentum is not None and short_momentum is not None and long_momentum > 0.08 and short_momentum < 0:
+                final["gold_cny"] = 0.45
+        return _normalize_weights(final, 0.85)
+
+    return overlay
+
+
+def _above_ma(prices_by_symbol: dict[str, list[float]], symbol: str, index: int, period: int) -> bool:
+    ma = moving_average(prices_by_symbol[symbol], period)[index]
+    return ma is not None and prices_by_symbol[symbol][index] >= ma
+
+
+def _mom(prices_by_symbol: dict[str, list[float]], symbol: str, index: int, lookback: int) -> float | None:
+    return price_momentum(prices_by_symbol[symbol], index, lookback)
+
+
+def _overlay_gold_handoff(original_overlay):
+    def overlay(raw_weights, signal_index, signal_date, prices_by_symbol, portfolio_values, config):
+        weights = original_overlay(raw_weights, signal_index, signal_date, prices_by_symbol, portfolio_values, config)
+        gold_hot = (_mom(prices_by_symbol, "gold_cny", signal_index, 90) or 0.0) > 0.08
+        gold_roll = (_mom(prices_by_symbol, "gold_cny", signal_index, 20) or 0.0) < 0
+        if not (gold_hot and gold_roll):
+            return _normalize_weights(weights, 0.85)
+
+        china_mania = any(
+            (_mom(prices_by_symbol, symbol, signal_index, 240) or 0.0) > 1.0
+            and (donchian_range_position(prices_by_symbol[symbol], signal_index, 240) or 0.0) > 0.95
+            for symbol in ["csi300", "shanghai_composite"]
+        )
+        if china_mania:
+            return _normalize_weights(weights, 0.85)
+
+        confirmed = []
+        for symbol in ["nasdaq", "sp500"]:
+            momentum = _mom(prices_by_symbol, symbol, signal_index, 60)
+            if momentum is not None and momentum > 0 and _above_ma(prices_by_symbol, symbol, signal_index, 120):
+                confirmed.append((momentum, symbol))
+        if confirmed:
+            _momentum, winner = max(confirmed)
+            weights[winner] = weights.get(winner, 0.0) + 0.20
+        return _normalize_weights(weights, 0.85)
+
+    return overlay
+
+
+def _rolling_vol(prices_by_symbol: dict[str, list[float]], symbol: str, index: int, lookback: int = 60) -> float | None:
+    values = prices_by_symbol[symbol]
+    if index - lookback + 1 < 1:
+        return None
+    returns: list[float] = []
+    for cursor in range(index - lookback + 1, index + 1):
+        if values[cursor - 1] > 0 and values[cursor] > 0:
+            returns.append(math.log(values[cursor] / values[cursor - 1]))
+    if len(returns) < 2:
+        return None
+    mean = sum(returns) / len(returns)
+    variance = sum((item - mean) ** 2 for item in returns) / (len(returns) - 1)
+    return math.sqrt(max(variance, 0.0)) * math.sqrt(TRADING_DAYS_PER_YEAR)
+
+
+def _confirmed_equity(prices_by_symbol: dict[str, list[float]], symbol: str, index: int) -> bool:
+    mom60 = _mom(prices_by_symbol, symbol, index, 60)
+    mom120 = _mom(prices_by_symbol, symbol, index, 120)
+    return (
+        mom60 is not None
+        and mom120 is not None
+        and mom60 > 0
+        and mom120 > 0
+        and _above_ma(prices_by_symbol, symbol, index, 120)
+    )
+
+
+def _score_basket(symbols: list[str], prices_by_symbol: dict[str, list[float]], index: int, budget: float) -> dict[str, float]:
+    scored = []
+    for symbol in symbols:
+        mom60 = _mom(prices_by_symbol, symbol, index, 60) or 0.0
+        mom120 = _mom(prices_by_symbol, symbol, index, 120) or 0.0
+        vol = _rolling_vol(prices_by_symbol, symbol, index) or 9.0
+        score = max(0.0, (mom120 + 0.5 * mom60) / max(vol, 0.01))
+        if score > 0:
+            scored.append((symbol, score))
+    total = sum(score for _symbol, score in scored)
+    if total <= 0:
+        return {}
+    return {symbol: budget * score / total for symbol, score in scored}
+
+
+def _overlay_equity_breadth(original_overlay):
+    handoff = _overlay_gold_handoff(original_overlay)
+
+    def overlay(raw_weights, signal_index, signal_date, prices_by_symbol, portfolio_values, config):
+        weights = handoff(raw_weights, signal_index, signal_date, prices_by_symbol, portfolio_values, config)
+        equities = [symbol for symbol in EQUITY_SYMBOLS if _confirmed_equity(prices_by_symbol, symbol, signal_index)]
+        budget = 1.0 - _positive_total(weights)
+        if len(equities) >= 2 and budget > 0:
+            for symbol, weight in _score_basket(equities, prices_by_symbol, signal_index, budget).items():
+                weights[symbol] = weights.get(symbol, 0.0) + weight
+        return _normalize_weights(weights)
+
+    return overlay
+
+
+def _trailing_return(values: list[float], index: int, lookback: int) -> float | None:
+    if index - lookback < 0 or values[index - lookback] <= 0:
+        return None
+    return values[index] / values[index - lookback] - 1
+
+
+def _trailing_drawdown(values: list[float], index: int, lookback: int) -> float | None:
+    start = max(0, index - lookback + 1)
+    window = values[start:index + 1]
+    if not window:
+        return None
+    peak = max(window)
+    return values[index] / peak - 1 if peak > 0 else None
+
+
+def _trailing_vol(values: list[float], index: int, lookback: int) -> float | None:
+    if index - lookback + 1 < 1:
+        return None
+    returns: list[float] = []
+    for cursor in range(index - lookback + 1, index + 1):
+        if values[cursor - 1] > 0 and values[cursor] > 0:
+            returns.append(math.log(values[cursor] / values[cursor - 1]))
+    if len(returns) < 20:
+        return None
+    mean = sum(returns) / len(returns)
+    variance = sum((item - mean) ** 2 for item in returns) / (len(returns) - 1)
+    return math.sqrt(max(variance, 0.0)) * math.sqrt(TRADING_DAYS_PER_YEAR)
+
+
+def _run_overlay_strategy(
+    name: str,
+    overlay_factory,
+    initial_cash: float,
+    fee_rate_pct: float,
+    slippage_rate_pct: float,
+    end_date: str | date | None,
+    start_date: str | date | None = None,
+) -> BacktestResult:
+    original_overlay = apply_gold_satellite_overlay
+    patched_original = _overlay_gold_rollover_cap(original_overlay)
+    globals()["apply_gold_satellite_overlay"] = overlay_factory(patched_original)
+    try:
+        result = _run_strategy_core(
+            "coreGoldSatelliteHeatCappedMomentum",
+            initial_cash,
+            fee_rate_pct,
+            slippage_rate_pct,
+            end_date,
+            start_date,
+        )
+    finally:
+        globals()["apply_gold_satellite_overlay"] = original_overlay
+    return BacktestResult(
+        strategy=name,
+        coverage_start=result.coverage_start,
+        coverage_end=result.coverage_end,
+        point_count=result.point_count,
+        annualized_return=result.annualized_return,
+        max_drawdown=result.max_drawdown,
+        total_return=result.total_return,
+        annualized_volatility=result.annualized_volatility,
+        sharpe_ratio=result.sharpe_ratio,
+        final_value=result.final_value,
+        trades=result.trades,
+        dates=result.dates,
+        values=result.values,
+    )
+
+
+def _one_way_vol_managed_overlay(current: BacktestResult, breadth: BacktestResult):
+    def factory(original_overlay):
+        current_engine = _overlay_gold_handoff(original_overlay)
+        breadth_engine = _overlay_equity_breadth(original_overlay)
+
+        def overlay(raw_weights, signal_index, signal_date, prices_by_symbol, portfolio_values, config):
+            current_weights = current_engine(raw_weights, signal_index, signal_date, prices_by_symbol, portfolio_values, config)
+            breadth_weights = breadth_engine(raw_weights, signal_index, signal_date, prices_by_symbol, portfolio_values, config)
+            current_ret = _trailing_return(current.values, signal_index, 240)
+            breadth_ret = _trailing_return(breadth.values, signal_index, 240)
+            breadth_dd = _trailing_drawdown(breadth.values, signal_index, 120)
+
+            routed = current_weights
+            offensive = False
+            if current_ret is not None and breadth_ret is not None and breadth_ret > current_ret:
+                if breadth_dd is not None and breadth_dd < -0.08:
+                    routed = _blend_weights(current_weights, breadth_weights, 0.7)
+                else:
+                    routed = _blend_weights(breadth_weights, current_weights, 0.7)
+                    offensive = True
+
+            if offensive:
+                current_vol = _trailing_vol(current.values, signal_index, 240)
+                breadth_vol = _trailing_vol(breadth.values, signal_index, 240)
+                if current_vol is not None and breadth_vol is not None and breadth_vol > current_vol and breadth_vol > 0:
+                    scale = min(max(current_vol / breadth_vol, 0.0), 1.0)
+                    routed = {symbol: weight * scale for symbol, weight in routed.items() if weight * scale > 0.0001}
+            return _normalize_weights(routed)
+
+        return overlay
+
+    return factory
+
+
+def run_strategy(
+    strategy: str = "coreGoldSatelliteHeatCappedMomentum",
+    initial_cash: float = 100_000.0,
+    fee_rate_pct: float = 1.0,
+    slippage_rate_pct: float = 0.05,
+    end_date: str | date | None = None,
+    start_date: str | date | None = None,
+) -> BacktestResult:
+    if strategy == "coreGoldSatelliteGoldHandoffMomentum":
+        return _run_overlay_strategy(strategy, _overlay_gold_handoff, initial_cash, fee_rate_pct, slippage_rate_pct, end_date, start_date)
+    if strategy == "coreGoldSatelliteEquityBreadthMomentum":
+        return _run_overlay_strategy(strategy, _overlay_equity_breadth, initial_cash, fee_rate_pct, slippage_rate_pct, end_date, start_date)
+    if strategy == "coreGoldSatelliteOneWayVolManagedMomentum":
+        original_fetch = fetch_public_history
+        cache: dict[str | None, dict[str, list[tuple[date, float]]]] = {}
+
+        def cached_fetch(end_date: date | None = None):
+            key = end_date.isoformat() if end_date else None
+            if key not in cache:
+                cache[key] = original_fetch(end_date=end_date)
+            return cache[key]
+
+        globals()["fetch_public_history"] = cached_fetch
+        try:
+            current = run_strategy("coreGoldSatelliteGoldHandoffMomentum", initial_cash, fee_rate_pct, slippage_rate_pct, end_date)
+            breadth = run_strategy("coreGoldSatelliteEquityBreadthMomentum", initial_cash, fee_rate_pct, slippage_rate_pct, end_date)
+            return _run_overlay_strategy(
+                strategy,
+                _one_way_vol_managed_overlay(current, breadth),
+                initial_cash,
+                fee_rate_pct,
+                slippage_rate_pct,
+                end_date,
+                start_date,
+            )
+        finally:
+            globals()["fetch_public_history"] = original_fetch
+    return _run_strategy_core(strategy, initial_cash, fee_rate_pct, slippage_rate_pct, end_date, start_date)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run AssetTimeMachine app-equivalent Python backtest")
     parser.add_argument("strategy", nargs="?", default="coreGoldSatelliteHeatCappedMomentum")
+    parser.add_argument("--start-date", help="optional YYYY-MM-DD report start; keeps earlier history for signal warmup")
     parser.add_argument("--end-date", help="optional YYYY-MM-DD market-data cutoff for stable App-record regression")
     parser.add_argument("--json", action="store_true", help="print machine-readable JSON")
     args = parser.parse_args()
-    result = run_strategy(args.strategy, end_date=args.end_date)
+    result = run_strategy(args.strategy, end_date=args.end_date, start_date=args.start_date)
     if args.json:
         print(json.dumps({
             "strategy": result.strategy,

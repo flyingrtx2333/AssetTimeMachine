@@ -88,6 +88,59 @@
 - 本地 JSON 导入
 - 便于备份、迁移、后续同步扩展
 
+### 7. 量化策略回测
+
+App 内策略指标必须以当前 Swift `BacktestEngine` 的实际运行为准，不能直接使用 research/spike 脚本结果作为产品展示或对外结论。
+
+当前准口径：
+
+- 回测引擎：`AssetTimeMachine/Backtest/BacktestEngine.swift`
+- 策略模板：`AssetTimeMachine/Backtest/BacktestModels.swift` 中的 `AdvancedBacktestStrategyTemplate.all`
+- 行情数据：`https://api.flyingrtx.com/api/v1/money/public/history`
+- 回测区间：全历史，按各策略可用数据起点自动决定
+- 初始资金：100,000 CNY
+- 手续费：1%
+- 滑点：0.05%
+
+实际验证命令：
+
+```bash
+cd ~/Desktop/AllProjects/AssetTimeMachine
+
+xcrun swiftc \
+  -parse-as-library \
+  -module-cache-path /private/tmp/atm-swift-module-cache \
+  AssetTimeMachine/Backtest/BacktestModels.swift \
+  AssetTimeMachine/Backtest/BacktestEngine.swift \
+  tools/strategy_metric_dump.swift \
+  -o /private/tmp/strategy_metric_dump
+
+/private/tmp/strategy_metric_dump
+```
+
+最近一次 App 引擎实测结果（2026-06-26，当前线上历史数据）：
+
+| 策略 | 年化 | 最大回撤 | 夏普 |
+|---|---:|---:|---:|
+| 权益曲线状态机 | 11.00% | 10.24% | 1.10 |
+| 单向控波元策略 | 10.61% | 11.23% | 1.04 |
+| 动态袖套夏普策略 | 10.05% | 11.65% | 1.03 |
+| 增强热度上限元 | 9.65% | 12.04% | 0.93 |
+| 热度上限元策略 | 9.44% | 12.04% | 0.93 |
+| 黄金交接保护 | 9.39% | 11.38% | 0.92 |
+| 月度热度上限元 | 8.82% | 16.57% | 0.85 |
+| 全球修复传染控制 | 3.45% | 23.43% | 0.43 |
+| 双金丝雀动量防守 | 1.86% | 31.89% | 0.28 |
+| 美元现金修复策略 | 1.24% | 24.44% | 0.20 |
+| 黄金恐慌锁盈策略 | 1.14% | 25.29% | 0.19 |
+| 风险效率增强策略 | 1.01% | 25.76% | 0.17 |
+| MA金叉死叉 | 0.75% | 43.40% | 0.12 |
+| BOLL下轨反弹 | -5.89% | 80.30% | -0.76 |
+| MA60趋势 | -6.41% | 87.05% | -0.46 |
+| MA20趋势 | -18.78% | 99.60% | -1.48 |
+
+如果新策略来自 `spikes/` 或 Python 搜索脚本，必须先通过上面的 Swift App 引擎验证，再更新 README 或 App 可见指标。
+
 ## 资产分类设计
 
 一级分类固定，二级项目由用户自定义。

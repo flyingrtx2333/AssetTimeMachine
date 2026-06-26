@@ -111,7 +111,7 @@ def parse_date(s):
 
 def load_data():
     batches = [
-        ["gold_cny", "nasdaq", "sp500", "usd_per_cny"],
+        ["gold_cny", "nasdaq_composite", "sp500", "usd_per_cny"],
         ["hang_seng", "nikkei225", "csi300", "shanghai_composite", "dow_jones"],
     ]
     raw = []

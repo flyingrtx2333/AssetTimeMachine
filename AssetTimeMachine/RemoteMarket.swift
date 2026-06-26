@@ -315,6 +315,11 @@ final class RemoteMarketStore: ObservableObject {
 
     private static let historyRefreshInterval: TimeInterval = 12 * 60 * 60
     private static let failedHistoryRetryInterval: TimeInterval = 5 * 60
+    private static let requiredHistorySymbols = [
+        "gold_cny", "nasdaq", "sp500", "usd_per_cny",
+        "hsi", "nikkei", "csi300", "shanghai_composite", "dowjones",
+        "shenzhen_component", "chinext"
+    ]
     private var isRefreshingLiveData = false
     private var isRefreshingHistory = false
     private var lastHistoryRefreshAt: Date?
@@ -326,8 +331,17 @@ final class RemoteMarketStore: ObservableObject {
             return Date().timeIntervalSince(lastHistoryAttemptAt) >= Self.failedHistoryRetryInterval
         }
 
+        if isMissingRequiredHistorySeries {
+            guard let lastHistoryAttemptAt else { return true }
+            return Date().timeIntervalSince(lastHistoryAttemptAt) >= Self.failedHistoryRetryInterval
+        }
+
         guard let lastHistoryRefreshAt else { return false }
         return Date().timeIntervalSince(lastHistoryRefreshAt) >= Self.historyRefreshInterval
+    }
+
+    private var isMissingRequiredHistorySeries: Bool {
+        Self.requiredHistorySymbols.contains { history(for: $0) == nil }
     }
 
     func refresh() async {
@@ -404,7 +418,8 @@ final class RemoteMarketStore: ObservableObject {
 
         let historyBatches = [
             ["gold_cny", "nasdaq", "sp500", "usd_per_cny"],
-            ["hang_seng", "nikkei225", "csi300", "shanghai_composite", "dow_jones"]
+            ["hang_seng", "nikkei225", "csi300", "shanghai_composite", "dow_jones"],
+            ["shenzhen_component", "chinext"]
         ]
         let fullHistoryStartDate = "2000-01-01"
         let fullHistoryEndDate = MarketDay.string(from: .now)
@@ -433,11 +448,18 @@ final class RemoteMarketStore: ObservableObject {
         }
 
         if !mergedSeries.isEmpty {
-            var normalizedSeries: [String: PublicHistorySeries] = [:]
+            var normalizedSeries = self.historySeries
             for series in mergedSeries {
                 let normalizedSymbol = Self.normalizedHistorySymbol(series.symbol)
-                if let existing = normalizedSeries[normalizedSymbol], existing.dates.count >= series.dates.count {
-                    continue
+                if let existing = normalizedSeries[normalizedSymbol] {
+                    let existingLastDate = existing.dates.last ?? ""
+                    let nextLastDate = series.dates.last ?? ""
+                    if existingLastDate > nextLastDate {
+                        continue
+                    }
+                    if existingLastDate == nextLastDate, existing.dates.count >= series.dates.count {
+                        continue
+                    }
                 }
                 normalizedSeries[normalizedSymbol] = series
             }
@@ -504,6 +526,13 @@ final class RemoteMarketStore: ObservableObject {
             }
         }
         return nil
+    }
+
+    func historyRelevanceToken(for symbols: some Sequence<String>) -> String {
+        Array(Set(symbols)).sorted().map { symbol in
+            guard let series = history(for: symbol) else { return "\(symbol):nil" }
+            return "\(symbol):\(series.dates.count):\(series.dates.last ?? "")"
+        }.joined(separator: "|")
     }
 }
 

@@ -574,7 +574,7 @@ enum AssetNotificationService {
     private static func subtitle(for snapshot: AssetSnapshot) -> String {
         let totalAssets = PortfolioCalculator.totalAssets(for: snapshot)
         let netAssets = PortfolioCalculator.netAssets(for: snapshot)
-        return AppLocalization.format("总资产 %@ · 净资产 %@", currencyString(totalAssets), currencyString(netAssets))
+        return AppLocalization.format("总资产 %@ · 净资产 %@", totalAssets.currencyString(), netAssets.currencyString())
     }
 
     private static func body(for snapshot: AssetSnapshot) -> String {
@@ -584,20 +584,10 @@ enum AssetNotificationService {
         let physical = breakdown[.physical] ?? 0
         return AppLocalization.format(
             "负债 %@。金融 %@ · 实物 %@",
-            currencyString(liabilities),
-            currencyString(financial),
-            currencyString(physical)
+            liabilities.currencyString(),
+            financial.currencyString(),
+            physical.currencyString()
         )
-    }
-
-    private static func currencyString(_ value: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "CNY"
-        formatter.locale = Locale(identifier: "zh_CN")
-        formatter.maximumFractionDigits = 2
-        formatter.minimumFractionDigits = 2
-        return formatter.string(from: NSNumber(value: value)) ?? "¥0.00"
     }
 }
 
