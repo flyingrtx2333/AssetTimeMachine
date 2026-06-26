@@ -2251,7 +2251,11 @@ struct QuickRecordValueSheet: View {
         errorMessage = nil
         defer { isRefreshingAutoPrice = false }
 
-        await marketStore.refreshLiveData()
+        let didRefreshLiveData = await marketStore.refreshLiveData()
+        guard didRefreshLiveData else {
+            errorMessage = marketStore.errorMessage ?? AppLocalization.string("暂时没拿到最新价格，稍后再试")
+            return
+        }
 
         guard let latestRate = item.resolvedAutoUnitPrice(using: marketStore) else {
             errorMessage = AppLocalization.string("暂时没拿到最新价格，稍后再试")
@@ -2272,12 +2276,7 @@ struct QuickRecordValueSheet: View {
     }
 
     private func validatedNumber(from text: String, forcePositive: Bool = false, fieldName: String) throws -> Double? {
-        let raw = text.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !raw.isEmpty else { return nil }
-        guard let value = Double(raw) else {
-            throw QuickRecordValueValidationError(message: AppLocalization.format("%@请输入有效数字", fieldName))
-        }
-        return forcePositive ? abs(value) : value
+        try validatedQuickRecordNumber(from: text, forcePositive: forcePositive, fieldName: fieldName)
     }
 
     private func normalizedReadonlyNumber(from text: String) -> Double? {
@@ -2289,6 +2288,15 @@ struct QuickRecordValueSheet: View {
 
 struct QuickRecordValueValidationError: Error {
     let message: String
+}
+
+private func validatedQuickRecordNumber(from text: String, forcePositive: Bool = false, fieldName: String) throws -> Double? {
+    let raw = text.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !raw.isEmpty else { return nil }
+    guard let value = Double(raw) else {
+        throw QuickRecordValueValidationError(message: AppLocalization.format("%@请输入有效数字", fieldName))
+    }
+    return forcePositive ? abs(value) : value
 }
 
 struct EditAssetItemSheet: View {
@@ -2912,11 +2920,6 @@ struct SnapshotEntryEditSheet: View {
     }
 
     private func validatedNumber(from text: String, forcePositive: Bool = false, fieldName: String) throws -> Double? {
-        let raw = text.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !raw.isEmpty else { return nil }
-        guard let value = Double(raw) else {
-            throw QuickRecordValueValidationError(message: AppLocalization.format("%@请输入有效数字", fieldName))
-        }
-        return forcePositive ? abs(value) : value
+        try validatedQuickRecordNumber(from: text, forcePositive: forcePositive, fieldName: fieldName)
     }
 }

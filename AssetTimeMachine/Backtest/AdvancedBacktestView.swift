@@ -717,7 +717,9 @@ struct AdvancedBacktestView: View {
                 let advice = capturedStrategyMode.isRotation
                     ? BacktestEngine.advancedRotationRebalanceAdvice(
                         assetInputs: filteredAssetInputs,
-                        mode: capturedStrategyMode
+                        mode: capturedStrategyMode,
+                        initialCash: capturedInitialCash,
+                        settings: capturedRiskSettings
                     )
                     : nil
 

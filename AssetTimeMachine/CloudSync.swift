@@ -338,6 +338,13 @@ enum AssetTimeMachineCloudIndicatorState {
     }
 }
 
+private enum CloudOperationResult {
+    case completed
+    case skippedBusy
+    case cancelled
+    case failed
+}
+
 @MainActor
 final class AssetTimeMachineCloudStore: ObservableObject {
     @Published var currentUser: AssetTimeMachineCloudUser?
@@ -503,7 +510,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             return
         }
 
-        await perform { [self] in
+        let syncResult = await perform { [self] in
             let latestBackup = try await self.fetchLatestBackupIfAvailable()
             let baseBackupID = latestBackup?.id
             var payloadToUpload = localPayload
@@ -552,7 +559,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             self.statusMessage = quietly ? AppLocalization.string("双向同步完成") : AppLocalization.format("云端同步完成，时间：%@", backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))
         }
 
-        if errorMessage == nil {
+        if syncResult == .completed {
             lastAutoSyncAttemptSignature = localSignature
         }
     }
@@ -690,17 +697,19 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         ].joined(separator: ":")
     }
 
-    private func perform(_ task: @escaping () async throws -> Void) async {
-        guard !isWorking else { return }
+    @discardableResult
+    private func perform(_ task: @escaping () async throws -> Void) async -> CloudOperationResult {
+        guard !isWorking else { return .skippedBusy }
         isWorking = true
         errorMessage = nil
         defer { isWorking = false }
 
         do {
             try await task()
+            return .completed
         } catch {
             guard !Self.isCancellation(error) else {
-                return
+                return .cancelled
             }
             if (error as NSError).code == 401 {
                 clearTokens()
@@ -708,9 +717,10 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                 backups = []
                 errorMessage = AppLocalization.string("登录状态已过期，请重新登录")
                 statusMessage = nil
-                return
+                return .failed
             }
             errorMessage = error.localizedDescription
+            return .failed
         }
     }
 

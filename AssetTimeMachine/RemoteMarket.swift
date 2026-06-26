@@ -331,6 +331,7 @@ final class RemoteMarketStore: ObservableObject {
     private var lastHistoryAttemptAt: Date?
     private var liveDataErrorMessage: String?
     private var historyErrorMessage: String?
+    private var lastLiveDataRefreshSucceeded = false
 
     private var shouldRefreshHistory: Bool {
         if historySeries.isEmpty {
@@ -361,7 +362,11 @@ final class RemoteMarketStore: ObservableObject {
 
     @discardableResult
     func refreshLiveData() async -> Bool {
-        guard !isRefreshingLiveData else { return false }
+        if isRefreshingLiveData {
+            await waitForLiveDataRefreshToFinish()
+            return lastLiveDataRefreshSucceeded
+        }
+
         isRefreshingLiveData = true
         updateLoadingState()
         defer {
@@ -398,6 +403,7 @@ final class RemoteMarketStore: ObservableObject {
         }
 
         let didRefreshAllLiveData = didRefreshExchangeRates && didRefreshOverview
+        lastLiveDataRefreshSucceeded = didRefreshAllLiveData
         liveDataErrorMessage = didRefreshAllLiveData ? nil : (firstErrorMessage ?? AppLocalization.string("接口请求失败"))
         updateErrorMessage()
         return didRefreshAllLiveData
@@ -411,6 +417,12 @@ final class RemoteMarketStore: ObservableObject {
 
         guard force || shouldRefreshHistory else { return }
         await refreshHistory()
+    }
+
+    private func waitForLiveDataRefreshToFinish() async {
+        while isRefreshingLiveData && !Task.isCancelled {
+            try? await Task.sleep(for: .milliseconds(100))
+        }
     }
 
     private func waitForHistoryRefreshToFinish() async {

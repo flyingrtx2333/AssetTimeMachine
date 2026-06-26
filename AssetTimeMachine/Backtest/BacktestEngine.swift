@@ -2560,9 +2560,16 @@ nonisolated enum BacktestEngine {
 
     static func advancedRotationRebalanceAdvice(
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
-        mode: AdvancedBacktestStrategyMode
+        mode: AdvancedBacktestStrategyMode,
+        initialCash: Double = 100_000,
+        settings: AdvancedBacktestRiskSettings? = nil
     ) -> StrategyRebalanceAdvice? {
         guard let config = advancedRotationConfig(for: mode) else { return nil }
+        let normalizedInitialCash = max(initialCash, 0)
+        let normalizedFeeRate = max(settings?.feeRate ?? 1.0, 0) / 100
+        let normalizedSlippageRate = max(settings?.slippageRate ?? 0.05, 0) / 100
+        guard normalizedInitialCash > 0 else { return nil }
+
         let preparedSeries: [PreparedAdvancedSeries] = assetInputs.compactMap { input -> PreparedAdvancedSeries? in
             guard input.assetSeries != nil,
                   !input.assetOption.requiresHistoricalFX || input.fxSeries != nil else { return nil }
@@ -2687,7 +2694,10 @@ nonisolated enum BacktestEngine {
                 pricesBySymbol: pricesBySymbol,
                 maBySymbol: maBySymbol,
                 volatilityBySymbol: volatilityBySymbol,
-                commonDates: commonDates
+                commonDates: commonDates,
+                initialCash: normalizedInitialCash,
+                feeRate: normalizedFeeRate,
+                slippageRate: normalizedSlippageRate
             )
         }
         if config.engineRouter != nil, engineRouterTracesByMode == nil {
@@ -2700,7 +2710,10 @@ nonisolated enum BacktestEngine {
                 maBySymbol: maBySymbol,
                 volatilityBySymbol: volatilityBySymbol,
                 commonDates: commonDates,
-                config: config
+                config: config,
+                initialCash: normalizedInitialCash,
+                feeRate: normalizedFeeRate,
+                slippageRate: normalizedSlippageRate
             )
         }
         if config.dynamicSleeveSelector != nil, dynamicSleeveTrace == nil {
@@ -2713,7 +2726,10 @@ nonisolated enum BacktestEngine {
                 maBySymbol: maBySymbol,
                 volatilityBySymbol: volatilityBySymbol,
                 commonDates: commonDates,
-                config: config
+                config: config,
+                initialCash: normalizedInitialCash,
+                feeRate: normalizedFeeRate,
+                slippageRate: normalizedSlippageRate
             )
         }
         if config.equityCurveStateGate != nil, equityCurveStateTrace == nil {
