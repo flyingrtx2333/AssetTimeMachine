@@ -94,10 +94,7 @@ struct DashboardView: View {
                     ScrollView(showsIndicators: false) {
                         Group {
                             if lastDashboardCacheToken == nil {
-                                LoadingStateCard(
-                                    title: AppLocalization.string("首页加载中"),
-                                    message: AppLocalization.string("正在整理你的资产概览…")
-                                )
+                                LoadingStateCard(title: AppLocalization.string("首页加载中"))
                             } else {
                                 VStack(alignment: .leading, spacing: 22) {
                                     summaryStrip
@@ -435,10 +432,7 @@ struct TodayStrategySheet: View {
                         header
 
                         if isRefreshing && advice == nil && statusMessage == nil {
-                            LoadingStateCard(
-                                title: AppLocalization.string("正在生成今日攻略"),
-                                message: AppLocalization.string("同步最新历史行情，按提醒策略计算目标仓位…")
-                            )
+                            LoadingStateCard(title: AppLocalization.string("正在生成今日攻略"))
                         } else if let statusMessage {
                             todayStrategyStatusCard(message: statusMessage)
                         } else if let template = selectedTemplate, let advice {

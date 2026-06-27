@@ -388,11 +388,9 @@ struct EmptyStateCard: View {
 
 struct LoadingStateCard: View {
     let title: String
-    let message: String?
 
     init(title: String, message: String? = nil) {
         self.title = title
-        self.message = message
     }
 
     var body: some View {
@@ -401,18 +399,9 @@ struct LoadingStateCard: View {
                 .controlSize(.large)
                 .tint(AssetTheme.gold)
 
-            VStack(spacing: 8) {
-                Text(AppLocalization.string(title))
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(AssetTheme.textPrimary)
-
-                if let message, !message.isEmpty {
-                    Text(AppLocalization.string(message))
-                        .font(.subheadline)
-                        .foregroundStyle(AssetTheme.textSecondary)
-                        .multilineTextAlignment(.center)
-                }
-            }
+            Text(AppLocalization.string(title))
+                .font(.title3.weight(.bold))
+                .foregroundStyle(AssetTheme.textPrimary)
         }
         .frame(maxWidth: .infinity, minHeight: 420, alignment: .center)
         .padding(.vertical, 26)

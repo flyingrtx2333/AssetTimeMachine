@@ -14,9 +14,20 @@ struct SettingsView: View {
     @AppStorage("app.strategyNotifications.hour") private var strategyNotificationHour: Int = StrategyNotificationDefaults.defaultHour
     @ObservedObject var cloudStore: AssetTimeMachineCloudStore
     let onReplayOnboarding: () -> Void
-    @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
+    @Query private var snapshots: [AssetSnapshot]
     @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
     @State private var showsLogoutConfirmation = false
+
+    init(cloudStore: AssetTimeMachineCloudStore, onReplayOnboarding: @escaping () -> Void) {
+        self.cloudStore = cloudStore
+        self.onReplayOnboarding = onReplayOnboarding
+
+        var descriptor = FetchDescriptor<AssetSnapshot>(
+            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
+        )
+        descriptor.fetchLimit = 1
+        _snapshots = Query(descriptor)
+    }
 
     private var latestSnapshot: AssetSnapshot? {
         snapshots.first(where: { Calendar.current.isDateInToday($0.date) }) ?? snapshots.first

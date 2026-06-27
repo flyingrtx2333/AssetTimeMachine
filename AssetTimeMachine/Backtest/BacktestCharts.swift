@@ -94,6 +94,7 @@ struct InteractiveBacktestChart: View {
     var comparisonSeries: [BacktestChartComparisonSeries] = []
     var valueStyle: BacktestChartValueStyle = .multiple
     var visibleSeriesIDs: Set<String> = []
+    var placesViewportControlsAboveChart = false
     @State private var selectedDate: Date?
     @State private var viewportStartRatio: Double = 0
     @State private var visibleSpanRatio: Double = 1
@@ -460,8 +461,9 @@ struct InteractiveBacktestChart: View {
                     .stroke(AssetTheme.border.opacity(0.48), lineWidth: 1)
             )
             .shadow(color: Color.black.opacity(0.14), radius: 10, y: 5)
-            .padding(.top, 8)
             .padding(.trailing, 6)
+            .padding(.top, placesViewportControlsAboveChart ? 0 : 8)
+            .offset(y: placesViewportControlsAboveChart ? -44 : 0)
         }
     }
 
@@ -665,7 +667,8 @@ struct BacktestValueChartSection: View {
                 points: chartPoints,
                 comparisonSeries: chartComparisonSeries,
                 valueStyle: valueStyle,
-                visibleSeriesIDs: effectiveVisibleSeriesIDs
+                visibleSeriesIDs: effectiveVisibleSeriesIDs,
+                placesViewportControlsAboveChart: true
             )
 
             if legendItems.count > 1 {

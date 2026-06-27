@@ -179,10 +179,7 @@ struct SnapshotListView: View {
                             }
 
                         } else if isPreparingInitialSnapshot || !didPrepare {
-                            LoadingStateCard(
-                                title: AppLocalization.string("记录加载中"),
-                                message: AppLocalization.string("正在准备今天的资产快照…")
-                            )
+                            LoadingStateCard(title: AppLocalization.string("记录加载中"))
                         } else {
                             EmptyStateCard(
                                 title: AppLocalization.string("暂无记录"),

@@ -8,7 +8,6 @@ struct BacktestView: View {
     @ObservedObject var marketStore: RemoteMarketStore
     let isVisible: Bool
     let isActive: Bool
-    @Query(sort: \BacktestRecord.createdAt, order: .reverse) private var backtestRecords: [BacktestRecord]
     @State private var selectedPage: BacktestPage = .home
     @State private var backtestMode: BacktestMode = .allocation
     @State private var cashWeight: Double = BacktestDefaults.cashWeight
@@ -40,6 +39,8 @@ struct BacktestView: View {
     @State private var pendingBacktestDataRefreshTask: Task<Void, Never>?
     @State private var pendingBacktestComputationTask: Task<Void, Never>?
     @State private var selectedBacktestRecord: BacktestRecord?
+    @State private var recentBacktestRecords: [BacktestRecord] = []
+    @State private var totalBacktestRecordCount = 0
     @State private var pendingAdvancedRestoreRequest: AdvancedBacktestRestoreRequest?
     @State private var showsAdvancedStrategyLibrary = false
     @State private var showsAllBacktestRecords = false
@@ -47,7 +48,7 @@ struct BacktestView: View {
     @State private var isRestoringBacktestRecord = false
     @State private var lastObservedRelevantHistoryToken: String = ""
 
-    private let recentRecordDisplayLimit = 5
+    private let recentRecordDisplayLimit = 8
 
     private enum DCAConfigSheet: String, Identifiable {
         case asset
@@ -75,8 +76,6 @@ struct BacktestView: View {
 
     private let indexOptions = BacktestDefaults.indexOptions
     private let dcaAssetOptions = BacktestDefaults.dcaAssetOptions
-    private let strategyTemplates = AdvancedBacktestStrategyTemplate.all
-
     private var filteredGoldSeries: PublicHistorySeries? {
         cachedFilteredGoldSeries
     }
@@ -261,8 +260,8 @@ struct BacktestView: View {
                                 VStack(alignment: .leading, spacing: 14) {
                                     if selectedPage == .home {
                                         BacktestHomeView(
-                                            records: Array(backtestRecords.prefix(recentRecordDisplayLimit)),
-                                            totalRecordCount: backtestRecords.count,
+                                            records: recentBacktestRecords,
+                                            totalRecordCount: totalBacktestRecordCount,
                                             onStart: { kind in
                                                 openBacktestPage(kind)
                                             },
@@ -289,7 +288,8 @@ struct BacktestView: View {
                                                 marketStore: marketStore,
                                                 isActive: isActive,
                                                 restoreRequest: pendingAdvancedRestoreRequest,
-                                                showsStrategyLibrary: $showsAdvancedStrategyLibrary
+                                                showsStrategyLibrary: $showsAdvancedStrategyLibrary,
+                                                onRecordsChanged: refreshBacktestRecordCache
                                             )
                                         } else {
                                             VStack(spacing: 18) {
@@ -381,8 +381,7 @@ struct BacktestView: View {
                 }
             }
             .navigationDestination(isPresented: $showsAllBacktestRecords) {
-                BacktestAllRecordsView(
-                    records: backtestRecords,
+                BacktestAllRecordsContainer(
                     onSelect: { record in
                         selectedBacktestRecord = record
                     },
@@ -483,6 +482,7 @@ struct BacktestView: View {
         }
         .task(id: isActive) {
             if isActive {
+                refreshBacktestRecordCache()
                 lastObservedRelevantHistoryToken = relevantHistoryToken
                 await marketStore.refreshHistoryIfNeeded()
                 guard !Task.isCancelled else { return }
@@ -527,6 +527,23 @@ struct BacktestView: View {
             scheduleBacktestDataRefresh(delayNanoseconds: 40_000_000, force: true)
             guard hasStartedBacktest else { return }
             scheduleBacktestRefresh(animated: !hasActiveReport && !hasPlayedInitialBacktestAnimation, saveRecord: false)
+        }
+    }
+
+    @MainActor
+    private func refreshBacktestRecordCache() {
+        var recentDescriptor = FetchDescriptor<BacktestRecord>(
+            sortBy: [SortDescriptor(\BacktestRecord.createdAt, order: .reverse)]
+        )
+        recentDescriptor.fetchLimit = recentRecordDisplayLimit
+
+        do {
+            recentBacktestRecords = try modelContext.fetch(recentDescriptor)
+            totalBacktestRecordCount = try modelContext.fetchCount(FetchDescriptor<BacktestRecord>())
+        } catch {
+            recentBacktestRecords = []
+            totalBacktestRecordCount = 0
+            print("[AssetTimeMachine] refresh backtest record cache failed: \(error)")
         }
     }
 
@@ -846,6 +863,7 @@ struct BacktestView: View {
         modelContext.insert(record)
         do {
             try modelContext.save()
+            refreshBacktestRecordCache()
         } catch {
             print("[AssetTimeMachine] save backtest record failed: \(error)")
         }
@@ -863,6 +881,7 @@ struct BacktestView: View {
         modelContext.delete(record)
         do {
             try modelContext.save()
+            refreshBacktestRecordCache()
         } catch {
             print("[AssetTimeMachine] delete backtest record failed: \(error)")
         }

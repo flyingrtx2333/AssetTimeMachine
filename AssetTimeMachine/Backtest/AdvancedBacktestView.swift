@@ -9,6 +9,7 @@ struct AdvancedBacktestView: View {
     let isActive: Bool
     let restoreRequest: AdvancedBacktestRestoreRequest?
     @Binding var showsStrategyLibrary: Bool
+    var onRecordsChanged: () -> Void = {}
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
     @State private var selectedAssetSymbols: Set<String> = [BacktestDefaults.dcaAssetSymbol]
     @State private var initialCash: Double = 100_000
@@ -1025,6 +1026,7 @@ struct AdvancedBacktestView: View {
         modelContext.insert(record)
         do {
             try modelContext.save()
+            onRecordsChanged()
         } catch {
             print("[AssetTimeMachine] save advanced backtest record failed: \(error)")
         }

@@ -3,6 +3,12 @@ import SwiftData
 import Charts
 import UIKit
 
+private struct TrendVideoPreviewRequest: Identifiable {
+    let id = UUID()
+    let points: [TimeMachineTrendPoint]
+    let rangeLabel: String
+}
+
 struct TimeMachineView: View {
     @Environment(\.modelContext) private var modelContext
     @ObservedObject var marketStore: RemoteMarketStore
@@ -25,6 +31,8 @@ struct TimeMachineView: View {
     @State private var pendingVisualizationRefreshTask: Task<Void, Never>?
     @State private var visibleDetailTrendSymbols: Set<String> = ["gold_cny"]
     @State private var selectedHistoryDrilldown: TimeMachineHistoryDrilldown?
+    @State private var trendVideoPreviewRequest: TrendVideoPreviewRequest?
+    @State private var trendVideoExportErrorMessage: String?
 
     private var trendPoints: [TimeMachineTrendPoint] {
         cachedTrendPoints
@@ -812,10 +820,50 @@ struct TimeMachineView: View {
     private func revealDetailComparison(_ option: TimeMachineDetailComparisonOption) {
         guard !visibleDetailTrendSymbols.contains(option.symbol) else { return }
         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-            visibleDetailTrendSymbols.insert(option.symbol)
+            _ = visibleDetailTrendSymbols.insert(option.symbol)
         }
         lastFullHistoryPointsCacheToken = nil
         refreshVisualizationCacheIfNeeded(force: true, includeDetailCards: true)
+    }
+
+    private var trendVideoExportBar: some View {
+        HStack(spacing: 12) {
+            Button {
+                openTrendVideoPreview()
+            } label: {
+                HStack(spacing: 9) {
+                    Image(systemName: "video.badge.waveform")
+                        .font(.system(size: 15, weight: .semibold))
+
+                    Text(AppLocalization.string("生成走势视频"))
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                }
+                .foregroundStyle(AssetTheme.textPrimary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 13)
+                .background(AssetTheme.surface.opacity(0.94), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(AssetTheme.border.opacity(0.68), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(trendVideoPreviewRequest != nil || filteredTrendPoints.count < 2)
+        }
+    }
+
+    @MainActor
+    private func openTrendVideoPreview() {
+        guard filteredTrendPoints.count >= 2 else {
+            trendVideoExportErrorMessage = AppLocalization.string("趋势数据不足，至少需要两条记录")
+            return
+        }
+
+        trendVideoPreviewRequest = TrendVideoPreviewRequest(
+            points: filteredTrendPoints,
+            rangeLabel: selectedRange.summaryLabel
+        )
     }
 
     var body: some View {
@@ -827,16 +875,14 @@ struct TimeMachineView: View {
                     ScrollView(showsIndicators: false) {
                         LazyVStack(alignment: .leading, spacing: 16) {
                             if lastVisualizationCacheToken == nil {
-                                LoadingStateCard(
-                                    title: AppLocalization.string("时光机加载中"),
-                                    message: AppLocalization.string("正在整理历史趋势和对照数据…")
-                                )
+                                LoadingStateCard(title: AppLocalization.string("时光机加载中"))
                             } else if let latestPoint, !filteredTrendPoints.isEmpty {
                                 TimeMachineHeroTrendCard(
                                     points: filteredTrendPoints,
                                     latestPoint: latestPoint,
                                     selectedRange: $selectedRange
                                 )
+                                trendVideoExportBar
 
                                 if !monthlySurplusPoints.isEmpty || !annualSurplusPoints.isEmpty {
                                     TimeMachineMonthlySurplusCard(
@@ -879,6 +925,23 @@ struct TimeMachineView: View {
         }
         .sheet(item: $selectedHistoryDrilldown) { descriptor in
             TimeMachineHistoryDrilldownSheet(descriptor: descriptor)
+        }
+        .sheet(item: $trendVideoPreviewRequest) { request in
+            TrendVideoPreviewSheet(points: request.points, rangeLabel: request.rangeLabel)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        }
+        .alert(AppLocalization.string("视频生成失败"), isPresented: Binding(
+            get: { trendVideoExportErrorMessage != nil },
+            set: { isPresented in
+                if !isPresented {
+                    trendVideoExportErrorMessage = nil
+                }
+            }
+        )) {
+            Button(AppLocalization.string("知道了"), role: .cancel) {}
+        } message: {
+            Text(trendVideoExportErrorMessage ?? AppLocalization.string("请稍后再试"))
         }
         .task(id: isActive) {
             if isActive {

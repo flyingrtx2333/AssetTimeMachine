@@ -209,10 +209,7 @@ struct BacktestHistorySectionHeader: View {
 
 struct BacktestEntryLoadingView: View {
     var body: some View {
-        LoadingStateCard(
-            title: AppLocalization.string("正在准备量化回测"),
-            message: AppLocalization.string("正在加载历史行情与策略数据，请稍候")
-        )
+        LoadingStateCard(title: AppLocalization.string("正在准备量化回测"))
     }
 }
 
@@ -320,6 +317,22 @@ struct BacktestAllRecordsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
+    }
+}
+
+struct BacktestAllRecordsContainer: View {
+    @Query(sort: \BacktestRecord.createdAt, order: .reverse) private var records: [BacktestRecord]
+    let onSelect: (BacktestRecord) -> Void
+    let onRestore: (BacktestRecord) -> Void
+    let onDelete: (BacktestRecord) -> Void
+
+    var body: some View {
+        BacktestAllRecordsView(
+            records: records,
+            onSelect: onSelect,
+            onRestore: onRestore,
+            onDelete: onDelete
+        )
     }
 }
 
@@ -450,10 +463,7 @@ struct BacktestHistoryRow: View {
             .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
 
         if let summaryLead, !summaryLead.isEmpty {
-            let knownTitles = Set(AdvancedBacktestStrategyTemplate.all.map(\.title) + [AdvancedBacktestStrategyMode.ruleBased.title])
-            if knownTitles.contains(summaryLead) {
-                return summaryLead
-            }
+            return summaryLead
         }
 
         if !record.subtitle.isEmpty,

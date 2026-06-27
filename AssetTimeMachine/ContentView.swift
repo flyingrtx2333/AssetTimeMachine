@@ -17,7 +17,7 @@ enum AppTab: Hashable {
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
-    @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
+    @Query private var snapshots: [AssetSnapshot]
     @AppStorage("app.onboarding.completed") private var hasCompletedOnboarding = false
     @AppStorage("app.notifications.enabled") private var notificationEnabled = false
     @AppStorage("app.notifications.intervalHours") private var notificationIntervalHours: Double = 1
@@ -42,7 +42,15 @@ struct ContentView: View {
     #endif
 
     private static let foregroundMarketRefreshInterval: TimeInterval = 3600
-    private static let activeTabWorkActivationDelayNanoseconds: UInt64 = 850_000_000
+    private static let activeTabWorkActivationDelayNanoseconds: UInt64 = 220_000_000
+
+    init() {
+        var descriptor = FetchDescriptor<AssetSnapshot>(
+            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
+        )
+        descriptor.fetchLimit = 1
+        _snapshots = Query(descriptor)
+    }
 
     private var notificationSnapshot: AssetSnapshot? {
         snapshots.first(where: { Calendar.current.isDateInToday($0.date) }) ?? snapshots.first
@@ -167,6 +175,9 @@ struct ContentView: View {
             }
             guard !Task.isCancelled else { return }
 
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            guard !Task.isCancelled, scenePhase == .active else { return }
+
             await refreshLiveMarketDataIfNeeded(force: false)
 
             while !Task.isCancelled {
@@ -218,6 +229,11 @@ struct ContentView: View {
             loadedTabs.insert(.snapshots)
         }
 
+        if ProcessInfo.processInfo.arguments.contains("-openTimeMachineTab") {
+            selectedTab = .timeMachine
+            activeWorkTab = .timeMachine
+            loadedTabs.insert(.timeMachine)
+        }
 
         if let importPath = launchArgumentValue(after: "-importJSONPath") {
             do {
@@ -255,19 +271,13 @@ struct ContentView: View {
             presentOnboarding()
         }
 
-        let didRefreshLiveData = await marketStore.refreshLiveData()
-        if didRefreshLiveData {
-            lastMarketRefreshAt = .now
-            await syncTodaySnapshotWithLatestMarketData()
-        }
-        if strategyNotificationEnabled {
-            await marketStore.refreshHistoryIfNeeded(force: false)
-        }
     }
 
     @MainActor
     private func scheduleActiveWorkTabActivation(for tab: AppTab) {
         pendingActiveTabActivationTask?.cancel()
+        loadedTabs.insert(tab)
+        activeWorkTab = nil
 
         pendingActiveTabActivationTask = Task {
             try? await Task.sleep(nanoseconds: Self.activeTabWorkActivationDelayNanoseconds)
@@ -283,24 +293,8 @@ struct ContentView: View {
 
     @MainActor
     private func scheduleDeferredHeavyTabPrewarm() {
-        guard pendingTabPrewarmTask == nil else { return }
-
-        pendingTabPrewarmTask = Task {
-            let tabsToPrewarm: [AppTab] = [.timeMachine, .snapshots, .backtest]
-            try? await Task.sleep(for: .milliseconds(450))
-
-            for tab in tabsToPrewarm {
-                guard !Task.isCancelled else { return }
-                await MainActor.run {
-                    loadedTabs.insert(tab)
-                }
-                try? await Task.sleep(for: .milliseconds(360))
-            }
-
-            await MainActor.run {
-                pendingTabPrewarmTask = nil
-            }
-        }
+        pendingTabPrewarmTask?.cancel()
+        pendingTabPrewarmTask = nil
     }
 
     @MainActor

@@ -955,16 +955,7 @@ struct DashboardFreedomSection: View {
                     .padding(.top, 2)
             }
         }
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(AssetTheme.cardGradient)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.42), lineWidth: 1)
-        )
-        .shadow(color: AssetTheme.cardShadow.opacity(0.85), radius: 22, x: 0, y: 10)
+        .padding(.top, 2)
         .alert(AppLocalization.string("修改月开销"), isPresented: $isEditingMonthlyExpense) {
             TextField(AppLocalization.string("例如 8000"), text: $monthlyExpenseDraft)
                 .keyboardType(.decimalPad)
