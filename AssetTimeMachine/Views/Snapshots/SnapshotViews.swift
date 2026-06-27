@@ -112,8 +112,14 @@ struct SnapshotListView: View {
         let nonLiabilityCategoryItems = categoryGroups.nonLiability
         let liabilityCategoryItems = categoryGroups.liability
         let snapshotEntriesByItemIDValue = snapshotEntriesByItemID(for: currentSnapshotValue)
-        let displayedTotalAssetsValue = displayedTotalAmount(for: nonLiabilityCategoryItems.map(\.items), entriesByItemID: snapshotEntriesByItemIDValue)
-        let displayedTotalLiabilitiesValue = displayedTotalAmount(for: liabilityCategoryItems.map(\.items), entriesByItemID: snapshotEntriesByItemIDValue)
+        let nonLiabilityItemGroups = nonLiabilityCategoryItems.map(\.items)
+        let liabilityItemGroups = liabilityCategoryItems.map(\.items)
+        let displayEntriesByItemIDValue = displayEntriesByItemID(
+            for: nonLiabilityItemGroups + liabilityItemGroups,
+            currentEntriesByItemID: snapshotEntriesByItemIDValue
+        )
+        let displayedTotalAssetsValue = displayedTotalAmount(for: nonLiabilityItemGroups, entriesByItemID: displayEntriesByItemIDValue)
+        let displayedTotalLiabilitiesValue = displayedTotalAmount(for: liabilityItemGroups, entriesByItemID: displayEntriesByItemIDValue)
         let displayedNetAssetsValue = displayedTotalAssetsValue - displayedTotalLiabilitiesValue
         let onboardingInputTargetCategoryID = nonLiabilityCategoryItems.first?.id
 
@@ -140,7 +146,7 @@ struct SnapshotListView: View {
                                 RecordCategoryCard(
                                     category: categoryItems.category,
                                     items: categoryItems.items,
-                                    snapshotEntriesByItemID: snapshotEntriesByItemIDValue,
+                                    snapshotEntriesByItemID: displayEntriesByItemIDValue,
                                     onboardingInputItemID: categoryItems.id == onboardingInputTargetCategoryID ? categoryItems.items.first?.id : nil,
                                     onboardingActiveAnchorID: onboardingActiveAnchorID,
                                     marketStore: marketStore,
@@ -163,7 +169,7 @@ struct SnapshotListView: View {
                                 LiabilityCategorySection(
                                     category: categoryItems.category,
                                     items: categoryItems.items,
-                                    snapshotEntriesByItemID: snapshotEntriesByItemIDValue,
+                                    snapshotEntriesByItemID: displayEntriesByItemIDValue,
                                     amountInputs: $amountInputs,
                                     quantityInputs: $quantityInputs,
                                     focusedField: $focusedField,
@@ -508,17 +514,32 @@ struct SnapshotListView: View {
         itemGroups
             .flatMap { $0 }
             .reduce(0) { partialResult, item in
-                partialResult + (displayEntry(for: item, entriesByItemID: entriesByItemID)?.resolvedAmount ?? 0)
+                partialResult + (entriesByItemID[item.id]?.resolvedAmount ?? 0)
             }
     }
 
-    private func displayEntry(for item: AssetItem, entriesByItemID: [UUID: AssetEntry]) -> AssetEntry? {
-        if let snapshotEntry = entriesByItemID[item.id],
-           snapshotEntry.amount != nil || snapshotEntry.quantity != nil || snapshotEntry.unitPrice != nil {
-            return snapshotEntry
+    private func displayEntriesByItemID(
+        for itemGroups: [[AssetItem]],
+        currentEntriesByItemID: [UUID: AssetEntry]
+    ) -> [UUID: AssetEntry] {
+        var result = currentEntriesByItemID
+
+        for item in itemGroups.flatMap({ $0 }) {
+            if hasRecordValue(result[item.id]) {
+                continue
+            }
+
+            if let latestEntry = item.latestEntry {
+                result[item.id] = latestEntry
+            }
         }
 
-        return item.latestEntry
+        return result
+    }
+
+    private func hasRecordValue(_ entry: AssetEntry?) -> Bool {
+        guard let entry else { return false }
+        return entry.amount != nil || entry.quantity != nil || entry.unitPrice != nil
     }
 }
 
@@ -1440,9 +1461,7 @@ struct AssetEntryInputRow: View {
 
     @ViewBuilder
     private func recordValueLabel(title: String, value: String) -> some View {
-        let fallbackValue = (title == AppLocalization.string("数量"))
-            ? (snapshotEntry?.quantity?.plainNumberString() ?? "--")
-            : (snapshotEntry?.unitPrice?.plainNumberString() ?? "--")
+        let fallbackValue = snapshotEntry?.quantity?.plainNumberString() ?? "--"
         let resolvedValue = value.isEmpty ? fallbackValue : value
 
         VStack(alignment: .trailing, spacing: 2) {

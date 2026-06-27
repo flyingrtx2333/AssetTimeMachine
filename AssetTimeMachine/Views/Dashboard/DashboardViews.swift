@@ -28,8 +28,11 @@ struct DashboardView: View {
     @State private var cachedFreedomProjection: FinancialFreedomProjection?
     @State private var cachedSnapshotSummary: DashboardSnapshotSummary?
     @State private var lastDashboardCacheToken: Int?
+    @State private var lastDashboardProjectionCacheToken: Int?
     @State private var pendingDashboardRefreshTask: Task<Void, Never>?
+    @State private var pendingDashboardProjectionRefreshTask: Task<Void, Never>?
     @State private var pendingAutoSyncTask: Task<Void, Never>?
+    @State private var dashboardRefreshGeneration = 0
     @State private var showsTodayStrategyModal = false
     @State private var showsCloudSyncModal = false
 
@@ -121,16 +124,27 @@ struct DashboardView: View {
             }
         }
         .task(id: isActive) {
+            dashboardRefreshGeneration += 1
+            let generation = dashboardRefreshGeneration
             if isActive {
-                scheduleDashboardRefresh(delayNanoseconds: 0)
+                scheduleDashboardRefresh(
+                    delayNanoseconds: 0,
+                    projectionDelayNanoseconds: 520_000_000,
+                    generation: generation
+                )
             } else {
                 pendingDashboardRefreshTask?.cancel()
+                pendingDashboardProjectionRefreshTask?.cancel()
                 pendingAutoSyncTask?.cancel()
             }
         }
         .onChange(of: isActive ? dashboardCacheToken : (lastDashboardCacheToken ?? 0)) { _, _ in
             guard isActive else { return }
-            scheduleDashboardRefresh(delayNanoseconds: 40_000_000)
+            scheduleDashboardRefresh(
+                delayNanoseconds: 40_000_000,
+                projectionDelayNanoseconds: 120_000_000,
+                generation: dashboardRefreshGeneration
+            )
         }
         .sheet(isPresented: $showsTodayStrategyModal) {
             TodayStrategySheet(
@@ -164,7 +178,12 @@ struct DashboardView: View {
     }
 
     @MainActor
-    private func scheduleDashboardRefresh(delayNanoseconds: UInt64, force: Bool = false) {
+    private func scheduleDashboardRefresh(
+        delayNanoseconds: UInt64,
+        projectionDelayNanoseconds: UInt64,
+        force: Bool = false,
+        generation: Int
+    ) {
         pendingDashboardRefreshTask?.cancel()
         pendingDashboardRefreshTask = Task {
             if delayNanoseconds == 0 {
@@ -174,24 +193,69 @@ struct DashboardView: View {
             }
             guard !Task.isCancelled else { return }
             await MainActor.run {
-                guard isActive else { return }
-                refreshDashboardCacheIfNeeded(force: force)
+                guard dashboardRefreshGeneration == generation else { return }
+                refreshDashboardCacheIfNeeded(
+                    force: force,
+                    generation: generation,
+                    projectionDelayNanoseconds: projectionDelayNanoseconds
+                )
             }
         }
     }
 
     @MainActor
-    private func refreshDashboardCacheIfNeeded(force: Bool = false) {
+    private func refreshDashboardCacheIfNeeded(
+        force: Bool = false,
+        generation: Int,
+        projectionDelayNanoseconds: UInt64
+    ) {
         let token = dashboardCacheToken
-        guard force || token != lastDashboardCacheToken else { return }
-        refreshDashboardCache()
-        lastDashboardCacheToken = token
+        if force || token != lastDashboardCacheToken {
+            refreshDashboardSnapshotCache()
+            lastDashboardCacheToken = token
+        }
+
+        if force || token != lastDashboardProjectionCacheToken {
+            scheduleDashboardProjectionRefresh(
+                for: token,
+                generation: generation,
+                delayNanoseconds: projectionDelayNanoseconds
+            )
+        }
     }
 
     @MainActor
-    private func refreshDashboardCache() {
+    private func refreshDashboardSnapshotCache() {
         cachedSnapshotSummary = buildLatestSnapshotSummary()
         cachedAllocationSlices = buildAllocationSlices()
+    }
+
+    @MainActor
+    private func scheduleDashboardProjectionRefresh(
+        for token: Int,
+        generation: Int,
+        delayNanoseconds: UInt64
+    ) {
+        pendingDashboardProjectionRefreshTask?.cancel()
+        pendingDashboardProjectionRefreshTask = Task {
+            if delayNanoseconds == 0 {
+                await Task.yield()
+            } else {
+                try? await Task.sleep(nanoseconds: delayNanoseconds)
+            }
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                guard dashboardRefreshGeneration == generation else { return }
+                refreshDashboardProjectionCache()
+                lastDashboardProjectionCacheToken = token
+                pendingDashboardProjectionRefreshTask = nil
+            }
+        }
+    }
+
+    @MainActor
+    private func refreshDashboardProjectionCache() {
         let nextTrendPoints = buildTrendPoints()
         cachedTrendPoints = nextTrendPoints
         cachedFreedomProjection = FinancialFreedomEstimator.estimate(

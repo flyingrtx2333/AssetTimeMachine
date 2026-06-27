@@ -1832,6 +1832,9 @@ struct TimeMachineHeroTrendCard: View {
     private let valueDomain: ClosedRange<Double>
     private let dateDomain: ClosedRange<Date>
     private let axisDates: [Date]
+    private let dateAxisKey = AppLocalization.string("日期")
+    private let seriesAxisKey = AppLocalization.string("序列")
+    private let selectedDateAxisKey = AppLocalization.string("选中日期")
 
     init(points: [TimeMachineTrendPoint], latestPoint: TimeMachineTrendPoint, selectedRange: Binding<TimeMachineRange>) {
         self.points = points
@@ -1873,16 +1876,16 @@ struct TimeMachineHeroTrendCard: View {
                 ForEach(TimeMachineAssetSeries.allCases) { series in
                     ForEach(displayPoints) { point in
                         LineMark(
-                            x: .value(AppLocalization.string("日期"), point.date),
+                            x: .value(dateAxisKey, point.date),
                             y: .value(series.title, series.value(from: point))
                         )
-                        .foregroundStyle(by: .value(AppLocalization.string("序列"), series.title))
+                        .foregroundStyle(by: .value(seriesAxisKey, series.title))
                         .lineStyle(series.strokeStyle)
                         .interpolationMethod(.catmullRom)
                     }
 
                     PointMark(
-                        x: .value(AppLocalization.string("日期"), selectedPoint.date),
+                        x: .value(dateAxisKey, selectedPoint.date),
                         y: .value(series.title, series.value(from: selectedPoint))
                     )
                     .foregroundStyle(series.color)
@@ -1890,7 +1893,7 @@ struct TimeMachineHeroTrendCard: View {
                 }
 
                 if selectedDate != nil {
-                    RuleMark(x: .value(AppLocalization.string("选中日期"), selectedPoint.date))
+                    RuleMark(x: .value(selectedDateAxisKey, selectedPoint.date))
                         .foregroundStyle(AssetTheme.textSecondary.opacity(0.38))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 5]))
                 }
