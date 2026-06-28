@@ -249,129 +249,125 @@ struct BacktestView: View {
             ZStack {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
-                if isActive {
-                    GeometryReader { geometry in
-                            ScrollView(.vertical, showsIndicators: false) {
-                                VStack(alignment: .leading, spacing: 14) {
-                                    if selectedPage == .home {
-                                        BacktestHomeView(
-                                            records: recentBacktestRecords,
-                                            totalRecordCount: totalBacktestRecordCount,
-                                            onStart: { kind in
-                                                openBacktestPage(kind)
-                                            },
-                                            onShowAllRecords: {
-                                                showsAllBacktestRecords = true
-                                            },
-                                            onSelect: { record in
-                                                selectedBacktestRecord = record
-                                            },
-                                            onRestore: { record in
-                                                restoreBacktestRecord(record)
-                                            },
-                                            onDelete: { record in
-                                                deleteBacktestRecord(record)
-                                            }
-                                        )
-                                    } else {
-                                        BacktestReturnHeader(title: activeBacktestPageTitle) {
-                                            selectedPage = .home
+                GeometryReader { geometry in
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 14) {
+                            if selectedPage == .home {
+                                BacktestHomeView(
+                                    records: recentBacktestRecords,
+                                    totalRecordCount: totalBacktestRecordCount,
+                                    onStart: { kind in
+                                        openBacktestPage(kind)
+                                    },
+                                    onShowAllRecords: {
+                                        showsAllBacktestRecords = true
+                                    },
+                                    onSelect: { record in
+                                        selectedBacktestRecord = record
+                                    },
+                                    onRestore: { record in
+                                        restoreBacktestRecord(record)
+                                    },
+                                    onDelete: { record in
+                                        deleteBacktestRecord(record)
+                                    }
+                                )
+                            } else {
+                                BacktestReturnHeader(title: activeBacktestPageTitle) {
+                                    selectedPage = .home
+                                }
+
+                                if selectedPage == .advanced {
+                                    AdvancedBacktestView(
+                                        marketStore: marketStore,
+                                        isActive: isActive,
+                                        restoreRequest: pendingAdvancedRestoreRequest,
+                                        showsStrategyLibrary: $showsAdvancedStrategyLibrary,
+                                        onRecordsChanged: refreshBacktestRecordCache
+                                    )
+                                } else {
+                                    VStack(spacing: 18) {
+                                        if backtestMode == .allocation {
+                                            BacktestAllocationCard(
+                                                slices: allocationSlices,
+                                                activeAllocationSummary: activeAllocationSummary,
+                                                selectedDateRangeLabel: selectedDateRangeLabel,
+                                                onTapRange: {
+                                                    showsRangeSheet = true
+                                                },
+                                                onTapAllocation: {
+                                                    showsAllocationSheet = true
+                                                },
+                                                onTapPrimaryAction: hasActiveReport ? nil : {
+                                                    hasStartedBacktest = true
+                                                    scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: true)
+                                                }
+                                            )
+                                            .onboardingAnchor(.backtestConfiguration)
+                                        } else {
+                                            BacktestDCACard(
+                                                assetTitle: AppLocalization.string(selectedDCAAssetOption?.title ?? "未选择资产"),
+                                                amount: dcaContributionAmount,
+                                                intervalDays: dcaIntervalDays,
+                                                selectedDateRangeLabel: selectedDateRangeLabel,
+                                                accent: selectedDCAAssetOption?.color ?? AssetTheme.gold,
+                                                onTapRange: {
+                                                    showsRangeSheet = true
+                                                },
+                                                onTapAsset: {
+                                                    activeDCAConfigSheet = .asset
+                                                },
+                                                onTapAmount: {
+                                                    activeDCAConfigSheet = .amount
+                                                },
+                                                onTapInterval: {
+                                                    activeDCAConfigSheet = .interval
+                                                },
+                                                onTapPrimaryAction: hasActiveReport ? nil : {
+                                                    hasStartedBacktest = true
+                                                    scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: true)
+                                                }
+                                            )
+                                            .onboardingAnchor(.backtestConfiguration)
                                         }
 
-                                        if selectedPage == .advanced {
-                                            AdvancedBacktestView(
-                                                marketStore: marketStore,
-                                                isActive: isActive,
-                                                restoreRequest: pendingAdvancedRestoreRequest,
-                                                showsStrategyLibrary: $showsAdvancedStrategyLibrary,
-                                                onRecordsChanged: refreshBacktestRecordCache
-                                            )
-                                        } else {
-                                            VStack(spacing: 18) {
-                                                if backtestMode == .allocation {
-                                                    BacktestAllocationCard(
-                                                        slices: allocationSlices,
-                                                        activeAllocationSummary: activeAllocationSummary,
-                                                        selectedDateRangeLabel: selectedDateRangeLabel,
-                                                        onTapRange: {
-                                                            showsRangeSheet = true
-                                                        },
-                                                        onTapAllocation: {
-                                                            showsAllocationSheet = true
-                                                        },
-                                                        onTapPrimaryAction: hasActiveReport ? nil : {
-                                                            hasStartedBacktest = true
-                                                            scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: true)
-                                                        }
-                                                    )
-                                                    .onboardingAnchor(.backtestConfiguration)
-                                                } else {
-                                                    BacktestDCACard(
-                                                        assetTitle: AppLocalization.string(selectedDCAAssetOption?.title ?? "未选择资产"),
-                                                        amount: dcaContributionAmount,
-                                                        intervalDays: dcaIntervalDays,
-                                                        selectedDateRangeLabel: selectedDateRangeLabel,
-                                                        accent: selectedDCAAssetOption?.color ?? AssetTheme.gold,
-                                                        onTapRange: {
-                                                            showsRangeSheet = true
-                                                        },
-                                                        onTapAsset: {
-                                                            activeDCAConfigSheet = .asset
-                                                        },
-                                                        onTapAmount: {
-                                                            activeDCAConfigSheet = .amount
-                                                        },
-                                                        onTapInterval: {
-                                                            activeDCAConfigSheet = .interval
-                                                        },
-                                                        onTapPrimaryAction: hasActiveReport ? nil : {
-                                                            hasStartedBacktest = true
-                                                            scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: true)
-                                                        }
-                                                    )
-                                                    .onboardingAnchor(.backtestConfiguration)
-                                                }
-
-                                                if !isBacktestLoading, hasActiveReport {
-                                                    HStack(spacing: 10) {
-                                                        BacktestActionChip(title: AppLocalization.string("重置回测"), systemImage: "arrow.counterclockwise") {
-                                                            resetBacktest()
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            .frame(maxWidth: .infinity)
-
-                                            if isBacktestLoading {
-                                                BacktestLoadingView()
-                                                    .padding(.top, 8)
-                                            }
-
-                                            if !isBacktestLoading {
-                                                switch backtestMode {
-                                                case .allocation:
-                                                    if let allocationReport {
-                                                        allocationReportSection(report: allocationReport)
-                                                    }
-                                                case .dca:
-                                                    if let dcaReport {
-                                                        dcaReportSection(report: dcaReport)
-                                                    }
+                                        if !isBacktestLoading, hasActiveReport {
+                                            HStack(spacing: 10) {
+                                                BacktestActionChip(title: AppLocalization.string("重置回测"), systemImage: "arrow.counterclockwise") {
+                                                    resetBacktest()
                                                 }
                                             }
                                         }
                                     }
+                                    .frame(maxWidth: .infinity)
+
+                                    if isBacktestLoading {
+                                        BacktestLoadingView()
+                                            .padding(.top, 8)
+                                    }
+
+                                    if !isBacktestLoading {
+                                        switch backtestMode {
+                                        case .allocation:
+                                            if let allocationReport {
+                                                allocationReportSection(report: allocationReport)
+                                            }
+                                        case .dca:
+                                            if let dcaReport {
+                                                dcaReportSection(report: dcaReport)
+                                            }
+                                        }
+                                    }
                                 }
-                                .frame(width: max(0, geometry.size.width - 40), alignment: .topLeading)
-                                .padding(.horizontal, 20)
-                                .padding(.top, 14)
-                                .padding(.bottom, selectedPage == .advanced || hasActiveReport ? 136 : 24)
                             }
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .clipped()
+                        }
+                        .frame(width: max(0, geometry.size.width - 40), alignment: .topLeading)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 14)
+                        .padding(.bottom, selectedPage == .advanced || hasActiveReport ? 136 : 24)
                     }
-                } else {
-                    Color.clear
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .clipped()
                 }
             }
             .navigationDestination(isPresented: $showsAllBacktestRecords) {

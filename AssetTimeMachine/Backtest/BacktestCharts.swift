@@ -15,6 +15,22 @@ enum BacktestChartValueStyle {
             return value.currencyString(code: code)
         }
     }
+
+    func axisLabel(for value: Double) -> String {
+        switch self {
+        case .multiple:
+            if value >= 100 {
+                return String(format: "%.0fx", value)
+            }
+            return String(format: "%.1fx", value)
+        case let .currency(code):
+            return value.formatted(
+                .currency(code: code)
+                .precision(.fractionLength(0...1))
+                .notation(.compactName)
+            )
+        }
+    }
 }
 
 enum BacktestChartSeriesTitle {
@@ -373,7 +389,7 @@ struct InteractiveBacktestChart: View {
                 Text(AppLocalization.string("资产"))
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(AssetTheme.textSecondary)
-                Text(selectedPoint.portfolioValue.currencyString())
+                Text(valueStyle.label(for: selectedPoint.portfolioValue))
                     .font(.caption.weight(.bold))
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.textPrimary)
@@ -518,13 +534,18 @@ struct InteractiveBacktestChart: View {
             }
         }
         .chartYAxis {
-            AxisMarks(position: .leading) { value in
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
                     .foregroundStyle(AssetTheme.border.opacity(0.35))
                 AxisValueLabel {
                     if let doubleValue = value.as(Double.self) {
-                        Text(valueStyle.label(for: doubleValue))
+                        Text(valueStyle.axisLabel(for: doubleValue))
+                            .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                            .monospacedDigit()
                             .foregroundStyle(AssetTheme.textSecondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                            .frame(width: 42, alignment: .trailing)
                     }
                 }
             }

@@ -1000,8 +1000,7 @@ struct TimeMachineView: View {
             ZStack {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
-                if isActive {
-                    ScrollView(showsIndicators: false) {
+                ScrollView(showsIndicators: false) {
                         LazyVStack(alignment: .leading, spacing: 16) {
                             if lastVisualizationCacheToken == nil {
                                 LoadingStateCard(title: AppLocalization.string("时光机加载中"))
@@ -1046,9 +1045,6 @@ struct TimeMachineView: View {
                         .padding(.top, 12)
                         .padding(.bottom, 136)
                     }
-                } else {
-                    Color.clear
-                }
             }
             .toolbar(.hidden, for: .navigationBar)
         }

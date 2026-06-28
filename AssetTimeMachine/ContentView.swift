@@ -29,6 +29,8 @@ struct ContentView: View {
     @State private var mountedTabs: Set<AppTab> = [.dashboard]
     @State private var lastSelectedTab: AppTab = .dashboard
     @State private var selectedTab: AppTab = .dashboard
+    @State private var workActiveTab: AppTab? = .dashboard
+    @State private var workActivationTask: Task<Void, Never>?
     @State private var didRunStartup = false
     @State private var lastMarketRefreshAt: Date?
     @State private var showsOnboarding = false
@@ -73,14 +75,23 @@ struct ContentView: View {
         return UInt64(remaining * 1_000_000_000)
     }
 
+    private var tabSelection: Binding<AppTab> {
+        Binding(
+            get: { selectedTab },
+            set: { selectTab($0) }
+        )
+    }
+
     var body: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: tabSelection) {
             deferredTabContent(for: .dashboard) {
-                DashboardView(
-                    marketStore: marketStore,
-                    cloudStore: cloudStore,
-                    isActive: selectedTab == .dashboard
-                )
+                TabSurface(isSelected: selectedTab == .dashboard) {
+                    DashboardView(
+                        marketStore: marketStore,
+                        cloudStore: cloudStore,
+                        isActive: workActiveTab == .dashboard
+                    )
+                }
             }
                 .tabItem {
                     Label(AppLocalization.string("首页"), systemImage: "house")
@@ -88,11 +99,13 @@ struct ContentView: View {
                 .tag(AppTab.dashboard)
 
             deferredTabContent(for: .snapshots) {
-                SnapshotListView(
-                    marketStore: marketStore,
-                    isActive: selectedTab == .snapshots,
-                    onboardingActiveAnchorID: activeOnboardingAnchorID
-                )
+                TabSurface(isSelected: selectedTab == .snapshots) {
+                    SnapshotListView(
+                        marketStore: marketStore,
+                        isActive: workActiveTab == .snapshots,
+                        onboardingActiveAnchorID: activeOnboardingAnchorID
+                    )
+                }
             }
                 .tabItem {
                     Label(AppLocalization.string("记录"), systemImage: "square.and.pencil")
@@ -100,10 +113,12 @@ struct ContentView: View {
                 .tag(AppTab.snapshots)
 
             deferredTabContent(for: .timeMachine) {
-                TimeMachineView(
-                    marketStore: marketStore,
-                    isActive: selectedTab == .timeMachine
-                )
+                TabSurface(isSelected: selectedTab == .timeMachine) {
+                    TimeMachineView(
+                        marketStore: marketStore,
+                        isActive: workActiveTab == .timeMachine
+                    )
+                }
             }
                 .tabItem {
                     Label(AppLocalization.string("时光机"), systemImage: "clock.arrow.circlepath")
@@ -111,10 +126,12 @@ struct ContentView: View {
                 .tag(AppTab.timeMachine)
 
             deferredTabContent(for: .backtest) {
-                BacktestView(
-                    marketStore: marketStore,
-                    isActive: selectedTab == .backtest
-                )
+                TabSurface(isSelected: selectedTab == .backtest) {
+                    BacktestView(
+                        marketStore: marketStore,
+                        isActive: workActiveTab == .backtest
+                    )
+                }
             }
                 .tabItem {
                     Label(AppLocalization.string("量化"), systemImage: "chart.xyaxis.line")
@@ -122,8 +139,10 @@ struct ContentView: View {
                 .tag(AppTab.backtest)
 
             deferredTabContent(for: .settings) {
-                SettingsView(cloudStore: cloudStore) {
-                    presentOnboarding()
+                TabSurface(isSelected: selectedTab == .settings) {
+                    SettingsView(cloudStore: cloudStore) {
+                        presentOnboarding()
+                    }
                 }
             }
                 .tabItem {
@@ -131,10 +150,11 @@ struct ContentView: View {
                 }
                 .tag(AppTab.settings)
         }
+        .animation(nil, value: selectedTab)
         .overlayPreferenceValue(OnboardingAnchorPreferenceKey.self) { anchors in
             if showsOnboarding {
                 OnboardingTutorialView(
-                    selectedTab: $selectedTab,
+                    selectedTab: tabSelection,
                     activeAnchorID: $activeOnboardingAnchorID,
                     anchors: anchors
                 ) {
@@ -147,13 +167,6 @@ struct ContentView: View {
             }
         }
         .tint(AssetTheme.gold)
-        .onChange(of: selectedTab) { _, newValue in
-            TabMountController.noteSelection(
-                newValue,
-                mountedTabs: &mountedTabs,
-                lastSelectedTab: &lastSelectedTab
-            )
-        }
         .task {
             await runStartupIfNeeded()
             #if DEBUG
@@ -208,6 +221,30 @@ struct ContentView: View {
         }
     }
 
+    @MainActor
+    private func scheduleWorkActivation(for tab: AppTab) {
+        workActivationTask?.cancel()
+        workActiveTab = nil
+        workActivationTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(280))
+            guard !Task.isCancelled, selectedTab == tab else { return }
+            workActiveTab = tab
+            workActivationTask = nil
+        }
+    }
+
+    @MainActor
+    private func selectTab(_ tab: AppTab) {
+        guard tab != selectedTab else { return }
+        TabMountController.noteSelection(
+            tab,
+            mountedTabs: &mountedTabs,
+            lastSelectedTab: &lastSelectedTab
+        )
+        selectedTab = tab
+        scheduleWorkActivation(for: tab)
+    }
+
     @ViewBuilder
     private func deferredTabContent<Content: View>(for tab: AppTab, @ViewBuilder content: () -> Content) -> some View {
         if TabMountController.shouldMount(tab, selectedTab: selectedTab, mountedTabs: mountedTabs) {
@@ -224,13 +261,11 @@ struct ContentView: View {
 
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-openSnapshotsTab") {
-            selectedTab = .snapshots
-            mountedTabs.insert(.snapshots)
+            selectTab(.snapshots)
         }
 
         if ProcessInfo.processInfo.arguments.contains("-openTimeMachineTab") {
-            selectedTab = .timeMachine
-            mountedTabs.insert(.timeMachine)
+            selectTab(.timeMachine)
         }
 
         if let importPath = launchArgumentValue(after: "-importJSONPath") {
@@ -316,7 +351,7 @@ struct ContentView: View {
                 guard !Task.isCancelled else { return }
                 print("[tab-profile] switching to \(debugName(for: tab))")
                 await MainActor.run {
-                    selectedTab = tab
+                    selectTab(tab)
                 }
                 try? await Task.sleep(for: .milliseconds(520))
             }
@@ -367,7 +402,7 @@ struct ContentView: View {
         hasCompletedOnboarding = true
         showsOnboarding = false
         activeOnboardingAnchorID = nil
-        selectedTab = onboardingReturnTab
+        selectTab(onboardingReturnTab)
     }
 
     @MainActor
