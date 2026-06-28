@@ -26,6 +26,7 @@ struct ContentView: View {
     @AppStorage("app.strategyNotifications.hour") private var strategyNotificationHour: Int = StrategyNotificationDefaults.defaultHour
     @StateObject private var marketStore = RemoteMarketStore()
     @StateObject private var cloudStore = AssetTimeMachineCloudStore()
+    @StateObject private var tabMountStore = TabMountStore()
     @State private var selectedTab: AppTab = .dashboard
     @State private var didRunStartup = false
     @State private var lastMarketRefreshAt: Date?
@@ -149,12 +150,18 @@ struct ContentView: View {
             }
         }
         .tint(AssetTheme.gold)
+        .onChange(of: selectedTab) { _, newValue in
+            tabMountStore.noteSelection(newValue)
+        }
         .task {
             await runStartupIfNeeded()
             #if DEBUG
             scheduleDebugTabSwitchLoopIfNeeded()
             #endif
-            await cloudStore.refreshIfNeeded(from: modelContext)
+            Task {
+                try? await Task.sleep(for: .milliseconds(600))
+                await cloudStore.refreshIfNeeded(from: modelContext)
+            }
             await refreshAssetNotifications()
             Task {
                 try? await Task.sleep(for: .seconds(2))
@@ -202,8 +209,11 @@ struct ContentView: View {
 
     @ViewBuilder
     private func deferredTabContent<Content: View>(for tab: AppTab, @ViewBuilder content: () -> Content) -> some View {
-        if selectedTab == tab {
+        if tabMountStore.shouldMount(tab, selectedTab: selectedTab) {
             content()
+                .onAppear {
+                    tabMountStore.markMounted(tab)
+                }
         } else {
             AssetTheme.pageGradient.ignoresSafeArea()
         }
@@ -217,10 +227,12 @@ struct ContentView: View {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-openSnapshotsTab") {
             selectedTab = .snapshots
+            tabMountStore.markMounted(.snapshots)
         }
 
         if ProcessInfo.processInfo.arguments.contains("-openTimeMachineTab") {
             selectedTab = .timeMachine
+            tabMountStore.markMounted(.timeMachine)
         }
 
         if let importPath = launchArgumentValue(after: "-importJSONPath") {

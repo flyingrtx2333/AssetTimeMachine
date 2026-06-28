@@ -17,12 +17,10 @@ struct DashboardView: View {
     @AppStorage("dashboard.monthlySalary") private var monthlySalary: Double = 10000
     @AppStorage("dashboard.monthlySalarySeedVersion") private var monthlySalarySeedVersion: Int = 0
     @AppStorage("dashboard.annualReturnRate") private var annualReturnRate: Double = 0.03
-    @ObservedObject var marketStore: RemoteMarketStore
+    let marketStore: RemoteMarketStore
     let cloudStore: AssetTimeMachineCloudStore
     let isActive: Bool
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
-    @Query private var items: [AssetItem]
-    @Query private var categories: [AssetCategory]
     @State private var cachedAllocationSlices: [DashboardAllocationSlice] = []
     @State private var cachedTrendPoints: [TimeMachineTrendPoint] = []
     @State private var cachedFreedomProjection: FinancialFreedomProjection?
@@ -72,10 +70,8 @@ struct DashboardView: View {
         if let latest = snapshots.first {
             hasher.combine(latest.id)
             hasher.combine(latest.updatedAt.timeIntervalSinceReferenceDate)
+            hasher.combine(latest.entries.count)
         }
-        hasher.combine(items.count)
-        hasher.combine(items.reduce(0) { max($0, $1.updatedAt.timeIntervalSinceReferenceDate) })
-        hasher.combine(categories.count)
         hasher.combine(monthlyExpense)
         hasher.combine(inflationRate)
         hasher.combine(monthlySalary)
@@ -86,14 +82,10 @@ struct DashboardView: View {
     private var autoSyncTrigger: String {
         let latestSnapshotUpdate = latestSnapshot?.updatedAt.timeIntervalSince1970 ?? 0
         let latestSnapshotID = latestSnapshot?.id.uuidString ?? "none"
-        let latestItemUpdate = items.reduce(0) { max($0, $1.updatedAt.timeIntervalSince1970) }
         return [
-            String(categories.count),
-            String(items.count),
-            String(snapshots.count),
             latestSnapshotID,
             String(Int(latestSnapshotUpdate)),
-            String(Int(latestItemUpdate))
+            String(snapshots.count)
         ].joined(separator: ":")
     }
 

@@ -5,7 +5,7 @@ import UIKit
 
 struct AdvancedBacktestView: View {
     @Environment(\.modelContext) private var modelContext
-    @ObservedObject var marketStore: RemoteMarketStore
+    let marketStore: RemoteMarketStore
     let isActive: Bool
     let restoreRequest: AdvancedBacktestRestoreRequest?
     @Binding var showsStrategyLibrary: Bool
@@ -48,6 +48,26 @@ struct AdvancedBacktestView: View {
     @State private var cachedAvailableDateBounds: ClosedRange<Date>?
     @State private var lastAdvancedDataCacheToken: Int?
     @State private var lastObservedRelevantHistoryToken: String = ""
+
+    init(
+        marketStore: RemoteMarketStore,
+        isActive: Bool,
+        restoreRequest: AdvancedBacktestRestoreRequest?,
+        showsStrategyLibrary: Binding<Bool>,
+        onRecordsChanged: @escaping () -> Void = {}
+    ) {
+        self.marketStore = marketStore
+        self.isActive = isActive
+        self.restoreRequest = restoreRequest
+        _showsStrategyLibrary = showsStrategyLibrary
+        self.onRecordsChanged = onRecordsChanged
+
+        var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
+            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
+        )
+        snapshotDescriptor.fetchLimit = 1
+        _snapshots = Query(snapshotDescriptor)
+    }
 
     private var assetOptions: [BacktestAssetOption] {
         BacktestDefaults.dcaAssetOptions

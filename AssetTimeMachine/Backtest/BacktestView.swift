@@ -5,7 +5,7 @@ import UIKit
 
 struct BacktestView: View {
     @Environment(\.modelContext) private var modelContext
-    @ObservedObject var marketStore: RemoteMarketStore
+    let marketStore: RemoteMarketStore
     let isVisible: Bool
     let isActive: Bool
     @State private var selectedPage: BacktestPage = .home

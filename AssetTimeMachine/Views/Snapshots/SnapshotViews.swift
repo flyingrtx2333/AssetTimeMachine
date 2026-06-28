@@ -35,7 +35,7 @@ struct SnapshotListView: View {
         var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
             sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
         )
-        snapshotDescriptor.fetchLimit = 32
+        snapshotDescriptor.fetchLimit = 8
         _snapshots = Query(snapshotDescriptor)
     }
 
@@ -48,8 +48,9 @@ struct SnapshotListView: View {
     @State private var showsAddAssetItemSheet = false
     @State private var editingAssetItem: AssetItem?
     @State private var quickEditingAssetItem: AssetItem?
-    @State private var focusedField: RecordInputField?
+    @FocusState private var focusedField: RecordInputField?
     @State private var pendingAutoRateSyncTask: Task<Void, Never>?
+    @State private var pendingPersistTask: Task<Void, Never>?
     @State private var cachedListLayout: SnapshotListLayout?
 
     private let liabilitySectionTitleMap: [String: String] = [
@@ -268,6 +269,16 @@ struct SnapshotListView: View {
                 .scrollDismissesKeyboard(.never)
             }
             .toolbar(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button(AppLocalization.string("完成")) {
+                        dismissKeyboard()
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AssetTheme.gold)
+                }
+            }
         }
         .sheet(isPresented: $showsAddAssetItemSheet) {
             AddAssetItemSheet()
@@ -362,7 +373,22 @@ struct SnapshotListView: View {
             }
             guard let previousField, previousField != newField,
                   let item = item(for: previousField) else { return }
+            schedulePersist(item: item)
+        }
+    }
+
+    @MainActor
+    private func schedulePersist(item: AssetItem, delayNanoseconds: UInt64 = 80_000_000) {
+        pendingPersistTask?.cancel()
+        pendingPersistTask = Task {
+            if delayNanoseconds > 0 {
+                try? await Task.sleep(nanoseconds: delayNanoseconds)
+            }
+            guard !Task.isCancelled else { return }
             persist(item: item)
+            await MainActor.run {
+                pendingPersistTask = nil
+            }
         }
     }
 
@@ -410,7 +436,6 @@ struct SnapshotListView: View {
     @MainActor
     private func dismissKeyboard() {
         focusedField = nil
-        dismissActiveKeyboard()
     }
 
     private func item(for field: RecordInputField) -> AssetItem? {
@@ -895,7 +920,7 @@ struct RecordCategoryCard: View {
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
     @Binding var unitPriceInputs: [UUID: String]
-    @Binding var focusedField: RecordInputField?
+    @FocusState.Binding var focusedField: RecordInputField?
     let onEdit: (AssetItem) -> Void
     let onEditValue: (AssetItem) -> Void
     @State private var draggedItemID: UUID?
@@ -1060,7 +1085,7 @@ struct LiabilityCategorySection: View {
     let snapshotEntriesByItemID: [UUID: AssetEntry]
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
-    @Binding var focusedField: RecordInputField?
+    @FocusState.Binding var focusedField: RecordInputField?
     let onEdit: (AssetItem) -> Void
     let onEditValue: (AssetItem) -> Void
     @State private var draggedItemID: UUID?
@@ -1150,7 +1175,7 @@ struct LiabilityEntryCard: View {
     let snapshotEntry: AssetEntry?
     @Binding var amountText: String
     @Binding var quantityText: String
-    @Binding var focusedField: RecordInputField?
+    @FocusState.Binding var focusedField: RecordInputField?
     let inputWidth: CGFloat
     let onEdit: () -> Void
     let onEditValue: () -> Void
@@ -1223,7 +1248,11 @@ struct LiabilityEntryCard: View {
                     }
                 } else {
                     Button {
-                        onEditValue()
+                        if item.valuationMethod == .directAmount || item.autoPricedAssetKind == nil {
+                            focusedField = activeField
+                        } else {
+                            onEditValue()
+                        }
                     } label: {
                         Text(displayValue)
                             .font(.system(size: 11.5, weight: .semibold))
@@ -1394,7 +1423,7 @@ struct AssetEntryCompactCard: View {
     let snapshotEntry: AssetEntry?
     @Binding var amountText: String
     @Binding var quantityText: String
-    @Binding var focusedField: RecordInputField?
+    @FocusState.Binding var focusedField: RecordInputField?
     let inputWidth: CGFloat
     let isOnboardingTarget: Bool
     let showsOnboardingInputPreview: Bool
@@ -1451,7 +1480,11 @@ struct AssetEntryCompactCard: View {
                     }
                 } else {
                     Button {
-                        onEditValue()
+                        if item.valuationMethod == .directAmount || item.autoPricedAssetKind == nil {
+                            focusedField = activeField
+                        } else {
+                            onEditValue()
+                        }
                     } label: {
                         Text(displayValue)
                             .font(.system(size: 11.5, weight: .semibold))
@@ -1490,7 +1523,7 @@ struct AssetEntryInputRow: View {
     @Binding var amountText: String
     @Binding var quantityText: String
     @Binding var unitPriceText: String
-    @Binding var focusedField: RecordInputField?
+    @FocusState.Binding var focusedField: RecordInputField?
     let inputWidth: CGFloat
     let isOnboardingTarget: Bool
     let showsOnboardingInputPreview: Bool
@@ -1548,7 +1581,11 @@ struct AssetEntryInputRow: View {
                     } else {
                         HStack(spacing: 12) {
                             Button {
-                                onEditValue()
+                                if item.autoPricedAssetKind == nil {
+                                    focusedField = .quantity(item.id)
+                                } else {
+                                    onEditValue()
+                                }
                             } label: {
                                 recordValueLabel(title: AppLocalization.string("数量"), value: quantityText)
                             }
@@ -1585,7 +1622,7 @@ struct ATMInputField: View {
     @Binding var text: String
     let placeholder: String
     var width: CGFloat? = nil
-    @Binding var focusedField: RecordInputField?
+    @FocusState.Binding var focusedField: RecordInputField?
     let focusValue: RecordInputField
     var centered: Bool = false
     var fontSize: CGFloat = 17
@@ -1595,148 +1632,22 @@ struct ATMInputField: View {
     var strokeOpacity: Double = 0.52
 
     var body: some View {
-        ATMUIKitInputField(
-            text: $text,
-            placeholder: placeholder,
-            focusedField: $focusedField,
-            focusValue: focusValue,
-            centered: centered,
-            fontSize: fontSize,
-            fontWeight: fontWeight
-        )
-        .padding(.horizontal, 2)
-        .frame(maxWidth: width == nil ? .infinity : nil, alignment: centered ? .center : .trailing)
-        .frame(width: width, height: height)
-        .background(AssetTheme.background.opacity(backgroundOpacity), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(AssetTheme.border.opacity(strokeOpacity), lineWidth: 1)
-        )
-    }
-}
-
-struct ATMUIKitInputField: UIViewRepresentable {
-    @Binding var text: String
-    let placeholder: String
-    @Binding var focusedField: RecordInputField?
-    let focusValue: RecordInputField
-    var centered: Bool = false
-    var fontSize: CGFloat = 17
-    var fontWeight: Font.Weight = .semibold
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(parent: self)
-    }
-
-    func makeUIView(context: Context) -> UITextField {
-        let textField = UITextField(frame: .zero)
-        textField.delegate = context.coordinator
-        textField.keyboardType = .decimalPad
-        textField.autocorrectionType = .no
-        textField.autocapitalizationType = .none
-        textField.borderStyle = .none
-        textField.backgroundColor = .clear
-        textField.tintColor = UIColor(AssetTheme.textPrimary)
-        textField.addTarget(context.coordinator, action: #selector(Coordinator.editingChanged(_:)), for: .editingChanged)
-        return textField
-    }
-
-    func updateUIView(_ uiView: UITextField, context: Context) {
-        context.coordinator.parent = self
-        context.coordinator.isBeingDismantled = false
-
-        if uiView.text != text {
-            uiView.text = text
-        }
-
-        uiView.textAlignment = centered ? .center : .right
-        uiView.font = .systemFont(ofSize: fontSize, weight: fontWeight.uiFontWeight)
-        uiView.textColor = UIColor(AssetTheme.textPrimary)
-        uiView.attributedPlaceholder = NSAttributedString(
-            string: AppLocalization.string(placeholder),
-            attributes: [.foregroundColor: UIColor(AssetTheme.textSecondary)]
-        )
-
-        let shouldBeFirstResponder = focusedField == focusValue
-        if shouldBeFirstResponder, !uiView.isFirstResponder {
-            context.coordinator.isSyncingFirstResponder = true
-            DispatchQueue.main.async {
-                guard context.coordinator.parent.focusedField == context.coordinator.parent.focusValue,
-                      !uiView.isFirstResponder else { return }
-                uiView.becomeFirstResponder()
-                context.coordinator.moveCaretToEnd(in: uiView)
-            }
-        } else if !shouldBeFirstResponder, uiView.isFirstResponder {
-            context.coordinator.isSyncingFirstResponder = true
-            DispatchQueue.main.async {
-                guard context.coordinator.parent.focusedField != context.coordinator.parent.focusValue,
-                      uiView.isFirstResponder else { return }
-                uiView.resignFirstResponder()
-            }
-        }
-    }
-
-    static func dismantleUIView(_ uiView: UITextField, coordinator: Coordinator) {
-        coordinator.isBeingDismantled = true
-        uiView.delegate = nil
-    }
-
-    final class Coordinator: NSObject, UITextFieldDelegate {
-        var parent: ATMUIKitInputField
-        var isSyncingFirstResponder = false
-        var isBeingDismantled = false
-
-        init(parent: ATMUIKitInputField) {
-            self.parent = parent
-        }
-
-        @objc func editingChanged(_ textField: UITextField) {
-            parent.text = textField.text ?? ""
-        }
-
-        func textFieldDidBeginEditing(_ textField: UITextField) {
-            isSyncingFirstResponder = false
-            parent.focusedField = parent.focusValue
-            moveCaretToEnd(in: textField)
-        }
-
-        func textFieldDidChangeSelection(_ textField: UITextField) {
-            // Keep user typing fluid. Forcing the caret on every selection update
-            // can fight UIKit's own text editing cycle and makes record inputs feel sticky.
-        }
-
-        func textFieldDidEndEditing(_ textField: UITextField) {
-            defer { isSyncingFirstResponder = false }
-
-            guard !isBeingDismantled else { return }
-            guard !isSyncingFirstResponder else { return }
-            guard parent.focusedField == parent.focusValue else { return }
-
-            parent.focusedField = nil
-        }
-
-        func moveCaretToEnd(in textField: UITextField) {
-            let end = textField.endOfDocument
-            guard let range = textField.textRange(from: end, to: end) else { return }
-            textField.selectedTextRange = range
-        }
-    }
-}
-
-extension Font.Weight {
-    var uiFontWeight: UIFont.Weight {
-        switch self {
-        case .ultraLight: return .ultraLight
-        case .thin: return .thin
-        case .light: return .light
-        case .regular: return .regular
-        case .medium: return .medium
-        case .semibold: return .semibold
-        case .bold: return .bold
-        case .heavy: return .heavy
-        case .black: return .black
-        default: return .regular
-        }
+        TextField(AppLocalization.string(placeholder), text: $text)
+            .keyboardType(.decimalPad)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .multilineTextAlignment(centered ? .center : .trailing)
+            .font(.system(size: fontSize, weight: fontWeight))
+            .foregroundStyle(AssetTheme.textPrimary)
+            .focused($focusedField, equals: focusValue)
+            .padding(.horizontal, 2)
+            .frame(maxWidth: width == nil ? .infinity : nil, alignment: centered ? .center : .trailing)
+            .frame(width: width, height: height)
+            .background(AssetTheme.background.opacity(backgroundOpacity), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(AssetTheme.border.opacity(strokeOpacity), lineWidth: 1)
+            )
     }
 }
 
@@ -2092,6 +2003,22 @@ struct QuickRecordValueSheet: View {
         case unitPrice
     }
 
+    private struct QuickRecordAutoFocusModifier: ViewModifier {
+        @FocusState.Binding var focusedField: QuickRecordValueField?
+
+        func body(content: Content) -> some View {
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("-disableQuickEditAutoFocus") {
+                content
+            } else {
+                content.defaultFocus($focusedField, .primary)
+            }
+            #else
+            content.defaultFocus($focusedField, .primary)
+            #endif
+        }
+    }
+
     let item: AssetItem
     let snapshot: AssetSnapshot?
     @ObservedObject var marketStore: RemoteMarketStore
@@ -2269,14 +2196,16 @@ struct QuickRecordValueSheet: View {
         }
         .shadow(color: .black.opacity(0.28), radius: 30, x: 0, y: 18)
         .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .task {
-            #if DEBUG
-            if ProcessInfo.processInfo.arguments.contains("-disableQuickEditAutoFocus") {
-                return
+        .modifier(QuickRecordAutoFocusModifier(focusedField: $focusedField))
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button(AppLocalization.string("完成")) {
+                    focusedField = nil
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(AssetTheme.gold)
             }
-            #endif
-            await Task.yield()
-            focusedField = .primary
         }
     }
 
@@ -2978,11 +2907,17 @@ struct SnapshotEntryEditSheet: View {
                     }
                     .foregroundStyle(AssetTheme.gold)
                 }
+
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button(AppLocalization.string("完成")) {
+                        focusedField = nil
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AssetTheme.gold)
+                }
             }
-            .task {
-                await Task.yield()
-                focusedField = usesQuantityAndUnitPrice ? .quantity : .amount
-            }
+            .defaultFocus($focusedField, usesQuantityAndUnitPrice ? .quantity : .amount)
         }
     }
 

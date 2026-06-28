@@ -11,10 +11,10 @@ private struct TrendVideoPreviewRequest: Identifiable {
 
 struct TimeMachineView: View {
     @Environment(\.modelContext) private var modelContext
-    @ObservedObject var marketStore: RemoteMarketStore
+    let marketStore: RemoteMarketStore
     let isVisible: Bool
     let isActive: Bool
-    @Query(sort: \AssetSnapshot.date, order: .forward) private var snapshots: [AssetSnapshot]
+    @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
     @State private var selectedRange: TimeMachineRange = .sixMonths
     @State private var cachedTrendPoints: [TimeMachineTrendPoint] = []
     @State private var cachedFilteredTrendPoints: [TimeMachineTrendPoint] = []
@@ -24,6 +24,7 @@ struct TimeMachineView: View {
     @State private var cachedFullHistoryPointsBySymbol: [String: [TimeMachineSingleAxisPoint]] = [:]
     @State private var cachedDetailTrendCards: [TimeMachineCombinedTrendDescriptor] = []
     @State private var cachedTrendPointBySnapshotID: [UUID: TimeMachineTrendPointCacheEntry] = [:]
+    @State private var cachedAllRangeSnapshots: [AssetSnapshot]?
     @State private var lastFullHistoryPointsCacheToken: Int?
     @State private var lastVisualizationCacheToken: Int?
     @State private var lastDetailTrendCardsCacheToken: Int?
@@ -38,6 +39,22 @@ struct TimeMachineView: View {
     #if DEBUG
     @State private var didOpenDebugTrendVideoPreview = false
     #endif
+
+    init(marketStore: RemoteMarketStore, isVisible: Bool, isActive: Bool) {
+        self.marketStore = marketStore
+        self.isVisible = isVisible
+        self.isActive = isActive
+
+        var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
+            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
+        )
+        snapshotDescriptor.fetchLimit = 400
+        _snapshots = Query(snapshotDescriptor)
+    }
+
+    private var chronologicalSnapshots: [AssetSnapshot] {
+        snapshots.reversed()
+    }
 
     private var trendPoints: [TimeMachineTrendPoint] {
         cachedTrendPoints
@@ -194,17 +211,15 @@ struct TimeMachineView: View {
     private var snapshotCacheToken: Int {
         var hasher = Hasher()
         hasher.combine(snapshots.count)
-        if let first = snapshots.first {
-            hasher.combine(first.id)
-            hasher.combine(first.updatedAt.timeIntervalSinceReferenceDate)
-            hasher.combine(first.marketAnchorsUpdatedAt?.timeIntervalSinceReferenceDate)
-            hasher.combine(first.entries.count)
+        if let latest = snapshots.first {
+            hasher.combine(latest.id)
+            hasher.combine(latest.updatedAt.timeIntervalSinceReferenceDate)
+            hasher.combine(latest.marketAnchorsUpdatedAt?.timeIntervalSinceReferenceDate)
+            hasher.combine(latest.entries.count)
         }
-        if let last = snapshots.last, last.id != snapshots.first?.id {
-            hasher.combine(last.id)
-            hasher.combine(last.updatedAt.timeIntervalSinceReferenceDate)
-            hasher.combine(last.marketAnchorsUpdatedAt?.timeIntervalSinceReferenceDate)
-            hasher.combine(last.entries.count)
+        if let oldest = snapshots.last, oldest.id != snapshots.first?.id {
+            hasher.combine(oldest.id)
+            hasher.combine(oldest.updatedAt.timeIntervalSinceReferenceDate)
         }
         return hasher.finalize()
     }
@@ -295,25 +310,23 @@ struct TimeMachineView: View {
                 try? await Task.sleep(nanoseconds: delayNanoseconds)
             }
             guard !Task.isCancelled else { return }
-            await MainActor.run {
-                guard isActive else { return }
-                refreshVisualizationCacheIfNeeded(force: force, includeDetailCards: includeDetailCards)
-            }
+            guard isActive else { return }
+            await refreshVisualizationCacheIfNeeded(force: force, includeDetailCards: includeDetailCards)
         }
     }
 
     @MainActor
-    private func refreshVisualizationCacheIfNeeded(force: Bool = false, includeDetailCards: Bool = true) {
+    private func refreshVisualizationCacheIfNeeded(force: Bool = false, includeDetailCards: Bool = true) async {
         let token = visualizationCacheToken
         if !force, token == lastVisualizationCacheToken {
             if includeDetailCards {
-                refreshDetailTrendCardsIfNeeded()
+                await refreshDetailTrendCardsIfNeeded()
             } else if cachedDetailTrendCards.isEmpty {
                 scheduleDeferredDetailCardsRefresh(for: token)
             }
             return
         }
-        refreshVisualizationCache(includeDetailCards: includeDetailCards, cacheToken: token)
+        await refreshVisualizationCache(includeDetailCards: includeDetailCards, cacheToken: token)
         lastVisualizationCacheToken = token
     }
 
@@ -375,14 +388,22 @@ struct TimeMachineView: View {
     }
 
     @MainActor
-    private func refreshVisualizationCache(includeDetailCards: Bool = true, cacheToken: Int? = nil) {
+    private func refreshVisualizationCache(includeDetailCards: Bool = true, cacheToken: Int? = nil) async {
+        guard !Task.isCancelled, isActive else { return }
         let cacheToken = cacheToken ?? visualizationCacheToken
         deferredFullTrendTask?.cancel()
 
-        let visibleSnapshots = snapshotsForSelectedRange()
-        let trendPoints = visibleSnapshots.map { snapshot in
-            trendPoint(for: snapshot)
+        let visibleSnapshots = await resolvedSnapshotsForVisualization()
+        var trendPoints: [TimeMachineTrendPoint] = []
+        trendPoints.reserveCapacity(visibleSnapshots.count)
+        for (index, snapshot) in visibleSnapshots.enumerated() {
+            guard !Task.isCancelled, isActive else { return }
+            trendPoints.append(trendPoint(for: snapshot))
+            if index.isMultiple(of: 6) {
+                await Task.yield()
+            }
         }
+
         let validSnapshotIDs = Set(snapshots.map(\.id))
         cachedTrendPointBySnapshotID = cachedTrendPointBySnapshotID.filter { validSnapshotIDs.contains($0.key) }
 
@@ -413,6 +434,7 @@ struct TimeMachineView: View {
         if fullHistoryToken == lastFullHistoryPointsCacheToken {
             fullHistoryPointsBySymbol = cachedFullHistoryPointsBySymbol
         } else {
+            await Task.yield()
             fullHistoryPointsBySymbol = buildFullHistoryPointsBySymbol()
             cachedFullHistoryPointsBySymbol = fullHistoryPointsBySymbol
             lastFullHistoryPointsCacheToken = fullHistoryToken
@@ -434,13 +456,42 @@ struct TimeMachineView: View {
     }
 
     private func snapshotsForSelectedRange(calendar: Calendar = .current) -> [AssetSnapshot] {
-        guard selectedRange != .all,
-              let latestDate = snapshots.last?.date,
-              let startDate = selectedRangeStartDate(from: latestDate, calendar: calendar) else {
-            return snapshots
+        if selectedRange == .all {
+            if let cachedAllRangeSnapshots, !cachedAllRangeSnapshots.isEmpty {
+                return cachedAllRangeSnapshots
+            }
+            return chronologicalSnapshots
         }
 
-        return snapshots.filter { $0.date >= startDate }
+        let orderedSnapshots = chronologicalSnapshots
+        guard let latestDate = orderedSnapshots.last?.date,
+              let startDate = selectedRangeStartDate(from: latestDate, calendar: calendar) else {
+            return orderedSnapshots
+        }
+
+        return orderedSnapshots.filter { $0.date >= startDate }
+    }
+
+    @MainActor
+    private func resolvedSnapshotsForVisualization() async -> [AssetSnapshot] {
+        guard selectedRange == .all else {
+            cachedAllRangeSnapshots = nil
+            return snapshotsForSelectedRange()
+        }
+
+        if let cachedAllRangeSnapshots, !cachedAllRangeSnapshots.isEmpty {
+            return cachedAllRangeSnapshots
+        }
+
+        let descriptor = FetchDescriptor<AssetSnapshot>(
+            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .forward)]
+        )
+        let fetched = (try? modelContext.fetch(descriptor)) ?? []
+        if fetched.count > chronologicalSnapshots.count {
+            cachedAllRangeSnapshots = fetched
+            return fetched
+        }
+        return chronologicalSnapshots
     }
 
     private func selectedRangeStartDate(from latestDate: Date, calendar: Calendar = .current) -> Date? {
@@ -472,9 +523,10 @@ struct TimeMachineView: View {
                   token == lastVisualizationCacheToken else { return }
 
             var fullTrendPoints: [TimeMachineTrendPoint] = []
-            fullTrendPoints.reserveCapacity(snapshots.count)
+            let orderedSnapshots = chronologicalSnapshots
+            fullTrendPoints.reserveCapacity(orderedSnapshots.count)
 
-            for (index, snapshot) in snapshots.enumerated() {
+            for (index, snapshot) in orderedSnapshots.enumerated() {
                 guard !Task.isCancelled,
                       isActive,
                       generation == activeGeneration,
@@ -497,11 +549,11 @@ struct TimeMachineView: View {
     }
 
     @MainActor
-    private func refreshDetailTrendCardsIfNeeded(force: Bool = false) {
+    private func refreshDetailTrendCardsIfNeeded(force: Bool = false) async {
         let token = visualizationCacheToken
         guard force || token != lastDetailTrendCardsCacheToken else { return }
         if token != lastVisualizationCacheToken {
-            refreshVisualizationCache(includeDetailCards: true, cacheToken: token)
+            await refreshVisualizationCache(includeDetailCards: true, cacheToken: token)
             lastVisualizationCacheToken = token
         } else {
             refreshDetailTrendCards(for: token)
@@ -526,10 +578,8 @@ struct TimeMachineView: View {
             await Task.yield()
             try? await Task.sleep(nanoseconds: 120_000_000)
             guard !Task.isCancelled else { return }
-            await MainActor.run {
-                guard isActive, token == visualizationCacheToken else { return }
-                refreshDetailTrendCardsIfNeeded()
-            }
+            guard isActive, token == visualizationCacheToken else { return }
+            await refreshDetailTrendCardsIfNeeded()
         }
     }
 
@@ -889,7 +939,9 @@ struct TimeMachineView: View {
             _ = visibleDetailTrendSymbols.insert(option.symbol)
         }
         lastFullHistoryPointsCacheToken = nil
-        refreshVisualizationCacheIfNeeded(force: true, includeDetailCards: true)
+        Task {
+            await refreshVisualizationCacheIfNeeded(force: true, includeDetailCards: true)
+        }
     }
 
     private var trendVideoExportBar: some View {
@@ -921,19 +973,28 @@ struct TimeMachineView: View {
 
     @MainActor
     private func openTrendVideoPreview() {
-        let exportPoints = snapshots.map { snapshot in
-            trendPoint(for: snapshot)
-        }
+        Task {
+            let sourceSnapshots = await resolvedSnapshotsForVisualization()
+            var exportPoints: [TimeMachineTrendPoint] = []
+            exportPoints.reserveCapacity(sourceSnapshots.count)
+            for (index, snapshot) in sourceSnapshots.enumerated() {
+                guard !Task.isCancelled else { return }
+                exportPoints.append(trendPoint(for: snapshot))
+                if index.isMultiple(of: 8) {
+                    await Task.yield()
+                }
+            }
 
-        guard exportPoints.count >= 2 else {
-            trendVideoExportErrorMessage = AppLocalization.string("趋势数据不足，至少需要两条记录")
-            return
-        }
+            guard exportPoints.count >= 2 else {
+                trendVideoExportErrorMessage = AppLocalization.string("趋势数据不足，至少需要两条记录")
+                return
+            }
 
-        trendVideoPreviewRequest = TrendVideoPreviewRequest(
-            points: exportPoints,
-            rangeLabel: TimeMachineRange.all.summaryLabel
-        )
+            trendVideoPreviewRequest = TrendVideoPreviewRequest(
+                points: exportPoints,
+                rangeLabel: TimeMachineRange.all.summaryLabel
+            )
+        }
     }
 
     var body: some View {
