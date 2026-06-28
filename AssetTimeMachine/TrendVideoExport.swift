@@ -98,7 +98,7 @@ enum TrendVideoExporter {
                 throw TrendVideoExportError.cannotCreatePixelBuffer
             }
 
-            let progress = frameCount <= 1 ? 1 : Double(frameIndex) / Double(frameCount - 1)
+            let progress = Double(frameIndex + 1) / Double(frameCount)
             renderer.draw(progress: progress, into: pixelBuffer)
 
             let time = CMTimeMultiply(frameDuration, multiplier: Int32(frameIndex))
@@ -108,6 +108,7 @@ enum TrendVideoExporter {
 
             if frameIndex % 3 == 0 || frameIndex == frameCount - 1 {
                 progressHandler(progress)
+                await Task.yield()
             }
         }
 
@@ -255,6 +256,7 @@ struct TrendVideoPreviewSheet: View {
                             .progressViewStyle(.linear)
                             .tint(AssetTheme.gold)
                             .frame(maxWidth: 260)
+                            .animation(.linear(duration: 0.16), value: exportProgress)
 
                         Text(AppLocalization.format("%@ %.0f%%", AppLocalization.string("正在生成视频"), exportProgress * 100))
                             .font(.subheadline.weight(.semibold))
@@ -374,6 +376,11 @@ private final class TrendVideoFrameRenderer {
     private let domain: ClosedRange<Double>
     private let firstDate: Date
     private let lastDate: Date
+    private let videoGold = UIColor(red: 0.96, green: 0.75, blue: 0.36, alpha: 1)
+    private let videoCyan = UIColor(red: 0.35, green: 0.78, blue: 0.96, alpha: 1)
+    private let videoRed = UIColor(red: 0.96, green: 0.39, blue: 0.43, alpha: 1)
+    private let videoTextPrimary = UIColor(red: 0.95, green: 0.95, blue: 0.93, alpha: 1)
+    private let videoTextSecondary = UIColor(red: 0.58, green: 0.62, blue: 0.70, alpha: 1)
 
     init(points: [TimeMachineTrendPoint], rangeLabel: String, size: CGSize) {
         self.points = points
@@ -416,102 +423,78 @@ private final class TrendVideoFrameRenderer {
 
         let rect = CGRect(origin: .zero, size: size)
         drawBackground(in: rect)
-        drawHeader(progress: progress)
+        let index = visibleEndIndex(progress: progress)
+        let point = points[index]
+        drawHeader(point: point)
+        drawDateWatermark(point: point)
         drawChart(progress: progress)
+        drawBottomPanels(point: point)
         drawFooter()
     }
 
     private func drawBackground(in rect: CGRect) {
         let colors = [
-            AssetTheme.backgroundUIColor.cgColor,
-            AssetTheme.backgroundSecondaryUIColor.cgColor
+            UIColor(red: 0.015, green: 0.022, blue: 0.045, alpha: 1).cgColor,
+            UIColor(red: 0.028, green: 0.046, blue: 0.075, alpha: 1).cgColor,
+            UIColor(red: 0.010, green: 0.012, blue: 0.024, alpha: 1).cgColor
         ] as CFArray
-        let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 1])
+        let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 0.45, 1])
         UIGraphicsGetCurrentContext()?.drawLinearGradient(
             gradient!,
             start: CGPoint(x: rect.minX, y: rect.minY),
-            end: CGPoint(x: rect.maxX, y: rect.maxY),
+            end: CGPoint(x: rect.maxX, y: rect.maxY * 0.78),
             options: []
         )
+
+        UIColor(red: 0.93, green: 0.77, blue: 0.45, alpha: 0.04).setFill()
+        UIBezierPath(ovalIn: CGRect(x: -240, y: 520, width: 640, height: 720)).fill()
+        UIColor(red: 0.19, green: 0.55, blue: 0.86, alpha: 0.05).setFill()
+        UIBezierPath(ovalIn: CGRect(x: 720, y: 300, width: 520, height: 720)).fill()
     }
 
-    private func drawHeader(progress: Double) {
-        let index = visibleEndIndex(progress: progress)
-        let point = points[index]
+    private func drawHeader(point: TimeMachineTrendPoint) {
         drawText(
             AppLocalization.string("资产时光机"),
-            in: CGRect(x: 72, y: 86, width: size.width - 144, height: 44),
-            font: .systemFont(ofSize: 32, weight: .semibold),
-            color: AssetTheme.goldUIColor
+            in: CGRect(x: 54, y: 104, width: size.width - 108, height: 42),
+            font: .systemFont(ofSize: 30, weight: .semibold),
+            color: videoGold
         )
         drawText(
             AppLocalization.string("财富走势回放"),
-            in: CGRect(x: 72, y: 134, width: size.width - 144, height: 82),
-            font: .systemFont(ofSize: 58, weight: .bold),
-            color: AssetTheme.textPrimaryUIColor
+            in: CGRect(x: 54, y: 152, width: size.width - 108, height: 86),
+            font: .systemFont(ofSize: 62, weight: .bold),
+            color: videoTextPrimary
         )
         drawText(
             "\(rangeLabel) · \(dateFormatter.string(from: point.date))",
-            in: CGRect(x: 72, y: 220, width: size.width - 144, height: 38),
-            font: .systemFont(ofSize: 28, weight: .medium),
-            color: AssetTheme.textSecondaryUIColor
+            in: CGRect(x: 54, y: 244, width: size.width - 108, height: 42),
+            font: .systemFont(ofSize: 27, weight: .medium),
+            color: videoTextSecondary
         )
 
-        let metricY: CGFloat = 300
-        drawMetric(
-            title: AppLocalization.string("总资产"),
-            value: point.mainAssets.currencyString(),
-            color: AssetTheme.goldSoftUIColor,
-            frame: CGRect(x: 72, y: metricY, width: 296, height: 116)
-        )
-        drawMetric(
-            title: AppLocalization.string("净资产"),
-            value: point.netAssets.currencyString(),
-            color: AssetTheme.positiveUIColor,
-            frame: CGRect(x: 392, y: metricY, width: 296, height: 116)
-        )
-        drawMetric(
-            title: AppLocalization.string("总负债"),
-            value: point.liabilities.currencyString(),
-            color: AssetTheme.negativeUIColor,
-            frame: CGRect(x: 712, y: metricY, width: 296, height: 116)
-        )
+        drawLegend(in: CGRect(x: 56, y: 360, width: 560, height: 42))
     }
 
-    private func drawMetric(title: String, value: String, color: UIColor, frame: CGRect) {
-        let path = UIBezierPath(roundedRect: frame, cornerRadius: 24)
-        AssetTheme.surfaceUIColor.withAlphaComponent(0.92).setFill()
-        path.fill()
-        AssetTheme.borderUIColor.setStroke()
-        path.lineWidth = 1.5
-        path.stroke()
-
-        let dotRect = CGRect(x: frame.minX + 22, y: frame.minY + 24, width: 13, height: 13)
-        UIBezierPath(ovalIn: dotRect).fill(color: color)
+    private func drawDateWatermark(point: TimeMachineTrendPoint) {
+        let year = Calendar.current.component(.year, from: point.date)
         drawText(
-            title,
-            in: CGRect(x: frame.minX + 44, y: frame.minY + 18, width: frame.width - 66, height: 28),
-            font: .systemFont(ofSize: 22, weight: .semibold),
-            color: AssetTheme.textSecondaryUIColor
+            "\(year)",
+            in: CGRect(x: 690, y: 318, width: 330, height: 100),
+            font: .monospacedDigitSystemFont(ofSize: 86, weight: .thin),
+            color: videoTextPrimary.withAlphaComponent(0.12),
+            alignment: .right
         )
         drawText(
-            value,
-            in: CGRect(x: frame.minX + 22, y: frame.minY + 58, width: frame.width - 44, height: 40),
-            font: .monospacedDigitSystemFont(ofSize: 28, weight: .bold),
-            color: color
+            point.date.shortDateString,
+            in: CGRect(x: 780, y: 414, width: 240, height: 48),
+            font: .monospacedDigitSystemFont(ofSize: 38, weight: .light),
+            color: videoTextPrimary.withAlphaComponent(0.16),
+            alignment: .right
         )
     }
 
     private func drawChart(progress: Double) {
-        let chartRect = CGRect(x: 72, y: 484, width: size.width - 144, height: 930)
-        let cardPath = UIBezierPath(roundedRect: chartRect, cornerRadius: 34)
-        AssetTheme.surfaceUIColor.withAlphaComponent(0.94).setFill()
-        cardPath.fill()
-        AssetTheme.borderUIColor.setStroke()
-        cardPath.lineWidth = 1.5
-        cardPath.stroke()
-
-        let plotRect = chartRect.insetBy(dx: 62, dy: 78)
+        let plotRect = CGRect(x: 74, y: 512, width: size.width - 148, height: 648)
         drawGrid(in: plotRect)
 
         let visibleCount = max(2, Int((Double(points.count - 1) * progress).rounded()) + 1)
@@ -525,15 +508,14 @@ private final class TrendVideoFrameRenderer {
             drawCurrentMarker(point: point, in: plotRect)
         }
 
-        drawLegend(in: CGRect(x: chartRect.minX + 58, y: chartRect.maxY - 84, width: chartRect.width - 116, height: 36))
         drawAxisLabels(in: plotRect)
     }
 
     private func drawGrid(in rect: CGRect) {
         guard let context = UIGraphicsGetCurrentContext() else { return }
         context.saveGState()
-        context.setStrokeColor(AssetTheme.chartGridUIColor.cgColor)
-        context.setLineWidth(1)
+        context.setStrokeColor(UIColor.white.withAlphaComponent(0.075).cgColor)
+        context.setLineWidth(1.2)
 
         for step in 0...4 {
             let y = rect.minY + rect.height * CGFloat(step) / 4
@@ -554,11 +536,11 @@ private final class TrendVideoFrameRenderer {
         guard points.count >= 2, let context = UIGraphicsGetCurrentContext() else { return }
         context.saveGState()
         context.setStrokeColor(uiColor(for: series).cgColor)
-        context.setLineWidth(series == .netAssets ? 6 : 5)
+        context.setLineWidth(series == .liabilities ? 5 : 6.5)
         context.setLineCap(.round)
         context.setLineJoin(.round)
         if dashed {
-            context.setLineDash(phase: 0, lengths: [16, 13])
+            context.setLineDash(phase: 0, lengths: [18, 15])
         }
 
         for (index, point) in points.enumerated() {
@@ -575,11 +557,11 @@ private final class TrendVideoFrameRenderer {
 
     private func drawCurrentMarker(point: TimeMachineTrendPoint, in rect: CGRect) {
         let markerPoint = chartPoint(for: point, series: .netAssets, in: rect)
-        let outer = CGRect(x: markerPoint.x - 15, y: markerPoint.y - 15, width: 30, height: 30)
+        let outer = CGRect(x: markerPoint.x - 18, y: markerPoint.y - 18, width: 36, height: 36)
         let inner = CGRect(x: markerPoint.x - 7, y: markerPoint.y - 7, width: 14, height: 14)
-        AssetTheme.positiveUIColor.withAlphaComponent(0.18).setFill()
+        videoCyan.withAlphaComponent(0.18).setFill()
         UIBezierPath(ovalIn: outer).fill()
-        AssetTheme.positiveUIColor.setFill()
+        videoCyan.setFill()
         UIBezierPath(ovalIn: inner).fill()
     }
 
@@ -592,16 +574,16 @@ private final class TrendVideoFrameRenderer {
             color.setFill()
             if item.1 {
                 for dash in 0..<3 {
-                    UIBezierPath(roundedRect: CGRect(x: x + CGFloat(dash) * 18, y: rect.midY - 3, width: 12, height: 6), cornerRadius: 3).fill()
+                    UIBezierPath(roundedRect: CGRect(x: x + CGFloat(dash) * 17, y: rect.midY - 3, width: 11, height: 5), cornerRadius: 3).fill()
                 }
             } else {
-                UIBezierPath(roundedRect: CGRect(x: x, y: rect.midY - 3, width: 44, height: 6), cornerRadius: 3).fill()
+                UIBezierPath(roundedRect: CGRect(x: x, y: rect.midY - 3, width: 42, height: 5), cornerRadius: 3).fill()
             }
             drawText(
                 item.0.title,
-                in: CGRect(x: x + 58, y: rect.minY, width: itemWidth - 64, height: rect.height),
-                font: .systemFont(ofSize: 22, weight: .semibold),
-                color: AssetTheme.textSecondaryUIColor
+                in: CGRect(x: x + 56, y: rect.minY - 1, width: itemWidth - 62, height: rect.height),
+                font: .systemFont(ofSize: 24, weight: .semibold),
+                color: videoTextSecondary
             )
         }
     }
@@ -610,19 +592,80 @@ private final class TrendVideoFrameRenderer {
         let upper = domain.upperBound.currencyString()
         let middle = ((domain.lowerBound + domain.upperBound) / 2).currencyString()
         let lower = domain.lowerBound.currencyString()
-        drawText(upper, in: CGRect(x: rect.minX, y: rect.minY - 44, width: 240, height: 32), font: .systemFont(ofSize: 20, weight: .medium), color: AssetTheme.textSecondaryUIColor)
-        drawText(middle, in: CGRect(x: rect.minX, y: rect.midY - 16, width: 240, height: 32), font: .systemFont(ofSize: 20, weight: .medium), color: AssetTheme.textSecondaryUIColor)
-        drawText(lower, in: CGRect(x: rect.minX, y: rect.maxY + 12, width: 240, height: 32), font: .systemFont(ofSize: 20, weight: .medium), color: AssetTheme.textSecondaryUIColor)
-        drawText(firstDate.recordDateString, in: CGRect(x: rect.minX, y: rect.maxY + 48, width: 220, height: 28), font: .systemFont(ofSize: 19, weight: .medium), color: AssetTheme.textSecondaryUIColor)
-        drawText(lastDate.recordDateString, in: CGRect(x: rect.maxX - 220, y: rect.maxY + 48, width: 220, height: 28), font: .systemFont(ofSize: 19, weight: .medium), color: AssetTheme.textSecondaryUIColor, alignment: .right)
+        drawText(upper, in: CGRect(x: rect.minX, y: rect.minY - 38, width: 260, height: 30), font: .systemFont(ofSize: 21, weight: .medium), color: videoTextSecondary.withAlphaComponent(0.84))
+        drawText(middle, in: CGRect(x: rect.minX, y: rect.midY - 16, width: 260, height: 30), font: .systemFont(ofSize: 20, weight: .medium), color: videoTextSecondary.withAlphaComponent(0.7))
+        drawText(lower, in: CGRect(x: rect.minX, y: rect.maxY + 8, width: 260, height: 30), font: .systemFont(ofSize: 20, weight: .medium), color: videoTextSecondary.withAlphaComponent(0.72))
+        drawText(firstDate.shortDateString, in: CGRect(x: rect.minX, y: rect.maxY + 44, width: 220, height: 30), font: .systemFont(ofSize: 20, weight: .medium), color: videoTextSecondary)
+        drawText(lastDate.shortDateString, in: CGRect(x: rect.maxX - 220, y: rect.maxY + 44, width: 220, height: 30), font: .systemFont(ofSize: 20, weight: .medium), color: videoTextSecondary, alignment: .right)
+    }
+
+    private func drawBottomPanels(point: TimeMachineTrendPoint) {
+        let first = points.first ?? point
+        let panelX: CGFloat = 34
+        let panelWidth = size.width - panelX * 2
+        let panelHeight: CGFloat = 144
+        let gap: CGFloat = 14
+        let startY: CGFloat = 1288
+
+        drawValuePanel(
+            title: AppLocalization.string("总资产"),
+            value: point.mainAssets.currencyString(),
+            delta: deltaDescription(current: point.mainAssets, baseline: first.mainAssets),
+            color: videoGold,
+            frame: CGRect(x: panelX, y: startY, width: panelWidth, height: panelHeight)
+        )
+        drawValuePanel(
+            title: AppLocalization.string("净资产"),
+            value: point.netAssets.currencyString(),
+            delta: deltaDescription(current: point.netAssets, baseline: first.netAssets),
+            color: videoCyan,
+            frame: CGRect(x: panelX, y: startY + panelHeight + gap, width: panelWidth, height: panelHeight)
+        )
+        drawValuePanel(
+            title: AppLocalization.string("总负债"),
+            value: point.liabilities.currencyString(),
+            delta: deltaDescription(current: point.liabilities, baseline: first.liabilities),
+            color: videoRed,
+            frame: CGRect(x: panelX, y: startY + (panelHeight + gap) * 2, width: panelWidth, height: panelHeight)
+        )
+    }
+
+    private func drawValuePanel(title: String, value: String, delta: String, color: UIColor, frame: CGRect) {
+        let path = UIBezierPath(roundedRect: frame, cornerRadius: 20)
+        UIColor(red: 0.035, green: 0.055, blue: 0.090, alpha: 0.82).setFill()
+        path.fill()
+        color.withAlphaComponent(0.88).setStroke()
+        path.lineWidth = 2
+        path.stroke()
+
+        drawText(
+            title,
+            in: CGRect(x: frame.minX + 34, y: frame.minY + 36, width: 300, height: 44),
+            font: .systemFont(ofSize: 34, weight: .bold),
+            color: color
+        )
+        drawText(
+            value,
+            in: CGRect(x: frame.midX - 40, y: frame.minY + 25, width: frame.width / 2 + 2, height: 64),
+            font: .monospacedDigitSystemFont(ofSize: 50, weight: .medium),
+            color: videoTextPrimary,
+            alignment: .right
+        )
+        drawText(
+            delta,
+            in: CGRect(x: frame.midX - 40, y: frame.minY + 90, width: frame.width / 2 + 2, height: 34),
+            font: .systemFont(ofSize: 25, weight: .medium),
+            color: videoTextSecondary,
+            alignment: .right
+        )
     }
 
     private func drawFooter() {
         drawText(
             AppLocalization.string("由资产时光机生成"),
-            in: CGRect(x: 72, y: size.height - 154, width: size.width - 144, height: 32),
-            font: .systemFont(ofSize: 22, weight: .medium),
-            color: AssetTheme.textSecondaryUIColor,
+            in: CGRect(x: 72, y: size.height - 96, width: size.width - 144, height: 32),
+            font: .systemFont(ofSize: 23, weight: .medium),
+            color: videoTextSecondary.withAlphaComponent(0.72),
             alignment: .center
         )
     }
@@ -637,6 +680,21 @@ private final class TrendVideoFrameRenderer {
             .paragraphStyle: paragraph
         ]
         (text as NSString).draw(in: rect, withAttributes: attributes)
+    }
+
+    private func deltaDescription(current: Double, baseline: Double) -> String {
+        let delta = current - baseline
+        let percentage: Double
+        if abs(baseline) > 0.0001 {
+            percentage = delta / abs(baseline)
+        } else {
+            percentage = 0
+        }
+
+        let sign = delta >= 0 ? "+" : "-"
+        let amount = abs(delta).currencyString()
+        let percent = String(format: "%.1f%%", abs(percentage) * 100)
+        return AppLocalization.format("变化 %@%@ / %@", sign, amount, percent)
     }
 
     private func visibleEndIndex(progress: Double) -> Int {
@@ -657,11 +715,11 @@ private final class TrendVideoFrameRenderer {
     private func uiColor(for series: TimeMachineAssetSeries) -> UIColor {
         switch series {
         case .mainAssets:
-            return AssetTheme.goldSoftUIColor
+            return videoGold
         case .netAssets:
-            return AssetTheme.positiveUIColor
+            return videoCyan
         case .liabilities:
-            return AssetTheme.negativeUIColor
+            return videoRed
         }
     }
 

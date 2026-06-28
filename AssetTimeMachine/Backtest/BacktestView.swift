@@ -696,7 +696,7 @@ struct BacktestView: View {
             isBacktestLoading = true
         }
 
-        let delayNanoseconds: UInt64 = showLoading ? 350_000_000 : 0
+        let delayNanoseconds: UInt64 = showLoading ? 120_000_000 : 0
         pendingBacktestComputationTask = Task {
             if delayNanoseconds == 0 {
                 await Task.yield()

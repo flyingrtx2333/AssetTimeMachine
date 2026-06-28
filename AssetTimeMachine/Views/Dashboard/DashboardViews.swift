@@ -36,6 +36,18 @@ struct DashboardView: View {
     @State private var showsTodayStrategyModal = false
     @State private var showsCloudSyncModal = false
 
+    init(marketStore: RemoteMarketStore, cloudStore: AssetTimeMachineCloudStore, isActive: Bool) {
+        self.marketStore = marketStore
+        self.cloudStore = cloudStore
+        self.isActive = isActive
+
+        var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
+            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
+        )
+        snapshotDescriptor.fetchLimit = 400
+        _snapshots = Query(snapshotDescriptor)
+    }
+
     private var latestSnapshot: AssetSnapshot? { snapshots.first }
 
     private var totalAssets: Double {
@@ -57,13 +69,10 @@ struct DashboardView: View {
     private var dashboardCacheToken: Int {
         var hasher = Hasher()
         hasher.combine(snapshots.count)
-
-        for snapshot in snapshots {
-            hasher.combine(snapshot.id)
-            hasher.combine(snapshot.date.timeIntervalSinceReferenceDate)
-            hasher.combine(snapshot.updatedAt.timeIntervalSinceReferenceDate)
+        if let latest = snapshots.first {
+            hasher.combine(latest.id)
+            hasher.combine(latest.updatedAt.timeIntervalSinceReferenceDate)
         }
-
         hasher.combine(items.count)
         hasher.combine(items.reduce(0) { max($0, $1.updatedAt.timeIntervalSinceReferenceDate) })
         hasher.combine(categories.count)
@@ -129,7 +138,7 @@ struct DashboardView: View {
             if isActive {
                 scheduleDashboardRefresh(
                     delayNanoseconds: 0,
-                    projectionDelayNanoseconds: 520_000_000,
+                    projectionDelayNanoseconds: 160_000_000,
                     generation: generation
                 )
             } else {
@@ -245,18 +254,16 @@ struct DashboardView: View {
             }
             guard !Task.isCancelled else { return }
 
-            await MainActor.run {
-                guard dashboardRefreshGeneration == generation else { return }
-                refreshDashboardProjectionCache()
-                lastDashboardProjectionCacheToken = token
-                pendingDashboardProjectionRefreshTask = nil
-            }
+            await refreshDashboardProjectionCache(token: token, generation: generation)
         }
     }
 
     @MainActor
-    private func refreshDashboardProjectionCache() {
-        let nextTrendPoints = buildTrendPoints()
+    private func refreshDashboardProjectionCache(token: Int, generation: Int) async {
+        guard dashboardRefreshGeneration == generation else { return }
+        guard let nextTrendPoints = await buildTrendPoints(generation: generation) else { return }
+        guard !Task.isCancelled, dashboardRefreshGeneration == generation else { return }
+
         cachedTrendPoints = nextTrendPoints
         cachedFreedomProjection = FinancialFreedomEstimator.estimate(
             points: nextTrendPoints,
@@ -265,6 +272,8 @@ struct DashboardView: View {
             monthlyExpense: monthlyExpense,
             annualInflationRate: inflationRate
         )
+        lastDashboardProjectionCacheToken = token
+        pendingDashboardProjectionRefreshTask = nil
     }
 
     private func buildLatestSnapshotSummary() -> DashboardSnapshotSummary? {
@@ -322,7 +331,8 @@ struct DashboardView: View {
         return slices
     }
 
-    private func buildTrendPoints() -> [TimeMachineTrendPoint] {
+    @MainActor
+    private func buildTrendPoints(generation: Int) async -> [TimeMachineTrendPoint]? {
         let orderedSnapshots = Array(snapshots.reversed())
         let sourceSnapshots: [AssetSnapshot]
 
@@ -334,11 +344,15 @@ struct DashboardView: View {
             sourceSnapshots = orderedSnapshots
         }
 
-        return sourceSnapshots.map { snapshot in
+        var result: [TimeMachineTrendPoint] = []
+        result.reserveCapacity(sourceSnapshots.count)
+
+        for (index, snapshot) in sourceSnapshots.enumerated() {
+            guard !Task.isCancelled, dashboardRefreshGeneration == generation else { return nil }
             let metrics = PortfolioCalculator.metrics(for: snapshot)
             let mainAssets = metrics.totalAssets
 
-            return TimeMachineTrendPoint(
+            result.append(TimeMachineTrendPoint(
                 date: snapshot.date,
                 mainAssets: mainAssets,
                 netAssets: metrics.netAssets,
@@ -354,8 +368,14 @@ struct DashboardView: View {
                 nasdaqAnchorPriceUSD: snapshot.nasdaqAnchorPriceUSD,
                 nasdaqAnchorPriceCNY: snapshot.nasdaqAnchorPriceCNY,
                 nasdaqAnchorDate: snapshot.nasdaqAnchorPriceDate
-            )
+            ))
+
+            if index.isMultiple(of: 2) {
+                await Task.yield()
+            }
         }
+
+        return result
     }
 
     private func migrateDashboardDefaultsIfNeeded() {

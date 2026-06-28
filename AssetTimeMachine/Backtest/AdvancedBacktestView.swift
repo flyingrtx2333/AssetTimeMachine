@@ -301,7 +301,7 @@ struct AdvancedBacktestView: View {
         }
         .onChange(of: refreshToken) { _, _ in
             guard isActive, hasStartedBacktest else { return }
-            scheduleRefresh(delayNanoseconds: 120_000_000, saveRecord: false)
+            scheduleRefresh(delayNanoseconds: 80_000_000, saveRecord: false)
         }
         .onChange(of: isActive ? advancedDataCacheToken : 0) { _, _ in
             guard isActive else { return }
@@ -332,7 +332,7 @@ struct AdvancedBacktestView: View {
                     lastObservedRelevantHistoryToken = relevantHistoryToken
                 }
                 guard hasStartedBacktest, report == nil, !isRefreshingReport else { return }
-                scheduleRefresh(delayNanoseconds: 120_000_000, saveRecord: false)
+                scheduleRefresh(delayNanoseconds: 80_000_000, saveRecord: false)
             } else {
                 saveAdvancedBacktestRecordIfNeeded(report)
                 cancelPendingAdvancedBacktestTasks()

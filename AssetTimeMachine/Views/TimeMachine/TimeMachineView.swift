@@ -30,10 +30,14 @@ struct TimeMachineView: View {
     @State private var deferredDetailCardsTask: Task<Void, Never>?
     @State private var deferredFullTrendTask: Task<Void, Never>?
     @State private var pendingVisualizationRefreshTask: Task<Void, Never>?
+    @State private var activeGeneration = 0
     @State private var visibleDetailTrendSymbols: Set<String> = ["gold_cny"]
     @State private var selectedHistoryDrilldown: TimeMachineHistoryDrilldown?
     @State private var trendVideoPreviewRequest: TrendVideoPreviewRequest?
     @State private var trendVideoExportErrorMessage: String?
+    #if DEBUG
+    @State private var didOpenDebugTrendVideoPreview = false
+    #endif
 
     private var trendPoints: [TimeMachineTrendPoint] {
         cachedTrendPoints
@@ -190,15 +194,18 @@ struct TimeMachineView: View {
     private var snapshotCacheToken: Int {
         var hasher = Hasher()
         hasher.combine(snapshots.count)
-
-        for snapshot in snapshots {
-            hasher.combine(snapshot.id)
-            hasher.combine(snapshot.date.timeIntervalSinceReferenceDate)
-            hasher.combine(snapshot.updatedAt.timeIntervalSinceReferenceDate)
-            hasher.combine(snapshot.marketAnchorsUpdatedAt?.timeIntervalSinceReferenceDate)
-            hasher.combine(snapshot.entries.count)
+        if let first = snapshots.first {
+            hasher.combine(first.id)
+            hasher.combine(first.updatedAt.timeIntervalSinceReferenceDate)
+            hasher.combine(first.marketAnchorsUpdatedAt?.timeIntervalSinceReferenceDate)
+            hasher.combine(first.entries.count)
         }
-
+        if let last = snapshots.last, last.id != snapshots.first?.id {
+            hasher.combine(last.id)
+            hasher.combine(last.updatedAt.timeIntervalSinceReferenceDate)
+            hasher.combine(last.marketAnchorsUpdatedAt?.timeIntervalSinceReferenceDate)
+            hasher.combine(last.entries.count)
+        }
         return hasher.finalize()
     }
 
@@ -456,22 +463,33 @@ struct TimeMachineView: View {
     @MainActor
     private func scheduleDeferredFullTrendRefresh(for token: Int) {
         deferredFullTrendTask?.cancel()
+        let generation = activeGeneration
         deferredFullTrendTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 320_000_000)
-            guard !Task.isCancelled, isActive, token == lastVisualizationCacheToken else { return }
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            guard !Task.isCancelled,
+                  isActive,
+                  generation == activeGeneration,
+                  token == lastVisualizationCacheToken else { return }
 
             var fullTrendPoints: [TimeMachineTrendPoint] = []
             fullTrendPoints.reserveCapacity(snapshots.count)
 
             for (index, snapshot) in snapshots.enumerated() {
-                guard !Task.isCancelled, token == lastVisualizationCacheToken else { return }
+                guard !Task.isCancelled,
+                      isActive,
+                      generation == activeGeneration,
+                      token == lastVisualizationCacheToken else { return }
                 fullTrendPoints.append(trendPoint(for: snapshot))
 
-                if index.isMultiple(of: 12) {
+                if index.isMultiple(of: 2) {
                     await Task.yield()
                 }
             }
 
+            guard !Task.isCancelled,
+                  isActive,
+                  generation == activeGeneration,
+                  token == lastVisualizationCacheToken else { return }
             cachedTrendPoints = fullTrendPoints
             cachedMonthlySurplusPoints = buildMonthlySurplusPoints(from: fullTrendPoints)
             cachedAnnualSurplusPoints = buildAnnualSurplusPoints(from: fullTrendPoints)
@@ -897,20 +915,24 @@ struct TimeMachineView: View {
                 )
             }
             .buttonStyle(.plain)
-            .disabled(trendVideoPreviewRequest != nil || filteredTrendPoints.count < 2)
+            .disabled(trendVideoPreviewRequest != nil || snapshots.count < 2)
         }
     }
 
     @MainActor
     private func openTrendVideoPreview() {
-        guard filteredTrendPoints.count >= 2 else {
+        let exportPoints = snapshots.map { snapshot in
+            trendPoint(for: snapshot)
+        }
+
+        guard exportPoints.count >= 2 else {
             trendVideoExportErrorMessage = AppLocalization.string("趋势数据不足，至少需要两条记录")
             return
         }
 
         trendVideoPreviewRequest = TrendVideoPreviewRequest(
-            points: filteredTrendPoints,
-            rangeLabel: selectedRange.summaryLabel
+            points: exportPoints,
+            rangeLabel: TimeMachineRange.all.summaryLabel
         )
     }
 
@@ -992,38 +1014,36 @@ struct TimeMachineView: View {
             Text(trendVideoExportErrorMessage ?? AppLocalization.string("请稍后再试"))
         }
         .task(id: isActive) {
+            activeGeneration += 1
             if isActive {
                 await marketStore.refreshHistoryIfNeeded()
                 guard !Task.isCancelled else { return }
+                scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 0)
+                try? await Task.sleep(for: .milliseconds(350))
+                guard !Task.isCancelled, isActive else { return }
                 await SnapshotAnchorService.backfillIfNeeded(in: modelContext)
                 guard !Task.isCancelled else { return }
-                scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 90_000_000)
+                scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 0)
             } else {
                 pendingVisualizationRefreshTask?.cancel()
                 deferredDetailCardsTask?.cancel()
                 deferredFullTrendTask?.cancel()
             }
         }
-        .onChange(of: selectedRange) { _, _ in
+        .onChange(of: isActive ? visualizationCacheToken : (lastVisualizationCacheToken ?? 0)) { _, _ in
             guard isActive else { return }
-            scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 0)
+            scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 80_000_000)
         }
-        .onChange(of: isActive ? snapshotCacheToken : (lastVisualizationCacheToken ?? 0)) { _, _ in
-            guard isActive else { return }
-            scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 40_000_000)
+        #if DEBUG
+        .task(id: lastVisualizationCacheToken) {
+            guard ProcessInfo.processInfo.arguments.contains("-openTrendVideoPreview"),
+                  !didOpenDebugTrendVideoPreview,
+                  filteredTrendPoints.count >= 2 else { return }
+            didOpenDebugTrendVideoPreview = true
+            try? await Task.sleep(for: .milliseconds(180))
+            openTrendVideoPreview()
         }
-        .onReceive(marketStore.$historySeries) { _ in
-            guard isActive else { return }
-            scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 40_000_000)
-        }
-        .onReceive(marketStore.$overview) { _ in
-            guard isActive else { return }
-            scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 40_000_000)
-        }
-        .onReceive(marketStore.$exchangeRates) { _ in
-            guard isActive else { return }
-            scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 40_000_000)
-        }
+        #endif
     }
 }
 

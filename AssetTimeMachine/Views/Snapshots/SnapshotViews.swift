@@ -5,6 +5,16 @@ import UIKit
 
 import UniformTypeIdentifiers
 
+private struct SnapshotListLayout {
+    let nonLiabilityCategoryItems: [SnapshotCategoryItems]
+    let liabilityCategoryItems: [SnapshotCategoryItems]
+    let displayEntriesByItemID: [UUID: AssetEntry]
+    let displayedTotalAssets: Double
+    let displayedTotalLiabilities: Double
+    let displayedNetAssets: Double
+    let onboardingInputTargetCategoryID: UUID?
+}
+
 struct SnapshotListView: View {
     @Environment(\.modelContext) private var modelContext
     @ObservedObject var marketStore: RemoteMarketStore
@@ -12,6 +22,22 @@ struct SnapshotListView: View {
     let onboardingActiveAnchorID: OnboardingAnchorID?
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
     @Query private var categories: [AssetCategory]
+
+    init(
+        marketStore: RemoteMarketStore,
+        isActive: Bool,
+        onboardingActiveAnchorID: OnboardingAnchorID?
+    ) {
+        self.marketStore = marketStore
+        self.isActive = isActive
+        self.onboardingActiveAnchorID = onboardingActiveAnchorID
+
+        var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
+            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
+        )
+        snapshotDescriptor.fetchLimit = 32
+        _snapshots = Query(snapshotDescriptor)
+    }
 
     @State private var currentSnapshotID: UUID?
     @State private var amountInputs: [UUID: String] = [:]
@@ -24,6 +50,7 @@ struct SnapshotListView: View {
     @State private var quickEditingAssetItem: AssetItem?
     @State private var focusedField: RecordInputField?
     @State private var pendingAutoRateSyncTask: Task<Void, Never>?
+    @State private var cachedListLayout: SnapshotListLayout?
 
     private let liabilitySectionTitleMap: [String: String] = [
         AppLocalization.string("长期负债"): AppLocalization.string("长期负债"),
@@ -93,6 +120,55 @@ struct SnapshotListView: View {
         })
     }
 
+    private var listLayoutCacheToken: String {
+        let snapshotID = currentSnapshotID?.uuidString ?? "none"
+        let snapshotUpdate = currentSnapshot?.updatedAt.timeIntervalSince1970 ?? 0
+        let latestItemUpdate = categories
+            .flatMap(\.items)
+            .reduce(0) { max($0, $1.updatedAt.timeIntervalSince1970) }
+        return [
+            snapshotID,
+            String(Int(snapshotUpdate)),
+            String(categories.count),
+            String(Int(latestItemUpdate)),
+            String(snapshots.count)
+        ].joined(separator: ":")
+    }
+
+    private var marketRefreshToken: Int {
+        var hasher = Hasher()
+        hasher.combine(exchangeRateCacheToken)
+        hasher.combine(overviewCacheToken)
+        return hasher.finalize()
+    }
+
+    private var exchangeRateCacheToken: Int {
+        var hasher = Hasher()
+        let rates = marketStore.exchangeRates.sorted { $0.key < $1.key }
+        hasher.combine(rates.count)
+        for (currency, rate) in rates {
+            hasher.combine(currency)
+            hasher.combine(rate)
+        }
+        return hasher.finalize()
+    }
+
+    private var overviewCacheToken: Int {
+        var hasher = Hasher()
+        let markets = (marketStore.overview?.markets ?? []).sorted { $0.symbol < $1.symbol }
+        hasher.combine(markets.count)
+        for market in markets {
+            hasher.combine(market.symbol)
+            hasher.combine(market.price)
+            hasher.combine(market.fetchedAt.timeIntervalSinceReferenceDate)
+        }
+        return hasher.finalize()
+    }
+
+    private var canAutoSyncMarketRates: Bool {
+        isActive && focusedField == nil && quickEditingAssetItem == nil && editingAssetItem == nil
+    }
+
     @ViewBuilder
     var body: some View {
         #if DEBUG
@@ -108,20 +184,7 @@ struct SnapshotListView: View {
 
     private var snapshotListBody: some View {
         let currentSnapshotValue = currentSnapshot
-        let categoryGroups = categoryItemGroups
-        let nonLiabilityCategoryItems = categoryGroups.nonLiability
-        let liabilityCategoryItems = categoryGroups.liability
-        let snapshotEntriesByItemIDValue = snapshotEntriesByItemID(for: currentSnapshotValue)
-        let nonLiabilityItemGroups = nonLiabilityCategoryItems.map(\.items)
-        let liabilityItemGroups = liabilityCategoryItems.map(\.items)
-        let displayEntriesByItemIDValue = displayEntriesByItemID(
-            for: nonLiabilityItemGroups + liabilityItemGroups,
-            currentEntriesByItemID: snapshotEntriesByItemIDValue
-        )
-        let displayedTotalAssetsValue = displayedTotalAmount(for: nonLiabilityItemGroups, entriesByItemID: displayEntriesByItemIDValue)
-        let displayedTotalLiabilitiesValue = displayedTotalAmount(for: liabilityItemGroups, entriesByItemID: displayEntriesByItemIDValue)
-        let displayedNetAssetsValue = displayedTotalAssetsValue - displayedTotalLiabilitiesValue
-        let onboardingInputTargetCategoryID = nonLiabilityCategoryItems.first?.id
+        let layout = cachedListLayout
 
         return NavigationStack {
             ZStack {
@@ -129,12 +192,12 @@ struct SnapshotListView: View {
 
                 ScrollView(showsIndicators: false) {
                     LazyVStack(alignment: .leading, spacing: 16) {
-                        if let currentSnapshot = currentSnapshotValue {
+                        if let currentSnapshot = currentSnapshotValue, let layout {
                             RecordPageHero(
                                 snapshot: currentSnapshot,
-                                totalAssets: displayedTotalAssetsValue,
-                                netAssets: displayedNetAssetsValue,
-                                totalLiabilities: displayedTotalLiabilitiesValue,
+                                totalAssets: layout.displayedTotalAssets,
+                                netAssets: layout.displayedNetAssets,
+                                totalLiabilities: layout.displayedTotalLiabilities,
                                 onAddAsset: {
                                     dismissKeyboard()
                                     showsAddAssetItemSheet = true
@@ -142,14 +205,13 @@ struct SnapshotListView: View {
                             )
                             .padding(.bottom, 2)
 
-                            ForEach(nonLiabilityCategoryItems) { categoryItems in
+                            ForEach(layout.nonLiabilityCategoryItems) { categoryItems in
                                 RecordCategoryCard(
                                     category: categoryItems.category,
                                     items: categoryItems.items,
-                                    snapshotEntriesByItemID: displayEntriesByItemIDValue,
-                                    onboardingInputItemID: categoryItems.id == onboardingInputTargetCategoryID ? categoryItems.items.first?.id : nil,
+                                    snapshotEntriesByItemID: layout.displayEntriesByItemID,
+                                    onboardingInputItemID: categoryItems.id == layout.onboardingInputTargetCategoryID ? categoryItems.items.first?.id : nil,
                                     onboardingActiveAnchorID: onboardingActiveAnchorID,
-                                    marketStore: marketStore,
                                     amountInputs: $amountInputs,
                                     quantityInputs: $quantityInputs,
                                     unitPriceInputs: $unitPriceInputs,
@@ -159,17 +221,16 @@ struct SnapshotListView: View {
                                         editingAssetItem = item
                                     },
                                     onEditValue: { item in
-                                        dismissKeyboard()
-                                        quickEditingAssetItem = item
+                                        presentQuickEdit(for: item)
                                     }
                                 )
                             }
 
-                            ForEach(liabilityCategoryItems) { categoryItems in
+                            ForEach(layout.liabilityCategoryItems) { categoryItems in
                                 LiabilityCategorySection(
                                     category: categoryItems.category,
                                     items: categoryItems.items,
-                                    snapshotEntriesByItemID: displayEntriesByItemIDValue,
+                                    snapshotEntriesByItemID: layout.displayEntriesByItemID,
                                     amountInputs: $amountInputs,
                                     quantityInputs: $quantityInputs,
                                     focusedField: $focusedField,
@@ -178,13 +239,12 @@ struct SnapshotListView: View {
                                         editingAssetItem = item
                                     },
                                     onEditValue: { item in
-                                        dismissKeyboard()
-                                        quickEditingAssetItem = item
+                                        presentQuickEdit(for: item)
                                     }
                                 )
                             }
 
-                        } else if isPreparingInitialSnapshot || !didPrepare {
+                        } else if isPreparingInitialSnapshot || !didPrepare || currentSnapshotValue != nil {
                             LoadingStateCard(title: AppLocalization.string("记录加载中"))
                         } else {
                             EmptyStateCard(
@@ -255,9 +315,13 @@ struct SnapshotListView: View {
                 .zIndex(10)
             }
         }
-        .animation(.spring(response: 0.28, dampingFraction: 0.88), value: quickEditingAssetItem?.id)
+        .animation(.spring(response: 0.22, dampingFraction: 0.92), value: quickEditingAssetItem?.id)
+        .onChange(of: listLayoutCacheToken) { _, _ in
+            refreshCachedListLayout()
+        }
         .task {
             await prepareSnapshotIfNeeded()
+            refreshCachedListLayout()
             #if DEBUG
             await ensureDebugAutoPricedItemIfNeeded()
             if ProcessInfo.processInfo.arguments.contains("-openFirstAutoPricedQuickEdit"),
@@ -268,12 +332,12 @@ struct SnapshotListView: View {
             }
             #endif
             if isActive {
-                scheduleAutoRateSync(delayNanoseconds: 650_000_000)
+                scheduleAutoRateSync(delayNanoseconds: 180_000_000)
             }
         }
         .task(id: isActive) {
             if isActive {
-                scheduleAutoRateSync(delayNanoseconds: 650_000_000)
+                scheduleAutoRateSync(delayNanoseconds: 180_000_000)
             } else {
                 pendingAutoRateSyncTask?.cancel()
             }
@@ -288,19 +352,59 @@ struct SnapshotListView: View {
             quickEditingAssetItem = debugAutoPricedItem
         }
         #endif
-        .onChange(of: marketStore.exchangeRates) { _, _ in
-            guard isActive else { return }
-            scheduleAutoRateSync(delayNanoseconds: 300_000_000)
-        }
-        .onReceive(marketStore.$overview) { _ in
-            guard isActive else { return }
+        .onChange(of: isActive ? marketRefreshToken : 0) { _, _ in
+            guard canAutoSyncMarketRates else { return }
             scheduleAutoRateSync(delayNanoseconds: 300_000_000)
         }
         .onChange(of: focusedField) { previousField, newField in
+            if newField != nil {
+                pendingAutoRateSyncTask?.cancel()
+            }
             guard let previousField, previousField != newField,
                   let item = item(for: previousField) else { return }
             persist(item: item)
         }
+    }
+
+    @MainActor
+    private func presentQuickEdit(for item: AssetItem) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            dismissKeyboard()
+            quickEditingAssetItem = item
+        }
+    }
+
+    @MainActor
+    private func refreshCachedListLayout() {
+        cachedListLayout = buildListLayout(for: currentSnapshot)
+    }
+
+    private func buildListLayout(for snapshot: AssetSnapshot?) -> SnapshotListLayout? {
+        guard snapshot != nil else { return nil }
+
+        let categoryGroups = categoryItemGroups
+        let nonLiabilityCategoryItems = categoryGroups.nonLiability
+        let liabilityCategoryItems = categoryGroups.liability
+        let snapshotEntriesByItemIDValue = snapshotEntriesByItemID(for: snapshot)
+        let nonLiabilityItemGroups = nonLiabilityCategoryItems.map(\.items)
+        let liabilityItemGroups = liabilityCategoryItems.map(\.items)
+        let displayEntriesByItemIDValue = displayEntriesByItemID(
+            for: nonLiabilityItemGroups + liabilityItemGroups,
+            currentEntriesByItemID: snapshotEntriesByItemIDValue
+        )
+
+        return SnapshotListLayout(
+            nonLiabilityCategoryItems: nonLiabilityCategoryItems,
+            liabilityCategoryItems: liabilityCategoryItems,
+            displayEntriesByItemID: displayEntriesByItemIDValue,
+            displayedTotalAssets: displayedTotalAmount(for: nonLiabilityItemGroups, entriesByItemID: displayEntriesByItemIDValue),
+            displayedTotalLiabilities: displayedTotalAmount(for: liabilityItemGroups, entriesByItemID: displayEntriesByItemIDValue),
+            displayedNetAssets: displayedTotalAmount(for: nonLiabilityItemGroups, entriesByItemID: displayEntriesByItemIDValue)
+                - displayedTotalAmount(for: liabilityItemGroups, entriesByItemID: displayEntriesByItemIDValue),
+            onboardingInputTargetCategoryID: nonLiabilityCategoryItems.first?.id
+        )
     }
 
     @MainActor
@@ -330,6 +434,7 @@ struct SnapshotListView: View {
             let snapshot = try SnapshotService.createSnapshot(on: .now, inheritPrevious: true, createMissingEntries: true, in: modelContext)
             currentSnapshotID = snapshot.id
             hydrateInputs(from: snapshot)
+            refreshCachedListLayout()
             await SnapshotAnchorService.captureLiveAnchorsIfPossible(for: snapshot, marketStore: marketStore, in: modelContext)
         } catch {
             print("[AssetTimeMachine] prepare snapshot failed: \(error)")
@@ -463,6 +568,7 @@ struct SnapshotListView: View {
             snapshot.updatedAt = .now
             do {
                 try modelContext.save()
+                refreshCachedListLayout()
                 await SnapshotAnchorService.captureLiveAnchorsIfPossible(for: snapshot, marketStore: marketStore, in: modelContext)
             } catch {
                 print("[AssetTimeMachine] sync auto rate failed: \(error)")
@@ -488,6 +594,7 @@ struct SnapshotListView: View {
                 }
                 try SnapshotService.upsertEntry(snapshot: snapshot, item: item, quantity: quantity, unitPrice: unitPrice, in: modelContext)
             }
+            refreshCachedListLayout()
         } catch {
             print("[AssetTimeMachine] persist entry failed: \(error)")
         }
@@ -785,7 +892,6 @@ struct RecordCategoryCard: View {
     let snapshotEntriesByItemID: [UUID: AssetEntry]
     let onboardingInputItemID: UUID?
     let onboardingActiveAnchorID: OnboardingAnchorID?
-    @ObservedObject var marketStore: RemoteMarketStore
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
     @Binding var unitPriceInputs: [UUID: String]
@@ -861,7 +967,6 @@ struct RecordCategoryCard: View {
                                         AssetEntryCompactCard(
                                             item: item,
                                             snapshotEntry: snapshotEntry(for: item),
-                                            marketStore: marketStore,
                                             amountText: Binding(
                                                 get: { amountInputs[item.id] ?? "" },
                                                 set: { newValue in
@@ -909,7 +1014,6 @@ struct RecordCategoryCard: View {
                                 AssetEntryInputRow(
                                     item: item,
                                     snapshotEntry: snapshotEntry(for: item),
-                                    marketStore: marketStore,
                                     amountText: Binding(
                                         get: { amountInputs[item.id] ?? "" },
                                         set: { newValue in
@@ -1288,7 +1392,6 @@ struct RecordItemDropDelegate: DropDelegate {
 struct AssetEntryCompactCard: View {
     let item: AssetItem
     let snapshotEntry: AssetEntry?
-    @ObservedObject var marketStore: RemoteMarketStore
     @Binding var amountText: String
     @Binding var quantityText: String
     @Binding var focusedField: RecordInputField?
@@ -1384,7 +1487,6 @@ struct AssetEntryCompactCard: View {
 struct AssetEntryInputRow: View {
     let item: AssetItem
     let snapshotEntry: AssetEntry?
-    @ObservedObject var marketStore: RemoteMarketStore
     @Binding var amountText: String
     @Binding var quantityText: String
     @Binding var unitPriceText: String

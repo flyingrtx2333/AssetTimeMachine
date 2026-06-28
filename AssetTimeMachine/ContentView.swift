@@ -27,22 +27,17 @@ struct ContentView: View {
     @StateObject private var marketStore = RemoteMarketStore()
     @StateObject private var cloudStore = AssetTimeMachineCloudStore()
     @State private var selectedTab: AppTab = .dashboard
-    @State private var activeWorkTab: AppTab? = .dashboard
-    @State private var loadedTabs: Set<AppTab> = [.dashboard]
     @State private var didRunStartup = false
     @State private var lastMarketRefreshAt: Date?
     @State private var showsOnboarding = false
     @State private var onboardingReturnTab: AppTab = .dashboard
     @State private var activeOnboardingAnchorID: OnboardingAnchorID?
-    @State private var pendingActiveTabActivationTask: Task<Void, Never>?
     @State private var pendingSnapshotNotificationRefreshTask: Task<Void, Never>?
-    @State private var pendingTabPrewarmTask: Task<Void, Never>?
     #if DEBUG
     @State private var debugTabSwitchTask: Task<Void, Never>?
     #endif
 
     private static let foregroundMarketRefreshInterval: TimeInterval = 3600
-    private static let activeTabWorkActivationDelayNanoseconds: UInt64 = 220_000_000
 
     init() {
         var descriptor = FetchDescriptor<AssetSnapshot>(
@@ -83,7 +78,7 @@ struct ContentView: View {
                     DashboardView(
                         marketStore: marketStore,
                         cloudStore: cloudStore,
-                        isActive: selectedTab == .dashboard && activeWorkTab == .dashboard
+                        isActive: selectedTab == .dashboard
                     )
                 }
                     .tabItem {
@@ -94,7 +89,7 @@ struct ContentView: View {
                 deferredTabContent(for: .snapshots) {
                     SnapshotListView(
                         marketStore: marketStore,
-                        isActive: selectedTab == .snapshots && activeWorkTab == .snapshots,
+                        isActive: selectedTab == .snapshots,
                         onboardingActiveAnchorID: activeOnboardingAnchorID
                     )
                 }
@@ -107,7 +102,7 @@ struct ContentView: View {
                     TimeMachineView(
                         marketStore: marketStore,
                         isVisible: selectedTab == .timeMachine,
-                        isActive: selectedTab == .timeMachine && activeWorkTab == .timeMachine
+                        isActive: selectedTab == .timeMachine
                     )
                 }
                     .tabItem {
@@ -119,7 +114,7 @@ struct ContentView: View {
                     BacktestView(
                         marketStore: marketStore,
                         isVisible: selectedTab == .backtest,
-                        isActive: selectedTab == .backtest && activeWorkTab == .backtest
+                        isActive: selectedTab == .backtest
                     )
                 }
                     .tabItem {
@@ -154,18 +149,17 @@ struct ContentView: View {
             }
         }
         .tint(AssetTheme.gold)
-        .onChange(of: selectedTab) { _, newValue in
-            scheduleActiveWorkTabActivation(for: newValue)
-        }
         .task {
             await runStartupIfNeeded()
-            scheduleDeferredHeavyTabPrewarm()
             #if DEBUG
             scheduleDebugTabSwitchLoopIfNeeded()
             #endif
             await cloudStore.refreshIfNeeded(from: modelContext)
             await refreshAssetNotifications()
-            await refreshStrategyNotifications()
+            Task {
+                try? await Task.sleep(for: .seconds(2))
+                await refreshStrategyNotifications()
+            }
         }
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }
@@ -208,12 +202,10 @@ struct ContentView: View {
 
     @ViewBuilder
     private func deferredTabContent<Content: View>(for tab: AppTab, @ViewBuilder content: () -> Content) -> some View {
-        if loadedTabs.contains(tab) {
+        if selectedTab == tab {
             content()
-        } else if selectedTab == tab {
-            AssetTheme.pageGradient.ignoresSafeArea()
         } else {
-            Color.clear
+            AssetTheme.pageGradient.ignoresSafeArea()
         }
     }
 
@@ -225,14 +217,10 @@ struct ContentView: View {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-openSnapshotsTab") {
             selectedTab = .snapshots
-            activeWorkTab = .snapshots
-            loadedTabs.insert(.snapshots)
         }
 
         if ProcessInfo.processInfo.arguments.contains("-openTimeMachineTab") {
             selectedTab = .timeMachine
-            activeWorkTab = .timeMachine
-            loadedTabs.insert(.timeMachine)
         }
 
         if let importPath = launchArgumentValue(after: "-importJSONPath") {
@@ -264,6 +252,7 @@ struct ContentView: View {
         try? SeedDataService.seedDefaultCategoriesIfNeeded(in: modelContext)
         #endif
 
+        await Task.yield()
         try? SeedDataService.ensureDefaultFinancialItems(in: modelContext)
         try? AssetItemService.migrateLegacyAutoPricedItemsIfNeeded(in: modelContext)
 
@@ -274,34 +263,10 @@ struct ContentView: View {
     }
 
     @MainActor
-    private func scheduleActiveWorkTabActivation(for tab: AppTab) {
-        pendingActiveTabActivationTask?.cancel()
-        loadedTabs.insert(tab)
-        activeWorkTab = nil
-
-        pendingActiveTabActivationTask = Task {
-            try? await Task.sleep(nanoseconds: Self.activeTabWorkActivationDelayNanoseconds)
-            guard !Task.isCancelled else { return }
-            await MainActor.run {
-                guard selectedTab == tab else { return }
-                loadedTabs.insert(tab)
-                activeWorkTab = tab
-                pendingActiveTabActivationTask = nil
-            }
-        }
-    }
-
-    @MainActor
-    private func scheduleDeferredHeavyTabPrewarm() {
-        pendingTabPrewarmTask?.cancel()
-        pendingTabPrewarmTask = nil
-    }
-
-    @MainActor
     private func scheduleSnapshotNotificationRefresh() {
         pendingSnapshotNotificationRefreshTask?.cancel()
         pendingSnapshotNotificationRefreshTask = Task {
-            try? await Task.sleep(for: .milliseconds(900))
+            try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
             await refreshAssetNotifications()
             if strategyNotificationEnabled {
@@ -330,7 +295,6 @@ struct ContentView: View {
         }
 
         print("[tab-profile] scheduling auto tab switch loop")
-        loadedTabs.formUnion([.dashboard, .snapshots, .timeMachine, .backtest, .settings])
         let sequence: [AppTab] = [
             .snapshots, .timeMachine, .backtest, .settings, .dashboard,
             .snapshots, .timeMachine, .backtest, .settings, .dashboard
@@ -363,7 +327,7 @@ struct ContentView: View {
             await syncTodaySnapshotWithLatestMarketData()
         }
         await refreshAssetNotifications()
-        await refreshStrategyNotifications()
+        Task { await refreshStrategyNotifications() }
     }
 
     @MainActor
