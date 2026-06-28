@@ -49,6 +49,7 @@ struct SnapshotListView: View {
     @State private var editingAssetItem: AssetItem?
     @State private var quickEditingAssetItem: AssetItem?
     @FocusState private var focusedField: RecordInputField?
+    @State private var inlineEditingField: RecordInputField?
     @State private var pendingAutoRateSyncTask: Task<Void, Never>?
     @State private var pendingPersistTask: Task<Void, Never>?
     @State private var cachedListLayout: SnapshotListLayout?
@@ -167,7 +168,7 @@ struct SnapshotListView: View {
     }
 
     private var canAutoSyncMarketRates: Bool {
-        isActive && focusedField == nil && quickEditingAssetItem == nil && editingAssetItem == nil
+        isActive && focusedField == nil && inlineEditingField == nil && quickEditingAssetItem == nil && editingAssetItem == nil
     }
 
     @ViewBuilder
@@ -217,6 +218,8 @@ struct SnapshotListView: View {
                                     quantityInputs: $quantityInputs,
                                     unitPriceInputs: $unitPriceInputs,
                                     focusedField: $focusedField,
+                                    inlineEditingField: inlineEditingField,
+                                    onBeginInlineEdit: beginInlineEditing,
                                     onEdit: { item in
                                         dismissKeyboard()
                                         editingAssetItem = item
@@ -235,6 +238,8 @@ struct SnapshotListView: View {
                                     amountInputs: $amountInputs,
                                     quantityInputs: $quantityInputs,
                                     focusedField: $focusedField,
+                                    inlineEditingField: inlineEditingField,
+                                    onBeginInlineEdit: beginInlineEditing,
                                     onEdit: { item in
                                         dismissKeyboard()
                                         editingAssetItem = item
@@ -368,6 +373,9 @@ struct SnapshotListView: View {
             scheduleAutoRateSync(delayNanoseconds: 300_000_000)
         }
         .onChange(of: focusedField) { previousField, newField in
+            if let newField {
+                inlineEditingField = newField
+            }
             if newField != nil {
                 pendingAutoRateSyncTask?.cancel()
             }
@@ -434,7 +442,14 @@ struct SnapshotListView: View {
     }
 
     @MainActor
+    private func beginInlineEditing(_ field: RecordInputField) {
+        inlineEditingField = field
+        focusedField = field
+    }
+
+    @MainActor
     private func dismissKeyboard() {
+        inlineEditingField = nil
         focusedField = nil
     }
 
@@ -619,7 +634,9 @@ struct SnapshotListView: View {
                 }
                 try SnapshotService.upsertEntry(snapshot: snapshot, item: item, quantity: quantity, unitPrice: unitPrice, in: modelContext)
             }
-            refreshCachedListLayout()
+            Task { @MainActor in
+                refreshCachedListLayout()
+            }
         } catch {
             print("[AssetTimeMachine] persist entry failed: \(error)")
         }
@@ -921,6 +938,8 @@ struct RecordCategoryCard: View {
     @Binding var quantityInputs: [UUID: String]
     @Binding var unitPriceInputs: [UUID: String]
     @FocusState.Binding var focusedField: RecordInputField?
+    let inlineEditingField: RecordInputField?
+    let onBeginInlineEdit: (RecordInputField) -> Void
     let onEdit: (AssetItem) -> Void
     let onEditValue: (AssetItem) -> Void
     @State private var draggedItemID: UUID?
@@ -1005,6 +1024,8 @@ struct RecordCategoryCard: View {
                                                 }
                                             ),
                                             focusedField: $focusedField,
+                                            inlineEditingField: inlineEditingField,
+                                            onBeginInlineEdit: onBeginInlineEdit,
                                             inputWidth: inputWidth,
                                             isOnboardingTarget: item.id == onboardingInputItemID,
                                             showsOnboardingInputPreview: onboardingActiveAnchorID == .recordsFirstInput && item.id == onboardingInputItemID,
@@ -1058,6 +1079,8 @@ struct RecordCategoryCard: View {
                                         }
                                     ),
                                     focusedField: $focusedField,
+                                    inlineEditingField: inlineEditingField,
+                                    onBeginInlineEdit: onBeginInlineEdit,
                                     inputWidth: inputWidth,
                                     isOnboardingTarget: item.id == onboardingInputItemID,
                                     showsOnboardingInputPreview: onboardingActiveAnchorID == .recordsFirstInput && item.id == onboardingInputItemID,
@@ -1086,6 +1109,8 @@ struct LiabilityCategorySection: View {
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
     @FocusState.Binding var focusedField: RecordInputField?
+    let inlineEditingField: RecordInputField?
+    let onBeginInlineEdit: (RecordInputField) -> Void
     let onEdit: (AssetItem) -> Void
     let onEditValue: (AssetItem) -> Void
     @State private var draggedItemID: UUID?
@@ -1140,6 +1165,8 @@ struct LiabilityCategorySection: View {
                                     }
                                 ),
                                 focusedField: $focusedField,
+                                inlineEditingField: inlineEditingField,
+                                onBeginInlineEdit: onBeginInlineEdit,
                                 inputWidth: inputWidth,
                                 onEdit: {
                                     onEdit(item)
@@ -1176,6 +1203,8 @@ struct LiabilityEntryCard: View {
     @Binding var amountText: String
     @Binding var quantityText: String
     @FocusState.Binding var focusedField: RecordInputField?
+    let inlineEditingField: RecordInputField?
+    let onBeginInlineEdit: (RecordInputField) -> Void
     let inputWidth: CGFloat
     let onEdit: () -> Void
     let onEditValue: () -> Void
@@ -1185,7 +1214,7 @@ struct LiabilityEntryCard: View {
     }
 
     private var isEditing: Bool {
-        focusedField == activeField
+        inlineEditingField == activeField
     }
 
     private var hasDisplayValue: Bool {
@@ -1216,54 +1245,26 @@ struct LiabilityEntryCard: View {
                 }
                 .buttonStyle(.plain)
 
-                if isEditing {
-                    if item.valuationMethod == .directAmount {
-                        ATMInputField(
-                            text: $amountText,
-                            placeholder: "0",
-                            width: inputWidth,
-                            focusedField: $focusedField,
-                            focusValue: .amount(item.id),
-                            centered: true,
-                            fontSize: 12,
-                            fontWeight: .medium,
-                            height: 32,
-                            backgroundOpacity: 0.54,
-                            strokeOpacity: 0.18
-                        )
-                    } else {
-                        ATMInputField(
-                            text: $quantityText,
-                            placeholder: item.compactRecordPlaceholder,
-                            width: inputWidth,
-                            focusedField: $focusedField,
-                            focusValue: .quantity(item.id),
-                            centered: true,
-                            fontSize: 12,
-                            fontWeight: .medium,
-                            height: 32,
-                            backgroundOpacity: 0.54,
-                            strokeOpacity: 0.18
-                        )
-                    }
-                } else {
-                    Button {
+                RecordInlineValueSlot(
+                    text: item.valuationMethod == .directAmount ? $amountText : $quantityText,
+                    displayValue: displayValue,
+                    placeholder: item.valuationMethod == .directAmount ? "0" : item.compactRecordPlaceholder,
+                    focusedField: $focusedField,
+                    focusValue: activeField,
+                    isEditing: isEditing,
+                    width: inputWidth,
+                    onTap: {
                         if item.valuationMethod == .directAmount || item.autoPricedAssetKind == nil {
-                            focusedField = activeField
+                            onBeginInlineEdit(activeField)
                         } else {
                             onEditValue()
                         }
-                    } label: {
-                        Text(displayValue)
-                            .font(.system(size: 11.5, weight: .semibold))
-                            .monospacedDigit()
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.82)
-                            .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.78))
-                            .frame(width: inputWidth, alignment: .trailing)
-                    }
-                    .buttonStyle(.plain)
-                }
+                    },
+                    height: 32,
+                    backgroundOpacity: 0.54,
+                    strokeOpacity: 0.18,
+                    hasDisplayValue: hasDisplayValue
+                )
             }
         }
     }
@@ -1424,6 +1425,8 @@ struct AssetEntryCompactCard: View {
     @Binding var amountText: String
     @Binding var quantityText: String
     @FocusState.Binding var focusedField: RecordInputField?
+    let inlineEditingField: RecordInputField?
+    let onBeginInlineEdit: (RecordInputField) -> Void
     let inputWidth: CGFloat
     let isOnboardingTarget: Bool
     let showsOnboardingInputPreview: Bool
@@ -1435,15 +1438,11 @@ struct AssetEntryCompactCard: View {
     }
 
     private var isEditing: Bool {
-        focusedField == activeField
+        inlineEditingField == activeField
     }
 
     private var hasDisplayValue: Bool {
         displayValue != "--"
-    }
-
-    private var showsEditableField: Bool {
-        isEditing || showsOnboardingInputPreview
     }
 
     var body: some View {
@@ -1470,33 +1469,26 @@ struct AssetEntryCompactCard: View {
                 }
                 .buttonStyle(.plain)
 
-                if showsEditableField {
-                    if item.valuationMethod == .directAmount {
-                        ATMInputField(text: $amountText, placeholder: "0", width: inputWidth, focusedField: $focusedField, focusValue: .amount(item.id), centered: true, fontSize: 12, fontWeight: .medium, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
-                            .onboardingAnchorIf(isOnboardingTarget, .recordsFirstInput)
-                    } else {
-                        ATMInputField(text: $quantityText, placeholder: "0", width: inputWidth, focusedField: $focusedField, focusValue: .quantity(item.id), centered: true, fontSize: 12, fontWeight: .medium, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
-                            .onboardingAnchorIf(isOnboardingTarget, .recordsFirstInput)
-                    }
-                } else {
-                    Button {
+                RecordInlineValueSlot(
+                    text: item.valuationMethod == .directAmount ? $amountText : $quantityText,
+                    displayValue: displayValue,
+                    placeholder: item.valuationMethod == .directAmount ? "0" : "0",
+                    focusedField: $focusedField,
+                    focusValue: activeField,
+                    isEditing: isEditing,
+                    showsInputPreview: showsOnboardingInputPreview,
+                    width: inputWidth,
+                    onTap: {
                         if item.valuationMethod == .directAmount || item.autoPricedAssetKind == nil {
-                            focusedField = activeField
+                            onBeginInlineEdit(activeField)
                         } else {
                             onEditValue()
                         }
-                    } label: {
-                        Text(displayValue)
-                            .font(.system(size: 11.5, weight: .semibold))
-                            .monospacedDigit()
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.82)
-                            .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.78))
-                            .frame(width: inputWidth, alignment: .trailing)
-                    }
-                    .buttonStyle(.plain)
-                    .onboardingAnchorIf(isOnboardingTarget, .recordsFirstInput)
-                }
+                    },
+                    height: 30,
+                    hasDisplayValue: hasDisplayValue
+                )
+                .onboardingAnchorIf(isOnboardingTarget, .recordsFirstInput)
             }
         }
     }
@@ -1524,6 +1516,8 @@ struct AssetEntryInputRow: View {
     @Binding var quantityText: String
     @Binding var unitPriceText: String
     @FocusState.Binding var focusedField: RecordInputField?
+    let inlineEditingField: RecordInputField?
+    let onBeginInlineEdit: (RecordInputField) -> Void
     let inputWidth: CGFloat
     let isOnboardingTarget: Bool
     let showsOnboardingInputPreview: Bool
@@ -1531,7 +1525,7 @@ struct AssetEntryInputRow: View {
     let onEditValue: () -> Void
 
     private var isEditing: Bool {
-        focusedField == .quantity(item.id) || focusedField == .unitPrice(item.id)
+        inlineEditingField == .quantity(item.id) || inlineEditingField == .unitPrice(item.id)
     }
 
     private var resolvedValueText: String {
@@ -1541,10 +1535,6 @@ struct AssetEntryInputRow: View {
 
     private var hasResolvedValue: Bool {
         resolvedValueText != "--"
-    }
-
-    private var showsEditableField: Bool {
-        isEditing || showsOnboardingInputPreview
     }
 
     var body: some View {
@@ -1572,49 +1562,29 @@ struct AssetEntryInputRow: View {
                 .buttonStyle(.plain)
 
                 VStack(alignment: .leading, spacing: 6) {
-
-                    if showsEditableField {
-                        HStack(spacing: 6) {
-                            ATMInputField(text: $quantityText, placeholder: AppLocalization.string("数量"), width: inputWidth, focusedField: $focusedField, focusValue: .quantity(item.id), centered: true, fontSize: 12, fontWeight: .medium, height: 30, backgroundOpacity: 0.05, strokeOpacity: 0.16)
-                                .onboardingAnchorIf(isOnboardingTarget, .recordsFirstInput)
-                        }
-                    } else {
-                        HStack(spacing: 12) {
-                            Button {
-                                if item.autoPricedAssetKind == nil {
-                                    focusedField = .quantity(item.id)
-                                } else {
-                                    onEditValue()
-                                }
-                            } label: {
-                                recordValueLabel(title: AppLocalization.string("数量"), value: quantityText)
+                    RecordInlineLabeledValueSlot(
+                        title: AppLocalization.string("数量"),
+                        text: $quantityText,
+                        displayValue: resolvedValueText,
+                        placeholder: AppLocalization.string("数量"),
+                        focusedField: $focusedField,
+                        focusValue: .quantity(item.id),
+                        isEditing: isEditing,
+                        showsInputPreview: showsOnboardingInputPreview,
+                        width: inputWidth,
+                        onTap: {
+                            if item.autoPricedAssetKind == nil {
+                                onBeginInlineEdit(.quantity(item.id))
+                            } else {
+                                onEditValue()
                             }
-                            .buttonStyle(.plain)
-                            .onboardingAnchorIf(isOnboardingTarget, .recordsFirstInput)
-                        }
-                    }
+                        },
+                        hasDisplayValue: hasResolvedValue
+                    )
+                    .onboardingAnchorIf(isOnboardingTarget, .recordsFirstInput)
                 }
             }
         }
-    }
-
-    @ViewBuilder
-    private func recordValueLabel(title: String, value: String) -> some View {
-        let fallbackValue = snapshotEntry?.quantity?.plainNumberString() ?? "--"
-        let resolvedValue = value.isEmpty ? fallbackValue : value
-
-        VStack(alignment: .trailing, spacing: 2) {
-            Text(title)
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(AssetTheme.textSecondary)
-            Text(resolvedValue)
-                .font(.system(size: 11.5, weight: .semibold))
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
-                .foregroundStyle(resolvedValue == "--" ? AssetTheme.textSecondary.opacity(0.78) : AssetTheme.textPrimary)
-        }
-        .frame(width: inputWidth, alignment: .trailing)
     }
 }
 
@@ -1648,6 +1618,126 @@ struct ATMInputField: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(AssetTheme.border.opacity(strokeOpacity), lineWidth: 1)
             )
+    }
+}
+
+struct RecordInlineValueSlot: View {
+    @Binding var text: String
+    let displayValue: String
+    let placeholder: String
+    @FocusState.Binding var focusedField: RecordInputField?
+    let focusValue: RecordInputField
+    let isEditing: Bool
+    var showsInputPreview: Bool = false
+    let width: CGFloat
+    let onTap: () -> Void
+    var height: CGFloat = 30
+    var centered: Bool = true
+    var fontSize: CGFloat = 12
+    var fontWeight: Font.Weight = .medium
+    var backgroundOpacity: Double = 0.05
+    var strokeOpacity: Double = 0.16
+    var hasDisplayValue: Bool = true
+
+    private var showsField: Bool {
+        isEditing || showsInputPreview
+    }
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            ATMInputField(
+                text: $text,
+                placeholder: placeholder,
+                width: width,
+                focusedField: $focusedField,
+                focusValue: focusValue,
+                centered: centered,
+                fontSize: fontSize,
+                fontWeight: fontWeight,
+                height: height,
+                backgroundOpacity: showsField ? backgroundOpacity : 0,
+                strokeOpacity: showsField ? strokeOpacity : 0
+            )
+            .opacity(showsField ? 1 : 0)
+            .allowsHitTesting(isEditing)
+            .focusable(isEditing)
+
+            if !showsField {
+                Button(action: onTap) {
+                    Text(displayValue)
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.82)
+                        .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.78))
+                        .frame(width: width, alignment: .trailing)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(width: width, height: height, alignment: .trailing)
+        .animation(nil, value: showsField)
+    }
+}
+
+struct RecordInlineLabeledValueSlot: View {
+    let title: String
+    @Binding var text: String
+    let displayValue: String
+    let placeholder: String
+    @FocusState.Binding var focusedField: RecordInputField?
+    let focusValue: RecordInputField
+    let isEditing: Bool
+    var showsInputPreview: Bool = false
+    let width: CGFloat
+    let onTap: () -> Void
+    var hasDisplayValue: Bool = true
+
+    private var showsField: Bool {
+        isEditing || showsInputPreview
+    }
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            ATMInputField(
+                text: $text,
+                placeholder: placeholder,
+                width: width,
+                focusedField: $focusedField,
+                focusValue: focusValue,
+                centered: true,
+                fontSize: 12,
+                fontWeight: .medium,
+                height: 30,
+                backgroundOpacity: showsField ? 0.05 : 0,
+                strokeOpacity: showsField ? 0.16 : 0
+            )
+            .opacity(showsField ? 1 : 0)
+            .allowsHitTesting(isEditing)
+            .focusable(isEditing)
+
+            if !showsField {
+                Button(action: onTap) {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(title)
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(AssetTheme.textSecondary)
+                        Text(displayValue)
+                            .font(.system(size: 11.5, weight: .semibold))
+                            .monospacedDigit()
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.82)
+                            .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.78))
+                    }
+                    .frame(width: width, alignment: .trailing)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(width: width, alignment: .trailing)
+        .animation(nil, value: showsField)
     }
 }
 
