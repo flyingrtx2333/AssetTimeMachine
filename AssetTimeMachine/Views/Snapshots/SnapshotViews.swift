@@ -347,9 +347,6 @@ struct SnapshotListView: View {
                 quickEditingAssetItem = debugAutoPricedItem
             }
             #endif
-            if isActive {
-                scheduleAutoRateSync(delayNanoseconds: 180_000_000)
-            }
         }
         .task(id: isActive) {
             if isActive {
@@ -444,7 +441,10 @@ struct SnapshotListView: View {
     @MainActor
     private func beginInlineEditing(_ field: RecordInputField) {
         inlineEditingField = field
-        focusedField = field
+        Task { @MainActor in
+            guard inlineEditingField == field else { return }
+            focusedField = field
+        }
     }
 
     @MainActor
@@ -1644,25 +1644,23 @@ struct RecordInlineValueSlot: View {
     }
 
     var body: some View {
-        ZStack(alignment: .trailing) {
-            ATMInputField(
-                text: $text,
-                placeholder: placeholder,
-                width: width,
-                focusedField: $focusedField,
-                focusValue: focusValue,
-                centered: centered,
-                fontSize: fontSize,
-                fontWeight: fontWeight,
-                height: height,
-                backgroundOpacity: showsField ? backgroundOpacity : 0,
-                strokeOpacity: showsField ? strokeOpacity : 0
-            )
-            .opacity(showsField ? 1 : 0)
-            .allowsHitTesting(isEditing)
-            .focusable(isEditing)
-
-            if !showsField {
+        Group {
+            if showsField {
+                ATMInputField(
+                    text: $text,
+                    placeholder: placeholder,
+                    width: width,
+                    focusedField: $focusedField,
+                    focusValue: focusValue,
+                    centered: centered,
+                    fontSize: fontSize,
+                    fontWeight: fontWeight,
+                    height: height,
+                    backgroundOpacity: backgroundOpacity,
+                    strokeOpacity: strokeOpacity
+                )
+                .allowsHitTesting(isEditing)
+            } else {
                 Button(action: onTap) {
                     Text(displayValue)
                         .font(.system(size: 11.5, weight: .semibold))
@@ -1699,25 +1697,23 @@ struct RecordInlineLabeledValueSlot: View {
     }
 
     var body: some View {
-        ZStack(alignment: .trailing) {
-            ATMInputField(
-                text: $text,
-                placeholder: placeholder,
-                width: width,
-                focusedField: $focusedField,
-                focusValue: focusValue,
-                centered: true,
-                fontSize: 12,
-                fontWeight: .medium,
-                height: 30,
-                backgroundOpacity: showsField ? 0.05 : 0,
-                strokeOpacity: showsField ? 0.16 : 0
-            )
-            .opacity(showsField ? 1 : 0)
-            .allowsHitTesting(isEditing)
-            .focusable(isEditing)
-
-            if !showsField {
+        Group {
+            if showsField {
+                ATMInputField(
+                    text: $text,
+                    placeholder: placeholder,
+                    width: width,
+                    focusedField: $focusedField,
+                    focusValue: focusValue,
+                    centered: true,
+                    fontSize: 12,
+                    fontWeight: .medium,
+                    height: 30,
+                    backgroundOpacity: 0.05,
+                    strokeOpacity: 0.16
+                )
+                .allowsHitTesting(isEditing)
+            } else {
                 Button(action: onTap) {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(title)

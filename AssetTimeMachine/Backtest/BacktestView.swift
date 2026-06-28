@@ -6,7 +6,6 @@ import UIKit
 struct BacktestView: View {
     @Environment(\.modelContext) private var modelContext
     let marketStore: RemoteMarketStore
-    let isVisible: Bool
     let isActive: Bool
     @State private var selectedPage: BacktestPage = .home
     @State private var backtestMode: BacktestMode = .allocation
@@ -250,12 +249,8 @@ struct BacktestView: View {
             ZStack {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
-                if isVisible {
-                    if !isActive {
-                        BacktestEntryLoadingView()
-                            .padding(.horizontal, 20)
-                    } else {
-                        GeometryReader { geometry in
+                if isActive {
+                    GeometryReader { geometry in
                             ScrollView(.vertical, showsIndicators: false) {
                                 VStack(alignment: .leading, spacing: 14) {
                                     if selectedPage == .home {
@@ -374,7 +369,6 @@ struct BacktestView: View {
                             }
                             .frame(width: geometry.size.width, height: geometry.size.height)
                             .clipped()
-                        }
                     }
                 } else {
                     Color.clear

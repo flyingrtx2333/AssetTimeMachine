@@ -12,7 +12,6 @@ private struct TrendVideoPreviewRequest: Identifiable {
 struct TimeMachineView: View {
     @Environment(\.modelContext) private var modelContext
     let marketStore: RemoteMarketStore
-    let isVisible: Bool
     let isActive: Bool
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
     @State private var selectedRange: TimeMachineRange = .sixMonths
@@ -40,9 +39,8 @@ struct TimeMachineView: View {
     @State private var didOpenDebugTrendVideoPreview = false
     #endif
 
-    init(marketStore: RemoteMarketStore, isVisible: Bool, isActive: Bool) {
+    init(marketStore: RemoteMarketStore, isActive: Bool) {
         self.marketStore = marketStore
-        self.isVisible = isVisible
         self.isActive = isActive
 
         var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
@@ -1002,7 +1000,7 @@ struct TimeMachineView: View {
             ZStack {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
-                if isVisible {
+                if isActive {
                     ScrollView(showsIndicators: false) {
                         LazyVStack(alignment: .leading, spacing: 16) {
                             if lastVisualizationCacheToken == nil {
@@ -1080,11 +1078,12 @@ struct TimeMachineView: View {
                 await marketStore.refreshHistoryIfNeeded()
                 guard !Task.isCancelled else { return }
                 scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 0)
-                try? await Task.sleep(for: .milliseconds(350))
-                guard !Task.isCancelled, isActive else { return }
-                await SnapshotAnchorService.backfillIfNeeded(in: modelContext)
-                guard !Task.isCancelled else { return }
-                scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 0)
+                Task {
+                    guard !Task.isCancelled, isActive else { return }
+                    await SnapshotAnchorService.backfillIfNeeded(in: modelContext)
+                    guard !Task.isCancelled, isActive else { return }
+                    scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 0)
+                }
             } else {
                 pendingVisualizationRefreshTask?.cancel()
                 deferredDetailCardsTask?.cancel()

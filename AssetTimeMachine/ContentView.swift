@@ -26,7 +26,8 @@ struct ContentView: View {
     @AppStorage("app.strategyNotifications.hour") private var strategyNotificationHour: Int = StrategyNotificationDefaults.defaultHour
     @StateObject private var marketStore = RemoteMarketStore()
     @StateObject private var cloudStore = AssetTimeMachineCloudStore()
-    @StateObject private var tabMountStore = TabMountStore()
+    @State private var mountedTabs: Set<AppTab> = [.dashboard]
+    @State private var lastSelectedTab: AppTab = .dashboard
     @State private var selectedTab: AppTab = .dashboard
     @State private var didRunStartup = false
     @State private var lastMarketRefreshAt: Date?
@@ -73,66 +74,62 @@ struct ContentView: View {
     }
 
     var body: some View {
-        ZStack {
-            TabView(selection: $selectedTab) {
-                deferredTabContent(for: .dashboard) {
-                    DashboardView(
-                        marketStore: marketStore,
-                        cloudStore: cloudStore,
-                        isActive: selectedTab == .dashboard
-                    )
-                }
-                    .tabItem {
-                        Label(AppLocalization.string("首页"), systemImage: "house")
-                    }
-                    .tag(AppTab.dashboard)
-
-                deferredTabContent(for: .snapshots) {
-                    SnapshotListView(
-                        marketStore: marketStore,
-                        isActive: selectedTab == .snapshots,
-                        onboardingActiveAnchorID: activeOnboardingAnchorID
-                    )
-                }
-                    .tabItem {
-                        Label(AppLocalization.string("记录"), systemImage: "square.and.pencil")
-                    }
-                    .tag(AppTab.snapshots)
-
-                deferredTabContent(for: .timeMachine) {
-                    TimeMachineView(
-                        marketStore: marketStore,
-                        isVisible: selectedTab == .timeMachine,
-                        isActive: selectedTab == .timeMachine
-                    )
-                }
-                    .tabItem {
-                        Label(AppLocalization.string("时光机"), systemImage: "clock.arrow.circlepath")
-                    }
-                    .tag(AppTab.timeMachine)
-
-                deferredTabContent(for: .backtest) {
-                    BacktestView(
-                        marketStore: marketStore,
-                        isVisible: selectedTab == .backtest,
-                        isActive: selectedTab == .backtest
-                    )
-                }
-                    .tabItem {
-                        Label(AppLocalization.string("量化"), systemImage: "chart.xyaxis.line")
-                    }
-                    .tag(AppTab.backtest)
-
-                deferredTabContent(for: .settings) {
-                    SettingsView(cloudStore: cloudStore) {
-                        presentOnboarding()
-                    }
-                }
-                    .tabItem {
-                        Label(AppLocalization.string("设置"), systemImage: "gearshape")
-                    }
-                    .tag(AppTab.settings)
+        TabView(selection: $selectedTab) {
+            deferredTabContent(for: .dashboard) {
+                DashboardView(
+                    marketStore: marketStore,
+                    cloudStore: cloudStore,
+                    isActive: selectedTab == .dashboard
+                )
             }
+                .tabItem {
+                    Label(AppLocalization.string("首页"), systemImage: "house")
+                }
+                .tag(AppTab.dashboard)
+
+            deferredTabContent(for: .snapshots) {
+                SnapshotListView(
+                    marketStore: marketStore,
+                    isActive: selectedTab == .snapshots,
+                    onboardingActiveAnchorID: activeOnboardingAnchorID
+                )
+            }
+                .tabItem {
+                    Label(AppLocalization.string("记录"), systemImage: "square.and.pencil")
+                }
+                .tag(AppTab.snapshots)
+
+            deferredTabContent(for: .timeMachine) {
+                TimeMachineView(
+                    marketStore: marketStore,
+                    isActive: selectedTab == .timeMachine
+                )
+            }
+                .tabItem {
+                    Label(AppLocalization.string("时光机"), systemImage: "clock.arrow.circlepath")
+                }
+                .tag(AppTab.timeMachine)
+
+            deferredTabContent(for: .backtest) {
+                BacktestView(
+                    marketStore: marketStore,
+                    isActive: selectedTab == .backtest
+                )
+            }
+                .tabItem {
+                    Label(AppLocalization.string("量化"), systemImage: "chart.xyaxis.line")
+                }
+                .tag(AppTab.backtest)
+
+            deferredTabContent(for: .settings) {
+                SettingsView(cloudStore: cloudStore) {
+                    presentOnboarding()
+                }
+            }
+                .tabItem {
+                    Label(AppLocalization.string("设置"), systemImage: "gearshape")
+                }
+                .tag(AppTab.settings)
         }
         .overlayPreferenceValue(OnboardingAnchorPreferenceKey.self) { anchors in
             if showsOnboarding {
@@ -151,7 +148,11 @@ struct ContentView: View {
         }
         .tint(AssetTheme.gold)
         .onChange(of: selectedTab) { _, newValue in
-            tabMountStore.noteSelection(newValue)
+            TabMountController.noteSelection(
+                newValue,
+                mountedTabs: &mountedTabs,
+                lastSelectedTab: &lastSelectedTab
+            )
         }
         .task {
             await runStartupIfNeeded()
@@ -209,13 +210,10 @@ struct ContentView: View {
 
     @ViewBuilder
     private func deferredTabContent<Content: View>(for tab: AppTab, @ViewBuilder content: () -> Content) -> some View {
-        if tabMountStore.shouldMount(tab, selectedTab: selectedTab) {
+        if TabMountController.shouldMount(tab, selectedTab: selectedTab, mountedTabs: mountedTabs) {
             content()
-                .onAppear {
-                    tabMountStore.markMounted(tab)
-                }
         } else {
-            AssetTheme.pageGradient.ignoresSafeArea()
+            Color.clear
         }
     }
 
@@ -227,12 +225,12 @@ struct ContentView: View {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-openSnapshotsTab") {
             selectedTab = .snapshots
-            tabMountStore.markMounted(.snapshots)
+            mountedTabs.insert(.snapshots)
         }
 
         if ProcessInfo.processInfo.arguments.contains("-openTimeMachineTab") {
             selectedTab = .timeMachine
-            tabMountStore.markMounted(.timeMachine)
+            mountedTabs.insert(.timeMachine)
         }
 
         if let importPath = launchArgumentValue(after: "-importJSONPath") {
