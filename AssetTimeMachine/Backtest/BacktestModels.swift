@@ -273,6 +273,8 @@ enum AdvancedBacktestStrategyMode: String, Codable {
     case coreGoldSatelliteEquityBreadthMomentum
     case coreGoldSatelliteOneWayVolManagedMomentum
     case coreGoldSatelliteEquityCurveStateGateMomentum
+    case coreGoldSatelliteSharpeStateGateMomentum
+    case coreGoldSatelliteRiskBudgetStateGateMomentum
     case coreGoldSatelliteConfirmedAccelerationMomentum
     case coreGoldSatelliteProfitLockMomentum
     case coreGoldSatelliteDynamicSleeveMomentum
@@ -345,6 +347,10 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("单向控波元策略")
         case .coreGoldSatelliteEquityCurveStateGateMomentum:
             return AppLocalization.string("权益曲线状态机")
+        case .coreGoldSatelliteSharpeStateGateMomentum:
+            return AppLocalization.string("高夏普状态机")
+        case .coreGoldSatelliteRiskBudgetStateGateMomentum:
+            return AppLocalization.string("风险预算状态机")
         case .coreGoldSatelliteConfirmedAccelerationMomentum:
             return AppLocalization.string("确认加速进攻袖套")
         case .coreGoldSatelliteProfitLockMomentum:
@@ -436,6 +442,10 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("新夏普冠军：以黄金交接保护为防守引擎、权益宽度为进攻引擎；当进攻引擎领先但自身波动高于防守引擎时，只降仓不加仓，剩余留现金。")
         case .coreGoldSatelliteEquityCurveStateGateMomentum:
             return AppLocalization.string("App-only状态机候选：以单向控波双引擎为基础；当策略自身近90日收益转弱或回撤扩大时，把风险预算降到70%，恢复后再打开。")
+        case .coreGoldSatelliteSharpeStateGateMomentum:
+            return AppLocalization.string("高夏普候选：以双引擎路由和黄金分散信用为基础；当策略自身75日收益转弱或回撤扩大时，把风险预算降到45%，只有75日收益重新转强后再打开。")
+        case .coreGoldSatelliteRiskBudgetStateGateMomentum:
+            return AppLocalization.string("进取候选：以高夏普状态机为底层信号，每日按融资成本计提风险预算，目标是用明确融资假设冲击15%以上年化；属于高级风险预算策略。")
         case .coreGoldSatelliteConfirmedAccelerationMomentum:
             return AppLocalization.string("内部进攻袖套：在单向控波基础上，只用空余预算承接确认加速且波动收缩的道指、深成指或创业板。")
         case .coreGoldSatelliteProfitLockMomentum:
@@ -527,6 +537,10 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("双引擎路由 · 只降不升 · 实时回测")
         case .coreGoldSatelliteEquityCurveStateGateMomentum:
             return AppLocalization.string("双引擎路由 · 权益曲线状态机 · 70%低风险")
+        case .coreGoldSatelliteSharpeStateGateMomentum:
+            return AppLocalization.string("双引擎路由 · 高夏普状态门 · 45%低风险")
+        case .coreGoldSatelliteRiskBudgetStateGateMomentum:
+            return AppLocalization.string("高夏普底层 · 2.05x预算 · 融资3%")
         case .coreGoldSatelliteConfirmedAccelerationMomentum:
             return AppLocalization.string("确认加速 · 额外权益 · 进攻袖套")
         case .coreGoldSatelliteProfitLockMomentum:
@@ -579,6 +593,8 @@ enum AdvancedBacktestStrategyMode: String, Codable {
              .coreGoldSatelliteEquityBreadthMomentum,
              .coreGoldSatelliteOneWayVolManagedMomentum,
              .coreGoldSatelliteEquityCurveStateGateMomentum,
+             .coreGoldSatelliteSharpeStateGateMomentum,
+             .coreGoldSatelliteRiskBudgetStateGateMomentum,
              .coreGoldSatelliteConfirmedAccelerationMomentum,
              .coreGoldSatelliteProfitLockMomentum,
              .coreGoldSatelliteDynamicSleeveMomentum,
@@ -1605,6 +1621,40 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             takeProfitRatio: 0
         ),
         .init(
+            id: "core-gold-satellite-sharpe-state-gate-momentum",
+            mode: .coreGoldSatelliteSharpeStateGateMomentum,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            category: AppLocalization.string("高级策略"),
+            title: AppLocalization.string("高夏普状态机"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "core-gold-satellite-risk-budget-state-gate-momentum",
+            mode: .coreGoldSatelliteRiskBudgetStateGateMomentum,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            category: AppLocalization.string("高级策略"),
+            title: AppLocalization.string("风险预算状态机"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 225,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
             id: "core-gold-satellite-dynamic-sleeve-momentum",
             mode: .coreGoldSatelliteDynamicSleeveMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "shenzhen_component", "chinext"],
@@ -2407,9 +2457,16 @@ enum BacktestDefaults {
         .init(symbol: "chinext", title: AppLocalization.string("创业板"), color: AssetTheme.positive, requiresHistoricalFX: false, historicalFXSymbol: nil),
         .init(symbol: "usd_cash", title: AppLocalization.string("美元现金"), color: AssetTheme.textSecondary, requiresHistoricalFX: false, historicalFXSymbol: nil),
     ]
+    static let strategySleeveAssetOptions: [BacktestAssetOption] = [
+        .init(symbol: "qmnrx", title: AppLocalization.string("QMNRX"), color: AssetTheme.accentBlue, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny"),
+        .init(symbol: "ostix", title: AppLocalization.string("OSTIX"), color: AssetTheme.textSecondary, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny"),
+        .init(symbol: "vmnfx", title: AppLocalization.string("VMNFX"), color: AssetTheme.positive, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny"),
+        .init(symbol: "bprrx", title: AppLocalization.string("BPRRX"), color: AssetTheme.accentOrange, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny"),
+    ]
+    static let strategyAssetOptions: [BacktestAssetOption] = dcaAssetOptions + strategySleeveAssetOptions
 
     static func strategyColor(for symbol: String) -> Color {
-        dcaAssetOptions.first(where: { $0.symbol == symbol })?.color ?? AssetTheme.gold
+        strategyAssetOptions.first(where: { $0.symbol == symbol })?.color ?? AssetTheme.gold
     }
 }
 
@@ -2428,7 +2485,7 @@ enum StrategyNotificationDefaults {
     static func assetOptions(for template: AdvancedBacktestStrategyTemplate) -> [BacktestAssetOption] {
         var selectedSymbols = Set(template.selectedAssetSymbols ?? BacktestDefaults.dcaAssetOptions.map(\.symbol))
         selectedSymbols.formUnion(template.mode.requiredSignalAssetSymbols)
-        let options = BacktestDefaults.dcaAssetOptions.filter { selectedSymbols.contains($0.symbol) }
+        let options = BacktestDefaults.strategyAssetOptions.filter { selectedSymbols.contains($0.symbol) }
         return options.isEmpty ? BacktestDefaults.dcaAssetOptions : options
     }
 }

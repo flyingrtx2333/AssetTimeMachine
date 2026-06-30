@@ -154,7 +154,7 @@ struct SettingsView: View {
                                 Spacer()
 
                                 Image(systemName: "chevron.right")
-                                    .font(.footnote.weight(.semibold))
+                                    .font(AppTypography.metaStrong)
                                     .foregroundStyle(AssetTheme.textSecondary)
                             }
                         }
@@ -266,7 +266,7 @@ struct SettingsView: View {
                                     Spacer()
 
                                     Image(systemName: "arrow.up.right.square")
-                                        .font(.footnote.weight(.semibold))
+                                        .font(AppTypography.metaStrong)
                                         .foregroundStyle(AssetTheme.textSecondary)
                                 }
                             }
@@ -308,16 +308,16 @@ struct SettingsView: View {
                                         if cloudStore.hasCompletedInitialSync {
                                             if let email = currentUser.userEmail, !email.isEmpty {
                                                 Text(email)
-                                                    .font(.caption)
+                                                    .font(AppTypography.caption)
                                                     .foregroundStyle(AssetTheme.textSecondary)
                                             } else {
                                                 Text(AppLocalization.string("云同步已完成"))
-                                                    .font(.caption)
+                                                    .font(AppTypography.caption)
                                                     .foregroundStyle(AssetTheme.textSecondary)
                                             }
                                         } else {
                                             Text(AppLocalization.string("等待首次云同步"))
-                                                .font(.caption)
+                                                .font(AppTypography.caption)
                                                 .foregroundStyle(AssetTheme.goldSoft)
                                         }
                                     }
@@ -326,7 +326,7 @@ struct SettingsView: View {
                                         Text(cloudStore.isSessionPending ? AppLocalization.string("正在恢复登录") : AppLocalization.string("登录凭证已保存"))
                                             .foregroundStyle(AssetTheme.textPrimary)
                                         Text(AppLocalization.string("正在验证云同步状态"))
-                                            .font(.caption)
+                                            .font(AppTypography.caption)
                                             .foregroundStyle(AssetTheme.textSecondary)
                                     }
                                 }
@@ -437,7 +437,7 @@ struct SettingsRowLabel: View {
                 .frame(width: 28, height: 28)
                 .overlay(
                     Image(systemName: systemImage)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(AppTypography.metaStrong)
                         .foregroundStyle(.white)
                 )
 

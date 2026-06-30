@@ -20,17 +20,18 @@ struct SnapshotListView: View {
     @ObservedObject var marketStore: RemoteMarketStore
     let isActive: Bool
     let onboardingActiveAnchorID: OnboardingAnchorID?
-    @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
-    @Query private var categories: [AssetCategory]
+    @Binding var pendingRecordSnapshotID: UUID?
 
     init(
         marketStore: RemoteMarketStore,
         isActive: Bool,
-        onboardingActiveAnchorID: OnboardingAnchorID?
+        onboardingActiveAnchorID: OnboardingAnchorID?,
+        pendingRecordSnapshotID: Binding<UUID?>
     ) {
         self.marketStore = marketStore
         self.isActive = isActive
         self.onboardingActiveAnchorID = onboardingActiveAnchorID
+        self._pendingRecordSnapshotID = pendingRecordSnapshotID
 
         var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
             sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
@@ -39,7 +40,11 @@ struct SnapshotListView: View {
         _snapshots = Query(snapshotDescriptor)
     }
 
+    @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
+    @Query private var categories: [AssetCategory]
+
     @State private var currentSnapshotID: UUID?
+    @State private var externalFocusedSnapshot: AssetSnapshot?
     @State private var amountInputs: [UUID: String] = [:]
     @State private var quantityInputs: [UUID: String] = [:]
     @State private var unitPriceInputs: [UUID: String] = [:]
@@ -60,6 +65,9 @@ struct SnapshotListView: View {
     ]
 
     private var currentSnapshot: AssetSnapshot? {
+        if let externalFocusedSnapshot {
+            return externalFocusedSnapshot
+        }
         if let currentSnapshotID,
            let snapshot = snapshots.first(where: { $0.id == currentSnapshotID }) {
             return snapshot
@@ -280,7 +288,7 @@ struct SnapshotListView: View {
                     Button(AppLocalization.string("完成")) {
                         dismissKeyboard()
                     }
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.gold)
                 }
             }
@@ -335,8 +343,16 @@ struct SnapshotListView: View {
         .onChange(of: listLayoutCacheToken) { _, _ in
             refreshCachedListLayout()
         }
+        .onChange(of: pendingRecordSnapshotID) { _, _ in
+            applyPendingRecordSnapshotIfNeeded()
+        }
+        .onChange(of: isActive) { _, active in
+            guard active else { return }
+            applyPendingRecordSnapshotIfNeeded()
+        }
         .task {
             await prepareSnapshotIfNeeded()
+            applyPendingRecordSnapshotIfNeeded()
             refreshCachedListLayout()
             #if DEBUG
             await ensureDebugAutoPricedItemIfNeeded()
@@ -463,6 +479,34 @@ struct SnapshotListView: View {
     }
 
     @MainActor
+    private func focusSnapshot(withID id: UUID) {
+        currentSnapshotID = id
+        externalFocusedSnapshot = nil
+
+        if let snapshot = snapshots.first(where: { $0.id == id }) {
+            hydrateInputs(from: snapshot)
+            refreshCachedListLayout()
+            return
+        }
+
+        var descriptor = FetchDescriptor<AssetSnapshot>(
+            predicate: #Predicate { $0.id == id }
+        )
+        descriptor.fetchLimit = 1
+        guard let snapshot = try? modelContext.fetch(descriptor).first else { return }
+        externalFocusedSnapshot = snapshot
+        hydrateInputs(from: snapshot)
+        refreshCachedListLayout()
+    }
+
+    @MainActor
+    private func applyPendingRecordSnapshotIfNeeded() {
+        guard let snapshotID = pendingRecordSnapshotID else { return }
+        focusSnapshot(withID: snapshotID)
+        pendingRecordSnapshotID = nil
+    }
+
+    @MainActor
     private func prepareSnapshotIfNeeded() async {
         guard !didPrepare else { return }
         didPrepare = true
@@ -472,8 +516,10 @@ struct SnapshotListView: View {
         do {
             try SeedDataService.seedDefaultCategoriesIfNeeded(in: modelContext)
             let snapshot = try SnapshotService.createSnapshot(on: .now, inheritPrevious: true, createMissingEntries: true, in: modelContext)
-            currentSnapshotID = snapshot.id
-            hydrateInputs(from: snapshot)
+            if pendingRecordSnapshotID == nil, currentSnapshotID == nil {
+                currentSnapshotID = snapshot.id
+                hydrateInputs(from: snapshot)
+            }
             refreshCachedListLayout()
             await SnapshotAnchorService.captureLiveAnchorsIfPossible(for: snapshot, marketStore: marketStore, in: modelContext)
         } catch {
@@ -711,11 +757,11 @@ struct RecordHeroMetric: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(AppLocalization.string(title))
-                .font(.system(size: 10, weight: .medium))
+                .font(AppTypography.microLabel)
                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
 
             Text(value)
-                .font(.system(size: 13, weight: .semibold))
+                .font(AppTypography.microValue)
                 .foregroundStyle(valueColor)
                 .monospacedDigit()
                 .lineLimit(1)
@@ -731,9 +777,9 @@ struct RecordHeroActionChip: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: systemImage)
-                .font(.system(size: 9.5, weight: .bold))
+                .font(AppTypography.chipIcon)
             Text(title)
-                .font(.system(size: 10.5, weight: .semibold))
+                .font(AppTypography.chip)
         }
         .foregroundStyle(AssetTheme.textPrimary)
         .padding(.horizontal, 11)
@@ -761,15 +807,15 @@ struct RecordPageHero: View {
         let amount = totalAssets.currencyString()
         guard let dotIndex = amount.lastIndex(of: ".") else {
             return Text(amount)
-                .font(.system(size: 32, weight: .semibold))
+                .font(AppTypography.pageHero)
         }
 
         let major = String(amount[..<dotIndex])
         let minor = String(amount[dotIndex...])
         return Text(major)
-            .font(.system(size: 32, weight: .semibold))
+            .font(AppTypography.pageHero)
         + Text(minor)
-            .font(.system(size: 19, weight: .semibold))
+            .font(AppTypography.pageHeroMinor)
             .baselineOffset(1)
     }
 
@@ -778,7 +824,7 @@ struct RecordPageHero: View {
             HStack(alignment: .center, spacing: 12) {
                 HStack(spacing: 8) {
                     Text(AppLocalization.string("总资产"))
-                        .font(.system(size: 11.5, weight: .semibold))
+                        .font(AppTypography.fieldLabel)
                         .tracking(0.2)
                         .foregroundStyle(AssetTheme.textSecondary.opacity(0.94))
 
@@ -832,7 +878,7 @@ struct RecordPageHero: View {
 
             HStack(alignment: .bottom, spacing: 12) {
                 Text(snapshot.date.recordDateString)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(AppTypography.chartLegendMedium)
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.9))
 
                 Spacer(minLength: 12)
@@ -896,14 +942,14 @@ struct RecordSectionHeader: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(AppLocalization.string(title))
-                .font(.system(size: 13.5, weight: .medium))
+                .font(AppTypography.meta)
                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.94))
                 .lineLimit(1)
 
             Spacer(minLength: 10)
 
             Text(amount)
-                .font(.system(size: 15.5, weight: .semibold))
+                .font(AppTypography.bodyStrong)
                 .monospacedDigit()
                 .foregroundStyle(amountColor)
                 .lineLimit(1)
@@ -1232,7 +1278,7 @@ struct LiabilityEntryCard: View {
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(AppLocalization.string(item.name))
-                                .font(.system(size: 11.5, weight: .medium))
+                                .font(AppTypography.chartLegendMedium)
                                 .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
@@ -1456,7 +1502,7 @@ struct AssetEntryCompactCard: View {
 
                         VStack(alignment: .leading, spacing: 3) {
                             Text(AppLocalization.string(item.name))
-                                .font(.system(size: 11.5, weight: .medium))
+                                .font(AppTypography.chartLegendMedium)
                                 .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
@@ -1548,7 +1594,7 @@ struct AssetEntryInputRow: View {
 
                         VStack(alignment: .leading, spacing: 3) {
                             Text(AppLocalization.string(item.name))
-                                .font(.system(size: 11.5, weight: .medium))
+                                .font(AppTypography.chartLegendMedium)
                                 .foregroundStyle(hasResolvedValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
@@ -1601,13 +1647,23 @@ struct ATMInputField: View {
     var backgroundOpacity: Double = 0.66
     var strokeOpacity: Double = 0.52
 
+    private var resolvedFont: Font {
+        if fontSize == 17, fontWeight == .medium {
+            return AppTypography.inputValue
+        }
+        if fontSize == 15.5, fontWeight == .semibold {
+            return AppTypography.bodyStrong
+        }
+        return .system(size: fontSize, weight: fontWeight, design: .rounded)
+    }
+
     var body: some View {
         TextField(AppLocalization.string(placeholder), text: $text)
             .keyboardType(.decimalPad)
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
             .multilineTextAlignment(centered ? .center : .trailing)
-            .font(.system(size: fontSize, weight: fontWeight))
+            .font(resolvedFont)
             .foregroundStyle(AssetTheme.textPrimary)
             .focused($focusedField, equals: focusValue)
             .padding(.horizontal, 2)
@@ -1663,7 +1719,7 @@ struct RecordInlineValueSlot: View {
             } else {
                 Button(action: onTap) {
                     Text(displayValue)
-                        .font(.system(size: 11.5, weight: .semibold))
+                        .font(AppTypography.fieldLabel)
                         .monospacedDigit()
                         .lineLimit(1)
                         .minimumScaleFactor(0.82)
@@ -1717,10 +1773,10 @@ struct RecordInlineLabeledValueSlot: View {
                 Button(action: onTap) {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(title)
-                            .font(.system(size: 9.5, weight: .medium))
+                            .font(AppTypography.chartAxisCompact)
                             .foregroundStyle(AssetTheme.textSecondary)
                         Text(displayValue)
-                            .font(.system(size: 11.5, weight: .semibold))
+                            .font(AppTypography.fieldLabel)
                             .monospacedDigit()
                             .lineLimit(1)
                             .minimumScaleFactor(0.82)
@@ -1802,7 +1858,7 @@ struct AssetEditorForm: View {
                 HStack(alignment: .top, spacing: 12) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(AppLocalization.string("名称"))
-                            .font(.headline)
+                            .font(AppTypography.blockTitle)
                             .foregroundStyle(AssetTheme.textPrimary)
 
                         TextField(AppLocalization.string("示例：银行卡、房产、车辆"), text: $name)
@@ -1821,7 +1877,7 @@ struct AssetEditorForm: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(AppLocalization.string("归类"))
-                            .font(.headline)
+                            .font(AppTypography.blockTitle)
                             .foregroundStyle(AssetTheme.textPrimary)
 
                         Picker(AppLocalization.string("归类"), selection: Binding(
@@ -1845,7 +1901,7 @@ struct AssetEditorForm: View {
                 }
 
                 Text(AppLocalization.string("图标"))
-                    .font(.headline)
+                    .font(AppTypography.blockTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
 
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -1867,7 +1923,7 @@ struct AssetEditorForm: View {
                                                 .fill(selectedIconName == option.key ? AssetTheme.overlayStrong : AssetTheme.overlaySubtle)
                                         )
                                     Text(AppLocalization.string(option.label))
-                                        .font(.caption2.weight(.medium))
+                                        .font(AppTypography.chartCaption)
                                         .foregroundStyle(selectedIconName == option.key ? AssetTheme.goldSoft : AssetTheme.textSecondary)
                                 }
                                 .padding(.vertical, 3)
@@ -1881,11 +1937,11 @@ struct AssetEditorForm: View {
 
             VStack(alignment: .leading, spacing: 12) {
                 Text(AppLocalization.string("特殊资产"))
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.textSecondary)
 
                 Text(AppLocalization.string(isAutoPricedLocked ? "该资产已绑定自动定价类型。如需调整，请新建资产类型。" : "以下资产支持数量录入，价格将自动更新。"))
-                    .font(.footnote)
+                    .font(AppTypography.meta)
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.8))
 
                 LazyVGrid(columns: autoAssetGridColumns, alignment: .leading, spacing: 10) {
@@ -1895,11 +1951,11 @@ struct AssetEditorForm: View {
                     } label: {
                         VStack(spacing: 6) {
                             Image(systemName: "square.grid.2x2")
-                                .font(.headline.weight(.semibold))
+                                .font(AppTypography.blockTitle)
                                 .foregroundStyle(selectedAutoPricedAssetKind == nil ? AssetTheme.gold : AssetTheme.textPrimary)
                                 .shadow(color: selectedAutoPricedAssetKind == nil ? AssetTheme.gold.opacity(0.45) : .clear, radius: 10)
                             Text(AppLocalization.string("普通资产"))
-                                .font(.caption2.weight(.medium))
+                                .font(AppTypography.chartCaption)
                                 .foregroundStyle(selectedAutoPricedAssetKind == nil ? AssetTheme.goldSoft : AssetTheme.textSecondary)
                                 .multilineTextAlignment(.center)
                                 .shadow(color: selectedAutoPricedAssetKind == nil ? AssetTheme.gold.opacity(0.3) : .clear, radius: 8)
@@ -1922,11 +1978,11 @@ struct AssetEditorForm: View {
                         } label: {
                             VStack(spacing: 6) {
                                 Image(systemName: autoAssetSymbolName(for: kind))
-                                    .font(.headline.weight(.semibold))
+                                    .font(AppTypography.blockTitle)
                                     .foregroundStyle(selectedAutoPricedAssetKind == kind ? AssetTheme.gold : AssetTheme.textPrimary)
                                     .shadow(color: selectedAutoPricedAssetKind == kind ? AssetTheme.gold.opacity(0.45) : .clear, radius: 10)
                                 Text(kind.defaultName)
-                                    .font(.caption2.weight(.medium))
+                                    .font(AppTypography.chartCaption)
                                     .foregroundStyle(selectedAutoPricedAssetKind == kind ? AssetTheme.goldSoft : AssetTheme.textSecondary)
                                     .multilineTextAlignment(.center)
                                     .lineLimit(2)
@@ -2007,7 +2063,7 @@ struct AddAssetItemSheet: View {
 
                         if let errorMessage {
                             Text(errorMessage)
-                                .font(.footnote)
+                                .font(AppTypography.meta)
                                 .foregroundStyle(AssetTheme.negative)
                                 .padding(.horizontal, 4)
                         }
@@ -2040,7 +2096,7 @@ struct AddAssetItemSheet: View {
 
                 ToolbarItem(placement: .principal) {
                     Text(AppLocalization.string("添加资产类型"))
-                        .font(.headline.weight(.bold))
+                        .font(AppTypography.blockTitleBold)
                         .foregroundStyle(AssetTheme.textPrimary)
                 }
 
@@ -2181,7 +2237,7 @@ struct QuickRecordValueSheet: View {
                 Spacer(minLength: 8)
 
                 Text(AppLocalization.string("修改本次记录"))
-                    .font(.headline.weight(.bold))
+                    .font(AppTypography.blockTitleBold)
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
 
@@ -2194,7 +2250,7 @@ struct QuickRecordValueSheet: View {
                 AssetItemGlyph(item: item, accent: isLiability ? AssetTheme.negative : AssetTheme.gold, size: 18)
 
                 Text(AppLocalization.string(item.name))
-                    .font(.headline.weight(.semibold))
+                    .font(AppTypography.blockTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
 
                 Spacer(minLength: 8)
@@ -2203,15 +2259,15 @@ struct QuickRecordValueSheet: View {
                    let trailingUnitPriceValue {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(trailingUnitPriceTitle)
-                            .font(.caption.weight(.medium))
+                            .font(AppTypography.caption)
                             .foregroundStyle(AssetTheme.textSecondary)
                         Text(trailingUnitPriceValue)
-                            .font(.subheadline.weight(.semibold))
+                            .font(AppTypography.rowTitle)
                             .monospacedDigit()
                             .foregroundStyle(AssetTheme.textPrimary)
                         if let trailingUnitPriceTimestamp {
                             Text(trailingUnitPriceTimestamp)
-                                .font(.caption2.weight(.medium))
+                                .font(AppTypography.chartCaption)
                                 .monospacedDigit()
                                 .foregroundStyle(AssetTheme.textSecondary)
                         }
@@ -2231,10 +2287,10 @@ struct QuickRecordValueSheet: View {
                                     .tint(AssetTheme.gold)
                             } else {
                                 Image(systemName: "arrow.clockwise")
-                                    .font(.caption.weight(.bold))
+                                    .font(AppTypography.captionStrong)
                             }
                             Text(AppLocalization.string(isRefreshingAutoPrice ? "刷新中" : "手动刷新最新价格"))
-                                .font(.caption.weight(.semibold))
+                                .font(AppTypography.captionStrong)
                         }
                         .foregroundStyle(AssetTheme.goldSoft)
                         .padding(.horizontal, 12)
@@ -2257,7 +2313,7 @@ struct QuickRecordValueSheet: View {
 
             if let errorMessage {
                 Text(errorMessage)
-                    .font(.footnote)
+                    .font(AppTypography.meta)
                     .foregroundStyle(AssetTheme.negative)
                     .padding(.horizontal, 2)
             }
@@ -2289,7 +2345,7 @@ struct QuickRecordValueSheet: View {
                 Button(AppLocalization.string("完成")) {
                     focusedField = nil
                 }
-                .font(.subheadline.weight(.semibold))
+                .font(AppTypography.rowTitle)
                 .foregroundStyle(AssetTheme.gold)
             }
         }
@@ -2299,7 +2355,7 @@ struct QuickRecordValueSheet: View {
     private func quickEditField(title: String, text: Binding<String>, placeholder: String, focus: QuickRecordValueField) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(AppLocalization.string(title))
-                .font(.caption.weight(.medium))
+                .font(AppTypography.caption)
                 .foregroundStyle(AssetTheme.textSecondary)
             TextField(placeholder, text: text)
                 .keyboardType(.decimalPad)
@@ -2322,7 +2378,7 @@ struct QuickRecordValueSheet: View {
 
     private func chromeButton(title: String, tint: Color, action: @escaping () -> Void) -> some View {
         Button(AppLocalization.string(title), action: action)
-            .font(.subheadline.weight(.semibold))
+            .font(AppTypography.rowTitle)
             .foregroundStyle(tint)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
@@ -2510,12 +2566,12 @@ struct EditAssetItemSheet: View {
                         if showsRecordPricingEditor {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text(AppLocalization.string("本次记录"))
-                                    .font(.headline)
+                                    .font(AppTypography.blockTitle)
                                     .foregroundStyle(AssetTheme.textPrimary)
 
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text(AppLocalization.string("数量"))
-                                        .font(.caption.weight(.medium))
+                                        .font(AppTypography.caption)
                                         .foregroundStyle(AssetTheme.textSecondary)
                                     TextField(AppLocalization.string("输入数量"), text: $recordQuantityText)
                                         .keyboardType(.decimalPad)
@@ -2529,7 +2585,7 @@ struct EditAssetItemSheet: View {
 
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text(AppLocalization.string("单价"))
-                                        .font(.caption.weight(.medium))
+                                        .font(AppTypography.caption)
                                         .foregroundStyle(AssetTheme.textSecondary)
                                     TextField(AppLocalization.string("输入单价"), text: $recordUnitPriceText)
                                         .keyboardType(.decimalPad)
@@ -2545,7 +2601,7 @@ struct EditAssetItemSheet: View {
 
                         if let errorMessage {
                             Text(errorMessage)
-                                .font(.footnote)
+                                .font(AppTypography.meta)
                                 .foregroundStyle(AssetTheme.negative)
                                 .padding(.horizontal, 4)
                         }
@@ -2578,7 +2634,7 @@ struct EditAssetItemSheet: View {
 
                 ToolbarItem(placement: .principal) {
                     Text(AppLocalization.string("编辑资产类型"))
-                        .font(.headline.weight(.bold))
+                        .font(AppTypography.blockTitleBold)
                         .foregroundStyle(AssetTheme.textPrimary)
                 }
 
@@ -2742,12 +2798,12 @@ struct SnapshotArchiveRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(snapshot.date.longDateString)
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
 
                 Text(AppLocalization.format("%d 项 · 负债 %@", snapshot.entries.count, metrics.totalLiabilities.currencyString()))
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(AssetTheme.textSecondary)
                     .lineLimit(1)
             }
@@ -2755,7 +2811,7 @@ struct SnapshotArchiveRow: View {
             Spacer(minLength: 12)
 
             Text(metrics.netAssets.currencyString())
-                .font(.subheadline.weight(.bold))
+                .font(AppTypography.rowTitle)
                 .foregroundStyle(AssetTheme.goldSoft)
                 .monospacedDigit()
                 .lineLimit(1)
@@ -2796,7 +2852,7 @@ struct SnapshotDetailView: View {
 
                     VStack(alignment: .leading, spacing: 12) {
                         Text(PortfolioCalculator.netAssets(for: snapshot).currencyString())
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .font(AppTypography.heroValue)
                             .foregroundStyle(AssetTheme.goldSoft)
 
                         HStack(spacing: 12) {
@@ -2819,16 +2875,16 @@ struct SnapshotDetailView: View {
                                     HStack(alignment: .top, spacing: 12) {
                                         VStack(alignment: .leading, spacing: 6) {
                                             Text(AppLocalization.string(entry.item?.name ?? "未命名"))
-                                                .font(.headline)
+                                                .font(AppTypography.blockTitle)
                                                 .foregroundStyle(AssetTheme.textPrimary)
 
                                             if let quantity = entry.quantity, let unitPrice = entry.unitPrice {
                                                 Text("\(quantity.plainNumberString()) × \(unitPrice.plainNumberString())")
-                                                    .font(.footnote)
+                                                    .font(AppTypography.meta)
                                                     .foregroundStyle(AssetTheme.textSecondary)
                                             } else {
                                                 Text(AppLocalization.string("点按编辑这条历史记录"))
-                                                    .font(.footnote)
+                                                    .font(AppTypography.meta)
                                                     .foregroundStyle(AssetTheme.textSecondary)
                                             }
                                         }
@@ -2837,10 +2893,10 @@ struct SnapshotDetailView: View {
 
                                         VStack(alignment: .trailing, spacing: 6) {
                                             Text(entry.resolvedAmount.currencyString())
-                                                .font(.headline.weight(.semibold))
+                                                .font(AppTypography.blockTitle)
                                                 .foregroundStyle(section.group == .liability ? AssetTheme.negative : AssetTheme.goldSoft)
                                             Image(systemName: "pencil")
-                                                .font(.caption.weight(.bold))
+                                                .font(AppTypography.captionStrong)
                                                 .foregroundStyle(AssetTheme.textSecondary)
                                         }
                                         .monospacedDigit()
@@ -2929,7 +2985,7 @@ struct SnapshotEntryEditSheet: View {
                                     .foregroundStyle(AssetTheme.textPrimary)
                                 if let snapshotDate = entry.snapshot?.date {
                                     Text(snapshotDate.longDateString)
-                                        .font(.footnote)
+                                        .font(AppTypography.meta)
                                         .foregroundStyle(AssetTheme.textSecondary)
                                 }
                             }
@@ -2961,7 +3017,7 @@ struct SnapshotEntryEditSheet: View {
 
                             if let errorMessage {
                                 Text(errorMessage)
-                                    .font(.footnote)
+                                    .font(AppTypography.meta)
                                     .foregroundStyle(AssetTheme.negative)
                             }
                         }
@@ -2983,7 +3039,7 @@ struct SnapshotEntryEditSheet: View {
 
                 ToolbarItem(placement: .principal) {
                     Text(AppLocalization.string("编辑历史记录"))
-                        .font(.headline.weight(.bold))
+                        .font(AppTypography.blockTitleBold)
                         .foregroundStyle(AssetTheme.textPrimary)
                 }
 
@@ -2999,7 +3055,7 @@ struct SnapshotEntryEditSheet: View {
                     Button(AppLocalization.string("完成")) {
                         focusedField = nil
                     }
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.gold)
                 }
             }
@@ -3010,7 +3066,7 @@ struct SnapshotEntryEditSheet: View {
     private func editField(title: String, text: Binding<String>, placeholder: String, focus: SnapshotEntryEditField) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.caption.weight(.medium))
+                .font(AppTypography.caption)
                 .foregroundStyle(AssetTheme.textSecondary)
             TextField(placeholder, text: text)
                 .keyboardType(.decimalPad)

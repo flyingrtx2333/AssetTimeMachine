@@ -15,12 +15,12 @@ struct BacktestModeEntryPanel: View {
                     } label: {
                         VStack(spacing: 7) {
                             Image(systemName: kind.entryIconName)
-                                .font(.headline.weight(.semibold))
+                                .font(AppTypography.blockTitle)
                                 .foregroundStyle(AssetTheme.gold)
                                 .frame(height: 20)
 
                             Text(kind.title)
-                                .font(.caption.weight(.semibold))
+                                .font(AppTypography.captionStrong)
                                 .foregroundStyle(AssetTheme.textPrimary)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.82)
@@ -59,9 +59,9 @@ struct BacktestReturnHeader: View {
             Button(action: onBack) {
                 HStack(spacing: 5) {
                     Image(systemName: "chevron.left")
-                        .font(.caption.weight(.bold))
+                        .font(AppTypography.captionStrong)
                     Text(AppLocalization.string("记录"))
-                        .font(.subheadline.weight(.semibold))
+                        .font(AppTypography.rowTitle)
                 }
                 .foregroundStyle(AssetTheme.gold)
                 .padding(.vertical, 8)
@@ -71,7 +71,7 @@ struct BacktestReturnHeader: View {
             .buttonStyle(.plain)
 
             Text(title)
-                .font(.headline.weight(.semibold))
+                .font(AppTypography.blockTitle)
                 .foregroundStyle(AssetTheme.textPrimary)
                 .lineLimit(1)
 
@@ -82,10 +82,10 @@ struct BacktestReturnHeader: View {
                     HStack(spacing: 6) {
                         if let trailingSystemImage {
                             Image(systemName: trailingSystemImage)
-                                .font(.caption.weight(.bold))
+                                .font(AppTypography.captionStrong)
                         }
                         Text(trailingTitle)
-                            .font(.subheadline.weight(.semibold))
+                            .font(AppTypography.rowTitle)
                     }
                     .foregroundStyle(AssetTheme.textPrimary)
                     .padding(.vertical, 8)
@@ -167,7 +167,7 @@ struct BacktestHistorySectionHeader: View {
 
             HStack(alignment: .center, spacing: 12) {
                 Text(AppLocalization.string("记录"))
-                    .font(.headline.weight(.bold))
+                    .font(AppTypography.blockTitleBold)
                     .foregroundStyle(AssetTheme.textPrimary)
 
                 Spacer(minLength: 12)
@@ -183,12 +183,12 @@ struct BacktestHistorySectionHeader: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "line.3.horizontal.decrease.circle")
-                            .font(.footnote.weight(.semibold))
+                            .font(AppTypography.metaStrong)
                         Text(selectedFilter.title)
-                            .font(.caption.weight(.semibold))
+                            .font(AppTypography.captionStrong)
                             .lineLimit(1)
                         Image(systemName: "chevron.down")
-                            .font(.caption2.weight(.bold))
+                            .font(AppTypography.chartAxisStrip)
                     }
                     .foregroundStyle(AssetTheme.textPrimary)
                     .padding(.horizontal, 10)
@@ -204,12 +204,6 @@ struct BacktestHistorySectionHeader: View {
         }
         .padding(.horizontal, 2)
         .padding(.top, 2)
-    }
-}
-
-struct BacktestEntryLoadingView: View {
-    var body: some View {
-        LoadingStateCard(title: AppLocalization.string("正在准备量化回测"))
     }
 }
 
@@ -229,10 +223,10 @@ struct BacktestHomeView: View {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(AppLocalization.string("最近回测"))
-                        .font(.headline.weight(.bold))
+                        .font(AppTypography.blockTitleBold)
                         .foregroundStyle(AssetTheme.textPrimary)
                     Text(totalRecordCount > 0 ? AppLocalization.format("共%d条记录", totalRecordCount) : AppLocalization.string("保存后的回测会出现在这里"))
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
 
@@ -241,9 +235,9 @@ struct BacktestHomeView: View {
                 Button(action: onShowAllRecords) {
                     HStack(spacing: 6) {
                         Text(AppLocalization.string("全部回测记录"))
-                            .font(.caption.weight(.semibold))
+                            .font(AppTypography.captionStrong)
                         Image(systemName: "chevron.right")
-                            .font(.caption2.weight(.bold))
+                            .font(AppTypography.chartAxisStrip)
                     }
                     .foregroundStyle(AssetTheme.gold)
                     .padding(.horizontal, 11)
@@ -346,7 +340,7 @@ struct BacktestHistoryEmptyCard: View {
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(AssetTheme.gold)
             Text(title)
-                .font(.headline.weight(.semibold))
+                .font(AppTypography.blockTitle)
                 .foregroundStyle(AssetTheme.textPrimary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -366,8 +360,19 @@ struct BacktestRecordListCard: View {
     let onRestore: (BacktestRecord) -> Void
     let onDelete: (BacktestRecord) -> Void
 
+    private func estimatedRowHeight(for record: BacktestRecord) -> CGFloat {
+        if showsDetailedContext {
+            return BacktestRecordCodec.kind(for: record) == .advanced ? 118 : 108
+        }
+        return 96
+    }
+
+    private var listHeight: CGFloat {
+        records.reduce(0) { $0 + estimatedRowHeight(for: $1) }
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
+        List {
             ForEach(Array(records.enumerated()), id: \.element.id) { index, record in
                 BacktestHistoryRow(
                     record: record,
@@ -376,19 +381,22 @@ struct BacktestRecordListCard: View {
                     onRestore: { onRestore(record) },
                     onDelete: { onDelete(record) }
                 )
-
-                if index < records.count - 1 {
-                    Divider()
-                        .overlay(AssetTheme.border.opacity(0.55))
-                        .padding(.leading, 18)
-                }
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(index == records.count - 1 ? .hidden : .visible, edges: .bottom)
+                .listRowSeparatorTint(AssetTheme.border.opacity(0.55))
+                .listRowBackground(Color.clear)
             }
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .scrollDisabled(true)
+        .frame(height: listHeight)
         .background(AssetTheme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .stroke(AssetTheme.border.opacity(0.65), lineWidth: 1)
         )
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 }
 
@@ -398,11 +406,6 @@ struct BacktestHistoryRow: View {
     let onSelect: () -> Void
     let onRestore: () -> Void
     let onDelete: () -> Void
-
-    @State private var dragOffset: CGFloat = 0
-    @State private var isDeleteRevealed = false
-
-    private let deleteActionWidth: CGFloat = 86
 
     private var kind: BacktestRecordKind {
         BacktestRecordCodec.kind(for: record)
@@ -474,151 +477,98 @@ struct BacktestHistoryRow: View {
         return AdvancedBacktestStrategyMode.ruleBased.title
     }
 
-    private var currentHorizontalOffset: CGFloat {
-        let baseOffset = isDeleteRevealed ? -deleteActionWidth : 0
-        return min(0, max(-deleteActionWidth, baseOffset + dragOffset))
-    }
-
     var body: some View {
-        ZStack(alignment: .trailing) {
-            Button(role: .destructive) {
-                withAnimation(.snappy(duration: 0.22)) {
-                    isDeleteRevealed = false
-                    dragOffset = 0
+        rowContent
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onSelect)
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive, action: onDelete) {
+                    Label(AppLocalization.string("删除"), systemImage: "trash")
                 }
-                onDelete()
-            } label: {
-                VStack(spacing: 5) {
-                    Image(systemName: "trash.fill")
-                        .font(.subheadline.weight(.bold))
-                    Text(AppLocalization.string("删除"))
-                        .font(.caption2.weight(.bold))
+            }
+            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                Button(action: onRestore) {
+                    Label(AppLocalization.string("恢复参数"), systemImage: "arrow.uturn.backward")
                 }
-                .foregroundStyle(.white)
-                .frame(width: deleteActionWidth)
-                .frame(maxHeight: .infinity)
-                .background(AssetTheme.negative)
+                .tint(AssetTheme.gold)
             }
-            .buttonStyle(.plain)
-            .opacity(currentHorizontalOffset < -8 ? 1 : 0)
-
-            rowButton
-                .offset(x: currentHorizontalOffset)
-                .simultaneousGesture(
-                    DragGesture(minimumDistance: 14, coordinateSpace: .local)
-                        .onChanged { value in
-                            guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                            dragOffset = value.translation.width
-                        }
-                        .onEnded { value in
-                            guard abs(value.translation.width) > abs(value.translation.height) else {
-                                dragOffset = 0
-                                return
-                            }
-                            let predictedOffset = (isDeleteRevealed ? -deleteActionWidth : 0) + value.predictedEndTranslation.width
-                            withAnimation(.snappy(duration: 0.22)) {
-                                isDeleteRevealed = predictedOffset < -deleteActionWidth * 0.42
-                                dragOffset = 0
-                            }
-                        }
-                )
-        }
-        .contentShape(Rectangle())
-        .clipped()
-        .animation(.snappy(duration: 0.22), value: isDeleteRevealed)
-        .contextMenu {
-            Button(AppLocalization.string("恢复参数"), systemImage: "arrow.uturn.backward") {
-                onRestore()
+            .contextMenu {
+                Button(AppLocalization.string("恢复参数"), systemImage: "arrow.uturn.backward", action: onRestore)
+                Button(role: .destructive, action: onDelete) {
+                    Label(AppLocalization.string("删除记录"), systemImage: "trash")
+                }
             }
-            Button(role: .destructive) {
-                onDelete()
-            } label: {
-                Label(AppLocalization.string("删除记录"), systemImage: "trash")
-            }
-        }
     }
 
-    private var rowButton: some View {
-        Button {
-            if isDeleteRevealed {
-                withAnimation(.snappy(duration: 0.22)) {
-                    isDeleteRevealed = false
-                    dragOffset = 0
-                }
-            } else {
-                onSelect()
-            }
-        } label: {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: iconName)
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(AssetTheme.gold)
-                    .frame(width: 32, height: 32)
-                    .background(AssetTheme.gold.opacity(0.12), in: Circle())
+    private var rowContent: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: iconName)
+                .font(AppTypography.blockTitle)
+                .foregroundStyle(AssetTheme.gold)
+                .frame(width: 32, height: 32)
+                .background(AssetTheme.gold.opacity(0.12), in: Circle())
 
-                VStack(alignment: .leading, spacing: 5) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(record.title)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(AssetTheme.textPrimary)
-                            .lineLimit(1)
-                        Text(record.createdAt.recordDateString)
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-                    }
-
-                    Text(displaySubtitle)
-                        .font(.caption2)
-                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(record.title)
+                        .font(AppTypography.rowTitle)
+                        .foregroundStyle(AssetTheme.textPrimary)
                         .lineLimit(1)
-
-                    if let extraSubtitleLine {
-                        Text(extraSubtitleLine)
-                            .font(.caption2)
-                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.62))
-                            .lineLimit(1)
-                    }
-                }
-
-                Spacer(minLength: 10)
-
-                HStack(alignment: .center, spacing: 8) {
-                    VStack(alignment: .trailing, spacing: 4) {
-                        historyMetricLine(
-                            title: AppLocalization.string("平均年化"),
-                            value: annualizedReturnText,
-                            valueColor: annualizedReturnColor
-                        )
-                        historyMetricLine(
-                            title: AppLocalization.string("最大回撤"),
-                            value: record.maxDrawdown.percentString(),
-                            valueColor: AssetTheme.negative
-                        )
-                        historyMetricLine(
-                            title: AppLocalization.string("夏普"),
-                            value: sharpeRatioText,
-                            valueColor: AssetTheme.textPrimary
-                        )
-                    }
-
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.bold))
+                    Text(record.createdAt.recordDateString)
+                        .font(AppTypography.caption)
                         .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
                 }
+
+                Text(displaySubtitle)
+                    .font(AppTypography.chartCaption)
+                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                    .lineLimit(1)
+
+                if let extraSubtitleLine {
+                    Text(extraSubtitleLine)
+                        .font(AppTypography.chartCaption)
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.62))
+                        .lineLimit(1)
+                }
             }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Spacer(minLength: 10)
+
+            HStack(alignment: .center, spacing: 8) {
+                VStack(alignment: .trailing, spacing: 4) {
+                    historyMetricLine(
+                        title: AppLocalization.string("平均年化"),
+                        value: annualizedReturnText,
+                        valueColor: annualizedReturnColor
+                    )
+                    historyMetricLine(
+                        title: AppLocalization.string("最大回撤"),
+                        value: record.maxDrawdown.percentString(),
+                        valueColor: AssetTheme.negative
+                    )
+                    historyMetricLine(
+                        title: AppLocalization.string("夏普"),
+                        value: sharpeRatioText,
+                        valueColor: AssetTheme.textPrimary
+                    )
+                }
+
+                Image(systemName: "chevron.right")
+                    .font(AppTypography.captionStrong)
+                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+            }
         }
-        .buttonStyle(.plain)
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func historyMetricLine(title: String, value: String, valueColor: Color) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(title)
-                .font(.caption2.weight(.medium))
+                .font(AppTypography.chartCaption)
                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
             Text(value)
-                .font(.caption2.weight(.bold))
+                .font(AppTypography.chartAxisStrip)
                 .foregroundStyle(valueColor)
                 .monospacedDigit()
         }
@@ -662,7 +612,7 @@ struct BacktestRecordDetailView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
                     Text(displayTitle)
-                        .font(.largeTitle.weight(.bold))
+                        .font(AppTypography.heroValue)
                         .foregroundStyle(AssetTheme.textPrimary)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -727,7 +677,7 @@ struct BacktestRecordDetailView: View {
         detailPanel {
             if points.isEmpty {
                 Text(AppLocalization.string("这条记录没有可展示的曲线快照。"))
-                    .font(.subheadline)
+                    .font(AppTypography.body)
                     .foregroundStyle(AssetTheme.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
@@ -806,7 +756,7 @@ struct BacktestRecordDetailView: View {
     private func detailLine(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title)
-                .font(.caption.weight(.semibold))
+                .font(AppTypography.captionStrong)
                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
             Text(value)
                 .font(.subheadline.weight(.medium))

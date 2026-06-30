@@ -888,12 +888,14 @@ nonisolated enum BacktestEngine {
         symbol: String = "recent_loss_volatility_meta_momentum",
         coreScale: Double? = nil,
         goldSatelliteWeight: Double = 0,
+        goldSatelliteMaxTotalExposure: Double = 0.85,
         rebalanceSessions: Int = 60,
         portfolioEquityBrake: AdvancedRotationOverlayPortfolioEquityBrake? = nil,
         singleAssetExposureCap: AdvancedRotationSingleAssetExposureCap? = nil,
         confirmedExcessRotation: AdvancedRotationConfirmedExcessRotation? = nil,
         goldRolloverCap: AdvancedRotationGoldRolloverCap? = nil,
         goldRolloverConfirmedHandoff: AdvancedRotationGoldRolloverConfirmedHandoff? = nil,
+        diversificationCredit: AdvancedRotationDiversificationCredit? = nil,
         confirmedEquityBreadth: AdvancedRotationConfirmedEquityBreadth? = nil,
         engineRouter: AdvancedRotationEngineRouter? = nil,
         confirmedAccelerationSatellite: AdvancedRotationConfirmedAccelerationSatellite? = nil,
@@ -904,6 +906,7 @@ nonisolated enum BacktestEngine {
         currencyCashSelector: AdvancedRotationCurrencyCashSelector? = nil,
         goldPanicLock: AdvancedRotationGoldPanicLock? = nil,
         riskEfficiencyGovernor: AdvancedRotationRiskEfficiencyGovernor? = nil,
+        riskBudgetEnhancer: AdvancedRotationRiskBudgetEnhancer? = nil,
         rebalanceBand: Double = 0,
         buyReason: String? = nil
     ) -> AdvancedRotationConfig {
@@ -949,6 +952,7 @@ nonisolated enum BacktestEngine {
             currencyCashSelector: currencyCashSelector,
             goldPanicLock: goldPanicLock,
             riskEfficiencyGovernor: riskEfficiencyGovernor,
+            riskBudgetEnhancer: riskBudgetEnhancer,
             rebalanceBand: rebalanceBand,
             buyReason: buyReason ?? AppLocalization.string("近期亏损波动元策略建仓")
         )
@@ -960,7 +964,7 @@ nonisolated enum BacktestEngine {
                 coreScale: coreScale,
                 satelliteSymbol: "gold_cny",
                 satelliteWeight: goldSatelliteWeight,
-                maxTotalExposure: 0.85,
+                maxTotalExposure: goldSatelliteMaxTotalExposure,
                 satelliteMomentumLookbackSessions: 90,
                 satelliteMomentumThreshold: 0,
                 satelliteMovingAveragePeriod: 120,
@@ -972,6 +976,7 @@ nonisolated enum BacktestEngine {
                 confirmedExcessRotation: confirmedExcessRotation,
                 goldRolloverCap: goldRolloverCap,
                 goldRolloverConfirmedHandoff: goldRolloverConfirmedHandoff,
+                diversificationCredit: diversificationCredit,
                 weakMonthEquityBrake: .init(
                     months: [2],
                     equitySymbols: ["nasdaq", "sp500", "csi300", "shanghai_composite"],
@@ -1762,6 +1767,92 @@ nonisolated enum BacktestEngine {
                 rebalanceBand: 0.08,
                 buyReason: AppLocalization.string("权益曲线状态机建仓")
             )
+        case .coreGoldSatelliteSharpeStateGateMomentum:
+            return recentLossVolatilityMetaConfig(
+                mode: mode,
+                symbol: "core_gold_satellite_sharpe_state_gate_momentum",
+                coreScale: 1.0,
+                goldSatelliteWeight: 0.10,
+                goldSatelliteMaxTotalExposure: 1.0,
+                diversificationCredit: .init(
+                    goldSymbol: "gold_cny",
+                    usEquitySymbols: ["nasdaq", "sp500"],
+                    goldFloor: 0.25,
+                    maxTotalExposure: 1.0,
+                    trendLookbackSessions: 126,
+                    goldShortLookbackSessions: 20,
+                    goldShortReturnFloor: -0.02,
+                    correlationLookbackSessions: 63,
+                    correlationCeiling: 0.35,
+                    strategyHealthLookbackSessions: 90,
+                    strategyDrawdownThreshold: 0.03
+                ),
+                engineRouter: .init(
+                    currentMode: .coreGoldSatelliteGoldHandoffMomentum,
+                    offensiveMode: .coreGoldSatelliteEquityBreadthMomentum,
+                    returnLookbackSessions: 240,
+                    drawdownLookbackSessions: 120,
+                    drawdownThreshold: 0.08,
+                    volatilityLookbackSessions: 240,
+                    offensiveBlendShare: 1.0,
+                    defensiveBlendCurrentShare: 0.70
+                ),
+                equityCurveStateGate: .init(
+                    lookbackSessions: 75,
+                    enterReturnThreshold: 0,
+                    enterDrawdownThreshold: 0.025,
+                    exitReturnThreshold: 0.05,
+                    exitDrawdownThreshold: 0,
+                    lowRiskScale: 0.35
+                ),
+                rebalanceBand: 0.08,
+                buyReason: AppLocalization.string("高夏普状态机建仓")
+            )
+        case .coreGoldSatelliteRiskBudgetStateGateMomentum:
+            return recentLossVolatilityMetaConfig(
+                mode: mode,
+                symbol: "core_gold_satellite_risk_budget_state_gate_momentum",
+                coreScale: 1.0,
+                goldSatelliteWeight: 0.10,
+                goldSatelliteMaxTotalExposure: 1.0,
+                diversificationCredit: .init(
+                    goldSymbol: "gold_cny",
+                    usEquitySymbols: ["nasdaq", "sp500"],
+                    goldFloor: 0.25,
+                    maxTotalExposure: 1.0,
+                    trendLookbackSessions: 126,
+                    goldShortLookbackSessions: 20,
+                    goldShortReturnFloor: -0.02,
+                    correlationLookbackSessions: 63,
+                    correlationCeiling: 0.35,
+                    strategyHealthLookbackSessions: 90,
+                    strategyDrawdownThreshold: 0.03
+                ),
+                engineRouter: .init(
+                    currentMode: .coreGoldSatelliteGoldHandoffMomentum,
+                    offensiveMode: .coreGoldSatelliteEquityBreadthMomentum,
+                    returnLookbackSessions: 240,
+                    drawdownLookbackSessions: 120,
+                    drawdownThreshold: 0.08,
+                    volatilityLookbackSessions: 240,
+                    offensiveBlendShare: 1.0,
+                    defensiveBlendCurrentShare: 0.70
+                ),
+                equityCurveStateGate: .init(
+                    lookbackSessions: 75,
+                    enterReturnThreshold: 0,
+                    enterDrawdownThreshold: 0.025,
+                    exitReturnThreshold: 0.05,
+                    exitDrawdownThreshold: 0,
+                    lowRiskScale: 0.45
+                ),
+                riskBudgetEnhancer: .init(
+                    multiplier: 2.05,
+                    annualFinancingRate: 0.03
+                ),
+                rebalanceBand: 0.08,
+                buyReason: AppLocalization.string("风险预算状态机建仓")
+            )
         case .coreGoldSatelliteConfirmedAccelerationMomentum:
             return recentLossVolatilityMetaConfig(
                 mode: mode,
@@ -2144,11 +2235,17 @@ nonisolated enum BacktestEngine {
         var currencyCashSelector: AdvancedRotationCurrencyCashSelector? = nil
         var goldPanicLock: AdvancedRotationGoldPanicLock? = nil
         var riskEfficiencyGovernor: AdvancedRotationRiskEfficiencyGovernor? = nil
+        var riskBudgetEnhancer: AdvancedRotationRiskBudgetEnhancer? = nil
         var zeroFillBeforeFirstSymbols: Set<String> = []
         var signalOnlySymbols: Set<String> = []
         var rebalancesFromFirstSignal: Bool = false
         var rebalanceBand: Double = 0
         let buyReason: String
+    }
+
+    private struct AdvancedRotationRiskBudgetEnhancer {
+        let multiplier: Double
+        let annualFinancingRate: Double
     }
 
     private struct AdvancedRotationGlobalRepairStack {
@@ -2388,6 +2485,7 @@ nonisolated enum BacktestEngine {
         let confirmedExcessRotation: AdvancedRotationConfirmedExcessRotation?
         let goldRolloverCap: AdvancedRotationGoldRolloverCap?
         let goldRolloverConfirmedHandoff: AdvancedRotationGoldRolloverConfirmedHandoff?
+        let diversificationCredit: AdvancedRotationDiversificationCredit?
         let weakMonthEquityBrake: AdvancedRotationWeakMonthEquityBrake?
     }
 
@@ -2405,6 +2503,20 @@ nonisolated enum BacktestEngine {
         let volatilityLookbackSessions: Int
         let minimumMomentum: Double
         let volatilityFloor: Double
+    }
+
+    private struct AdvancedRotationDiversificationCredit {
+        let goldSymbol: String
+        let usEquitySymbols: [String]
+        let goldFloor: Double
+        let maxTotalExposure: Double
+        let trendLookbackSessions: Int
+        let goldShortLookbackSessions: Int
+        let goldShortReturnFloor: Double
+        let correlationLookbackSessions: Int
+        let correlationCeiling: Double
+        let strategyHealthLookbackSessions: Int
+        let strategyDrawdownThreshold: Double
     }
 
     private struct AdvancedRotationGoldRolloverCap {
@@ -3066,6 +3178,48 @@ nonisolated enum BacktestEngine {
         return sqrt(max(variance, 0)) * sqrt(252)
     }
 
+    private static func rollingCorrelation(
+        leftValues: [Double],
+        rightValueSets: [[Double]],
+        at index: Int,
+        lookback: Int
+    ) -> Double? {
+        guard lookback > 1,
+              leftValues.indices.contains(index),
+              index - lookback + 1 >= 1,
+              !rightValueSets.isEmpty else { return nil }
+
+        var leftReturns: [Double] = []
+        var rightReturns: [Double] = []
+        for cursor in (index - lookback + 1)...index {
+            guard leftValues.indices.contains(cursor),
+                  leftValues.indices.contains(cursor - 1),
+                  leftValues[cursor] > 0,
+                  leftValues[cursor - 1] > 0 else { continue }
+            let availableRightReturns = rightValueSets.compactMap { values -> Double? in
+                guard values.indices.contains(cursor),
+                      values.indices.contains(cursor - 1),
+                      values[cursor] > 0,
+                      values[cursor - 1] > 0 else { return nil }
+                return values[cursor] / values[cursor - 1] - 1
+            }
+            guard !availableRightReturns.isEmpty else { continue }
+            leftReturns.append(leftValues[cursor] / leftValues[cursor - 1] - 1)
+            rightReturns.append(availableRightReturns.reduce(0, +) / Double(availableRightReturns.count))
+        }
+        guard leftReturns.count >= 20,
+              leftReturns.count == rightReturns.count else { return nil }
+        let leftMean = leftReturns.reduce(0, +) / Double(leftReturns.count)
+        let rightMean = rightReturns.reduce(0, +) / Double(rightReturns.count)
+        let leftVariance = leftReturns.reduce(0) { $0 + pow($1 - leftMean, 2) }
+        let rightVariance = rightReturns.reduce(0) { $0 + pow($1 - rightMean, 2) }
+        guard leftVariance > 0, rightVariance > 0 else { return nil }
+        let covariance = leftReturns.indices.reduce(0.0) { partial, cursor in
+            partial + (leftReturns[cursor] - leftMean) * (rightReturns[cursor] - rightMean)
+        }
+        return covariance / sqrt(leftVariance * rightVariance)
+    }
+
     private static func applyGoldSatelliteOverlay(
         to rawWeights: [String: Double],
         signalIndex: Int,
@@ -3253,6 +3407,60 @@ nonisolated enum BacktestEngine {
                 if let winner = candidates.max(by: { lhs, rhs in lhs.momentum < rhs.momentum }) {
                     finalWeights[winner.symbol, default: 0] += max(handoff.replacementMaxAdd, 0)
                 }
+            }
+        }
+
+        if let diversificationCredit = overlay.diversificationCredit,
+           !finalWeights.isEmpty,
+           let goldPrices = pricesBySymbol[diversificationCredit.goldSymbol],
+           goldPrices.indices.contains(signalIndex) {
+            let strategyIsHealthy: Bool
+            if let portfolioValues,
+               portfolioValues.indices.contains(signalIndex) {
+                let recentReturn = portfolioRollingReturn(
+                    values: portfolioValues,
+                    at: signalIndex,
+                    lookback: diversificationCredit.strategyHealthLookbackSessions
+                )
+                let recentDrawdown = portfolioRollingDrawdown(
+                    values: portfolioValues,
+                    at: signalIndex,
+                    lookback: diversificationCredit.strategyHealthLookbackSessions
+                )
+                strategyIsHealthy = (recentReturn ?? 0) >= 0
+                    && (recentDrawdown ?? 0) >= -max(diversificationCredit.strategyDrawdownThreshold, 0)
+            } else {
+                strategyIsHealthy = true
+            }
+
+            let hasUSEquity = diversificationCredit.usEquitySymbols.contains { symbol in
+                (finalWeights[symbol] ?? 0) > 0.0001
+            }
+            let usTrendValues = diversificationCredit.usEquitySymbols.compactMap { symbol -> Double? in
+                guard let prices = pricesBySymbol[symbol] else { return nil }
+                return Self.priceMomentum(values: prices, at: signalIndex, lookback: diversificationCredit.trendLookbackSessions)
+            }
+            let usTrend = usTrendValues.isEmpty ? nil : usTrendValues.reduce(0, +) / Double(usTrendValues.count)
+            let correlation = rollingCorrelation(
+                leftValues: goldPrices,
+                rightValueSets: diversificationCredit.usEquitySymbols.compactMap { pricesBySymbol[$0] },
+                at: signalIndex,
+                lookback: diversificationCredit.correlationLookbackSessions
+            )
+            if strategyIsHealthy,
+               hasUSEquity,
+               let goldTrend = Self.priceMomentum(values: goldPrices, at: signalIndex, lookback: diversificationCredit.trendLookbackSessions),
+               let goldShortReturn = Self.priceMomentum(values: goldPrices, at: signalIndex, lookback: diversificationCredit.goldShortLookbackSessions),
+               let usTrend,
+               let correlation,
+               goldTrend > 0,
+               usTrend > 0,
+               goldShortReturn > diversificationCredit.goldShortReturnFloor,
+               correlation < diversificationCredit.correlationCeiling {
+                finalWeights[diversificationCredit.goldSymbol] = max(
+                    finalWeights[diversificationCredit.goldSymbol] ?? 0,
+                    min(max(diversificationCredit.goldFloor, 0), 1)
+                )
             }
         }
 
@@ -5775,6 +5983,9 @@ nonisolated enum BacktestEngine {
         let normalizedFeeRate = max(settings.feeRate, 0) / 100
         let normalizedSlippageRate = max(settings.slippageRate, 0) / 100
         let normalizedRebalanceBand = max(config.rebalanceBand, 0)
+        let normalizedRiskBudgetMultiplier = max(config.riskBudgetEnhancer?.multiplier ?? 1, 0)
+        let normalizedFinancingAnnualRate = max(config.riskBudgetEnhancer?.annualFinancingRate ?? 0, 0)
+        let allowsFinancedExposure = normalizedRiskBudgetMultiplier > 1.0001
         guard normalizedInitialCash > 0 else { return nil }
 
         let aligned = alignedRotationPriceSeries(
@@ -6095,6 +6306,11 @@ nonisolated enum BacktestEngine {
                         cash += cashInterest
                         cashInterestEarned += cashInterest
                     }
+                } else if cash < 0, normalizedFinancingAnnualRate > 0 {
+                    let financingCost = abs(cash) * CashYieldCNY.dailyReturn(fromAnnualRate: normalizedFinancingAnnualRate)
+                    if financingCost.isFinite, financingCost > 0 {
+                        cash -= financingCost
+                    }
                 }
             }
 
@@ -6122,12 +6338,15 @@ nonisolated enum BacktestEngine {
                         refreshRepairOverlay: shouldOverlayRebalance
                     )
                     : [:]
-                let targetWeights = config.metaSwitch == nil
+                let guardedTargetWeights = config.metaSwitch == nil
                     ? applyPortfolioDrawdownGuard(
                         to: baseTargetWeights,
                         currentValue: preRebalanceValue
                     )
                     : baseTargetWeights
+                let targetWeights = normalizedRiskBudgetMultiplier == 1
+                    ? guardedTargetWeights
+                    : guardedTargetWeights.mapValues { $0 * normalizedRiskBudgetMultiplier }
                 let targetSymbols = Set(targetWeights.keys)
 
                 for symbol in heldSymbols.subtracting(targetSymbols) {
@@ -6216,8 +6435,9 @@ nonisolated enum BacktestEngine {
                           let option = optionBySymbol[symbol] else { continue }
                     let currentValue = (unitsBySymbol[symbol] ?? 0) * price
                     let targetValue = totalValue * targetWeight
+                    let targetGap = Swift.max(targetValue - currentValue, 0.0)
                     let amountToInvest = currentValue < targetValue * (1 - normalizedRebalanceBand)
-                        ? Swift.min(cash, Swift.max(targetValue - currentValue, 0.0))
+                        ? (allowsFinancedExposure ? targetGap : Swift.min(cash, targetGap))
                         : 0.0
                     if amountToInvest > 0 {
                         let executionPrice = price * (1 + normalizedSlippageRate)

@@ -24,7 +24,7 @@ struct APIDocumentationView: View {
 
                         VStack(alignment: .leading, spacing: 14) {
                             Text("Base URL")
-                                .font(.subheadline.weight(.semibold))
+                                .font(AppTypography.rowTitle)
                                 .foregroundStyle(AssetTheme.textSecondary)
 
                             Text(RemoteMarketClient.baseURL.absoluteString)
@@ -55,9 +55,9 @@ struct ATMBackButton: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: "chevron.left")
-                    .font(.footnote.weight(.bold))
+                    .font(AppTypography.metaStrong)
                 Text(AppLocalization.string("返回"))
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.rowTitle)
             }
             .foregroundStyle(AssetTheme.textPrimary)
             .padding(.horizontal, 12)
@@ -97,13 +97,13 @@ struct ATMHeader<Trailing: View>: View {
                     )
 
                     Text(AppLocalization.string(title))
-                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .font(AppTypography.heroValue)
                         .foregroundStyle(AssetTheme.textPrimary)
                 }
 
                 if let subtitle, !subtitle.isEmpty {
                     Text(AppLocalization.string(subtitle))
-                        .font(.subheadline)
+                        .font(AppTypography.body)
                         .foregroundStyle(AssetTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -113,16 +113,6 @@ struct ATMHeader<Trailing: View>: View {
             trailing
         }
     }
-}
-
-enum AppTypography {
-    static let eyebrow = Font.system(size: 13, weight: .semibold, design: .rounded)
-    static let meta = Font.system(size: 14, weight: .medium, design: .rounded)
-    static let sectionTitle = Font.system(size: 20, weight: .bold, design: .rounded)
-    static let heroValue = Font.system(size: 40, weight: .bold, design: .rounded)
-    static let rowTitle = Font.system(size: 18, weight: .semibold, design: .rounded)
-    static let rowValue = Font.system(size: 20, weight: .semibold, design: .rounded)
-    static let metricValue = Font.system(size: 18, weight: .semibold, design: .rounded)
 }
 
 struct SectionTitle: View {
@@ -227,7 +217,7 @@ struct HeroSideMetric: View {
             }
 
             Text(value)
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .font(AppTypography.bodyStrong)
                 .monospacedDigit()
                 .foregroundStyle(AssetTheme.textPrimary)
                 .minimumScaleFactor(0.72)
@@ -290,7 +280,7 @@ struct EndpointCard: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(AppLocalization.string(endpoint.title))
-                        .font(.headline)
+                        .font(AppTypography.blockTitle)
                         .foregroundStyle(AssetTheme.textPrimary)
 
                     Text(endpoint.path)
@@ -304,7 +294,7 @@ struct EndpointCard: View {
             }
 
             Text(AppLocalization.string(endpoint.description))
-                .font(.subheadline)
+                .font(AppTypography.body)
                 .foregroundStyle(AssetTheme.textSecondary)
 
             if let market {
@@ -314,7 +304,7 @@ struct EndpointCard: View {
                     Spacer()
                     Text(market.fetchedAt.formatted(date: .omitted, time: .shortened))
                 }
-                .font(.footnote.weight(.semibold))
+                .font(AppTypography.metaStrong)
                 .foregroundStyle(AssetTheme.goldSoft)
                 .padding(12)
                 .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -338,7 +328,7 @@ struct CapabilityRow: View {
                 .foregroundStyle(AssetTheme.textPrimary)
             Spacer()
             Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
+                .font(AppTypography.captionStrong)
                 .foregroundStyle(AssetTheme.textSecondary)
         }
         .padding(14)
@@ -374,7 +364,7 @@ struct EmptyStateCard: View {
 
                 if let message, !message.isEmpty {
                     Text(AppLocalization.string(message))
-                        .font(.subheadline)
+                        .font(AppTypography.body)
                         .foregroundStyle(AssetTheme.textSecondary)
                         .multilineTextAlignment(.center)
                 }

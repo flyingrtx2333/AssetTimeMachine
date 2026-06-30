@@ -387,10 +387,10 @@ struct InteractiveBacktestChart: View {
         if selectedDate != nil, let selectedPoint {
             VStack(alignment: .trailing, spacing: 2) {
                 Text(AppLocalization.string("资产"))
-                    .font(.caption2.weight(.semibold))
+                    .font(AppTypography.chartCaptionStrong)
                     .foregroundStyle(AssetTheme.textSecondary)
                 Text(valueStyle.label(for: selectedPoint.portfolioValue))
-                    .font(.caption.weight(.bold))
+                    .font(AppTypography.captionStrong)
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
@@ -491,7 +491,7 @@ struct InteractiveBacktestChart: View {
     ) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.caption.weight(.bold))
+                .font(AppTypography.captionStrong)
                 .foregroundStyle(isEnabled ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.42))
                 .frame(width: 28, height: 28)
                 .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -540,7 +540,7 @@ struct InteractiveBacktestChart: View {
                 AxisValueLabel {
                     if let doubleValue = value.as(Double.self) {
                         Text(valueStyle.axisLabel(for: doubleValue))
-                            .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                            .font(AppTypography.chartAxisCompact)
                             .monospacedDigit()
                             .foregroundStyle(AssetTheme.textSecondary)
                             .lineLimit(1)
@@ -681,7 +681,7 @@ struct BacktestValueChartSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.subheadline.weight(.bold))
+                .font(AppTypography.rowTitle)
                 .foregroundStyle(AssetTheme.textPrimary)
 
             InteractiveBacktestChart(
@@ -708,7 +708,7 @@ struct BacktestValueChartSection: View {
 
             if let footnote, !footnote.isEmpty {
                 Text(footnote)
-                    .font(.caption2)
+                    .font(AppTypography.chartCaption)
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.82))
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -748,7 +748,7 @@ struct BacktestValueChartSection: View {
                 }
 
                 Text(series.title)
-                    .font(.caption2.weight(.semibold))
+                    .font(AppTypography.chartCaptionStrong)
                     .foregroundStyle(isVisible ? AssetTheme.textSecondary : AssetTheme.textSecondary.opacity(0.58))
                     .strikethrough(!isVisible, color: AssetTheme.textSecondary.opacity(0.72))
                     .lineLimit(1)

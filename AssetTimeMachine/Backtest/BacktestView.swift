@@ -998,7 +998,7 @@ struct BacktestView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text(AppLocalization.string("组合净值"))
-                    .font(.headline.weight(.bold))
+                    .font(AppTypography.blockTitleBold)
                     .foregroundStyle(AssetTheme.textPrimary)
                 Spacer()
             }
@@ -1009,7 +1009,7 @@ struct BacktestView: View {
 
         VStack(alignment: .leading, spacing: 12) {
             Text(AppLocalization.string("分析报告"))
-                .font(.headline.weight(.bold))
+                .font(AppTypography.blockTitleBold)
                 .foregroundStyle(AssetTheme.textPrimary)
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
@@ -1030,7 +1030,7 @@ struct BacktestView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text(AppLocalization.string("定投市值"))
-                    .font(.headline.weight(.bold))
+                    .font(AppTypography.blockTitleBold)
                     .foregroundStyle(AssetTheme.textPrimary)
                 Spacer()
             }
@@ -1041,7 +1041,7 @@ struct BacktestView: View {
 
         VStack(alignment: .leading, spacing: 12) {
             Text(AppLocalization.string("分析报告"))
-                .font(.headline.weight(.bold))
+                .font(AppTypography.blockTitleBold)
                 .foregroundStyle(AssetTheme.textPrimary)
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
@@ -1094,11 +1094,11 @@ struct BacktestAllocationCard: View {
                 Button(action: onTapRange) {
                     HStack(spacing: 8) {
                         Text(selectedDateRangeLabel)
-                            .font(.headline.weight(.bold))
+                            .font(AppTypography.blockTitleBold)
                             .lineLimit(1)
                             .minimumScaleFactor(0.78)
                         Image(systemName: "chevron.down")
-                            .font(.caption.weight(.bold))
+                            .font(AppTypography.captionStrong)
                     }
                     .foregroundStyle(AssetTheme.textPrimary)
                 }
@@ -1108,7 +1108,7 @@ struct BacktestAllocationCard: View {
 
                 Button(action: onTapAllocation) {
                     Image(systemName: "slider.horizontal.3")
-                        .font(.footnote.weight(.bold))
+                        .font(AppTypography.metaStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
                 .buttonStyle(.plain)
@@ -1133,7 +1133,7 @@ struct BacktestAllocationCard: View {
 
                         VStack(spacing: 4) {
                             Text(activeAllocationSummary)
-                                .font(.subheadline.weight(.semibold))
+                                .font(AppTypography.rowTitle)
                                 .foregroundStyle(AssetTheme.textPrimary)
                                 .multilineTextAlignment(.center)
                                 .lineLimit(2)
@@ -1208,14 +1208,14 @@ struct BacktestAllocationRow: View {
                     .frame(width: 9, height: 9)
 
                 Text(AppLocalization.string(slice.title))
-                    .font(.footnote.weight(.medium))
+                    .font(AppTypography.meta)
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
 
                 Spacer(minLength: 8)
 
                 Text("\(Int(slice.amount.rounded()))%")
-                    .font(.footnote.weight(.semibold))
+                    .font(AppTypography.metaStrong)
                     .foregroundStyle(AssetTheme.textSecondary)
                     .monospacedDigit()
             }
@@ -1303,7 +1303,7 @@ struct CashYieldDetailSheet: View {
                             .font(.title3.weight(.bold))
                             .foregroundStyle(AssetTheme.textPrimary)
                         Text(summary.sourceDetail)
-                            .font(.footnote)
+                            .font(AppTypography.meta)
                             .foregroundStyle(AssetTheme.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -1331,13 +1331,13 @@ struct CashYieldDetailSheet: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(AppLocalization.string("数据来源"))
-                            .font(.subheadline.weight(.bold))
+                            .font(AppTypography.rowTitle)
                             .foregroundStyle(AssetTheme.textPrimary)
                         Text(summary.source)
-                            .font(.footnote)
+                            .font(AppTypography.meta)
                             .foregroundStyle(AssetTheme.textSecondary)
                         Text(AppLocalization.format("适用区间 %@", periodText))
-                            .font(.caption)
+                            .font(AppTypography.caption)
                             .foregroundStyle(AssetTheme.textSecondary.opacity(0.9))
                     }
                     .padding(14)
@@ -1349,7 +1349,7 @@ struct CashYieldDetailSheet: View {
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text(AppLocalization.string("历史活期利率"))
-                            .font(.subheadline.weight(.bold))
+                            .font(AppTypography.rowTitle)
                             .foregroundStyle(AssetTheme.textPrimary)
 
                         VStack(spacing: 0) {
@@ -1357,11 +1357,11 @@ struct CashYieldDetailSheet: View {
                                 let point = summary.ratePoints[index]
                                 HStack(spacing: 12) {
                                     Text(point.date.recordDateString)
-                                        .font(.footnote.weight(.medium).monospacedDigit())
+                                        .font(AppTypography.meta.monospacedDigit())
                                         .foregroundStyle(AssetTheme.textPrimary)
                                     Spacer(minLength: 12)
                                     Text(point.annualRate.percentString(maxFractionDigits: 2))
-                                        .font(.footnote.weight(.semibold).monospacedDigit())
+                                        .font(AppTypography.metaStrong.monospacedDigit())
                                         .foregroundStyle(AssetTheme.gold)
                                 }
                                 .padding(.vertical, 10)
@@ -1425,7 +1425,7 @@ struct MarketRiskSignalDetailSheet: View {
                             .font(.title3.weight(.bold))
                             .foregroundStyle(AssetTheme.textPrimary)
                         Text(summary.sourceDetail)
-                            .font(.footnote)
+                            .font(AppTypography.meta)
                             .foregroundStyle(AssetTheme.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -1454,13 +1454,13 @@ struct MarketRiskSignalDetailSheet: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(AppLocalization.string("数据来源"))
-                            .font(.subheadline.weight(.bold))
+                            .font(AppTypography.rowTitle)
                             .foregroundStyle(AssetTheme.textPrimary)
                         Text(summary.source)
-                            .font(.footnote)
+                            .font(AppTypography.meta)
                             .foregroundStyle(AssetTheme.textSecondary)
                         Text(AppLocalization.format("适用区间 %@", periodText))
-                            .font(.caption)
+                            .font(AppTypography.caption)
                             .foregroundStyle(AssetTheme.textSecondary.opacity(0.9))
                     }
                     .padding(14)
@@ -1472,7 +1472,7 @@ struct MarketRiskSignalDetailSheet: View {
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text(AppLocalization.string("历史风险信号"))
-                            .font(.subheadline.weight(.bold))
+                            .font(AppTypography.rowTitle)
                             .foregroundStyle(AssetTheme.textPrimary)
 
                         VStack(spacing: 0) {
@@ -1514,11 +1514,11 @@ struct MarketRiskSignalDetailSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 Text(point.date.recordDateString)
-                    .font(.footnote.weight(.medium).monospacedDigit())
+                    .font(AppTypography.meta.monospacedDigit())
                     .foregroundStyle(AssetTheme.textPrimary)
 
                 Text(point.level.title)
-                    .font(.caption2.weight(.bold))
+                    .font(AppTypography.chartAxisStrip)
                     .foregroundStyle(point.level.accent)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
@@ -1527,7 +1527,7 @@ struct MarketRiskSignalDetailSheet: View {
                 Spacer(minLength: 10)
 
                 Text(String(format: "%.0f", point.score))
-                    .font(.footnote.weight(.semibold).monospacedDigit())
+                    .font(AppTypography.metaStrong.monospacedDigit())
                     .foregroundStyle(point.level.accent)
             }
 
@@ -1538,7 +1538,7 @@ struct MarketRiskSignalDetailSheet: View {
                 point.drawdownFromHigh?.percentString(maxFractionDigits: 1) ?? "--",
                 point.annualizedVolatility?.percentString(maxFractionDigits: 1) ?? "--"
             ))
-            .font(.caption)
+            .font(AppTypography.caption)
             .foregroundStyle(AssetTheme.textSecondary)
             .lineLimit(1)
         }
@@ -1555,14 +1555,14 @@ struct CashYieldMetricTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title)
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(AssetTheme.textSecondary)
             Text(value)
-                .font(.subheadline.weight(.bold).monospacedDigit())
+                .font(AppTypography.rowTitle.monospacedDigit())
                 .foregroundStyle(accent)
             if let subtitle {
                 Text(subtitle)
-                    .font(.caption2)
+                    .font(AppTypography.chartCaption)
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.85))
             }
         }

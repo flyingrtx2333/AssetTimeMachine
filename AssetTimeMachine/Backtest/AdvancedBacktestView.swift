@@ -401,13 +401,13 @@ struct AdvancedBacktestView: View {
                             .tint(AssetTheme.gold)
 
                         Text(state.message)
-                            .font(.subheadline)
+                            .font(AppTypography.body)
                             .foregroundStyle(AssetTheme.textSecondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
                     Text(state.message)
-                        .font(.subheadline)
+                        .font(AppTypography.body)
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
             }
@@ -418,7 +418,7 @@ struct AdvancedBacktestView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 10) {
                 Text(AppLocalization.string("策略设置"))
-                    .font(.headline.weight(.bold))
+                    .font(AppTypography.blockTitleBold)
                     .foregroundStyle(AssetTheme.textPrimary)
 
                 Spacer(minLength: 12)
@@ -428,9 +428,9 @@ struct AdvancedBacktestView: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "sparkles")
-                            .font(.caption.weight(.bold))
+                            .font(AppTypography.captionStrong)
                         Text(AppLocalization.string("策略大全"))
-                            .font(.caption.weight(.semibold))
+                            .font(AppTypography.captionStrong)
                     }
                     .foregroundStyle(AssetTheme.gold)
                     .padding(.horizontal, 10)
@@ -808,14 +808,14 @@ struct AdvancedBacktestView: View {
                             .controlSize(.small)
                             .tint(AssetTheme.gold)
                         Text(AppLocalization.string("正在寻找候选策略…"))
-                            .font(.subheadline)
+                            .font(AppTypography.body)
                             .foregroundStyle(AssetTheme.textSecondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
                     if bestCandidates.isEmpty {
                         Text(AppLocalization.string(hasOptimizedStrategies ? "暂无可用候选策略，请调整资产或区间后重试" : "需要时可扫描候选策略"))
-                            .font(.subheadline)
+                            .font(AppTypography.body)
                             .foregroundStyle(AssetTheme.textSecondary)
                     } else {
                         ForEach(Array(bestCandidates.enumerated()), id: \.element.id) { index, candidate in
@@ -825,11 +825,11 @@ struct AdvancedBacktestView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                                         Text("#\(index + 1)")
-                                            .font(.caption.weight(.bold))
+                                            .font(AppTypography.captionStrong)
                                             .foregroundStyle(AssetTheme.gold)
                                         Spacer()
                                         Text(candidate.report.totalReturn.percentString())
-                                            .font(.subheadline.weight(.bold))
+                                            .font(AppTypography.rowTitle)
                                             .foregroundStyle(candidate.report.totalReturn >= 0 ? AssetTheme.positive : AssetTheme.negative)
                                     }
 
@@ -843,7 +843,7 @@ struct AdvancedBacktestView: View {
                                         candidate.report.maxDrawdown.percentString(),
                                         candidate.report.sharpeRatio.map { String(format: "%.2f", $0) } ?? "--"
                                     ))
-                                    .font(.caption)
+                                    .font(AppTypography.caption)
                                     .foregroundStyle(AssetTheme.textSecondary)
                                     .lineLimit(2)
 
@@ -898,7 +898,7 @@ struct AdvancedBacktestView: View {
 
     private func candidateTagPill(_ title: String) -> some View {
         Text(title)
-            .font(.caption2.weight(.semibold))
+            .font(AppTypography.chartCaptionStrong)
             .foregroundStyle(AssetTheme.gold)
             .padding(.horizontal, 7)
             .padding(.vertical, 4)
@@ -1108,12 +1108,12 @@ struct AdvancedBacktestView: View {
     private func sectionHeader(_ title: String, trailing: String? = nil, trailingColor: Color = AssetTheme.textSecondary) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(title)
-                .font(.headline.weight(.bold))
+                .font(AppTypography.blockTitleBold)
                 .foregroundStyle(AssetTheme.textPrimary)
             Spacer()
             if let trailing, !trailing.isEmpty {
                 Text(trailing)
-                    .font(.caption.weight(.semibold))
+                    .font(AppTypography.captionStrong)
                     .foregroundStyle(trailingColor)
                     .lineLimit(1)
             }
@@ -1146,11 +1146,11 @@ struct AdvancedBacktestView: View {
                         .foregroundStyle(AssetTheme.textSecondary)
                     Spacer()
                     Text(value)
-                        .font(.subheadline.weight(.semibold))
+                        .font(AppTypography.rowTitle)
                         .foregroundStyle(accent)
                         .multilineTextAlignment(.trailing)
                     Image(systemName: "chevron.down")
-                        .font(.caption.weight(.bold))
+                        .font(AppTypography.captionStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
                 .padding(.vertical, 2)
@@ -1191,14 +1191,14 @@ struct AdvancedBacktestView: View {
                 .keyboardType(.decimalPad)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-                .font(.subheadline.weight(.semibold))
+                .font(AppTypography.rowTitle)
                 .foregroundStyle(AssetTheme.textPrimary)
                 .multilineTextAlignment(.trailing)
                 .monospacedDigit()
                 .frame(minWidth: 110, maxWidth: 160)
 
                 Text(unit)
-                    .font(.caption.weight(.semibold))
+                    .font(AppTypography.captionStrong)
                     .foregroundStyle(AssetTheme.textSecondary)
             }
             .padding(.vertical, 2)
@@ -1278,14 +1278,14 @@ struct AdvancedBacktestView: View {
             .keyboardType(.decimalPad)
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
-            .font(.subheadline.weight(.semibold))
+            .font(AppTypography.rowTitle)
             .foregroundStyle(AssetTheme.textPrimary)
             .multilineTextAlignment(.trailing)
             .monospacedDigit()
             .frame(minWidth: 44, maxWidth: 72)
 
             Text(unit)
-                .font(.caption.weight(.semibold))
+                .font(AppTypography.captionStrong)
                 .foregroundStyle(AssetTheme.textSecondary)
         }
         .frame(maxWidth: .infinity)
@@ -1299,7 +1299,7 @@ struct AdvancedBacktestView: View {
                     .foregroundStyle(AssetTheme.textSecondary)
                 Spacer()
                 Text(value)
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
                     .multilineTextAlignment(.trailing)
             }
@@ -1322,11 +1322,11 @@ struct AdvancedBacktestView: View {
                         .foregroundStyle(AssetTheme.textSecondary)
                     Spacer()
                     Text(value)
-                        .font(.subheadline.weight(.semibold))
+                        .font(AppTypography.rowTitle)
                         .foregroundStyle(AssetTheme.textPrimary)
                         .multilineTextAlignment(.trailing)
                     Image(systemName: "chevron.right")
-                        .font(.caption.weight(.bold))
+                        .font(AppTypography.captionStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
                 .padding(.vertical, 2)
@@ -1355,9 +1355,9 @@ struct AdvancedBacktestView: View {
                     } label: {
                         HStack(spacing: 8) {
                             Text(direction.wrappedValue.title)
-                                .font(.subheadline.weight(.semibold))
+                                .font(AppTypography.rowTitle)
                             Image(systemName: "chevron.down")
-                                .font(.caption.weight(.bold))
+                                .font(AppTypography.captionStrong)
                         }
                         .foregroundStyle(AssetTheme.textPrimary)
                     }
@@ -1368,13 +1368,13 @@ struct AdvancedBacktestView: View {
                     if direction.wrappedValue.usesDayThreshold {
                         Stepper(value: days, in: 1...10) {
                             Text(AppLocalization.format("%d天", days.wrappedValue))
-                                .font(.subheadline.weight(.semibold))
+                                .font(AppTypography.rowTitle)
                                 .foregroundStyle(AssetTheme.textPrimary)
                         }
                         .tint(accent)
                     } else {
                         Text(AppLocalization.string("固定参数"))
-                            .font(.caption.weight(.semibold))
+                            .font(AppTypography.captionStrong)
                             .foregroundStyle(AssetTheme.textSecondary)
                     }
                 }
@@ -1400,9 +1400,9 @@ struct AdvancedBacktestView: View {
                 Button(action: swapAdvancedRules) {
                     HStack(spacing: 8) {
                         Image(systemName: "arrow.up.arrow.down")
-                            .font(.caption.weight(.bold))
+                            .font(AppTypography.captionStrong)
                         Text(AppLocalization.string("互换条件"))
-                            .font(.caption.weight(.semibold))
+                            .font(AppTypography.captionStrong)
                     }
                     .foregroundStyle(AssetTheme.textPrimary)
                     .padding(.horizontal, 12)

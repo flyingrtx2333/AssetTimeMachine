@@ -13,6 +13,7 @@ struct TimeMachineView: View {
     @Environment(\.modelContext) private var modelContext
     let marketStore: RemoteMarketStore
     let isActive: Bool
+    let onOpenRecordSnapshot: (UUID) -> Void
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
     @State private var selectedRange: TimeMachineRange = .sixMonths
     @State private var cachedTrendPoints: [TimeMachineTrendPoint] = []
@@ -39,9 +40,10 @@ struct TimeMachineView: View {
     @State private var didOpenDebugTrendVideoPreview = false
     #endif
 
-    init(marketStore: RemoteMarketStore, isActive: Bool) {
+    init(marketStore: RemoteMarketStore, isActive: Bool, onOpenRecordSnapshot: @escaping (UUID) -> Void) {
         self.marketStore = marketStore
         self.isActive = isActive
+        self.onOpenRecordSnapshot = onOpenRecordSnapshot
 
         var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
             sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
@@ -74,38 +76,8 @@ struct TimeMachineView: View {
         cachedAnnualSurplusPoints
     }
 
-    private var liveUSDPerCNY: Double? {
-        marketStore.exchangeRate(for: "USD")
-    }
-
-    private var liveGoldAnchorPrice: Double? {
-        marketStore.market(for: "gold")?.price
-    }
-
-    private var liveBTCAnchorPriceUSD: Double? {
-        marketStore.market(for: "btc")?.price
-    }
-
-    private var liveBTCAnchorPriceCNY: Double? {
-        guard let liveBTCAnchorPriceUSD,
-              let liveUSDPerCNY,
-              liveUSDPerCNY > 0 else {
-            return nil
-        }
-        return liveBTCAnchorPriceUSD / liveUSDPerCNY
-    }
-
-    private var liveNasdaqAnchorPriceUSD: Double? {
-        marketStore.market(for: "nasdaq")?.price
-    }
-
-    private var liveNasdaqAnchorPriceCNY: Double? {
-        guard let liveNasdaqAnchorPriceUSD,
-              let liveUSDPerCNY,
-              liveUSDPerCNY > 0 else {
-            return nil
-        }
-        return liveNasdaqAnchorPriceUSD / liveUSDPerCNY
+    private var liveMarketAnchors: TimeMachineLiveMarketAnchors {
+        TimeMachineLiveMarketAnchors.from(marketStore: marketStore)
     }
 
     private var detailTrendCards: [TimeMachineCombinedTrendDescriptor] {
@@ -182,28 +154,17 @@ struct TimeMachineView: View {
         return formatter
     }()
 
-    private func liveGoldAnchorPriceIfToday(for snapshot: AssetSnapshot) -> Double? {
-        Calendar.current.isDateInToday(snapshot.date) ? liveGoldAnchorPrice : nil
-    }
+    @MainActor
+    private func trendPoint(for snapshot: AssetSnapshot) -> TimeMachineTrendPoint {
+        let liveAnchors = liveMarketAnchors
+        let token = TimeMachineTrendPointBuilder.cacheToken(for: snapshot, liveAnchors: liveAnchors)
+        if let cached = cachedTrendPointBySnapshotID[snapshot.id], cached.token == token {
+            return cached.point
+        }
 
-    private func liveBTCAnchorPriceUSDIfToday(for snapshot: AssetSnapshot) -> Double? {
-        Calendar.current.isDateInToday(snapshot.date) ? liveBTCAnchorPriceUSD : nil
-    }
-
-    private func liveBTCAnchorPriceCNYIfToday(for snapshot: AssetSnapshot) -> Double? {
-        Calendar.current.isDateInToday(snapshot.date) ? liveBTCAnchorPriceCNY : nil
-    }
-
-    private func liveNasdaqAnchorPriceUSDIfToday(for snapshot: AssetSnapshot) -> Double? {
-        Calendar.current.isDateInToday(snapshot.date) ? liveNasdaqAnchorPriceUSD : nil
-    }
-
-    private func liveNasdaqAnchorPriceCNYIfToday(for snapshot: AssetSnapshot) -> Double? {
-        Calendar.current.isDateInToday(snapshot.date) ? liveNasdaqAnchorPriceCNY : nil
-    }
-
-    private func liveAnchorDateIfToday(for snapshot: AssetSnapshot, hasValue: Bool) -> Date? {
-        hasValue && Calendar.current.isDateInToday(snapshot.date) ? snapshot.date : nil
+        let point = TimeMachineTrendPointBuilder.make(from: snapshot, liveAnchors: liveAnchors)
+        cachedTrendPointBySnapshotID[snapshot.id] = TimeMachineTrendPointCacheEntry(token: token, point: point)
+        return point
     }
 
     private var snapshotCacheToken: Int {
@@ -326,63 +287,6 @@ struct TimeMachineView: View {
         }
         await refreshVisualizationCache(includeDetailCards: includeDetailCards, cacheToken: token)
         lastVisualizationCacheToken = token
-    }
-
-    @MainActor
-    private func trendPoint(for snapshot: AssetSnapshot) -> TimeMachineTrendPoint {
-        let token = snapshotTrendPointToken(for: snapshot)
-        if let cached = cachedTrendPointBySnapshotID[snapshot.id], cached.token == token {
-            return cached.point
-        }
-
-        let metrics = PortfolioCalculator.metrics(for: snapshot)
-        let mainAssets = metrics.totalAssets
-        let liabilities = metrics.totalLiabilities
-        let netAssets = metrics.netAssets
-
-        let goldAnchorPrice = snapshot.goldAnchorPriceCNY ?? liveGoldAnchorPriceIfToday(for: snapshot)
-        let btcAnchorPriceCNY = snapshot.btcAnchorPriceCNY ?? liveBTCAnchorPriceCNYIfToday(for: snapshot)
-        let nasdaqAnchorPriceCNY = snapshot.nasdaqAnchorPriceCNY ?? liveNasdaqAnchorPriceCNYIfToday(for: snapshot)
-        let btcAnchorPriceUSD = snapshot.btcAnchorPriceUSD ?? liveBTCAnchorPriceUSDIfToday(for: snapshot)
-        let nasdaqAnchorPriceUSD = snapshot.nasdaqAnchorPriceUSD ?? liveNasdaqAnchorPriceUSDIfToday(for: snapshot)
-
-        let point = TimeMachineTrendPoint(
-            date: snapshot.date,
-            mainAssets: mainAssets,
-            netAssets: netAssets,
-            liabilities: liabilities,
-            goldEquivalent: goldAnchorPrice.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-            btcEquivalent: btcAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-            nasdaqEquivalent: nasdaqAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-            goldAnchorPriceCNY: goldAnchorPrice,
-            goldAnchorDate: snapshot.goldAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: goldAnchorPrice != nil),
-            btcAnchorPriceUSD: btcAnchorPriceUSD,
-            btcAnchorPriceCNY: btcAnchorPriceCNY,
-            btcAnchorDate: snapshot.btcAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: btcAnchorPriceUSD != nil),
-            nasdaqAnchorPriceUSD: nasdaqAnchorPriceUSD,
-            nasdaqAnchorPriceCNY: nasdaqAnchorPriceCNY,
-            nasdaqAnchorDate: snapshot.nasdaqAnchorPriceDate ?? liveAnchorDateIfToday(for: snapshot, hasValue: nasdaqAnchorPriceUSD != nil)
-        )
-        cachedTrendPointBySnapshotID[snapshot.id] = TimeMachineTrendPointCacheEntry(token: token, point: point)
-        return point
-    }
-
-    private func snapshotTrendPointToken(for snapshot: AssetSnapshot) -> Int {
-        var hasher = Hasher()
-        hasher.combine(snapshot.id)
-        hasher.combine(snapshot.date.timeIntervalSinceReferenceDate)
-        hasher.combine(snapshot.updatedAt.timeIntervalSinceReferenceDate)
-        hasher.combine(snapshot.marketAnchorsUpdatedAt?.timeIntervalSinceReferenceDate)
-        hasher.combine(snapshot.entries.count)
-
-        if Calendar.current.isDateInToday(snapshot.date) {
-            hasher.combine(liveGoldAnchorPrice)
-            hasher.combine(liveBTCAnchorPriceUSD)
-            hasher.combine(liveBTCAnchorPriceCNY)
-            hasher.combine(liveNasdaqAnchorPriceUSD)
-            hasher.combine(liveNasdaqAnchorPriceCNY)
-        }
-        return hasher.finalize()
     }
 
     @MainActor
@@ -930,6 +834,16 @@ struct TimeMachineView: View {
         return aggregated.map { TimeMachineSingleAxisPoint(date: $0.date, value: $0.leftValue) }
     }
 
+    private func hasSnapshotRecord(on date: Date) -> Bool {
+        (try? SnapshotService.snapshot(on: date, in: modelContext)) != nil
+    }
+
+    @MainActor
+    private func openRecord(for date: Date) {
+        guard let snapshot = try? SnapshotService.snapshot(on: date, in: modelContext) else { return }
+        onOpenRecordSnapshot(snapshot.id)
+    }
+
     @MainActor
     private func revealDetailComparison(_ option: TimeMachineDetailComparisonOption) {
         guard !visibleDetailTrendSymbols.contains(option.symbol) else { return }
@@ -943,30 +857,28 @@ struct TimeMachineView: View {
     }
 
     private var trendVideoExportBar: some View {
-        HStack(spacing: 12) {
-            Button {
-                openTrendVideoPreview()
-            } label: {
-                HStack(spacing: 9) {
-                    Image(systemName: "video.badge.waveform")
-                        .font(.system(size: 15, weight: .semibold))
+        Button {
+            openTrendVideoPreview()
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "video.badge.waveform")
+                    .font(AppTypography.metaStrong)
 
-                    Text(AppLocalization.string("生成走势视频"))
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-                }
-                .foregroundStyle(AssetTheme.textPrimary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 13)
-                .background(AssetTheme.surface.opacity(0.94), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(AssetTheme.border.opacity(0.68), lineWidth: 1)
-                )
+                Text(AppLocalization.string("生成走势视频"))
+                    .font(AppTypography.metaStrong)
+                    .lineLimit(1)
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.right")
+                    .font(AppTypography.chipIcon)
             }
-            .buttonStyle(.plain)
-            .disabled(trendVideoPreviewRequest != nil || snapshots.count < 2)
+            .foregroundStyle(AssetTheme.goldSoft)
+            .padding(.vertical, 10)
         }
+        .buttonStyle(.plain)
+        .disabled(trendVideoPreviewRequest != nil || snapshots.count < 2)
+        .opacity(trendVideoPreviewRequest != nil || snapshots.count < 2 ? 0.48 : 1)
     }
 
     @MainActor
@@ -995,44 +907,76 @@ struct TimeMachineView: View {
         }
     }
 
+    private var heroTrendSection: some View {
+        Group {
+            if let latestPoint, !filteredTrendPoints.isEmpty {
+                TimeMachineHeroTrendCard(
+                    points: filteredTrendPoints,
+                    latestPoint: latestPoint,
+                    selectedRange: $selectedRange,
+                    hasRecord: hasSnapshotRecord(on:),
+                    onOpenRecord: openRecord(for:)
+                )
+            }
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                        LazyVStack(alignment: .leading, spacing: 16) {
+                        LazyVStack(alignment: .leading, spacing: 0) {
                             if lastVisualizationCacheToken == nil {
                                 LoadingStateCard(title: AppLocalization.string("时光机加载中"))
-                            } else if let latestPoint, !filteredTrendPoints.isEmpty {
-                                TimeMachineHeroTrendCard(
-                                    points: filteredTrendPoints,
-                                    latestPoint: latestPoint,
-                                    selectedRange: $selectedRange
-                                )
+                            } else if !filteredTrendPoints.isEmpty {
+                                heroTrendSection
+
+                                TimeMachineSectionDivider()
+                                    .padding(.vertical, 22)
+
                                 trendVideoExportBar
 
                                 if !monthlySurplusPoints.isEmpty || !annualSurplusPoints.isEmpty {
+                                    TimeMachineSectionDivider()
+                                        .padding(.vertical, 22)
+
                                     TimeMachineMonthlySurplusCard(
                                         points: monthlySurplusPoints,
                                         annualPoints: annualSurplusPoints
                                     )
                                 }
 
-                                LazyVStack(spacing: 12) {
-                                    ForEach(detailTrendCards) { card in
-                                        TimeMachineDualAxisTrendCard(descriptor: card) { history in
-                                            selectedHistoryDrilldown = history
-                                        }
-                                    }
+                                if !detailTrendCards.isEmpty || !hiddenDetailComparisonOptions.isEmpty {
+                                    TimeMachineSectionDivider()
+                                        .padding(.vertical, 22)
 
-                                    if !hiddenDetailComparisonOptions.isEmpty {
-                                        TimeMachineComparisonRevealButtons(options: hiddenDetailComparisonOptions) { option in
-                                            revealDetailComparison(option)
+                                    VStack(spacing: 0) {
+                                        ForEach(Array(detailTrendCards.enumerated()), id: \.element.id) { index, card in
+                                            if index > 0 {
+                                                TimeMachineSectionDivider()
+                                                    .padding(.vertical, 26)
+                                            }
+
+                                            TimeMachineDualAxisTrendCard(descriptor: card) { history in
+                                                selectedHistoryDrilldown = history
+                                            }
+                                        }
+
+                                        if !hiddenDetailComparisonOptions.isEmpty {
+                                            if !detailTrendCards.isEmpty {
+                                                TimeMachineSectionDivider()
+                                                    .padding(.vertical, 20)
+                                            }
+
+                                            TimeMachineComparisonRevealButtons(options: hiddenDetailComparisonOptions) { option in
+                                                revealDetailComparison(option)
+                                            }
                                         }
                                     }
+                                    .onboardingAnchor(.timeMachineAnchors)
                                 }
-                                .onboardingAnchor(.timeMachineAnchors)
                             } else {
                                 EmptyStateCard(
                                     title: AppLocalization.string("暂无趋势数据"),
@@ -1041,8 +985,8 @@ struct TimeMachineView: View {
                                 )
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 14)
                         .padding(.bottom, 136)
                     }
             }

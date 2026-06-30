@@ -770,6 +770,7 @@ private struct AssetTimeMachineCloudStatusSymbol: View {
                 Image(systemName: "arrow.triangle.2.circlepath")
                     .font(.system(size: size * 0.6, weight: .bold))
                     .foregroundStyle(state.symbolColor.opacity(0.85))
+                    .symbolEffect(.rotate, options: .repeat(.continuous))
             }
         }
         .foregroundStyle(state.symbolColor)
@@ -860,12 +861,12 @@ struct AssetTimeMachineCloudPage: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(heroTitle)
-                        .font(.headline.weight(.semibold))
+                        .font(AppTypography.blockTitle)
                         .foregroundStyle(AssetTheme.textPrimary)
 
                     if let heroSubtitle, !heroSubtitle.isEmpty {
                         Text(heroSubtitle)
-                            .font(.footnote)
+                            .font(AppTypography.meta)
                             .foregroundStyle(AssetTheme.textSecondary)
                     }
                 }
@@ -875,7 +876,7 @@ struct AssetTimeMachineCloudPage: View {
 
             if let statusNotice {
                 Label(statusNotice.text, systemImage: statusNotice.systemImage)
-                    .font(.footnote)
+                    .font(AppTypography.meta)
                     .foregroundStyle(statusNotice.color)
             }
         }
@@ -896,8 +897,8 @@ struct AssetTimeMachineCloudPage: View {
 
     private var mainCard: some View {
         VStack(alignment: .leading, spacing: 22) {
-            if let currentUser = store.currentUser {
-                loggedInSection(currentUser)
+            if store.currentUser != nil {
+                loggedInSection
             } else if store.isSessionPending {
                 sessionLoadingSection
             } else {
@@ -928,109 +929,65 @@ struct AssetTimeMachineCloudPage: View {
                 ProgressView()
                     .tint(AssetTheme.gold)
                 Text(AppLocalization.string("正在恢复云同步状态…"))
-                    .font(.headline)
+                    .font(AppTypography.blockTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
             }
 
             Text(AppLocalization.string("已检测到登录凭证，正在验证云端连接。"))
-                .font(.footnote)
+                .font(AppTypography.meta)
                 .foregroundStyle(AssetTheme.textSecondary)
         }
     }
 
-    private func loggedInSection(_ currentUser: AssetTimeMachineCloudUser) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .center, spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(AssetTheme.surfaceRaised.opacity(0.92))
-                        .frame(width: 36, height: 36)
-
-                    Image(systemName: "person.crop.circle.fill")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(AssetTheme.gold)
-                }
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(currentUser.displayName)
-                        .font(.headline)
-                        .foregroundStyle(AssetTheme.textPrimary)
-                    Text(currentUser.userEmail ?? AppLocalization.string("账号已登录"))
-                        .font(.footnote)
-                        .foregroundStyle(AssetTheme.textSecondary)
-
-                    if !store.hasCompletedInitialSync {
-                        Text(AppLocalization.string("等待首次云同步"))
-                            .font(.caption)
-                            .foregroundStyle(AssetTheme.goldSoft)
-                    }
-                }
+    private var loggedInSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(AppLocalization.string("最近备份"))
+                    .font(AppTypography.rowTitle)
+                    .foregroundStyle(AssetTheme.textPrimary)
 
                 Spacer(minLength: 8)
 
-                Button(AppLocalization.string("退出")) {
-                    store.logout()
+                Button {
+                    Task {
+                        await store.refreshSession()
+                    }
+                } label: {
+                    Label(AppLocalization.string("刷新"), systemImage: "arrow.clockwise")
+                        .font(AppTypography.meta)
+                        .foregroundStyle(AssetTheme.textSecondary)
                 }
-                .font(.footnote.weight(.medium))
-                .foregroundStyle(AssetTheme.textSecondary)
+                .buttonStyle(.plain)
+                .disabled(store.isWorking)
             }
 
-            Label(
-                store.lastSyncAt.map { AppLocalization.format("最近同步 %@", $0.formatted(date: .abbreviated, time: .shortened)) } ?? AppLocalization.string("等待首次云同步"),
-                systemImage: "arrow.triangle.2.circlepath.circle.fill"
-            )
-            .font(.footnote.weight(.medium))
-            .foregroundStyle(AssetTheme.textSecondary)
+            if store.backups.isEmpty {
+                Text(AppLocalization.string("暂无云端备份，正在准备首次同步"))
+                    .font(AppTypography.meta)
+                    .foregroundStyle(AssetTheme.textSecondary)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(store.backups.prefix(3).enumerated()), id: \.element.id) { index, backup in
+                        cloudBackupRow(backup)
 
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Text(AppLocalization.string("最近备份"))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(AssetTheme.textPrimary)
-
-                    Spacer(minLength: 8)
-
-                    Button {
-                        Task {
-                            await store.refreshSession()
+                        if index < min(store.backups.count, 3) - 1 {
+                            Rectangle()
+                                .fill(AssetTheme.border.opacity(0.32))
+                                .frame(height: 1)
+                                .padding(.leading, 2)
                         }
-                    } label: {
-                        Label(AppLocalization.string("刷新"), systemImage: "arrow.clockwise")
-                            .font(.footnote.weight(.medium))
-                            .foregroundStyle(AssetTheme.textSecondary)
                     }
-                    .buttonStyle(.plain)
-                    .disabled(store.isWorking)
                 }
 
-                if store.backups.isEmpty {
-                    Text(AppLocalization.string("暂无云端备份，正在准备首次同步"))
-                        .font(.footnote)
+                Button {
+                    showRestoreConfirm = true
+                } label: {
+                    Label(AppLocalization.string("恢复最近一次备份"), systemImage: "arrow.clockwise.icloud")
+                        .font(AppTypography.metaStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
-                } else {
-                    VStack(spacing: 0) {
-                        ForEach(Array(store.backups.prefix(3).enumerated()), id: \.element.id) { index, backup in
-                            cloudBackupRow(backup)
-
-                            if index < min(store.backups.count, 3) - 1 {
-                                Rectangle()
-                                    .fill(AssetTheme.border.opacity(0.32))
-                                    .frame(height: 1)
-                                    .padding(.leading, 2)
-                            }
-                        }
-                    }
-
-                    Button {
-                        showRestoreConfirm = true
-                    } label: {
-                        Label(AppLocalization.string("恢复最近一次备份"), systemImage: "arrow.clockwise.icloud")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(AssetTheme.textSecondary)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(store.isWorking)
                 }
+                .buttonStyle(.plain)
+                .disabled(store.isWorking)
             }
         }
     }
@@ -1043,23 +1000,23 @@ struct AssetTimeMachineCloudPage: View {
                     .frame(width: 30, height: 30)
 
                 Image(systemName: backup.isLatest == 1 ? "icloud.fill" : "clock.arrow.circlepath")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(AppTypography.microValue)
                     .foregroundStyle(backup.isLatest == 1 ? AssetTheme.gold : AssetTheme.textSecondary)
             }
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(backup.fileName ?? AppLocalization.string("未命名备份"))
-                    .font(.footnote.weight(.medium))
+                    .font(AppTypography.meta)
                     .foregroundStyle(AssetTheme.textPrimary)
 
                 HStack(spacing: 8) {
                     Text(backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(AssetTheme.textSecondary)
 
                     if let fileSize = backup.fileSize {
                         Text(ByteCountFormatter.string(fromByteCount: Int64(fileSize), countStyle: .file))
-                            .font(.caption)
+                            .font(AppTypography.caption)
                             .foregroundStyle(AssetTheme.textSecondary)
                     }
                 }
@@ -1069,7 +1026,7 @@ struct AssetTimeMachineCloudPage: View {
 
             if backup.isLatest == 1 {
                 Text(AppLocalization.string("最新"))
-                    .font(.caption2.weight(.semibold))
+                    .font(AppTypography.chartCaptionStrong)
                     .foregroundStyle(AssetTheme.goldSoft)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)

@@ -338,29 +338,12 @@ struct DashboardView: View {
 
         var result: [TimeMachineTrendPoint] = []
         result.reserveCapacity(sourceSnapshots.count)
+        let liveAnchors = TimeMachineLiveMarketAnchors.from(marketStore: marketStore)
 
         for (index, snapshot) in sourceSnapshots.enumerated() {
             guard !Task.isCancelled, dashboardRefreshGeneration == generation else { return nil }
-            let metrics = PortfolioCalculator.metrics(for: snapshot)
-            let mainAssets = metrics.totalAssets
 
-            result.append(TimeMachineTrendPoint(
-                date: snapshot.date,
-                mainAssets: mainAssets,
-                netAssets: metrics.netAssets,
-                liabilities: metrics.totalLiabilities,
-                goldEquivalent: snapshot.goldAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-                btcEquivalent: snapshot.btcAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-                nasdaqEquivalent: snapshot.nasdaqAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-                goldAnchorPriceCNY: snapshot.goldAnchorPriceCNY,
-                goldAnchorDate: snapshot.goldAnchorPriceDate,
-                btcAnchorPriceUSD: snapshot.btcAnchorPriceUSD,
-                btcAnchorPriceCNY: snapshot.btcAnchorPriceCNY,
-                btcAnchorDate: snapshot.btcAnchorPriceDate,
-                nasdaqAnchorPriceUSD: snapshot.nasdaqAnchorPriceUSD,
-                nasdaqAnchorPriceCNY: snapshot.nasdaqAnchorPriceCNY,
-                nasdaqAnchorDate: snapshot.nasdaqAnchorPriceDate
-            ))
+            result.append(TimeMachineTrendPointBuilder.make(from: snapshot, liveAnchors: liveAnchors))
 
             if index.isMultiple(of: 2) {
                 await Task.yield()
@@ -467,10 +450,10 @@ struct DashboardTodayStrategyButton: View {
     var body: some View {
         HStack(spacing: 7) {
             Image(systemName: "scope")
-                .font(.footnote.weight(.bold))
+                .font(AppTypography.metaStrong)
 
             Text(AppLocalization.string("今日策略"))
-                .font(.footnote.weight(.semibold))
+                .font(AppTypography.metaStrong)
         }
         .foregroundStyle(AssetTheme.goldSoft)
         .padding(.horizontal, 11)
@@ -550,18 +533,18 @@ struct TodayStrategySheet: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 Image(systemName: "scope")
-                    .font(.headline.weight(.bold))
+                    .font(AppTypography.blockTitleBold)
                     .foregroundStyle(AssetTheme.goldSoft)
                     .frame(width: 34, height: 34)
                     .background(AssetTheme.gold.opacity(0.12), in: Circle())
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(selectedTemplate?.title ?? AppLocalization.string("未选择策略"))
-                        .font(.headline.weight(.bold))
+                        .font(AppTypography.blockTitleBold)
                         .foregroundStyle(AssetTheme.textPrimary)
 
                     Text(AppLocalization.string("使用设置里的提醒策略生成"))
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
 
@@ -583,19 +566,19 @@ struct TodayStrategySheet: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     Text(AppLocalization.string("今日建议"))
-                        .font(.subheadline.weight(.bold))
+                        .font(AppTypography.rowTitle)
                         .foregroundStyle(AssetTheme.textPrimary)
 
                     Spacer(minLength: 12)
 
                     Text(AppLocalization.format("信号截至 %@", advice.asOfDate.recordDateString))
-                        .font(.caption.weight(.semibold))
+                        .font(AppTypography.captionStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
                         .lineLimit(1)
                 }
 
                 Text(todayStrategySummary(template: template, advice: advice))
-                    .font(.footnote)
+                    .font(AppTypography.meta)
                     .foregroundStyle(AssetTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -621,7 +604,7 @@ struct TodayStrategySheet: View {
             )
 
             Text(AppLocalization.string("攻略仅用于历史回测口径下的调仓参考，不构成投资建议。"))
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(AssetTheme.textSecondary)
                 .padding(.horizontal, 4)
         }
@@ -630,11 +613,11 @@ struct TodayStrategySheet: View {
     private func todayStrategyStatusCard(message: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Image(systemName: "exclamationmark.circle.fill")
-                .font(.title3)
+                .font(AppTypography.sectionTitle)
                 .foregroundStyle(AssetTheme.accentOrange)
 
             Text(message)
-                .font(.subheadline)
+                .font(AppTypography.body)
                 .foregroundStyle(AssetTheme.textPrimary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -655,11 +638,11 @@ struct TodayStrategySheet: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(action.title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
 
                 Text(action.detailText(lookbackSessions: lookbackSessions))
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(AssetTheme.textSecondary)
                     .lineLimit(1)
             }
@@ -668,11 +651,11 @@ struct TodayStrategySheet: View {
 
             VStack(alignment: .trailing, spacing: 3) {
                 Text(action.kind.title)
-                    .font(.caption.weight(.bold))
+                    .font(AppTypography.captionStrong)
                     .foregroundStyle(action.kind.accent)
 
                 Text(action.amountText)
-                    .font(.subheadline.weight(.bold).monospacedDigit())
+                    .font(AppTypography.rowTitle.monospacedDigit())
                     .foregroundStyle(action.kind.accent)
                     .lineLimit(1)
             }
@@ -688,11 +671,11 @@ struct TodayStrategySheet: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(AppLocalization.string("现金/其他"))
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
 
                 Text(AppLocalization.string("未投入部分保留为防守仓位"))
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(AssetTheme.textSecondary)
                     .lineLimit(1)
             }
@@ -700,7 +683,7 @@ struct TodayStrategySheet: View {
             Spacer(minLength: 12)
 
             Text(weight.percentString(maxFractionDigits: 1))
-                .font(.subheadline.weight(.bold).monospacedDigit())
+                .font(AppTypography.rowTitle.monospacedDigit())
                 .foregroundStyle(AssetTheme.textSecondary)
         }
         .padding(.vertical, 2)

@@ -21,11 +21,11 @@ struct BacktestDCACard: View {
                 Button(action: onTapRange) {
                     HStack(spacing: 8) {
                         Text(selectedDateRangeLabel)
-                            .font(.headline.weight(.bold))
+                            .font(AppTypography.blockTitleBold)
                             .lineLimit(1)
                             .minimumScaleFactor(0.78)
                         Image(systemName: "chevron.down")
-                            .font(.caption.weight(.bold))
+                            .font(AppTypography.captionStrong)
                     }
                     .foregroundStyle(AssetTheme.textPrimary)
                 }
@@ -113,13 +113,13 @@ struct BacktestInfoRow: View {
                 Spacer()
 
                 Text(value)
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.rowTitle)
                     .foregroundStyle(valueColor)
                     .multilineTextAlignment(.trailing)
 
                 if showsChevron {
                     Image(systemName: "chevron.right")
-                        .font(.caption.weight(.bold))
+                        .font(AppTypography.captionStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
             }
@@ -147,10 +147,10 @@ struct BacktestPrimaryActionButton: View {
                 Spacer(minLength: 0)
 
                 Image(systemName: systemImage)
-                    .font(.footnote.weight(.bold))
+                    .font(AppTypography.metaStrong)
 
                 Text(AppLocalization.string(title))
-                    .font(.subheadline.weight(.bold))
+                    .font(AppTypography.rowTitle)
 
                 Spacer(minLength: 0)
             }
@@ -183,7 +183,7 @@ struct BacktestActionChip: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: systemImage)
-                    .font(.footnote.weight(.bold))
+                    .font(AppTypography.metaStrong)
                     .foregroundStyle(AssetTheme.textSecondary)
                 Text(AppLocalization.string(title))
                     .font(.subheadline.weight(.medium))
@@ -255,7 +255,7 @@ struct BacktestDateRangeSheet: View {
 
                         VStack(alignment: .leading, spacing: 10) {
                             Text(AppLocalization.string("快速选择"))
-                                .font(.caption.weight(.semibold))
+                                .font(AppTypography.captionStrong)
                                 .foregroundStyle(AssetTheme.textSecondary)
 
                             LazyVGrid(
@@ -317,7 +317,7 @@ struct BacktestDateRangeSheet: View {
 
                 ToolbarItem(placement: .principal) {
                     Text(AppLocalization.string("调整时间"))
-                        .font(.headline.weight(.bold))
+                        .font(AppTypography.blockTitleBold)
                         .foregroundStyle(AssetTheme.textPrimary)
                 }
 
@@ -338,11 +338,11 @@ struct BacktestDateRangeSheet: View {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(AppLocalization.string("已选区间"))
-                        .font(.caption.weight(.semibold))
+                        .font(AppTypography.captionStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
 
                     Text("\(startDate.recordDateString) - \(endDate.recordDateString)")
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .font(AppTypography.sheetTitle)
                         .foregroundStyle(AssetTheme.textPrimary)
                         .lineLimit(2)
                         .minimumScaleFactor(0.82)
@@ -352,7 +352,7 @@ struct BacktestDateRangeSheet: View {
 
                 VStack(alignment: .trailing, spacing: 6) {
                     Text(AppLocalization.string("天数"))
-                        .font(.caption.weight(.semibold))
+                        .font(AppTypography.captionStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
                     Text(AppLocalization.format("%d天", selectedSpanDays))
                         .font(.title3.weight(.bold))
@@ -366,11 +366,11 @@ struct BacktestDateRangeSheet: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(AppLocalization.string("可选范围"))
-                    .font(.caption.weight(.semibold))
+                    .font(AppTypography.captionStrong)
                     .foregroundStyle(AssetTheme.textSecondary)
 
                 Text("\(availableBounds.lowerBound.longDateString) - \(availableBounds.upperBound.longDateString)")
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
             }
         }
@@ -437,7 +437,7 @@ struct BacktestRangePresetButton: View {
     var body: some View {
         Button(action: action) {
             Text(AppLocalization.string(title))
-                .font(.caption.weight(.bold))
+                .font(AppTypography.captionStrong)
                 .foregroundStyle(isSelected ? Color.black.opacity(0.88) : AssetTheme.textPrimary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
@@ -478,7 +478,7 @@ struct BacktestCalendarCard: View {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(AppLocalization.string(title))
-                        .font(.caption.weight(.semibold))
+                        .font(AppTypography.captionStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
                     Text(value)
                         .font(.title3.weight(.bold))
@@ -488,7 +488,7 @@ struct BacktestCalendarCard: View {
                 Spacer(minLength: 8)
 
                 Image(systemName: "calendar")
-                    .font(.footnote.weight(.bold))
+                    .font(AppTypography.metaStrong)
                     .foregroundStyle(accent)
                     .padding(10)
                     .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -535,7 +535,7 @@ struct BacktestLoadingView: View {
                 .tint(AssetTheme.gold)
                 .scaleEffect(1.15)
             Text(AppLocalization.string("正在重新回测..."))
-                .font(.subheadline.weight(.semibold))
+                .font(AppTypography.rowTitle)
                 .foregroundStyle(AssetTheme.textPrimary)
         }
         .frame(maxWidth: .infinity)
@@ -642,10 +642,10 @@ struct AdvancedStrategyLibrarySheet: View {
     private var strategySearchAndFilterArea: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .font(.footnote.weight(.semibold))
+                .font(AppTypography.metaStrong)
                 .foregroundStyle(AssetTheme.textSecondary)
             TextField(AppLocalization.string("搜索策略、指标或资产"), text: $searchText)
-                .font(.footnote.weight(.medium))
+                .font(AppTypography.meta)
                 .foregroundStyle(AssetTheme.textPrimary)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled(true)
@@ -655,7 +655,7 @@ struct AdvancedStrategyLibrarySheet: View {
                     searchText = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.footnote.weight(.semibold))
+                        .font(AppTypography.metaStrong)
                         .foregroundStyle(AssetTheme.textSecondary.opacity(0.76))
                 }
                 .buttonStyle(.plain)
@@ -674,10 +674,10 @@ struct AdvancedStrategyLibrarySheet: View {
     private var strategyEmptyState: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(AppLocalization.string("没有匹配策略"))
-                .font(.subheadline.weight(.semibold))
+                .font(AppTypography.rowTitle)
                 .foregroundStyle(AssetTheme.textPrimary)
             Text(AppLocalization.string("换个关键词，或切回全部分类。"))
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(AssetTheme.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -713,7 +713,7 @@ struct AdvancedStrategyTemplateRow: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .top, spacing: 8) {
                     Text(template.category)
-                        .font(.caption2.weight(.bold))
+                        .font(AppTypography.chartAxisStrip)
                         .foregroundStyle(isActive ? AssetTheme.gold : AssetTheme.textSecondary)
                         .lineLimit(1)
                         .padding(.horizontal, 8)
@@ -729,14 +729,14 @@ struct AdvancedStrategyTemplateRow: View {
 
                 VStack(alignment: .leading, spacing: 5) {
                     Text(template.title)
-                        .font(.subheadline.weight(.bold))
+                        .font(AppTypography.rowTitle)
                         .foregroundStyle(AssetTheme.textPrimary)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
 
                     if !template.subtitle.isEmpty {
                         Text(template.subtitle)
-                            .font(.caption.weight(.semibold))
+                            .font(AppTypography.captionStrong)
                             .foregroundStyle(AssetTheme.gold)
                             .lineLimit(3)
                             .fixedSize(horizontal: false, vertical: true)
@@ -948,6 +948,20 @@ struct AdvancedStrategyTemplateRow: View {
                 AppLocalization.string("70%低风险"),
                 AppLocalization.string("现金缓冲")
             ]
+        case .coreGoldSatelliteSharpeStateGateMomentum:
+            return [
+                AppLocalization.string("双引擎路由"),
+                AppLocalization.string("75日状态"),
+                AppLocalization.string("35%低风险"),
+                AppLocalization.string("夏普优先")
+            ]
+        case .coreGoldSatelliteRiskBudgetStateGateMomentum:
+            return [
+                AppLocalization.string("风险预算"),
+                AppLocalization.string("2.05x"),
+                AppLocalization.string("融资3%"),
+                AppLocalization.string("状态门")
+            ]
         case .coreGoldSatelliteConfirmedAccelerationMomentum:
             return [
                 AppLocalization.string("确认加速"),
@@ -1074,7 +1088,7 @@ struct AdvancedStrategyTemplateRow: View {
 
     private func strategyChip(_ title: String) -> some View {
         Text(title)
-            .font(.caption2.weight(.semibold))
+            .font(AppTypography.chartCaptionStrong)
             .foregroundStyle(AssetTheme.textSecondary)
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
@@ -1146,7 +1160,7 @@ struct StrategyCapabilityRadarChart: View {
                     let labelPoint = point(index: index, radius: labelRadius)
                     context.draw(
                         Text(metrics[index].label)
-                            .font(.system(size: 7, weight: .semibold))
+                            .font(AppTypography.chartAxisMini)
                             .foregroundStyle(AssetTheme.textSecondary.opacity(0.92)),
                         at: labelPoint,
                         anchor: .center
@@ -1170,7 +1184,7 @@ struct StrategyCapabilityRadarChart: View {
             .accessibilityHidden(true)
 
             Text(profile.summary)
-                .font(.system(size: 9, weight: .semibold))
+                .font(AppTypography.chartAxisStrip)
                 .foregroundStyle(AssetTheme.textSecondary)
                 .lineLimit(1)
         }
@@ -1249,6 +1263,10 @@ extension AdvancedBacktestStrategyTemplate {
             growth = 0.93; stability = 0.96; defense = 0.96; flexibility = 0.99
         case .coreGoldSatelliteEquityCurveStateGateMomentum:
             growth = 0.94; stability = 0.98; defense = 0.98; flexibility = 0.99
+        case .coreGoldSatelliteSharpeStateGateMomentum:
+            growth = 0.78; stability = 1.00; defense = 1.00; flexibility = 0.99
+        case .coreGoldSatelliteRiskBudgetStateGateMomentum:
+            growth = 1.00; stability = 0.72; defense = 0.70; flexibility = 0.96
         case .coreGoldSatelliteConfirmedAccelerationMomentum:
             growth = 1.00; stability = 0.82; defense = 0.78; flexibility = 0.99
         case .coreGoldSatelliteProfitLockMomentum:
@@ -1359,7 +1377,7 @@ struct BacktestDCASettingSheet: View {
                     VStack(alignment: .leading, spacing: 16) {
                         VStack(alignment: .leading, spacing: 10) {
                             Text(AppLocalization.string("回测资产"))
-                                .font(.subheadline.weight(.semibold))
+                                .font(AppTypography.rowTitle)
                                 .foregroundStyle(AssetTheme.textPrimary)
 
                             Picker(AppLocalization.string("回测资产"), selection: $assetSymbol) {
@@ -1371,7 +1389,7 @@ struct BacktestDCASettingSheet: View {
                             .tint(AssetTheme.textPrimary)
 
                             Text(AppLocalization.string("每次投入固定为人民币。美元资产会按历史 USD/CNY 折算，人民币资产保持原口径。"))
-                                .font(.caption)
+                                .font(AppTypography.caption)
                                 .foregroundStyle(AssetTheme.textSecondary)
                         }
                         .padding(16)
@@ -1421,7 +1439,7 @@ struct BacktestDCASettingSheet: View {
                 }
                 ToolbarItem(placement: .principal) {
                     Text(AppLocalization.string("定投参数"))
-                        .font(.headline.weight(.bold))
+                        .font(AppTypography.blockTitleBold)
                         .foregroundStyle(AssetTheme.textPrimary)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -1456,7 +1474,7 @@ struct AdvancedBacktestAssetPickerSheet: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(AppLocalization.string("可同时勾选多种资产；初始资金会按资产数量平均分配，每种资产独立执行同一套买卖规则。"))
-                            .font(.footnote)
+                            .font(AppTypography.meta)
                             .foregroundStyle(AssetTheme.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.horizontal, 2)
@@ -1471,13 +1489,13 @@ struct AdvancedBacktestAssetPickerSheet: View {
                                         .frame(width: 10, height: 10)
 
                                     Text(AppLocalization.string(option.title))
-                                        .font(.subheadline.weight(.semibold))
+                                        .font(AppTypography.rowTitle)
                                         .foregroundStyle(AssetTheme.textPrimary)
 
                                     Spacer(minLength: 12)
 
                                     Image(systemName: selectedSymbols.contains(option.symbol) ? "checkmark.circle.fill" : "circle")
-                                        .font(.headline.weight(.semibold))
+                                        .font(AppTypography.blockTitle)
                                         .foregroundStyle(selectedSymbols.contains(option.symbol) ? option.color : AssetTheme.textSecondary.opacity(0.7))
                                 }
                                 .padding(16)
@@ -1504,7 +1522,7 @@ struct AdvancedBacktestAssetPickerSheet: View {
                 }
                 ToolbarItem(placement: .principal) {
                     Text(AppLocalization.string("回测资产"))
-                        .font(.headline.weight(.bold))
+                        .font(AppTypography.blockTitleBold)
                         .foregroundStyle(AssetTheme.textPrimary)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -1560,13 +1578,13 @@ struct BacktestDCAAssetSheet: View {
                                         .frame(width: 10, height: 10)
 
                                     Text(AppLocalization.string(option.title))
-                                        .font(.subheadline.weight(.semibold))
+                                        .font(AppTypography.rowTitle)
                                         .foregroundStyle(AssetTheme.textPrimary)
 
                                     Spacer(minLength: 12)
 
                                     Image(systemName: selectedSymbol == option.symbol ? "checkmark.circle.fill" : "circle")
-                                        .font(.headline.weight(.semibold))
+                                        .font(AppTypography.blockTitle)
                                         .foregroundStyle(selectedSymbol == option.symbol ? option.color : AssetTheme.textSecondary.opacity(0.7))
                                 }
                                 .padding(16)
@@ -1593,7 +1611,7 @@ struct BacktestDCAAssetSheet: View {
                 }
                 ToolbarItem(placement: .principal) {
                     Text(AppLocalization.string("回测资产"))
-                        .font(.headline.weight(.bold))
+                        .font(AppTypography.blockTitleBold)
                         .foregroundStyle(AssetTheme.textPrimary)
                 }
             }
@@ -1658,7 +1676,7 @@ struct BacktestDCAAmountSheet: View {
                 }
                 ToolbarItem(placement: .principal) {
                     Text(AppLocalization.string("每次投入"))
-                        .font(.headline.weight(.bold))
+                        .font(AppTypography.blockTitleBold)
                         .foregroundStyle(AssetTheme.textPrimary)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -1730,7 +1748,7 @@ struct BacktestDCAIntervalSheet: View {
                 }
                 ToolbarItem(placement: .principal) {
                     Text(AppLocalization.string("定投频率"))
-                        .font(.headline.weight(.bold))
+                        .font(AppTypography.blockTitleBold)
                         .foregroundStyle(AssetTheme.textPrimary)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -1754,7 +1772,7 @@ struct BacktestSelectionChip: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.subheadline.weight(.semibold))
+                .font(AppTypography.rowTitle)
                 .foregroundStyle(isSelected ? Color.black.opacity(0.86) : AssetTheme.textPrimary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -1874,10 +1892,10 @@ struct BacktestAllocationSheet: View {
                 ToolbarItem(placement: .principal) {
                     VStack(spacing: 2) {
                         Text(AppLocalization.string("调整配置"))
-                            .font(.headline.weight(.bold))
+                            .font(AppTypography.blockTitleBold)
                             .foregroundStyle(AssetTheme.textPrimary)
                         Text(quotaText)
-                            .font(.caption2.weight(.semibold))
+                            .font(AppTypography.chartCaptionStrong)
                             .foregroundStyle(quotaColor)
                     }
                     .multilineTextAlignment(.center)
@@ -1959,7 +1977,7 @@ struct BacktestStepperCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
                 Text(AppLocalization.string(title))
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
                 Spacer()
                 Text(valueText)
@@ -1968,7 +1986,7 @@ struct BacktestStepperCard: View {
             }
 
             Text(AppLocalization.string(caption))
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(AssetTheme.textSecondary)
 
             HStack(spacing: 10) {
@@ -1992,7 +2010,7 @@ struct BacktestMiniControlButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.caption.weight(.bold))
+            .font(AppTypography.captionStrong)
             .foregroundStyle(filled ? Color.black.opacity(configuration.isPressed ? 0.7 : 0.88) : AssetTheme.textPrimary)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
@@ -2028,11 +2046,11 @@ struct BacktestWeightRow: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(AppLocalization.string(title))
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
                 Spacer()
                 Text("\(Int(value.rounded()))%")
-                    .font(.caption.weight(.bold))
+                    .font(AppTypography.captionStrong)
                     .foregroundStyle(tint)
             }
 
@@ -2058,11 +2076,11 @@ struct BacktestMetricCard: View {
         VStack(alignment: .leading, spacing: 6) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(AppLocalization.string(title))
-                    .font(.caption.weight(.semibold))
+                    .font(AppTypography.captionStrong)
                     .foregroundStyle(AssetTheme.textSecondary)
                 if let subtitle {
                     Text(AppLocalization.string(subtitle))
-                        .font(.caption2.weight(.medium))
+                        .font(AppTypography.chartCaption)
                         .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
                 }
             }
