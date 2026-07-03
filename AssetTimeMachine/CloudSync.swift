@@ -438,7 +438,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     func login(username: String, password: String) async {
         await perform { [self] in
             let token = try await AssetTimeMachineCloudAPI.login(username: username, password: password)
-            self.saveTokens(token)
+            try self.saveTokens(token)
             try await self.loadSessionData()
             self.statusMessage = AppLocalization.string("登录成功，正在准备云同步")
         }
@@ -478,7 +478,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                     userName: userName,
                     userEmail: userEmail
                 )
-                self.saveTokens(token)
+                try self.saveTokens(token)
                 try await self.loadSessionData()
                 self.statusMessage = AppLocalization.string("Apple 登录成功，正在准备云同步")
             }
@@ -594,7 +594,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         errorMessage = nil
     }
 
-    private func saveTokens(_ token: AssetTimeMachineCloudToken, fallbackRefreshToken: String? = nil) {
+    private func saveTokens(_ token: AssetTimeMachineCloudToken, fallbackRefreshToken: String? = nil) throws {
         let refreshTokenToSave: String?
         if let refreshToken = token.refreshToken, !refreshToken.isEmpty {
             refreshTokenToSave = refreshToken
@@ -603,12 +603,19 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         } else {
             refreshTokenToSave = nil
         }
-        tokenStore.save(accessToken: token.accessToken, refreshToken: refreshTokenToSave)
+        try tokenStore.save(accessToken: token.accessToken, refreshToken: refreshTokenToSave)
+        guard tokenStore.loadAccessToken() == token.accessToken else {
+            throw NSError(
+                domain: "AssetTimeMachineCloudStore",
+                code: -20,
+                userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("登录凭证保存后校验失败")]
+            )
+        }
         clearLegacyUserDefaultsTokens()
     }
 
     private func clearTokens() {
-        tokenStore.clear()
+        try? tokenStore.clear()
         clearLegacyUserDefaultsTokens()
     }
 
@@ -622,8 +629,13 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             return
         }
         let legacyRefreshToken = defaults.string(forKey: refreshTokenKey)
-        tokenStore.save(accessToken: legacyAccessToken, refreshToken: legacyRefreshToken)
-        clearLegacyUserDefaultsTokens()
+        do {
+            try tokenStore.save(accessToken: legacyAccessToken, refreshToken: legacyRefreshToken)
+            guard tokenStore.loadAccessToken() == legacyAccessToken else { return }
+            clearLegacyUserDefaultsTokens()
+        } catch {
+            // Keep legacy UserDefaults tokens if Keychain migration fails, so upgraded users stay signed in.
+        }
     }
 
     private func clearLegacyUserDefaultsTokens() {
@@ -678,7 +690,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
 
             do {
                 let refreshedToken = try await AssetTimeMachineCloudAPI.refresh(refreshToken: refreshToken)
-                saveTokens(refreshedToken, fallbackRefreshToken: refreshToken)
+                try saveTokens(refreshedToken, fallbackRefreshToken: refreshToken)
                 return try await operation(refreshedToken.accessToken)
             } catch {
                 if (error as NSError).code == 401 {
