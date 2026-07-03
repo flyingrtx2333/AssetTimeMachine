@@ -379,6 +379,54 @@ struct StrategyMetricDump {
         }
     }
 
+    private static let allRotationModes: [AdvancedBacktestStrategyMode] = [
+        .ultraDefensiveRotation,
+        .defensiveRotation,
+        .lowDrawdownRotation,
+        .balancedRotation,
+        .enhancedRotation,
+        .longTermDefensiveTrend,
+        .longTermEnhancedLowDrawdownTrend,
+        .steadyDrawdownLadderTrend,
+        .septemberGuardLadderTrend,
+        .longTermGrowthTrend,
+        .longTermLowVolMomentum,
+        .robustLowVolMomentum,
+        .overheatGuardMomentum,
+        .highZoneDecelerationMomentum,
+        .pairConfirmDoubleGuardMomentum,
+        .tailBreakdownLockMomentum,
+        .recentLossVolatilityMetaMomentum,
+        .coreGoldSatelliteConservativeMomentum,
+        .coreGoldSatelliteBalancedMomentum,
+        .coreGoldSatelliteFullMomentum,
+        .coreGoldSatelliteHeatCappedMomentum,
+        .coreGoldSatelliteGoldHandoffMomentum,
+        .coreGoldSatelliteEquityBreadthMomentum,
+        .coreGoldSatelliteOneWayVolManagedMomentum,
+        .coreGoldSatelliteEquityCurveStateGateMomentum,
+        .coreGoldSatelliteSharpeStateGateMomentum,
+        .coreGoldSatelliteAssetRiskGateMomentum,
+        .coreGoldSatelliteRiskBudgetStateGateMomentum,
+        .coreGoldSatelliteConfirmedAccelerationMomentum,
+        .coreGoldSatelliteProfitLockMomentum,
+        .coreGoldSatelliteDynamicSleeveMomentum,
+        .coreGoldSatelliteContagionRepairMomentum,
+        .coreGoldSatelliteCurrencyCashMomentum,
+        .coreGoldSatelliteGoldPanicLockMomentum,
+        .coreGoldSatelliteRiskEfficiencyMomentum,
+        .coreGoldSatelliteMonthlyHeatCappedMomentum,
+        .coreGoldSatelliteConfirmedExcessMomentum,
+        .coreGoldSatelliteAggressiveMomentum,
+        .canaryMomentumDefense,
+        .drawdownReentryMomentum,
+        .goldCoreTrendSatellite,
+        .goldNasdaqSteadyRotation,
+        .goldNasdaqPortfolioScheduler,
+        .strongVolControlledRotation,
+        .momentumRotation
+    ]
+
     private static func appFilteredInputs(
         for template: AdvancedBacktestStrategyTemplate,
         seriesBySymbol: [String: PublicHistorySeries]
@@ -431,6 +479,554 @@ struct StrategyMetricDump {
             stopLossRatio: 0,
             takeProfitRatio: 0
         )
+
+        if ProcessInfo.processInfo.environment["ATM_ASSET_RISK_GRID"] == "1"
+            || ProcessInfo.processInfo.environment["ATM_ASSET_RISK_FOCUSED_GRID"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteAssetRiskGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let focused = ProcessInfo.processInfo.environment["ATM_ASSET_RISK_FOCUSED_GRID"] == "1"
+            let lowScales = focused
+                ? [0.55, 0.60, 0.62, 0.65, 0.68, 0.70, 0.73, 0.75]
+                : [0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.73, 0.75]
+            let multipliers = focused
+                ? [1.00, 1.05, 1.10, 1.15, 1.20, 1.25, 1.30, 1.35]
+                : [1.00, 1.05, 1.10, 1.15, 1.20, 1.25, 1.30, 1.35, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20]
+            print("APP_ASSET_RISK_GRID")
+            print("low_scale,multiplier,annualized,max_drawdown,volatility,sharpe,start,end,points")
+            for lowScale in lowScales {
+                for multiplier in multipliers {
+                    BacktestResearchOverrides.assetRiskLowScale = lowScale
+                    BacktestResearchOverrides.assetRiskMultiplier = multiplier
+                    guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                        assetInputs: inputs,
+                        initialCash: 100_000,
+                        settings: settings,
+                        mode: .coreGoldSatelliteAssetRiskGateMomentum
+                    ) else {
+                        print(String(format: "%.2f,%.2f,n/a,n/a,n/a,n/a,n/a,n/a,0", lowScale, multiplier))
+                        continue
+                    }
+                    print([
+                        String(format: "%.2f", lowScale),
+                        String(format: "%.2f", multiplier),
+                        report.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                        String(format: "%.6f", report.maxDrawdown * 100),
+                        report.annualizedVolatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                        report.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a",
+                        report.points.first?.date.recordDateString ?? "n/a",
+                        report.points.last?.date.recordDateString ?? "n/a",
+                        "\(report.points.count)"
+                    ].joined(separator: ","))
+                }
+            }
+            BacktestResearchOverrides.assetRiskLowScale = nil
+            BacktestResearchOverrides.assetRiskMultiplier = nil
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_SHARPE_GRID"] == "1"
+            || ProcessInfo.processInfo.environment["ATM_SHARPE_FOCUSED_GRID"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let focused = ProcessInfo.processInfo.environment["ATM_SHARPE_FOCUSED_GRID"] == "1"
+            let lowScales = focused
+                ? [0.20, 0.25, 0.30, 0.35, 0.40, 0.45]
+                : [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
+            let multipliers = focused
+                ? [1.00, 1.20, 1.40, 1.60, 1.80, 2.00]
+                : [1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20]
+            print("APP_SHARPE_GRID")
+            print("low_scale,multiplier,annualized,max_drawdown,volatility,sharpe,start,end,points")
+            for lowScale in lowScales {
+                for multiplier in multipliers {
+                    BacktestResearchOverrides.sharpeLowScale = lowScale
+                    BacktestResearchOverrides.sharpeMultiplier = multiplier
+                    guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                        assetInputs: inputs,
+                        initialCash: 100_000,
+                        settings: settings,
+                        mode: .coreGoldSatelliteSharpeStateGateMomentum
+                    ) else {
+                        print(String(format: "%.2f,%.2f,n/a,n/a,n/a,n/a,n/a,n/a,0", lowScale, multiplier))
+                        continue
+                    }
+                    print([
+                        String(format: "%.2f", lowScale),
+                        String(format: "%.2f", multiplier),
+                        report.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                        String(format: "%.6f", report.maxDrawdown * 100),
+                        report.annualizedVolatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                        report.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a",
+                        report.points.first?.date.recordDateString ?? "n/a",
+                        report.points.last?.date.recordDateString ?? "n/a",
+                        "\(report.points.count)"
+                    ].joined(separator: ","))
+                }
+            }
+            BacktestResearchOverrides.sharpeLowScale = nil
+            BacktestResearchOverrides.sharpeMultiplier = nil
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_RISK_BUDGET_FOCUSED_GRID"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let lowScales = [0.48, 0.50, 0.52, 0.55, 0.58]
+            let multipliers = [1.0]
+            let defensiveShares = [0.50, 0.60, 0.70]
+            print("APP_RISK_BUDGET_FOCUSED_GRID")
+            print("low_scale,multiplier,defensive_share,annualized,max_drawdown,volatility,sharpe,start,end,points")
+            for lowScale in lowScales {
+                for multiplier in multipliers {
+                    for defensiveShare in defensiveShares {
+                        BacktestResearchOverrides.riskBudgetLowScale = lowScale
+                        BacktestResearchOverrides.riskBudgetMultiplier = multiplier
+                        BacktestResearchOverrides.riskBudgetDefensiveShare = defensiveShare
+                        guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                            assetInputs: inputs,
+                            initialCash: 100_000,
+                            settings: settings,
+                            mode: .coreGoldSatelliteRiskBudgetStateGateMomentum
+                        ) else {
+                            print(String(format: "%.2f,%.2f,%.2f,n/a,n/a,n/a,n/a,n/a,n/a,0", lowScale, multiplier, defensiveShare))
+                            continue
+                        }
+                        print([
+                            String(format: "%.2f", lowScale),
+                            String(format: "%.2f", multiplier),
+                            String(format: "%.2f", defensiveShare),
+                            report.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                            String(format: "%.6f", report.maxDrawdown * 100),
+                            report.annualizedVolatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                            report.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a",
+                            report.points.first?.date.recordDateString ?? "n/a",
+                            report.points.last?.date.recordDateString ?? "n/a",
+                            "\(report.points.count)"
+                        ].joined(separator: ","))
+                    }
+                }
+            }
+            BacktestResearchOverrides.riskBudgetLowScale = nil
+            BacktestResearchOverrides.riskBudgetMultiplier = nil
+            BacktestResearchOverrides.riskBudgetDefensiveShare = nil
+            return
+        }
+
+        if let variant = ProcessInfo.processInfo.environment["ATM_RISK_BUDGET_VARIANT"] {
+            let parts = variant.split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+            guard parts.count == 3 else {
+                print("APP_RISK_BUDGET_VARIANT")
+                print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points")
+                print("风险预算参数候选,invalid,n/a,n/a,n/a,n/a,n/a,n/a,0")
+                return
+            }
+            guard parts[1] <= 1.0001 else {
+                print("APP_RISK_BUDGET_VARIANT")
+                print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points")
+                print("风险预算参数候选,financing_rejected,n/a,n/a,n/a,n/a,n/a,n/a,0")
+                return
+            }
+
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            BacktestResearchOverrides.riskBudgetLowScale = parts[0]
+            BacktestResearchOverrides.riskBudgetMultiplier = parts[1]
+            BacktestResearchOverrides.riskBudgetDefensiveShare = parts[2]
+            defer {
+                BacktestResearchOverrides.riskBudgetLowScale = nil
+                BacktestResearchOverrides.riskBudgetMultiplier = nil
+                BacktestResearchOverrides.riskBudgetDefensiveShare = nil
+            }
+            guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: .coreGoldSatelliteRiskBudgetStateGateMomentum
+            ) else {
+                print("APP_RISK_BUDGET_VARIANT")
+                print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points")
+                print("风险预算参数候选,risk_budget_variant,n/a,n/a,n/a,n/a,n/a,n/a,0")
+                return
+            }
+
+            let calendar = Calendar(identifier: .gregorian)
+            func startDate(_ year: Int, _ month: Int, _ day: Int) -> Date {
+                calendar.date(from: DateComponents(year: year, month: month, day: day))!
+            }
+            let slices: [(String, String, Date?)] = [
+                ("全区间", "full", nil),
+                ("最近10年", "recent_10y", startDate(2016, 7, 1)),
+                ("2020以来", "since_2020", startDate(2020, 1, 1)),
+                ("2022以来", "since_2022", startDate(2022, 1, 1)),
+                ("2024以来", "since_2024", startDate(2024, 1, 1))
+            ]
+            let rows = slices.map { title, id, startDate in
+                let points: [BacktestSeriesPoint]
+                if let startDate {
+                    points = report.points.filter { $0.date >= startDate }
+                } else {
+                    points = report.points
+                }
+                return metricRow(
+                    title: title,
+                    id: id,
+                    points: points
+                )
+            }
+            printRows(rows, header: "APP_RISK_BUDGET_VARIANT")
+            return
+        }
+
+        if let variant = ProcessInfo.processInfo.environment["ATM_ASSET_RISK_VARIANT"] {
+            let parts = variant.split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+            guard parts.count == 2 else {
+                print("APP_ASSET_RISK_VARIANT")
+                print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points")
+                print("收益回撤门参数候选,invalid,n/a,n/a,n/a,n/a,n/a,n/a,0")
+                return
+            }
+
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteAssetRiskGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            BacktestResearchOverrides.assetRiskLowScale = parts[0]
+            BacktestResearchOverrides.assetRiskMultiplier = parts[1]
+            defer {
+                BacktestResearchOverrides.assetRiskLowScale = nil
+                BacktestResearchOverrides.assetRiskMultiplier = nil
+            }
+            guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: .coreGoldSatelliteAssetRiskGateMomentum
+            ) else {
+                print("APP_ASSET_RISK_VARIANT")
+                print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points")
+                print("收益回撤门参数候选,asset_risk_variant,n/a,n/a,n/a,n/a,n/a,n/a,0")
+                return
+            }
+
+            let calendar = Calendar(identifier: .gregorian)
+            func startDate(_ year: Int, _ month: Int, _ day: Int) -> Date {
+                calendar.date(from: DateComponents(year: year, month: month, day: day))!
+            }
+            let slices: [(String, String, Date?)] = [
+                ("全区间", "full", nil),
+                ("最近10年", "recent_10y", startDate(2016, 7, 1)),
+                ("2020以来", "since_2020", startDate(2020, 1, 1)),
+                ("2022以来", "since_2022", startDate(2022, 1, 1)),
+                ("2024以来", "since_2024", startDate(2024, 1, 1))
+            ]
+            let rows = slices.map { title, id, startDate in
+                let points = startDate.map { date in report.points.filter { $0.date >= date } } ?? report.points
+                return metricRow(title: title, id: id, points: points)
+            }
+            printRows(rows, header: "APP_ASSET_RISK_VARIANT")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_DUMP_ALL_MODES"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let allAppAssetOptions = BacktestDefaults.dcaAssetOptions
+            var rows: [MetricRow] = []
+            for mode in allRotationModes {
+                let requiredSymbols = mode.requiredSignalAssetSymbols
+                let options: [BacktestAssetOption]
+                if requiredSymbols.isEmpty {
+                    options = allAppAssetOptions
+                } else {
+                    options = requiredSymbols.compactMap { optionsBySymbol[$0] }
+                }
+                let inputs = options.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else {
+                    rows.append(MetricRow(
+                        title: mode.title,
+                        id: mode.rawValue,
+                        annualized: nil,
+                        maxDrawdown: nil,
+                        volatility: nil,
+                        sharpe: nil,
+                        start: "n/a",
+                        end: "n/a",
+                        pointCount: 0
+                    ))
+                    continue
+                }
+                rows.append(MetricRow(
+                    title: mode.title,
+                    id: mode.rawValue,
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                ))
+            }
+            printRows(rows, header: "APP_ALL_MODE_METRICS")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_CALENDAR_BUCKET_TURBO"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let report = BacktestEngine.runCalendarBucketTurboCompositeStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings
+            ) else {
+                print("APP_CALENDAR_BUCKET_TURBO")
+                print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points")
+                print("日历桶风险预算复合,calendar_bucket_turbo_composite,n/a,n/a,n/a,n/a,n/a,n/a,0")
+                return
+            }
+            printRows([
+                MetricRow(
+                    title: "日历桶风险预算复合",
+                    id: "calendar_bucket_turbo_composite",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+            ], header: "APP_CALENDAR_BUCKET_TURBO")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_COARSE_CALENDAR_BUCKET_TURBO"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let report = BacktestEngine.runCoarseCalendarBucketTurboCompositeStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings
+            ) else {
+                print("APP_COARSE_CALENDAR_BUCKET_TURBO")
+                print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points")
+                print("粗日历桶风险预算复合,coarse_calendar_bucket_turbo_composite,n/a,n/a,n/a,n/a,n/a,n/a,0")
+                return
+            }
+            printRows([
+                MetricRow(
+                    title: "粗日历桶风险预算复合",
+                    id: "coarse_calendar_bucket_turbo_composite",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+            ], header: "APP_COARSE_CALENDAR_BUCKET_TURBO")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_COMPACT_CALENDAR_BUCKET_TURBO"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let report = BacktestEngine.runCompactCalendarBucketTurboCompositeStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings
+            ) else {
+                print("APP_COMPACT_CALENDAR_BUCKET_TURBO")
+                print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points")
+                print("压缩日历桶风险预算复合,compact_calendar_bucket_turbo_composite,n/a,n/a,n/a,n/a,n/a,n/a,0")
+                return
+            }
+            printRows([
+                MetricRow(
+                    title: "压缩日历桶风险预算复合",
+                    id: "compact_calendar_bucket_turbo_composite",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+            ], header: "APP_COMPACT_CALENDAR_BUCKET_TURBO")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_NO_CALENDAR_LOWDD_COMPOSITE"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let report = BacktestEngine.runNoCalendarLowDrawdownCompositeStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings
+            ) else {
+                print("APP_NO_CALENDAR_LOWDD_COMPOSITE")
+                print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points")
+                print("无日历低回撤复合,no_calendar_lowdd_composite,n/a,n/a,n/a,n/a,n/a,n/a,0")
+                return
+            }
+            printRows([
+                MetricRow(
+                    title: "无日历低回撤复合",
+                    id: "no_calendar_lowdd_composite",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+            ], header: "APP_NO_CALENDAR_LOWDD_COMPOSITE")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_NO_CALENDAR_HIGH_RETURN_COMPOSITE"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let report = BacktestEngine.runNoCalendarHighReturnCompositeStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings
+            ) else {
+                print("APP_NO_CALENDAR_HIGH_RETURN_COMPOSITE")
+                print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points")
+                print("无日历高收益复合,no_calendar_high_return_composite,n/a,n/a,n/a,n/a,n/a,n/a,0")
+                return
+            }
+            printRows([
+                MetricRow(
+                    title: "无日历高收益复合",
+                    id: "no_calendar_high_return_composite",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+            ], header: "APP_NO_CALENDAR_HIGH_RETURN_COMPOSITE")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_NO_CALENDAR_THREE_SLEEVE_COMPOSITE"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let report = BacktestEngine.runNoCalendarThreeSleeveCompositeStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings
+            ) else {
+                print("APP_NO_CALENDAR_THREE_SLEEVE_COMPOSITE")
+                print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points")
+                print("无日历三袖套复合,no_calendar_three_sleeve_composite,n/a,n/a,n/a,n/a,n/a,n/a,0")
+                return
+            }
+            printRows([
+                MetricRow(
+                    title: "无日历三袖套复合",
+                    id: "no_calendar_three_sleeve_composite",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+            ], header: "APP_NO_CALENDAR_THREE_SLEEVE_COMPOSITE")
+            return
+        }
 
         var rows: [MetricRow] = []
         var sliceRows: [SliceMetricRow] = []

@@ -21,6 +21,9 @@ This repository is the **AssetTimeMachine** SwiftUI + SwiftData iOS app. It conn
 - `scripts/` contains helper conversion/demo/search scripts.
 - `tools/` contains local research/backtest parity utilities. Keep durable comparison scripts here instead of `/tmp`.
 - `marketing/` contains App Store copy, screenshots, icon prompts, and backups.
+  - Final App Store poster exports should also be copied to the local OneDrive delivery folder:
+    `/Users/xiangjunsheng/Library/CloudStorage/OneDrive-个人/作品合集/个人-IOSAPP资产时光机-2026`
+  - App Store poster screenshots must use an accepted App Store Connect size such as `1242 × 2688px` for portrait uploads.
 - `build/` contains generated archives/IPAs. Do not hand-edit or commit generated build artifacts unless explicitly asked.
 
 ## Connected Backend / Server Context
@@ -172,6 +175,34 @@ It should define at least:
 - `ASC_KEY_PATH` if needed by the local setup
 
 Do not commit this env file or key material.
+
+### Recommended one-command release
+
+Prefer the maintained release helper for normal TestFlight uploads:
+
+```bash
+cd ~/Desktop/AllProjects/AssetTimeMachine
+scripts/release_testflight.sh --commit-message "chore(ios): release testflight build"
+```
+
+The script automatically:
+
+- reads `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`;
+- increments `CURRENT_PROJECT_VERSION` unless `--no-bump` is passed;
+- runs `git diff --check`;
+- runs the simulator Debug build unless `--skip-debug-build` is passed;
+- optionally commits current changes plus the build bump when `--commit-message` is passed;
+- archives, exports, uploads the IPA, and polls App Store Connect until `BUILD-STATUS: VALID`.
+
+To bump the user-visible version, pass `--version`:
+
+```bash
+scripts/release_testflight.sh --version 1.0.6 --commit-message "chore(ios): release 1.0.6"
+```
+
+The script expects App Store Connect credentials from `~/.appstoreconnect/assettimemachine.env` by default. Override with `ASC_ENV=/path/to/env` only for local private setups. Do not print or commit env contents.
+
+Use the manual steps below only when debugging the release helper or when the user explicitly asks for a manual release.
 
 ### 1. Bump build number
 
@@ -326,26 +357,26 @@ Do not present strategy performance from a separate research script as product t
 
 ### Current App-engine strategy metrics
 
-These are the current App-engine truth values from `tools/strategy_metric_dump.swift`, run against the production market history endpoint on 2026-06-26. Assumptions: full available history, initial cash 100,000 CNY, fee 1%, slippage 0.05%.
+These are the current App-engine truth values from `tools/strategy_metric_dump.swift`, run against the production market history endpoint on 2026-07-01. Assumptions: full available history, initial cash 100,000 CNY, fee 1%, slippage 0.05%.
 
 | Strategy | Annualized | Max drawdown | Sharpe | Range |
 |---|---:|---:|---:|---|
-| 权益曲线状态机 | 11.00% | 10.24% | 1.10 | 2002-01-04..2026-06-26 |
-| 单向控波元策略 | 10.61% | 11.23% | 1.04 | 2002-01-04..2026-06-26 |
-| 动态袖套夏普策略 | 10.05% | 11.65% | 1.03 | 2002-01-04..2026-06-26 |
-| 增强热度上限元 | 9.65% | 12.04% | 0.93 | 2002-01-04..2026-06-26 |
-| 热度上限元策略 | 9.44% | 12.04% | 0.93 | 2002-01-04..2026-06-26 |
-| 黄金交接保护 | 9.39% | 11.38% | 0.92 | 2002-01-04..2026-06-26 |
-| 月度热度上限元 | 8.82% | 16.57% | 0.85 | 2002-01-04..2026-06-26 |
-| 全球修复传染控制 | 3.45% | 23.43% | 0.43 | 2002-01-04..2026-06-26 |
-| 双金丝雀动量防守 | 1.86% | 31.89% | 0.28 | 2002-01-04..2026-06-26 |
-| 美元现金修复策略 | 1.24% | 24.44% | 0.20 | 2002-01-04..2026-06-26 |
-| 黄金恐慌锁盈策略 | 1.14% | 25.29% | 0.19 | 2002-01-04..2026-06-26 |
-| 风险效率增强策略 | 1.01% | 25.76% | 0.17 | 2002-01-04..2026-06-26 |
-| MA金叉死叉 | 0.75% | 43.40% | 0.12 | 2000-01-13..2026-06-26 |
-| BOLL下轨反弹 | -5.89% | 80.30% | -0.76 | 2000-01-13..2026-06-26 |
-| MA60趋势 | -6.41% | 87.05% | -0.46 | 2000-01-13..2026-06-26 |
-| MA20趋势 | -18.78% | 99.60% | -1.48 | 2000-01-13..2026-06-26 |
+| 风险预算状态机 | 15.08% | 16.28% | 0.95 | 2002-01-04..2026-07-01 |
+| 确认加速进攻袖套 | 11.09% | 11.79% | 1.04 | 2002-01-04..2026-07-01 |
+| 权益曲线状态机 | 11.03% | 10.24% | 1.10 | 2002-01-04..2026-07-01 |
+| 单向控波元策略 | 10.65% | 11.23% | 1.04 | 2002-01-04..2026-07-01 |
+| 动态袖套夏普策略 | 10.08% | 11.65% | 1.03 | 2002-01-04..2026-07-01 |
+| 收益回撤门状态机 | 10.41% | 9.98% | 1.08 | 2002-01-04..2026-07-01 |
+| 增强热度上限元 | 9.70% | 12.04% | 0.94 | 2002-01-04..2026-07-01 |
+| 锁盈防守袖套 | 9.65% | 10.08% | 1.06 | 2002-01-04..2026-07-01 |
+| 热度上限元策略 | 9.48% | 12.04% | 0.93 | 2002-01-04..2026-07-01 |
+| 黄金交接保护 | 9.43% | 11.38% | 0.93 | 2002-01-04..2026-07-01 |
+| 月度热度上限元 | 8.87% | 16.57% | 0.85 | 2002-01-04..2026-07-01 |
+| 高夏普状态机 | 6.91% | 6.82% | 1.21 | 2002-01-04..2026-07-01 |
+| MA金叉死叉 | 0.77% | 43.40% | 0.12 | 2000-01-13..2026-07-01 |
+| BOLL下轨反弹 | -5.90% | 80.30% | -0.76 | 2000-01-13..2026-07-01 |
+| MA60趋势 | -6.43% | 87.05% | -0.46 | 2000-01-13..2026-07-01 |
+| MA20趋势 | -18.88% | 99.61% | -1.49 | 2000-01-13..2026-07-01 |
 
 If this table disagrees with a research script, trust this table only until `tools/strategy_metric_dump.swift` is rerun.
 
@@ -412,6 +443,9 @@ Use this order when looking for a new strategy candidate:
 - For multi-asset backtests across gold/US equities/A-shares, use recent valid price forward-fill with enough holiday tolerance; do not accidentally delete dates because one market is closed.
 - K-line charts must use real OHLC data. Do not fake OHLC from close-only series.
 - User preference: no BTC in main AssetTimeMachine strategy line unless explicitly requested.
+- Hard rule: external fund sleeves/proxies are unavailable and meaningless for this project. Do not use, recommend, rank, compare, or revive strategies that depend on `qmnix`, `qmnrx`, `ostix`, `vmnfx`, `bprrx`, or similar off-App fund/proxy sleeves.
+- User explicitly rejected all external fund-sleeve/proxy-asset based strategy lines as unusable/no-value. Treat them as dead ends, not as candidates, benchmarks, fallbacks, or evidence that a Sharpe-2 product strategy exists.
+- Treat all prior fund-sleeve/proxy-fund spike metrics as invalid for current product decisions. Old Sharpe-2 research lines such as `internal_budget_ensemble`, `internal_experience_ensemble`, sparse/internal ensembles, and any descendants of the `qmnrx/ostix` fixture path must not be presented as viable AssetTimeMachine candidates; see `spikes/263-invalidated-fund-sleeve-sharpe2-audit/README.md`.
 - Main product candidates should be checked on full history plus slices such as 2020+, recent 10Y, and stress periods; do not optimize only one pretty interval.
 - Preferred direction is gold/Nasdaq-centered strategies with controlled drawdown. Avoid unrelated asset stories unless the user explicitly asks.
 
