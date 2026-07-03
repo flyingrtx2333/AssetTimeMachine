@@ -24,11 +24,7 @@ enum BacktestChartValueStyle {
             }
             return String(format: "%.1fx", value)
         case let .currency(code):
-            return value.formatted(
-                .currency(code: code)
-                .precision(.fractionLength(0...1))
-                .notation(.compactName)
-            )
+            return value.chartAxisCurrencyLabel(code: code)
         }
     }
 }

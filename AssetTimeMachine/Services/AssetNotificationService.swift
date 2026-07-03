@@ -4,6 +4,7 @@ import UserNotifications
 enum AssetNotificationService {
     static let notificationIdentifier = "assettimemachine.asset-report"
     static let strategyNotificationIdentifier = "assettimemachine.strategy-rebalance"
+    static let strategyTestNotificationIdentifier = "assettimemachine.strategy-rebalance.test"
     static let intervalOptions: [Double] = [1, 2, 4, 6, 8, 12, 24]
     static let strategyHourOptions: [Int] = [8, 9, 12, 18, 21]
 
@@ -82,6 +83,27 @@ enum AssetNotificationService {
 
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
         let request = UNNotificationRequest(identifier: strategyNotificationIdentifier, content: content, trigger: trigger)
+        try await center.add(request)
+        return true
+    }
+
+    static func sendStrategyTestNotification(strategyTitle: String, body: String?) async throws -> Bool {
+        let center = UNUserNotificationCenter.current()
+        let granted = try await ensureAuthorization(for: center)
+        guard granted else { return false }
+
+        center.removePendingNotificationRequests(withIdentifiers: [strategyTestNotificationIdentifier])
+        center.removeDeliveredNotifications(withIdentifiers: [strategyTestNotificationIdentifier])
+
+        let content = UNMutableNotificationContent()
+        content.title = AppLocalization.string("今日调仓提醒")
+        content.subtitle = strategyTitle
+        content.body = body ?? AppLocalization.string("打开资产时光机，查看最新策略信号。")
+        content.sound = .default
+        content.threadIdentifier = strategyNotificationIdentifier
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(identifier: strategyTestNotificationIdentifier, content: content, trigger: trigger)
         try await center.add(request)
         return true
     }

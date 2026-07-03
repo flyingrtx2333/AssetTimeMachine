@@ -5,7 +5,7 @@ import UIKit
 
 import UniformTypeIdentifiers
 
-private struct SnapshotListLayout {
+struct SnapshotListLayout {
     let nonLiabilityCategoryItems: [SnapshotCategoryItems]
     let liabilityCategoryItems: [SnapshotCategoryItems]
     let displayEntriesByItemID: [UUID: AssetEntry]
@@ -15,74 +15,24 @@ private struct SnapshotListLayout {
     let onboardingInputTargetCategoryID: UUID?
 }
 
-struct SnapshotListView: View {
-    @Environment(\.modelContext) private var modelContext
-    @ObservedObject var marketStore: RemoteMarketStore
-    let isActive: Bool
-    let onboardingActiveAnchorID: OnboardingAnchorID?
-    @Binding var pendingRecordSnapshotID: UUID?
-
-    init(
-        marketStore: RemoteMarketStore,
-        isActive: Bool,
-        onboardingActiveAnchorID: OnboardingAnchorID?,
-        pendingRecordSnapshotID: Binding<UUID?>
-    ) {
-        self.marketStore = marketStore
-        self.isActive = isActive
-        self.onboardingActiveAnchorID = onboardingActiveAnchorID
-        self._pendingRecordSnapshotID = pendingRecordSnapshotID
-
-        var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
-            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
-        )
-        snapshotDescriptor.fetchLimit = 8
-        _snapshots = Query(snapshotDescriptor)
-    }
-
-    @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
-    @Query private var categories: [AssetCategory]
-
-    @State private var currentSnapshotID: UUID?
-    @State private var externalFocusedSnapshot: AssetSnapshot?
-    @State private var amountInputs: [UUID: String] = [:]
-    @State private var quantityInputs: [UUID: String] = [:]
-    @State private var unitPriceInputs: [UUID: String] = [:]
-    @State private var didPrepare = false
-    @State private var isPreparingInitialSnapshot = false
-    @State private var showsAddAssetItemSheet = false
-    @State private var editingAssetItem: AssetItem?
-    @State private var quickEditingAssetItem: AssetItem?
-    @FocusState private var focusedField: RecordInputField?
-    @State private var inlineEditingField: RecordInputField?
-    @State private var pendingAutoRateSyncTask: Task<Void, Never>?
-    @State private var pendingPersistTask: Task<Void, Never>?
-    @State private var cachedListLayout: SnapshotListLayout?
-
-    private let liabilitySectionTitleMap: [String: String] = [
+enum SnapshotRecordLayoutBuilder {
+    private static let liabilitySectionTitleMap: [String: String] = [
         AppLocalization.string("长期负债"): AppLocalization.string("长期负债"),
         AppLocalization.string("短期负债"): AppLocalization.string("短期负债")
     ]
 
-    private var currentSnapshot: AssetSnapshot? {
-        if let externalFocusedSnapshot {
-            return externalFocusedSnapshot
-        }
-        if let currentSnapshotID,
-           let snapshot = snapshots.first(where: { $0.id == currentSnapshotID }) {
-            return snapshot
-        }
-        return snapshots.first(where: { Calendar.current.isDateInToday($0.date) }) ?? snapshots.first
-    }
-
-    private var categoryItemGroups: (nonLiability: [SnapshotCategoryItems], liability: [SnapshotCategoryItems]) {
-        let activeCategoryItems = categories.compactMap { category -> SnapshotCategoryItems? in
-            let items = category.activeSortedItems
+    static func categoryItemGroups(
+        from categories: [AssetCategory],
+        includingSnapshotItems snapshotItems: [AssetItem] = []
+    ) -> (nonLiability: [SnapshotCategoryItems], liability: [SnapshotCategoryItems]) {
+        let snapshotItemIDs = Set(snapshotItems.map(\.id))
+        let categoryItems = categories.compactMap { category -> SnapshotCategoryItems? in
+            let items = sortedRecordItems(in: category, includingSnapshotItemIDs: snapshotItemIDs)
             guard !items.isEmpty else { return nil }
             return SnapshotCategoryItems(category: category, items: items)
         }
 
-        let nonLiability = activeCategoryItems
+        let nonLiability = categoryItems
             .filter { $0.category.group != .liability }
             .sorted {
                 if $0.category.group.sortPriority == $1.category.group.sortPriority {
@@ -91,7 +41,7 @@ struct SnapshotListView: View {
                 return $0.category.group.sortPriority < $1.category.group.sortPriority
             }
 
-        let liability = activeCategoryItems
+        let liability = categoryItems
             .filter { $0.category.group == .liability }
             .sorted {
                 let lhsPriority = $0.category.liabilitySortPriority(titleMap: liabilitySectionTitleMap)
@@ -105,9 +55,147 @@ struct SnapshotListView: View {
         return (nonLiability, liability)
     }
 
+    private static func sortedRecordItems(
+        in category: AssetCategory,
+        includingSnapshotItemIDs snapshotItemIDs: Set<UUID>
+    ) -> [AssetItem] {
+        category.items
+            .filter { item in item.isActive || snapshotItemIDs.contains(item.id) }
+            .sorted { lhs, rhs in
+                if lhs.sortOrder == rhs.sortOrder {
+                    return lhs.createdAt < rhs.createdAt
+                }
+                return lhs.sortOrder < rhs.sortOrder
+            }
+    }
+
+    static func make(
+        snapshot: AssetSnapshot,
+        categories: [AssetCategory],
+        includeLatestEntryFallback: Bool = true,
+        includeInactiveSnapshotItems: Bool = false
+    ) -> SnapshotListLayout {
+        let snapshotEntriesByItemID: [UUID: AssetEntry] = Dictionary(
+            uniqueKeysWithValues: snapshot.entries.compactMap { entry in
+                guard let itemID = entry.item?.id else { return nil }
+                return (itemID, entry)
+            }
+        )
+        let snapshotItems = includeInactiveSnapshotItems
+            ? snapshot.entries.compactMap(\.item)
+            : []
+        let categoryGroups = categoryItemGroups(from: categories, includingSnapshotItems: snapshotItems)
+        let nonLiabilityCategoryItems = categoryGroups.nonLiability
+        let liabilityCategoryItems = categoryGroups.liability
+        let nonLiabilityItemGroups = nonLiabilityCategoryItems.map(\.items)
+        let liabilityItemGroups = liabilityCategoryItems.map(\.items)
+        let displayEntriesByItemID = displayEntriesByItemID(
+            for: nonLiabilityItemGroups + liabilityItemGroups,
+            currentEntriesByItemID: snapshotEntriesByItemID,
+            includeLatestEntryFallback: includeLatestEntryFallback
+        )
+
+        return SnapshotListLayout(
+            nonLiabilityCategoryItems: nonLiabilityCategoryItems,
+            liabilityCategoryItems: liabilityCategoryItems,
+            displayEntriesByItemID: displayEntriesByItemID,
+            displayedTotalAssets: displayedTotalAmount(for: nonLiabilityItemGroups, entriesByItemID: displayEntriesByItemID),
+            displayedTotalLiabilities: displayedTotalAmount(for: liabilityItemGroups, entriesByItemID: displayEntriesByItemID),
+            displayedNetAssets: displayedTotalAmount(for: nonLiabilityItemGroups, entriesByItemID: displayEntriesByItemID)
+                - displayedTotalAmount(for: liabilityItemGroups, entriesByItemID: displayEntriesByItemID),
+            onboardingInputTargetCategoryID: nonLiabilityCategoryItems.first?.id
+        )
+    }
+
+    private static func displayedTotalAmount(for itemGroups: [[AssetItem]], entriesByItemID: [UUID: AssetEntry]) -> Double {
+        itemGroups
+            .flatMap { $0 }
+            .reduce(0) { partialResult, item in
+                partialResult + (entriesByItemID[item.id]?.resolvedAmount ?? 0)
+            }
+    }
+
+    private static func displayEntriesByItemID(
+        for itemGroups: [[AssetItem]],
+        currentEntriesByItemID: [UUID: AssetEntry],
+        includeLatestEntryFallback: Bool
+    ) -> [UUID: AssetEntry] {
+        var result = currentEntriesByItemID
+
+        guard includeLatestEntryFallback else { return result }
+
+        for item in itemGroups.flatMap({ $0 }) {
+            if hasRecordValue(result[item.id]) {
+                continue
+            }
+
+            if let latestEntry = item.latestEntry {
+                result[item.id] = latestEntry
+            }
+        }
+
+        return result
+    }
+
+    private static func hasRecordValue(_ entry: AssetEntry?) -> Bool {
+        guard let entry else { return false }
+        return entry.amount != nil || entry.quantity != nil || entry.unitPrice != nil
+    }
+}
+
+struct SnapshotListView: View {
+    @Environment(\.modelContext) private var modelContext
+    @ObservedObject var marketStore: RemoteMarketStore
+    let isActive: Bool
+    let onboardingActiveAnchorID: OnboardingAnchorID?
+
+    init(
+        marketStore: RemoteMarketStore,
+        isActive: Bool,
+        onboardingActiveAnchorID: OnboardingAnchorID?
+    ) {
+        self.marketStore = marketStore
+        self.isActive = isActive
+        self.onboardingActiveAnchorID = onboardingActiveAnchorID
+
+        var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
+            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
+        )
+        snapshotDescriptor.fetchLimit = 8
+        _snapshots = Query(snapshotDescriptor)
+    }
+
+    @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
+    @Query private var categories: [AssetCategory]
+
+    @State private var currentSnapshotID: UUID?
+    @State private var amountInputs: [UUID: String] = [:]
+    @State private var quantityInputs: [UUID: String] = [:]
+    @State private var unitPriceInputs: [UUID: String] = [:]
+    @State private var didPrepare = false
+    @State private var isPreparingInitialSnapshot = false
+    @State private var showsAddAssetItemSheet = false
+    @State private var editingAssetItem: AssetItem?
+    @State private var quickEditingAssetItem: AssetItem?
+    @FocusState private var focusedField: RecordInputField?
+    @State private var inlineEditingField: RecordInputField?
+    @State private var pendingAutoRateSyncTask: Task<Void, Never>?
+    @State private var pendingPersistTask: Task<Void, Never>?
+    @State private var cachedListLayout: SnapshotListLayout?
+    @State private var cachedItemsByID: [UUID: AssetItem] = [:]
+    @State private var itemsByIDCacheToken: String = ""
+
+    private var currentSnapshot: AssetSnapshot? {
+        if let currentSnapshotID,
+           let snapshot = snapshots.first(where: { $0.id == currentSnapshotID }) {
+            return snapshot
+        }
+        return snapshots.first(where: { Calendar.current.isDateInToday($0.date) }) ?? snapshots.first
+    }
+
     #if DEBUG
     private var debugAutoPricedItem: AssetItem? {
-        let groups = categoryItemGroups
+        let groups = SnapshotRecordLayoutBuilder.categoryItemGroups(from: categories)
         return groups.nonLiability
             .flatMap(\.items)
             .first(where: { $0.autoPricedAssetKind != nil })
@@ -133,46 +221,17 @@ struct SnapshotListView: View {
     private var listLayoutCacheToken: String {
         let snapshotID = currentSnapshotID?.uuidString ?? "none"
         let snapshotUpdate = currentSnapshot?.updatedAt.timeIntervalSince1970 ?? 0
-        let latestItemUpdate = categories
-            .flatMap(\.items)
-            .reduce(0) { max($0, $1.updatedAt.timeIntervalSince1970) }
         return [
             snapshotID,
             String(Int(snapshotUpdate)),
             String(categories.count),
-            String(Int(latestItemUpdate)),
+            String(cachedItemsByID.count),
             String(snapshots.count)
         ].joined(separator: ":")
     }
 
     private var marketRefreshToken: Int {
-        var hasher = Hasher()
-        hasher.combine(exchangeRateCacheToken)
-        hasher.combine(overviewCacheToken)
-        return hasher.finalize()
-    }
-
-    private var exchangeRateCacheToken: Int {
-        var hasher = Hasher()
-        let rates = marketStore.exchangeRates.sorted { $0.key < $1.key }
-        hasher.combine(rates.count)
-        for (currency, rate) in rates {
-            hasher.combine(currency)
-            hasher.combine(rate)
-        }
-        return hasher.finalize()
-    }
-
-    private var overviewCacheToken: Int {
-        var hasher = Hasher()
-        let markets = (marketStore.overview?.markets ?? []).sorted { $0.symbol < $1.symbol }
-        hasher.combine(markets.count)
-        for market in markets {
-            hasher.combine(market.symbol)
-            hasher.combine(market.price)
-            hasher.combine(market.fetchedAt.timeIntervalSinceReferenceDate)
-        }
-        return hasher.finalize()
+        marketStore.liveMarketCacheToken()
     }
 
     private var canAutoSyncMarketRates: Bool {
@@ -215,48 +274,23 @@ struct SnapshotListView: View {
                             )
                             .padding(.bottom, 2)
 
-                            ForEach(layout.nonLiabilityCategoryItems) { categoryItems in
-                                RecordCategoryCard(
-                                    category: categoryItems.category,
-                                    items: categoryItems.items,
-                                    snapshotEntriesByItemID: layout.displayEntriesByItemID,
-                                    onboardingInputItemID: categoryItems.id == layout.onboardingInputTargetCategoryID ? categoryItems.items.first?.id : nil,
-                                    onboardingActiveAnchorID: onboardingActiveAnchorID,
-                                    amountInputs: $amountInputs,
-                                    quantityInputs: $quantityInputs,
-                                    unitPriceInputs: $unitPriceInputs,
-                                    focusedField: $focusedField,
-                                    inlineEditingField: inlineEditingField,
-                                    onBeginInlineEdit: beginInlineEditing,
-                                    onEdit: { item in
-                                        dismissKeyboard()
-                                        editingAssetItem = item
-                                    },
-                                    onEditValue: { item in
-                                        presentQuickEdit(for: item)
-                                    }
-                                )
-                            }
-
-                            ForEach(layout.liabilityCategoryItems) { categoryItems in
-                                LiabilityCategorySection(
-                                    category: categoryItems.category,
-                                    items: categoryItems.items,
-                                    snapshotEntriesByItemID: layout.displayEntriesByItemID,
-                                    amountInputs: $amountInputs,
-                                    quantityInputs: $quantityInputs,
-                                    focusedField: $focusedField,
-                                    inlineEditingField: inlineEditingField,
-                                    onBeginInlineEdit: beginInlineEditing,
-                                    onEdit: { item in
-                                        dismissKeyboard()
-                                        editingAssetItem = item
-                                    },
-                                    onEditValue: { item in
-                                        presentQuickEdit(for: item)
-                                    }
-                                )
-                            }
+                            RecordSnapshotSections(
+                                layout: layout,
+                                onboardingActiveAnchorID: onboardingActiveAnchorID,
+                                amountInputs: $amountInputs,
+                                quantityInputs: $quantityInputs,
+                                unitPriceInputs: $unitPriceInputs,
+                                focusedField: $focusedField,
+                                inlineEditingField: inlineEditingField,
+                                onBeginInlineEdit: beginInlineEditing,
+                                onEdit: { item in
+                                    dismissKeyboard()
+                                    editingAssetItem = item
+                                },
+                                onEditValue: { item in
+                                    presentQuickEdit(for: item)
+                                }
+                            )
 
                         } else if isPreparingInitialSnapshot || !didPrepare || currentSnapshotValue != nil {
                             LoadingStateCard(title: AppLocalization.string("记录加载中"))
@@ -268,7 +302,7 @@ struct SnapshotListView: View {
                         }
 
                         Color.clear
-                            .frame(height: 180)
+                            .frame(height: TabScrollLayout.keyboardDismissSpacer)
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 dismissKeyboard()
@@ -277,7 +311,7 @@ struct SnapshotListView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
                     .padding(.top, 18)
-                    .padding(.bottom, 104)
+                    .padding(.bottom, TabScrollLayout.bottomPadding)
                 }
                 .scrollDismissesKeyboard(.never)
             }
@@ -343,16 +377,8 @@ struct SnapshotListView: View {
         .onChange(of: listLayoutCacheToken) { _, _ in
             refreshCachedListLayout()
         }
-        .onChange(of: pendingRecordSnapshotID) { _, _ in
-            applyPendingRecordSnapshotIfNeeded()
-        }
-        .onChange(of: isActive) { _, active in
-            guard active else { return }
-            applyPendingRecordSnapshotIfNeeded()
-        }
         .task {
             await prepareSnapshotIfNeeded()
-            applyPendingRecordSnapshotIfNeeded()
             refreshCachedListLayout()
             #if DEBUG
             await ensureDebugAutoPricedItemIfNeeded()
@@ -425,33 +451,32 @@ struct SnapshotListView: View {
 
     @MainActor
     private func refreshCachedListLayout() {
+        refreshItemsByIDCache()
         cachedListLayout = buildListLayout(for: currentSnapshot)
     }
 
+    @MainActor
+    private func refreshItemsByIDCache() {
+        var hasher = Hasher()
+        hasher.combine(categories.count)
+        for category in categories {
+            hasher.combine(category.id)
+            hasher.combine(category.items.count)
+            if let latestItem = category.items.max(by: { $0.updatedAt < $1.updatedAt }) {
+                hasher.combine(latestItem.updatedAt.timeIntervalSince1970)
+            }
+        }
+        let token = String(hasher.finalize())
+        guard token != itemsByIDCacheToken else { return }
+        cachedItemsByID = Dictionary(
+            uniqueKeysWithValues: categories.flatMap(\.items).map { ($0.id, $0) }
+        )
+        itemsByIDCacheToken = token
+    }
+
     private func buildListLayout(for snapshot: AssetSnapshot?) -> SnapshotListLayout? {
-        guard snapshot != nil else { return nil }
-
-        let categoryGroups = categoryItemGroups
-        let nonLiabilityCategoryItems = categoryGroups.nonLiability
-        let liabilityCategoryItems = categoryGroups.liability
-        let snapshotEntriesByItemIDValue = snapshotEntriesByItemID(for: snapshot)
-        let nonLiabilityItemGroups = nonLiabilityCategoryItems.map(\.items)
-        let liabilityItemGroups = liabilityCategoryItems.map(\.items)
-        let displayEntriesByItemIDValue = displayEntriesByItemID(
-            for: nonLiabilityItemGroups + liabilityItemGroups,
-            currentEntriesByItemID: snapshotEntriesByItemIDValue
-        )
-
-        return SnapshotListLayout(
-            nonLiabilityCategoryItems: nonLiabilityCategoryItems,
-            liabilityCategoryItems: liabilityCategoryItems,
-            displayEntriesByItemID: displayEntriesByItemIDValue,
-            displayedTotalAssets: displayedTotalAmount(for: nonLiabilityItemGroups, entriesByItemID: displayEntriesByItemIDValue),
-            displayedTotalLiabilities: displayedTotalAmount(for: liabilityItemGroups, entriesByItemID: displayEntriesByItemIDValue),
-            displayedNetAssets: displayedTotalAmount(for: nonLiabilityItemGroups, entriesByItemID: displayEntriesByItemIDValue)
-                - displayedTotalAmount(for: liabilityItemGroups, entriesByItemID: displayEntriesByItemIDValue),
-            onboardingInputTargetCategoryID: nonLiabilityCategoryItems.first?.id
-        )
+        guard let snapshot else { return nil }
+        return SnapshotRecordLayoutBuilder.make(snapshot: snapshot, categories: categories)
     }
 
     @MainActor
@@ -475,35 +500,7 @@ struct SnapshotListView: View {
         case let .amount(id), let .quantity(id), let .unitPrice(id):
             itemID = id
         }
-        return categories.flatMap(\.items).first(where: { $0.id == itemID })
-    }
-
-    @MainActor
-    private func focusSnapshot(withID id: UUID) {
-        currentSnapshotID = id
-        externalFocusedSnapshot = nil
-
-        if let snapshot = snapshots.first(where: { $0.id == id }) {
-            hydrateInputs(from: snapshot)
-            refreshCachedListLayout()
-            return
-        }
-
-        var descriptor = FetchDescriptor<AssetSnapshot>(
-            predicate: #Predicate { $0.id == id }
-        )
-        descriptor.fetchLimit = 1
-        guard let snapshot = try? modelContext.fetch(descriptor).first else { return }
-        externalFocusedSnapshot = snapshot
-        hydrateInputs(from: snapshot)
-        refreshCachedListLayout()
-    }
-
-    @MainActor
-    private func applyPendingRecordSnapshotIfNeeded() {
-        guard let snapshotID = pendingRecordSnapshotID else { return }
-        focusSnapshot(withID: snapshotID)
-        pendingRecordSnapshotID = nil
+        return cachedItemsByID[itemID]
     }
 
     @MainActor
@@ -516,7 +513,7 @@ struct SnapshotListView: View {
         do {
             try SeedDataService.seedDefaultCategoriesIfNeeded(in: modelContext)
             let snapshot = try SnapshotService.createSnapshot(on: .now, inheritPrevious: true, createMissingEntries: true, in: modelContext)
-            if pendingRecordSnapshotID == nil, currentSnapshotID == nil {
+            if currentSnapshotID == nil {
                 currentSnapshotID = snapshot.id
                 hydrateInputs(from: snapshot)
             }
@@ -696,46 +693,6 @@ struct SnapshotListView: View {
         }
         return forcePositive ? abs(value) : value
     }
-
-    private func snapshotEntriesByItemID(for snapshot: AssetSnapshot?) -> [UUID: AssetEntry] {
-        guard let snapshot else { return [:] }
-        return Dictionary(uniqueKeysWithValues: snapshot.entries.compactMap { entry in
-            guard let itemID = entry.item?.id else { return nil }
-            return (itemID, entry)
-        })
-    }
-
-    private func displayedTotalAmount(for itemGroups: [[AssetItem]], entriesByItemID: [UUID: AssetEntry]) -> Double {
-        itemGroups
-            .flatMap { $0 }
-            .reduce(0) { partialResult, item in
-                partialResult + (entriesByItemID[item.id]?.resolvedAmount ?? 0)
-            }
-    }
-
-    private func displayEntriesByItemID(
-        for itemGroups: [[AssetItem]],
-        currentEntriesByItemID: [UUID: AssetEntry]
-    ) -> [UUID: AssetEntry] {
-        var result = currentEntriesByItemID
-
-        for item in itemGroups.flatMap({ $0 }) {
-            if hasRecordValue(result[item.id]) {
-                continue
-            }
-
-            if let latestEntry = item.latestEntry {
-                result[item.id] = latestEntry
-            }
-        }
-
-        return result
-    }
-
-    private func hasRecordValue(_ entry: AssetEntry?) -> Bool {
-        guard let entry else { return false }
-        return entry.amount != nil || entry.quantity != nil || entry.unitPrice != nil
-    }
 }
 
 enum RecordInputField: Hashable {
@@ -792,11 +749,66 @@ struct RecordHeroActionChip: View {
     }
 }
 
+struct RecordSnapshotSections: View {
+    let layout: SnapshotListLayout
+    let onboardingActiveAnchorID: OnboardingAnchorID?
+    @Binding var amountInputs: [UUID: String]
+    @Binding var quantityInputs: [UUID: String]
+    @Binding var unitPriceInputs: [UUID: String]
+    @FocusState.Binding var focusedField: RecordInputField?
+    let inlineEditingField: RecordInputField?
+    let onBeginInlineEdit: (RecordInputField) -> Void
+    let onEdit: (AssetItem) -> Void
+    let onEditValue: (AssetItem) -> Void
+    var isReadOnly: Bool = false
+    var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
+
+    var body: some View {
+        ForEach(layout.nonLiabilityCategoryItems) { categoryItems in
+            RecordCategoryCard(
+                category: categoryItems.category,
+                items: categoryItems.items,
+                snapshotEntriesByItemID: layout.displayEntriesByItemID,
+                onboardingInputItemID: categoryItems.id == layout.onboardingInputTargetCategoryID ? categoryItems.items.first?.id : nil,
+                onboardingActiveAnchorID: onboardingActiveAnchorID,
+                amountInputs: $amountInputs,
+                quantityInputs: $quantityInputs,
+                unitPriceInputs: $unitPriceInputs,
+                focusedField: $focusedField,
+                inlineEditingField: inlineEditingField,
+                onBeginInlineEdit: onBeginInlineEdit,
+                onEdit: onEdit,
+                onEditValue: onEditValue,
+                isReadOnly: isReadOnly,
+                onReadOnlyEdit: onReadOnlyEdit
+            )
+        }
+
+        ForEach(layout.liabilityCategoryItems) { categoryItems in
+            LiabilityCategorySection(
+                category: categoryItems.category,
+                items: categoryItems.items,
+                snapshotEntriesByItemID: layout.displayEntriesByItemID,
+                amountInputs: $amountInputs,
+                quantityInputs: $quantityInputs,
+                focusedField: $focusedField,
+                inlineEditingField: inlineEditingField,
+                onBeginInlineEdit: onBeginInlineEdit,
+                onEdit: onEdit,
+                onEditValue: onEditValue,
+                isReadOnly: isReadOnly,
+                onReadOnlyEdit: onReadOnlyEdit
+            )
+        }
+    }
+}
+
 struct RecordPageHero: View {
     let snapshot: AssetSnapshot
     let totalAssets: Double
     let netAssets: Double
     let totalLiabilities: Double
+    var showsActionChips: Bool = true
     let onAddAsset: () -> Void
 
     private var netAssetColor: Color {
@@ -841,25 +853,27 @@ struct RecordPageHero: View {
 
                 Spacer(minLength: 12)
 
-                HStack(spacing: 8) {
-                    NavigationLink {
-                        SnapshotArchiveView()
-                    } label: {
-                        RecordHeroActionChip(
-                            systemImage: "clock.arrow.circlepath",
-                            title: AppLocalization.string("历史记录")
-                        )
-                    }
-                    .buttonStyle(.plain)
+                if showsActionChips {
+                    HStack(spacing: 8) {
+                        NavigationLink {
+                            SnapshotArchiveView()
+                        } label: {
+                            RecordHeroActionChip(
+                                systemImage: "clock.arrow.circlepath",
+                                title: AppLocalization.string("历史记录")
+                            )
+                        }
+                        .buttonStyle(.plain)
 
-                    Button(action: onAddAsset) {
-                        RecordHeroActionChip(
-                            systemImage: "plus",
-                            title: AppLocalization.string("新增资产")
-                        )
+                        Button(action: onAddAsset) {
+                            RecordHeroActionChip(
+                                systemImage: "plus",
+                                title: AppLocalization.string("新增资产")
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .onboardingAnchor(.recordsAddAsset)
                     }
-                    .buttonStyle(.plain)
-                    .onboardingAnchor(.recordsAddAsset)
                 }
             }
 
@@ -988,6 +1002,8 @@ struct RecordCategoryCard: View {
     let onBeginInlineEdit: (RecordInputField) -> Void
     let onEdit: (AssetItem) -> Void
     let onEditValue: (AssetItem) -> Void
+    var isReadOnly: Bool = false
+    var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
     @State private var draggedItemID: UUID?
 
     private let compactColumns = [
@@ -1003,7 +1019,10 @@ struct RecordCategoryCard: View {
     }
 
     private func snapshotEntry(for item: AssetItem) -> AssetEntry? {
-        snapshotEntriesByItemID[item.id] ?? item.latestEntry
+        if isReadOnly {
+            return snapshotEntriesByItemID[item.id]
+        }
+        return snapshotEntriesByItemID[item.id] ?? item.latestEntry
     }
 
     private var inputBlocks: [InputBlock] {
@@ -1053,7 +1072,7 @@ struct RecordCategoryCard: View {
                         RecordMatrixSurface {
                             LazyVGrid(columns: compactColumns, alignment: .leading, spacing: 0) {
                                 ForEach(Array(compactItems.enumerated()), id: \.element.id) { index, item in
-                                    ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
+                                    ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID, allowsReorder: !isReadOnly) {
                                         AssetEntryCompactCard(
                                             item: item,
                                             snapshotEntry: snapshotEntry(for: item),
@@ -1080,7 +1099,9 @@ struct RecordCategoryCard: View {
                                             },
                                             onEditValue: {
                                                 onEditValue(item)
-                                            }
+                                            },
+                                            isReadOnly: isReadOnly,
+                                            onReadOnlyEdit: onReadOnlyEdit
                                         )
                                     }
                                     .overlay(alignment: .trailing) {
@@ -1102,7 +1123,7 @@ struct RecordCategoryCard: View {
                         }
                     case let .expanded(item):
                         RecordMatrixSurface {
-                            ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
+                            ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID, allowsReorder: !isReadOnly) {
                                 AssetEntryInputRow(
                                     item: item,
                                     snapshotEntry: snapshotEntry(for: item),
@@ -1135,7 +1156,9 @@ struct RecordCategoryCard: View {
                                     },
                                     onEditValue: {
                                         onEditValue(item)
-                                    }
+                                    },
+                                    isReadOnly: isReadOnly,
+                                    onReadOnlyEdit: onReadOnlyEdit
                                 )
                             }
                         }
@@ -1159,6 +1182,8 @@ struct LiabilityCategorySection: View {
     let onBeginInlineEdit: (RecordInputField) -> Void
     let onEdit: (AssetItem) -> Void
     let onEditValue: (AssetItem) -> Void
+    var isReadOnly: Bool = false
+    var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
     @State private var draggedItemID: UUID?
 
     private let columns = [GridItem(.flexible(), spacing: 0), GridItem(.flexible(), spacing: 0)]
@@ -1171,7 +1196,10 @@ struct LiabilityCategorySection: View {
     }
 
     private func snapshotEntry(for item: AssetItem) -> AssetEntry? {
-        snapshotEntriesByItemID[item.id] ?? item.latestEntry
+        if isReadOnly {
+            return snapshotEntriesByItemID[item.id]
+        }
+        return snapshotEntriesByItemID[item.id] ?? item.latestEntry
     }
 
     private func showsRightDivider(at index: Int, total: Int) -> Bool {
@@ -1194,7 +1222,7 @@ struct LiabilityCategorySection: View {
             RecordMatrixSurface {
                 LazyVGrid(columns: columns, alignment: .leading, spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID) {
+                        ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID, allowsReorder: !isReadOnly) {
                             LiabilityEntryCard(
                                 item: item,
                                 snapshotEntry: snapshotEntry(for: item),
@@ -1219,7 +1247,9 @@ struct LiabilityCategorySection: View {
                                 },
                                 onEditValue: {
                                     onEditValue(item)
-                                }
+                                },
+                                isReadOnly: isReadOnly,
+                                onReadOnlyEdit: onReadOnlyEdit
                             )
                         }
                         .overlay(alignment: .trailing) {
@@ -1254,13 +1284,15 @@ struct LiabilityEntryCard: View {
     let inputWidth: CGFloat
     let onEdit: () -> Void
     let onEditValue: () -> Void
+    var isReadOnly: Bool = false
+    var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
 
     private var activeField: RecordInputField {
         item.valuationMethod == .directAmount ? .amount(item.id) : .quantity(item.id)
     }
 
     private var isEditing: Bool {
-        inlineEditingField == activeField
+        !isReadOnly && inlineEditingField == activeField
     }
 
     private var hasDisplayValue: Bool {
@@ -1269,11 +1301,15 @@ struct LiabilityEntryCard: View {
 
     var body: some View {
         RecordInputCard {
-            HStack(alignment: .top, spacing: 8) {
+            HStack(alignment: .center, spacing: 8) {
                 Button {
-                    onEdit()
+                    if isReadOnly, let entry = snapshotEntry {
+                        onReadOnlyEdit?(entry)
+                    } else {
+                        onEdit()
+                    }
                 } label: {
-                    HStack(alignment: .top, spacing: 6) {
+                    HStack(alignment: .center, spacing: 6) {
                         RecordEntryGlyph(item: item, tint: hasDisplayValue ? AssetTheme.negative : AssetTheme.negative.opacity(0.72))
 
                         VStack(alignment: .leading, spacing: 2) {
@@ -1300,7 +1336,9 @@ struct LiabilityEntryCard: View {
                     isEditing: isEditing,
                     width: inputWidth,
                     onTap: {
-                        if item.valuationMethod == .directAmount || item.autoPricedAssetKind == nil {
+                        if isReadOnly, let entry = snapshotEntry {
+                            onReadOnlyEdit?(entry)
+                        } else if item.valuationMethod == .directAmount || item.autoPricedAssetKind == nil {
                             onBeginInlineEdit(activeField)
                         } else {
                             onEditValue()
@@ -1394,35 +1432,42 @@ struct ReorderableRecordCell<Content: View>: View {
     let category: AssetCategory
     let item: AssetItem
     @Binding var draggedItemID: UUID?
+    var allowsReorder: Bool = true
     @ViewBuilder var content: Content
 
     init(
         category: AssetCategory,
         item: AssetItem,
         draggedItemID: Binding<UUID?>,
+        allowsReorder: Bool = true,
         @ViewBuilder content: () -> Content
     ) {
         self.category = category
         self.item = item
         self._draggedItemID = draggedItemID
+        self.allowsReorder = allowsReorder
         self.content = content()
     }
 
     var body: some View {
-        content
-            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .opacity(draggedItemID == item.id ? 0.55 : 1)
-            .scaleEffect(draggedItemID == item.id ? 0.98 : 1)
-            .onDrag {
-                draggedItemID = item.id
-                return NSItemProvider(object: item.id.uuidString as NSString)
-            }
-            .onDrop(of: [UTType.plainText], delegate: RecordItemDropDelegate(
-                targetItem: item,
-                category: category,
-                draggedItemID: $draggedItemID,
-                modelContext: modelContext
-            ))
+        if allowsReorder {
+            content
+                .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .opacity(draggedItemID == item.id ? 0.55 : 1)
+                .scaleEffect(draggedItemID == item.id ? 0.98 : 1)
+                .onDrag {
+                    draggedItemID = item.id
+                    return NSItemProvider(object: item.id.uuidString as NSString)
+                }
+                .onDrop(of: [UTType.plainText], delegate: RecordItemDropDelegate(
+                    targetItem: item,
+                    category: category,
+                    draggedItemID: $draggedItemID,
+                    modelContext: modelContext
+                ))
+        } else {
+            content
+        }
     }
 }
 
@@ -1478,13 +1523,15 @@ struct AssetEntryCompactCard: View {
     let showsOnboardingInputPreview: Bool
     let onEdit: () -> Void
     let onEditValue: () -> Void
+    var isReadOnly: Bool = false
+    var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
 
     private var activeField: RecordInputField {
         item.valuationMethod == .directAmount ? .amount(item.id) : .quantity(item.id)
     }
 
     private var isEditing: Bool {
-        inlineEditingField == activeField
+        !isReadOnly && inlineEditingField == activeField
     }
 
     private var hasDisplayValue: Bool {
@@ -1493,11 +1540,15 @@ struct AssetEntryCompactCard: View {
 
     var body: some View {
         RecordInputCard {
-            HStack(alignment: .top, spacing: 8) {
+            HStack(alignment: .center, spacing: 8) {
                 Button {
-                    onEdit()
+                    if isReadOnly, let entry = snapshotEntry {
+                        onReadOnlyEdit?(entry)
+                    } else {
+                        onEdit()
+                    }
                 } label: {
-                    HStack(alignment: .top, spacing: 6) {
+                    HStack(alignment: .center, spacing: 6) {
                         RecordEntryGlyph(item: item, tint: hasDisplayValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.74))
 
                         VStack(alignment: .leading, spacing: 3) {
@@ -1525,7 +1576,9 @@ struct AssetEntryCompactCard: View {
                     showsInputPreview: showsOnboardingInputPreview,
                     width: inputWidth,
                     onTap: {
-                        if item.valuationMethod == .directAmount || item.autoPricedAssetKind == nil {
+                        if isReadOnly, let entry = snapshotEntry {
+                            onReadOnlyEdit?(entry)
+                        } else if item.valuationMethod == .directAmount || item.autoPricedAssetKind == nil {
                             onBeginInlineEdit(activeField)
                         } else {
                             onEditValue()
@@ -1569,9 +1622,11 @@ struct AssetEntryInputRow: View {
     let showsOnboardingInputPreview: Bool
     let onEdit: () -> Void
     let onEditValue: () -> Void
+    var isReadOnly: Bool = false
+    var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
 
     private var isEditing: Bool {
-        inlineEditingField == .quantity(item.id) || inlineEditingField == .unitPrice(item.id)
+        !isReadOnly && (inlineEditingField == .quantity(item.id) || inlineEditingField == .unitPrice(item.id))
     }
 
     private var resolvedValueText: String {
@@ -1587,7 +1642,11 @@ struct AssetEntryInputRow: View {
         RecordInputCard {
             HStack(alignment: .top, spacing: 8) {
                 Button {
-                    onEdit()
+                    if isReadOnly, let entry = snapshotEntry {
+                        onReadOnlyEdit?(entry)
+                    } else {
+                        onEdit()
+                    }
                 } label: {
                     HStack(alignment: .top, spacing: 6) {
                         RecordEntryGlyph(item: item, tint: hasResolvedValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.74))
@@ -1619,7 +1678,9 @@ struct AssetEntryInputRow: View {
                         showsInputPreview: showsOnboardingInputPreview,
                         width: inputWidth,
                         onTap: {
-                            if item.autoPricedAssetKind == nil {
+                            if isReadOnly, let entry = snapshotEntry {
+                                onReadOnlyEdit?(entry)
+                            } else if item.autoPricedAssetKind == nil {
                                 onBeginInlineEdit(.quantity(item.id))
                             } else {
                                 onEditValue()
@@ -1867,7 +1928,7 @@ struct AssetEditorForm: View {
                             .font(.body.weight(.semibold))
                             .foregroundStyle(AssetTheme.textPrimary)
                             .padding(.horizontal, 14)
-                            .frame(height: 48)
+                            .frame(height: TabScrollLayout.keyboardDismissSpacer)
                             .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -1889,7 +1950,7 @@ struct AssetEditorForm: View {
                             }
                         }
                         .pickerStyle(.menu)
-                        .frame(height: 48)
+                        .frame(height: TabScrollLayout.keyboardDismissSpacer)
                         .frame(maxWidth: .infinity)
                         .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .overlay(
@@ -2069,7 +2130,7 @@ struct AddAssetItemSheet: View {
                         }
 
                         Color.clear
-                            .frame(height: 180)
+                            .frame(height: TabScrollLayout.formKeyboardDismissSpacer)
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 dismissActiveKeyboard()
@@ -2078,7 +2139,7 @@ struct AddAssetItemSheet: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
-                    .padding(.bottom, 36)
+                    .padding(.bottom, TabScrollLayout.sheetBottomPadding)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         dismissActiveKeyboard()
@@ -2607,7 +2668,7 @@ struct EditAssetItemSheet: View {
                         }
 
                         Color.clear
-                            .frame(height: 180)
+                            .frame(height: TabScrollLayout.formKeyboardDismissSpacer)
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 dismissActiveKeyboard()
@@ -2616,7 +2677,7 @@ struct EditAssetItemSheet: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
-                    .padding(.bottom, 36)
+                    .padding(.bottom, TabScrollLayout.sheetBottomPadding)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         dismissActiveKeyboard()
@@ -2823,19 +2884,21 @@ struct SnapshotArchiveRow: View {
 
 struct SnapshotDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @Query private var categories: [AssetCategory]
     let snapshot: AssetSnapshot
     @State private var editingEntry: AssetEntry?
+    @State private var amountInputs: [UUID: String] = [:]
+    @State private var quantityInputs: [UUID: String] = [:]
+    @State private var unitPriceInputs: [UUID: String] = [:]
+    @FocusState private var focusedField: RecordInputField?
 
-    private var groupedEntries: [(group: AssetGroup, entries: [AssetEntry])] {
-        AssetGroup.allCases.compactMap { group in
-            let entries = snapshot.entries
-                .filter { $0.item?.category?.group == group }
-                .sorted { lhs, rhs in
-                    (lhs.item?.sortOrder ?? 0) < (rhs.item?.sortOrder ?? 0)
-                }
-            guard !entries.isEmpty else { return nil }
-            return (group, entries)
-        }
+    private var layout: SnapshotListLayout {
+        SnapshotRecordLayoutBuilder.make(
+            snapshot: snapshot,
+            categories: categories,
+            includeLatestEntryFallback: false,
+            includeInactiveSnapshotItems: true
+        )
     }
 
     var body: some View {
@@ -2843,86 +2906,64 @@ struct SnapshotDetailView: View {
             AssetTheme.pageGradient.ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    ATMHeader(title: snapshot.date.longDateString) {
+                LazyVStack(alignment: .leading, spacing: 16) {
+                    HStack {
                         ATMBackButton {
                             dismiss()
                         }
+                        Spacer(minLength: 0)
                     }
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(PortfolioCalculator.netAssets(for: snapshot).currencyString())
-                            .font(AppTypography.heroValue)
-                            .foregroundStyle(AssetTheme.goldSoft)
+                    RecordPageHero(
+                        snapshot: snapshot,
+                        totalAssets: layout.displayedTotalAssets,
+                        netAssets: layout.displayedNetAssets,
+                        totalLiabilities: layout.displayedTotalLiabilities,
+                        showsActionChips: false,
+                        onAddAsset: {}
+                    )
+                    .padding(.bottom, 2)
 
-                        HStack(spacing: 12) {
-                            CompactStat(title: AppLocalization.string("资产"), value: PortfolioCalculator.totalAssets(for: snapshot).currencyString(), accent: AssetTheme.gold)
-                            CompactStat(title: AppLocalization.string("负债"), value: PortfolioCalculator.totalLiabilities(for: snapshot).currencyString(), accent: AssetTheme.negative)
+                    RecordSnapshotSections(
+                        layout: layout,
+                        onboardingActiveAnchorID: nil,
+                        amountInputs: $amountInputs,
+                        quantityInputs: $quantityInputs,
+                        unitPriceInputs: $unitPriceInputs,
+                        focusedField: $focusedField,
+                        inlineEditingField: nil,
+                        onBeginInlineEdit: { _ in },
+                        onEdit: { _ in },
+                        onEditValue: { _ in },
+                        isReadOnly: true,
+                        onReadOnlyEdit: { entry in
+                            editingEntry = entry
                         }
-                    }
-                    .atmCardStyle()
+                    )
 
-                    ForEach(groupedEntries, id: \.group) { section in
-                        VStack(alignment: .leading, spacing: 14) {
-                            Text(section.group.displayName)
-                                .font(.title3.weight(.bold))
-                                .foregroundStyle(AssetTheme.textPrimary)
-
-                            ForEach(section.entries) { entry in
-                                Button {
-                                    editingEntry = entry
-                                } label: {
-                                    HStack(alignment: .top, spacing: 12) {
-                                        VStack(alignment: .leading, spacing: 6) {
-                                            Text(AppLocalization.string(entry.item?.name ?? "未命名"))
-                                                .font(AppTypography.blockTitle)
-                                                .foregroundStyle(AssetTheme.textPrimary)
-
-                                            if let quantity = entry.quantity, let unitPrice = entry.unitPrice {
-                                                Text("\(quantity.plainNumberString()) × \(unitPrice.plainNumberString())")
-                                                    .font(AppTypography.meta)
-                                                    .foregroundStyle(AssetTheme.textSecondary)
-                                            } else {
-                                                Text(AppLocalization.string("点按编辑这条历史记录"))
-                                                    .font(AppTypography.meta)
-                                                    .foregroundStyle(AssetTheme.textSecondary)
-                                            }
-                                        }
-
-                                        Spacer()
-
-                                        VStack(alignment: .trailing, spacing: 6) {
-                                            Text(entry.resolvedAmount.currencyString())
-                                                .font(AppTypography.blockTitle)
-                                                .foregroundStyle(section.group == .liability ? AssetTheme.negative : AssetTheme.goldSoft)
-                                            Image(systemName: "pencil")
-                                                .font(AppTypography.captionStrong)
-                                                .foregroundStyle(AssetTheme.textSecondary)
-                                        }
-                                        .monospacedDigit()
-                                        .lineLimit(1)
-                                    }
-                                    .padding(14)
-                                    .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                            .stroke(AssetTheme.border.opacity(0.75), lineWidth: 1)
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .atmCardStyle()
-                    }
+                    Color.clear.frame(height: 32)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 120)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.top, 18)
+                .padding(.bottom, TabScrollLayout.bottomPadding)
             }
         }
         .toolbar(.hidden, for: .navigationBar)
+        .onAppear {
+            hydrateDisplayInputs(from: snapshot)
+        }
         .sheet(item: $editingEntry) { entry in
             SnapshotEntryEditSheet(entry: entry)
+        }
+    }
+
+    private func hydrateDisplayInputs(from snapshot: AssetSnapshot) {
+        for entry in snapshot.entries {
+            guard let item = entry.item else { continue }
+            amountInputs[item.id] = item.valuationMethod == .directAmount ? (entry.amount?.plainNumberString() ?? "") : ""
+            quantityInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.quantity?.plainNumberString() ?? "") : ""
+            unitPriceInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.unitPrice?.plainNumberString() ?? "") : ""
         }
     }
 }
@@ -2981,7 +3022,7 @@ struct SnapshotEntryEditSheet: View {
                             }
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(itemName)
-                                    .font(.title3.weight(.bold))
+                                    .font(AppTypography.blockTitleBold)
                                     .foregroundStyle(AssetTheme.textPrimary)
                                 if let snapshotDate = entry.snapshot?.date {
                                     Text(snapshotDate.longDateString)
@@ -3025,7 +3066,7 @@ struct SnapshotEntryEditSheet: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
-                    .padding(.bottom, 48)
+                    .padding(.bottom, TabScrollLayout.sheetBottomPadding)
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
@@ -3034,6 +3075,7 @@ struct SnapshotEntryEditSheet: View {
                     Button(AppLocalization.string("取消")) {
                         dismiss()
                     }
+                    .font(AppTypography.body)
                     .foregroundStyle(AssetTheme.textSecondary)
                 }
 
@@ -3047,6 +3089,7 @@ struct SnapshotEntryEditSheet: View {
                     Button(AppLocalization.string("保存")) {
                         save()
                     }
+                    .font(AppTypography.bodyStrong)
                     .foregroundStyle(AssetTheme.gold)
                 }
 
@@ -3071,7 +3114,7 @@ struct SnapshotEntryEditSheet: View {
             TextField(placeholder, text: text)
                 .keyboardType(.decimalPad)
                 .textFieldStyle(.plain)
-                .font(.body.weight(.medium))
+                .font(AppTypography.inputValue)
                 .foregroundStyle(AssetTheme.textPrimary)
                 .focused($focusedField, equals: focus)
                 .padding(.horizontal, 12)

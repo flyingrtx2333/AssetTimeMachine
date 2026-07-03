@@ -91,25 +91,57 @@ extension Double {
         return formatter.string(from: NSNumber(value: self)) ?? String(self)
     }
 
-    func compactNumberString(maxFractionDigits: Int = 1) -> String {
+    func compactNumberString(maxFractionDigits: Int = 1, currencyCode: String? = nil) -> String {
         let formatter = AppFormatterCache.compactNumberFormatter(maxFractionDigits: maxFractionDigits)
 
         let absValue = abs(self)
         let sign = self < 0 ? "-" : ""
 
+        func formattedUnit(_ value: Double, suffix: String) -> String {
+            let number = formatter.string(from: NSNumber(value: value)) ?? String(value)
+            return "\(sign)\(number)\(suffix)"
+        }
+
+        if currencyCode?.uppercased() == "CNY" {
+            switch absValue {
+            case 100_000_000...:
+                return formattedUnit(absValue / 100_000_000, suffix: AppLocalization.string("亿"))
+            case 10_000...:
+                return formattedUnit(absValue / 10_000, suffix: AppLocalization.string("万"))
+            default:
+                return formatter.string(from: NSNumber(value: self)) ?? String(self)
+            }
+        }
+
         switch absValue {
         case 1_000_000_000...:
-            let value = absValue / 1_000_000_000
-            return "\(sign)\((formatter.string(from: NSNumber(value: value)) ?? String(value)))B"
+            return formattedUnit(absValue / 1_000_000_000, suffix: "B")
         case 1_000_000...:
-            let value = absValue / 1_000_000
-            return "\(sign)\((formatter.string(from: NSNumber(value: value)) ?? String(value)))M"
+            return formattedUnit(absValue / 1_000_000, suffix: "M")
         case 1_000...:
-            let value = absValue / 1_000
-            return "\(sign)\((formatter.string(from: NSNumber(value: value)) ?? String(value)))K"
+            return formattedUnit(absValue / 1_000, suffix: "K")
         default:
             return formatter.string(from: NSNumber(value: self)) ?? String(self)
         }
+    }
+
+    func chartAxisCurrencyLabel(code: String, maxFractionDigits: Int = 1) -> String {
+        let symbol: String
+        switch code.uppercased() {
+        case "USD":
+            symbol = "$"
+        case "HKD":
+            symbol = "HK$"
+        case "JPY":
+            symbol = "¥"
+        case "GBP":
+            symbol = "£"
+        case "EUR":
+            symbol = "€"
+        default:
+            symbol = "¥"
+        }
+        return "\(symbol)\(compactNumberString(maxFractionDigits: maxFractionDigits, currencyCode: code))"
     }
 
     func percentString(maxFractionDigits: Int = 2) -> String {

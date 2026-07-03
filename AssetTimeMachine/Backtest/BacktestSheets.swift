@@ -955,11 +955,18 @@ struct AdvancedStrategyTemplateRow: View {
                 AppLocalization.string("35%低风险"),
                 AppLocalization.string("夏普优先")
             ]
+        case .coreGoldSatelliteAssetRiskGateMomentum:
+            return [
+                AppLocalization.string("权益曲线底座"),
+                AppLocalization.string("A股破位保护"),
+                AppLocalization.string("73%低风险"),
+                AppLocalization.string("回撤<10%")
+            ]
         case .coreGoldSatelliteRiskBudgetStateGateMomentum:
             return [
                 AppLocalization.string("风险预算"),
-                AppLocalization.string("2.05x"),
-                AppLocalization.string("融资3%"),
+                AppLocalization.string("无融资"),
+                AppLocalization.string("全周期"),
                 AppLocalization.string("状态门")
             ]
         case .coreGoldSatelliteConfirmedAccelerationMomentum:
@@ -1265,6 +1272,8 @@ extension AdvancedBacktestStrategyTemplate {
             growth = 0.94; stability = 0.98; defense = 0.98; flexibility = 0.99
         case .coreGoldSatelliteSharpeStateGateMomentum:
             growth = 0.78; stability = 1.00; defense = 1.00; flexibility = 0.99
+        case .coreGoldSatelliteAssetRiskGateMomentum:
+            growth = 0.90; stability = 0.98; defense = 0.98; flexibility = 1.00
         case .coreGoldSatelliteRiskBudgetStateGateMomentum:
             growth = 1.00; stability = 0.72; defense = 0.70; flexibility = 0.96
         case .coreGoldSatelliteConfirmedAccelerationMomentum:

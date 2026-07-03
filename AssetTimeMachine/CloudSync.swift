@@ -803,7 +803,7 @@ private struct AssetTimeMachineCloudStatusSymbol: View {
 
             if state == .checking {
                 Image(systemName: "arrow.triangle.2.circlepath")
-                    .font(.system(size: size * 0.6, weight: .bold))
+                    .font(.system(size: size * 0.38, weight: .bold))
                     .foregroundStyle(state.symbolColor.opacity(0.85))
                     .symbolEffect(.rotate, options: .repeat(.continuous))
             }
@@ -851,7 +851,7 @@ struct AssetTimeMachineCloudPage: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
-                .padding(.bottom, 40)
+                .padding(.bottom, TabScrollLayout.sheetBottomPadding)
             }
         }
         .navigationTitle(AppLocalization.string("云同步"))
@@ -1040,21 +1040,13 @@ struct AssetTimeMachineCloudPage: View {
             }
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(backup.fileName ?? AppLocalization.string("未命名备份"))
+                Text(backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))
                     .font(AppTypography.meta)
                     .foregroundStyle(AssetTheme.textPrimary)
 
-                HStack(spacing: 8) {
-                    Text(backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))
-                        .font(AppTypography.caption)
-                        .foregroundStyle(AssetTheme.textSecondary)
-
-                    if let fileSize = backup.fileSize {
-                        Text(ByteCountFormatter.string(fromByteCount: Int64(fileSize), countStyle: .file))
-                            .font(AppTypography.caption)
-                            .foregroundStyle(AssetTheme.textSecondary)
-                    }
-                }
+                Text(backupFileSizeLabel(for: backup))
+                    .font(AppTypography.caption)
+                    .foregroundStyle(AssetTheme.textSecondary)
             }
 
             Spacer(minLength: 8)
@@ -1069,6 +1061,13 @@ struct AssetTimeMachineCloudPage: View {
             }
         }
         .padding(.vertical, 10)
+    }
+
+    private func backupFileSizeLabel(for backup: AssetTimeMachineCloudBackup) -> String {
+        guard let fileSize = backup.fileSize else {
+            return AppLocalization.string("未知大小")
+        }
+        return ByteCountFormatter.string(fromByteCount: Int64(fileSize), countStyle: .file)
     }
 
     private var heroTitle: String {

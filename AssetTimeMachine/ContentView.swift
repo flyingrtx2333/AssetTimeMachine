@@ -32,7 +32,6 @@ struct ContentView: View {
     @State var onboardingReturnTab: AppTab = .dashboard
     @State var activeOnboardingAnchorID: OnboardingAnchorID?
     @State var pendingSnapshotNotificationRefreshTask: Task<Void, Never>?
-    @State var pendingRecordSnapshotID: UUID?
     #if DEBUG
     @State var debugTabSwitchTask: Task<Void, Never>?
     #endif
@@ -68,8 +67,7 @@ struct ContentView: View {
                     SnapshotListView(
                         marketStore: marketStore,
                         isActive: workActiveTab == .snapshots,
-                        onboardingActiveAnchorID: activeOnboardingAnchorID,
-                        pendingRecordSnapshotID: $pendingRecordSnapshotID
+                        onboardingActiveAnchorID: activeOnboardingAnchorID
                     )
                 }
             }
@@ -82,8 +80,7 @@ struct ContentView: View {
                 TabSurface(isSelected: selectedTab == .timeMachine) {
                     TimeMachineView(
                         marketStore: marketStore,
-                        isActive: workActiveTab == .timeMachine,
-                        onOpenRecordSnapshot: openRecordSnapshot
+                        isActive: workActiveTab == .timeMachine
                     )
                 }
             }
@@ -107,7 +104,12 @@ struct ContentView: View {
 
             deferredTabContent(for: .settings) {
                 TabSurface(isSelected: selectedTab == .settings) {
-                    SettingsView(cloudStore: cloudStore) {
+                    SettingsView(
+                        cloudStore: cloudStore,
+                        onSendStrategyTestNotification: {
+                            await sendStrategyTestNotification()
+                        }
+                    ) {
                         presentOnboarding()
                     }
                 }

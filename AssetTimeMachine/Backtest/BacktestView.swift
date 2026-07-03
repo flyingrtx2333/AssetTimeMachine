@@ -364,7 +364,7 @@ struct BacktestView: View {
                         .frame(width: max(0, geometry.size.width - 40), alignment: .topLeading)
                         .padding(.horizontal, 20)
                         .padding(.top, 14)
-                        .padding(.bottom, selectedPage == .advanced || hasActiveReport ? 136 : 24)
+                        .padding(.bottom, TabScrollLayout.sheetBottomPadding)
                     }
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .clipped()
@@ -380,6 +380,9 @@ struct BacktestView: View {
                     },
                     onDelete: { record in
                         deleteBacktestRecord(record)
+                    },
+                    onDeleteMany: { records in
+                        deleteBacktestRecords(records)
                     }
                 )
             }
@@ -868,12 +871,20 @@ struct BacktestView: View {
 
     @MainActor
     private func deleteBacktestRecord(_ record: BacktestRecord) {
-        modelContext.delete(record)
+        deleteBacktestRecords([record])
+    }
+
+    @MainActor
+    private func deleteBacktestRecords(_ records: [BacktestRecord]) {
+        guard !records.isEmpty else { return }
+        for record in records {
+            modelContext.delete(record)
+        }
         do {
             try modelContext.save()
             refreshBacktestRecordCache()
         } catch {
-            print("[AssetTimeMachine] delete backtest record failed: \(error)")
+            print("[AssetTimeMachine] delete backtest records failed: \(error)")
         }
     }
 

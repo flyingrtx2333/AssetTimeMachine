@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import Charts
 import UIKit
+import UserNotifications
 
 struct SettingsView: View {
     @Environment(\.openURL) private var openURL
@@ -13,13 +14,21 @@ struct SettingsView: View {
     @AppStorage("app.strategyNotifications.templateID") private var strategyNotificationTemplateID = StrategyNotificationDefaults.defaultTemplateID
     @AppStorage("app.strategyNotifications.hour") private var strategyNotificationHour: Int = StrategyNotificationDefaults.defaultHour
     @ObservedObject var cloudStore: AssetTimeMachineCloudStore
+    let onSendStrategyTestNotification: () async -> Bool
     let onReplayOnboarding: () -> Void
     @Query private var snapshots: [AssetSnapshot]
     @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
     @State private var showsLogoutConfirmation = false
+    @State private var isSendingStrategyTestNotification = false
+    @State private var strategyTestNotificationMessage: String?
 
-    init(cloudStore: AssetTimeMachineCloudStore, onReplayOnboarding: @escaping () -> Void) {
+    init(
+        cloudStore: AssetTimeMachineCloudStore,
+        onSendStrategyTestNotification: @escaping () async -> Bool,
+        onReplayOnboarding: @escaping () -> Void
+    ) {
         self.cloudStore = cloudStore
+        self.onSendStrategyTestNotification = onSendStrategyTestNotification
         self.onReplayOnboarding = onReplayOnboarding
 
         var descriptor = FetchDescriptor<AssetSnapshot>(
@@ -251,6 +260,29 @@ struct SettingsView: View {
                         .foregroundStyle(AssetTheme.textPrimary)
                         .listRowBackground(AssetTheme.surface)
 
+                        if !StrategyNotificationDefaults.eligibleTemplates.isEmpty {
+                            Button {
+                                sendStrategyTestNotification()
+                            } label: {
+                                HStack(spacing: 12) {
+                                    SettingsRowLabel(
+                                        title: AppLocalization.string("发送测试提醒"),
+                                        systemImage: "paperplane.fill",
+                                        color: AssetTheme.accentBlue
+                                    )
+
+                                    Spacer()
+
+                                    if isSendingStrategyTestNotification {
+                                        ProgressView()
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(isSendingStrategyTestNotification)
+                            .listRowBackground(AssetTheme.surface)
+                        }
+
                         if notificationStatus == .denied {
                             Button {
                                 guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
@@ -289,6 +321,11 @@ struct SettingsView: View {
 
                                 if strategyNotificationEnabled {
                                     Text(strategyNotificationPreview)
+                                        .foregroundStyle(AssetTheme.textSecondary)
+                                }
+
+                                if let strategyTestNotificationMessage {
+                                    Text(strategyTestNotificationMessage)
                                         .foregroundStyle(AssetTheme.textSecondary)
                                 }
 
@@ -418,6 +455,21 @@ struct SettingsView: View {
     private func normalizeStrategyNotificationTemplateIfNeeded() {
         guard StrategyNotificationDefaults.template(for: strategyNotificationTemplateID)?.id != strategyNotificationTemplateID else { return }
         strategyNotificationTemplateID = StrategyNotificationDefaults.defaultTemplateID
+    }
+
+    private func sendStrategyTestNotification() {
+        guard !isSendingStrategyTestNotification else { return }
+        isSendingStrategyTestNotification = true
+        strategyTestNotificationMessage = nil
+
+        Task {
+            let sent = await onSendStrategyTestNotification()
+            await reloadNotificationStatus()
+            isSendingStrategyTestNotification = false
+            strategyTestNotificationMessage = sent
+                ? AppLocalization.string("测试提醒已发送")
+                : AppLocalization.string("通知权限未开启")
+        }
     }
 
     private func reloadNotificationStatus() async {

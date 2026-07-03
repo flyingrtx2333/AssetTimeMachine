@@ -40,7 +40,7 @@ struct APIDocumentationView: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 12)
-                    .padding(.bottom, 120)
+                    .padding(.bottom, TabScrollLayout.sheetBottomPadding)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)

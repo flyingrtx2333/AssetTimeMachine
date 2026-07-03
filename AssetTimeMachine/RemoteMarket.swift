@@ -203,7 +203,7 @@ enum RemoteMarketClient {
         .init(
             title: "公共历史走势",
             path: "/api/v1/money/public/history?symbols=nasdaq,sp500,hsi&period=1year",
-            description: "返回指数、黄金与原油等公共历史序列。",
+            description: "返回指数、黄金、原油与国债收益率基准信号等公共历史序列。",
             symbol: nil
         ),
     ]
@@ -320,11 +320,12 @@ final class RemoteMarketStore: ObservableObject {
 
     private static let historyRefreshInterval: TimeInterval = 12 * 60 * 60
     private static let failedHistoryRetryInterval: TimeInterval = 5 * 60
+    private static let treasuryYieldSignalSymbols = ["cn_10y_yield", "us_10y_yield", "us_2y_yield", "us_3m_yield"]
     private static let requiredHistorySymbols = [
         "gold_cny", "nasdaq", "sp500", "usd_per_cny",
-        "hsi", "nikkei", "csi300", "shanghai_composite", "dowjones",
+        "hsi", "csi300", "shanghai_composite", "dowjones",
         "shenzhen_component", "chinext"
-    ]
+    ] + treasuryYieldSignalSymbols
     private var isRefreshingLiveData = false
     private var isRefreshingHistory = false
     private var lastHistoryRefreshAt: Date?
@@ -444,10 +445,11 @@ final class RemoteMarketStore: ObservableObject {
             updateLoadingState()
         }
 
-        let historyBatches = [
-            ["gold_cny", "nasdaq", "sp500", "usd_per_cny"],
-            ["hang_seng", "nikkei225", "csi300", "shanghai_composite", "dow_jones"],
-            ["shenzhen_component", "chinext"]
+        let historyBatches: [(symbols: [String], includeOHLC: Bool)] = [
+            (["gold_cny", "nasdaq", "sp500", "usd_per_cny"], true),
+            (["hang_seng", "csi300", "shanghai_composite", "dow_jones"], true),
+            (["shenzhen_component", "chinext"], true),
+            (Self.treasuryYieldSignalSymbols, false)
         ]
         let fullHistoryStartDate = "2000-01-01"
         let fullHistoryEndDate = MarketDay.string(from: .now)
@@ -459,10 +461,10 @@ final class RemoteMarketStore: ObservableObject {
                 group.addTask {
                     do {
                         let response = try await RemoteMarketClient.fetchHistory(
-                            symbols: batch,
+                            symbols: batch.symbols,
                             startDate: fullHistoryStartDate,
                             endDate: fullHistoryEndDate,
-                            includeOHLC: true
+                            includeOHLC: batch.includeOHLC
                         )
                         return HistoryBatchFetchResult(series: response.series, errorMessage: nil)
                     } catch {
@@ -540,6 +542,14 @@ final class RemoteMarketStore: ObservableObject {
             return "nikkei"
         case "dow_jones", "dowjones":
             return "dowjones"
+        case "cn_10y", "china_10y", "china_10y_yield", "cgb_10y", "cn_10y_yield":
+            return "cn_10y_yield"
+        case "us10y", "us_10y", "treasury_10y", "us_treasury_10y", "us_10y_yield":
+            return "us_10y_yield"
+        case "us2y", "us_2y", "us_2y_yield":
+            return "us_2y_yield"
+        case "us3m", "us_3m", "us_3m_yield":
+            return "us_3m_yield"
         default:
             return symbol
         }
@@ -556,6 +566,14 @@ final class RemoteMarketStore: ObservableObject {
             return ["nikkei", "nikkei225"]
         case "dowjones":
             return ["dowjones", "dow_jones"]
+        case "cn_10y_yield":
+            return ["cn_10y_yield", "cn_10y", "china_10y"]
+        case "us_10y_yield":
+            return ["us_10y_yield", "us10y", "us_10y"]
+        case "us_2y_yield":
+            return ["us_2y_yield", "us2y", "us_2y"]
+        case "us_3m_yield":
+            return ["us_3m_yield", "us3m", "us_3m"]
         default:
             return [normalizedSymbol, symbol]
         }

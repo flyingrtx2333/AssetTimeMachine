@@ -263,11 +263,11 @@ struct TimeMachineCombinedTrendDescriptor: Identifiable {
         self.canShowDualAxisChart = showsComparisonLine && sampledDualPoints.count >= 2
         self.canShowLeftOnlyChart = sampledLeftOnlyPoints.count >= 2
         if hasCandlesticks {
-            self.leftDomain = Self.paddedDomain(values: sampledCandlesticks.flatMap { [$0.low, $0.high] })
+            self.leftDomain = ChartLayoutSupport.paddedValueDomain(values: sampledCandlesticks.flatMap { [$0.low, $0.high] })
         } else {
-            self.leftDomain = Self.paddedDomain(values: sampledDualPoints.map(\.leftValue) + sampledLeftOnlyPoints.map(\.value))
+            self.leftDomain = ChartLayoutSupport.paddedValueDomain(values: sampledDualPoints.map(\.leftValue) + sampledLeftOnlyPoints.map(\.value))
         }
-        self.rightDomain = Self.paddedDomain(values: sampledDualPoints.map(\.rightValue))
+        self.rightDomain = ChartLayoutSupport.paddedValueDomain(values: sampledDualPoints.map(\.rightValue))
         self.bottomAxisDates = Self.detailCardAxisDates(
             sampledCandlesticks.map(\.date) + sampledLeftOnlyPoints.map(\.date) + sampledDualPoints.map(\.date)
         )
@@ -287,19 +287,6 @@ struct TimeMachineCombinedTrendDescriptor: Identifiable {
         guard sortedDates.count > 2 else { return sortedDates }
         return [sortedDates[sortedDates.count / 2]]
     }
-
-    private static func paddedDomain(values: [Double]) -> ClosedRange<Double> {
-        let filtered = values.filter { $0.isFinite }
-        guard let minValue = filtered.min(), let maxValue = filtered.max() else {
-            return 0...1
-        }
-        if abs(maxValue - minValue) < .ulpOfOne {
-            let padding = max(abs(maxValue) * 0.08, 1)
-            return (minValue - padding)...(maxValue + padding)
-        }
-        let padding = max((maxValue - minValue) * 0.12, abs(maxValue) * 0.02)
-        return (minValue - padding)...(maxValue + padding)
-    }
 }
 
 struct TimeMachineDetailComparisonOption: Identifiable {
@@ -317,26 +304,9 @@ enum TimeMachineAxisValueStyle {
     func compactLabel(for value: Double) -> String {
         switch self {
         case let .currency(code, suffix):
-            return "\(currencySymbol(for: code))\(value.compactNumberString())\(suffix)"
+            return "\(value.chartAxisCurrencyLabel(code: code))\(suffix)"
         case let .quantity(unit, maxFractionDigits):
             return "\(value.compactNumberString(maxFractionDigits: maxFractionDigits))\(unit)"
-        }
-    }
-
-    private func currencySymbol(for code: String) -> String {
-        switch code.uppercased() {
-        case "USD":
-            return "$"
-        case "HKD":
-            return "HK$"
-        case "JPY":
-            return "¥"
-        case "GBP":
-            return "£"
-        case "EUR":
-            return "€"
-        default:
-            return "¥"
         }
     }
 }
@@ -511,8 +481,7 @@ struct TimeMachineHeroTrendCard: View {
     let hasRecord: ((Date) -> Bool)?
     let onOpenRecord: ((Date) -> Void)?
     @State private var selectedDate: Date?
-    private let cardCornerRadius: CGFloat = 26
-    private let plotCornerRadius: CGFloat = 20
+    private let plotCornerRadius: CGFloat = 14
     private let displayPoints: [TimeMachineTrendPoint]
     private let valueDomain: ClosedRange<Double>
     private let dateDomain: ClosedRange<Date>
@@ -534,9 +503,12 @@ struct TimeMachineHeroTrendCard: View {
         self.hasRecord = hasRecord
         self.onOpenRecord = onOpenRecord
 
-        let sampledPoints = evenlySampledItems(points, maxCount: 60)
+        let sampledPoints = evenlySampledItems(
+            points,
+            maxCount: selectedRange.wrappedValue == .all ? 120 : 60
+        )
         self.displayPoints = sampledPoints
-        self.valueDomain = Self.paddedDomain(values: sampledPoints.flatMap { point in
+        self.valueDomain = ChartLayoutSupport.paddedValueDomain(values: sampledPoints.flatMap { point in
             TimeMachineAssetSeries.allCases.map { $0.value(from: point) }
         })
         self.dateDomain = Self.makeDateDomain(from: sampledPoints)
@@ -570,7 +542,7 @@ struct TimeMachineHeroTrendCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 13) {
+        VStack(alignment: .leading, spacing: 10) {
             heroHeader
             metricGrid
             legendRow
@@ -617,7 +589,7 @@ struct TimeMachineHeroTrendCard: View {
                         .foregroundStyle(AssetTheme.chartTick.opacity(0.7))
                     AxisValueLabel(anchor: .top, verticalSpacing: 7) {
                         if let date = value.as(Date.self) {
-                            TimeMachineAxisDateLabel(date: date, position: axisLabelPosition(for: date, in: axisDates))
+                            TimeMachineAxisDateLabel(date: date, position: ChartLayoutSupport.axisLabelPosition(for: date, in: axisDates))
                         }
                     }
                 }
@@ -628,7 +600,7 @@ struct TimeMachineHeroTrendCard: View {
                         .foregroundStyle(AssetTheme.chartGrid.opacity(0.72))
                     AxisValueLabel {
                         if let y = value.as(Double.self) {
-                            Text(y, format: .number.notation(.compactName))
+                            Text(y.chartAxisCurrencyLabel(code: "CNY"))
                                 .font(.system(size: 9.5, weight: .medium, design: .rounded))
                                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
                         }
@@ -636,19 +608,12 @@ struct TimeMachineHeroTrendCard: View {
                 }
             }
             .chartLegend(.hidden)
-            .chartPlotStyle { plotArea in
-                plotArea
-                    .background(AssetTheme.surface.opacity(0.42))
-                    .clipShape(RoundedRectangle(cornerRadius: plotCornerRadius, style: .continuous))
-            }
             .chartOverlay { proxy in
                 TimeMachineDragOverlay(proxy: proxy) { date in
                     selectedDate = date
                 }
             }
-            .padding(.horizontal, 3)
-            .padding(.top, 2)
-            .padding(.bottom, 6)
+            .padding(.bottom, 4)
             .onboardingAnchor(.timeMachineChart)
 
             if canOpenSelectedRecord {
@@ -668,17 +633,7 @@ struct TimeMachineHeroTrendCard: View {
                 .padding(.top, 4)
             }
         }
-        .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
-                .fill(AssetTheme.cardGradient)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.5), lineWidth: 1)
-        )
-        .shadow(color: AssetTheme.cardShadow.opacity(0.78), radius: 18, x: 0, y: 10)
     }
 
     private var heroHeader: some View {
@@ -761,30 +716,6 @@ struct TimeMachineHeroTrendCard: View {
     private var dateRangeLabel: String {
         guard let first = points.first?.date, let last = points.last?.date else { return AppLocalization.string("暂无范围") }
         return "\(first.chartAxisDateString) - \(last.chartAxisDateString)"
-    }
-
-    private func axisLabelPosition(for date: Date, in axisDates: [Date]) -> TimeMachineAxisDateLabel.Position {
-        guard let first = axisDates.first, let last = axisDates.last else { return .middle }
-        if Calendar.current.isDate(date, inSameDayAs: first) {
-            return .leading
-        }
-        if Calendar.current.isDate(date, inSameDayAs: last) {
-            return .trailing
-        }
-        return .middle
-    }
-
-    private static func paddedDomain(values: [Double]) -> ClosedRange<Double> {
-        let filtered = values.filter { $0.isFinite }
-        guard let minValue = filtered.min(), let maxValue = filtered.max() else {
-            return 0...1
-        }
-        if abs(maxValue - minValue) < .ulpOfOne {
-            let padding = max(abs(maxValue) * 0.08, 1)
-            return (minValue - padding)...(maxValue + padding)
-        }
-        let padding = max((maxValue - minValue) * 0.12, abs(maxValue) * 0.02)
-        return (minValue - padding)...(maxValue + padding)
     }
 }
 
@@ -910,7 +841,6 @@ struct TimeMachineMonthlySurplusCard: View {
     let annualPoints: [TimeMachineAnnualSurplusPoint]
     @State private var selectedDate: Date?
     @State private var selectedGranularity: SurplusGranularity = .monthly
-    private let cardCornerRadius: CGFloat = 22
     private let chartCornerRadius: CGFloat = 18
 
     private enum SurplusGranularity: String, CaseIterable, Identifiable {
@@ -997,17 +927,7 @@ struct TimeMachineMonthlySurplusCard: View {
                 summaryRow
             }
         }
-        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
-                .fill(AssetTheme.cardGradient)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.42), lineWidth: 1)
-        )
-        .shadow(color: AssetTheme.cardShadow.opacity(0.46), radius: 14, x: 0, y: 8)
     }
 
     private var header: some View {
@@ -1172,11 +1092,10 @@ struct TimeMachineMonthlySurplusCard: View {
 struct TimeMachineAnnualSurplusCard: View {
     let points: [TimeMachineAnnualSurplusPoint]
     @State private var selectedDate: Date?
-    private let cardCornerRadius: CGFloat = 22
     private let chartCornerRadius: CGFloat = 18
 
     private var displayPoints: [TimeMachineAnnualSurplusPoint] {
-        Array(points.suffix(12))
+        points
     }
 
     private var latestPoint: TimeMachineAnnualSurplusPoint? {
@@ -1450,16 +1369,7 @@ struct TimeMachineComparisonRevealButtons: View {
                 }
             }
         }
-        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(AssetTheme.surface.opacity(0.36))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.28), lineWidth: 1)
-        )
     }
 }
 
@@ -1467,7 +1377,6 @@ struct TimeMachineDualAxisTrendCard: View {
     let descriptor: TimeMachineCombinedTrendDescriptor
     var onTapHistory: ((TimeMachineHistoryDrilldown) -> Void)?
     @State private var selectedDate: Date?
-    private let cardCornerRadius: CGFloat = 22
     private let chartCornerRadius: CGFloat = 18
     private let displayPoints: [TimeMachineDualAxisPoint]
     private let displayLeftOnlyPoints: [TimeMachineSingleAxisPoint]
@@ -1550,17 +1459,7 @@ struct TimeMachineDualAxisTrendCard: View {
                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
-                .fill(AssetTheme.cardGradient)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.38), lineWidth: 1)
-        )
-        .shadow(color: AssetTheme.cardShadow.opacity(0.38), radius: 12, x: 0, y: 7)
     }
 
     private var header: some View {
@@ -1929,12 +1828,6 @@ struct TimeMachineDualAxisTrendCard: View {
         }
         return descriptor.rightLatestLabel
     }
-
-    private func axisTickValues(for domain: ClosedRange<Double>) -> [Double] {
-        let step = (domain.upperBound - domain.lowerBound) / 2
-        guard step.isFinite, step > 0 else { return [domain.lowerBound] }
-        return [domain.lowerBound, domain.lowerBound + step, domain.upperBound]
-    }
 }
 
 struct TimeMachineHistoryDrilldownSheet: View {
@@ -1984,9 +1877,9 @@ struct TimeMachineHistoryDrilldownSheet: View {
 
     private var valueDomain: ClosedRange<Double> {
         if canShowCandlestickChart {
-            return paddedDomain(values: displayCandlesticks.flatMap { [$0.low, $0.high] })
+            return ChartLayoutSupport.paddedValueDomain(values: displayCandlesticks.flatMap { [$0.low, $0.high] })
         }
-        return paddedDomain(values: displayPoints.map(\.value))
+        return ChartLayoutSupport.paddedValueDomain(values: displayPoints.map(\.value))
     }
 
     private var selectedDisplayValue: Double? {
@@ -2079,7 +1972,7 @@ struct TimeMachineHistoryDrilldownSheet: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
-                    .padding(.bottom, 24)
+                    .padding(.bottom, TabScrollLayout.sheetBottomPadding)
                 }
             }
             .navigationTitle(AppLocalization.string("指数走势"))
@@ -2213,14 +2106,14 @@ struct TimeMachineHistoryDrilldownSheet: View {
             AxisTick().foregroundStyle(AssetTheme.chartTick)
             AxisValueLabel(anchor: .top, verticalSpacing: 8) {
                 if let date = value.as(Date.self) {
-                    TimeMachineAxisDateLabel(date: date, position: axisLabelPosition(for: date, in: axisDates))
+                            TimeMachineAxisDateLabel(date: date, position: ChartLayoutSupport.axisLabelPosition(for: date, in: axisDates))
                 }
             }
         }
     }
 
     private var historyYAxisMarks: some AxisContent {
-        AxisMarks(values: axisTickValues(for: valueDomain)) { value in
+        AxisMarks(values: ChartLayoutSupport.threeTickValues(for: valueDomain)) { value in
             AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
                 .foregroundStyle(AssetTheme.chartGrid)
             AxisValueLabel {
@@ -2261,36 +2154,6 @@ struct TimeMachineHistoryDrilldownSheet: View {
             return AppLocalization.string("暂无范围")
         }
         return "\(first.chartAxisDateString) - \(last.chartAxisDateString)"
-    }
-
-    private func axisLabelPosition(for date: Date, in axisDates: [Date]) -> TimeMachineAxisDateLabel.Position {
-        guard let first = axisDates.first, let last = axisDates.last else { return .middle }
-        if Calendar.current.isDate(date, inSameDayAs: first) {
-            return .leading
-        }
-        if Calendar.current.isDate(date, inSameDayAs: last) {
-            return .trailing
-        }
-        return .middle
-    }
-
-    private func axisTickValues(for domain: ClosedRange<Double>) -> [Double] {
-        let step = (domain.upperBound - domain.lowerBound) / 2
-        guard step.isFinite, step > 0 else { return [domain.lowerBound] }
-        return [domain.lowerBound, domain.lowerBound + step, domain.upperBound]
-    }
-
-    private func paddedDomain(values: [Double]) -> ClosedRange<Double> {
-        let filtered = values.filter { $0.isFinite }
-        guard let minValue = filtered.min(), let maxValue = filtered.max() else {
-            return 0...1
-        }
-        if abs(maxValue - minValue) < .ulpOfOne {
-            let padding = max(abs(maxValue) * 0.08, 1)
-            return (minValue - padding)...(maxValue + padding)
-        }
-        let padding = max((maxValue - minValue) * 0.12, abs(maxValue) * 0.02)
-        return (minValue - padding)...(maxValue + padding)
     }
 }
 

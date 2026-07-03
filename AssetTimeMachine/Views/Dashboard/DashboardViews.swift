@@ -33,6 +33,7 @@ struct DashboardView: View {
     @State private var dashboardRefreshGeneration = 0
     @State private var showsTodayStrategyModal = false
     @State private var showsCloudSyncModal = false
+    @State private var freedomKeyboardDismissSignal = 0
 
     init(marketStore: RemoteMarketStore, cloudStore: AssetTimeMachineCloudStore, isActive: Bool) {
         self.marketStore = marketStore
@@ -66,12 +67,7 @@ struct DashboardView: View {
 
     private var dashboardCacheToken: Int {
         var hasher = Hasher()
-        hasher.combine(snapshots.count)
-        if let latest = snapshots.first {
-            hasher.combine(latest.id)
-            hasher.combine(latest.updatedAt.timeIntervalSinceReferenceDate)
-            hasher.combine(latest.entries.count)
-        }
+        hasher.combine(SnapshotRevisionToken.revision(for: snapshots))
         hasher.combine(monthlyExpense)
         hasher.combine(inflationRate)
         hasher.combine(monthlySalary)
@@ -104,13 +100,21 @@ struct DashboardView: View {
                                     summaryStrip
                                     freedomSection
                                         .id("dashboard-freedom-section")
+
+                                    Color.clear
+                                        .frame(height: TabScrollLayout.keyboardDismissSpacer)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            freedomKeyboardDismissSignal += 1
+                                        }
                                 }
                             }
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 28)
-                        .padding(.bottom, 172)
+                        .padding(.bottom, TabScrollLayout.bottomPadding)
                     }
+                    .scrollDismissesKeyboard(.interactively)
                     .task {
                         migrateDashboardDefaultsIfNeeded()
                         await cloudStore.refreshIfNeeded()
@@ -397,6 +401,7 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 12) {
                 Button {
+                    freedomKeyboardDismissSignal += 1
                     showsTodayStrategyModal = true
                 } label: {
                     DashboardTodayStrategyButton()
@@ -407,6 +412,7 @@ struct DashboardView: View {
                 Spacer(minLength: 0)
 
                 Button {
+                    freedomKeyboardDismissSignal += 1
                     showsCloudSyncModal = true
                 } label: {
                     AssetTimeMachineCloudEntryButton(store: cloudStore)
@@ -419,11 +425,19 @@ struct DashboardView: View {
                     slices: allocationSlices,
                     totalAmount: totalAssets
                 )
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    freedomKeyboardDismissSignal += 1
+                }
             } else {
                 EmptyStateCard(
                     title: AppLocalization.string("暂无资产分布"),
                     systemImage: "chart.pie.fill"
                 )
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    freedomKeyboardDismissSignal += 1
+                }
             }
 
             Rectangle()
@@ -439,7 +453,8 @@ struct DashboardView: View {
             monthlySalary: $monthlySalary,
             annualReturnRate: $annualReturnRate,
             monthlyExpense: $monthlyExpense,
-            inflationRate: $inflationRate
+            inflationRate: $inflationRate,
+            keyboardDismissSignal: $freedomKeyboardDismissSignal
         )
         .onboardingAnchor(.dashboardFreedom)
     }

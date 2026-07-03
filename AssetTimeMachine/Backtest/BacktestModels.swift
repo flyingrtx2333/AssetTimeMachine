@@ -274,6 +274,7 @@ enum AdvancedBacktestStrategyMode: String, Codable {
     case coreGoldSatelliteOneWayVolManagedMomentum
     case coreGoldSatelliteEquityCurveStateGateMomentum
     case coreGoldSatelliteSharpeStateGateMomentum
+    case coreGoldSatelliteAssetRiskGateMomentum
     case coreGoldSatelliteRiskBudgetStateGateMomentum
     case coreGoldSatelliteConfirmedAccelerationMomentum
     case coreGoldSatelliteProfitLockMomentum
@@ -349,6 +350,8 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("权益曲线状态机")
         case .coreGoldSatelliteSharpeStateGateMomentum:
             return AppLocalization.string("高夏普状态机")
+        case .coreGoldSatelliteAssetRiskGateMomentum:
+            return AppLocalization.string("收益回撤门状态机")
         case .coreGoldSatelliteRiskBudgetStateGateMomentum:
             return AppLocalization.string("风险预算状态机")
         case .coreGoldSatelliteConfirmedAccelerationMomentum:
@@ -444,8 +447,10 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("App-only状态机候选：以单向控波双引擎为基础；当策略自身近90日收益转弱或回撤扩大时，把风险预算降到70%，恢复后再打开。")
         case .coreGoldSatelliteSharpeStateGateMomentum:
             return AppLocalization.string("高夏普候选：以双引擎路由和黄金分散信用为基础；当策略自身75日收益转弱或回撤扩大时，把风险预算降到45%，只有75日收益重新转强后再打开。")
+        case .coreGoldSatelliteAssetRiskGateMomentum:
+            return AppLocalization.string("收益回撤候选：以权益曲线状态机为底层，把低风险档位压到73%，并在A股泡沫后破位时清掉对应A股袖套；目标是在10%左右年化下把最大回撤压进10%以内。")
         case .coreGoldSatelliteRiskBudgetStateGateMomentum:
-            return AppLocalization.string("进取候选：以高夏普状态机为底层信号，每日按融资成本计提风险预算，目标是用明确融资假设冲击15%以上年化；属于高级风险预算策略。")
+            return AppLocalization.string("无融资全周期候选：以高夏普状态机为底层信号，保留风险预算框架但不放大本金；按全历史收益优先调校，目标是在无融资约束下提高全周期年化。")
         case .coreGoldSatelliteConfirmedAccelerationMomentum:
             return AppLocalization.string("内部进攻袖套：在单向控波基础上，只用空余预算承接确认加速且波动收缩的道指、深成指或创业板。")
         case .coreGoldSatelliteProfitLockMomentum:
@@ -539,8 +544,10 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("双引擎路由 · 权益曲线状态机 · 70%低风险")
         case .coreGoldSatelliteSharpeStateGateMomentum:
             return AppLocalization.string("双引擎路由 · 高夏普状态门 · 45%低风险")
+        case .coreGoldSatelliteAssetRiskGateMomentum:
+            return AppLocalization.string("权益曲线底座 · A股破位保护 · 回撤<10%")
         case .coreGoldSatelliteRiskBudgetStateGateMomentum:
-            return AppLocalization.string("高夏普底层 · 2.05x预算 · 融资3%")
+            return AppLocalization.string("高夏普底层 · 无融资预算 · 全周期")
         case .coreGoldSatelliteConfirmedAccelerationMomentum:
             return AppLocalization.string("确认加速 · 额外权益 · 进攻袖套")
         case .coreGoldSatelliteProfitLockMomentum:
@@ -594,6 +601,7 @@ enum AdvancedBacktestStrategyMode: String, Codable {
              .coreGoldSatelliteOneWayVolManagedMomentum,
              .coreGoldSatelliteEquityCurveStateGateMomentum,
              .coreGoldSatelliteSharpeStateGateMomentum,
+             .coreGoldSatelliteAssetRiskGateMomentum,
              .coreGoldSatelliteRiskBudgetStateGateMomentum,
              .coreGoldSatelliteConfirmedAccelerationMomentum,
              .coreGoldSatelliteProfitLockMomentum,
@@ -607,11 +615,11 @@ enum AdvancedBacktestStrategyMode: String, Codable {
              .coreGoldSatelliteAggressiveMomentum:
             switch self {
             case .coreGoldSatelliteContagionRepairMomentum:
-                return ["gold_cny", "nasdaq", "sp500", "dowjones", "hsi", "nikkei", "csi300", "shanghai_composite", "shenzhen_component", "chinext"]
+                return ["gold_cny", "nasdaq", "sp500", "dowjones", "hsi", "csi300", "shanghai_composite", "shenzhen_component", "chinext"]
             case .coreGoldSatelliteCurrencyCashMomentum,
                  .coreGoldSatelliteGoldPanicLockMomentum,
                  .coreGoldSatelliteRiskEfficiencyMomentum:
-                return ["gold_cny", "nasdaq", "sp500", "dowjones", "hsi", "nikkei", "csi300", "shanghai_composite", "shenzhen_component", "chinext", "usd_cash"]
+                return ["gold_cny", "nasdaq", "sp500", "dowjones", "hsi", "csi300", "shanghai_composite", "shenzhen_component", "chinext", "usd_cash"]
             case .coreGoldSatelliteConfirmedAccelerationMomentum,
                  .coreGoldSatelliteDynamicSleeveMomentum:
                 return ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "shenzhen_component", "chinext"]
@@ -1430,9 +1438,10 @@ enum StrategyRebalanceActionBuilder {
     }
 }
 
-struct AdvancedBacktestComputationResult {
+struct AdvancedBacktestComputationResult: Sendable {
     let report: AdvancedBacktestReport?
     let rebalanceAdvice: StrategyRebalanceAdvice?
+    let comparisonSeries: [BacktestChartComparisonSeries]
 }
 
 struct AdvancedBacktestRiskSettings {
@@ -1451,6 +1460,7 @@ struct AdvancedBacktestCandidate: Identifiable {
     let tradeAmount: Double
     let settings: AdvancedBacktestRiskSettings
     let report: AdvancedBacktestReport
+    let comparisonSeries: [BacktestChartComparisonSeries]
     let score: Double
 
     var title: String {
@@ -1488,70 +1498,6 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
     }
 
     static let all: [AdvancedBacktestStrategyTemplate] = [
-        .init(
-            id: "basic-ma20-trend",
-            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
-            category: AppLocalization.string("基础策略"),
-            title: AppLocalization.string("MA20趋势"),
-            annualizedReturn: 0,
-            maxDrawdown: 0,
-            sharpeRatio: 0,
-            buyRule: .init(direction: .priceCrossesAboveMA20, days: 1),
-            sellRule: .init(direction: .priceCrossesBelowMA20, days: 1),
-            tradeAmountRatio: 1,
-            maxPositionRatio: 100,
-            cooldownDays: 0,
-            stopLossRatio: 0,
-            takeProfitRatio: 0
-        ),
-        .init(
-            id: "basic-ma60-trend",
-            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
-            category: AppLocalization.string("基础策略"),
-            title: AppLocalization.string("MA60趋势"),
-            annualizedReturn: 0,
-            maxDrawdown: 0,
-            sharpeRatio: 0,
-            buyRule: .init(direction: .priceAboveMA60, days: 1),
-            sellRule: .init(direction: .priceBelowMA60, days: 1),
-            tradeAmountRatio: 1,
-            maxPositionRatio: 100,
-            cooldownDays: 0,
-            stopLossRatio: 0,
-            takeProfitRatio: 0
-        ),
-        .init(
-            id: "basic-ma-golden-cross",
-            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
-            category: AppLocalization.string("基础策略"),
-            title: AppLocalization.string("MA金叉死叉"),
-            annualizedReturn: 0,
-            maxDrawdown: 0,
-            sharpeRatio: 0,
-            buyRule: .init(direction: .ma20CrossesAboveMA60, days: 1),
-            sellRule: .init(direction: .ma20CrossesBelowMA60, days: 1),
-            tradeAmountRatio: 1,
-            maxPositionRatio: 100,
-            cooldownDays: 0,
-            stopLossRatio: 0,
-            takeProfitRatio: 0
-        ),
-        .init(
-            id: "basic-boll-mean-reversion",
-            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
-            category: AppLocalization.string("基础策略"),
-            title: AppLocalization.string("BOLL下轨反弹"),
-            annualizedReturn: 0,
-            maxDrawdown: 0,
-            sharpeRatio: 0,
-            buyRule: .init(direction: .touchesBollLower, days: 1),
-            sellRule: .init(direction: .priceCrossesAboveBollMiddle, days: 1),
-            tradeAmountRatio: 1,
-            maxPositionRatio: 100,
-            cooldownDays: 0,
-            stopLossRatio: 0,
-            takeProfitRatio: 0
-        ),
         .init(
             id: "core-gold-satellite-heat-capped-momentum",
             mode: .coreGoldSatelliteHeatCappedMomentum,
@@ -1638,6 +1584,23 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             takeProfitRatio: 0
         ),
         .init(
+            id: "core-gold-satellite-asset-risk-gate-momentum",
+            mode: .coreGoldSatelliteAssetRiskGateMomentum,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            category: AppLocalization.string("高级策略"),
+            title: AppLocalization.string("收益回撤门状态机"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
             id: "core-gold-satellite-risk-budget-state-gate-momentum",
             mode: .coreGoldSatelliteRiskBudgetStateGateMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
@@ -1655,79 +1618,45 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             takeProfitRatio: 0
         ),
         .init(
+            id: "core-gold-satellite-confirmed-acceleration-momentum",
+            mode: .coreGoldSatelliteConfirmedAccelerationMomentum,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "shenzhen_component", "chinext"],
+            category: AppLocalization.string("高级策略"),
+            title: AppLocalization.string("确认加速进攻袖套"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "core-gold-satellite-profit-lock-momentum",
+            mode: .coreGoldSatelliteProfitLockMomentum,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            category: AppLocalization.string("高级策略"),
+            title: AppLocalization.string("锁盈防守袖套"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
             id: "core-gold-satellite-dynamic-sleeve-momentum",
             mode: .coreGoldSatelliteDynamicSleeveMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "shenzhen_component", "chinext"],
             category: AppLocalization.string("高级策略"),
             title: AppLocalization.string("动态袖套夏普策略"),
-            annualizedReturn: 0,
-            maxDrawdown: 0,
-            sharpeRatio: 0,
-            buyRule: .init(direction: .priceAboveMA60, days: 1),
-            sellRule: .init(direction: .priceBelowMA60, days: 1),
-            tradeAmountRatio: 1,
-            maxPositionRatio: 100,
-            cooldownDays: 0,
-            stopLossRatio: 0,
-            takeProfitRatio: 0
-        ),
-        .init(
-            id: "core-gold-satellite-contagion-repair-momentum",
-            mode: .coreGoldSatelliteContagionRepairMomentum,
-            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "hsi", "nikkei", "csi300", "shanghai_composite", "shenzhen_component", "chinext"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("全球修复传染控制"),
-            annualizedReturn: 0,
-            maxDrawdown: 0,
-            sharpeRatio: 0,
-            buyRule: .init(direction: .priceAboveMA60, days: 1),
-            sellRule: .init(direction: .priceBelowMA60, days: 1),
-            tradeAmountRatio: 1,
-            maxPositionRatio: 100,
-            cooldownDays: 0,
-            stopLossRatio: 0,
-            takeProfitRatio: 0
-        ),
-        .init(
-            id: "core-gold-satellite-currency-cash-momentum",
-            mode: .coreGoldSatelliteCurrencyCashMomentum,
-            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "hsi", "nikkei", "csi300", "shanghai_composite", "shenzhen_component", "chinext", "usd_cash"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("美元现金修复策略"),
-            annualizedReturn: 0,
-            maxDrawdown: 0,
-            sharpeRatio: 0,
-            buyRule: .init(direction: .priceAboveMA60, days: 1),
-            sellRule: .init(direction: .priceBelowMA60, days: 1),
-            tradeAmountRatio: 1,
-            maxPositionRatio: 100,
-            cooldownDays: 0,
-            stopLossRatio: 0,
-            takeProfitRatio: 0
-        ),
-        .init(
-            id: "core-gold-satellite-gold-panic-lock-momentum",
-            mode: .coreGoldSatelliteGoldPanicLockMomentum,
-            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "hsi", "nikkei", "csi300", "shanghai_composite", "shenzhen_component", "chinext", "usd_cash"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("黄金恐慌锁盈策略"),
-            annualizedReturn: 0,
-            maxDrawdown: 0,
-            sharpeRatio: 0,
-            buyRule: .init(direction: .priceAboveMA60, days: 1),
-            sellRule: .init(direction: .priceBelowMA60, days: 1),
-            tradeAmountRatio: 1,
-            maxPositionRatio: 100,
-            cooldownDays: 0,
-            stopLossRatio: 0,
-            takeProfitRatio: 0
-        ),
-        .init(
-            id: "core-gold-satellite-risk-efficiency-momentum",
-            mode: .coreGoldSatelliteRiskEfficiencyMomentum,
-            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "hsi", "nikkei", "csi300", "shanghai_composite", "shenzhen_component", "chinext", "usd_cash"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("风险效率增强策略"),
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1774,18 +1703,65 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             takeProfitRatio: 0
         ),
         .init(
-            id: "canary-momentum-defense",
-            mode: .canaryMomentumDefense,
-            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("双金丝雀动量防守"),
+            id: "basic-ma20-trend",
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
+            category: AppLocalization.string("基础策略"),
+            title: AppLocalization.string("MA20趋势"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceCrossesAboveMA20, days: 1),
+            sellRule: .init(direction: .priceCrossesBelowMA20, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "basic-ma60-trend",
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
+            category: AppLocalization.string("基础策略"),
+            title: AppLocalization.string("MA60趋势"),
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
             buyRule: .init(direction: .priceAboveMA60, days: 1),
             sellRule: .init(direction: .priceBelowMA60, days: 1),
             tradeAmountRatio: 1,
-            maxPositionRatio: 95,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "basic-ma-golden-cross",
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
+            category: AppLocalization.string("基础策略"),
+            title: AppLocalization.string("MA金叉死叉"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .ma20CrossesAboveMA60, days: 1),
+            sellRule: .init(direction: .ma20CrossesBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "basic-boll-mean-reversion",
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
+            category: AppLocalization.string("基础策略"),
+            title: AppLocalization.string("BOLL下轨反弹"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .touchesBollLower, days: 1),
+            sellRule: .init(direction: .priceCrossesAboveBollMiddle, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 100,
             cooldownDays: 0,
             stopLossRatio: 0,
             takeProfitRatio: 0
@@ -2265,6 +2241,93 @@ enum BacktestRecordCodec {
         BacktestRecordKind(rawValue: record.kindRawValue) ?? .allocation
     }
 
+    static func advancedStrategyDisplayTitle(for record: BacktestRecord) -> String {
+        guard kind(for: record) == .advanced else { return record.title }
+
+        if let config = decodeConfig(from: record),
+           let modeRaw = config.strategyModeRawValue,
+           let mode = AdvancedBacktestStrategyMode(rawValue: modeRaw) {
+            if mode != .ruleBased {
+                return mode.title
+            }
+            if let template = AdvancedBacktestStrategyTemplate.all.first(where: { matchesStrategyTemplate($0, config: config) }) {
+                return template.title
+            }
+        }
+
+        let summaryLead = record.configSummary
+            .split(separator: "·", maxSplits: 1, omittingEmptySubsequences: true)
+            .first
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        if let summaryLead, !summaryLead.isEmpty {
+            return summaryLead
+        }
+
+        if !record.subtitle.isEmpty,
+           !record.subtitle.contains("·") {
+            return record.subtitle
+        }
+
+        return AdvancedBacktestStrategyMode.ruleBased.title
+    }
+
+    private static func matchesStrategyTemplate(
+        _ template: AdvancedBacktestStrategyTemplate,
+        config: BacktestRecordConfigPayload
+    ) -> Bool {
+        guard let modeRaw = config.strategyModeRawValue,
+              let mode = AdvancedBacktestStrategyMode(rawValue: modeRaw),
+              mode == template.mode else {
+            return false
+        }
+
+        if let selectedSymbols = template.selectedAssetSymbols {
+            let recordSymbols = Set(config.selectedAssetSymbols ?? config.selectedAssetSymbol.map { [$0] } ?? [])
+            if recordSymbols != Set(selectedSymbols) {
+                return false
+            }
+        }
+
+        if template.mode.isRotation {
+            let feeRate = config.feeRate ?? 1.0
+            let slippageRate = config.slippageRate ?? 0.05
+            return abs(feeRate - 1.0) < 0.01 && abs(slippageRate - 0.05) < 0.01
+        }
+
+        guard let buyDirectionRawValue = config.buyDirectionRawValue,
+              let buyDirection = AdvancedBacktestSignalDirection(rawValue: buyDirectionRawValue),
+              let sellDirectionRawValue = config.sellDirectionRawValue,
+              let sellDirection = AdvancedBacktestSignalDirection(rawValue: sellDirectionRawValue),
+              let initialCash = config.initialCash,
+              let tradeAmount = config.tradeAmount,
+              let maxPositionRatio = config.maxPositionRatio,
+              let feeRate = config.feeRate,
+              let slippageRate = config.slippageRate,
+              let cooldownDays = config.cooldownDays,
+              let stopLossRatio = config.stopLossRatio,
+              let takeProfitRatio = config.takeProfitRatio,
+              let buyDays = config.buyDays,
+              let sellDays = config.sellDays else {
+            return false
+        }
+
+        let expectedTradeAmount = max(initialCash * template.tradeAmountRatio, 1)
+        let tradeTolerance = max(expectedTradeAmount * 0.005, 1)
+
+        return buyDirection == template.buyRule.direction
+            && buyDays == template.buyRule.days
+            && sellDirection == template.sellRule.direction
+            && sellDays == template.sellRule.days
+            && abs(tradeAmount - expectedTradeAmount) <= tradeTolerance
+            && abs(maxPositionRatio - template.maxPositionRatio) < 0.01
+            && abs(feeRate - 1.0) < 0.01
+            && abs(slippageRate - 0.05) < 0.01
+            && abs(Double(cooldownDays) - Double(template.cooldownDays)) < 0.01
+            && abs(stopLossRatio - template.stopLossRatio) < 0.01
+            && abs(takeProfitRatio - template.takeProfitRatio) < 0.01
+    }
+
     static func advancedReport(from record: BacktestRecord) -> AdvancedBacktestReport? {
         guard kind(for: record) == .advanced,
               let config = decodeConfig(from: record) else { return nil }
@@ -2433,7 +2496,6 @@ enum BacktestDefaults {
         .init(symbol: "nasdaq", title: AppLocalization.string("纳指"), color: AssetTheme.accentBlue),
         .init(symbol: "dowjones", title: AppLocalization.string("道指"), color: AssetTheme.accentOrange),
         .init(symbol: "hsi", title: AppLocalization.string("恒生"), color: AssetTheme.accentRed),
-        .init(symbol: "nikkei", title: AppLocalization.string("日经225"), color: AssetTheme.positive),
         .init(symbol: "csi300", title: AppLocalization.string("沪深300"), color: AssetTheme.textPrimary),
         .init(symbol: "shanghai_composite", title: AppLocalization.string("上证综指"), color: AssetTheme.textSecondary),
         .init(symbol: "shenzhen_component", title: AppLocalization.string("深成指"), color: AssetTheme.accentRed),
@@ -2450,20 +2512,15 @@ enum BacktestDefaults {
         .init(symbol: "nasdaq", title: AppLocalization.string("纳指"), color: AssetTheme.accentBlue, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny"),
         .init(symbol: "dowjones", title: AppLocalization.string("道指"), color: AssetTheme.accentOrange, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny"),
         .init(symbol: "hsi", title: AppLocalization.string("恒生"), color: AssetTheme.accentRed, requiresHistoricalFX: false, historicalFXSymbol: nil),
-        .init(symbol: "nikkei", title: AppLocalization.string("日经225"), color: AssetTheme.positive, requiresHistoricalFX: false, historicalFXSymbol: nil),
         .init(symbol: "csi300", title: AppLocalization.string("沪深300"), color: AssetTheme.textPrimary, requiresHistoricalFX: false, historicalFXSymbol: nil),
         .init(symbol: "shanghai_composite", title: AppLocalization.string("上证综指"), color: AssetTheme.textSecondary, requiresHistoricalFX: false, historicalFXSymbol: nil),
         .init(symbol: "shenzhen_component", title: AppLocalization.string("深成指"), color: AssetTheme.accentRed, requiresHistoricalFX: false, historicalFXSymbol: nil),
         .init(symbol: "chinext", title: AppLocalization.string("创业板"), color: AssetTheme.positive, requiresHistoricalFX: false, historicalFXSymbol: nil),
+    ]
+    static let internalStrategyAssetOptions: [BacktestAssetOption] = [
         .init(symbol: "usd_cash", title: AppLocalization.string("美元现金"), color: AssetTheme.textSecondary, requiresHistoricalFX: false, historicalFXSymbol: nil),
     ]
-    static let strategySleeveAssetOptions: [BacktestAssetOption] = [
-        .init(symbol: "qmnrx", title: AppLocalization.string("QMNRX"), color: AssetTheme.accentBlue, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny"),
-        .init(symbol: "ostix", title: AppLocalization.string("OSTIX"), color: AssetTheme.textSecondary, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny"),
-        .init(symbol: "vmnfx", title: AppLocalization.string("VMNFX"), color: AssetTheme.positive, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny"),
-        .init(symbol: "bprrx", title: AppLocalization.string("BPRRX"), color: AssetTheme.accentOrange, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny"),
-    ]
-    static let strategyAssetOptions: [BacktestAssetOption] = dcaAssetOptions + strategySleeveAssetOptions
+    static let strategyAssetOptions: [BacktestAssetOption] = dcaAssetOptions + internalStrategyAssetOptions
 
     static func strategyColor(for symbol: String) -> Color {
         strategyAssetOptions.first(where: { $0.symbol == symbol })?.color ?? AssetTheme.gold

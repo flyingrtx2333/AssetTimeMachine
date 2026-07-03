@@ -41,6 +41,7 @@ struct AdvancedBacktestView: View {
     @State private var isOptimizingStrategies = false
     @State private var isLoadingRequiredHistory = false
     @State private var pendingRefreshTask: Task<Void, Never>?
+    @State private var pendingDataCacheTask: Task<Void, Never>?
     @State private var pendingReportComputationTask: Task<AdvancedBacktestComputationResult, Never>?
     @State private var pendingOptimizationComputationTask: Task<[AdvancedBacktestCandidate], Never>?
     @State private var lastSavedAdvancedBacktestSignature: String?
@@ -102,7 +103,7 @@ struct AdvancedBacktestView: View {
         var options = selectedAssetOptions
         var symbols = Set(options.map(\.symbol))
         for signalSymbol in strategyMode.requiredSignalAssetSymbols where !symbols.contains(signalSymbol) {
-            if let option = assetOptions.first(where: { $0.symbol == signalSymbol }) {
+            if let option = BacktestDefaults.strategyAssetOptions.first(where: { $0.symbol == signalSymbol }) {
                 options.append(option)
                 symbols.insert(signalSymbol)
             }
@@ -325,18 +326,18 @@ struct AdvancedBacktestView: View {
         }
         .onChange(of: isActive ? advancedDataCacheToken : 0) { _, _ in
             guard isActive else { return }
-            refreshAdvancedDataCacheIfNeeded()
+            scheduleAdvancedDataCacheRefresh()
         }
         .onChange(of: isActive ? relevantHistoryToken : "") { _, newToken in
             guard isActive, hasStartedBacktest else { return }
             guard newToken != lastObservedRelevantHistoryToken else { return }
             lastObservedRelevantHistoryToken = newToken
-            refreshAdvancedDataCacheIfNeeded(force: true)
+            scheduleAdvancedDataCacheRefresh(force: true)
             scheduleRefresh(delayNanoseconds: 80_000_000, saveRecord: false)
         }
         .task(id: isActive) {
             if isActive {
-                refreshAdvancedDataCacheIfNeeded(force: true)
+                scheduleAdvancedDataCacheRefresh(force: true)
                 lastObservedRelevantHistoryToken = relevantHistoryToken
                 let shouldForceHistoryRefresh = isMissingSelectedHistoryData
                 if shouldForceHistoryRefresh {
@@ -348,7 +349,7 @@ struct AdvancedBacktestView: View {
                     await MainActor.run { isLoadingRequiredHistory = false }
                 }
                 await MainActor.run {
-                    refreshAdvancedDataCacheIfNeeded(force: true)
+                    scheduleAdvancedDataCacheRefresh(force: true)
                     lastObservedRelevantHistoryToken = relevantHistoryToken
                 }
                 guard hasStartedBacktest, report == nil, !isRefreshingReport else { return }
@@ -561,7 +562,7 @@ struct AdvancedBacktestView: View {
         hasStartedBacktest = true
 
         guard isMissingSelectedHistoryData else {
-            refreshAdvancedDataCacheIfNeeded(force: true)
+            scheduleAdvancedDataCacheRefresh(force: true)
             scheduleRefresh(delayNanoseconds: 0, saveRecord: true)
             return
         }
@@ -574,7 +575,7 @@ struct AdvancedBacktestView: View {
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 guard isActive, hasStartedBacktest else { return }
-                refreshAdvancedDataCacheIfNeeded(force: true)
+                scheduleAdvancedDataCacheRefresh(force: true)
                 scheduleRefresh(delayNanoseconds: 0, saveRecord: true)
             }
         }
@@ -643,9 +644,11 @@ struct AdvancedBacktestView: View {
     @MainActor
     private func cancelPendingAdvancedBacktestTasks() {
         pendingRefreshTask?.cancel()
+        pendingDataCacheTask?.cancel()
         pendingReportComputationTask?.cancel()
         pendingOptimizationComputationTask?.cancel()
         pendingRefreshTask = nil
+        pendingDataCacheTask = nil
         pendingReportComputationTask = nil
         pendingOptimizationComputationTask = nil
         isRefreshingReport = false
@@ -653,35 +656,33 @@ struct AdvancedBacktestView: View {
     }
 
     @MainActor
-    private func refreshAdvancedDataCacheIfNeeded(force: Bool = false) {
+    private func scheduleAdvancedDataCacheRefresh(force: Bool = false) {
         let token = advancedDataCacheToken
         guard force || token != lastAdvancedDataCacheToken else { return }
 
-        cachedSelectedAssetInputs = calculationAssetOptions.map { option in
-            BacktestEngine.advancedAssetInput(for: option) { symbol in
-                marketStore.history(for: symbol)
-            }
-        }
+        pendingDataCacheTask?.cancel()
+        let options = calculationAssetOptions
+        let mode = strategyMode
+        let snapshots = AdvancedBacktestDataSupport.historySnapshots(
+            symbols: relevantHistorySymbols,
+            historyProvider: { marketStore.history(for: $0) }
+        )
 
-        let boundarySymbols = strategyMode.dateBoundaryAssetSymbols
-        let boundaryOptions = calculationAssetOptions.filter { option in
-            boundarySymbols?.contains(option.symbol) ?? true
+        pendingDataCacheTask = Task {
+            let cache = await Task.detached(priority: .userInitiated) {
+                AdvancedBacktestDataSupport.buildDataCache(
+                    calculationAssetOptions: options,
+                    strategyMode: mode,
+                    historySnapshots: snapshots
+                )
+            }.value
+
+            guard !Task.isCancelled else { return }
+            cachedSelectedAssetInputs = cache.selectedAssetInputs
+            cachedAvailableDateBounds = cache.availableDateBounds
+            lastAdvancedDataCacheToken = token
+            pendingDataCacheTask = nil
         }
-        let sourceSeries = boundaryOptions.flatMap { option -> [PublicHistorySeries] in
-            var series: [PublicHistorySeries] = []
-            let input = BacktestEngine.advancedAssetInput(for: option) { symbol in
-                marketStore.history(for: symbol)
-            }
-            if let assetSeries = input.assetSeries {
-                series.append(assetSeries)
-            }
-            if let fxSeries = input.fxSeries {
-                series.append(fxSeries)
-            }
-            return series
-        }
-        cachedAvailableDateBounds = BacktestEngine.availableDateBounds(for: sourceSeries)
-        lastAdvancedDataCacheToken = token
     }
 
     @MainActor
@@ -693,9 +694,15 @@ struct AdvancedBacktestView: View {
         pendingReportComputationTask = nil
         pendingOptimizationComputationTask = nil
 
-        let capturedAssetInputs = selectedAssetInputs
-        guard !capturedAssetInputs.isEmpty,
-              capturedAssetInputs.allSatisfy({ $0.assetSeries != nil && (!$0.assetOption.requiresHistoricalFX || $0.fxSeries != nil) }) else {
+        let capturedOptions = calculationAssetOptions
+        let capturedHistorySnapshots = AdvancedBacktestDataSupport.historySnapshots(
+            symbols: relevantHistorySymbols,
+            historyProvider: { marketStore.history(for: $0) }
+        )
+        guard AdvancedBacktestDataSupport.hasRequiredHistoryData(
+            for: capturedOptions,
+            in: capturedHistorySnapshots
+        ) else {
             report = nil
             cachedComparisonSeries = []
             rebalanceAdvice = nil
@@ -714,6 +721,18 @@ struct AdvancedBacktestView: View {
         let buyRule = AdvancedBacktestRule(direction: buyDirection, days: buyDays)
         let sellRule = AdvancedBacktestRule(direction: sellDirection, days: sellDays)
         let capturedRiskSettings = self.riskSettings
+        let capturedSelectedAssetOptions = selectedAssetOptions
+        let capturedBuyDirection = buyDirection
+        let capturedBuyDays = buyDays
+        let capturedSellDirection = sellDirection
+        let capturedSellDays = sellDays
+        let capturedFeeRate = feeRate
+        let capturedSlippageRate = slippageRate
+        let capturedMaxPositionRatio = maxPositionRatio
+        let capturedCooldownDays = Int(cooldownDays.rounded())
+        let capturedStopLossRatio = stopLossRatio
+        let capturedTakeProfitRatio = takeProfitRatio
+        let capturedConfigSummary = advancedConfigSummary()
 
         isRefreshingReport = true
         bestCandidates = []
@@ -728,11 +747,19 @@ struct AdvancedBacktestView: View {
             guard !Task.isCancelled else { return }
 
             let computationTask = Task.detached(priority: .userInitiated) { () -> AdvancedBacktestComputationResult in
-                let filteredAssetInputs = BacktestEngine.filteredAdvancedAssetInputs(capturedAssetInputs, within: capturedDateBounds)
+                let dataCache = AdvancedBacktestDataSupport.buildDataCache(
+                    calculationAssetOptions: capturedOptions,
+                    strategyMode: capturedStrategyMode,
+                    historySnapshots: capturedHistorySnapshots
+                )
+                let filteredAssetInputs = BacktestEngine.filteredAdvancedAssetInputs(
+                    dataCache.selectedAssetInputs,
+                    within: capturedDateBounds
+                )
                 guard !Task.isCancelled,
                       !filteredAssetInputs.isEmpty,
                       filteredAssetInputs.allSatisfy({ $0.assetSeries != nil && (!$0.assetOption.requiresHistoricalFX || $0.fxSeries != nil) }) else {
-                    return AdvancedBacktestComputationResult(report: nil, rebalanceAdvice: nil)
+                    return AdvancedBacktestComputationResult(report: nil, rebalanceAdvice: nil, comparisonSeries: [])
                 }
 
                 let advice = capturedStrategyMode.isRotation
@@ -763,7 +790,12 @@ struct AdvancedBacktestView: View {
                     )
                 }
 
-                return AdvancedBacktestComputationResult(report: report, rebalanceAdvice: advice)
+                let comparisonSeries = report.map { AdvancedBacktestPresentation.comparisonSeries(from: $0) } ?? []
+                return AdvancedBacktestComputationResult(
+                    report: report,
+                    rebalanceAdvice: advice,
+                    comparisonSeries: comparisonSeries
+                )
             }
             await MainActor.run {
                 pendingReportComputationTask = computationTask
@@ -776,13 +808,40 @@ struct AdvancedBacktestView: View {
             }
 
             guard !Task.isCancelled else { return }
+
+            var recordDraft: AdvancedBacktestRecordDraft?
+            if saveRecord, let report = refreshedResult.report {
+                let draft = await Task.detached(priority: .utility) {
+                    AdvancedBacktestDataSupport.buildRecordDraft(
+                        report: report,
+                        selectedAssetOptions: capturedSelectedAssetOptions,
+                        initialCash: capturedInitialCash,
+                        tradeAmount: capturedTradeAmount,
+                        feeRate: capturedFeeRate,
+                        slippageRate: capturedSlippageRate,
+                        maxPositionRatio: capturedMaxPositionRatio,
+                        cooldownDays: capturedCooldownDays,
+                        stopLossRatio: capturedStopLossRatio,
+                        takeProfitRatio: capturedTakeProfitRatio,
+                        strategyMode: capturedStrategyMode,
+                        buyDirection: capturedBuyDirection,
+                        buyDays: capturedBuyDays,
+                        sellDirection: capturedSellDirection,
+                        sellDays: capturedSellDays,
+                        configSummary: capturedConfigSummary
+                    )
+                }.value
+                guard !Task.isCancelled else { return }
+                recordDraft = draft
+            }
+
             await MainActor.run {
                 pendingReportComputationTask = nil
                 report = refreshedResult.report
-                cachedComparisonSeries = refreshedResult.report.map { AdvancedBacktestPresentation.comparisonSeries(from: $0) } ?? []
+                cachedComparisonSeries = refreshedResult.comparisonSeries
                 rebalanceAdvice = refreshedResult.rebalanceAdvice
-                if saveRecord {
-                    saveAdvancedBacktestRecordIfNeeded(refreshedResult.report)
+                if let recordDraft {
+                    insertAdvancedBacktestRecord(recordDraft)
                 }
                 bestCandidates = []
                 hasOptimizedStrategies = false
@@ -918,9 +977,15 @@ struct AdvancedBacktestView: View {
         pendingReportComputationTask = nil
         pendingOptimizationComputationTask = nil
 
-        let capturedAssetInputs = selectedAssetInputs
-        guard !capturedAssetInputs.isEmpty,
-              capturedAssetInputs.allSatisfy({ $0.assetSeries != nil && (!$0.assetOption.requiresHistoricalFX || $0.fxSeries != nil) }) else {
+        let capturedOptions = calculationAssetOptions
+        let capturedHistorySnapshots = AdvancedBacktestDataSupport.historySnapshots(
+            symbols: relevantHistorySymbols,
+            historyProvider: { marketStore.history(for: $0) }
+        )
+        guard AdvancedBacktestDataSupport.hasRequiredHistoryData(
+            for: capturedOptions,
+            in: capturedHistorySnapshots
+        ) else {
             bestCandidates = []
             hasOptimizedStrategies = true
             isOptimizingStrategies = false
@@ -931,6 +996,7 @@ struct AdvancedBacktestView: View {
         let capturedDateBounds = effectiveDateBounds
         let capturedInitialCash = self.initialCash
         let capturedRiskSettings = self.riskSettings
+        let capturedStrategyMode = strategyMode
 
         bestCandidates = []
         hasOptimizedStrategies = false
@@ -940,7 +1006,15 @@ struct AdvancedBacktestView: View {
             guard !Task.isCancelled else { return }
 
             let computationTask = Task.detached(priority: .utility) { () -> [AdvancedBacktestCandidate] in
-                let filteredAssetInputs = BacktestEngine.filteredAdvancedAssetInputs(capturedAssetInputs, within: capturedDateBounds)
+                let dataCache = AdvancedBacktestDataSupport.buildDataCache(
+                    calculationAssetOptions: capturedOptions,
+                    strategyMode: capturedStrategyMode,
+                    historySnapshots: capturedHistorySnapshots
+                )
+                let filteredAssetInputs = BacktestEngine.filteredAdvancedAssetInputs(
+                    dataCache.selectedAssetInputs,
+                    within: capturedDateBounds
+                )
                 guard !Task.isCancelled,
                       !filteredAssetInputs.isEmpty,
                       filteredAssetInputs.allSatisfy({ $0.assetSeries != nil && (!$0.assetOption.requiresHistoricalFX || $0.fxSeries != nil) }) else {
@@ -978,72 +1052,55 @@ struct AdvancedBacktestView: View {
     @MainActor
     private func saveAdvancedBacktestRecordIfNeeded(_ report: AdvancedBacktestReport?) {
         guard let report, !report.points.isEmpty else { return }
-        let config = BacktestRecordConfigPayload(
-            kind: .advanced,
-            selectedAssetSymbol: selectedAssetOptions.first?.symbol,
-            selectedAssetSymbols: selectedAssetOptions.map(\.symbol),
-            initialCash: initialCash,
-            tradeAmount: tradeAmount,
-            feeRate: feeRate,
-            slippageRate: slippageRate,
-            maxPositionRatio: maxPositionRatio,
-            cooldownDays: Int(cooldownDays.rounded()),
-            stopLossRatio: stopLossRatio,
-            takeProfitRatio: takeProfitRatio,
-            strategyModeRawValue: strategyMode.rawValue,
-            buyDirectionRawValue: buyDirection.rawValue,
-            buyDays: buyDays,
-            sellDirectionRawValue: sellDirection.rawValue,
-            sellDays: sellDays,
-            advancedTrades: BacktestRecordCodec.advancedTradePayloads(from: report.trades),
-            advancedAssetCharts: BacktestRecordCodec.advancedAssetChartPayloads(from: report.assetReports),
-            advancedBenchmarkSeries: BacktestRecordCodec.advancedBenchmarkSeriesPayloads(from: report.benchmarkSeries),
-            finalCash: report.finalCash,
-            finalUnits: report.finalUnits,
-            cashYieldSummary: BacktestRecordCodec.cashYieldSummaryPayload(from: report.cashYieldSummary),
-            riskSignalSummary: report.riskSignalSummary.map { BacktestRecordCodec.riskSignalSummaryPayload(from: $0) }
-        )
-        let configSummary = advancedConfigSummary()
-        let record = BacktestRecord(
-            kindRawValue: BacktestRecordKind.advanced.rawValue,
-            title: BacktestRecordKind.advanced.title,
-            subtitle: strategyMode.title,
-            configSummary: configSummary,
-            startDate: report.points.first?.date,
-            endDate: report.points.last?.date,
-            totalReturn: report.totalReturn,
-            annualizedReturn: report.annualizedReturn,
-            maxDrawdown: report.maxDrawdown,
-            annualizedVolatility: report.annualizedVolatility,
-            sharpeRatio: report.sharpeRatio,
-            finalValue: report.finalPortfolioValue,
-            totalInvested: initialCash,
-            profitLoss: report.finalPortfolioValue - initialCash,
-            tradeCount: report.buyCount + report.sellCount,
-            pointsJSON: BacktestRecordCodec.pointsData(from: report.points),
-            configJSON: BacktestRecordCodec.configData(from: config)
-        )
-        insertAdvancedBacktestRecord(record)
+
+        let capturedSelectedAssetOptions = selectedAssetOptions
+        let capturedInitialCash = initialCash
+        let capturedTradeAmount = tradeAmount
+        let capturedFeeRate = feeRate
+        let capturedSlippageRate = slippageRate
+        let capturedMaxPositionRatio = maxPositionRatio
+        let capturedCooldownDays = Int(cooldownDays.rounded())
+        let capturedStopLossRatio = stopLossRatio
+        let capturedTakeProfitRatio = takeProfitRatio
+        let capturedStrategyMode = strategyMode
+        let capturedBuyDirection = buyDirection
+        let capturedBuyDays = buyDays
+        let capturedSellDirection = sellDirection
+        let capturedSellDays = sellDays
+        let capturedConfigSummary = advancedConfigSummary()
+
+        Task {
+            let draft = await Task.detached(priority: .utility) {
+                AdvancedBacktestDataSupport.buildRecordDraft(
+                    report: report,
+                    selectedAssetOptions: capturedSelectedAssetOptions,
+                    initialCash: capturedInitialCash,
+                    tradeAmount: capturedTradeAmount,
+                    feeRate: capturedFeeRate,
+                    slippageRate: capturedSlippageRate,
+                    maxPositionRatio: capturedMaxPositionRatio,
+                    cooldownDays: capturedCooldownDays,
+                    stopLossRatio: capturedStopLossRatio,
+                    takeProfitRatio: capturedTakeProfitRatio,
+                    strategyMode: capturedStrategyMode,
+                    buyDirection: capturedBuyDirection,
+                    buyDays: capturedBuyDays,
+                    sellDirection: capturedSellDirection,
+                    sellDays: capturedSellDays,
+                    configSummary: capturedConfigSummary
+                )
+            }.value
+            guard !Task.isCancelled else { return }
+            insertAdvancedBacktestRecord(draft)
+        }
     }
 
     @MainActor
-    private func insertAdvancedBacktestRecord(_ record: BacktestRecord) {
-        let signature = [
-            record.kindRawValue,
-            record.subtitle,
-            record.configSummary,
-            record.startDate?.recordDateString ?? "nil",
-            record.endDate?.recordDateString ?? "nil",
-            String(format: "%.8f", record.totalReturn),
-            String(format: "%.8f", record.maxDrawdown),
-            String(format: "%.4f", record.finalValue ?? 0),
-            String(record.tradeCount)
-        ].joined(separator: "|")
+    private func insertAdvancedBacktestRecord(_ draft: AdvancedBacktestRecordDraft) {
+        guard draft.signature != lastSavedAdvancedBacktestSignature else { return }
+        lastSavedAdvancedBacktestSignature = draft.signature
 
-        guard signature != lastSavedAdvancedBacktestSignature else { return }
-        lastSavedAdvancedBacktestSignature = signature
-
-        modelContext.insert(record)
+        modelContext.insert(draft.record)
         do {
             try modelContext.save()
             onRecordsChanged()
@@ -1451,7 +1508,7 @@ struct AdvancedBacktestView: View {
             stopLossRatio = candidate.settings.stopLossRatio
             takeProfitRatio = candidate.settings.takeProfitRatio
             report = candidate.report
-            cachedComparisonSeries = AdvancedBacktestPresentation.comparisonSeries(from: candidate.report)
+            cachedComparisonSeries = candidate.comparisonSeries
             saveAdvancedBacktestRecordIfNeeded(candidate.report)
         }
     }

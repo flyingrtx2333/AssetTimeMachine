@@ -33,12 +33,6 @@ extension ContentView {
         scheduleWorkActivation(for: tab)
     }
 
-    @MainActor
-    func openRecordSnapshot(_ snapshotID: UUID) {
-        pendingRecordSnapshotID = snapshotID
-        selectTab(.snapshots)
-    }
-
     @ViewBuilder
     func deferredTabContent<Content: View>(for tab: AppTab, @ViewBuilder content: () -> Content) -> some View {
         if TabMountController.shouldMount(tab, selectedTab: selectedTab, mountedTabs: mountedTabs) {

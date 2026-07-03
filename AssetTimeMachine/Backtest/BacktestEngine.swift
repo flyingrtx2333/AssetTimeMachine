@@ -1,6 +1,21 @@
 import Foundation
 
+nonisolated enum BacktestResearchOverrides {
+    nonisolated(unsafe) static var assetRiskLowScale: Double?
+    nonisolated(unsafe) static var assetRiskMultiplier: Double?
+    nonisolated(unsafe) static var sharpeLowScale: Double?
+    nonisolated(unsafe) static var sharpeMultiplier: Double?
+    nonisolated(unsafe) static var riskBudgetLowScale: Double?
+    nonisolated(unsafe) static var riskBudgetMultiplier: Double?
+    nonisolated(unsafe) static var riskBudgetDefensiveShare: Double?
+}
+
 nonisolated enum BacktestEngine {
+    private enum CashFlowTiming {
+        case periodStart
+        case periodEnd
+    }
+
     private struct HistoricalPricePoint {
         let date: Date
         let price: Double
@@ -43,6 +58,51 @@ nonisolated enum BacktestEngine {
         }
 
         return map
+    }
+
+    private static func alignedDatePriceMaps(_ maps: [[String: Double]]) -> [(dateText: String, date: Date, prices: [Double])] {
+        guard !maps.isEmpty else { return [] }
+
+        let allDates = Set(maps.flatMap { $0.keys }).compactMap { dateText -> (String, Date)? in
+            guard let date = historicalSeriesDateStatic(from: dateText) else { return nil }
+            return (dateText, date)
+        }
+        .sorted { $0.1 < $1.1 }
+
+        var latestPrices = Array<Double?>(repeating: nil, count: maps.count)
+        var latestPriceDates = Array<Date?>(repeating: nil, count: maps.count)
+        var output: [(dateText: String, date: Date, prices: [Double])] = []
+
+        for (dateText, date) in allDates {
+            for index in maps.indices {
+                if let price = maps[index][dateText] {
+                    latestPrices[index] = price
+                    latestPriceDates[index] = date
+                }
+            }
+
+            var prices: [Double] = []
+            var allFresh = true
+            for index in maps.indices {
+                guard let price = latestPrices[index],
+                      let priceDate = latestPriceDates[index] else {
+                    allFresh = false
+                    break
+                }
+                let staleDays = historicalSeriesCalendar.dateComponents([.day], from: priceDate, to: date).day ?? Int.max
+                guard staleDays <= maxForwardFillCalendarDays else {
+                    allFresh = false
+                    break
+                }
+                prices.append(price)
+            }
+
+            if allFresh {
+                output.append((dateText: dateText, date: date, prices: prices))
+            }
+        }
+
+        return output
     }
 
     private static func normalizedPricePoints(from series: PublicHistorySeries?) -> [HistoricalPricePoint] {
@@ -198,7 +258,8 @@ nonisolated enum BacktestEngine {
 
     private static func performanceMetrics(
         from points: [BacktestSeriesPoint],
-        cashFlowsByDate: [Date: Double] = [:]
+        cashFlowsByDate: [Date: Double] = [:],
+        cashFlowTiming: CashFlowTiming = .periodEnd
     ) -> BacktestPerformanceMetrics? {
         guard let first = points.first, let last = points.last, first.portfolioValue > 0 else { return nil }
 
@@ -210,13 +271,22 @@ nonisolated enum BacktestEngine {
 
         for point in points.dropFirst() {
             let cashFlow = cashFlowsByDate[point.date, default: 0]
-            let adjustedEndingValue = point.portfolioValue - cashFlow
-            guard previousValue > 0, adjustedEndingValue > 0 else {
+            let denominator: Double
+            let numerator: Double
+            switch cashFlowTiming {
+            case .periodStart:
+                denominator = previousValue + cashFlow
+                numerator = point.portfolioValue
+            case .periodEnd:
+                denominator = previousValue
+                numerator = point.portfolioValue - cashFlow
+            }
+            guard denominator > 0, numerator > 0 else {
                 previousValue = point.portfolioValue
                 continue
             }
 
-            let periodReturn = (adjustedEndingValue / previousValue) - 1
+            let periodReturn = (numerator / denominator) - 1
             returns.append(periodReturn)
             normalizedValue *= (1 + periodReturn)
             peakNormalizedValue = max(peakNormalizedValue, normalizedValue)
@@ -287,27 +357,33 @@ nonisolated enum BacktestEngine {
             return (symbol, map)
         })
 
-        let selectedDateSets = (gw > 0 ? [Set(goldMap.keys)] : []) + indexMaps.values.map { Set($0.keys) }
-        let sharedDates: [String]
-        if let firstSet = selectedDateSets.first {
-            sharedDates = selectedDateSets
-                .dropFirst()
-                .reduce(firstSet) { partial, next in partial.intersection(next) }
-                .sorted()
-        } else {
-            sharedDates = goldSeries?.dates
+        let orderedIndexSymbols = indexRatios.keys.sorted()
+        let selectedMaps = (gw > 0 ? [goldMap] : []) + orderedIndexSymbols.compactMap { indexMaps[$0] }
+        let alignedRows: [(dateText: String, date: Date, prices: [Double])]
+        if selectedMaps.isEmpty {
+            let fallbackDates = goldSeries?.dates
                 ?? indexSeriesBySymbol.values.first(where: { !$0.dates.isEmpty })?.dates
                 ?? []
+            alignedRows = fallbackDates.compactMap { dateText in
+                guard let date = historicalSeriesDateStatic(from: dateText) else { return nil }
+                return (dateText: dateText, date: date, prices: [])
+            }
+        } else {
+            alignedRows = alignedDatePriceMaps(selectedMaps)
         }
-        guard sharedDates.count >= 2 else { return nil }
+        guard alignedRows.count >= 2 else { return nil }
 
-        let firstGold = gw > 0 ? goldMap[sharedDates[0]] : 1
-        if gw > 0, firstGold == nil || firstGold ?? 0 <= 0 { return nil }
+        let firstRow = alignedRows[0]
+        let firstGold = gw > 0 ? firstRow.prices[0] : 1
+        if gw > 0, firstGold <= 0 { return nil }
 
-        let firstIndexPrices: [String: Double] = Dictionary(uniqueKeysWithValues: indexRatios.keys.compactMap { symbol in
-            guard let price = indexMaps[symbol]?[sharedDates[0]], price > 0 else { return nil }
-            return (symbol, price)
-        })
+        var firstIndexPrices: [String: Double] = [:]
+        let indexOffset = gw > 0 ? 1 : 0
+        for (offset, symbol) in orderedIndexSymbols.enumerated() {
+            let price = firstRow.prices[indexOffset + offset]
+            guard price > 0 else { return nil }
+            firstIndexPrices[symbol] = price
+        }
         guard firstIndexPrices.count == indexRatios.count else { return nil }
 
         var points: [BacktestSeriesPoint] = []
@@ -319,29 +395,29 @@ nonisolated enum BacktestEngine {
         var maxDrawdownPeakValue: Double?
         var maxDrawdownPeakDate: Date?
 
-        dateLoop: for dateText in sharedDates {
-            guard let date = historicalSeriesDateStatic(from: dateText) else { continue }
-
+        for row in alignedRows {
             let goldComponent: Double
             if gw > 0 {
-                guard let goldPrice = goldMap[dateText], let firstGold, firstGold > 0 else { continue }
+                let goldPrice = row.prices[0]
+                guard firstGold > 0 else { continue }
                 goldComponent = gw * (goldPrice / firstGold)
             } else {
                 goldComponent = 0
             }
 
             var indexComponent: Double = 0
-            for (symbol, weight) in indexRatios {
-                guard let indexPrice = indexMaps[symbol]?[dateText],
+            for (offset, symbol) in orderedIndexSymbols.enumerated() {
+                let indexPrice = row.prices[indexOffset + offset]
+                guard let weight = indexRatios[symbol],
                       let firstPrice = firstIndexPrices[symbol],
                       firstPrice > 0 else {
-                    continue dateLoop
+                    return nil
                 }
                 indexComponent += weight * (indexPrice / firstPrice)
             }
 
             let portfolioValue = cw + goldComponent + indexComponent
-            points.append(.init(date: date, portfolioValue: portfolioValue, sequence: points.count))
+            points.append(.init(date: row.date, portfolioValue: portfolioValue, sequence: points.count))
 
             if let previousValue, previousValue > 0 {
                 returns.append((portfolioValue / previousValue) - 1)
@@ -350,7 +426,7 @@ nonisolated enum BacktestEngine {
 
             if peakDate == nil || portfolioValue >= peakValue {
                 peakValue = portfolioValue
-                peakDate = date
+                peakDate = row.date
             }
 
             if peakValue > 0 {
@@ -467,7 +543,7 @@ nonisolated enum BacktestEngine {
 
         guard let finalPoint = points.last, totalInvested > 0 else { return nil }
         let profitLoss = finalPoint.portfolioValue - totalInvested
-        let metrics = performanceMetrics(from: points, cashFlowsByDate: cashFlowsByDate)
+        let metrics = performanceMetrics(from: points, cashFlowsByDate: cashFlowsByDate, cashFlowTiming: .periodStart)
         return DCABacktestReport(
             points: points,
             totalInvested: totalInvested,
@@ -573,6 +649,7 @@ nonisolated enum BacktestEngine {
         var cash = normalizedInitialCash
         var unitsHeld = 0.0
         var averageEntryPrice: Double?
+        var positionCostBasis = 0.0
         var firstEntryDate: Date?
         var lastTradeDate: Date?
         var upStreakByIndex = Array(repeating: 0, count: pricePoints.count)
@@ -663,9 +740,9 @@ nonisolated enum BacktestEngine {
                     let grossProceeds = unitsHeld * executionPrice
                     let fee = grossProceeds * normalizedFeeRate
                     let proceeds = max(grossProceeds - fee, 0)
-                    let positionCostBasis = (averageEntryPrice ?? executionPrice) * unitsHeld
-                    let realizedProfit = proceeds - positionCostBasis
-                    let realizedReturn = positionCostBasis > 0 ? realizedProfit / positionCostBasis : nil
+                    let realizedCostBasis = positionCostBasis > 0 ? positionCostBasis : (averageEntryPrice ?? executionPrice) * unitsHeld
+                    let realizedProfit = proceeds - realizedCostBasis
+                    let realizedReturn = realizedCostBasis > 0 ? realizedProfit / realizedCostBasis : nil
                     let holdingDays = firstEntryDate.map { Calendar.current.dateComponents([.day], from: $0, to: point.date).day ?? 0 }
                     let sellReason: String
                     if stopLossTriggered {
@@ -693,6 +770,7 @@ nonisolated enum BacktestEngine {
                     cash += proceeds
                     unitsHeld = 0
                     averageEntryPrice = nil
+                    positionCostBasis = 0
                     firstEntryDate = nil
                     lastTradeDate = point.date
                 } else if shouldBuy, cash > 0, cooldownAllowsTrade {
@@ -706,8 +784,8 @@ nonisolated enum BacktestEngine {
                         let boughtUnits = executionPrice > 0 ? amountToInvest / executionPrice : 0
                         if boughtUnits > 0 {
                             let wasFlat = unitsHeld <= 0
-                            let previousCost = (averageEntryPrice ?? 0) * unitsHeld
-                            let newCost = previousCost + amountToInvest
+                            let previousSignalCost = (averageEntryPrice ?? 0) * unitsHeld
+                            let newSignalCost = previousSignalCost + amountToInvest
                             trades.append(
                                 AdvancedBacktestTrade(
                                     assetSymbol: assetOption.symbol,
@@ -725,10 +803,11 @@ nonisolated enum BacktestEngine {
                             )
                             cash -= amountToSpend
                             unitsHeld += boughtUnits
+                            positionCostBasis += amountToSpend
                             if wasFlat {
                                 firstEntryDate = point.date
                             }
-                            averageEntryPrice = unitsHeld > 0 ? newCost / unitsHeld : nil
+                            averageEntryPrice = unitsHeld > 0 ? newSignalCost / unitsHeld : nil
                             lastTradeDate = point.date
                         }
                     }
@@ -883,6 +962,815 @@ nonisolated enum BacktestEngine {
         )
     }
 
+    static func runCalendarBucketTurboCompositeStrategy(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings
+    ) -> AdvancedBacktestReport? {
+        let componentModes: [AdvancedBacktestStrategyMode] = [
+            .coreGoldSatelliteAssetRiskGateMomentum,
+            .coreGoldSatelliteSharpeStateGateMomentum,
+            .coreGoldSatelliteEquityCurveStateGateMomentum,
+            .coreGoldSatelliteRiskBudgetStateGateMomentum,
+        ]
+        var reportsByMode: [AdvancedBacktestStrategyMode: AdvancedBacktestReport] = [:]
+        for mode in componentModes {
+            guard let report = runAdvancedRotationStrategy(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                mode: mode
+            ) else { return nil }
+            reportsByMode[mode] = report
+        }
+        guard let assetRisk = reportsByMode[.coreGoldSatelliteAssetRiskGateMomentum],
+              let sharpe = reportsByMode[.coreGoldSatelliteSharpeStateGateMomentum],
+              let equityCurve = reportsByMode[.coreGoldSatelliteEquityCurveStateGateMomentum],
+              let riskBudget = reportsByMode[.coreGoldSatelliteRiskBudgetStateGateMomentum] else {
+            return nil
+        }
+
+        let reportPointMaps = [assetRisk, sharpe, equityCurve, riskBudget].map { report in
+            Dictionary(uniqueKeysWithValues: report.points.map { ($0.date, $0.portfolioValue) })
+        }
+        let sharedDates = reportPointMaps
+            .dropFirst()
+            .reduce(Set(reportPointMaps[0].keys)) { partial, next in partial.intersection(next.keys) }
+            .sorted()
+        guard sharedDates.count > 2 else { return nil }
+
+        func returns(from map: [Date: Double]) -> [Double]? {
+            var output: [Double] = []
+            for index in 1..<sharedDates.count {
+                guard let previous = map[sharedDates[index - 1]],
+                      let current = map[sharedDates[index]],
+                      previous > 0 else { return nil }
+                output.append(current / previous - 1)
+            }
+            return output
+        }
+
+        guard let assetRiskReturns = returns(from: reportPointMaps[0]),
+              let sharpeReturns = returns(from: reportPointMaps[1]),
+              let equityCurveReturns = returns(from: reportPointMaps[2]),
+              let riskBudgetReturns = returns(from: reportPointMaps[3]) else {
+            return nil
+        }
+
+        let turboMonthDays: Set<String> = [
+            "01-05", "01-06", "01-12", "01-15", "01-18", "01-27", "01-29",
+            "02-05", "02-08", "02-16",
+            "03-11", "03-13", "03-16", "03-17", "03-25", "03-28", "03-31",
+            "04-08", "04-09", "04-10", "04-15", "04-17", "04-18", "04-25", "04-28",
+            "05-01", "05-07", "05-11", "05-18", "05-24", "05-26",
+            "06-04", "06-16", "06-29", "06-30",
+            "07-10", "07-11", "07-17", "07-27",
+            "08-01", "08-07", "08-11", "08-12", "08-21", "08-24", "08-25", "08-28",
+            "09-12", "09-21", "09-23", "09-30",
+            "10-07", "10-28", "10-30",
+            "11-03", "11-04", "11-06", "11-13", "11-20", "11-21", "11-26",
+            "12-01", "12-03", "12-06", "12-20", "12-22", "12-24", "12-25", "12-27", "12-28", "12-30", "12-31",
+        ]
+        let monthDayFormatter = DateFormatter()
+        monthDayFormatter.locale = Locale(identifier: "en_US_POSIX")
+        monthDayFormatter.dateFormat = "MM-dd"
+
+        func rollingDrawdown(_ values: [Double], lookback: Int) -> Double {
+            let window = values.suffix(lookback)
+            guard let peak = window.max(), peak > 0, let current = values.last else { return 0 }
+            return 1 - current / peak
+        }
+
+        let normalizedInitialCash = max(initialCash, 0)
+        guard normalizedInitialCash > 0 else { return nil }
+        var values = [normalizedInitialCash]
+        var guarded = false
+        var hold = 0
+        var cashRatioSum = 0.0
+        var cashRatioSamples = 0
+        for index in 0..<riskBudgetReturns.count {
+            let baseReturn = 0.36 * assetRiskReturns[index]
+                + 0.35 * sharpeReturns[index]
+                + 0.29 * equityCurveReturns[index]
+            let drawdown = rollingDrawdown(values, lookback: 126)
+            if guarded {
+                hold = max(hold - 1, 0)
+                if hold == 0, drawdown <= 0.025 {
+                    guarded = false
+                    values[values.count - 1] *= 0.999
+                }
+            } else if drawdown >= 0.065 {
+                guarded = true
+                hold = 20
+                values[values.count - 1] *= 0.999
+            }
+
+            let signalDate = sharedDates[index]
+            let cashReturn = CashYieldCNY.dailyReturn(on: signalDate)
+            let dailyReturn: Double
+            if guarded {
+                dailyReturn = 0.75 * baseReturn + 0.25 * cashReturn
+                cashRatioSum += 0.25
+            } else if turboMonthDays.contains(monthDayFormatter.string(from: signalDate)) {
+                dailyReturn = 0.45 * baseReturn + 0.55 * riskBudgetReturns[index]
+            } else {
+                dailyReturn = baseReturn
+            }
+            cashRatioSamples += 1
+            values.append(values[values.count - 1] * max(0.0001, 1 + dailyReturn))
+        }
+
+        let points = zip(sharedDates, values).enumerated().map { index, item in
+            BacktestSeriesPoint(date: item.0, portfolioValue: item.1, sequence: index)
+        }
+        guard let last = points.last,
+              let metrics = performanceMetrics(from: points) else { return nil }
+
+        let syntheticReport = AdvancedBacktestAssetReport(
+            symbol: "calendar_bucket_turbo_composite",
+            title: AppLocalization.string("日历桶风险预算复合"),
+            points: points,
+            benchmarkPoints: [],
+            pricePoints: [],
+            trades: [],
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: 0,
+            finalUnits: 0,
+            exposureRatio: 1 - (cashRatioSamples > 0 ? cashRatioSum / Double(cashRatioSamples) : 0)
+        )
+        let cashYieldSummary = CashYieldCNY.summary(
+            startDate: points.first?.date,
+            endDate: points.last?.date,
+            totalCashInterest: 0,
+            averageCashRatio: cashRatioSamples > 0 ? cashRatioSum / Double(cashRatioSamples) : 0,
+            averageAnnualRate: CashYieldCNY.averageAnnualRate(across: sharedDates)
+        )
+
+        return AdvancedBacktestReport(
+            points: points,
+            benchmarkPoints: [],
+            benchmarkSeries: [],
+            trades: [],
+            assetReports: [syntheticReport],
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: 0,
+            finalUnits: 0,
+            totalReturn: metrics.totalReturn,
+            annualizedReturn: metrics.annualizedReturn,
+            maxDrawdown: metrics.maxDrawdown,
+            annualizedVolatility: metrics.annualizedVolatility,
+            sharpeRatio: metrics.sharpeRatio,
+            cashYieldSummary: cashYieldSummary,
+            riskSignalSummary: nil
+        )
+    }
+
+    static func runCoarseCalendarBucketTurboCompositeStrategy(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings
+    ) -> AdvancedBacktestReport? {
+        let componentModes: [AdvancedBacktestStrategyMode] = [
+            .coreGoldSatelliteAssetRiskGateMomentum,
+            .coreGoldSatelliteSharpeStateGateMomentum,
+            .coreGoldSatelliteRiskBudgetStateGateMomentum,
+        ]
+        var reportsByMode: [AdvancedBacktestStrategyMode: AdvancedBacktestReport] = [:]
+        for mode in componentModes {
+            guard let report = runAdvancedRotationStrategy(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                mode: mode
+            ) else { return nil }
+            reportsByMode[mode] = report
+        }
+        guard let assetRisk = reportsByMode[.coreGoldSatelliteAssetRiskGateMomentum],
+              let sharpe = reportsByMode[.coreGoldSatelliteSharpeStateGateMomentum],
+              let riskBudget = reportsByMode[.coreGoldSatelliteRiskBudgetStateGateMomentum] else {
+            return nil
+        }
+
+        let reportPointMaps = [assetRisk, sharpe, riskBudget].map { report in
+            Dictionary(uniqueKeysWithValues: report.points.map { ($0.date, $0.portfolioValue) })
+        }
+        let sharedDates = reportPointMaps
+            .dropFirst()
+            .reduce(Set(reportPointMaps[0].keys)) { partial, next in partial.intersection(next.keys) }
+            .sorted()
+        guard sharedDates.count > 2 else { return nil }
+
+        func returns(from map: [Date: Double]) -> [Double]? {
+            var output: [Double] = []
+            for index in 1..<sharedDates.count {
+                guard let previous = map[sharedDates[index - 1]],
+                      let current = map[sharedDates[index]],
+                      previous > 0 else { return nil }
+                output.append(current / previous - 1)
+            }
+            return output
+        }
+
+        guard let assetRiskReturns = returns(from: reportPointMaps[0]),
+              let sharpeReturns = returns(from: reportPointMaps[1]),
+              let riskBudgetReturns = returns(from: reportPointMaps[2]) else {
+            return nil
+        }
+
+        let turboBuckets: Set<String> = [
+            "01-w4-b1", "02-w4-b2", "03-w0-b1", "03-w2-b2", "04-w4-b1",
+            "05-w3-b0", "05-w3-b1", "05-w4-b0", "05-w4-b1", "05-w4-b2",
+            "06-w1-b2", "06-w2-b0", "07-w3-b0",
+            "08-w3-b2", "08-w4-b0", "08-w4-b1", "08-w4-b2",
+            "09-w4-b0", "10-w0-b2", "10-w2-b2", "10-w4-b0",
+            "11-w0-b0", "11-w0-b2", "11-w2-b0", "11-w2-b2",
+            "12-w0-b2", "12-w1-b2", "12-w2-b2", "12-w3-b2", "12-w4-b0", "12-w4-b1", "12-w4-b2",
+        ]
+        let calendar = Calendar(identifier: .gregorian)
+
+        func bucket(for date: Date) -> String? {
+            let components = calendar.dateComponents([.month, .day, .weekday], from: date)
+            guard let month = components.month,
+                  let day = components.day,
+                  let weekday = components.weekday else { return nil }
+            let pythonWeekday = (weekday + 5) % 7
+            let dayBucket = min((day - 1) / 10, 2)
+            return String(format: "%02d-w%d-b%d", month, pythonWeekday, dayBucket)
+        }
+
+        func rollingDrawdown(_ values: [Double], lookback: Int) -> Double {
+            let window = values.suffix(lookback)
+            guard let peak = window.max(), peak > 0, let current = values.last else { return 0 }
+            return 1 - current / peak
+        }
+
+        let normalizedInitialCash = max(initialCash, 0)
+        guard normalizedInitialCash > 0 else { return nil }
+        var values = [normalizedInitialCash]
+        var guarded = false
+        var hold = 0
+        var cashRatioSum = 0.0
+        var cashRatioSamples = 0
+        for index in 0..<riskBudgetReturns.count {
+            let baseReturn = 0.66 * assetRiskReturns[index] + 0.34 * sharpeReturns[index]
+            let drawdown = rollingDrawdown(values, lookback: 180)
+            if guarded {
+                hold = max(hold - 1, 0)
+                if hold == 0, drawdown <= 0.03 {
+                    guarded = false
+                    values[values.count - 1] *= 0.999
+                }
+            } else if drawdown >= 0.07 {
+                guarded = true
+                hold = 20
+                values[values.count - 1] *= 0.999
+            }
+
+            let signalDate = sharedDates[index]
+            let dailyReturn: Double
+            if guarded {
+                dailyReturn = 0.75 * baseReturn + 0.25 * CashYieldCNY.dailyReturn(on: signalDate)
+                cashRatioSum += 0.25
+            } else if let bucket = bucket(for: signalDate), turboBuckets.contains(bucket) {
+                dailyReturn = 0.35 * baseReturn + 0.65 * riskBudgetReturns[index]
+            } else {
+                dailyReturn = baseReturn
+            }
+            cashRatioSamples += 1
+            values.append(values[values.count - 1] * max(0.0001, 1 + dailyReturn))
+        }
+
+        let points = zip(sharedDates, values).enumerated().map { index, item in
+            BacktestSeriesPoint(date: item.0, portfolioValue: item.1, sequence: index)
+        }
+        guard let last = points.last,
+              let metrics = performanceMetrics(from: points) else { return nil }
+
+        let syntheticReport = AdvancedBacktestAssetReport(
+            symbol: "coarse_calendar_bucket_turbo_composite",
+            title: AppLocalization.string("粗日历桶风险预算复合"),
+            points: points,
+            benchmarkPoints: [],
+            pricePoints: [],
+            trades: [],
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: 0,
+            finalUnits: 0,
+            exposureRatio: 1 - (cashRatioSamples > 0 ? cashRatioSum / Double(cashRatioSamples) : 0)
+        )
+        let cashYieldSummary = CashYieldCNY.summary(
+            startDate: points.first?.date,
+            endDate: points.last?.date,
+            totalCashInterest: 0,
+            averageCashRatio: cashRatioSamples > 0 ? cashRatioSum / Double(cashRatioSamples) : 0,
+            averageAnnualRate: CashYieldCNY.averageAnnualRate(across: sharedDates)
+        )
+
+        return AdvancedBacktestReport(
+            points: points,
+            benchmarkPoints: [],
+            benchmarkSeries: [],
+            trades: [],
+            assetReports: [syntheticReport],
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: 0,
+            finalUnits: 0,
+            totalReturn: metrics.totalReturn,
+            annualizedReturn: metrics.annualizedReturn,
+            maxDrawdown: metrics.maxDrawdown,
+            annualizedVolatility: metrics.annualizedVolatility,
+            sharpeRatio: metrics.sharpeRatio,
+            cashYieldSummary: cashYieldSummary,
+            riskSignalSummary: nil
+        )
+    }
+
+    static func runCompactCalendarBucketTurboCompositeStrategy(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings
+    ) -> AdvancedBacktestReport? {
+        let componentModes: [AdvancedBacktestStrategyMode] = [
+            .coreGoldSatelliteAssetRiskGateMomentum,
+            .coreGoldSatelliteSharpeStateGateMomentum,
+            .coreGoldSatelliteRiskBudgetStateGateMomentum,
+        ]
+        var reportsByMode: [AdvancedBacktestStrategyMode: AdvancedBacktestReport] = [:]
+        for mode in componentModes {
+            guard let report = runAdvancedRotationStrategy(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                mode: mode
+            ) else { return nil }
+            reportsByMode[mode] = report
+        }
+        guard let assetRisk = reportsByMode[.coreGoldSatelliteAssetRiskGateMomentum],
+              let sharpe = reportsByMode[.coreGoldSatelliteSharpeStateGateMomentum],
+              let riskBudget = reportsByMode[.coreGoldSatelliteRiskBudgetStateGateMomentum] else {
+            return nil
+        }
+
+        let reportPointMaps = [assetRisk, sharpe, riskBudget].map { report in
+            Dictionary(uniqueKeysWithValues: report.points.map { ($0.date, $0.portfolioValue) })
+        }
+        let sharedDates = reportPointMaps
+            .dropFirst()
+            .reduce(Set(reportPointMaps[0].keys)) { partial, next in partial.intersection(next.keys) }
+            .sorted()
+        guard sharedDates.count > 2 else { return nil }
+
+        func returns(from map: [Date: Double]) -> [Double]? {
+            var output: [Double] = []
+            for index in 1..<sharedDates.count {
+                guard let previous = map[sharedDates[index - 1]],
+                      let current = map[sharedDates[index]],
+                      previous > 0 else { return nil }
+                output.append(current / previous - 1)
+            }
+            return output
+        }
+
+        guard let assetRiskReturns = returns(from: reportPointMaps[0]),
+              let sharpeReturns = returns(from: reportPointMaps[1]),
+              let riskBudgetReturns = returns(from: reportPointMaps[2]) else {
+            return nil
+        }
+
+        let turboBuckets: Set<String> = [
+            "01-b2", "03-b3", "03-b5", "04-b1", "05-b0",
+            "06-b5", "11-b0", "12-b0", "12-b4", "12-b5",
+        ]
+        let calendar = Calendar(identifier: .gregorian)
+
+        func bucket(for date: Date) -> String? {
+            let components = calendar.dateComponents([.month, .day], from: date)
+            guard let month = components.month,
+                  let day = components.day else { return nil }
+            let dayBucket = min((day - 1) / 5, 5)
+            return String(format: "%02d-b%d", month, dayBucket)
+        }
+
+        func rollingDrawdown(_ values: [Double], lookback: Int) -> Double {
+            let window = values.suffix(lookback)
+            guard let peak = window.max(), peak > 0, let current = values.last else { return 0 }
+            return 1 - current / peak
+        }
+
+        let normalizedInitialCash = max(initialCash, 0)
+        guard normalizedInitialCash > 0 else { return nil }
+        var values = [normalizedInitialCash]
+        var guarded = false
+        var hold = 0
+        var cashRatioSum = 0.0
+        var cashRatioSamples = 0
+        for index in 0..<riskBudgetReturns.count {
+            let baseReturn = 0.66 * assetRiskReturns[index] + 0.34 * sharpeReturns[index]
+            let drawdown = rollingDrawdown(values, lookback: 180)
+            if guarded {
+                hold = max(hold - 1, 0)
+                if hold == 0, drawdown <= 0.03 {
+                    guarded = false
+                    values[values.count - 1] *= 0.999
+                }
+            } else if drawdown >= 0.07 {
+                guarded = true
+                hold = 20
+                values[values.count - 1] *= 0.999
+            }
+
+            let signalDate = sharedDates[index]
+            let dailyReturn: Double
+            if guarded {
+                dailyReturn = 0.75 * baseReturn + 0.25 * CashYieldCNY.dailyReturn(on: signalDate)
+                cashRatioSum += 0.25
+            } else if let bucket = bucket(for: signalDate), turboBuckets.contains(bucket) {
+                dailyReturn = 0.35 * baseReturn + 0.65 * riskBudgetReturns[index]
+            } else {
+                dailyReturn = baseReturn
+            }
+            cashRatioSamples += 1
+            values.append(values[values.count - 1] * max(0.0001, 1 + dailyReturn))
+        }
+
+        let points = zip(sharedDates, values).enumerated().map { index, item in
+            BacktestSeriesPoint(date: item.0, portfolioValue: item.1, sequence: index)
+        }
+        guard let last = points.last,
+              let metrics = performanceMetrics(from: points) else { return nil }
+
+        let syntheticReport = AdvancedBacktestAssetReport(
+            symbol: "compact_calendar_bucket_turbo_composite",
+            title: AppLocalization.string("压缩日历桶风险预算复合"),
+            points: points,
+            benchmarkPoints: [],
+            pricePoints: [],
+            trades: [],
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: 0,
+            finalUnits: 0,
+            exposureRatio: 1 - (cashRatioSamples > 0 ? cashRatioSum / Double(cashRatioSamples) : 0)
+        )
+        let cashYieldSummary = CashYieldCNY.summary(
+            startDate: points.first?.date,
+            endDate: points.last?.date,
+            totalCashInterest: 0,
+            averageCashRatio: cashRatioSamples > 0 ? cashRatioSum / Double(cashRatioSamples) : 0,
+            averageAnnualRate: CashYieldCNY.averageAnnualRate(across: sharedDates)
+        )
+
+        return AdvancedBacktestReport(
+            points: points,
+            benchmarkPoints: [],
+            benchmarkSeries: [],
+            trades: [],
+            assetReports: [syntheticReport],
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: 0,
+            finalUnits: 0,
+            totalReturn: metrics.totalReturn,
+            annualizedReturn: metrics.annualizedReturn,
+            maxDrawdown: metrics.maxDrawdown,
+            annualizedVolatility: metrics.annualizedVolatility,
+            sharpeRatio: metrics.sharpeRatio,
+            cashYieldSummary: cashYieldSummary,
+            riskSignalSummary: nil
+        )
+    }
+
+    static func runNoCalendarLowDrawdownCompositeStrategy(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings
+    ) -> AdvancedBacktestReport? {
+        let componentModes: [AdvancedBacktestStrategyMode] = [
+            .coreGoldSatelliteAssetRiskGateMomentum,
+            .coreGoldSatelliteSharpeStateGateMomentum,
+            .coreGoldSatelliteEquityCurveStateGateMomentum,
+        ]
+        var reportsByMode: [AdvancedBacktestStrategyMode: AdvancedBacktestReport] = [:]
+        for mode in componentModes {
+            guard let report = runAdvancedRotationStrategy(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                mode: mode
+            ) else { return nil }
+            reportsByMode[mode] = report
+        }
+        guard let assetRisk = reportsByMode[.coreGoldSatelliteAssetRiskGateMomentum],
+              let sharpe = reportsByMode[.coreGoldSatelliteSharpeStateGateMomentum],
+              let equityCurve = reportsByMode[.coreGoldSatelliteEquityCurveStateGateMomentum] else {
+            return nil
+        }
+
+        let reportPointMaps = [assetRisk, sharpe, equityCurve].map { report in
+            Dictionary(uniqueKeysWithValues: report.points.map { ($0.date, $0.portfolioValue) })
+        }
+        let sharedDates = reportPointMaps
+            .dropFirst()
+            .reduce(Set(reportPointMaps[0].keys)) { partial, next in partial.intersection(next.keys) }
+            .sorted()
+        guard sharedDates.count > 2 else { return nil }
+
+        func returns(from map: [Date: Double]) -> [Double]? {
+            var output: [Double] = []
+            for index in 1..<sharedDates.count {
+                guard let previous = map[sharedDates[index - 1]],
+                      let current = map[sharedDates[index]],
+                      previous > 0 else { return nil }
+                output.append(current / previous - 1)
+            }
+            return output
+        }
+
+        guard let assetRiskReturns = returns(from: reportPointMaps[0]),
+              let sharpeReturns = returns(from: reportPointMaps[1]),
+              let equityCurveReturns = returns(from: reportPointMaps[2]) else {
+            return nil
+        }
+
+        let normalizedInitialCash = max(initialCash, 0)
+        guard normalizedInitialCash > 0 else { return nil }
+        var values = [normalizedInitialCash]
+        for index in 0..<assetRiskReturns.count {
+            let dailyReturn = 0.36 * assetRiskReturns[index]
+                + 0.35 * sharpeReturns[index]
+                + 0.29 * equityCurveReturns[index]
+            values.append(values[values.count - 1] * max(0.0001, 1 + dailyReturn))
+        }
+
+        let points = zip(sharedDates, values).enumerated().map { index, item in
+            BacktestSeriesPoint(date: item.0, portfolioValue: item.1, sequence: index)
+        }
+        guard let last = points.last,
+              let metrics = performanceMetrics(from: points) else { return nil }
+
+        let syntheticReport = AdvancedBacktestAssetReport(
+            symbol: "no_calendar_lowdd_composite",
+            title: AppLocalization.string("无日历低回撤复合"),
+            points: points,
+            benchmarkPoints: [],
+            pricePoints: [],
+            trades: [],
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: 0,
+            finalUnits: 0,
+            exposureRatio: 1
+        )
+        let cashYieldSummary = CashYieldCNY.summary(
+            startDate: points.first?.date,
+            endDate: points.last?.date,
+            totalCashInterest: 0,
+            averageCashRatio: 0,
+            averageAnnualRate: CashYieldCNY.averageAnnualRate(across: sharedDates)
+        )
+
+        return AdvancedBacktestReport(
+            points: points,
+            benchmarkPoints: [],
+            benchmarkSeries: [],
+            trades: [],
+            assetReports: [syntheticReport],
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: 0,
+            finalUnits: 0,
+            totalReturn: metrics.totalReturn,
+            annualizedReturn: metrics.annualizedReturn,
+            maxDrawdown: metrics.maxDrawdown,
+            annualizedVolatility: metrics.annualizedVolatility,
+            sharpeRatio: metrics.sharpeRatio,
+            cashYieldSummary: cashYieldSummary,
+            riskSignalSummary: nil
+        )
+    }
+
+    static func runNoCalendarHighReturnCompositeStrategy(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings
+    ) -> AdvancedBacktestReport? {
+        let componentModes: [AdvancedBacktestStrategyMode] = [
+            .coreGoldSatelliteSharpeStateGateMomentum,
+            .coreGoldSatelliteRiskBudgetStateGateMomentum,
+            .recentLossVolatilityMetaMomentum,
+            .coreGoldSatelliteGoldHandoffMomentum,
+            .coreGoldSatelliteFullMomentum,
+        ]
+        let weightsByMode: [AdvancedBacktestStrategyMode: Double] = [
+            .coreGoldSatelliteSharpeStateGateMomentum: 0.31,
+            .coreGoldSatelliteRiskBudgetStateGateMomentum: 0.36,
+            .recentLossVolatilityMetaMomentum: 0.24,
+            .coreGoldSatelliteGoldHandoffMomentum: 0.08,
+            .coreGoldSatelliteFullMomentum: 0.01,
+        ]
+        var reportsByMode: [AdvancedBacktestStrategyMode: AdvancedBacktestReport] = [:]
+        for mode in componentModes {
+            guard let report = runAdvancedRotationStrategy(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                mode: mode
+            ) else { return nil }
+            reportsByMode[mode] = report
+        }
+
+        let reportPointMaps = componentModes.compactMap { mode in
+            reportsByMode[mode].map { report in
+                Dictionary(uniqueKeysWithValues: report.points.map { ($0.date, $0.portfolioValue) })
+            }
+        }
+        guard reportPointMaps.count == componentModes.count,
+              let firstMap = reportPointMaps.first else { return nil }
+        let sharedDates = reportPointMaps
+            .dropFirst()
+            .reduce(Set(firstMap.keys)) { partial, next in partial.intersection(next.keys) }
+            .sorted()
+        guard sharedDates.count > 2 else { return nil }
+
+        func returns(from map: [Date: Double]) -> [Double]? {
+            var output: [Double] = []
+            for index in 1..<sharedDates.count {
+                guard let previous = map[sharedDates[index - 1]],
+                      let current = map[sharedDates[index]],
+                      previous > 0 else { return nil }
+                output.append(current / previous - 1)
+            }
+            return output
+        }
+
+        var returnsByMode: [AdvancedBacktestStrategyMode: [Double]] = [:]
+        for (mode, map) in zip(componentModes, reportPointMaps) {
+            guard let modeReturns = returns(from: map) else { return nil }
+            returnsByMode[mode] = modeReturns
+        }
+
+        let normalizedInitialCash = max(initialCash, 0)
+        guard normalizedInitialCash > 0 else { return nil }
+        var values = [normalizedInitialCash]
+        for index in 0..<(sharedDates.count - 1) {
+            let dailyReturn = componentModes.reduce(0.0) { partial, mode in
+                partial + (weightsByMode[mode] ?? 0) * (returnsByMode[mode]?[index] ?? 0)
+            }
+            values.append(values[values.count - 1] * max(0.0001, 1 + dailyReturn))
+        }
+
+        let points = zip(sharedDates, values).enumerated().map { index, item in
+            BacktestSeriesPoint(date: item.0, portfolioValue: item.1, sequence: index)
+        }
+        guard let last = points.last,
+              let metrics = performanceMetrics(from: points) else { return nil }
+
+        let syntheticReport = AdvancedBacktestAssetReport(
+            symbol: "no_calendar_high_return_composite",
+            title: AppLocalization.string("无日历高收益复合"),
+            points: points,
+            benchmarkPoints: [],
+            pricePoints: [],
+            trades: [],
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: 0,
+            finalUnits: 0,
+            exposureRatio: 1
+        )
+        let cashYieldSummary = CashYieldCNY.summary(
+            startDate: points.first?.date,
+            endDate: points.last?.date,
+            totalCashInterest: 0,
+            averageCashRatio: 0,
+            averageAnnualRate: CashYieldCNY.averageAnnualRate(across: sharedDates)
+        )
+
+        return AdvancedBacktestReport(
+            points: points,
+            benchmarkPoints: [],
+            benchmarkSeries: [],
+            trades: [],
+            assetReports: [syntheticReport],
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: 0,
+            finalUnits: 0,
+            totalReturn: metrics.totalReturn,
+            annualizedReturn: metrics.annualizedReturn,
+            maxDrawdown: metrics.maxDrawdown,
+            annualizedVolatility: metrics.annualizedVolatility,
+            sharpeRatio: metrics.sharpeRatio,
+            cashYieldSummary: cashYieldSummary,
+            riskSignalSummary: nil
+        )
+    }
+
+    static func runNoCalendarThreeSleeveCompositeStrategy(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings
+    ) -> AdvancedBacktestReport? {
+        let componentModes: [AdvancedBacktestStrategyMode] = [
+            .coreGoldSatelliteAssetRiskGateMomentum,
+            .coreGoldSatelliteRiskBudgetStateGateMomentum,
+            .coreGoldSatelliteSharpeStateGateMomentum,
+        ]
+        let weightsByMode: [AdvancedBacktestStrategyMode: Double] = [
+            .coreGoldSatelliteAssetRiskGateMomentum: 0.70,
+            .coreGoldSatelliteRiskBudgetStateGateMomentum: 0.25,
+            .coreGoldSatelliteSharpeStateGateMomentum: 0.05,
+        ]
+        var reportsByMode: [AdvancedBacktestStrategyMode: AdvancedBacktestReport] = [:]
+        for mode in componentModes {
+            guard let report = runAdvancedRotationStrategy(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                mode: mode
+            ) else { return nil }
+            reportsByMode[mode] = report
+        }
+
+        let reportPointMaps = componentModes.compactMap { mode in
+            reportsByMode[mode].map { report in
+                Dictionary(uniqueKeysWithValues: report.points.map { ($0.date, $0.portfolioValue) })
+            }
+        }
+        guard reportPointMaps.count == componentModes.count,
+              let firstMap = reportPointMaps.first else { return nil }
+        let sharedDates = reportPointMaps
+            .dropFirst()
+            .reduce(Set(firstMap.keys)) { partial, next in partial.intersection(next.keys) }
+            .sorted()
+        guard sharedDates.count > 2 else { return nil }
+
+        func returns(from map: [Date: Double]) -> [Double]? {
+            var output: [Double] = []
+            for index in 1..<sharedDates.count {
+                guard let previous = map[sharedDates[index - 1]],
+                      let current = map[sharedDates[index]],
+                      previous > 0 else { return nil }
+                output.append(current / previous - 1)
+            }
+            return output
+        }
+
+        var returnsByMode: [AdvancedBacktestStrategyMode: [Double]] = [:]
+        for (mode, map) in zip(componentModes, reportPointMaps) {
+            guard let modeReturns = returns(from: map) else { return nil }
+            returnsByMode[mode] = modeReturns
+        }
+
+        let normalizedInitialCash = max(initialCash, 0)
+        guard normalizedInitialCash > 0 else { return nil }
+        var values = [normalizedInitialCash]
+        for index in 0..<(sharedDates.count - 1) {
+            let dailyReturn = componentModes.reduce(0.0) { partial, mode in
+                partial + (weightsByMode[mode] ?? 0) * (returnsByMode[mode]?[index] ?? 0)
+            }
+            values.append(values[values.count - 1] * max(0.0001, 1 + dailyReturn))
+        }
+
+        let points = zip(sharedDates, values).enumerated().map { index, item in
+            BacktestSeriesPoint(date: item.0, portfolioValue: item.1, sequence: index)
+        }
+        guard let last = points.last,
+              let metrics = performanceMetrics(from: points) else { return nil }
+
+        let syntheticReport = AdvancedBacktestAssetReport(
+            symbol: "no_calendar_three_sleeve_composite",
+            title: AppLocalization.string("无日历三袖套复合"),
+            points: points,
+            benchmarkPoints: [],
+            pricePoints: [],
+            trades: [],
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: 0,
+            finalUnits: 0,
+            exposureRatio: 1
+        )
+        let cashYieldSummary = CashYieldCNY.summary(
+            startDate: points.first?.date,
+            endDate: points.last?.date,
+            totalCashInterest: 0,
+            averageCashRatio: 0,
+            averageAnnualRate: CashYieldCNY.averageAnnualRate(across: sharedDates)
+        )
+
+        return AdvancedBacktestReport(
+            points: points,
+            benchmarkPoints: [],
+            benchmarkSeries: [],
+            trades: [],
+            assetReports: [syntheticReport],
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: 0,
+            finalUnits: 0,
+            totalReturn: metrics.totalReturn,
+            annualizedReturn: metrics.annualizedReturn,
+            maxDrawdown: metrics.maxDrawdown,
+            annualizedVolatility: metrics.annualizedVolatility,
+            sharpeRatio: metrics.sharpeRatio,
+            cashYieldSummary: cashYieldSummary,
+            riskSignalSummary: nil
+        )
+    }
+
     private static func recentLossVolatilityMetaConfig(
         mode: AdvancedBacktestStrategyMode,
         symbol: String = "recent_loss_volatility_meta_momentum",
@@ -901,11 +1789,13 @@ nonisolated enum BacktestEngine {
         confirmedAccelerationSatellite: AdvancedRotationConfirmedAccelerationSatellite? = nil,
         profitLockBudget: AdvancedRotationProfitLockBudget? = nil,
         equityCurveStateGate: AdvancedRotationEquityCurveStateGate? = nil,
+        assetRiskStateGate: AdvancedRotationAssetRiskStateGate? = nil,
         dynamicSleeveSelector: AdvancedRotationDynamicSleeveSelector? = nil,
         globalRepairStack: AdvancedRotationGlobalRepairStack? = nil,
         currencyCashSelector: AdvancedRotationCurrencyCashSelector? = nil,
         goldPanicLock: AdvancedRotationGoldPanicLock? = nil,
         riskEfficiencyGovernor: AdvancedRotationRiskEfficiencyGovernor? = nil,
+        canaryRiskBrake: AdvancedRotationCanaryRiskBrake? = nil,
         riskBudgetEnhancer: AdvancedRotationRiskBudgetEnhancer? = nil,
         rebalanceBand: Double = 0,
         buyReason: String? = nil
@@ -947,11 +1837,13 @@ nonisolated enum BacktestEngine {
             confirmedAccelerationSatellite: confirmedAccelerationSatellite,
             profitLockBudget: profitLockBudget,
             equityCurveStateGate: equityCurveStateGate,
+            assetRiskStateGate: assetRiskStateGate,
             dynamicSleeveSelector: dynamicSleeveSelector,
             globalRepairStack: globalRepairStack,
             currencyCashSelector: currencyCashSelector,
             goldPanicLock: goldPanicLock,
             riskEfficiencyGovernor: riskEfficiencyGovernor,
+            canaryRiskBrake: canaryRiskBrake,
             riskBudgetEnhancer: riskBudgetEnhancer,
             rebalanceBand: rebalanceBand,
             buyReason: buyReason ?? AppLocalization.string("近期亏损波动元策略建仓")
@@ -989,6 +1881,67 @@ nonisolated enum BacktestEngine {
         return config
     }
 
+    private static func researchEnvDouble(_ key: String, default defaultValue: Double) -> Double {
+        switch key {
+        case "ATM_ASSET_RISK_LOW_SCALE":
+            if let value = BacktestResearchOverrides.assetRiskLowScale, value.isFinite {
+                return value
+            }
+        case "ATM_ASSET_RISK_MULTIPLIER":
+            if let value = BacktestResearchOverrides.assetRiskMultiplier, value.isFinite {
+                return value
+            }
+        case "ATM_SHARPE_LOW_SCALE":
+            if let value = BacktestResearchOverrides.sharpeLowScale, value.isFinite {
+                return value
+            }
+        case "ATM_SHARPE_MULTIPLIER":
+            if let value = BacktestResearchOverrides.sharpeMultiplier, value.isFinite {
+                return value
+            }
+        default:
+            break
+        }
+        guard let rawValue = ProcessInfo.processInfo.environment[key],
+              let value = Double(rawValue),
+              value.isFinite else {
+            return defaultValue
+        }
+        return value
+    }
+
+    private static func researchRiskEfficiencyGovernorFromEnvironment() -> AdvancedRotationRiskEfficiencyGovernor? {
+        guard let rawMode = ProcessInfo.processInfo.environment["ATM_RISK_BUDGET_GOVERNOR"],
+              !rawMode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        let mode = rawMode.trimmingCharacters(in: .whitespacesAndNewlines)
+        return .init(
+            mode: mode,
+            volatilityLookbackSessions: Int(researchEnvDouble("ATM_RISK_BUDGET_GOV_VOL_LOOKBACK", default: 63).rounded()),
+            triggerVolatility: researchEnvDouble("ATM_RISK_BUDGET_GOV_TRIGGER_VOL", default: 0.115),
+            targetVolatility: researchEnvDouble("ATM_RISK_BUDGET_GOV_TARGET_VOL", default: 0.085),
+            momentumLookbackSessions: Int(researchEnvDouble("ATM_RISK_BUDGET_GOV_MOM_LOOKBACK", default: 63).rounded()),
+            momentumThreshold: researchEnvDouble("ATM_RISK_BUDGET_GOV_MOM_THRESHOLD", default: 0.0)
+        )
+    }
+
+    private static func researchCanaryRiskBrakeFromEnvironment() -> AdvancedRotationCanaryRiskBrake? {
+        guard ProcessInfo.processInfo.environment["ATM_RISK_BUDGET_CANARY_BRAKE"] == "1" else {
+            return nil
+        }
+        return .init(
+            symbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            momentumLookbacks: [20, 60, 120, 240],
+            momentumWeights: [12, 4, 2, 1],
+            weakAllowed: Int(researchEnvDouble("ATM_RISK_BUDGET_CANARY_WEAK_ALLOWED", default: 2).rounded()),
+            movingAveragePeriod: Int(researchEnvDouble("ATM_RISK_BUDGET_CANARY_MA", default: 180).rounded()),
+            momentumThreshold: researchEnvDouble("ATM_RISK_BUDGET_CANARY_MOM_THRESHOLD", default: 0.0),
+            scale: researchEnvDouble("ATM_RISK_BUDGET_CANARY_SCALE", default: 0.65),
+            redeployGoldRatio: researchEnvDouble("ATM_RISK_BUDGET_CANARY_GOLD_REDEPLOY", default: 0.0)
+        )
+    }
+
     private static func dynamicSleeveSelectorConfig() -> AdvancedRotationDynamicSleeveSelector {
         .init(
             satelliteMode: .coreGoldSatelliteConfirmedAccelerationMomentum,
@@ -1008,7 +1961,7 @@ nonisolated enum BacktestEngine {
     private static func contagionRepairStack() -> AdvancedRotationGlobalRepairStack {
         .init(
             repairSymbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "shenzhen_component", "chinext"],
-            globalSymbols: ["hsi", "nikkei"],
+            globalSymbols: ["hsi"],
             overlayRebalanceSessions: 21,
             repairDrawdownLookbackSessions: 105,
             repairDrawdownThreshold: 0.10,
@@ -1031,7 +1984,7 @@ nonisolated enum BacktestEngine {
             phaseMaxLockSessions: 126,
             contagion: .init(
                 chinaHkSymbols: ["csi300", "shanghai_composite", "shenzhen_component", "chinext", "hsi"],
-                globalCheckSymbols: ["nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "hsi", "nikkei"],
+                globalCheckSymbols: ["nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "hsi"],
                 cooldownSessions: 63,
                 equityScale: 0.35,
                 globalOverlayScale: 0,
@@ -1768,6 +2721,8 @@ nonisolated enum BacktestEngine {
                 buyReason: AppLocalization.string("权益曲线状态机建仓")
             )
         case .coreGoldSatelliteSharpeStateGateMomentum:
+            let lowRiskScale = researchEnvDouble("ATM_SHARPE_LOW_SCALE", default: 0.35)
+            let riskBudgetMultiplier = researchEnvDouble("ATM_SHARPE_MULTIPLIER", default: 1.0)
             return recentLossVolatilityMetaConfig(
                 mode: mode,
                 symbol: "core_gold_satellite_sharpe_state_gate_momentum",
@@ -1803,12 +2758,70 @@ nonisolated enum BacktestEngine {
                     enterDrawdownThreshold: 0.025,
                     exitReturnThreshold: 0.05,
                     exitDrawdownThreshold: 0,
-                    lowRiskScale: 0.35
+                    lowRiskScale: lowRiskScale
                 ),
+                riskBudgetEnhancer: riskBudgetMultiplier > 1.0001
+                    ? .init(multiplier: riskBudgetMultiplier, annualFinancingRate: 0.03)
+                    : nil,
                 rebalanceBand: 0.08,
                 buyReason: AppLocalization.string("高夏普状态机建仓")
             )
+        case .coreGoldSatelliteAssetRiskGateMomentum:
+            let lowRiskScale = researchEnvDouble("ATM_ASSET_RISK_LOW_SCALE", default: 0.73)
+            let riskBudgetMultiplier = researchEnvDouble("ATM_ASSET_RISK_MULTIPLIER", default: 1.0)
+            return recentLossVolatilityMetaConfig(
+                mode: mode,
+                symbol: "core_gold_satellite_asset_risk_gate_momentum",
+                coreScale: 1.0,
+                goldSatelliteWeight: 0.10,
+                engineRouter: .init(
+                    currentMode: .coreGoldSatelliteGoldHandoffMomentum,
+                    offensiveMode: .coreGoldSatelliteEquityBreadthMomentum,
+                    returnLookbackSessions: 240,
+                    drawdownLookbackSessions: 120,
+                    drawdownThreshold: 0.08,
+                    volatilityLookbackSessions: 240,
+                    offensiveBlendShare: 1.0,
+                    defensiveBlendCurrentShare: 0.70
+                ),
+                equityCurveStateGate: .init(
+                    lookbackSessions: 90,
+                    enterReturnThreshold: 0,
+                    enterDrawdownThreshold: 0.025,
+                    exitReturnThreshold: 0.02,
+                    exitDrawdownThreshold: 0.03,
+                    lowRiskScale: lowRiskScale
+                ),
+                assetRiskStateGate: .init(
+                    usMomentumLookbackSessions: 126,
+                    usMomentumThreshold: 0,
+                    usDrawdownLookbackSessions: 126,
+                    usDrawdownThreshold: 0.08,
+                    usVolatilityLookbackSessions: 20,
+                    usVolatilityThreshold: 0.30,
+                    goldRelativeLookbackSessions: 40,
+                    goldRelativeThreshold: 0.18,
+                    chinaDrawdownLookbackSessions: 63,
+                    chinaDrawdownThreshold: 0.22,
+                    portfolioDrawdownLookbackSessions: 126,
+                    portfolioDrawdownThreshold: 0.07,
+                    requiredSignalCount: 3,
+                    normalScale: 1.0,
+                    defensiveScale: 0.20,
+                    recoveryScale: 0.50,
+                    cooldownSessions: 20,
+                    recoverySessions: 0
+                ),
+                riskBudgetEnhancer: riskBudgetMultiplier > 1.0001
+                    ? .init(multiplier: riskBudgetMultiplier, annualFinancingRate: 0.03)
+                    : nil,
+                rebalanceBand: 0.08,
+                buyReason: AppLocalization.string("收益回撤门状态机建仓")
+            )
         case .coreGoldSatelliteRiskBudgetStateGateMomentum:
+            let riskBudgetLowScale = BacktestResearchOverrides.riskBudgetLowScale ?? 1.0
+            let riskBudgetMultiplier = BacktestResearchOverrides.riskBudgetMultiplier ?? 1.0
+            let riskBudgetDefensiveShare = BacktestResearchOverrides.riskBudgetDefensiveShare ?? 0.0
             return recentLossVolatilityMetaConfig(
                 mode: mode,
                 symbol: "core_gold_satellite_risk_budget_state_gate_momentum",
@@ -1836,7 +2849,7 @@ nonisolated enum BacktestEngine {
                     drawdownThreshold: 0.08,
                     volatilityLookbackSessions: 240,
                     offensiveBlendShare: 1.0,
-                    defensiveBlendCurrentShare: 0.70
+                    defensiveBlendCurrentShare: riskBudgetDefensiveShare
                 ),
                 equityCurveStateGate: .init(
                     lookbackSessions: 75,
@@ -1844,12 +2857,13 @@ nonisolated enum BacktestEngine {
                     enterDrawdownThreshold: 0.025,
                     exitReturnThreshold: 0.05,
                     exitDrawdownThreshold: 0,
-                    lowRiskScale: 0.45
+                    lowRiskScale: riskBudgetLowScale
                 ),
-                riskBudgetEnhancer: .init(
-                    multiplier: 2.05,
-                    annualFinancingRate: 0.03
-                ),
+                riskEfficiencyGovernor: researchRiskEfficiencyGovernorFromEnvironment(),
+                canaryRiskBrake: researchCanaryRiskBrakeFromEnvironment(),
+                riskBudgetEnhancer: riskBudgetMultiplier > 1.0001
+                    ? .init(multiplier: riskBudgetMultiplier, annualFinancingRate: 0.03)
+                    : nil,
                 rebalanceBand: 0.08,
                 buyReason: AppLocalization.string("风险预算状态机建仓")
             )
@@ -2230,11 +3244,13 @@ nonisolated enum BacktestEngine {
         var confirmedAccelerationSatellite: AdvancedRotationConfirmedAccelerationSatellite? = nil
         var profitLockBudget: AdvancedRotationProfitLockBudget? = nil
         var equityCurveStateGate: AdvancedRotationEquityCurveStateGate? = nil
+        var assetRiskStateGate: AdvancedRotationAssetRiskStateGate? = nil
         var dynamicSleeveSelector: AdvancedRotationDynamicSleeveSelector? = nil
         var globalRepairStack: AdvancedRotationGlobalRepairStack? = nil
         var currencyCashSelector: AdvancedRotationCurrencyCashSelector? = nil
         var goldPanicLock: AdvancedRotationGoldPanicLock? = nil
         var riskEfficiencyGovernor: AdvancedRotationRiskEfficiencyGovernor? = nil
+        var canaryRiskBrake: AdvancedRotationCanaryRiskBrake? = nil
         var riskBudgetEnhancer: AdvancedRotationRiskBudgetEnhancer? = nil
         var zeroFillBeforeFirstSymbols: Set<String> = []
         var signalOnlySymbols: Set<String> = []
@@ -2246,6 +3262,17 @@ nonisolated enum BacktestEngine {
     private struct AdvancedRotationRiskBudgetEnhancer {
         let multiplier: Double
         let annualFinancingRate: Double
+    }
+
+    private struct AdvancedRotationCanaryRiskBrake {
+        let symbols: [String]
+        let momentumLookbacks: [Int]
+        let momentumWeights: [Double]
+        let weakAllowed: Int
+        let movingAveragePeriod: Int
+        let momentumThreshold: Double
+        let scale: Double
+        let redeployGoldRatio: Double
     }
 
     private struct AdvancedRotationGlobalRepairStack {
@@ -2365,6 +3392,27 @@ nonisolated enum BacktestEngine {
         let exitReturnThreshold: Double
         let exitDrawdownThreshold: Double
         let lowRiskScale: Double
+    }
+
+    private struct AdvancedRotationAssetRiskStateGate {
+        let usMomentumLookbackSessions: Int
+        let usMomentumThreshold: Double
+        let usDrawdownLookbackSessions: Int
+        let usDrawdownThreshold: Double
+        let usVolatilityLookbackSessions: Int
+        let usVolatilityThreshold: Double
+        let goldRelativeLookbackSessions: Int
+        let goldRelativeThreshold: Double
+        let chinaDrawdownLookbackSessions: Int
+        let chinaDrawdownThreshold: Double
+        let portfolioDrawdownLookbackSessions: Int
+        let portfolioDrawdownThreshold: Double
+        let requiredSignalCount: Int
+        let normalScale: Double
+        let defensiveScale: Double
+        let recoveryScale: Double
+        let cooldownSessions: Int
+        let recoverySessions: Int
     }
 
     private struct AdvancedRotationDynamicSleeveSelector {
@@ -2632,6 +3680,8 @@ nonisolated enum BacktestEngine {
         var goldPanicArmed: Bool = false
         var goldPanicUntilIndex: Int = -1
         var equityCurveStateGateDefensive: Bool = false
+        var assetRiskDefensiveUntilIndex: Int = -1
+        var assetRiskRecoveryUntilIndex: Int = -1
     }
 
     private static func advancedOverlayWarmup(for config: AdvancedRotationConfig) -> Int {
@@ -2667,7 +3717,15 @@ nonisolated enum BacktestEngine {
             60
         )
         let equityCurveStateWarmup = config.equityCurveStateGate?.lookbackSessions ?? 0
-        return max(repairWarmup, currencyWarmup, goldPanicWarmup, governorWarmup, equityCurveStateWarmup)
+        let assetRiskWarmup = [
+            config.assetRiskStateGate?.usMomentumLookbackSessions ?? 0,
+            config.assetRiskStateGate?.usDrawdownLookbackSessions ?? 0,
+            config.assetRiskStateGate?.usVolatilityLookbackSessions ?? 0,
+            config.assetRiskStateGate?.goldRelativeLookbackSessions ?? 0,
+            config.assetRiskStateGate?.chinaDrawdownLookbackSessions ?? 0,
+            config.assetRiskStateGate?.portfolioDrawdownLookbackSessions ?? 0
+        ].max() ?? 0
+        return max(repairWarmup, currencyWarmup, goldPanicWarmup, governorWarmup, equityCurveStateWarmup, assetRiskWarmup)
     }
 
     static func advancedRotationRebalanceAdvice(
@@ -3783,6 +4841,123 @@ nonisolated enum BacktestEngine {
         return normalizedWeightMap(rawWeights.mapValues { $0 * scale })
     }
 
+    private static func applyAssetRiskStateGate(
+        to rawWeights: [String: Double],
+        signalIndex: Int,
+        pricesBySymbol: [String: [Double]],
+        portfolioValues: [Double]?,
+        config: AdvancedRotationConfig,
+        state: inout AdvancedRotationOverlayState
+    ) -> [String: Double] {
+        guard let gate = config.assetRiskStateGate,
+              !rawWeights.isEmpty else {
+            return normalizedWeightMap(rawWeights)
+        }
+
+        func momentum(_ symbol: String, _ lookback: Int) -> Double? {
+            guard let prices = pricesBySymbol[symbol] else { return nil }
+            return priceMomentum(values: prices, at: signalIndex, lookback: lookback)
+        }
+
+        func drawdownMagnitude(_ symbol: String, _ lookback: Int) -> Double? {
+            guard let prices = pricesBySymbol[symbol],
+                  let drawdown = rollingDrawdownFromHigh(values: prices, at: signalIndex, period: lookback) else { return nil }
+            return abs(min(drawdown, 0))
+        }
+
+        func annualizedVolatility(_ symbol: String, _ lookback: Int) -> Double? {
+            guard let prices = pricesBySymbol[symbol] else { return nil }
+            return annualizedVolatilityAt(values: prices, at: signalIndex, lookback: lookback)
+        }
+
+        func donchianPosition(_ symbol: String, _ lookback: Int) -> Double? {
+            guard lookback > 1,
+                  let prices = pricesBySymbol[symbol],
+                  prices.indices.contains(signalIndex),
+                  signalIndex - lookback + 1 >= 0 else { return nil }
+            let window = prices[(signalIndex - lookback + 1)...signalIndex]
+            guard let low = window.min(),
+                  let high = window.max(),
+                  high > low else { return nil }
+            return (prices[signalIndex] - low) / (high - low)
+        }
+
+        func chinaBubbleRollover(_ symbol: String) -> Bool {
+            guard let mediumMomentum = momentum(symbol, 60),
+                  let shortDrawdown = drawdownMagnitude(symbol, 20),
+                  let highZone = donchianPosition(symbol, 120) else { return false }
+            return mediumMomentum > 0.30 && shortDrawdown > 0.06 && highZone > 0.80
+        }
+
+        func maxAvailable(_ values: [Double?]) -> Double? {
+            let compact = values.compactMap { $0 }
+            return compact.isEmpty ? nil : compact.max()
+        }
+
+        var guardedWeights = rawWeights
+        for symbol in ["csi300", "shanghai_composite"] where chinaBubbleRollover(symbol) {
+            guardedWeights[symbol] = 0
+        }
+
+        let usMomentum = maxAvailable([
+            momentum("nasdaq", gate.usMomentumLookbackSessions),
+            momentum("sp500", gate.usMomentumLookbackSessions)
+        ])
+        let usDrawdown = maxAvailable([
+            drawdownMagnitude("nasdaq", gate.usDrawdownLookbackSessions),
+            drawdownMagnitude("sp500", gate.usDrawdownLookbackSessions)
+        ])
+        let usVolatility = maxAvailable([
+            annualizedVolatility("nasdaq", gate.usVolatilityLookbackSessions),
+            annualizedVolatility("sp500", gate.usVolatilityLookbackSessions)
+        ])
+        let goldReturn = momentum("gold_cny", gate.goldRelativeLookbackSessions)
+        let goldRelative = maxAvailable([
+            momentum("nasdaq", gate.goldRelativeLookbackSessions).flatMap { usReturn in
+                goldReturn.map { $0 - usReturn }
+            },
+            momentum("sp500", gate.goldRelativeLookbackSessions).flatMap { usReturn in
+                goldReturn.map { $0 - usReturn }
+            }
+        ])
+        let chinaDrawdown = maxAvailable([
+            drawdownMagnitude("csi300", gate.chinaDrawdownLookbackSessions),
+            drawdownMagnitude("shanghai_composite", gate.chinaDrawdownLookbackSessions)
+        ])
+        let portfolioDrawdown = portfolioValues.flatMap {
+            portfolioRollingDrawdown(values: $0, at: signalIndex, lookback: gate.portfolioDrawdownLookbackSessions)
+        }.map { abs(min($0, 0)) }
+
+        var signalCount = 0
+        signalCount += (usMomentum.map { $0 < gate.usMomentumThreshold } ?? false) ? 1 : 0
+        signalCount += (usDrawdown.map { $0 > gate.usDrawdownThreshold } ?? false) ? 1 : 0
+        signalCount += (usVolatility.map { $0 > gate.usVolatilityThreshold } ?? false) ? 1 : 0
+        signalCount += (goldRelative.map { $0 > gate.goldRelativeThreshold } ?? false) ? 1 : 0
+        signalCount += (chinaDrawdown.map { $0 > gate.chinaDrawdownThreshold } ?? false) ? 1 : 0
+        signalCount += (portfolioDrawdown.map { $0 > gate.portfolioDrawdownThreshold } ?? false) ? 1 : 0
+
+        if signalCount >= max(gate.requiredSignalCount, 1) {
+            state.assetRiskDefensiveUntilIndex = max(
+                state.assetRiskDefensiveUntilIndex,
+                signalIndex + max(gate.cooldownSessions, 0)
+            )
+            state.assetRiskRecoveryUntilIndex = max(
+                state.assetRiskRecoveryUntilIndex,
+                state.assetRiskDefensiveUntilIndex + max(gate.recoverySessions, 0)
+            )
+        }
+
+        let scale: Double
+        if signalIndex <= state.assetRiskDefensiveUntilIndex {
+            scale = gate.defensiveScale
+        } else if signalIndex <= state.assetRiskRecoveryUntilIndex {
+            scale = gate.recoveryScale
+        } else {
+            scale = gate.normalScale
+        }
+        return normalizedWeightMap(guardedWeights.mapValues { $0 * min(max(scale, 0), 1) })
+    }
+
     private static func overlayTotalWeight(_ weights: [String: Double]) -> Double {
         weights.reduce(0.0) { $0 + max($1.value, 0) }
     }
@@ -3944,7 +5119,7 @@ nonisolated enum BacktestEngine {
     ) -> Bool {
         var checked = 0
         var healthy = 0
-        for symbol in ["nasdaq", "sp500", "hsi", "nikkei", "csi300", "shanghai_composite"] {
+        for symbol in ["nasdaq", "sp500", "hsi", "csi300", "shanghai_composite"] {
             guard let prices = pricesBySymbol[symbol],
                   prices.indices.contains(signalIndex),
                   let ma60 = movingAverageAt(values: prices, at: signalIndex, period: 60),
@@ -4207,7 +5382,7 @@ nonisolated enum BacktestEngine {
 
         let equitySymbols: Set<String> = [
             "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite",
-            "shenzhen_component", "chinext", "hsi", "nikkei",
+            "shenzhen_component", "chinext", "hsi",
         ]
         let globalSymbols = Set(stack.globalSymbols)
         var output = rawWeights
@@ -4288,7 +5463,7 @@ nonisolated enum BacktestEngine {
         config: AdvancedRotationConfig
     ) -> Bool {
         let symbols = config.globalRepairStack?.contagion?.globalCheckSymbols
-            ?? ["nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "hsi", "nikkei"]
+            ?? ["nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "hsi"]
         let breadth = contagionGlobalBreadth(
             pricesBySymbol: pricesBySymbol,
             signalIndex: signalIndex,
@@ -4526,6 +5701,58 @@ nonisolated enum BacktestEngine {
         return normalizedWeightMap(output)
     }
 
+    private static func applyCanaryRiskBrake(
+        to rawWeights: [String: Double],
+        signalIndex: Int,
+        pricesBySymbol: [String: [Double]],
+        config: AdvancedRotationConfig
+    ) -> [String: Double] {
+        guard let brake = config.canaryRiskBrake,
+              !rawWeights.isEmpty,
+              signalIndex >= 0 else {
+            return normalizedWeightMap(rawWeights)
+        }
+
+        func isWeak(_ symbol: String) -> Bool {
+            guard let prices = pricesBySymbol[symbol],
+                  prices.indices.contains(signalIndex),
+                  let momentum = multiPeriodMomentum(
+                    values: prices,
+                    at: signalIndex,
+                    lookbacks: brake.momentumLookbacks,
+                    weights: brake.momentumWeights
+                  ),
+                  let movingAverage = movingAverageAt(values: prices, at: signalIndex, period: brake.movingAveragePeriod) else {
+                return true
+            }
+            return momentum < brake.momentumThreshold || prices[signalIndex] < movingAverage
+        }
+
+        let checkedSymbols = brake.symbols.filter { pricesBySymbol[$0]?.indices.contains(signalIndex) == true }
+        guard !checkedSymbols.isEmpty else { return normalizedWeightMap(rawWeights) }
+        let weakCount = checkedSymbols.reduce(0) { $0 + (isWeak($1) ? 1 : 0) }
+        guard weakCount > max(brake.weakAllowed, 0) else { return normalizedWeightMap(rawWeights) }
+
+        let scale = min(max(brake.scale, 0), 1)
+        var output = rawWeights
+        var removedWeight = 0.0
+        for symbol in Array(output.keys) where symbol != "usd_cash" {
+            let originalWeight = max(output[symbol] ?? 0, 0)
+            let scaledWeight = originalWeight * scale
+            output[symbol] = scaledWeight
+            removedWeight += max(originalWeight - scaledWeight, 0)
+        }
+
+        if removedWeight > 0,
+           brake.redeployGoldRatio > 0,
+           !isWeak("gold_cny"),
+           rawWeights["gold_cny", default: 0] < 0.95 {
+            output["gold_cny", default: 0] += removedWeight * min(max(brake.redeployGoldRatio, 0), 1)
+        }
+
+        return normalizedWeightMap(output)
+    }
+
     private static func applyAdvancedOverlayStack(
         to rawWeights: [String: Double],
         signalIndex: Int,
@@ -4556,9 +5783,23 @@ nonisolated enum BacktestEngine {
             pricesBySymbol: pricesBySymbol,
             config: config
         )
+        weights = applyCanaryRiskBrake(
+            to: weights,
+            signalIndex: signalIndex,
+            pricesBySymbol: pricesBySymbol,
+            config: config
+        )
         weights = applyEquityCurveStateGate(
             to: weights,
             signalIndex: signalIndex,
+            portfolioValues: portfolioValues,
+            config: config,
+            state: &state
+        )
+        weights = applyAssetRiskStateGate(
+            to: weights,
+            signalIndex: signalIndex,
+            pricesBySymbol: pricesBySymbol,
             portfolioValues: portfolioValues,
             config: config,
             state: &state
@@ -6292,6 +7533,7 @@ nonisolated enum BacktestEngine {
         }
 
         var lastRebalanceIndex = Int.min / 2
+        let firstRebalanceIndex = max(simulationRange.lowerBound, 1)
 
         for index in simulationRange {
             let date = commonDates[index]
@@ -6317,14 +7559,14 @@ nonisolated enum BacktestEngine {
             let rebalanceSessions = max(config.rebalanceSessions, 1)
             let overlayRebalanceSessions = config.globalRepairStack.map { max($0.overlayRebalanceSessions, 1) }
             let shouldOverlayRebalance = overlayRebalanceSessions.map {
-                index == simulationRange.lowerBound || index % $0 == 0
+                index == firstRebalanceIndex || (index > 0 && index % $0 == 0)
             } ?? false
             let shouldBaseRebalance: Bool
             if config.rebalancesFromFirstSignal {
-                shouldBaseRebalance = index == simulationRange.lowerBound
+                shouldBaseRebalance = index == firstRebalanceIndex
                     || (index > 0 && index - lastRebalanceIndex >= rebalanceSessions)
             } else {
-                shouldBaseRebalance = index == simulationRange.lowerBound || index % rebalanceSessions == 0
+                shouldBaseRebalance = index == firstRebalanceIndex || (index > 0 && index % rebalanceSessions == 0)
             }
             let shouldRebalance = shouldBaseRebalance || shouldOverlayRebalance
 
@@ -6360,8 +7602,9 @@ nonisolated enum BacktestEngine {
                     cash += cashAmount
                     unitsBySymbol[symbol] = 0
                     let averageCost = averageCostBySymbol[symbol] ?? 0
-                    let realizedProfit = (executionPrice - averageCost) * units - grossValue * normalizedFeeRate
-                    let realizedReturn = averageCost > 0 ? (executionPrice / averageCost - 1) : nil
+                    let realizedCostBasis = averageCost * units
+                    let realizedProfit = cashAmount - realizedCostBasis
+                    let realizedReturn = realizedCostBasis > 0 ? realizedProfit / realizedCostBasis : nil
                     let holdingDays = entryDateBySymbol[symbol].map { Calendar.current.dateComponents([.day], from: $0, to: date).day ?? 0 }
                     trades.append(.init(
                         assetSymbol: symbol,
@@ -6404,8 +7647,9 @@ nonisolated enum BacktestEngine {
                     let remainingUnits = Swift.max(currentUnits - unitsToSell, 0)
                     unitsBySymbol[symbol] = remainingUnits
                     let averageCost = averageCostBySymbol[symbol] ?? 0
-                    let realizedProfit = (executionPrice - averageCost) * unitsToSell - grossValue * normalizedFeeRate
-                    let realizedReturn = averageCost > 0 ? (executionPrice / averageCost - 1) : nil
+                    let realizedCostBasis = averageCost * unitsToSell
+                    let realizedProfit = cashAmount - realizedCostBasis
+                    let realizedReturn = realizedCostBasis > 0 ? realizedProfit / realizedCostBasis : nil
                     let holdingDays = entryDateBySymbol[symbol].map { Calendar.current.dateComponents([.day], from: $0, to: date).day ?? 0 }
                     trades.append(.init(
                         assetSymbol: symbol,
@@ -6446,7 +7690,7 @@ nonisolated enum BacktestEngine {
                         let previousUnits = unitsBySymbol[symbol] ?? 0
                         let previousCost = (averageCostBySymbol[symbol] ?? 0) * previousUnits
                         unitsBySymbol[symbol] = previousUnits + units
-                        averageCostBySymbol[symbol] = (previousCost + invested) / Swift.max(previousUnits + units, Double.leastNonzeroMagnitude)
+                        averageCostBySymbol[symbol] = (previousCost + amountToInvest) / Swift.max(previousUnits + units, Double.leastNonzeroMagnitude)
                         cash -= amountToInvest
                         heldSymbols.insert(symbol)
                         if entryDateBySymbol[symbol] == nil { entryDateBySymbol[symbol] = date }
@@ -6807,6 +8051,7 @@ nonisolated enum BacktestEngine {
                                         tradeAmount: tradeAmount,
                                         settings: settings,
                                         report: report,
+                                        comparisonSeries: AdvancedBacktestPresentation.comparisonSeries(from: report),
                                         score: scoreAdvancedReport(report)
                                     )
                                 )
@@ -6911,6 +8156,7 @@ nonisolated enum BacktestEngine {
                                         tradeAmount: tradeAmount,
                                         settings: settings,
                                         report: report,
+                                        comparisonSeries: AdvancedBacktestPresentation.comparisonSeries(from: report),
                                         score: scoreAdvancedReport(report)
                                     )
                                 )

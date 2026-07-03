@@ -75,12 +75,12 @@ extension ContentView {
     }
 
     @MainActor
-    func currentStrategyNotificationContent() async -> (title: String, body: String?) {
+    func currentStrategyNotificationContent(includeAdviceWhenDisabled: Bool = false) async -> (title: String, body: String?) {
         guard let template = StrategyNotificationDefaults.template(for: strategyNotificationTemplateID) else {
             return (AppLocalization.string("策略提醒"), AppLocalization.string("打开资产时光机，选择一个策略作为每日提醒。"))
         }
 
-        guard strategyNotificationEnabled else {
+        guard strategyNotificationEnabled || includeAdviceWhenDisabled else {
             return (template.title, nil)
         }
 
@@ -105,5 +105,19 @@ extension ContentView {
             allAssetOptions: BacktestDefaults.dcaAssetOptions
         )
         return (template.title, StrategyNotificationContentBuilder.body(advice: advice, actions: actions))
+    }
+
+    @MainActor
+    func sendStrategyTestNotification() async -> Bool {
+        do {
+            let content = await currentStrategyNotificationContent(includeAdviceWhenDisabled: true)
+            return try await AssetNotificationService.sendStrategyTestNotification(
+                strategyTitle: content.title,
+                body: content.body
+            )
+        } catch {
+            print("[AssetTimeMachine] send strategy test notification failed: \(error)")
+            return false
+        }
     }
 }
