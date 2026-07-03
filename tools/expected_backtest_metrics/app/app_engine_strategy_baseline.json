@@ -1,0 +1,319 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-03T16:48:12",
+  "source": "tools/strategy_metric_dump.swift via xcrun swiftc",
+  "command": "xcrun swiftc -parse-as-library -module-cache-path /private/tmp/atm-swift-module-cache AssetTimeMachine/Backtest/BacktestModels.swift AssetTimeMachine/Backtest/BacktestEngine.swift tools/strategy_metric_dump.swift -o /private/tmp/strategy_metric_dump && /private/tmp/strategy_metric_dump",
+  "assumptions": {
+    "initial_cash": 100000,
+    "fee_rate_percent": 1.0,
+    "slippage_rate_percent": 0.05,
+    "history_endpoint": "https://api.flyingrtx.com/api/v1/money/public/history",
+    "period": "all"
+  },
+  "strategies": [
+    {
+      "title": "热度上限元策略",
+      "id": "core-gold-satellite-heat-capped-momentum",
+      "metrics_percent": {
+        "annualized": 8.067836,
+        "max_drawdown": 16.692629,
+        "volatility": 9.664073,
+        "sharpe": 0.825584
+      },
+      "metrics": {
+        "annualized_return": 0.08067836,
+        "max_drawdown": -0.16692629,
+        "annualized_volatility": 0.09664073000000001,
+        "sharpe": 0.825584
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    },
+    {
+      "title": "黄金交接保护",
+      "id": "core-gold-satellite-gold-handoff-momentum",
+      "metrics_percent": {
+        "annualized": 8.274201,
+        "max_drawdown": 14.370036,
+        "volatility": 9.618637,
+        "sharpe": 0.848241
+      },
+      "metrics": {
+        "annualized_return": 0.08274200999999999,
+        "max_drawdown": -0.14370036,
+        "annualized_volatility": 0.09618637,
+        "sharpe": 0.848241
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    },
+    {
+      "title": "单向控波元策略",
+      "id": "core-gold-satellite-one-way-vol-managed-momentum",
+      "metrics_percent": {
+        "annualized": 9.203751,
+        "max_drawdown": 14.181404,
+        "volatility": 9.280426,
+        "sharpe": 0.964919
+      },
+      "metrics": {
+        "annualized_return": 0.09203751,
+        "max_drawdown": -0.14181404,
+        "annualized_volatility": 0.09280426,
+        "sharpe": 0.964919
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    },
+    {
+      "title": "权益曲线状态机",
+      "id": "core-gold-satellite-equity-curve-state-gate-momentum",
+      "metrics_percent": {
+        "annualized": 9.589046,
+        "max_drawdown": 13.019451,
+        "volatility": 9.223074,
+        "sharpe": 1.007323
+      },
+      "metrics": {
+        "annualized_return": 0.09589046,
+        "max_drawdown": -0.13019451,
+        "annualized_volatility": 0.09223074,
+        "sharpe": 1.007323
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    },
+    {
+      "title": "高夏普状态机",
+      "id": "core-gold-satellite-sharpe-state-gate-momentum",
+      "metrics_percent": {
+        "annualized": 5.887147,
+        "max_drawdown": 9.878162,
+        "volatility": 5.485666,
+        "sharpe": 1.036903
+      },
+      "metrics": {
+        "annualized_return": 0.058871469999999995,
+        "max_drawdown": -0.09878162,
+        "annualized_volatility": 0.05485666,
+        "sharpe": 1.036903
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    },
+    {
+      "title": "收益回撤门状态机",
+      "id": "core-gold-satellite-asset-risk-gate-momentum",
+      "metrics_percent": {
+        "annualized": 8.737027,
+        "max_drawdown": 13.136753,
+        "volatility": 8.838797,
+        "sharpe": 0.961699
+      },
+      "metrics": {
+        "annualized_return": 0.08737027,
+        "max_drawdown": -0.13136753,
+        "annualized_volatility": 0.08838797,
+        "sharpe": 0.961699
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    },
+    {
+      "title": "风险预算状态机",
+      "id": "core-gold-satellite-risk-budget-state-gate-momentum",
+      "metrics_percent": {
+        "annualized": 9.964941,
+        "max_drawdown": 15.539383,
+        "volatility": 10.000786,
+        "sharpe": 0.969629
+      },
+      "metrics": {
+        "annualized_return": 0.09964941,
+        "max_drawdown": -0.15539383,
+        "annualized_volatility": 0.10000786,
+        "sharpe": 0.969629
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    },
+    {
+      "title": "确认加速进攻袖套",
+      "id": "core-gold-satellite-confirmed-acceleration-momentum",
+      "metrics_percent": {
+        "annualized": 9.443113,
+        "max_drawdown": 14.042858,
+        "volatility": 10.230497,
+        "sharpe": 0.905103
+      },
+      "metrics": {
+        "annualized_return": 0.09443113,
+        "max_drawdown": -0.14042858,
+        "annualized_volatility": 0.10230497,
+        "sharpe": 0.905103
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    },
+    {
+      "title": "锁盈防守袖套",
+      "id": "core-gold-satellite-profit-lock-momentum",
+      "metrics_percent": {
+        "annualized": 8.549354,
+        "max_drawdown": 11.671817,
+        "volatility": 8.385725,
+        "sharpe": 0.989017
+      },
+      "metrics": {
+        "annualized_return": 0.08549353999999999,
+        "max_drawdown": -0.11671817000000001,
+        "annualized_volatility": 0.08385725000000001,
+        "sharpe": 0.989017
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    },
+    {
+      "title": "动态袖套夏普策略",
+      "id": "core-gold-satellite-dynamic-sleeve-momentum",
+      "metrics_percent": {
+        "annualized": 8.973663,
+        "max_drawdown": 12.077698,
+        "volatility": 9.361464,
+        "sharpe": 0.93554
+      },
+      "metrics": {
+        "annualized_return": 0.08973663,
+        "max_drawdown": -0.12077697999999999,
+        "annualized_volatility": 0.09361464,
+        "sharpe": 0.93554
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    },
+    {
+      "title": "月度热度上限元",
+      "id": "core-gold-satellite-monthly-heat-capped-momentum",
+      "metrics_percent": {
+        "annualized": 7.616501,
+        "max_drawdown": 16.800822,
+        "volatility": 9.908325,
+        "sharpe": 0.766758
+      },
+      "metrics": {
+        "annualized_return": 0.07616501,
+        "max_drawdown": -0.16800822,
+        "annualized_volatility": 0.09908325,
+        "sharpe": 0.766758
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    },
+    {
+      "title": "增强热度上限元",
+      "id": "core-gold-satellite-confirmed-excess-momentum",
+      "metrics_percent": {
+        "annualized": 8.234083,
+        "max_drawdown": 16.876914,
+        "volatility": 9.862278,
+        "sharpe": 0.826052
+      },
+      "metrics": {
+        "annualized_return": 0.08234083,
+        "max_drawdown": -0.16876913999999998,
+        "annualized_volatility": 0.09862278,
+        "sharpe": 0.826052
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    },
+    {
+      "title": "MA20趋势",
+      "id": "basic-ma20-trend",
+      "metrics_percent": {
+        "annualized": -20.036964,
+        "max_drawdown": 99.581882,
+        "volatility": 12.638418,
+        "sharpe": -1.64826
+      },
+      "metrics": {
+        "annualized_return": -0.20036964000000002,
+        "max_drawdown": -0.9958188199999999,
+        "annualized_volatility": 0.12638417999999998,
+        "sharpe": -1.64826
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    },
+    {
+      "title": "MA60趋势",
+      "id": "basic-ma60-trend",
+      "metrics_percent": {
+        "annualized": -6.643343,
+        "max_drawdown": 86.594193,
+        "volatility": 11.711173,
+        "sharpe": -0.509297
+      },
+      "metrics": {
+        "annualized_return": -0.06643343,
+        "max_drawdown": -0.8659419300000001,
+        "annualized_volatility": 0.11711173000000001,
+        "sharpe": -0.509297
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    },
+    {
+      "title": "MA金叉死叉",
+      "id": "basic-ma-golden-cross",
+      "metrics_percent": {
+        "annualized": 1.335274,
+        "max_drawdown": 40.770832,
+        "volatility": 9.978851,
+        "sharpe": 0.17875
+      },
+      "metrics": {
+        "annualized_return": 0.01335274,
+        "max_drawdown": -0.40770832,
+        "annualized_volatility": 0.09978851000000001,
+        "sharpe": 0.17875
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    },
+    {
+      "title": "BOLL下轨反弹",
+      "id": "basic-boll-mean-reversion",
+      "metrics_percent": {
+        "annualized": -5.308461,
+        "max_drawdown": 74.017393,
+        "volatility": 7.736104,
+        "sharpe": -0.643728
+      },
+      "metrics": {
+        "annualized_return": -0.053084610000000004,
+        "max_drawdown": -0.74017393,
+        "annualized_volatility": 0.07736104,
+        "sharpe": -0.643728
+      },
+      "start": "2002-01-04",
+      "end": "2026-07-02",
+      "point_count": 6377
+    }
+  ]
+}

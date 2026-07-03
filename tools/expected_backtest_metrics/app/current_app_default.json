@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-03T16:48:12",
+  "source": "tools/strategy_metric_dump.swift via xcrun swiftc",
+  "status": "baseline_dumped_first_listed_template_pending_product_tier_confirmation",
+  "note": "The current product default/tier mapping is not yet formalized. This records the first dumped App strategy template as the current first-listed baseline; use app_engine_strategy_baseline.json for the full App-engine truth set.",
+  "strategy": {
+    "title": "热度上限元策略",
+    "id": "core-gold-satellite-heat-capped-momentum",
+    "metrics_percent": {
+      "annualized": 8.067836,
+      "max_drawdown": 16.692629,
+      "volatility": 9.664073,
+      "sharpe": 0.825584
+    },
+    "metrics": {
+      "annualized_return": 0.08067836,
+      "max_drawdown": -0.16692629,
+      "annualized_volatility": 0.09664073000000001,
+      "sharpe": 0.825584
+    },
+    "start": "2002-01-04",
+    "end": "2026-07-02",
+    "point_count": 6377
+  }
+}

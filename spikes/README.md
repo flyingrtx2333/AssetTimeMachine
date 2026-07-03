@@ -4,8 +4,8 @@ This directory contains research experiments. Files under `spikes/` are **not** 
 
 ## Current product/app status
 
-- Current App default strategy baseline: **pending dump**.
-  - Before splitting `BacktestEngine.swift`, replace `tools/expected_backtest_metrics/app/current_app_default_pending.json` with concrete App-engine metrics.
+- Current App engine baseline: dumped to `tools/expected_backtest_metrics/app/app_engine_strategy_baseline.json`.
+- Current first-listed App strategy baseline: `tools/expected_backtest_metrics/app/current_app_default.json`.
 - Current research champion: `345-gold-repair-refine`.
 - Current App-equivalent replay target: `345-gold-repair-refine`.
 - No new research result is allowed to become a product/default strategy without App-equivalent replay and regression metrics.
@@ -95,14 +95,9 @@ Reject by default:
 
 ## Before Backtest refactor
 
-Before splitting `BacktestEngine.swift`, complete the app-side golden metrics dump:
+Before splitting `BacktestEngine.swift`, keep these app-side golden metrics current:
 
-- current App default strategy;
-- current App engine major strategies;
-- 345 App-equivalent replay target once implemented.
+- `tools/expected_backtest_metrics/app/app_engine_strategy_baseline.json`
+- `tools/expected_backtest_metrics/app/current_app_default.json`
 
-The placeholder is currently:
-
-- `tools/expected_backtest_metrics/app/current_app_default_pending.json`
-
-Do not remove the placeholder until concrete App-engine metrics replace it.
+These were produced with `tools/strategy_metric_dump.swift`. Re-run the dump whenever App strategy logic changes before refactoring engine code.
