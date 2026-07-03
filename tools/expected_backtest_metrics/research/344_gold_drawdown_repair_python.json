@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-03T16:37:38",
+  "strategy": "incumbent_gold_drawdown_repair",
+  "status": "direction_verified_not_current_champion",
+  "source": "python_research",
+  "metrics": {
+    "start": "2000-01-03",
+    "end_date": "2026-07-02",
+    "years": 27.404761904761905,
+    "cagr": 0.08443964465147191,
+    "max_dd": -0.10933464460871134,
+    "sharpe": 0.9792097944292989,
+    "vol": 0.08663643483569342,
+    "end": 9.221365191343972,
+    "calmar": 0.772304560495586
+  },
+  "slice_metrics": {
+    "2016+": {
+      "start": "2016-01-04",
+      "end_date": "2026-07-02",
+      "years": 10.876984126984127,
+      "cagr": 0.10728726587392567,
+      "max_dd": -0.10933464460871123,
+      "sharpe": 1.1436297637812005,
+      "vol": 0.09291384061487365,
+      "end": 3.0298326382596725,
+      "calmar": 0.9812741995722147
+    },
+    "2020+": {
+      "start": "2020-01-02",
+      "end_date": "2026-07-02",
+      "years": 6.742063492063492,
+      "cagr": 0.12602862713143792,
+      "max_dd": -0.10933464460871134,
+      "sharpe": 1.173480154785377,
+      "vol": 0.1059703793747217,
+      "end": 2.2261249744735325,
+      "calmar": 1.1526870333046884
+    },
+    "10y": {
+      "start": "2016-07-04",
+      "end_date": "2026-07-02",
+      "years": 10.36111111111111,
+      "cagr": 0.10590962746672261,
+      "max_dd": -0.10933464460871134,
+      "sharpe": 1.1193807613548385,
+      "vol": 0.09389661857849822,
+      "end": 2.8378147096471507,
+      "calmar": 0.9686739994057123
+    },
+    "2022+": {
+      "start": "2022-01-03",
+      "end_date": "2026-07-02",
+      "years": 4.674603174603175,
+      "cagr": 0.10920203734876344,
+      "max_dd": -0.10933464460871134,
+      "sharpe": 1.0725348452665688,
+      "vol": 0.10145943642720968,
+      "end": 1.6233305714787567,
+      "calmar": 0.9987871432662311
+    }
+  },
+  "stats": {
+    "avg_exposure": 0.6037231392991635,
+    "turnover": 95.72899999999998,
+    "repair_days": 150,
+    "freed_gold_sum": 18.46000000000004
+  },
+  "latest_target_weights": [
+    "2026-07-02",
+    {
+      "gold": 0.24,
+      "nasdaq": 0.1305,
+      "sp500": 0.3885
+    }
+  ],
+  "overlay": {
+    "dd_fast_n": 63,
+    "dd_slow_n": 126,
+    "dd_fast_cut": -0.09,
+    "dd_slow_cut": -0.18,
+    "deep_dd_cut": -0.24,
+    "mom_fast_n": 20,
+    "mom_slow_n": 120,
+    "mom_fast_cut": -0.03,
+    "mom_slow_cut": -0.05,
+    "ma_fast": 100,
+    "ma_slow": 200,
+    "gold_stress_cap": 0.24,
+    "gold_deep_cap": 0.22,
+    "eq_ma": 120,
+    "eq_mom_n": 120,
+    "nas_min_mom": 0.02,
+    "sp_min_mom": 0.0,
+    "vol_n": 63,
+    "score_mom_n": 120,
+    "eq_dd_n": 126,
+    "eq_dd_floor": -0.12,
+    "handoff_ratio": 0.85,
+    "second_ratio": 0.3
+  },
+  "notes": [
+    "Direction validation: gold sleeve drawdown repair improved old incumbent.",
+    "Superseded by 345-gold-repair-refine for App-equivalent replay priority."
+  ]
+}

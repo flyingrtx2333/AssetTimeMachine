@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-03T16:37:38",
+  "strategy": "incumbent_gold_drawdown_repair",
+  "status": "research_champion_pending_app_equivalent_replay",
+  "source": "python_research",
+  "metrics": {
+    "start": "2000-01-03",
+    "end_date": "2026-07-02",
+    "years": 27.404761904761905,
+    "cagr": 0.08721243764621867,
+    "max_dd": -0.1052658139597007,
+    "sharpe": 1.0026899062620211,
+    "vol": 0.08720368567577615,
+    "end": 9.889806993284033,
+    "calmar": 0.8284972524850901
+  },
+  "slice_metrics": {
+    "2016+": {
+      "start": "2016-01-04",
+      "end_date": "2026-07-02",
+      "years": 10.876984126984127,
+      "cagr": 0.11414119204087791,
+      "max_dd": -0.09705130350344515,
+      "sharpe": 1.2016311455828312,
+      "vol": 0.0936205363128169,
+      "end": 3.240172639229828,
+      "calmar": 1.1760912828628427
+    },
+    "2020+": {
+      "start": "2020-01-02",
+      "end_date": "2026-07-02",
+      "years": 6.742063492063492,
+      "cagr": 0.13817439086960692,
+      "max_dd": -0.09705130350344504,
+      "sharpe": 1.2661584563236195,
+      "vol": 0.10675600835237634,
+      "end": 2.393113868892381,
+      "calmar": 1.4237252451194757
+    },
+    "10y": {
+      "start": "2016-07-04",
+      "end_date": "2026-07-02",
+      "years": 10.36111111111111,
+      "cagr": 0.11294705823776963,
+      "max_dd": -0.09705130350344504,
+      "sharpe": 1.1783058765720626,
+      "vol": 0.09464575761293854,
+      "end": 3.0305923263633963,
+      "calmar": 1.1637871327896212
+    },
+    "2022+": {
+      "start": "2022-01-03",
+      "end_date": "2026-07-02",
+      "years": 4.674603174603175,
+      "cagr": 0.11939927202593759,
+      "max_dd": -0.0919017940035547,
+      "sharpe": 1.1663239433479873,
+      "vol": 0.10112083709240875,
+      "end": 1.694281351268477,
+      "calmar": 1.2992050190153994
+    }
+  },
+  "stats": {
+    "avg_exposure": 0.60141394303511,
+    "turnover": 109.45622715404691,
+    "repair_days": 176,
+    "freed_gold_sum": 25.453759791122685
+  },
+  "latest_target_weights": [
+    "2026-07-02",
+    {
+      "gold": 0.22,
+      "nasdaq": 0.1365,
+      "sp500": 0.4135
+    }
+  ],
+  "overlay": {
+    "dd_fast_n": 63,
+    "dd_slow_n": 126,
+    "dd_fast_cut": -0.08,
+    "dd_slow_cut": -0.16,
+    "deep_dd_cut": -0.24,
+    "mom_fast_n": 30,
+    "mom_slow_n": 150,
+    "mom_fast_cut": -0.02,
+    "mom_slow_cut": -0.05,
+    "ma_fast": 80,
+    "ma_slow": 220,
+    "gold_stress_cap": 0.22,
+    "gold_deep_cap": 0.2,
+    "eq_ma": 120,
+    "eq_mom_n": 150,
+    "nas_min_mom": 0.04,
+    "sp_min_mom": 0.0,
+    "vol_n": 63,
+    "score_mom_n": 120,
+    "eq_dd_n": 90,
+    "eq_dd_floor": -0.12,
+    "handoff_ratio": 0.95,
+    "second_ratio": 0.3
+  },
+  "notes": [
+    "Current research champion as of convergence kickoff.",
+    "Must pass Swift/App-equivalent replay before product candidate or default strategy.",
+    "Do not continue parameter cherry-picking without stability/logic checks."
+  ]
+}

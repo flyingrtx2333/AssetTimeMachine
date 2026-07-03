@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-03T16:37:38",
+  "strategy_family": "dual_stress_brake",
+  "status": "rejected_new_logic_not_material",
+  "source": "python_research_mechanism_check",
+  "baseline": "345_gold_repair_refine_python",
+  "verdict": "No promotion: top numeric rows had too few brake days, so new dual-stress logic did not materially drive the result.",
+  "hits_under_strict_gate": 0,
+  "best_numeric_row": {
+    "metrics": {
+      "start": "2000-01-03",
+      "end_date": "2026-07-02",
+      "years": 27.404761904761905,
+      "cagr": 0.08819442301644642,
+      "max_dd": -0.10274801158751401,
+      "sharpe": 1.0128069490119944,
+      "vol": 0.08722590694061619,
+      "end": 10.137544610502202,
+      "calmar": 0.8583564942405547
+    },
+    "slice_metrics": {
+      "2020+": {
+        "start": "2020-01-02",
+        "end_date": "2026-07-02",
+        "years": 6.742063492063492,
+        "cagr": 0.1422759336274131,
+        "max_dd": -0.0880579131004593,
+        "sharpe": 1.295315105427049,
+        "vol": 0.1071643677401199,
+        "end": 2.4518614811059853,
+        "calmar": 1.61570866964676
+      },
+      "10y": {
+        "start": "2016-07-04",
+        "end_date": "2026-07-02",
+        "years": 10.36111111111111,
+        "cagr": 0.11809253009422727,
+        "max_dd": -0.08805791310045918,
+        "sharpe": 1.2221988378609707,
+        "vol": 0.09505344080500969,
+        "end": 3.178947184995206,
+        "calmar": 1.3410780012411112
+      },
+      "2022+": {
+        "start": "2022-01-03",
+        "end_date": "2026-07-02",
+        "years": 4.674603174603175,
+        "cagr": 0.11688286602591513,
+        "max_dd": -0.0880579131004593,
+        "sharpe": 1.1429597158160374,
+        "vol": 0.10122770362685382,
+        "end": 1.6765503965719042,
+        "calmar": 1.327340859106795
+      }
+    },
+    "stats": {
+      "avg_exposure": 0.5998770737660781,
+      "turnover": 118.0897402597401,
+      "repair_days": 182,
+      "brake_days": 2
+    },
+    "score": 0.1077947306485882,
+    "better": false,
+    "overlay": {
+      "dd_fast_n": 63,
+      "dd_slow_n": 126,
+      "dd_fast_cut": -0.07,
+      "dd_slow_cut": -0.14,
+      "deep_dd_cut": -0.24,
+      "mom_fast_n": 30,
+      "mom_slow_n": 150,
+      "mom_fast_cut": -0.02,
+      "mom_slow_cut": -0.05,
+      "ma_fast": 80,
+      "ma_slow": 220,
+      "gold_stress_cap": 0.2,
+      "gold_deep_cap": 0.2,
+      "eq_ma": 160,
+      "eq_mom_n": 150,
+      "nas_min_mom": 0.04,
+      "sp_min_mom": 0.0,
+      "vol_n": 63,
+      "score_mom_n": 120,
+      "eq_dd_n": 126,
+      "eq_dd_floor": -0.12,
+      "handoff_ratio": 0.95,
+      "second_ratio": 0.3,
+      "eq_fast_mom_n": 30,
+      "eq_slow_mom_n": 90,
+      "eq_fast_cut": -0.06,
+      "eq_slow_cut": -0.04,
+      "eq_dd_cut": -0.08,
+      "nas_stress_cap": 0.08,
+      "sp_stress_cap": 0.12,
+      "dual_eq_total_cap": 0.12
+    },
+    "latest_target_weights": [
+      "2026-07-02",
+      {
+        "gold": 0.2,
+        "nasdaq": 0.1425,
+        "sp500": 0.4325
+      }
+    ]
+  },
+  "notes": [
+    "Strict gate required brake_days >= 5; top rows generally had only 1-2 brake days."
+  ]
+}

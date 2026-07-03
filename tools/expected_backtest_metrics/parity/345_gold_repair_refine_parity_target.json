@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-03T16:37:38",
+  "strategy": "345-gold-repair-refine",
+  "status": "parity_target_pending_swift_app_replay",
+  "python_research_file": "../research/345_gold_repair_refine_python.json",
+  "tolerances": {
+    "cagr_abs": 0.0005,
+    "max_drawdown_abs": 0.0005,
+    "sharpe_abs": 0.01,
+    "weight_abs": 0.001
+  },
+  "must_match": [
+    "full.cagr",
+    "full.maxDrawdown",
+    "full.sharpe",
+    "2020+.cagr",
+    "2020+.maxDrawdown",
+    "10y.cagr",
+    "10y.maxDrawdown",
+    "2022+.cagr",
+    "2022+.maxDrawdown",
+    "latest_target_weights",
+    "turnover",
+    "repair_days"
+  ],
+  "promotion_rule": "Cannot become ProductCandidate/ProductDefault until App-equivalent replay matches within tolerance."
+}
