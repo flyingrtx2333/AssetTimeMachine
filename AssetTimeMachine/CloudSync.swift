@@ -359,11 +359,14 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     private let lastUploadedSignatureKey = "assettimemachine.cloud.lastUploadedSignature"
     private let lastSyncAtKey = "assettimemachine.cloud.lastSyncAt"
     private let defaults = UserDefaults.standard
+    private let tokenStore: CloudTokenStore
     private var hasLoadedInitialState = false
     private var lastAutoSyncAttemptSignature: String?
 
-    init() {
+    init(tokenStore: CloudTokenStore = KeychainTokenStore()) {
+        self.tokenStore = tokenStore
         lastSyncAt = defaults.object(forKey: lastSyncAtKey) as? Date
+        migrateLegacyTokensIfNeeded()
     }
 
     var hasToken: Bool {
@@ -408,11 +411,11 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 
     private var accessToken: String? {
-        defaults.string(forKey: tokenKey)
+        tokenStore.loadAccessToken()
     }
 
     private var refreshToken: String? {
-        defaults.string(forKey: refreshTokenKey)
+        tokenStore.loadRefreshToken()
     }
 
     func refreshIfNeeded(from context: ModelContext? = nil) async {
@@ -582,8 +585,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 
     func logout() {
-        defaults.removeObject(forKey: tokenKey)
-        defaults.removeObject(forKey: refreshTokenKey)
+        clearTokens()
         defaults.removeObject(forKey: lastUploadedSignatureKey)
         currentUser = nil
         backups = []
@@ -593,17 +595,38 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 
     private func saveTokens(_ token: AssetTimeMachineCloudToken, fallbackRefreshToken: String? = nil) {
-        defaults.set(token.accessToken, forKey: tokenKey)
+        let refreshTokenToSave: String?
         if let refreshToken = token.refreshToken, !refreshToken.isEmpty {
-            defaults.set(refreshToken, forKey: refreshTokenKey)
+            refreshTokenToSave = refreshToken
         } else if let fallbackRefreshToken, !fallbackRefreshToken.isEmpty {
-            defaults.set(fallbackRefreshToken, forKey: refreshTokenKey)
+            refreshTokenToSave = fallbackRefreshToken
         } else {
-            defaults.removeObject(forKey: refreshTokenKey)
+            refreshTokenToSave = nil
         }
+        tokenStore.save(accessToken: token.accessToken, refreshToken: refreshTokenToSave)
+        clearLegacyUserDefaultsTokens()
     }
 
     private func clearTokens() {
+        tokenStore.clear()
+        clearLegacyUserDefaultsTokens()
+    }
+
+    private func migrateLegacyTokensIfNeeded() {
+        guard tokenStore.loadAccessToken()?.isEmpty ?? true else {
+            clearLegacyUserDefaultsTokens()
+            return
+        }
+        guard let legacyAccessToken = defaults.string(forKey: tokenKey), !legacyAccessToken.isEmpty else {
+            clearLegacyUserDefaultsTokens()
+            return
+        }
+        let legacyRefreshToken = defaults.string(forKey: refreshTokenKey)
+        tokenStore.save(accessToken: legacyAccessToken, refreshToken: legacyRefreshToken)
+        clearLegacyUserDefaultsTokens()
+    }
+
+    private func clearLegacyUserDefaultsTokens() {
         defaults.removeObject(forKey: tokenKey)
         defaults.removeObject(forKey: refreshTokenKey)
     }
