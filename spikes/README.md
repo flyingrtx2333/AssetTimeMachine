@@ -4,8 +4,8 @@ This directory contains research experiments. Files under `spikes/` are **not** 
 
 ## Current product/app status
 
-- Current App engine baseline: dumped to `tools/expected_backtest_metrics/app/app_engine_strategy_baseline.json`.
-- Current first-listed App strategy baseline: `tools/expected_backtest_metrics/app/current_app_default.json`.
+- Current App BacktestEngine baseline: dumped to `tools/expected_backtest_metrics/app/app_engine_strategy_baseline.json`.
+- Current first-listed App BacktestEngine strategy baseline: `tools/expected_backtest_metrics/app/current_app_default.json` (`product_default_confirmed=false`).
 - Current research champion: `345-gold-repair-refine`.
 - Current App-equivalent replay target: `345-gold-repair-refine`.
 - No new research result is allowed to become a product/default strategy without App-equivalent replay and regression metrics.
@@ -95,9 +95,9 @@ Reject by default:
 
 ## Before Backtest refactor
 
-Before splitting `BacktestEngine.swift`, keep these app-side golden metrics current:
+Before splitting `BacktestEngine.swift`, keep these App BacktestEngine golden metrics current:
 
 - `tools/expected_backtest_metrics/app/app_engine_strategy_baseline.json`
 - `tools/expected_backtest_metrics/app/current_app_default.json`
 
-These were produced with `tools/strategy_metric_dump.swift`. Re-run the dump whenever App strategy logic changes before refactoring engine code.
+These are BacktestEngine-level baselines with `full / since2020 / last10y / since2022` slices, produced with `ATM_DUMP_SLICES=1 tools/strategy_metric_dump.swift`. They are not a full App-equivalent/UI replay. Re-run the dump whenever App strategy logic changes before refactoring engine code.

@@ -113,6 +113,19 @@ enum BacktestChartValueStyle {
     case currency(code: String)
 }
 
+struct BacktestChartComparisonSeries: Identifiable {
+    let id: String
+    let title: String
+    let points: [BacktestSeriesPoint]
+    let color: Color
+}
+
+enum AdvancedBacktestPresentation {
+    static func comparisonSeries(from report: AdvancedBacktestReport) -> [BacktestChartComparisonSeries] {
+        []
+    }
+}
+
 final class BacktestRecord {
     var kindRawValue: String
     var title: String
@@ -267,6 +280,131 @@ struct StrategyMetricDump {
         let pointCount: Int
     }
 
+    struct SliceMetricRow {
+        let slice: String
+        let row: MetricRow
+    }
+
+    private static func metricRow(
+        title: String,
+        id: String,
+        points: [BacktestSeriesPoint]
+    ) -> MetricRow {
+        guard let first = points.first, let last = points.last, first.portfolioValue > 0 else {
+            return MetricRow(title: title, id: id, annualized: nil, maxDrawdown: nil, volatility: nil, sharpe: nil, start: "n/a", end: "n/a", pointCount: points.count)
+        }
+
+        var normalizedValue = 1.0
+        var previousValue = first.portfolioValue
+        var peakNormalizedValue = normalizedValue
+        var returns: [Double] = []
+        var maxDrawdown = 0.0
+
+        for point in points.dropFirst() {
+            guard previousValue > 0, point.portfolioValue > 0 else {
+                previousValue = point.portfolioValue
+                continue
+            }
+            let periodReturn = point.portfolioValue / previousValue - 1
+            returns.append(periodReturn)
+            normalizedValue *= (1 + periodReturn)
+            peakNormalizedValue = max(peakNormalizedValue, normalizedValue)
+            if peakNormalizedValue > 0 {
+                maxDrawdown = max(maxDrawdown, (peakNormalizedValue - normalizedValue) / peakNormalizedValue)
+            }
+            previousValue = point.portfolioValue
+        }
+
+        let daySpan = max(Calendar.current.dateComponents([.day], from: first.date, to: last.date).day ?? 0, 1)
+        let years = Double(daySpan) / 365.25
+        let annualizedReturn = years > 0 ? pow(normalizedValue, 1 / years) - 1 : nil
+        let mean = returns.isEmpty ? nil : returns.reduce(0, +) / Double(returns.count)
+        let variance = returns.count > 1 && mean != nil
+            ? returns.reduce(0) { $0 + pow($1 - mean!, 2) } / Double(returns.count - 1)
+            : nil
+        let dailyVolatility = variance.map { sqrt($0) }
+        let annualizedVolatility = dailyVolatility.map { $0 * sqrt(252) }
+        let sharpeRatio: Double?
+        if let mean, let dailyVolatility, dailyVolatility > 0 {
+            sharpeRatio = (mean * 252) / (dailyVolatility * sqrt(252))
+        } else {
+            sharpeRatio = nil
+        }
+
+        return MetricRow(
+            title: title,
+            id: id,
+            annualized: annualizedReturn,
+            maxDrawdown: maxDrawdown,
+            volatility: annualizedVolatility,
+            sharpe: sharpeRatio,
+            start: first.date.recordDateString,
+            end: last.date.recordDateString,
+            pointCount: points.count
+        )
+    }
+
+    private static func metricRowsForSlices(
+        title: String,
+        id: String,
+        points: [BacktestSeriesPoint],
+        fullRow: MetricRow? = nil
+    ) -> [SliceMetricRow] {
+        guard let lastDate = points.last?.date else {
+            return [SliceMetricRow(slice: "full", row: fullRow ?? metricRow(title: title, id: id, points: points))]
+        }
+
+        let calendar = Calendar(identifier: .gregorian)
+        let since2020 = calendar.date(from: DateComponents(year: 2020, month: 1, day: 1))!
+        let since2022 = calendar.date(from: DateComponents(year: 2022, month: 1, day: 1))!
+        let last10y = calendar.date(byAdding: .year, value: -10, to: lastDate) ?? lastDate
+        let slices: [(String, Date?)] = [
+            ("full", nil),
+            ("since2020", since2020),
+            ("last10y", last10y),
+            ("since2022", since2022)
+        ]
+
+        return slices.map { slice, startDate in
+            if slice == "full", let fullRow {
+                return SliceMetricRow(slice: slice, row: fullRow)
+            }
+            let slicedPoints: [BacktestSeriesPoint]
+            if let startDate {
+                slicedPoints = points.filter { $0.date >= startDate }
+            } else {
+                slicedPoints = points
+            }
+            return SliceMetricRow(slice: slice, row: metricRow(title: title, id: id, points: slicedPoints))
+        }
+    }
+
+    private static func appFilteredInputs(
+        for template: AdvancedBacktestStrategyTemplate,
+        seriesBySymbol: [String: PublicHistorySeries]
+    ) -> [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)] {
+        let options = StrategyNotificationDefaults.assetOptions(for: template)
+        let historyProvider: (String) -> PublicHistorySeries? = { symbol in
+            seriesBySymbol[normalizedHistorySymbol(symbol)]
+        }
+        let inputs = options.map { option in
+            BacktestEngine.advancedAssetInput(for: option, historyProvider: historyProvider)
+        }
+
+        let boundarySymbols = template.mode.dateBoundaryAssetSymbols
+        let boundaryOptions = options.filter { option in
+            boundarySymbols?.contains(option.symbol) ?? true
+        }
+        let sourceSeries = boundaryOptions.flatMap { option -> [PublicHistorySeries] in
+            let input = BacktestEngine.advancedAssetInput(for: option, historyProvider: historyProvider)
+            return [input.assetSeries, input.fxSeries].compactMap { $0 }
+        }
+        return BacktestEngine.filteredAdvancedAssetInputs(
+            inputs,
+            within: BacktestEngine.availableDateBounds(for: sourceSeries)
+        )
+    }
+
     static func main() async throws {
         let symbols = [
             "gold_cny",
@@ -295,13 +433,9 @@ struct StrategyMetricDump {
         )
 
         var rows: [MetricRow] = []
+        var sliceRows: [SliceMetricRow] = []
         for template in AdvancedBacktestStrategyTemplate.all {
-            let options = StrategyNotificationDefaults.assetOptions(for: template)
-            let inputs = options.map { option in
-                BacktestEngine.advancedAssetInput(for: option) { symbol in
-                    seriesBySymbol[normalizedHistorySymbol(symbol)]
-                }
-            }
+            let inputs = appFilteredInputs(for: template, seriesBySymbol: seriesBySymbol)
             let report: AdvancedBacktestReport?
             if template.mode.isRotation {
                 report = BacktestEngine.runAdvancedRotationStrategy(
@@ -341,7 +475,7 @@ struct StrategyMetricDump {
                 ))
                 continue
             }
-            rows.append(MetricRow(
+            let row = MetricRow(
                 title: template.title,
                 id: template.id,
                 annualized: report.annualizedReturn,
@@ -351,15 +485,45 @@ struct StrategyMetricDump {
                 start: report.points.first?.date.recordDateString ?? "n/a",
                 end: report.points.last?.date.recordDateString ?? "n/a",
                 pointCount: report.points.count
-            ))
+            )
+            rows.append(row)
+            sliceRows.append(contentsOf: metricRowsForSlices(title: template.title, id: template.id, points: report.points, fullRow: row))
         }
 
-        print("APP_STRATEGY_METRICS")
+        if ProcessInfo.processInfo.environment["ATM_DUMP_SLICES"] == "1" {
+            printSliceRows(sliceRows, header: "APP_STRATEGY_SLICE_METRICS")
+        } else {
+            printRows(rows, header: "APP_STRATEGY_METRICS")
+        }
+    }
+
+    private static func printRows(_ rows: [MetricRow], header: String) {
+        print(header)
         print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points")
         for row in rows {
             print([
                 row.title,
                 row.id,
+                format(row.annualized),
+                format(row.maxDrawdown),
+                format(row.volatility),
+                format(row.sharpe, digits: 6, percent: false),
+                row.start,
+                row.end,
+                String(row.pointCount)
+            ].joined(separator: ","))
+        }
+    }
+
+    private static func printSliceRows(_ rows: [SliceMetricRow], header: String) {
+        print(header)
+        print("title,id,slice,annualized,max_drawdown,volatility,sharpe,start,end,points")
+        for sliceRow in rows {
+            let row = sliceRow.row
+            print([
+                row.title,
+                row.id,
+                sliceRow.slice,
                 format(row.annualized),
                 format(row.maxDrawdown),
                 format(row.volatility),
