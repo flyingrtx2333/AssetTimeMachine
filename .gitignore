@@ -22,3 +22,14 @@ marketing/app-store/private-real-data/
 # Generated image batches kept local unless explicitly selected
 marketing/app-store/**/imagegen/
 marketing/app-store/**/imagegen-posters/
+
+# Local research / spike outputs are not part of the product by default.
+# Existing tracked historical files stay tracked; new research artifacts must be force-added deliberately.
+spikes/
+marketing/app-store/20*/
+
+# Research replay / verification scripts generated during strategy searches.
+tools/check_*_readiness.py
+tools/*_swift_replay.swift
+tools/strategy_curve_dump.swift
+tools/verify_*.py
