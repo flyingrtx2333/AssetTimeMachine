@@ -1,9 +1,9 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-03T21:26:12",
-  "source": "tools/strategy_metric_dump.swift ATM_DUMP_SLICES=1 via xcrun swiftc --ref HEAD",
+  "generated_at": "2026-07-04T02:23:29",
+  "source": "tools/strategy_metric_dump.swift ATM_DUMP_SLICES=1 via xcrun swiftc working-tree",
   "baseline_type": "app_backtest_engine_baseline_not_full_app_equivalent_replay",
-  "command": "python3 tools/verify_expected_backtest_metrics.py --ref HEAD",
+  "command": "python3 tools/verify_expected_backtest_metrics.py",
   "assumptions": {
     "initial_cash": 100000,
     "fee_rate_percent": 1.0,
@@ -18,82 +18,82 @@
     ],
     "full_slice_source": "AdvancedBacktestReport metrics",
     "non_full_slice_source": "BacktestSeriesPoint portfolio curve recalculation",
-    "verified_source_ref": "HEAD"
+    "verified_source_ref": "working-tree"
   },
-  "status": "baseline_dumped_first_listed_template_pending_product_tier_confirmation",
-  "product_default_confirmed": false,
-  "note": "The product default/tier mapping is not yet formalized. This records the first dumped App BacktestEngine strategy template as the current first-listed baseline; use app_engine_strategy_baseline.json for the full App BacktestEngine truth set.",
+  "status": "product_default_strategy_confirmed_from_StrategyNotificationDefaults.defaultTemplateID",
+  "product_default_confirmed": true,
+  "note": "Records the current product default strategy baseline. Full App BacktestEngine truth set remains app_engine_strategy_baseline.json.",
   "strategy": {
-    "title": "MA20趋势",
-    "id": "basic-ma20-trend",
+    "title": "热度上限元策略",
+    "id": "core-gold-satellite-heat-capped-momentum",
     "metrics_by_slice": {
       "full": {
         "metrics_percent": {
-          "annualized": -20.036964,
-          "max_drawdown": 99.581882,
-          "volatility": 12.638418,
-          "sharpe": -1.64826
+          "annualized": 8.063772,
+          "max_drawdown": 16.692629,
+          "volatility": 9.663337,
+          "sharpe": 0.825228
         },
         "metrics": {
-          "annualized_return": -0.20036964000000002,
-          "max_drawdown": -0.9958188199999999,
-          "annualized_volatility": 0.12638417999999998,
-          "sharpe": -1.64826
+          "annualized_return": 0.08063772,
+          "max_drawdown": -0.16692629,
+          "annualized_volatility": 0.09663337,
+          "sharpe": 0.825228
         },
         "start": "2002-01-04",
-        "end": "2026-07-02",
-        "point_count": 6377
+        "end": "2026-07-03",
+        "point_count": 6378
       },
       "since2020": {
         "metrics_percent": {
-          "annualized": -28.416279,
-          "max_drawdown": 88.732119,
-          "volatility": 11.924832,
-          "sharpe": -2.641556
+          "annualized": 9.292748,
+          "max_drawdown": 12.161809,
+          "volatility": 10.752866,
+          "sharpe": 0.850591
         },
         "metrics": {
-          "annualized_return": -0.28416279,
-          "max_drawdown": -0.88732119,
-          "annualized_volatility": 0.11924832,
-          "sharpe": -2.641556
+          "annualized_return": 0.09292748,
+          "max_drawdown": -0.12161809,
+          "annualized_volatility": 0.10752866,
+          "sharpe": 0.850591
         },
         "start": "2020-01-02",
-        "end": "2026-07-02",
-        "point_count": 1699
+        "end": "2026-07-03",
+        "point_count": 1700
       },
       "last10y": {
         "metrics_percent": {
-          "annualized": -25.337864,
-          "max_drawdown": 94.722775,
-          "volatility": 11.542544,
-          "sharpe": -2.383326
+          "annualized": 5.678672,
+          "max_drawdown": 16.692629,
+          "volatility": 9.717362,
+          "sharpe": 0.597047
         },
         "metrics": {
-          "annualized_return": -0.25337864,
-          "max_drawdown": -0.94722775,
-          "annualized_volatility": 0.11542543999999999,
-          "sharpe": -2.383326
+          "annualized_return": 0.05678672,
+          "max_drawdown": -0.16692629,
+          "annualized_volatility": 0.09717362,
+          "sharpe": 0.597047
         },
         "start": "2016-07-04",
-        "end": "2026-07-02",
-        "point_count": 2611
+        "end": "2026-07-03",
+        "point_count": 2612
       },
       "since2022": {
         "metrics_percent": {
-          "annualized": -24.684584,
-          "max_drawdown": 72.019318,
-          "volatility": 10.807886,
-          "sharpe": -2.467798
+          "annualized": 8.655464,
+          "max_drawdown": 12.161809,
+          "volatility": 10.599602,
+          "sharpe": 0.806372
         },
         "metrics": {
-          "annualized_return": -0.24684584,
-          "max_drawdown": -0.72019318,
-          "annualized_volatility": 0.10807886,
-          "sharpe": -2.467798
+          "annualized_return": 0.08655464,
+          "max_drawdown": -0.12161809,
+          "annualized_volatility": 0.10599602,
+          "sharpe": 0.806372
         },
         "start": "2022-01-03",
-        "end": "2026-07-02",
-        "point_count": 1178
+        "end": "2026-07-03",
+        "point_count": 1179
       }
     }
   }

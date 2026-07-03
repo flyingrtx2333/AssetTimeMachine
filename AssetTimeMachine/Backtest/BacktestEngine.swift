@@ -1,5 +1,12 @@
 import Foundation
 
+/// Research-only parameter overrides used by standalone dump/search tools.
+///
+/// Product backtests must not read process environment variables or silently change
+/// strategy parameters based on launch-time state. Keeping these overrides explicit
+/// makes App-engine golden metrics reproducible while still allowing local tools to
+/// run one-off parameter grids by setting the values directly before invoking the
+/// engine.
 nonisolated enum BacktestResearchOverrides {
     nonisolated(unsafe) static var assetRiskLowScale: Double?
     nonisolated(unsafe) static var assetRiskMultiplier: Double?
@@ -1881,7 +1888,7 @@ nonisolated enum BacktestEngine {
         return config
     }
 
-    private static func researchEnvDouble(_ key: String, default defaultValue: Double) -> Double {
+    private static func researchOverrideDouble(_ key: String, default defaultValue: Double) -> Double {
         switch key {
         case "ATM_ASSET_RISK_LOW_SCALE":
             if let value = BacktestResearchOverrides.assetRiskLowScale, value.isFinite {
@@ -1902,44 +1909,7 @@ nonisolated enum BacktestEngine {
         default:
             break
         }
-        guard let rawValue = ProcessInfo.processInfo.environment[key],
-              let value = Double(rawValue),
-              value.isFinite else {
-            return defaultValue
-        }
-        return value
-    }
-
-    private static func researchRiskEfficiencyGovernorFromEnvironment() -> AdvancedRotationRiskEfficiencyGovernor? {
-        guard let rawMode = ProcessInfo.processInfo.environment["ATM_RISK_BUDGET_GOVERNOR"],
-              !rawMode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return nil
-        }
-        let mode = rawMode.trimmingCharacters(in: .whitespacesAndNewlines)
-        return .init(
-            mode: mode,
-            volatilityLookbackSessions: Int(researchEnvDouble("ATM_RISK_BUDGET_GOV_VOL_LOOKBACK", default: 63).rounded()),
-            triggerVolatility: researchEnvDouble("ATM_RISK_BUDGET_GOV_TRIGGER_VOL", default: 0.115),
-            targetVolatility: researchEnvDouble("ATM_RISK_BUDGET_GOV_TARGET_VOL", default: 0.085),
-            momentumLookbackSessions: Int(researchEnvDouble("ATM_RISK_BUDGET_GOV_MOM_LOOKBACK", default: 63).rounded()),
-            momentumThreshold: researchEnvDouble("ATM_RISK_BUDGET_GOV_MOM_THRESHOLD", default: 0.0)
-        )
-    }
-
-    private static func researchCanaryRiskBrakeFromEnvironment() -> AdvancedRotationCanaryRiskBrake? {
-        guard ProcessInfo.processInfo.environment["ATM_RISK_BUDGET_CANARY_BRAKE"] == "1" else {
-            return nil
-        }
-        return .init(
-            symbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            momentumLookbacks: [20, 60, 120, 240],
-            momentumWeights: [12, 4, 2, 1],
-            weakAllowed: Int(researchEnvDouble("ATM_RISK_BUDGET_CANARY_WEAK_ALLOWED", default: 2).rounded()),
-            movingAveragePeriod: Int(researchEnvDouble("ATM_RISK_BUDGET_CANARY_MA", default: 180).rounded()),
-            momentumThreshold: researchEnvDouble("ATM_RISK_BUDGET_CANARY_MOM_THRESHOLD", default: 0.0),
-            scale: researchEnvDouble("ATM_RISK_BUDGET_CANARY_SCALE", default: 0.65),
-            redeployGoldRatio: researchEnvDouble("ATM_RISK_BUDGET_CANARY_GOLD_REDEPLOY", default: 0.0)
-        )
+        return defaultValue
     }
 
     private static func dynamicSleeveSelectorConfig() -> AdvancedRotationDynamicSleeveSelector {
@@ -2721,8 +2691,8 @@ nonisolated enum BacktestEngine {
                 buyReason: AppLocalization.string("权益曲线状态机建仓")
             )
         case .coreGoldSatelliteSharpeStateGateMomentum:
-            let lowRiskScale = researchEnvDouble("ATM_SHARPE_LOW_SCALE", default: 0.35)
-            let riskBudgetMultiplier = researchEnvDouble("ATM_SHARPE_MULTIPLIER", default: 1.0)
+            let lowRiskScale = researchOverrideDouble("ATM_SHARPE_LOW_SCALE", default: 0.35)
+            let riskBudgetMultiplier = researchOverrideDouble("ATM_SHARPE_MULTIPLIER", default: 1.0)
             return recentLossVolatilityMetaConfig(
                 mode: mode,
                 symbol: "core_gold_satellite_sharpe_state_gate_momentum",
@@ -2767,8 +2737,8 @@ nonisolated enum BacktestEngine {
                 buyReason: AppLocalization.string("高夏普状态机建仓")
             )
         case .coreGoldSatelliteAssetRiskGateMomentum:
-            let lowRiskScale = researchEnvDouble("ATM_ASSET_RISK_LOW_SCALE", default: 0.73)
-            let riskBudgetMultiplier = researchEnvDouble("ATM_ASSET_RISK_MULTIPLIER", default: 1.0)
+            let lowRiskScale = researchOverrideDouble("ATM_ASSET_RISK_LOW_SCALE", default: 0.73)
+            let riskBudgetMultiplier = researchOverrideDouble("ATM_ASSET_RISK_MULTIPLIER", default: 1.0)
             return recentLossVolatilityMetaConfig(
                 mode: mode,
                 symbol: "core_gold_satellite_asset_risk_gate_momentum",
@@ -2859,8 +2829,8 @@ nonisolated enum BacktestEngine {
                     exitDrawdownThreshold: 0,
                     lowRiskScale: riskBudgetLowScale
                 ),
-                riskEfficiencyGovernor: researchRiskEfficiencyGovernorFromEnvironment(),
-                canaryRiskBrake: researchCanaryRiskBrakeFromEnvironment(),
+                riskEfficiencyGovernor: nil,
+                canaryRiskBrake: nil,
                 riskBudgetEnhancer: riskBudgetMultiplier > 1.0001
                     ? .init(multiplier: riskBudgetMultiplier, annualFinancingRate: 0.03)
                     : nil,

@@ -1,9 +1,9 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-03T21:26:12",
-  "source": "tools/strategy_metric_dump.swift ATM_DUMP_SLICES=1 via xcrun swiftc --ref HEAD",
+  "generated_at": "2026-07-04T02:23:29",
+  "source": "tools/strategy_metric_dump.swift ATM_DUMP_SLICES=1 via xcrun swiftc working-tree",
   "baseline_type": "app_backtest_engine_baseline_not_full_app_equivalent_replay",
-  "command": "python3 tools/verify_expected_backtest_metrics.py --ref HEAD",
+  "command": "python3 tools/verify_expected_backtest_metrics.py",
   "assumptions": {
     "initial_cash": 100000,
     "fee_rate_percent": 1.0,
@@ -18,376 +18,80 @@
     ],
     "full_slice_source": "AdvancedBacktestReport metrics",
     "non_full_slice_source": "BacktestSeriesPoint portfolio curve recalculation",
-    "verified_source_ref": "HEAD"
+    "verified_source_ref": "working-tree"
   },
   "strategies": [
-    {
-      "title": "MA20趋势",
-      "id": "basic-ma20-trend",
-      "metrics_by_slice": {
-        "full": {
-          "metrics_percent": {
-            "annualized": -20.036964,
-            "max_drawdown": 99.581882,
-            "volatility": 12.638418,
-            "sharpe": -1.64826
-          },
-          "metrics": {
-            "annualized_return": -0.20036964000000002,
-            "max_drawdown": -0.9958188199999999,
-            "annualized_volatility": 0.12638417999999998,
-            "sharpe": -1.64826
-          },
-          "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6377
-        },
-        "since2020": {
-          "metrics_percent": {
-            "annualized": -28.416279,
-            "max_drawdown": 88.732119,
-            "volatility": 11.924832,
-            "sharpe": -2.641556
-          },
-          "metrics": {
-            "annualized_return": -0.28416279,
-            "max_drawdown": -0.88732119,
-            "annualized_volatility": 0.11924832,
-            "sharpe": -2.641556
-          },
-          "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1699
-        },
-        "last10y": {
-          "metrics_percent": {
-            "annualized": -25.337864,
-            "max_drawdown": 94.722775,
-            "volatility": 11.542544,
-            "sharpe": -2.383326
-          },
-          "metrics": {
-            "annualized_return": -0.25337864,
-            "max_drawdown": -0.94722775,
-            "annualized_volatility": 0.11542543999999999,
-            "sharpe": -2.383326
-          },
-          "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2611
-        },
-        "since2022": {
-          "metrics_percent": {
-            "annualized": -24.684584,
-            "max_drawdown": 72.019318,
-            "volatility": 10.807886,
-            "sharpe": -2.467798
-          },
-          "metrics": {
-            "annualized_return": -0.24684584,
-            "max_drawdown": -0.72019318,
-            "annualized_volatility": 0.10807886,
-            "sharpe": -2.467798
-          },
-          "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1178
-        }
-      }
-    },
-    {
-      "title": "MA60趋势",
-      "id": "basic-ma60-trend",
-      "metrics_by_slice": {
-        "full": {
-          "metrics_percent": {
-            "annualized": -6.643343,
-            "max_drawdown": 86.594193,
-            "volatility": 11.711173,
-            "sharpe": -0.509297
-          },
-          "metrics": {
-            "annualized_return": -0.06643343,
-            "max_drawdown": -0.8659419300000001,
-            "annualized_volatility": 0.11711173000000001,
-            "sharpe": -0.509297
-          },
-          "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6377
-        },
-        "since2020": {
-          "metrics_percent": {
-            "annualized": -9.786912,
-            "max_drawdown": 49.491351,
-            "volatility": 11.185122,
-            "sharpe": -0.831799
-          },
-          "metrics": {
-            "annualized_return": -0.09786911999999999,
-            "max_drawdown": -0.49491351,
-            "annualized_volatility": 0.11185122,
-            "sharpe": -0.831799
-          },
-          "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1699
-        },
-        "last10y": {
-          "metrics_percent": {
-            "annualized": -8.961503,
-            "max_drawdown": 63.134562,
-            "volatility": 10.745974,
-            "sharpe": -0.789117
-          },
-          "metrics": {
-            "annualized_return": -0.08961503,
-            "max_drawdown": -0.63134562,
-            "annualized_volatility": 0.10745974,
-            "sharpe": -0.789117
-          },
-          "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2611
-        },
-        "since2022": {
-          "metrics_percent": {
-            "annualized": -5.717097,
-            "max_drawdown": 23.490048,
-            "volatility": 10.281059,
-            "sharpe": -0.499534
-          },
-          "metrics": {
-            "annualized_return": -0.05717097,
-            "max_drawdown": -0.23490048000000002,
-            "annualized_volatility": 0.10281059000000001,
-            "sharpe": -0.499534
-          },
-          "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1178
-        }
-      }
-    },
-    {
-      "title": "MA金叉死叉",
-      "id": "basic-ma-golden-cross",
-      "metrics_by_slice": {
-        "full": {
-          "metrics_percent": {
-            "annualized": 1.335274,
-            "max_drawdown": 40.770832,
-            "volatility": 9.978851,
-            "sharpe": 0.17875
-          },
-          "metrics": {
-            "annualized_return": 0.01335274,
-            "max_drawdown": -0.40770832,
-            "annualized_volatility": 0.09978851000000001,
-            "sharpe": 0.17875
-          },
-          "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6377
-        },
-        "since2020": {
-          "metrics_percent": {
-            "annualized": 0.257647,
-            "max_drawdown": 29.414429,
-            "volatility": 9.162535,
-            "sharpe": 0.07299
-          },
-          "metrics": {
-            "annualized_return": 0.00257647,
-            "max_drawdown": -0.29414429,
-            "annualized_volatility": 0.09162535,
-            "sharpe": 0.07299
-          },
-          "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1699
-        },
-        "last10y": {
-          "metrics_percent": {
-            "annualized": 1.803544,
-            "max_drawdown": 29.414429,
-            "volatility": 8.432504,
-            "sharpe": 0.246767
-          },
-          "metrics": {
-            "annualized_return": 0.01803544,
-            "max_drawdown": -0.29414429,
-            "annualized_volatility": 0.08432504,
-            "sharpe": 0.246767
-          },
-          "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2611
-        },
-        "since2022": {
-          "metrics_percent": {
-            "annualized": 0.885458,
-            "max_drawdown": 18.133303,
-            "volatility": 8.419497,
-            "sharpe": 0.142894
-          },
-          "metrics": {
-            "annualized_return": 0.008854579999999999,
-            "max_drawdown": -0.18133303,
-            "annualized_volatility": 0.08419497,
-            "sharpe": 0.142894
-          },
-          "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1178
-        }
-      }
-    },
-    {
-      "title": "BOLL下轨反弹",
-      "id": "basic-boll-mean-reversion",
-      "metrics_by_slice": {
-        "full": {
-          "metrics_percent": {
-            "annualized": -5.308461,
-            "max_drawdown": 74.017393,
-            "volatility": 7.736104,
-            "sharpe": -0.643728
-          },
-          "metrics": {
-            "annualized_return": -0.053084610000000004,
-            "max_drawdown": -0.74017393,
-            "annualized_volatility": 0.07736104,
-            "sharpe": -0.643728
-          },
-          "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6377
-        },
-        "since2020": {
-          "metrics_percent": {
-            "annualized": -4.290038,
-            "max_drawdown": 26.204531,
-            "volatility": 9.224985,
-            "sharpe": -0.412199
-          },
-          "metrics": {
-            "annualized_return": -0.04290038,
-            "max_drawdown": -0.26204531,
-            "annualized_volatility": 0.09224985000000001,
-            "sharpe": -0.412199
-          },
-          "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1699
-        },
-        "last10y": {
-          "metrics_percent": {
-            "annualized": -4.032874,
-            "max_drawdown": 34.341307,
-            "volatility": 8.083247,
-            "sharpe": -0.450953
-          },
-          "metrics": {
-            "annualized_return": -0.040328739999999995,
-            "max_drawdown": -0.34341307,
-            "annualized_volatility": 0.08083247,
-            "sharpe": -0.450953
-          },
-          "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2611
-        },
-        "since2022": {
-          "metrics_percent": {
-            "annualized": -3.678777,
-            "max_drawdown": 15.94759,
-            "volatility": 7.768294,
-            "sharpe": -0.425447
-          },
-          "metrics": {
-            "annualized_return": -0.036787770000000004,
-            "max_drawdown": -0.1594759,
-            "annualized_volatility": 0.07768294,
-            "sharpe": -0.425447
-          },
-          "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1178
-        }
-      }
-    },
     {
       "title": "热度上限元策略",
       "id": "core-gold-satellite-heat-capped-momentum",
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 8.067836,
+            "annualized": 8.063772,
             "max_drawdown": 16.692629,
-            "volatility": 9.664073,
-            "sharpe": 0.825584
+            "volatility": 9.663337,
+            "sharpe": 0.825228
           },
           "metrics": {
-            "annualized_return": 0.08067836,
+            "annualized_return": 0.08063772,
             "max_drawdown": -0.16692629,
-            "annualized_volatility": 0.09664073000000001,
-            "sharpe": 0.825584
+            "annualized_volatility": 0.09663337,
+            "sharpe": 0.825228
           },
           "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6377
+          "end": "2026-07-03",
+          "point_count": 6378
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 9.308766,
+            "annualized": 9.292748,
             "max_drawdown": 12.161809,
-            "volatility": 10.755954,
-            "sharpe": 0.851825
+            "volatility": 10.752866,
+            "sharpe": 0.850591
           },
           "metrics": {
-            "annualized_return": 0.09308766,
+            "annualized_return": 0.09292748,
             "max_drawdown": -0.12161809,
-            "annualized_volatility": 0.10755954,
-            "sharpe": 0.851825
+            "annualized_volatility": 0.10752866,
+            "sharpe": 0.850591
           },
           "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1699
+          "end": "2026-07-03",
+          "point_count": 1700
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 5.687768,
+            "annualized": 5.678672,
             "max_drawdown": 16.692629,
-            "volatility": 9.71918,
-            "sharpe": 0.597868
+            "volatility": 9.717362,
+            "sharpe": 0.597047
           },
           "metrics": {
-            "annualized_return": 0.05687768,
+            "annualized_return": 0.05678672,
             "max_drawdown": -0.16692629,
-            "annualized_volatility": 0.0971918,
-            "sharpe": 0.597868
+            "annualized_volatility": 0.09717362,
+            "sharpe": 0.597047
           },
           "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2611
+          "end": "2026-07-03",
+          "point_count": 2612
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 8.678106,
+            "annualized": 8.655464,
             "max_drawdown": 12.161809,
-            "volatility": 10.603997,
-            "sharpe": 0.808153
+            "volatility": 10.599602,
+            "sharpe": 0.806372
           },
           "metrics": {
-            "annualized_return": 0.08678106,
+            "annualized_return": 0.08655464,
             "max_drawdown": -0.12161809,
-            "annualized_volatility": 0.10603997,
-            "sharpe": 0.808153
+            "annualized_volatility": 0.10599602,
+            "sharpe": 0.806372
           },
           "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1178
+          "end": "2026-07-03",
+          "point_count": 1179
         }
       }
     },
@@ -397,71 +101,71 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 8.274201,
+            "annualized": 8.270105,
             "max_drawdown": 14.370036,
-            "volatility": 9.618637,
-            "sharpe": 0.848241
+            "volatility": 9.617905,
+            "sharpe": 0.847881
           },
           "metrics": {
-            "annualized_return": 0.08274200999999999,
+            "annualized_return": 0.08270105,
             "max_drawdown": -0.14370036,
-            "annualized_volatility": 0.09618637,
-            "sharpe": 0.848241
+            "annualized_volatility": 0.09617905,
+            "sharpe": 0.847881
           },
           "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6377
+          "end": "2026-07-03",
+          "point_count": 6378
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 9.362624,
+            "annualized": 9.346575,
             "max_drawdown": 12.161809,
-            "volatility": 10.975616,
-            "sharpe": 0.841304
+            "volatility": 10.972462,
+            "sharpe": 0.840092
           },
           "metrics": {
-            "annualized_return": 0.09362624,
+            "annualized_return": 0.09346575,
             "max_drawdown": -0.12161809,
-            "annualized_volatility": 0.10975616,
-            "sharpe": 0.841304
+            "annualized_volatility": 0.10972462,
+            "sharpe": 0.840092
           },
           "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1699
+          "end": "2026-07-03",
+          "point_count": 1700
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 6.081266,
+            "annualized": 6.072029,
             "max_drawdown": 14.370036,
-            "volatility": 9.786415,
-            "sharpe": 0.631093
+            "volatility": 9.784585,
+            "sharpe": 0.63027
           },
           "metrics": {
-            "annualized_return": 0.060812660000000004,
+            "annualized_return": 0.06072029,
             "max_drawdown": -0.14370036,
-            "annualized_volatility": 0.09786415,
-            "sharpe": 0.631093
+            "annualized_volatility": 0.09784585,
+            "sharpe": 0.63027
           },
           "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2611
+          "end": "2026-07-03",
+          "point_count": 2612
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 8.827614,
+            "annualized": 8.80485,
             "max_drawdown": 12.161809,
-            "volatility": 10.773977,
-            "sharpe": 0.809399
+            "volatility": 10.76951,
+            "sharpe": 0.80764
           },
           "metrics": {
-            "annualized_return": 0.08827614,
+            "annualized_return": 0.0880485,
             "max_drawdown": -0.12161809,
-            "annualized_volatility": 0.10773977,
-            "sharpe": 0.809399
+            "annualized_volatility": 0.1076951,
+            "sharpe": 0.80764
           },
           "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1178
+          "end": "2026-07-03",
+          "point_count": 1179
         }
       }
     },
@@ -471,71 +175,71 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 9.210557,
+            "annualized": 9.205527,
             "max_drawdown": 14.181404,
-            "volatility": 9.281965,
-            "sharpe": 0.965425
+            "volatility": 9.28127,
+            "sharpe": 0.964968
           },
           "metrics": {
-            "annualized_return": 0.09210557,
+            "annualized_return": 0.09205527,
             "max_drawdown": -0.14181404,
-            "annualized_volatility": 0.09281964999999999,
-            "sharpe": 0.965425
+            "annualized_volatility": 0.0928127,
+            "sharpe": 0.964968
           },
           "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6377
+          "end": "2026-07-03",
+          "point_count": 6378
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 8.563041,
+            "annualized": 8.54447,
             "max_drawdown": 8.755887,
-            "volatility": 10.097215,
-            "sharpe": 0.835272
+            "volatility": 10.094351,
+            "sharpe": 0.833715
           },
           "metrics": {
-            "annualized_return": 0.08563041,
+            "annualized_return": 0.0854447,
             "max_drawdown": -0.08755887,
-            "annualized_volatility": 0.10097215,
-            "sharpe": 0.835272
+            "annualized_volatility": 0.10094351,
+            "sharpe": 0.833715
           },
           "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1699
+          "end": "2026-07-03",
+          "point_count": 1700
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 5.612928,
+            "annualized": 5.601977,
             "max_drawdown": 14.181404,
-            "volatility": 9.211389,
-            "sharpe": 0.618235
+            "volatility": 9.209689,
+            "sharpe": 0.617183
           },
           "metrics": {
-            "annualized_return": 0.056129280000000004,
+            "annualized_return": 0.05601977,
             "max_drawdown": -0.14181404,
-            "annualized_volatility": 0.09211389,
-            "sharpe": 0.618235
+            "annualized_volatility": 0.09209689,
+            "sharpe": 0.617183
           },
           "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2611
+          "end": "2026-07-03",
+          "point_count": 2612
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 8.56565,
+            "annualized": 8.538799,
             "max_drawdown": 8.755887,
-            "volatility": 10.461962,
-            "sharpe": 0.808196
+            "volatility": 10.457669,
+            "sharpe": 0.806027
           },
           "metrics": {
-            "annualized_return": 0.0856565,
+            "annualized_return": 0.08538799,
             "max_drawdown": -0.08755887,
-            "annualized_volatility": 0.10461962,
-            "sharpe": 0.808196
+            "annualized_volatility": 0.10457669,
+            "sharpe": 0.806027
           },
           "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1178
+          "end": "2026-07-03",
+          "point_count": 1179
         }
       }
     },
@@ -545,71 +249,71 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 9.599844,
+            "annualized": 9.595709,
             "max_drawdown": 13.019451,
-            "volatility": 9.225463,
-            "sharpe": 1.008121
+            "volatility": 9.224762,
+            "sharpe": 1.007751
           },
           "metrics": {
-            "annualized_return": 0.09599843999999999,
+            "annualized_return": 0.09595709,
             "max_drawdown": -0.13019451,
-            "annualized_volatility": 0.09225462999999999,
-            "sharpe": 1.008121
+            "annualized_volatility": 0.09224762,
+            "sharpe": 1.007751
           },
           "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6377
+          "end": "2026-07-03",
+          "point_count": 6378
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 8.833564,
+            "annualized": 8.818414,
             "max_drawdown": 8.755887,
-            "volatility": 10.114835,
-            "sharpe": 0.857713
+            "volatility": 10.111932,
+            "sharpe": 0.856467
           },
           "metrics": {
-            "annualized_return": 0.08833564,
+            "annualized_return": 0.08818414,
             "max_drawdown": -0.08755887,
-            "annualized_volatility": 0.10114835,
-            "sharpe": 0.857713
+            "annualized_volatility": 0.10111932,
+            "sharpe": 0.856467
           },
           "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1699
+          "end": "2026-07-03",
+          "point_count": 1700
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 5.670349,
+            "annualized": 5.661638,
             "max_drawdown": 13.019451,
-            "volatility": 9.075114,
-            "sharpe": 0.631915
+            "volatility": 9.073419,
+            "sharpe": 0.631076
           },
           "metrics": {
-            "annualized_return": 0.056703489999999995,
+            "annualized_return": 0.05661638,
             "max_drawdown": -0.13019451,
-            "annualized_volatility": 0.09075114,
-            "sharpe": 0.631915
+            "annualized_volatility": 0.09073419,
+            "sharpe": 0.631076
           },
           "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2611
+          "end": "2026-07-03",
+          "point_count": 2612
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 9.100546,
+            "annualized": 9.078426,
             "max_drawdown": 8.755887,
-            "volatility": 10.354485,
-            "sharpe": 0.861159
+            "volatility": 10.350195,
+            "sharpe": 0.859394
           },
           "metrics": {
-            "annualized_return": 0.09100546,
+            "annualized_return": 0.09078426,
             "max_drawdown": -0.08755887,
-            "annualized_volatility": 0.10354485000000001,
-            "sharpe": 0.861159
+            "annualized_volatility": 0.10350195,
+            "sharpe": 0.859394
           },
           "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1178
+          "end": "2026-07-03",
+          "point_count": 1179
         }
       }
     },
@@ -619,71 +323,145 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 5.890471,
+            "annualized": 5.888376,
             "max_drawdown": 9.878162,
-            "volatility": 5.486278,
-            "sharpe": 1.037348
+            "volatility": 5.485859,
+            "sharpe": 1.037028
           },
           "metrics": {
-            "annualized_return": 0.05890471,
+            "annualized_return": 0.05888376,
             "max_drawdown": -0.09878162,
-            "annualized_volatility": 0.05486278000000001,
-            "sharpe": 1.037348
+            "annualized_volatility": 0.05485859,
+            "sharpe": 1.037028
           },
           "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6377
+          "end": "2026-07-03",
+          "point_count": 6378
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 3.243691,
+            "annualized": 3.237092,
             "max_drawdown": 3.366218,
-            "volatility": 3.714367,
-            "sharpe": 0.847284
+            "volatility": 3.713314,
+            "sharpe": 0.845715
           },
           "metrics": {
-            "annualized_return": 0.03243691,
+            "annualized_return": 0.03237092,
             "max_drawdown": -0.03366218,
-            "annualized_volatility": 0.037143670000000004,
-            "sharpe": 0.847284
+            "annualized_volatility": 0.03713314,
+            "sharpe": 0.845715
           },
           "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1699
+          "end": "2026-07-03",
+          "point_count": 1700
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 2.241466,
+            "annualized": 2.23749,
             "max_drawdown": 5.017061,
-            "volatility": 3.37851,
-            "sharpe": 0.649991
+            "volatility": 3.377888,
+            "sharpe": 0.648924
           },
           "metrics": {
-            "annualized_return": 0.02241466,
+            "annualized_return": 0.0223749,
             "max_drawdown": -0.05017061,
-            "annualized_volatility": 0.0337851,
-            "sharpe": 0.649991
+            "annualized_volatility": 0.03377888,
+            "sharpe": 0.648924
           },
           "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2611
+          "end": "2026-07-03",
+          "point_count": 2612
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 3.239108,
+            "annualized": 3.229571,
             "max_drawdown": 3.366218,
-            "volatility": 3.84995,
-            "sharpe": 0.815777
+            "volatility": 3.848371,
+            "sharpe": 0.813596
           },
           "metrics": {
-            "annualized_return": 0.032391079999999996,
+            "annualized_return": 0.03229571,
             "max_drawdown": -0.03366218,
-            "annualized_volatility": 0.0384995,
-            "sharpe": 0.815777
+            "annualized_volatility": 0.03848371,
+            "sharpe": 0.813596
           },
           "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1178
+          "end": "2026-07-03",
+          "point_count": 1179
+        }
+      }
+    },
+    {
+      "title": "收益回撤门状态机",
+      "id": "core-gold-satellite-asset-risk-gate-momentum",
+      "metrics_by_slice": {
+        "full": {
+          "metrics_percent": {
+            "annualized": 8.743563,
+            "max_drawdown": 13.136753,
+            "volatility": 8.840636,
+            "sharpe": 0.962135
+          },
+          "metrics": {
+            "annualized_return": 0.08743563,
+            "max_drawdown": -0.13136753,
+            "annualized_volatility": 0.08840636,
+            "sharpe": 0.962135
+          },
+          "start": "2002-01-04",
+          "end": "2026-07-03",
+          "point_count": 6378
+        },
+        "since2020": {
+          "metrics_percent": {
+            "annualized": 8.286183,
+            "max_drawdown": 8.755887,
+            "volatility": 9.965674,
+            "sharpe": 0.820121
+          },
+          "metrics": {
+            "annualized_return": 0.08286183,
+            "max_drawdown": -0.08755887,
+            "annualized_volatility": 0.09965674,
+            "sharpe": 0.820121
+          },
+          "start": "2020-01-02",
+          "end": "2026-07-03",
+          "point_count": 1700
+        },
+        "last10y": {
+          "metrics_percent": {
+            "annualized": 5.452879,
+            "max_drawdown": 13.136753,
+            "volatility": 9.022799,
+            "sharpe": 0.61296
+          },
+          "metrics": {
+            "annualized_return": 0.05452879,
+            "max_drawdown": -0.13136753,
+            "annualized_volatility": 0.09022799,
+            "sharpe": 0.61296
+          },
+          "start": "2016-07-04",
+          "end": "2026-07-03",
+          "point_count": 2612
+        },
+        "since2022": {
+          "metrics_percent": {
+            "annualized": 8.758406,
+            "max_drawdown": 8.755887,
+            "volatility": 10.367403,
+            "sharpe": 0.830877
+          },
+          "metrics": {
+            "annualized_return": 0.08758406,
+            "max_drawdown": -0.08755887,
+            "annualized_volatility": 0.10367403,
+            "sharpe": 0.830877
+          },
+          "start": "2022-01-03",
+          "end": "2026-07-03",
+          "point_count": 1179
         }
       }
     },
@@ -693,71 +471,219 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 13.81027,
-            "max_drawdown": 20.300577,
-            "volatility": 14.84547,
-            "sharpe": 0.918011
+            "annualized": 9.970239,
+            "max_drawdown": 15.539383,
+            "volatility": 10.002239,
+            "sharpe": 0.969929
           },
           "metrics": {
-            "annualized_return": 0.1381027,
-            "max_drawdown": -0.20300577,
-            "annualized_volatility": 0.1484547,
-            "sharpe": 0.918011
+            "annualized_return": 0.09970239,
+            "max_drawdown": -0.15539383,
+            "annualized_volatility": 0.10002239,
+            "sharpe": 0.969929
           },
           "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6377
+          "end": "2026-07-03",
+          "point_count": 6378
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 12.382251,
-            "max_drawdown": 17.009098,
-            "volatility": 16.162041,
-            "sharpe": 0.777651
+            "annualized": 8.569668,
+            "max_drawdown": 9.668674,
+            "volatility": 10.486917,
+            "sharpe": 0.80849
           },
           "metrics": {
-            "annualized_return": 0.12382251,
-            "max_drawdown": -0.17009098,
-            "annualized_volatility": 0.16162041,
-            "sharpe": 0.777651
+            "annualized_return": 0.08569668,
+            "max_drawdown": -0.09668674,
+            "annualized_volatility": 0.10486917,
+            "sharpe": 0.80849
           },
           "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1699
+          "end": "2026-07-03",
+          "point_count": 1700
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 7.375476,
-            "max_drawdown": 17.009098,
-            "volatility": 14.30926,
-            "sharpe": 0.551703
+            "annualized": 5.643409,
+            "max_drawdown": 14.644637,
+            "volatility": 9.575143,
+            "sharpe": 0.601167
           },
           "metrics": {
-            "annualized_return": 0.07375476,
-            "max_drawdown": -0.17009098,
-            "annualized_volatility": 0.14309260000000001,
-            "sharpe": 0.551703
+            "annualized_return": 0.05643409,
+            "max_drawdown": -0.14644637,
+            "annualized_volatility": 0.09575143,
+            "sharpe": 0.601167
           },
           "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2611
+          "end": "2026-07-03",
+          "point_count": 2612
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 13.691284,
-            "max_drawdown": 17.009098,
-            "volatility": 17.177073,
-            "sharpe": 0.804934
+            "annualized": 8.487179,
+            "max_drawdown": 9.668674,
+            "volatility": 10.842998,
+            "sharpe": 0.776942
           },
           "metrics": {
-            "annualized_return": 0.13691284,
-            "max_drawdown": -0.17009098,
-            "annualized_volatility": 0.17177073,
-            "sharpe": 0.804934
+            "annualized_return": 0.08487179,
+            "max_drawdown": -0.09668674,
+            "annualized_volatility": 0.10842998,
+            "sharpe": 0.776942
           },
           "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1178
+          "end": "2026-07-03",
+          "point_count": 1179
+        }
+      }
+    },
+    {
+      "title": "确认加速进攻袖套",
+      "id": "core-gold-satellite-confirmed-acceleration-momentum",
+      "metrics_by_slice": {
+        "full": {
+          "metrics_percent": {
+            "annualized": 9.438046,
+            "max_drawdown": 14.042858,
+            "volatility": 10.229725,
+            "sharpe": 0.904686
+          },
+          "metrics": {
+            "annualized_return": 0.09438046,
+            "max_drawdown": -0.14042858,
+            "annualized_volatility": 0.10229725,
+            "sharpe": 0.904686
+          },
+          "start": "2002-01-04",
+          "end": "2026-07-03",
+          "point_count": 6378
+        },
+        "since2020": {
+          "metrics_percent": {
+            "annualized": 7.208433,
+            "max_drawdown": 14.042858,
+            "volatility": 11.826342,
+            "sharpe": 0.626678
+          },
+          "metrics": {
+            "annualized_return": 0.07208433,
+            "max_drawdown": -0.14042858,
+            "annualized_volatility": 0.11826342,
+            "sharpe": 0.626678
+          },
+          "start": "2020-01-02",
+          "end": "2026-07-03",
+          "point_count": 1700
+        },
+        "last10y": {
+          "metrics_percent": {
+            "annualized": 4.853203,
+            "max_drawdown": 14.042858,
+            "volatility": 10.566151,
+            "sharpe": 0.485669
+          },
+          "metrics": {
+            "annualized_return": 0.04853203,
+            "max_drawdown": -0.14042858,
+            "annualized_volatility": 0.10566151,
+            "sharpe": 0.485669
+          },
+          "start": "2016-07-04",
+          "end": "2026-07-03",
+          "point_count": 2612
+        },
+        "since2022": {
+          "metrics_percent": {
+            "annualized": 6.74246,
+            "max_drawdown": 12.429231,
+            "volatility": 10.987078,
+            "sharpe": 0.626285
+          },
+          "metrics": {
+            "annualized_return": 0.0674246,
+            "max_drawdown": -0.12429231,
+            "annualized_volatility": 0.10987078,
+            "sharpe": 0.626285
+          },
+          "start": "2022-01-03",
+          "end": "2026-07-03",
+          "point_count": 1179
+        }
+      }
+    },
+    {
+      "title": "锁盈防守袖套",
+      "id": "core-gold-satellite-profit-lock-momentum",
+      "metrics_by_slice": {
+        "full": {
+          "metrics_percent": {
+            "annualized": 8.545779,
+            "max_drawdown": 11.671817,
+            "volatility": 8.385087,
+            "sharpe": 0.988663
+          },
+          "metrics": {
+            "annualized_return": 0.08545779,
+            "max_drawdown": -0.11671817,
+            "annualized_volatility": 0.08385087,
+            "sharpe": 0.988663
+          },
+          "start": "2002-01-04",
+          "end": "2026-07-03",
+          "point_count": 6378
+        },
+        "since2020": {
+          "metrics_percent": {
+            "annualized": 8.647272,
+            "max_drawdown": 8.755887,
+            "volatility": 9.456263,
+            "sharpe": 0.893006
+          },
+          "metrics": {
+            "annualized_return": 0.08647272,
+            "max_drawdown": -0.08755887,
+            "annualized_volatility": 0.09456263,
+            "sharpe": 0.893006
+          },
+          "start": "2020-01-02",
+          "end": "2026-07-03",
+          "point_count": 1700
+        },
+        "last10y": {
+          "metrics_percent": {
+            "annualized": 5.554635,
+            "max_drawdown": 11.671817,
+            "volatility": 8.465247,
+            "sharpe": 0.658552
+          },
+          "metrics": {
+            "annualized_return": 0.05554635,
+            "max_drawdown": -0.11671817,
+            "annualized_volatility": 0.08465247,
+            "sharpe": 0.658552
+          },
+          "start": "2016-07-04",
+          "end": "2026-07-03",
+          "point_count": 2612
+        },
+        "since2022": {
+          "metrics_percent": {
+            "annualized": 8.962506,
+            "max_drawdown": 8.755887,
+            "volatility": 9.87153,
+            "sharpe": 0.885792
+          },
+          "metrics": {
+            "annualized_return": 0.08962506,
+            "max_drawdown": -0.08755887,
+            "annualized_volatility": 0.0987153,
+            "sharpe": 0.885792
+          },
+          "start": "2022-01-03",
+          "end": "2026-07-03",
+          "point_count": 1179
         }
       }
     },
@@ -767,366 +693,70 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 8.973663,
+            "annualized": 8.969689,
             "max_drawdown": 12.077698,
-            "volatility": 9.361464,
-            "sharpe": 0.93554
+            "volatility": 9.360751,
+            "sharpe": 0.935186
           },
           "metrics": {
-            "annualized_return": 0.08973663,
-            "max_drawdown": -0.12077697999999999,
-            "annualized_volatility": 0.09361464,
-            "sharpe": 0.93554
+            "annualized_return": 0.08969689,
+            "max_drawdown": -0.12077698,
+            "annualized_volatility": 0.09360751,
+            "sharpe": 0.935186
           },
           "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6377
+          "end": "2026-07-03",
+          "point_count": 6378
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 7.092501,
+            "annualized": 7.078569,
             "max_drawdown": 10.332665,
-            "volatility": 10.70717,
-            "sharpe": 0.670736
+            "volatility": 10.704078,
+            "sharpe": 0.669623
           },
           "metrics": {
-            "annualized_return": 0.07092501000000001,
+            "annualized_return": 0.07078569,
             "max_drawdown": -0.10332665,
-            "annualized_volatility": 0.10707169999999999,
-            "sharpe": 0.670736
+            "annualized_volatility": 0.10704078,
+            "sharpe": 0.669623
           },
           "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1699
+          "end": "2026-07-03",
+          "point_count": 1700
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 4.740772,
+            "annualized": 4.732548,
             "max_drawdown": 12.077698,
-            "volatility": 9.542658,
-            "sharpe": 0.516147
+            "volatility": 9.540866,
+            "sharpe": 0.51538
           },
           "metrics": {
-            "annualized_return": 0.04740772,
-            "max_drawdown": -0.12077697999999999,
-            "annualized_volatility": 0.09542658,
-            "sharpe": 0.516147
+            "annualized_return": 0.04732548,
+            "max_drawdown": -0.12077698,
+            "annualized_volatility": 0.09540866,
+            "sharpe": 0.51538
           },
           "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2611
+          "end": "2026-07-03",
+          "point_count": 2612
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 6.748497,
+            "annualized": 6.728628,
             "max_drawdown": 10.020371,
-            "volatility": 10.310613,
-            "sharpe": 0.661008
+            "volatility": 10.306322,
+            "sharpe": 0.659357
           },
           "metrics": {
-            "annualized_return": 0.06748497,
+            "annualized_return": 0.06728628,
             "max_drawdown": -0.10020371,
-            "annualized_volatility": 0.10310613,
-            "sharpe": 0.661008
+            "annualized_volatility": 0.10306322,
+            "sharpe": 0.659357
           },
           "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1178
-        }
-      }
-    },
-    {
-      "title": "全球修复传染控制",
-      "id": "core-gold-satellite-contagion-repair-momentum",
-      "metrics_by_slice": {
-        "full": {
-          "metrics_percent": {
-            "annualized": 3.993333,
-            "max_drawdown": 26.429286,
-            "volatility": 8.622812,
-            "sharpe": 0.482476
-          },
-          "metrics": {
-            "annualized_return": 0.039933329999999996,
-            "max_drawdown": -0.26429286,
-            "annualized_volatility": 0.08622811999999999,
-            "sharpe": 0.482476
-          },
-          "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6381
-        },
-        "since2020": {
-          "metrics_percent": {
-            "annualized": 4.719092,
-            "max_drawdown": 16.161798,
-            "volatility": 9.947874,
-            "sharpe": 0.496825
-          },
-          "metrics": {
-            "annualized_return": 0.04719092,
-            "max_drawdown": -0.16161798000000002,
-            "annualized_volatility": 0.09947874000000001,
-            "sharpe": 0.496825
-          },
-          "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1699
-        },
-        "last10y": {
-          "metrics_percent": {
-            "annualized": 0.93108,
-            "max_drawdown": 26.429286,
-            "volatility": 8.749634,
-            "sharpe": 0.146048
-          },
-          "metrics": {
-            "annualized_return": 0.009310800000000001,
-            "max_drawdown": -0.26429286,
-            "annualized_volatility": 0.08749634,
-            "sharpe": 0.146048
-          },
-          "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2611
-        },
-        "since2022": {
-          "metrics_percent": {
-            "annualized": 5.040329,
-            "max_drawdown": 14.355605,
-            "volatility": 9.960543,
-            "sharpe": 0.524881
-          },
-          "metrics": {
-            "annualized_return": 0.050403289999999996,
-            "max_drawdown": -0.14355605000000002,
-            "annualized_volatility": 0.09960543,
-            "sharpe": 0.524881
-          },
-          "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1178
-        }
-      }
-    },
-    {
-      "title": "美元现金修复策略",
-      "id": "core-gold-satellite-currency-cash-momentum",
-      "metrics_by_slice": {
-        "full": {
-          "metrics_percent": {
-            "annualized": 1.152928,
-            "max_drawdown": 25.255561,
-            "volatility": 6.830661,
-            "sharpe": 0.196466
-          },
-          "metrics": {
-            "annualized_return": 0.01152928,
-            "max_drawdown": -0.25255561,
-            "annualized_volatility": 0.06830661,
-            "sharpe": 0.196466
-          },
-          "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6384
-        },
-        "since2020": {
-          "metrics_percent": {
-            "annualized": 0.029114,
-            "max_drawdown": 13.739688,
-            "volatility": 8.182114,
-            "sharpe": 0.0444
-          },
-          "metrics": {
-            "annualized_return": 0.00029114,
-            "max_drawdown": -0.13739688,
-            "annualized_volatility": 0.08182114,
-            "sharpe": 0.0444
-          },
-          "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1700
-        },
-        "last10y": {
-          "metrics_percent": {
-            "annualized": -0.657667,
-            "max_drawdown": 15.424323,
-            "volatility": 7.479002,
-            "sharpe": -0.047622
-          },
-          "metrics": {
-            "annualized_return": -0.00657667,
-            "max_drawdown": -0.15424322999999998,
-            "annualized_volatility": 0.07479002,
-            "sharpe": -0.047622
-          },
-          "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2612
-        },
-        "since2022": {
-          "metrics_percent": {
-            "annualized": 0.527486,
-            "max_drawdown": 13.739688,
-            "volatility": 8.379613,
-            "sharpe": 0.10231
-          },
-          "metrics": {
-            "annualized_return": 0.00527486,
-            "max_drawdown": -0.13739688,
-            "annualized_volatility": 0.08379613000000001,
-            "sharpe": 0.10231
-          },
-          "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1179
-        }
-      }
-    },
-    {
-      "title": "黄金恐慌锁盈策略",
-      "id": "core-gold-satellite-gold-panic-lock-momentum",
-      "metrics_by_slice": {
-        "full": {
-          "metrics_percent": {
-            "annualized": 1.064885,
-            "max_drawdown": 25.443077,
-            "volatility": 6.816375,
-            "sharpe": 0.184382
-          },
-          "metrics": {
-            "annualized_return": 0.010648850000000001,
-            "max_drawdown": -0.25443077,
-            "annualized_volatility": 0.06816375,
-            "sharpe": 0.184382
-          },
-          "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6384
-        },
-        "since2020": {
-          "metrics_percent": {
-            "annualized": -0.059152,
-            "max_drawdown": 13.739688,
-            "volatility": 8.155514,
-            "sharpe": 0.033846
-          },
-          "metrics": {
-            "annualized_return": -0.00059152,
-            "max_drawdown": -0.13739688,
-            "annualized_volatility": 0.08155514,
-            "sharpe": 0.033846
-          },
-          "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1700
-        },
-        "last10y": {
-          "metrics_percent": {
-            "annualized": -0.682727,
-            "max_drawdown": 15.479138,
-            "volatility": 7.4586,
-            "sharpe": -0.05122
-          },
-          "metrics": {
-            "annualized_return": -0.00682727,
-            "max_drawdown": -0.15479138,
-            "annualized_volatility": 0.074586,
-            "sharpe": -0.05122
-          },
-          "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2612
-        },
-        "since2022": {
-          "metrics_percent": {
-            "annualized": 0.399236,
-            "max_drawdown": 13.739688,
-            "volatility": 8.342148,
-            "sharpe": 0.087684
-          },
-          "metrics": {
-            "annualized_return": 0.0039923599999999995,
-            "max_drawdown": -0.13739688,
-            "annualized_volatility": 0.08342147999999999,
-            "sharpe": 0.087684
-          },
-          "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1179
-        }
-      }
-    },
-    {
-      "title": "风险效率增强策略",
-      "id": "core-gold-satellite-risk-efficiency-momentum",
-      "metrics_by_slice": {
-        "full": {
-          "metrics_percent": {
-            "annualized": 0.984502,
-            "max_drawdown": 26.881849,
-            "volatility": 6.797656,
-            "sharpe": 0.173386
-          },
-          "metrics": {
-            "annualized_return": 0.00984502,
-            "max_drawdown": -0.26881848999999997,
-            "annualized_volatility": 0.06797656,
-            "sharpe": 0.173386
-          },
-          "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6384
-        },
-        "since2020": {
-          "metrics_percent": {
-            "annualized": -0.358456,
-            "max_drawdown": 15.404307,
-            "volatility": 8.096421,
-            "sharpe": -0.002194
-          },
-          "metrics": {
-            "annualized_return": -0.00358456,
-            "max_drawdown": -0.15404307,
-            "annualized_volatility": 0.08096421,
-            "sharpe": -0.002194
-          },
-          "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1700
-        },
-        "last10y": {
-          "metrics_percent": {
-            "annualized": -0.876204,
-            "max_drawdown": 17.11019,
-            "volatility": 7.416535,
-            "sharpe": -0.077287
-          },
-          "metrics": {
-            "annualized_return": -0.00876204,
-            "max_drawdown": -0.1711019,
-            "annualized_volatility": 0.07416534999999999,
-            "sharpe": -0.077287
-          },
-          "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2612
-        },
-        "since2022": {
-          "metrics_percent": {
-            "annualized": -0.035273,
-            "max_drawdown": 15.404307,
-            "volatility": 8.25877,
-            "sharpe": 0.037263
-          },
-          "metrics": {
-            "annualized_return": -0.00035273,
-            "max_drawdown": -0.15404307,
-            "annualized_volatility": 0.0825877,
-            "sharpe": 0.037263
-          },
-          "start": "2022-01-03",
-          "end": "2026-07-02",
+          "end": "2026-07-03",
           "point_count": 1179
         }
       }
@@ -1137,71 +767,71 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 7.616501,
+            "annualized": 7.612103,
             "max_drawdown": 16.800822,
-            "volatility": 9.908325,
-            "sharpe": 0.766758
+            "volatility": 9.907572,
+            "sharpe": 0.766377
           },
           "metrics": {
-            "annualized_return": 0.07616501,
+            "annualized_return": 0.07612103,
             "max_drawdown": -0.16800822,
-            "annualized_volatility": 0.09908325,
-            "sharpe": 0.766758
+            "annualized_volatility": 0.09907572,
+            "sharpe": 0.766377
           },
           "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6377
+          "end": "2026-07-03",
+          "point_count": 6378
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 9.353787,
+            "annualized": 9.336212,
             "max_drawdown": 11.718055,
-            "volatility": 11.146813,
-            "sharpe": 0.829371
+            "volatility": 11.143621,
+            "sharpe": 0.828056
           },
           "metrics": {
-            "annualized_return": 0.09353787000000001,
+            "annualized_return": 0.09336212,
             "max_drawdown": -0.11718055,
-            "annualized_volatility": 0.11146813,
-            "sharpe": 0.829371
+            "annualized_volatility": 0.11143621,
+            "sharpe": 0.828056
           },
           "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1699
+          "end": "2026-07-03",
+          "point_count": 1700
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 5.870225,
+            "annualized": 5.8601,
             "max_drawdown": 16.800822,
-            "volatility": 10.107077,
-            "sharpe": 0.595211
+            "volatility": 10.105192,
+            "sharpe": 0.59433
           },
           "metrics": {
-            "annualized_return": 0.05870225,
+            "annualized_return": 0.058601,
             "max_drawdown": -0.16800822,
-            "annualized_volatility": 0.10107077,
-            "sharpe": 0.595211
+            "annualized_volatility": 0.10105192,
+            "sharpe": 0.59433
           },
           "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2611
+          "end": "2026-07-03",
+          "point_count": 2612
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 8.456265,
+            "annualized": 8.431609,
             "max_drawdown": 11.718055,
-            "volatility": 10.886733,
-            "sharpe": 0.771915
+            "volatility": 10.882234,
+            "sharpe": 0.770007
           },
           "metrics": {
-            "annualized_return": 0.08456265,
+            "annualized_return": 0.08431609,
             "max_drawdown": -0.11718055,
-            "annualized_volatility": 0.10886733,
-            "sharpe": 0.771915
+            "annualized_volatility": 0.10882234,
+            "sharpe": 0.770007
           },
           "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1178
+          "end": "2026-07-03",
+          "point_count": 1179
         }
       }
     },
@@ -1211,145 +841,367 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 8.234083,
+            "annualized": 8.229693,
             "max_drawdown": 16.876914,
-            "volatility": 9.862278,
-            "sharpe": 0.826052
+            "volatility": 9.861529,
+            "sharpe": 0.825674
           },
           "metrics": {
-            "annualized_return": 0.08234083,
-            "max_drawdown": -0.16876913999999998,
-            "annualized_volatility": 0.09862278,
-            "sharpe": 0.826052
+            "annualized_return": 0.08229693,
+            "max_drawdown": -0.16876914,
+            "annualized_volatility": 0.09861529,
+            "sharpe": 0.825674
           },
           "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6377
+          "end": "2026-07-03",
+          "point_count": 6378
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 9.265787,
+            "annualized": 9.248652,
             "max_drawdown": 12.675181,
-            "volatility": 11.027586,
-            "sharpe": 0.830098
+            "volatility": 11.024426,
+            "sharpe": 0.828803
           },
           "metrics": {
-            "annualized_return": 0.09265786999999999,
+            "annualized_return": 0.09248652,
             "max_drawdown": -0.12675181,
-            "annualized_volatility": 0.11027585999999999,
-            "sharpe": 0.830098
+            "annualized_volatility": 0.11024426,
+            "sharpe": 0.828803
           },
           "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1699
+          "end": "2026-07-03",
+          "point_count": 1700
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 5.648876,
+            "annualized": 5.639076,
             "max_drawdown": 16.876914,
-            "volatility": 9.954088,
-            "sharpe": 0.582523
+            "volatility": 9.95223,
+            "sharpe": 0.581655
           },
           "metrics": {
-            "annualized_return": 0.05648876,
-            "max_drawdown": -0.16876913999999998,
-            "annualized_volatility": 0.09954088,
-            "sharpe": 0.582523
+            "annualized_return": 0.05639076,
+            "max_drawdown": -0.16876914,
+            "annualized_volatility": 0.0995223,
+            "sharpe": 0.581655
           },
           "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2611
+          "end": "2026-07-03",
+          "point_count": 2612
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 8.635138,
+            "annualized": 8.610892,
             "max_drawdown": 12.665348,
-            "volatility": 10.888067,
-            "sharpe": 0.786394
+            "volatility": 10.883563,
+            "sharpe": 0.784526
           },
           "metrics": {
-            "annualized_return": 0.08635137999999999,
-            "max_drawdown": -0.12665347999999998,
-            "annualized_volatility": 0.10888067,
-            "sharpe": 0.786394
+            "annualized_return": 0.08610892,
+            "max_drawdown": -0.12665348,
+            "annualized_volatility": 0.10883563,
+            "sharpe": 0.784526
           },
           "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1178
+          "end": "2026-07-03",
+          "point_count": 1179
         }
       }
     },
     {
-      "title": "双金丝雀动量防守",
-      "id": "canary-momentum-defense",
+      "title": "MA20趋势",
+      "id": "basic-ma20-trend",
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 2.501312,
-            "max_drawdown": 23.889125,
-            "volatility": 7.230871,
-            "sharpe": 0.366958
+            "annualized": -20.066197,
+            "max_drawdown": 99.585863,
+            "volatility": 12.638609,
+            "sharpe": -1.650954
           },
           "metrics": {
-            "annualized_return": 0.02501312,
-            "max_drawdown": -0.23889125,
-            "annualized_volatility": 0.07230871,
-            "sharpe": 0.366958
+            "annualized_return": -0.20066197,
+            "max_drawdown": -0.99585863,
+            "annualized_volatility": 0.12638609,
+            "sharpe": -1.650954
           },
           "start": "2002-01-04",
-          "end": "2026-07-02",
-          "point_count": 6377
+          "end": "2026-07-03",
+          "point_count": 6378
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 2.582996,
-            "max_drawdown": 23.34309,
-            "volatility": 7.447098,
-            "sharpe": 0.367496
+            "annualized": -28.51151,
+            "max_drawdown": 88.839413,
+            "volatility": 11.925576,
+            "sharpe": -2.65168
           },
           "metrics": {
-            "annualized_return": 0.02582996,
-            "max_drawdown": -0.2334309,
-            "annualized_volatility": 0.07447098,
-            "sharpe": 0.367496
+            "annualized_return": -0.2851151,
+            "max_drawdown": -0.88839413,
+            "annualized_volatility": 0.11925576,
+            "sharpe": -2.65168
           },
           "start": "2020-01-02",
-          "end": "2026-07-02",
-          "point_count": 1699
+          "end": "2026-07-03",
+          "point_count": 1700
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 1.31622,
-            "max_drawdown": 23.34309,
-            "volatility": 6.676988,
-            "sharpe": 0.222408
+            "annualized": -25.403324,
+            "max_drawdown": 94.773025,
+            "volatility": 11.543305,
+            "sharpe": -2.390218
           },
           "metrics": {
-            "annualized_return": 0.013162199999999999,
-            "max_drawdown": -0.2334309,
-            "annualized_volatility": 0.06676988,
-            "sharpe": 0.222408
+            "annualized_return": -0.25403324,
+            "max_drawdown": -0.94773025,
+            "annualized_volatility": 0.11543305,
+            "sharpe": -2.390218
           },
           "start": "2016-07-04",
-          "end": "2026-07-02",
-          "point_count": 2611
+          "end": "2026-07-03",
+          "point_count": 2612
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 2.815445,
-            "max_drawdown": 18.156724,
-            "volatility": 7.438087,
-            "sharpe": 0.396322
+            "annualized": -24.831729,
+            "max_drawdown": 72.285754,
+            "volatility": 10.810383,
+            "sharpe": -2.483976
           },
           "metrics": {
-            "annualized_return": 0.02815445,
-            "max_drawdown": -0.18156724000000002,
-            "annualized_volatility": 0.07438087,
-            "sharpe": 0.396322
+            "annualized_return": -0.24831729,
+            "max_drawdown": -0.72285754,
+            "annualized_volatility": 0.10810383,
+            "sharpe": -2.483976
           },
           "start": "2022-01-03",
-          "end": "2026-07-02",
-          "point_count": 1178
+          "end": "2026-07-03",
+          "point_count": 1179
+        }
+      }
+    },
+    {
+      "title": "MA60趋势",
+      "id": "basic-ma60-trend",
+      "metrics_by_slice": {
+        "full": {
+          "metrics_percent": {
+            "annualized": -6.673395,
+            "max_drawdown": 86.658624,
+            "volatility": 11.711282,
+            "sharpe": -0.511926
+          },
+          "metrics": {
+            "annualized_return": -0.06673395,
+            "max_drawdown": -0.86658624,
+            "annualized_volatility": 0.11711282,
+            "sharpe": -0.511926
+          },
+          "start": "2002-01-04",
+          "end": "2026-07-03",
+          "point_count": 6378
+        },
+        "since2020": {
+          "metrics_percent": {
+            "annualized": -9.894995,
+            "max_drawdown": 49.734103,
+            "volatility": 11.185731,
+            "sharpe": -0.841927
+          },
+          "metrics": {
+            "annualized_return": -0.09894995,
+            "max_drawdown": -0.49734103,
+            "annualized_volatility": 0.11185731,
+            "sharpe": -0.841927
+          },
+          "start": "2020-01-02",
+          "end": "2026-07-03",
+          "point_count": 1700
+        },
+        "last10y": {
+          "metrics_percent": {
+            "annualized": -9.032667,
+            "max_drawdown": 63.311743,
+            "volatility": 10.746581,
+            "sharpe": -0.795993
+          },
+          "metrics": {
+            "annualized_return": -0.09032667,
+            "max_drawdown": -0.63311743,
+            "annualized_volatility": 0.10746581,
+            "sharpe": -0.795993
+          },
+          "start": "2016-07-04",
+          "end": "2026-07-03",
+          "point_count": 2612
+        },
+        "since2022": {
+          "metrics_percent": {
+            "annualized": -5.882898,
+            "max_drawdown": 23.857767,
+            "volatility": 10.283082,
+            "sharpe": -0.51574
+          },
+          "metrics": {
+            "annualized_return": -0.05882898,
+            "max_drawdown": -0.23857767,
+            "annualized_volatility": 0.10283082,
+            "sharpe": -0.51574
+          },
+          "start": "2022-01-03",
+          "end": "2026-07-03",
+          "point_count": 1179
+        }
+      }
+    },
+    {
+      "title": "MA金叉死叉",
+      "id": "basic-ma-golden-cross",
+      "metrics_by_slice": {
+        "full": {
+          "metrics_percent": {
+            "annualized": 1.333183,
+            "max_drawdown": 40.770832,
+            "volatility": 9.978074,
+            "sharpe": 0.178551
+          },
+          "metrics": {
+            "annualized_return": 0.01333183,
+            "max_drawdown": -0.40770832,
+            "annualized_volatility": 0.09978074,
+            "sharpe": 0.178551
+          },
+          "start": "2002-01-04",
+          "end": "2026-07-03",
+          "point_count": 6378
+        },
+        "since2020": {
+          "metrics_percent": {
+            "annualized": 0.250304,
+            "max_drawdown": 29.414429,
+            "volatility": 9.159857,
+            "sharpe": 0.072209
+          },
+          "metrics": {
+            "annualized_return": 0.00250304,
+            "max_drawdown": -0.29414429,
+            "annualized_volatility": 0.09159857,
+            "sharpe": 0.072209
+          },
+          "start": "2020-01-02",
+          "end": "2026-07-03",
+          "point_count": 1700
+        },
+        "last10y": {
+          "metrics_percent": {
+            "annualized": 1.798269,
+            "max_drawdown": 29.414429,
+            "volatility": 8.430906,
+            "sharpe": 0.246182
+          },
+          "metrics": {
+            "annualized_return": 0.01798269,
+            "max_drawdown": -0.29414429,
+            "annualized_volatility": 0.08430906,
+            "sharpe": 0.246182
+          },
+          "start": "2016-07-04",
+          "end": "2026-07-03",
+          "point_count": 2612
+        },
+        "since2022": {
+          "metrics_percent": {
+            "annualized": 0.874392,
+            "max_drawdown": 18.133303,
+            "volatility": 8.415953,
+            "sharpe": 0.141641
+          },
+          "metrics": {
+            "annualized_return": 0.00874392,
+            "max_drawdown": -0.18133303,
+            "annualized_volatility": 0.08415953,
+            "sharpe": 0.141641
+          },
+          "start": "2022-01-03",
+          "end": "2026-07-03",
+          "point_count": 1179
+        }
+      }
+    },
+    {
+      "title": "BOLL下轨反弹",
+      "id": "basic-boll-mean-reversion",
+      "metrics_by_slice": {
+        "full": {
+          "metrics_percent": {
+            "annualized": -5.296551,
+            "max_drawdown": 74.017393,
+            "volatility": 7.735748,
+            "sharpe": -0.642157
+          },
+          "metrics": {
+            "annualized_return": -0.05296551,
+            "max_drawdown": -0.74017393,
+            "annualized_volatility": 0.07735748,
+            "sharpe": -0.642157
+          },
+          "start": "2002-01-04",
+          "end": "2026-07-03",
+          "point_count": 6378
+        },
+        "since2020": {
+          "metrics_percent": {
+            "annualized": -4.245098,
+            "max_drawdown": 26.204531,
+            "volatility": 9.223034,
+            "sharpe": -0.407323
+          },
+          "metrics": {
+            "annualized_return": -0.04245098,
+            "max_drawdown": -0.26204531,
+            "annualized_volatility": 0.09223034,
+            "sharpe": -0.407323
+          },
+          "start": "2020-01-02",
+          "end": "2026-07-03",
+          "point_count": 1700
+        },
+        "last10y": {
+          "metrics_percent": {
+            "annualized": -4.003647,
+            "max_drawdown": 34.341307,
+            "volatility": 8.082265,
+            "sharpe": -0.447329
+          },
+          "metrics": {
+            "annualized_return": -0.04003647,
+            "max_drawdown": -0.34341307,
+            "annualized_volatility": 0.08082265,
+            "sharpe": -0.447329
+          },
+          "start": "2016-07-04",
+          "end": "2026-07-03",
+          "point_count": 2612
+        },
+        "since2022": {
+          "metrics_percent": {
+            "annualized": -3.613754,
+            "max_drawdown": 15.94759,
+            "volatility": 7.766289,
+            "sharpe": -0.41711
+          },
+          "metrics": {
+            "annualized_return": -0.03613754,
+            "max_drawdown": -0.1594759,
+            "annualized_volatility": 0.07766289,
+            "sharpe": -0.41711
+          },
+          "start": "2022-01-03",
+          "end": "2026-07-03",
+          "point_count": 1179
         }
       }
     }

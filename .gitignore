@@ -9,6 +9,9 @@ DerivedData/
 # macOS
 .DS_Store
 
+# Local agent scratch space
+.ai-bridge/
+
 # Python / local script byproducts
 __pycache__/
 *.py[cod]
