@@ -14,12 +14,28 @@ import os
 import subprocess
 import sys
 import tempfile
+import urllib.parse
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_PATH = ROOT / "tools" / "expected_backtest_metrics" / "app" / "app_engine_strategy_baseline.json"
+FIXTURE_PATH = ROOT / "tools" / "fixtures" / "backtest-history" / "public_history.json"
+HISTORY_SYMBOLS = [
+    "gold_cny",
+    "nasdaq_composite",
+    "sp500",
+    "dow_jones",
+    "hang_seng",
+    "nikkei225",
+    "csi300",
+    "shanghai_composite",
+    "shenzhen_component",
+    "chinext",
+    "usd_per_cny",
+]
 SWIFT_SOURCES = [
     "AssetTimeMachine/Backtest/BacktestModels.swift",
     "AssetTimeMachine/Backtest/BacktestEngine.swift",
@@ -88,9 +104,50 @@ def compile_dump_tool(sources: list[Path], output: Path) -> None:
         raise RuntimeError("swiftc failed:\n" + result.stdout + result.stderr)
 
 
-def dump_slice_metrics(binary: Path) -> str:
+def dump_tool_supports_history_fixture(sources: list[Path]) -> bool:
+    return any("ATM_HISTORY_FIXTURE" in path.read_text(encoding="utf-8") for path in sources)
+
+
+def validate_history_payload(payload: dict) -> None:
+    if not payload.get("success") or not payload.get("series"):
+        raise RuntimeError("history fixture refresh returned an invalid payload")
+    series = payload.get("series") or []
+    symbols = [row.get("symbol") for row in series]
+    missing = sorted(set(HISTORY_SYMBOLS) - set(symbols))
+    if missing:
+        raise RuntimeError(f"history fixture refresh missing symbols: {', '.join(missing)}")
+    for row in series:
+        symbol = row.get("symbol", "<unknown>")
+        dates = row.get("dates") or []
+        prices = row.get("prices") or []
+        if not dates or not prices:
+            raise RuntimeError(f"history fixture series is empty: {symbol}")
+        if len(dates) != len(prices):
+            raise RuntimeError(f"history fixture date/price length mismatch: {symbol}")
+
+
+def refresh_fixture(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    query = urllib.parse.urlencode(
+        {
+            "symbols": ",".join(HISTORY_SYMBOLS),
+            "period": "all",
+            "include_ohlc": "false",
+        }
+    )
+    url = f"https://api.flyingrtx.com/api/v1/money/public/history?{query}"
+    with urllib.request.urlopen(url, timeout=60) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    validate_history_payload(payload)
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def dump_slice_metrics(binary: Path, *, fixture: Path | None) -> str:
     env = os.environ.copy()
     env["ATM_DUMP_SLICES"] = "1"
+    env.pop("ATM_HISTORY_FIXTURE", None)
+    if fixture is not None:
+        env["ATM_HISTORY_FIXTURE"] = str(fixture)
     result = run([str(binary)], env=env, capture=True)
     if result.returncode != 0:
         raise RuntimeError("strategy metric dump failed:\n" + result.stdout + result.stderr)
@@ -183,6 +240,9 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Verify App BacktestEngine expected metrics.")
     parser.add_argument("--ref", help="Verify Swift sources from a git ref, e.g. HEAD. Defaults to current working tree.")
     parser.add_argument("--baseline", type=Path, default=BASELINE_PATH, help="Expected baseline JSON path.")
+    parser.add_argument("--fixture", type=Path, default=FIXTURE_PATH, help="Pinned public-history fixture used by default.")
+    parser.add_argument("--live-history", action="store_true", help="Use the live market-history endpoint instead of the pinned fixture.")
+    parser.add_argument("--refresh-fixture", action="store_true", help="Refresh the pinned fixture from the live market-history endpoint before verifying.")
     parser.add_argument(
         "--metric-tolerance",
         type=float,
@@ -191,12 +251,29 @@ def main(argv: Iterable[str] | None = None) -> int:
     )
     args = parser.parse_args(list(argv) if argv is not None else None)
 
+    if args.live_history and args.refresh_fixture:
+        parser.error("--live-history and --refresh-fixture are mutually exclusive")
+
+    fixture: Path | None = None
+    if not args.live_history:
+        fixture_path: Path = args.fixture
+        if args.refresh_fixture:
+            refresh_fixture(fixture_path)
+        if not fixture_path.exists():
+            raise RuntimeError(f"history fixture not found: {fixture_path}. Run with --refresh-fixture once.")
+        fixture = fixture_path
+
     with tempfile.TemporaryDirectory(prefix="atm-backtest-verify-") as tmp:
         temp_dir = Path(tmp)
         sources = source_paths(args.ref, temp_dir)
+        if fixture is not None and not dump_tool_supports_history_fixture(sources):
+            raise RuntimeError(
+                "selected Swift sources do not support ATM_HISTORY_FIXTURE; "
+                "use a ref that includes the pinned-fixture verifier change or pass --live-history"
+            )
         binary = temp_dir / "strategy_metric_dump"
         compile_dump_tool(sources, binary)
-        output = dump_slice_metrics(binary)
+        output = dump_slice_metrics(binary, fixture=fixture)
 
     actual = parse_dump_csv(output)
     expected = expected_rows(args.baseline)
@@ -205,6 +282,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         print("Backtest metric verification FAILED")
         print(f"baseline: {args.baseline}")
         print(f"source ref: {args.ref or 'working-tree'}")
+        print(f"history: {'live' if fixture is None else fixture}")
         print(f"expected rows: {len(expected)}, actual rows: {len(actual)}")
         for failure in failures[:80]:
             print("- " + failure)
@@ -214,6 +292,7 @@ def main(argv: Iterable[str] | None = None) -> int:
 
     print("Backtest metric verification OK")
     print(f"source ref: {args.ref or 'working-tree'}")
+    print(f"history: {'live' if fixture is None else fixture}")
     print(f"strategies: {len({strategy_id for strategy_id, _ in expected})}")
     print(f"rows: {len(expected)}")
     print(f"slices: {', '.join(sorted(REQUIRED_SLICES))}")

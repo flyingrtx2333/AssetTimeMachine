@@ -104,6 +104,7 @@ Recommended quick preflight before shipping:
 
 ```bash
 git diff --check
+python3 tools/verify_expected_backtest_metrics.py --ref HEAD
 xcodebuild \
   -project AssetTimeMachine.xcodeproj \
   -scheme AssetTimeMachine \
@@ -111,6 +112,8 @@ xcodebuild \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
   build
 ```
+
+Backtest golden metrics use the pinned fixture at `tools/fixtures/backtest-history/public_history.json` by default, so normal verification is stable and does not drift when the live market-history endpoint backfills data. Use `--live-history` only for explicit live-data checks. Use `--refresh-fixture` deliberately when updating the pinned history snapshot and review the resulting baseline diff.
 
 ## Running on iOS Simulator
 

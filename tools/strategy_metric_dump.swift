@@ -227,7 +227,21 @@ struct PublicHistoryResponse: Codable {
 enum RemoteMarketClient {
     static let baseURL = URL(string: "https://api.flyingrtx.com")!
 
+    private static func fixtureHistoryResponseIfConfigured() throws -> PublicHistoryResponse? {
+        guard let fixturePath = ProcessInfo.processInfo.environment["ATM_HISTORY_FIXTURE"],
+              !fixturePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        let fixtureURL = URL(fileURLWithPath: fixturePath)
+        let data = try Data(contentsOf: fixtureURL)
+        return try JSONDecoder().decode(PublicHistoryResponse.self, from: data)
+    }
+
     static func fetchHistory(symbols: [String], period: String? = nil, includeOHLC: Bool = false) async throws -> PublicHistoryResponse {
+        if let fixtureResponse = try fixtureHistoryResponseIfConfigured() {
+            return fixtureResponse
+        }
+
         var components = URLComponents(url: baseURL.appendingPathComponent("/api/v1/money/public/history"), resolvingAgainstBaseURL: false)!
         components.queryItems = [
             URLQueryItem(name: "symbols", value: symbols.joined(separator: ",")),

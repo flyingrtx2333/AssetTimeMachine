@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-04T10:11:06",
-  "source": "tools/strategy_metric_dump.swift ATM_DUMP_SLICES=1 via xcrun swiftc working-tree",
+  "generated_at": "2026-07-04T10:35:00+08:00",
+  "source": "tools/strategy_metric_dump.swift ATM_DUMP_SLICES=1 with pinned tools/fixtures/backtest-history/public_history.json",
   "baseline_type": "app_backtest_engine_baseline_not_full_app_equivalent_replay",
   "command": "python3 tools/verify_expected_backtest_metrics.py",
   "assumptions": {
@@ -1206,5 +1206,21 @@
         }
       }
     }
-  ]
+  ],
+  "history_fixture": "tools/fixtures/backtest-history/public_history.json",
+  "history_fixture_series_count": 11,
+  "history_fixture_symbols": [
+    "gold_cny",
+    "nasdaq_composite",
+    "sp500",
+    "dow_jones",
+    "hang_seng",
+    "nikkei225",
+    "csi300",
+    "shanghai_composite",
+    "shenzhen_component",
+    "chinext",
+    "usd_per_cny"
+  ],
+  "history_fixture_max_end": "2026-07-04"
 }
