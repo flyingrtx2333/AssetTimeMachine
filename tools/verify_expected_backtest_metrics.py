@@ -38,6 +38,7 @@ HISTORY_SYMBOLS = [
 ]
 SWIFT_SOURCES = [
     "AssetTimeMachine/Backtest/BacktestModels.swift",
+    "AssetTimeMachine/Backtest/BacktestMetricsCalculator.swift",
     "AssetTimeMachine/Backtest/BacktestEngine.swift",
     "tools/strategy_metric_dump.swift",
 ]
