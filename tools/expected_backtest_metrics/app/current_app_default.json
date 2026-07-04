@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-04T02:23:29",
+  "generated_at": "2026-07-04T10:11:06",
   "source": "tools/strategy_metric_dump.swift ATM_DUMP_SLICES=1 via xcrun swiftc working-tree",
   "baseline_type": "app_backtest_engine_baseline_not_full_app_equivalent_replay",
   "command": "python3 tools/verify_expected_backtest_metrics.py",
@@ -18,7 +18,8 @@
     ],
     "full_slice_source": "AdvancedBacktestReport metrics",
     "non_full_slice_source": "BacktestSeriesPoint portfolio curve recalculation",
-    "verified_source_ref": "working-tree"
+    "verified_source_ref": "working-tree",
+    "note": "Uses live public history data; refresh only when live endpoint revisions are intentional. Structural strategy/slice drift remains a hard failure."
   },
   "status": "product_default_strategy_confirmed_from_StrategyNotificationDefaults.defaultTemplateID",
   "product_default_confirmed": true,
