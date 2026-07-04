@@ -319,43 +319,17 @@ nonisolated enum BacktestEngine {
         )
     }
 
-    private struct PreparedAdvancedSeries {
-        let assetOption: BacktestAssetOption
-        let pricePoints: [(date: Date, cnyPrice: Double)]
-        let ma20: [Double?]
-        let ma60: [Double?]
-        let boll20: [(middle: Double, lower: Double, upper: Double)?]
-    }
-
     private static func preparedAdvancedSeries(
         assetSeries: PublicHistorySeries?,
         assetOption: BacktestAssetOption,
         fxSeries: PublicHistorySeries?
     ) -> PreparedAdvancedSeries? {
-        guard let assetSeries else { return nil }
-
-        let fxLookup: HistoricalLookup?
-        if assetOption.requiresHistoricalFX {
-            guard let lookup = makeHistoricalLookup(from: fxSeries), !lookup.points.isEmpty else { return nil }
-            fxLookup = lookup
-        } else {
-            fxLookup = nil
-        }
-
-        let assetPricePoints = normalizedPricePoints(from: assetSeries)
-        let pricePoints: [(date: Date, cnyPrice: Double)] = assetPricePoints.compactMap { point in
-            guard let cnyPrice = cnyPrice(for: point, assetOption: assetOption, fxLookup: fxLookup) else { return nil }
-            return (date: point.date, cnyPrice: cnyPrice)
-        }
-        guard pricePoints.count >= 2 else { return nil }
-
-        let prices = pricePoints.map { $0.cnyPrice }
-        return PreparedAdvancedSeries(
+        BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+            assetSeries: assetSeries,
             assetOption: assetOption,
-            pricePoints: pricePoints,
-            ma20: movingAverage(values: prices, period: 20),
-            ma60: movingAverage(values: prices, period: 60),
-            boll20: bollingerBands(values: prices, period: 20, multiplier: 2)
+            fxSeries: fxSeries,
+            movingAverage: { values, period in movingAverage(values: values, period: period) },
+            bollingerBands: { values, period, multiplier in bollingerBands(values: values, period: period, multiplier: multiplier) }
         )
     }
 
