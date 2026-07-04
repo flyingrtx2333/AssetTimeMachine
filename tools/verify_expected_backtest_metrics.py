@@ -40,6 +40,7 @@ SWIFT_SOURCES = [
     "AssetTimeMachine/Backtest/BacktestModels.swift",
     "AssetTimeMachine/Backtest/BacktestMetricsCalculator.swift",
     "AssetTimeMachine/Backtest/BacktestSeriesAlignment.swift",
+    "AssetTimeMachine/Backtest/BacktestFXConverter.swift",
     "AssetTimeMachine/Backtest/BacktestEngine.swift",
     "tools/strategy_metric_dump.swift",
 ]
