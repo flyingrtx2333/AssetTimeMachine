@@ -486,12 +486,6 @@ struct AdvancedBacktestView: View {
                     advancedStaticRow(
                         title: AppLocalization.string("策略模式"),
                         value: strategyMode.title,
-                        showsDivider: true
-                    )
-
-                    advancedStaticRow(
-                        title: AppLocalization.string("轮动规则"),
-                        value: strategyMode.ruleSummary,
                         showsDivider: false
                     )
                 } else {
@@ -1112,9 +1106,8 @@ struct AdvancedBacktestView: View {
     private func advancedConfigSummary() -> String {
         if strategyMode.isRotation {
             return AppLocalization.format(
-                "%@ · %@ · 费率%.2f%% · 滑点%.2f%%",
+                "%@ · 费率%.2f%% · 滑点%.2f%%",
                 strategyMode.title,
-                strategyMode.ruleSummary,
                 feeRate,
                 slippageRate
             )
