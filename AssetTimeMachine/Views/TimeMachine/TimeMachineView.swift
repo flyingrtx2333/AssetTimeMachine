@@ -400,7 +400,13 @@ struct TimeMachineView: View {
         let descriptor = FetchDescriptor<AssetSnapshot>(
             sortBy: [SortDescriptor(\AssetSnapshot.date, order: .forward)]
         )
-        let fetched = (try? modelContext.fetch(descriptor)) ?? []
+        let fetched: [AssetSnapshot]
+        do {
+            fetched = try modelContext.fetch(descriptor)
+        } catch {
+            print("[AssetTimeMachine] fetch all snapshots for visualization failed: \(error)")
+            fetched = []
+        }
         if fetched.count > chronologicalSnapshots.count {
             cachedAllRangeSnapshots = fetched
             return fetched
@@ -434,7 +440,13 @@ struct TimeMachineView: View {
         let descriptor = FetchDescriptor<AssetSnapshot>(
             sortBy: [SortDescriptor(\AssetSnapshot.date, order: .forward)]
         )
-        let fetched = (try? modelContext.fetch(descriptor)) ?? []
+        let fetched: [AssetSnapshot]
+        do {
+            fetched = try modelContext.fetch(descriptor)
+        } catch {
+            print("[AssetTimeMachine] fetch all snapshots for surplus failed: \(error)")
+            fetched = []
+        }
         if fetched.count > chronologicalSnapshots.count {
             cachedAllSnapshotsForSurplus = fetched
             return fetched

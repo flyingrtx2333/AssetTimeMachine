@@ -2151,16 +2151,29 @@ struct AdvancedBacktestRestoreRequest {
 }
 
 enum BacktestRecordCodec {
+    private static func encodeOrFallback<T: Encodable>(
+        _ payload: T,
+        fallbackJSON: String,
+        context: String
+    ) -> Data {
+        do {
+            return try JSONEncoder().encode(payload)
+        } catch {
+            print("[AssetTimeMachine] encode backtest record \(context) failed: \(error)")
+            return Data(fallbackJSON.utf8)
+        }
+    }
+
     static func pointsData(from points: [BacktestSeriesPoint], maxCount: Int = 240) -> Data {
         let sampledPoints = sampled(points, maxCount: maxCount)
         let payload = sampledPoints.enumerated().map { index, point in
             BacktestRecordPointPayload(point: point, sequence: index)
         }
-        return (try? JSONEncoder().encode(payload)) ?? Data()
+        return encodeOrFallback(payload, fallbackJSON: "[]", context: "points")
     }
 
     static func configData(from payload: BacktestRecordConfigPayload) -> Data {
-        (try? JSONEncoder().encode(payload)) ?? Data()
+        encodeOrFallback(payload, fallbackJSON: "{}", context: "config")
     }
 
     static func cashYieldSummaryPayload(from summary: CashYieldSummary, maxRatePointCount: Int = 60) -> BacktestRecordCashYieldSummaryPayload {
@@ -2223,8 +2236,14 @@ enum BacktestRecordCodec {
     }
 
     static func decodePoints(from record: BacktestRecord) -> [BacktestSeriesPoint] {
-        guard !record.pointsJSON.isEmpty,
-              let payload = try? JSONDecoder().decode([BacktestRecordPointPayload].self, from: record.pointsJSON) else {
+        guard !record.pointsJSON.isEmpty else {
+            return []
+        }
+        let payload: [BacktestRecordPointPayload]
+        do {
+            payload = try JSONDecoder().decode([BacktestRecordPointPayload].self, from: record.pointsJSON)
+        } catch {
+            print("[AssetTimeMachine] decode backtest record points failed: title=\(record.title) kind=\(record.kindRawValue) error=\(error)")
             return []
         }
         return payload
@@ -2234,7 +2253,12 @@ enum BacktestRecordCodec {
 
     static func decodeConfig(from record: BacktestRecord) -> BacktestRecordConfigPayload? {
         guard !record.configJSON.isEmpty else { return nil }
-        return try? JSONDecoder().decode(BacktestRecordConfigPayload.self, from: record.configJSON)
+        do {
+            return try JSONDecoder().decode(BacktestRecordConfigPayload.self, from: record.configJSON)
+        } catch {
+            print("[AssetTimeMachine] decode backtest record config failed: title=\(record.title) kind=\(record.kindRawValue) error=\(error)")
+            return nil
+        }
     }
 
     static func kind(for record: BacktestRecord) -> BacktestRecordKind {

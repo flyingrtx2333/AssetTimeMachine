@@ -40,15 +40,15 @@ extension ContentView {
                 )
             }
         } else {
-            try? SeedDataService.seedDefaultCategoriesIfNeeded(in: modelContext)
+            seedDefaultCategoriesForStartup()
         }
         #else
-        try? SeedDataService.seedDefaultCategoriesIfNeeded(in: modelContext)
+        seedDefaultCategoriesForStartup()
         #endif
 
         await Task.yield()
-        try? SeedDataService.ensureDefaultFinancialItems(in: modelContext)
-        try? AssetItemService.migrateLegacyAutoPricedItemsIfNeeded(in: modelContext)
+        ensureDefaultFinancialItemsForStartup()
+        migrateLegacyAutoPricedItemsForStartup()
 
         if !hasCompletedOnboarding {
             presentOnboarding()
@@ -59,6 +59,33 @@ extension ContentView {
     func presentOnboarding() {
         onboardingReturnTab = selectedTab
         showsOnboarding = true
+    }
+
+    @MainActor
+    private func seedDefaultCategoriesForStartup() {
+        do {
+            try SeedDataService.seedDefaultCategoriesIfNeeded(in: modelContext)
+        } catch {
+            print("[AssetTimeMachine] seed default categories failed: \(error)")
+        }
+    }
+
+    @MainActor
+    private func ensureDefaultFinancialItemsForStartup() {
+        do {
+            try SeedDataService.ensureDefaultFinancialItems(in: modelContext)
+        } catch {
+            print("[AssetTimeMachine] ensure default financial items failed: \(error)")
+        }
+    }
+
+    @MainActor
+    private func migrateLegacyAutoPricedItemsForStartup() {
+        do {
+            try AssetItemService.migrateLegacyAutoPricedItemsIfNeeded(in: modelContext)
+        } catch {
+            print("[AssetTimeMachine] migrate legacy auto-priced items failed: \(error)")
+        }
     }
 
     @MainActor
