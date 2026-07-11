@@ -482,6 +482,7 @@ Pull requests should describe the user-facing change, list verification commands
 
 ## Current Known Operational Notes
 
+- Latest TestFlight release: version `1.0.6` build `140`, Delivery UUID `77688614-f8b8-4353-94a7-34206d596456`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.0.6-140`.
 - The app base API should return from `https://api.flyingrtx.com`.
 - If market-data freshness looks wrong, separate these layers before fixing:
   - app cache / `RemoteMarketStore.historySeries`
