@@ -76,7 +76,7 @@ struct PublicHistoryDailyBar: Codable, Identifiable, Equatable {
     var id: String { dateText }
 }
 
-struct PublicHistorySeries: Codable, Identifiable, Equatable {
+struct PublicHistorySeries: Codable, Identifiable, Equatable, Sendable {
     let symbol: String
     let category: String
     let label: String
@@ -309,6 +309,42 @@ private struct HistoryBatchFetchResult {
     let errorMessage: String?
 }
 
+private struct MarketHistoryCacheEntry: Codable, Sendable {
+    let savedAt: Date
+    let seriesBySymbol: [String: PublicHistorySeries]
+}
+
+private enum MarketHistoryDiskCache {
+    private static var fileURL: URL? {
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("AssetTimeMachine", isDirectory: true)
+            .appendingPathComponent("market-history-v1.json", isDirectory: false)
+    }
+
+    static func load() -> MarketHistoryCacheEntry? {
+        guard let fileURL,
+              let data = try? Data(contentsOf: fileURL) else { return nil }
+        return try? JSONDecoder().decode(MarketHistoryCacheEntry.self, from: data)
+    }
+
+    static func save(seriesBySymbol: [String: PublicHistorySeries], at date: Date) {
+        guard let fileURL else { return }
+        do {
+            try FileManager.default.createDirectory(
+                at: fileURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            let data = try JSONEncoder().encode(MarketHistoryCacheEntry(
+                savedAt: date,
+                seriesBySymbol: seriesBySymbol
+            ))
+            try data.write(to: fileURL, options: .atomic)
+        } catch {
+            // A cache write failure must not affect live market data.
+        }
+    }
+}
+
 @MainActor
 final class RemoteMarketStore: ObservableObject {
     @Published var overview: PublicMarketOverview?
@@ -330,6 +366,8 @@ final class RemoteMarketStore: ObservableObject {
     private var isRefreshingHistory = false
     private var lastHistoryRefreshAt: Date?
     private var lastHistoryAttemptAt: Date?
+    private var didLoadHistoryDiskCache = false
+    private var historyDiskCacheLoadTask: Task<MarketHistoryCacheEntry?, Never>?
     private var liveDataErrorMessage: String?
     private var historyErrorMessage: String?
     private var lastLiveDataRefreshSucceeded = false
@@ -379,9 +417,14 @@ final class RemoteMarketStore: ObservableObject {
         var didRefreshOverview = false
         var firstErrorMessage: String?
 
+        async let exchangeRatesRequest = RemoteMarketClient.fetchExchangeRates()
+        async let overviewRequest = RemoteMarketClient.fetchOverview()
+
         do {
-            let exchangeRates = try await RemoteMarketClient.fetchExchangeRates()
-            let mappedRates = Dictionary(uniqueKeysWithValues: exchangeRates.rates.map { ($0.currency.uppercased(), $0.rate) })
+            let exchangeRates = try await exchangeRatesRequest
+            let mappedRates = exchangeRates.rates.reduce(into: [String: Double]()) { result, item in
+                result[item.currency.uppercased()] = item.rate
+            }
             if self.exchangeRates != mappedRates {
                 self.exchangeRates = mappedRates
             }
@@ -394,7 +437,7 @@ final class RemoteMarketStore: ObservableObject {
         }
 
         do {
-            let overview = try await RemoteMarketClient.fetchOverview()
+            let overview = try await overviewRequest
             if self.overview != overview {
                 self.overview = overview
             }
@@ -411,6 +454,8 @@ final class RemoteMarketStore: ObservableObject {
     }
 
     func refreshHistoryIfNeeded(force: Bool = false) async {
+        await loadHistoryDiskCacheIfNeeded()
+
         if isRefreshingHistory {
             await waitForHistoryRefreshToFinish()
             return
@@ -418,6 +463,30 @@ final class RemoteMarketStore: ObservableObject {
 
         guard force || shouldRefreshHistory else { return }
         await refreshHistory()
+    }
+
+    private func loadHistoryDiskCacheIfNeeded() async {
+        if didLoadHistoryDiskCache { return }
+
+        let task: Task<MarketHistoryCacheEntry?, Never>
+        if let historyDiskCacheLoadTask {
+            task = historyDiskCacheLoadTask
+        } else {
+            task = Task.detached(priority: .utility) {
+                MarketHistoryDiskCache.load()
+            }
+            historyDiskCacheLoadTask = task
+        }
+
+        let cached = await task.value
+        historyDiskCacheLoadTask = nil
+        didLoadHistoryDiskCache = true
+
+        guard historySeries.isEmpty, let cached else { return }
+        historySeries = cached.seriesBySymbol
+        if !isMissingRequiredHistorySeries {
+            lastHistoryRefreshAt = cached.savedAt
+        }
     }
 
     private func waitForLiveDataRefreshToFinish() async {
@@ -448,7 +517,7 @@ final class RemoteMarketStore: ObservableObject {
         let historyBatches: [(symbols: [String], includeOHLC: Bool)] = [
             (["gold_cny", "nasdaq", "sp500", "usd_per_cny"], true),
             (["hang_seng", "csi300", "shanghai_composite", "dow_jones"], true),
-            (["shenzhen_component", "chinext"], true),
+            (["shenzhen_component", "chinext", "nikkei225", "oil_wti_cny"], true),
             (Self.treasuryYieldSignalSymbols, false)
         ]
         let fullHistoryStartDate = "2000-01-01"
@@ -511,6 +580,12 @@ final class RemoteMarketStore: ObservableObject {
                 lastHistoryRefreshAt = nil
                 historyErrorMessage = AppLocalization.string("部分历史行情暂时不可用，稍后会自动重试")
             }
+
+            let cachedSeries = self.historySeries
+            let cacheDate = lastHistoryRefreshAt ?? Date()
+            await Task.detached(priority: .utility) {
+                MarketHistoryDiskCache.save(seriesBySymbol: cachedSeries, at: cacheDate)
+            }.value
         } else {
             lastHistoryRefreshAt = nil
             historyErrorMessage = batchErrorMessages.first ?? AppLocalization.string("历史数据加载失败")
@@ -540,6 +615,8 @@ final class RemoteMarketStore: ObservableObject {
             return "hsi"
         case "nikkei225", "nikkei":
             return "nikkei"
+        case "oil_wti", "oil_wti_cny", "wti":
+            return "oil_wti_cny"
         case "dow_jones", "dowjones":
             return "dowjones"
         case "cn_10y", "china_10y", "china_10y_yield", "cgb_10y", "cn_10y_yield":
@@ -564,6 +641,8 @@ final class RemoteMarketStore: ObservableObject {
             return ["hsi", "hang_seng"]
         case "nikkei":
             return ["nikkei", "nikkei225"]
+        case "oil_wti_cny":
+            return ["oil_wti_cny", "oil_wti", "wti"]
         case "dowjones":
             return ["dowjones", "dow_jones"]
         case "cn_10y_yield":

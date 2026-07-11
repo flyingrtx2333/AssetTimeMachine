@@ -76,8 +76,8 @@ enum AssetNotificationService {
         content.threadIdentifier = strategyNotificationIdentifier
 
         var components = DateComponents()
-        components.calendar = Calendar(identifier: .gregorian)
-        components.timeZone = TimeZone(identifier: "Asia/Shanghai") ?? .current
+        components.calendar = .autoupdatingCurrent
+        components.timeZone = .autoupdatingCurrent
         components.hour = min(max(hour, 0), 23)
         components.minute = 0
 

@@ -14,8 +14,8 @@ struct AdvancedBacktestView: View {
     @State private var selectedAssetSymbols: Set<String> = [BacktestDefaults.dcaAssetSymbol]
     @State private var initialCash: Double = 100_000
     @State private var tradeAmount: Double = 10_000
-    @State private var feeRate: Double = 1.0
-    @State private var slippageRate: Double = 0.05
+    @State private var feeRate: Double = BacktestDefaults.advancedFeeRatePercent
+    @State private var slippageRate: Double = BacktestDefaults.advancedSlippageRatePercent
     @State private var maxPositionRatio: Double = 70
     @State private var cooldownDays: Double = 3
     @State private var stopLossRatio: Double = 0
@@ -79,7 +79,7 @@ struct AdvancedBacktestView: View {
     }
 
     private var strategyTemplates: [AdvancedBacktestStrategyTemplate] {
-        AdvancedBacktestStrategyTemplate.all
+        AdvancedBacktestStrategyTemplate.productCatalog
     }
 
     private var activeStrategyTemplateID: String? {
@@ -583,8 +583,8 @@ struct AdvancedBacktestView: View {
         }
 
         if template.mode.isRotation {
-            return abs(feeRate - 1.0) < 0.01
-                && abs(slippageRate - 0.05) < 0.01
+            return abs(feeRate - BacktestDefaults.advancedFeeRatePercent) < 0.01
+                && abs(slippageRate - BacktestDefaults.advancedSlippageRatePercent) < 0.01
         }
 
         let expectedTradeAmount = max(initialCash * template.tradeAmountRatio, 1)
@@ -596,8 +596,8 @@ struct AdvancedBacktestView: View {
             && sellDays == template.sellRule.days
             && abs(tradeAmount - expectedTradeAmount) <= tradeTolerance
             && abs(maxPositionRatio - template.maxPositionRatio) < 0.01
-            && abs(feeRate - 1.0) < 0.01
-            && abs(slippageRate - 0.05) < 0.01
+            && abs(feeRate - BacktestDefaults.advancedFeeRatePercent) < 0.01
+            && abs(slippageRate - BacktestDefaults.advancedSlippageRatePercent) < 0.01
             && abs(cooldownDays - Double(template.cooldownDays)) < 0.01
             && abs(stopLossRatio - template.stopLossRatio) < 0.01
             && abs(takeProfitRatio - template.takeProfitRatio) < 0.01
@@ -614,8 +614,8 @@ struct AdvancedBacktestView: View {
             sellDirection = template.sellRule.direction
             sellDays = template.sellRule.days
             tradeAmount = max(initialCash * template.tradeAmountRatio, 1)
-            feeRate = 1.0
-            slippageRate = 0.05
+            feeRate = BacktestDefaults.advancedFeeRatePercent
+            slippageRate = BacktestDefaults.advancedSlippageRatePercent
             maxPositionRatio = template.maxPositionRatio
             cooldownDays = Double(template.cooldownDays)
             stopLossRatio = template.stopLossRatio
@@ -1131,8 +1131,8 @@ struct AdvancedBacktestView: View {
         selectedAssetSymbols = Set(restoredSymbols).isEmpty ? [BacktestDefaults.dcaAssetSymbol] : Set(restoredSymbols)
         initialCash = config.initialCash ?? 100_000
         tradeAmount = config.tradeAmount ?? 10_000
-        feeRate = config.feeRate ?? 1.0
-        slippageRate = config.slippageRate ?? 0.05
+        feeRate = config.feeRate ?? BacktestDefaults.advancedFeeRatePercent
+        slippageRate = config.slippageRate ?? BacktestDefaults.advancedSlippageRatePercent
         maxPositionRatio = config.maxPositionRatio ?? 70
         cooldownDays = Double(config.cooldownDays ?? 3)
         stopLossRatio = config.stopLossRatio ?? 0

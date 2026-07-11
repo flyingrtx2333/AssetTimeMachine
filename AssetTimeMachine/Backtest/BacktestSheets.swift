@@ -1074,6 +1074,13 @@ struct AdvancedStrategyTemplateRow: View {
                 AppLocalization.string("压力信号"),
                 AppLocalization.string("目标波动9.5%")
             ]
+        case .goldNasdaqDualTrendBarbell:
+            return [
+                AppLocalization.string("黄金55%"),
+                AppLocalization.string("纳指45%"),
+                AppLocalization.string("双独立趋势"),
+                AppLocalization.string("每63交易日")
+            ]
         case .strongVolControlledRotation:
             return [
                 AppLocalization.string("20日强弱"),
@@ -1306,6 +1313,8 @@ extension AdvancedBacktestStrategyTemplate {
             growth = 0.58; stability = 0.82; defense = 0.82; flexibility = 0.76
         case .goldNasdaqPortfolioScheduler:
             growth = 0.74; stability = 0.86; defense = 0.90; flexibility = 0.88
+        case .goldNasdaqDualTrendBarbell:
+            growth = 0.88; stability = 0.78; defense = 0.80; flexibility = 0.82
         case .strongVolControlledRotation:
             growth = 0.78; stability = 0.66; defense = 0.66; flexibility = 0.78
         case .momentumRotation:

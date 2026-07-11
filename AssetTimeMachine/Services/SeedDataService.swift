@@ -43,48 +43,19 @@ enum SeedDataService {
         try context.save()
     }
 
-    @MainActor
-    static func ensureDefaultFinancialItems(in context: ModelContext) throws {
-        let categories = try context.fetch(FetchDescriptor<AssetCategory>())
-        var didChange = false
-
-        for category in categories {
-            let existingNames = Set(category.items.map { $0.name.trimmingCharacters(in: .whitespacesAndNewlines) })
-            var nextSortOrder = (category.items.map(\AssetItem.sortOrder).max() ?? -1) + 1
-
-            for config in defaultItems(for: category.group) where !existingNames.contains(config.name) {
-                let item = AssetItem(
-                    name: config.name,
-                    note: config.upgradeNote,
-                    iconName: AssetItemService.suggestedIconName(for: config.name, autoPricedAssetKind: nil),
-                    valuationMethod: .directAmount,
-                    sortOrder: nextSortOrder,
-                    category: category
-                )
-                context.insert(item)
-                nextSortOrder += 1
-                didChange = true
-            }
-        }
-
-        if didChange {
-            try context.save()
-        }
-    }
-
     private static func defaultItems(for group: AssetGroup) -> [DefaultItemConfig] {
         switch group {
         case .financial:
             return defaultFinancialItems.map {
-                DefaultItemConfig(name: $0, note: "默认资金项目，可编辑或删除", upgradeNote: "系统补齐的默认资金项目，可编辑或删除")
+                DefaultItemConfig(name: $0, note: "默认资金项目，可编辑或删除")
             }
         case .physical:
             return defaultPhysicalItems.map {
-                DefaultItemConfig(name: $0, note: "示例项目，可编辑或删除", upgradeNote: "系统补齐的默认实物项目，可编辑或删除")
+                DefaultItemConfig(name: $0, note: "示例项目，可编辑或删除")
             }
         case .liability:
             return defaultLiabilityItems.map {
-                DefaultItemConfig(name: $0, note: "默认负债项目，可编辑或删除", upgradeNote: "系统补齐的默认负债项目，可编辑或删除")
+                DefaultItemConfig(name: $0, note: "默认负债项目，可编辑或删除")
             }
         }
     }
@@ -93,5 +64,4 @@ enum SeedDataService {
 private struct DefaultItemConfig {
     let name: String
     let note: String
-    let upgradeNote: String
 }

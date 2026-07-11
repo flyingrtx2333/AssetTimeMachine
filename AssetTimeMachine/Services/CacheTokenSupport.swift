@@ -9,19 +9,16 @@ enum SnapshotRevisionToken {
     ) -> Int {
         var hasher = Hasher()
         hasher.combine(snapshots.count)
-        if let latest = snapshots.first {
-            hasher.combine(latest.id)
-            hasher.combine(latest.updatedAt.timeIntervalSinceReferenceDate)
+        for snapshot in snapshots {
+            hasher.combine(snapshot.id)
+            hasher.combine(snapshot.updatedAt.timeIntervalSinceReferenceDate)
             if includeMarketAnchorsUpdatedAt {
-                hasher.combine(latest.marketAnchorsUpdatedAt?.timeIntervalSinceReferenceDate)
+                hasher.combine(snapshot.marketAnchorsUpdatedAt?.timeIntervalSinceReferenceDate)
             }
-            hasher.combine(latest.entries.count)
+            hasher.combine(snapshot.entries.count)
         }
-        if includeOldest,
-           let oldest = snapshots.last,
-           oldest.id != snapshots.first?.id {
-            hasher.combine(oldest.id)
-            hasher.combine(oldest.updatedAt.timeIntervalSinceReferenceDate)
+        if includeOldest {
+            hasher.combine(snapshots.last?.id)
         }
         return hasher.finalize()
     }

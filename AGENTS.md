@@ -104,7 +104,19 @@ Recommended quick preflight before shipping:
 
 ```bash
 git diff --check
-python3 tools/verify_expected_backtest_metrics.py --ref HEAD
+xcrun swiftc \
+  -parse-as-library \
+  -module-cache-path /private/tmp/atm-swift-module-cache \
+  AssetTimeMachine/Backtest/BacktestModels.swift \
+  AssetTimeMachine/Backtest/BacktestMetricsCalculator.swift \
+  AssetTimeMachine/Backtest/BacktestSeriesAlignment.swift \
+  AssetTimeMachine/Backtest/BacktestFXConverter.swift \
+  AssetTimeMachine/Backtest/BacktestAdvancedSeriesPreparer.swift \
+  AssetTimeMachine/Backtest/BacktestEngine.swift \
+  tools/strategy_metric_dump.swift \
+  -o /private/tmp/strategy_metric_dump
+ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json \
+  /private/tmp/strategy_metric_dump --verify-app-baseline
 xcodebuild \
   -project AssetTimeMachine.xcodeproj \
   -scheme AssetTimeMachine \
@@ -113,7 +125,7 @@ xcodebuild \
   build
 ```
 
-Backtest golden metrics use the pinned fixture at `tools/fixtures/backtest-history/public_history.json` by default, so normal verification is stable and does not drift when the live market-history endpoint backfills data. Use `--live-history` only for explicit live-data checks. Use `--refresh-fixture` deliberately when updating the pinned history snapshot and review the resulting baseline diff.
+Backtest golden metrics use the pinned fixture at `tools/fixtures/backtest-history/public_history.json` through `ATM_HISTORY_FIXTURE`, so normal verification is stable and does not drift when the live market-history endpoint backfills data. Refresh this fixture only deliberately, then review the baseline diff.
 
 ## Running on iOS Simulator
 
@@ -360,28 +372,27 @@ Do not present strategy performance from a separate research script as product t
 
 ### Current App-engine strategy metrics
 
-These are the current App-engine truth values from `tools/strategy_metric_dump.swift`, run against the production market history endpoint on 2026-07-01. Assumptions: full available history, initial cash 100,000 CNY, fee 1%, slippage 0.05%.
+The App exposes `AdvancedBacktestStrategyTemplate.productCatalog`; `AdvancedBacktestStrategyTemplate.all` remains the full research/diagnostic inventory. Do not add every parameter variant to the visible library. Keep a small product catalog with materially different risk tiers or signal families.
 
-| Strategy | Annualized | Max drawdown | Sharpe | Range |
-|---|---:|---:|---:|---|
-| 风险预算状态机 | 15.08% | 16.28% | 0.95 | 2002-01-04..2026-07-01 |
-| 确认加速进攻袖套 | 11.09% | 11.79% | 1.04 | 2002-01-04..2026-07-01 |
-| 权益曲线状态机 | 11.03% | 10.24% | 1.10 | 2002-01-04..2026-07-01 |
-| 单向控波元策略 | 10.65% | 11.23% | 1.04 | 2002-01-04..2026-07-01 |
-| 动态袖套夏普策略 | 10.08% | 11.65% | 1.03 | 2002-01-04..2026-07-01 |
-| 收益回撤门状态机 | 10.41% | 9.98% | 1.08 | 2002-01-04..2026-07-01 |
-| 增强热度上限元 | 9.70% | 12.04% | 0.94 | 2002-01-04..2026-07-01 |
-| 锁盈防守袖套 | 9.65% | 10.08% | 1.06 | 2002-01-04..2026-07-01 |
-| 热度上限元策略 | 9.48% | 12.04% | 0.93 | 2002-01-04..2026-07-01 |
-| 黄金交接保护 | 9.43% | 11.38% | 0.93 | 2002-01-04..2026-07-01 |
-| 月度热度上限元 | 8.87% | 16.57% | 0.85 | 2002-01-04..2026-07-01 |
-| 高夏普状态机 | 6.91% | 6.82% | 1.21 | 2002-01-04..2026-07-01 |
-| MA金叉死叉 | 0.77% | 43.40% | 0.12 | 2000-01-13..2026-07-01 |
-| BOLL下轨反弹 | -5.90% | 80.30% | -0.76 | 2000-01-13..2026-07-01 |
-| MA60趋势 | -6.43% | 87.05% | -0.46 | 2000-01-13..2026-07-01 |
-| MA20趋势 | -18.88% | 99.61% | -1.49 | 2000-01-13..2026-07-01 |
+Current App defaults are initial cash 100,000 CNY, fee 1.00%, and slippage 0.05%. This is both the product assumption and the pinned regression assumption. Do not lower the default fee to improve displayed strategy performance. Environment overrides are allowed only for explicit sensitivity research.
 
-If this table disagrees with a research script, trust this table only until `tools/strategy_metric_dump.swift` is rerun.
+The product Sharpe ratio must remain calculated and visible. The current implementation uses daily returns with a zero risk-free-rate assumption.
+
+Current product results from the pinned fixture, run on 2026-07-10 with data through 2026-07-03:
+
+| Product strategy | Full annualized | Full max drawdown | Last 10Y annualized | Last 10Y max drawdown | Full Sharpe |
+|---|---:|---:|---:|---:|---:|
+| 进取风险预算 | 10.50% | 14.09% | 6.62% | 12.63% | 1.02 |
+| 均衡权益状态 | 9.60% | 13.02% | 5.67% | 13.02% | 1.01 |
+| 稳健锁盈防守 | 8.55% | 11.67% | 5.56% | 11.67% | 0.99 |
+| 双趋势金纳杠铃 | 10.15% | 16.98% | 13.56% | 16.98% | 0.89 |
+
+The first three visible strategies share the gold/equity meta-strategy trunk and represent aggressive, balanced, and defensive risk tiers. `双趋势金纳杠铃` is an independent signal family: a strategic 55% gold / 45% Nasdaq budget, separate MA200 plus 126/252-session trend states for each sleeve, a 63-session review cadence, and cash for unallocated budget. It must not call `recentLossVolatilityMetaConfig` or silently inherit the meta-strategy router. It is a logic-diversification option rather than the default because its full-history drawdown is higher even though its recent-decade return is materially stronger. All metrics use the required 1% fee and 0.05% slippage assumptions.
+
+The backend fixture supplies price-change series; the engine does not inject equity dividend reinvestment. A future total-return-index migration requires a new baseline and must not be compared directly with these values.
+
+If this table disagrees with a non-App script, trust `tools/strategy_metric_dump.swift` and rerun the Swift dump/verifier.
+
 
 ### Required App-engine strategy verification command
 
@@ -394,6 +405,10 @@ xcrun swiftc \
   -parse-as-library \
   -module-cache-path /private/tmp/atm-swift-module-cache \
   AssetTimeMachine/Backtest/BacktestModels.swift \
+  AssetTimeMachine/Backtest/BacktestMetricsCalculator.swift \
+  AssetTimeMachine/Backtest/BacktestSeriesAlignment.swift \
+  AssetTimeMachine/Backtest/BacktestFXConverter.swift \
+  AssetTimeMachine/Backtest/BacktestAdvancedSeriesPreparer.swift \
   AssetTimeMachine/Backtest/BacktestEngine.swift \
   tools/strategy_metric_dump.swift \
   -o /private/tmp/strategy_metric_dump
@@ -401,7 +416,7 @@ xcrun swiftc \
 /private/tmp/strategy_metric_dump
 ```
 
-The dump fetches live history from `https://api.flyingrtx.com`, so it may need network permission. Do not substitute `tools/batch_strategy_summary.py` for this command when the question is “what does the App currently show/calculate?”; that batch script may include spike runners that are not App-equivalent.
+The dump fetches live history from `https://api.flyingrtx.com`, so it may need network permission. For stable golden verification, run it with `ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json` and `--verify-app-baseline`.
 
 ### How to find / research strategies
 
@@ -415,40 +430,27 @@ Use this order when looking for a new strategy candidate:
    rg -n 'symbol: ".*rotation' AssetTimeMachine/Backtest
    ```
 
-2. Check reusable parity/search tools before creating new scripts:
+2. Check the reusable Swift dump/verifier before adding new strategy code:
 
    ```bash
    ls tools
    sed -n '1,160p' tools/strategy_metric_dump.swift
-   sed -n '1,120p' tools/atm_app_equivalent_backtest.py
-   sed -n '1,120p' tools/atm_strategy_explorer.py
-   sed -n '1,120p' tools/search_no_btc_2002_strategies.py
    ```
 
-3. Check previous spike writeups before repeating work:
-
-   ```bash
-   find spikes -maxdepth 2 -name README.md | sort
-   ```
-
-4. If a new experiment is needed, create a numbered folder under `spikes/NNN-short-topic/` with:
-   - `README.md`: hypothesis, data range, assets, result table, why it passed/failed.
-   - one or more `.py` scripts: deterministic, no hardcoded secrets, no `/tmp`-only dependencies.
-
-5. Promote only durable, reusable comparison/search code into `tools/`. Keep temporary dead-end probes in `spikes/`.
+3. If a new experiment is needed, implement it as a Swift `StrategyTargetProvider` or Swift CLI search path that calls the same `BacktestDailySimulator`. Do not add Python strategy searchers, app-equivalent simulators, replay scripts, or spike folders.
 
 ### Strategy acceptance rules
 
 - Do not trust one-off `/tmp` research scripts for App-facing strategy metrics.
-- New strategy candidates must be replayed through the current App/backtest engine before being presented as product results. Prefer `tools/strategy_metric_dump.swift` for current product metrics.
-- Do not copy high-return/high-Sharpe values from spike scripts into README, AGENTS, App cards, App subtitles, release notes, or user-facing answers unless a Swift App-engine run produces the same values.
-- For AssetTimeMachine strategy work, keep reusable comparison scripts under `tools/`.
+- New strategy candidates must be implemented as Swift target providers and replayed through the current unified App/backtest simulator before being presented as product results. Prefer `tools/strategy_metric_dump.swift` for current product metrics.
+- Do not copy high-return/high-Sharpe values from non-App scripts into README, AGENTS, App cards, App subtitles, release notes, or user-facing answers unless a Swift App-engine run produces the same values.
+- For AssetTimeMachine strategy work, keep durable Swift comparison/search code under `tools/`.
 - For multi-asset backtests across gold/US equities/A-shares, use recent valid price forward-fill with enough holiday tolerance; do not accidentally delete dates because one market is closed.
 - K-line charts must use real OHLC data. Do not fake OHLC from close-only series.
 - User preference: no BTC in main AssetTimeMachine strategy line unless explicitly requested.
 - Hard rule: external fund sleeves/proxies are unavailable and meaningless for this project. Do not use, recommend, rank, compare, or revive strategies that depend on `qmnix`, `qmnrx`, `ostix`, `vmnfx`, `bprrx`, or similar off-App fund/proxy sleeves.
 - User explicitly rejected all external fund-sleeve/proxy-asset based strategy lines as unusable/no-value. Treat them as dead ends, not as candidates, benchmarks, fallbacks, or evidence that a Sharpe-2 product strategy exists.
-- Treat all prior fund-sleeve/proxy-fund spike metrics as invalid for current product decisions. Old Sharpe-2 research lines such as `internal_budget_ensemble`, `internal_experience_ensemble`, sparse/internal ensembles, and any descendants of the `qmnrx/ostix` fixture path must not be presented as viable AssetTimeMachine candidates; see `spikes/263-invalidated-fund-sleeve-sharpe2-audit/README.md`.
+- Treat all prior fund-sleeve/proxy-fund metrics as invalid for current product decisions. Old Sharpe-2 research lines such as `internal_budget_ensemble`, `internal_experience_ensemble`, sparse/internal ensembles, and any descendants of the `qmnrx/ostix` fixture path must not be presented as viable AssetTimeMachine candidates.
 - Main product candidates should be checked on full history plus slices such as 2020+, recent 10Y, and stress periods; do not optimize only one pretty interval.
 - Preferred direction is gold/Nasdaq-centered strategies with controlled drawdown. Avoid unrelated asset stories unless the user explicitly asks.
 

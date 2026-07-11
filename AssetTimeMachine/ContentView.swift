@@ -193,5 +193,8 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [AssetCategory.self, AssetItem.self, AssetSnapshot.self, AssetEntry.self], inMemory: true)
+        .modelContainer(
+            for: [AssetCategory.self, AssetItem.self, AssetSnapshot.self, AssetEntry.self, BacktestRecord.self, SyncDeletionTombstone.self],
+            inMemory: true
+        )
 }

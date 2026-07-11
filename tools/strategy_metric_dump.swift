@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import Darwin
 
 func evenlySampledItems<T>(_ items: [T], maxCount: Int) -> [T] {
     guard maxCount > 0, items.count > maxCount else { return items }
@@ -280,6 +281,21 @@ extension Date {
     }
 }
 
+private enum MetricDumpExecutionAssumptions {
+    static let feeRatePercent = environmentPercent(named: "ATM_FEE_RATE_PERCENT", defaultValue: 1.0)
+    static let slippageRatePercent = environmentPercent(named: "ATM_SLIPPAGE_RATE_PERCENT", defaultValue: 0.05)
+
+    private static func environmentPercent(named name: String, defaultValue: Double) -> Double {
+        guard let rawValue = ProcessInfo.processInfo.environment[name],
+              let value = Double(rawValue),
+              value.isFinite,
+              value >= 0 else {
+            return defaultValue
+        }
+        return value
+    }
+}
+
 @main
 struct StrategyMetricDump {
     struct MetricRow {
@@ -297,6 +313,262 @@ struct StrategyMetricDump {
     struct SliceMetricRow {
         let slice: String
         let row: MetricRow
+    }
+
+    private enum NewLogicKind: String {
+        case cashConfirmedParity
+        case goldNasdaqBarbell
+        case goldAnchorEquityPulse
+        case dualMomentumAnchor
+        case staticGoldEquityAnchor
+        case staticAnchorWithEquityFuse
+        case staticAnchorWithPortfolioFuse
+        case volTargetGoldEquityAnchor
+        case anchorTrendFilter
+        case goldEquityRiskParity
+        case trendPullbackReentry
+    }
+
+    private struct NewLogicVariant {
+        let kind: NewLogicKind
+        let id: String
+        let title: String
+        let rebalanceSessions: Int
+        let topCount: Int
+        let maxExposure: Double
+        let perAssetCap: Double
+        let minScore: Double
+        let requireMovingAverage: Bool
+        let requireBreadthConfirmation: Bool
+        let useUsdCash: Bool
+        let goldBallast: Double
+    }
+
+    private struct WebLogicVariant {
+        let id: String
+        let title: String
+        let goldWeight: Double
+        let equityStressScale: Double
+        let goldStressScale: Double
+        let targetVolatility: Double
+        let rebalanceSessions: Int
+    }
+
+    private struct WebLogicRun {
+        let variant: WebLogicVariant
+        let run: ResearchTargetStrategyRun
+        let full: MetricRow
+        let since2020: MetricRow
+        let since2022: MetricRow
+        let passed: Bool
+    }
+
+    private struct SharpeFineRun {
+        let lowScale: Double
+        let multiplier: Double
+        let full: MetricRow
+        let last10y: MetricRow
+        let since2020: MetricRow
+        let since2022: MetricRow
+        let passed: Bool
+    }
+
+    private struct AdaptiveAnchorVariant {
+        let id: String
+        let title: String
+        let riskOnGold: Double
+        let neutralGold: Double
+        let defensiveGold: Double
+        let equityStressScale: Double
+        let portfolioBrake: Double
+        let targetVolatility: Double
+        let rebalanceSessions: Int
+    }
+
+    private struct AdaptiveAnchorRun {
+        let variant: AdaptiveAnchorVariant
+        let full: MetricRow
+        let last10y: MetricRow
+        let since2020: MetricRow
+        let since2022: MetricRow
+        let passed: Bool
+    }
+
+    private enum MechanismKind: String {
+        case broadMomentumRiskParity
+        case crisisGoldShield
+        case correlationFailureBrake
+        case portfolioRepairState
+        case breakoutRetest
+        case ohlcPanicAirbag
+        case dollarGoldDefense
+        case consensusRiskTier
+    }
+
+    private struct MechanismVariant {
+        let kind: MechanismKind
+        let id: String
+        let title: String
+        let rebalanceSessions: Int
+        let rebalanceBand: Double
+        let symbols: [String]
+        let zeroFillBeforeFirstSymbols: Set<String>
+    }
+
+    private struct MechanismRun {
+        let variant: MechanismVariant
+        let full: MetricRow
+        let last10y: MetricRow
+        let since2020: MetricRow
+        let since2022: MetricRow
+        let passed: Bool
+    }
+
+    private enum EngineRouterKind: String {
+        case breadthWhenHealthy
+        case trailingScoreLeader
+        case volatilityGovernor
+        case recoveryTorque
+        case stickyChampion
+        case staticRiskEquityBlend
+        case staticRiskProfitBlend
+        case staticTriBlend
+        case staticOffensiveCore
+        case riskBudgetReplay
+        case equityCurveReplay
+    }
+
+    private struct EngineRouterVariant {
+        let kind: EngineRouterKind
+        let id: String
+        let title: String
+        let rebalanceSessions: Int
+    }
+
+    private struct EngineRouterRun {
+        let variant: EngineRouterVariant
+        let full: MetricRow
+        let last10y: MetricRow
+        let since2020: MetricRow
+        let since2022: MetricRow
+        let passed: Bool
+    }
+
+    private enum FeeAwareKind: String {
+        case stickyRiskBudget
+        case stickyEquityCurve
+        case stabilityBlend
+        case defensiveHandoff
+        case offensiveSleeve
+    }
+
+    private struct FeeAwareVariant {
+        let kind: FeeAwareKind
+        let id: String
+        let title: String
+        let rebalanceSessions: Int
+        let switchThreshold: Double
+        let minimumHoldSessions: Int
+    }
+
+    private struct FeeAwareRun {
+        let variant: FeeAwareVariant
+        let full: MetricRow
+        let last10y: MetricRow
+        let since2020: MetricRow
+        let since2022: MetricRow
+        let passed: Bool
+    }
+
+    private enum LowTurnoverKind: String {
+        case annualPolicyClock
+        case drawdownLadderRepair
+        case correlationQuarantine
+        case globalGrowthInflationClock
+        case riskContributionAnchor
+        case seasonalRiskBudget
+        case capitalPreservationClock
+        case highWaterThrottle
+        case sparseGlobalSatellite
+        case relativeStrengthCarry
+        case inflationOpportunitySleeve
+        case crashOpportunityLadder
+    }
+
+    private struct LowTurnoverVariant {
+        let kind: LowTurnoverKind
+        let id: String
+        let title: String
+        let rebalanceSessions: Int
+        let rebalanceBand: Double
+        let warmupSessions: Int
+    }
+
+    private struct LowTurnoverRun {
+        let variant: LowTurnoverVariant
+        let full: MetricRow
+        let last10y: MetricRow
+        let since2020: MetricRow
+        let since2022: MetricRow
+        let passed: Bool
+    }
+
+    private enum QualityTargetKind: String {
+        case tippTrendConvexity
+        case highWaterPyramid
+        case dualLeaderLeverage
+        case volTargetLeveredAnchor
+        case crashReentryConvexity
+        case panicFloorCash
+    }
+
+    private struct QualityTargetVariant {
+        let kind: QualityTargetKind
+        let id: String
+        let title: String
+        let maxGrossExposure: Double
+        let rebalanceSessions: Int
+        let rebalanceBand: Double
+        let floorDrawdown: Double
+        let targetVolatility: Double
+    }
+
+    private struct QualityTargetRun {
+        let variant: QualityTargetVariant
+        let full: MetricRow
+        let last10y: MetricRow
+        let since2020: MetricRow
+        let since2022: MetricRow
+        let passed: Bool
+    }
+
+    private enum StrictTargetKind: String {
+        case capitalFloorTrend
+        case lowVolAnchor
+        case dualMomentumFloor
+        case canaryFloor
+        case drawdownBudget
+        case profitLockReentry
+    }
+
+    private struct StrictTargetVariant {
+        let kind: StrictTargetKind
+        let id: String
+        let title: String
+        let rebalanceSessions: Int
+        let rebalanceBand: Double
+        let floorDrawdown: Double
+        let targetVolatility: Double
+        let maxExposure: Double
+    }
+
+    private struct StrictTargetRun {
+        let variant: StrictTargetVariant
+        let full: MetricRow
+        let last10y: MetricRow
+        let since2020: MetricRow
+        let since2022: MetricRow
+        let passed: Bool
     }
 
     private static func metricRow(
@@ -393,6 +665,4628 @@ struct StrategyMetricDump {
         }
     }
 
+    private static func priceMomentum(_ values: [Double], at index: Int, lookback: Int) -> Double? {
+        guard lookback > 0,
+              values.indices.contains(index),
+              values.indices.contains(index - lookback),
+              values[index - lookback] > 0,
+              values[index] > 0 else { return nil }
+        return values[index] / values[index - lookback] - 1
+    }
+
+    private static func movingAverage(_ values: [Double], at index: Int, period: Int) -> Double? {
+        guard period > 0,
+              values.indices.contains(index),
+              index - period + 1 >= 0 else { return nil }
+        let startIndex = index - period + 1
+        let slice = values[startIndex...index]
+        return slice.reduce(0, +) / Double(slice.count)
+    }
+
+    private static func annualizedVolatility(_ values: [Double], at index: Int, lookback: Int) -> Double? {
+        guard lookback > 1,
+              values.indices.contains(index),
+              index - lookback + 1 >= 1 else { return nil }
+        var returns: [Double] = []
+        for cursor in (index - lookback + 1)...index {
+            guard values.indices.contains(cursor - 1),
+                  values[cursor] > 0,
+                  values[cursor - 1] > 0 else { continue }
+            returns.append(values[cursor] / values[cursor - 1] - 1)
+        }
+        guard returns.count >= max(20, lookback / 2) else { return nil }
+        let mean = returns.reduce(0, +) / Double(returns.count)
+        let variance = returns.reduce(0) { $0 + pow($1 - mean, 2) } / Double(returns.count - 1)
+        return sqrt(max(variance, 0)) * sqrt(252)
+    }
+
+    private static func drawdownFromHigh(_ values: [Double], at index: Int, lookback: Int) -> Double? {
+        guard lookback > 1,
+              values.indices.contains(index) else { return nil }
+        let startIndex = max(0, index - lookback + 1)
+        guard startIndex <= index,
+              let high = values[startIndex...index].max(),
+              high > 0 else { return nil }
+        return values[index] / high - 1
+    }
+
+    private static func trendScore(
+        symbol: String,
+        pricesBySymbol: [String: [Double]],
+        index: Int
+    ) -> Double? {
+        guard let prices = pricesBySymbol[symbol],
+              let momentum63 = priceMomentum(prices, at: index, lookback: 63),
+              let momentum126 = priceMomentum(prices, at: index, lookback: 126),
+              let momentum252 = priceMomentum(prices, at: index, lookback: 252),
+              let volatility = annualizedVolatility(prices, at: index, lookback: 63) else { return nil }
+        let blendedMomentum = momentum63 * 0.20 + momentum126 * 0.30 + momentum252 * 0.50
+        return blendedMomentum / max(volatility, 0.06)
+    }
+
+    private static func isAboveMovingAverage(
+        symbol: String,
+        pricesBySymbol: [String: [Double]],
+        index: Int,
+        period: Int
+    ) -> Bool {
+        guard let prices = pricesBySymbol[symbol],
+              prices.indices.contains(index),
+              let average = movingAverage(prices, at: index, period: period) else { return false }
+        return prices[index] > average
+    }
+
+    private static func positiveTrendCount(
+        symbols: [String],
+        pricesBySymbol: [String: [Double]],
+        index: Int,
+        minimumScore: Double
+    ) -> Int {
+        symbols.reduce(0) { partial, symbol in
+            let passes = (trendScore(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index) ?? -Double.infinity) > minimumScore
+                && isAboveMovingAverage(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index, period: 180)
+            return partial + (passes ? 1 : 0)
+        }
+    }
+
+    private static func cappedRiskParityWeights(
+        selected: [(symbol: String, score: Double)],
+        pricesBySymbol: [String: [Double]],
+        index: Int,
+        maxExposure: Double,
+        perAssetCap: Double
+    ) -> [String: Double] {
+        guard !selected.isEmpty, maxExposure > 0 else { return [:] }
+        let raw = selected.map { item -> (symbol: String, value: Double) in
+            let volatility = annualizedVolatility(pricesBySymbol[item.symbol] ?? [], at: index, lookback: 63) ?? 0.18
+            return (item.symbol, max(item.score, 0.05) / max(volatility, 0.06))
+        }
+        let totalRaw = raw.reduce(0.0) { $0 + $1.value }
+        guard totalRaw > 0 else { return [:] }
+        var weights: [String: Double] = [:]
+        for item in raw {
+            weights[item.symbol] = min(maxExposure * item.value / totalRaw, perAssetCap)
+        }
+        let cappedTotal = weights.values.reduce(0, +)
+        if cappedTotal > maxExposure, cappedTotal > 0 {
+            weights = weights.mapValues { $0 * maxExposure / cappedTotal }
+        }
+        return weights
+    }
+
+    private static func weightedPortfolioAnnualizedVolatility(
+        weights: [String: Double],
+        pricesBySymbol: [String: [Double]],
+        at index: Int,
+        lookback: Int
+    ) -> Double? {
+        guard lookback > 1,
+              index - lookback + 1 >= 1,
+              !weights.isEmpty else { return nil }
+        var returns: [Double] = []
+        for cursor in (index - lookback + 1)...index {
+            var dailyReturn = 0.0
+            var usedWeight = 0.0
+            for (symbol, weight) in weights where weight > 0 {
+                guard let prices = pricesBySymbol[symbol],
+                      prices.indices.contains(cursor),
+                      prices.indices.contains(cursor - 1),
+                      prices[cursor] > 0,
+                      prices[cursor - 1] > 0 else { continue }
+                dailyReturn += weight * (prices[cursor] / prices[cursor - 1] - 1)
+                usedWeight += weight
+            }
+            if usedWeight > 0 {
+                returns.append(dailyReturn)
+            }
+        }
+        guard returns.count >= max(20, lookback / 2) else { return nil }
+        let mean = returns.reduce(0, +) / Double(returns.count)
+        let variance = returns.reduce(0) { $0 + pow($1 - mean, 2) } / Double(returns.count - 1)
+        return sqrt(max(variance, 0)) * sqrt(252)
+    }
+
+    private static func rollingCorrelation(
+        _ first: [Double],
+        _ second: [Double],
+        at index: Int,
+        lookback: Int
+    ) -> Double? {
+        guard lookback > 5,
+              first.indices.contains(index),
+              second.indices.contains(index),
+              index - lookback + 1 >= 1 else { return nil }
+        var firstReturns: [Double] = []
+        var secondReturns: [Double] = []
+        for cursor in (index - lookback + 1)...index {
+            guard first.indices.contains(cursor),
+                  first.indices.contains(cursor - 1),
+                  second.indices.contains(cursor),
+                  second.indices.contains(cursor - 1),
+                  first[cursor] > 0,
+                  first[cursor - 1] > 0,
+                  second[cursor] > 0,
+                  second[cursor - 1] > 0 else { continue }
+            firstReturns.append(first[cursor] / first[cursor - 1] - 1)
+            secondReturns.append(second[cursor] / second[cursor - 1] - 1)
+        }
+        guard firstReturns.count >= max(10, lookback / 2),
+              firstReturns.count == secondReturns.count else { return nil }
+        let firstMean = firstReturns.reduce(0, +) / Double(firstReturns.count)
+        let secondMean = secondReturns.reduce(0, +) / Double(secondReturns.count)
+        var covariance = 0.0
+        var firstVariance = 0.0
+        var secondVariance = 0.0
+        for index in firstReturns.indices {
+            let firstDelta = firstReturns[index] - firstMean
+            let secondDelta = secondReturns[index] - secondMean
+            covariance += firstDelta * secondDelta
+            firstVariance += firstDelta * firstDelta
+            secondVariance += secondDelta * secondDelta
+        }
+        guard firstVariance > 0, secondVariance > 0 else { return nil }
+        return covariance / sqrt(firstVariance * secondVariance)
+    }
+
+    private static func portfolioDrawdown(
+        context: StrategyTargetContext,
+        lookback: Int
+    ) -> Double {
+        let values = context.points.suffix(max(lookback, 1)).map(\.portfolioValue) + [context.preRebalanceValue]
+        guard let current = values.last,
+              let peak = values.max(),
+              peak > 0 else { return 0 }
+        return current / peak - 1
+    }
+
+    private static func scaledWeights(
+        _ weights: [String: Double],
+        toMaxExposure maxExposure: Double
+    ) -> [String: Double] {
+        let exposure = weights.values.reduce(0, +)
+        guard exposure > maxExposure, exposure > 0 else { return weights }
+        return weights.mapValues { $0 * maxExposure / exposure }
+    }
+
+    private static func recentOHLCPanicCount(
+        symbol: String,
+        signalDate: Date,
+        data: ResearchTargetDataContext,
+        lookbackBars: Int
+    ) -> Int {
+        guard let bars = data.ohlcBySymbol[symbol], !bars.isEmpty else { return 0 }
+        let recentBars = bars.filter { $0.date <= signalDate }.suffix(max(lookbackBars, 1))
+        return recentBars.reduce(0) { count, bar in
+            guard bar.close > 0, bar.high > 0, bar.low > 0, bar.open > 0 else { return count }
+            let intradayRange = (bar.high - bar.low) / bar.close
+            let closeLocation = (bar.close - bar.low) / max(bar.high - bar.low, 0.0001)
+            let downBody = bar.close / bar.open - 1
+            let panic = intradayRange > 0.035 && closeLocation < 0.35 && downBody < -0.008
+            return count + (panic ? 1 : 0)
+        }
+    }
+
+    private static func joinedWeightMap(_ weights: [String: Double]) -> String {
+        weights
+            .filter { $0.value > 0.0001 }
+            .sorted { $0.key < $1.key }
+            .map { "\($0.key):\(String(format: "%.4f", $0.value))" }
+            .joined(separator: "|")
+    }
+
+    private static func newLogicWeights(
+        variant: NewLogicVariant,
+        context: StrategyTargetContext,
+        data: ResearchTargetDataContext
+    ) -> [String: Double] {
+        let pricesBySymbol = data.pricesBySymbol
+        let index = context.signalIndex
+        let usSymbols = ["nasdaq", "sp500", "dowjones"]
+        let chinaSymbols = ["csi300", "shanghai_composite", "shenzhen_component", "chinext"]
+        let globalSymbols = ["hsi", "nikkei"]
+        let riskSymbols = usSymbols + chinaSymbols + globalSymbols
+        let usTrendCount = positiveTrendCount(symbols: usSymbols, pricesBySymbol: pricesBySymbol, index: index, minimumScore: 0.02)
+        let chinaTrendCount = positiveTrendCount(symbols: chinaSymbols, pricesBySymbol: pricesBySymbol, index: index, minimumScore: 0.02)
+        let globalTrendCount = positiveTrendCount(symbols: globalSymbols, pricesBySymbol: pricesBySymbol, index: index, minimumScore: 0.02)
+        let totalRiskTrendCount = usTrendCount + chinaTrendCount + globalTrendCount
+        let goldScore = trendScore(symbol: "gold_cny", pricesBySymbol: pricesBySymbol, index: index) ?? -Double.infinity
+        let goldPasses = goldScore > variant.minScore
+            && (!variant.requireMovingAverage || isAboveMovingAverage(symbol: "gold_cny", pricesBySymbol: pricesBySymbol, index: index, period: 180))
+
+        func usdCashWeight() -> [String: Double] {
+            guard variant.useUsdCash,
+                  let usdScore = trendScore(symbol: "usd_cash", pricesBySymbol: pricesBySymbol, index: index),
+                  usdScore > 0.10,
+                  isAboveMovingAverage(symbol: "usd_cash", pricesBySymbol: pricesBySymbol, index: index, period: 126) else {
+                return [:]
+            }
+            return ["usd_cash": min(variant.maxExposure, 0.70)]
+        }
+
+        func staticAnchorWeights() -> [String: Double] {
+            let goldWeight = min(max(variant.goldBallast, 0), variant.perAssetCap)
+            let equityWeight = max(variant.maxExposure - goldWeight, 0)
+            return [
+                "gold_cny": goldWeight,
+                "nasdaq": min(equityWeight * 0.70, variant.perAssetCap),
+                "sp500": min(equityWeight * 0.30, variant.perAssetCap * 0.50),
+            ].filter { $0.value > 0 }
+        }
+
+        func weightedAnchorReturn(weights: [String: Double], lookback: Int) -> Double? {
+            var total = 0.0
+            var usedWeight = 0.0
+            for (symbol, weight) in weights {
+                guard let prices = pricesBySymbol[symbol],
+                      let momentum = priceMomentum(prices, at: index, lookback: lookback) else { continue }
+                total += weight * momentum
+                usedWeight += weight
+            }
+            return usedWeight > 0 ? total / usedWeight : nil
+        }
+
+        func weightedAnchorVolatility(weights: [String: Double], lookback: Int) -> Double? {
+            guard lookback > 1, index - lookback + 1 >= 1 else { return nil }
+            var returns: [Double] = []
+            for cursor in (index - lookback + 1)...index {
+                var dailyReturn = 0.0
+                var usedWeight = 0.0
+                for (symbol, weight) in weights {
+                    guard let prices = pricesBySymbol[symbol],
+                          prices.indices.contains(cursor),
+                          prices.indices.contains(cursor - 1),
+                          prices[cursor] > 0,
+                          prices[cursor - 1] > 0 else { continue }
+                    dailyReturn += weight * (prices[cursor] / prices[cursor - 1] - 1)
+                    usedWeight += weight
+                }
+                if usedWeight > 0 {
+                    returns.append(dailyReturn / usedWeight)
+                }
+            }
+            guard returns.count >= max(20, lookback / 2) else { return nil }
+            let mean = returns.reduce(0, +) / Double(returns.count)
+            let variance = returns.reduce(0) { $0 + pow($1 - mean, 2) } / Double(returns.count - 1)
+            return sqrt(max(variance, 0)) * sqrt(252)
+        }
+
+        func weightedAnchorDrawdown(weights: [String: Double], lookback: Int) -> Double? {
+            guard lookback > 1, index - lookback + 1 >= 0 else { return nil }
+            var normalizedValues: [Double] = []
+            let startIndex = index - lookback + 1
+            for cursor in startIndex...index {
+                var value = 0.0
+                var usedWeight = 0.0
+                for (symbol, weight) in weights {
+                    guard let prices = pricesBySymbol[symbol],
+                          prices.indices.contains(cursor),
+                          prices.indices.contains(startIndex),
+                          prices[startIndex] > 0 else { continue }
+                    value += weight * prices[cursor] / prices[startIndex]
+                    usedWeight += weight
+                }
+                if usedWeight > 0 {
+                    normalizedValues.append(value / usedWeight)
+                }
+            }
+            guard let current = normalizedValues.last,
+                  let peak = normalizedValues.max(),
+                  peak > 0 else { return nil }
+            return current / peak - 1
+        }
+
+        switch variant.kind {
+        case .cashConfirmedParity:
+            let candidateSymbols = ["gold_cny"] + riskSymbols + (variant.useUsdCash ? ["usd_cash"] : [])
+            let candidates = candidateSymbols.compactMap { symbol -> (symbol: String, score: Double)? in
+                guard let score = trendScore(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index),
+                      score > variant.minScore else { return nil }
+                if variant.requireMovingAverage,
+                   !isAboveMovingAverage(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index, period: symbol == "usd_cash" ? 126 : 180) {
+                    return nil
+                }
+                if variant.requireBreadthConfirmation {
+                    if usSymbols.contains(symbol), usTrendCount < 2 { return nil }
+                    if chinaSymbols.contains(symbol), chinaTrendCount < 2 { return nil }
+                    if globalSymbols.contains(symbol), totalRiskTrendCount < 3 { return nil }
+                    if symbol == "gold_cny", !goldPasses { return nil }
+                }
+                return (symbol, score)
+            }
+            .sorted { lhs, rhs in
+                if lhs.score == rhs.score { return lhs.symbol < rhs.symbol }
+                return lhs.score > rhs.score
+            }
+            let selected = Array(candidates.prefix(max(variant.topCount, 1)))
+            var weights = cappedRiskParityWeights(
+                selected: selected,
+                pricesBySymbol: pricesBySymbol,
+                index: index,
+                maxExposure: totalRiskTrendCount <= 1 ? variant.maxExposure * 0.65 : variant.maxExposure,
+                perAssetCap: variant.perAssetCap
+            )
+            if goldPasses,
+               variant.goldBallast > 0,
+               weights["gold_cny"] == nil,
+               weights.values.reduce(0, +) + variant.goldBallast <= variant.maxExposure {
+                weights["gold_cny"] = variant.goldBallast
+            }
+            return weights.isEmpty ? usdCashWeight() : weights
+
+        case .goldNasdaqBarbell:
+            let equityCandidates = usSymbols.compactMap { symbol -> (symbol: String, score: Double)? in
+                guard let score = trendScore(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index),
+                      score > variant.minScore,
+                      (!variant.requireMovingAverage || isAboveMovingAverage(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index, period: 180)),
+                      (!variant.requireBreadthConfirmation || usTrendCount >= 2) else { return nil }
+                return (symbol, score)
+            }
+            .sorted { $0.score > $1.score }
+            var weights: [String: Double] = [:]
+            let equityPasses = !equityCandidates.isEmpty
+            if goldPasses && equityPasses {
+                weights["gold_cny"] = min(variant.perAssetCap, variant.maxExposure * 0.48)
+                weights[equityCandidates[0].symbol] = min(variant.perAssetCap, variant.maxExposure * 0.42)
+                if equityCandidates.count > 1 {
+                    weights[equityCandidates[1].symbol] = min(variant.perAssetCap * 0.40, variant.maxExposure * 0.10)
+                }
+            } else if goldPasses {
+                weights["gold_cny"] = min(variant.maxExposure * 0.82, variant.perAssetCap)
+            } else if equityPasses && usTrendCount >= 2 {
+                weights[equityCandidates[0].symbol] = min(variant.maxExposure * 0.72, variant.perAssetCap)
+                if variant.goldBallast > 0,
+                   goldScore > -0.15,
+                   weights.values.reduce(0, +) + variant.goldBallast <= variant.maxExposure {
+                    weights["gold_cny"] = variant.goldBallast
+                }
+            }
+            return weights.isEmpty ? usdCashWeight() : weights
+
+        case .goldAnchorEquityPulse:
+            var weights: [String: Double] = [:]
+            let goldHealthy = goldScore > -0.20
+                && (!variant.requireMovingAverage || isAboveMovingAverage(symbol: "gold_cny", pricesBySymbol: pricesBySymbol, index: index, period: 220))
+            let goldAnchor = goldPasses ? variant.goldBallast : (goldHealthy ? variant.goldBallast * 0.70 : 0)
+            if goldAnchor > 0 {
+                weights["gold_cny"] = min(goldAnchor, variant.perAssetCap)
+            }
+            let equityCandidates = usSymbols.compactMap { symbol -> (symbol: String, score: Double)? in
+                guard let score = trendScore(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index),
+                      score > variant.minScore,
+                      (!variant.requireMovingAverage || isAboveMovingAverage(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index, period: 180)),
+                      (!variant.requireBreadthConfirmation || usTrendCount >= 2) else { return nil }
+                return (symbol, score)
+            }
+            .sorted { lhs, rhs in
+                if lhs.score == rhs.score { return lhs.symbol < rhs.symbol }
+                return lhs.score > rhs.score
+            }
+            if !equityCandidates.isEmpty {
+                let remainingExposure = max(variant.maxExposure - weights.values.reduce(0, +), 0)
+                weights[equityCandidates[0].symbol, default: 0] += min(remainingExposure * 0.82, variant.perAssetCap)
+                if equityCandidates.count > 1 {
+                    let usedExposure = weights.values.reduce(0, +)
+                    weights[equityCandidates[1].symbol, default: 0] += min(max(variant.maxExposure - usedExposure, 0), variant.perAssetCap * 0.35)
+                }
+            } else if goldPasses {
+                weights["gold_cny"] = min(max(weights["gold_cny"] ?? 0, variant.maxExposure * 0.76), variant.perAssetCap)
+            }
+            return weights.isEmpty ? usdCashWeight() : weights
+
+        case .dualMomentumAnchor:
+            let candidateSymbols = ["gold_cny", "nasdaq", "sp500"]
+            let candidates = candidateSymbols.compactMap { symbol -> (symbol: String, score: Double)? in
+                guard let score = trendScore(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index),
+                      score > variant.minScore,
+                      (!variant.requireMovingAverage || isAboveMovingAverage(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index, period: 180)) else { return nil }
+                if usSymbols.contains(symbol), variant.requireBreadthConfirmation, usTrendCount < 2 { return nil }
+                return (symbol, score)
+            }
+            .sorted { lhs, rhs in
+                if lhs.score == rhs.score { return lhs.symbol < rhs.symbol }
+                return lhs.score > rhs.score
+            }
+            guard let leader = candidates.first else { return usdCashWeight() }
+            var weights: [String: Double] = [leader.symbol: min(variant.maxExposure * 0.78, variant.perAssetCap)]
+            if candidates.count > 1 {
+                let second = candidates[1]
+                weights[second.symbol] = min(variant.maxExposure * 0.22, variant.perAssetCap * 0.50)
+            } else if leader.symbol != "gold_cny", goldScore > -0.10, variant.goldBallast > 0 {
+                weights["gold_cny"] = min(variant.goldBallast, variant.maxExposure - weights.values.reduce(0, +))
+            }
+            return weights
+
+        case .staticGoldEquityAnchor:
+            let goldWeight = min(max(variant.goldBallast, 0), variant.perAssetCap)
+            let remaining = max(variant.maxExposure - goldWeight, 0)
+            var weights: [String: Double] = ["gold_cny": goldWeight]
+            if remaining > 0 {
+                weights["nasdaq"] = min(remaining * 0.70, variant.perAssetCap)
+                weights["sp500"] = min(remaining * 0.30, variant.perAssetCap * 0.50)
+            }
+            return weights.filter { $0.value > 0 }
+
+        case .staticAnchorWithEquityFuse:
+            let baseGoldWeight = min(max(variant.goldBallast, 0), variant.perAssetCap)
+            let baseEquityWeight = max(variant.maxExposure - baseGoldWeight, 0)
+            var weights: [String: Double] = [
+                "gold_cny": baseGoldWeight,
+                "nasdaq": min(baseEquityWeight * 0.70, variant.perAssetCap),
+                "sp500": min(baseEquityWeight * 0.30, variant.perAssetCap * 0.50),
+            ].filter { $0.value > 0 }
+
+            func drawdown(_ symbol: String, _ lookback: Int) -> Double {
+                guard let prices = pricesBySymbol[symbol],
+                      let value = drawdownFromHigh(prices, at: index, lookback: lookback) else { return 0 }
+                return value
+            }
+
+            func momentum(_ symbol: String, _ lookback: Int) -> Double {
+                guard let prices = pricesBySymbol[symbol],
+                      let value = priceMomentum(prices, at: index, lookback: lookback) else { return 0 }
+                return value
+            }
+
+            let strictFuse = variant.requireMovingAverage
+            let nasdaqStress = strictFuse
+                ? (drawdown("nasdaq", 126) < -0.08 && momentum("nasdaq", 63) < -0.015)
+                : (drawdown("nasdaq", 126) < -0.13 && momentum("nasdaq", 63) < -0.035)
+            let sp500Stress = strictFuse
+                ? (drawdown("sp500", 126) < -0.07 && momentum("sp500", 63) < -0.010)
+                : (drawdown("sp500", 126) < -0.10 && momentum("sp500", 63) < -0.030)
+            let movingAverageStress = !isAboveMovingAverage(symbol: "nasdaq", pricesBySymbol: pricesBySymbol, index: index, period: 220)
+                && !isAboveMovingAverage(symbol: "sp500", pricesBySymbol: pricesBySymbol, index: index, period: 220)
+            let usStress = (nasdaqStress && sp500Stress) || (movingAverageStress && usTrendCount < 2)
+            if usStress {
+                let equityScale = min(max(variant.minScore, 0), 1)
+                let oldNasdaq = weights["nasdaq"] ?? 0
+                let oldSP500 = weights["sp500"] ?? 0
+                weights["nasdaq"] = oldNasdaq * equityScale
+                weights["sp500"] = oldSP500 * equityScale
+                let removedEquity = oldNasdaq + oldSP500 - (weights["nasdaq"] ?? 0) - (weights["sp500"] ?? 0)
+                if goldScore > -0.20 {
+                    let addToGold = min(removedEquity * 0.65, variant.perAssetCap - (weights["gold_cny"] ?? 0))
+                    if addToGold > 0 {
+                        weights["gold_cny", default: 0] += addToGold
+                    }
+                }
+            }
+
+            let goldStress = strictFuse
+                ? (
+                    (drawdown("gold_cny", 126) < -0.07 && momentum("gold_cny", 63) < -0.010)
+                    || (!isAboveMovingAverage(symbol: "gold_cny", pricesBySymbol: pricesBySymbol, index: index, period: 220)
+                        && momentum("gold_cny", 126) < 0)
+                )
+                : (
+                    drawdown("gold_cny", 126) < -0.12
+                    && momentum("gold_cny", 63) < -0.030
+                    && !isAboveMovingAverage(symbol: "gold_cny", pricesBySymbol: pricesBySymbol, index: index, period: 220)
+                )
+            if goldStress {
+                weights["gold_cny"] = (weights["gold_cny"] ?? 0) * (strictFuse ? 0.35 : 0.55)
+            }
+
+            if weights.values.reduce(0, +) < 0.35 {
+                return usdCashWeight()
+            }
+            return weights.filter { $0.value > 0.0001 }
+
+        case .staticAnchorWithPortfolioFuse:
+            let baseGoldWeight = min(max(variant.goldBallast, 0), variant.perAssetCap)
+            let baseEquityWeight = max(variant.maxExposure - baseGoldWeight, 0)
+            var weights: [String: Double] = [
+                "gold_cny": baseGoldWeight,
+                "nasdaq": min(baseEquityWeight * 0.70, variant.perAssetCap),
+                "sp500": min(baseEquityWeight * 0.30, variant.perAssetCap * 0.50),
+            ].filter { $0.value > 0 }
+
+            let recentValues = context.points.suffix(252).map(\.portfolioValue) + [context.preRebalanceValue]
+            let recentPeak = recentValues.max() ?? context.preRebalanceValue
+            let portfolioDrawdown = recentPeak > 0 ? context.preRebalanceValue / recentPeak - 1 : 0
+            if portfolioDrawdown < -0.18 {
+                weights["nasdaq"] = (weights["nasdaq"] ?? 0) * min(max(variant.minScore, 0), 1)
+                weights["sp500"] = (weights["sp500"] ?? 0) * min(max(variant.minScore, 0), 1)
+                weights["gold_cny"] = (weights["gold_cny"] ?? 0) * 0.60
+            } else if portfolioDrawdown < -0.12 {
+                weights["nasdaq"] = (weights["nasdaq"] ?? 0) * min(max(variant.minScore, 0), 1)
+                weights["sp500"] = (weights["sp500"] ?? 0) * min(max(variant.minScore, 0), 1)
+            } else if portfolioDrawdown < -0.08 {
+                weights["nasdaq"] = (weights["nasdaq"] ?? 0) * max(min(variant.minScore + 0.25, 1), 0)
+                weights["sp500"] = (weights["sp500"] ?? 0) * max(min(variant.minScore + 0.25, 1), 0)
+            }
+
+            if (weights["gold_cny"] ?? 0) < 0.20,
+               goldScore > -0.10 {
+                weights["gold_cny"] = 0.20
+            }
+            return weights.filter { $0.value > 0.0001 }
+
+        case .volTargetGoldEquityAnchor:
+            let baseWeights = staticAnchorWeights()
+            let portfolioVolatility = weightedAnchorVolatility(weights: baseWeights, lookback: 63) ?? 0.14
+            let targetVolatility = max(variant.minScore, 0.04)
+            var scale = min(max(targetVolatility / max(portfolioVolatility, 0.04), 0.20), variant.maxExposure)
+            let mediumReturn = weightedAnchorReturn(weights: baseWeights, lookback: 126) ?? 0
+            let mediumDrawdown = weightedAnchorDrawdown(weights: baseWeights, lookback: 126) ?? 0
+            if mediumReturn < -0.03 || mediumDrawdown < -0.12 {
+                scale *= 0.70
+            }
+            if mediumReturn > 0.12, mediumDrawdown > -0.05 {
+                scale = min(scale * 1.08, variant.maxExposure)
+            }
+            let weights = baseWeights.mapValues { $0 * scale }
+            if weights.values.reduce(0, +) < 0.35 {
+                return usdCashWeight()
+            }
+            return weights.filter { $0.value > 0.0001 }
+
+        case .anchorTrendFilter:
+            let baseWeights = staticAnchorWeights()
+            let shortReturn = weightedAnchorReturn(weights: baseWeights, lookback: 63) ?? 0
+            let mediumReturn = weightedAnchorReturn(weights: baseWeights, lookback: 126) ?? 0
+            let longReturn = weightedAnchorReturn(weights: baseWeights, lookback: 252) ?? 0
+            let drawdown = weightedAnchorDrawdown(weights: baseWeights, lookback: 126) ?? 0
+            var scale = variant.maxExposure
+            if mediumReturn < -0.04 && drawdown < -0.08 {
+                scale = min(max(variant.minScore, 0), 1)
+            } else if shortReturn < -0.05 || longReturn < 0 {
+                scale = min(max(variant.minScore + 0.25, 0), 1)
+            } else if longReturn > 0.12 && mediumReturn > 0 {
+                scale = variant.maxExposure
+            }
+            var weights = baseWeights.mapValues { $0 * scale }
+            if scale < 0.60, goldScore > 0 {
+                weights["gold_cny", default: 0] += min(0.12, variant.perAssetCap - (weights["gold_cny"] ?? 0))
+            }
+            return weights.filter { $0.value > 0.0001 }
+
+        case .goldEquityRiskParity:
+            let candidateSymbols = ["gold_cny", "nasdaq", "sp500"]
+            let selected = candidateSymbols.compactMap { symbol -> (symbol: String, score: Double)? in
+                guard let volatility = annualizedVolatility(pricesBySymbol[symbol] ?? [], at: index, lookback: 63),
+                      volatility > 0 else { return nil }
+                let score: Double
+                if variant.requireMovingAverage {
+                    guard isAboveMovingAverage(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index, period: 180) else { return nil }
+                    score = 1 / volatility
+                } else {
+                    score = 1 / volatility
+                }
+                return (symbol, score)
+            }
+            let weights = cappedRiskParityWeights(
+                selected: selected,
+                pricesBySymbol: pricesBySymbol,
+                index: index,
+                maxExposure: variant.maxExposure,
+                perAssetCap: variant.perAssetCap
+            )
+            return weights.isEmpty ? staticAnchorWeights().mapValues { $0 * 0.60 } : weights
+
+        case .trendPullbackReentry:
+            let candidateSymbols = ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite"]
+            let candidates = candidateSymbols.compactMap { symbol -> (symbol: String, score: Double)? in
+                guard let prices = pricesBySymbol[symbol],
+                      let longMomentum = priceMomentum(prices, at: index, lookback: 252),
+                      longMomentum > 0,
+                      let pullback = drawdownFromHigh(prices, at: index, lookback: 126),
+                      pullback < -0.035,
+                      pullback > -0.22,
+                      let rebound = priceMomentum(prices, at: index, lookback: 20),
+                      rebound > -0.015,
+                      isAboveMovingAverage(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index, period: 220),
+                      let volatility = annualizedVolatility(prices, at: index, lookback: 63) else { return nil }
+                if usSymbols.contains(symbol), variant.requireBreadthConfirmation, usTrendCount < 2 { return nil }
+                if chinaSymbols.contains(symbol), variant.requireBreadthConfirmation, chinaTrendCount < 2 { return nil }
+                let score = (longMomentum + abs(pullback) * 0.75 + rebound * 0.50) / max(volatility, 0.06)
+                return score > variant.minScore ? (symbol, score) : nil
+            }
+            .sorted { $0.score > $1.score }
+            let selected = Array(candidates.prefix(max(variant.topCount, 1)))
+            var weights = cappedRiskParityWeights(
+                selected: selected,
+                pricesBySymbol: pricesBySymbol,
+                index: index,
+                maxExposure: variant.maxExposure,
+                perAssetCap: variant.perAssetCap
+            )
+            if weights.isEmpty, goldPasses, totalRiskTrendCount <= 1 {
+                weights["gold_cny"] = min(variant.goldBallast, variant.perAssetCap)
+            }
+            return weights.isEmpty ? usdCashWeight() : weights
+        }
+    }
+
+    private static func runNewLogicGrid(
+        seriesBySymbol: [String: PublicHistorySeries],
+        settings: AdvancedBacktestRiskSettings
+    ) {
+        let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+        let variants: [NewLogicVariant] = [
+            .init(kind: .cashConfirmedParity, id: "cfp_60_3_90_ma_breadth_usd", title: "现金确认风险平价 60日", rebalanceSessions: 60, topCount: 3, maxExposure: 0.90, perAssetCap: 0.42, minScore: 0.08, requireMovingAverage: true, requireBreadthConfirmation: true, useUsdCash: true, goldBallast: 0.12),
+            .init(kind: .cashConfirmedParity, id: "cfp_80_3_85_ma_breadth", title: "现金确认风险平价 80日", rebalanceSessions: 80, topCount: 3, maxExposure: 0.85, perAssetCap: 0.38, minScore: 0.10, requireMovingAverage: true, requireBreadthConfirmation: true, useUsdCash: false, goldBallast: 0.16),
+            .init(kind: .cashConfirmedParity, id: "cfp_40_2_80_strict_usd", title: "现金确认风险平价 双强", rebalanceSessions: 40, topCount: 2, maxExposure: 0.80, perAssetCap: 0.45, minScore: 0.12, requireMovingAverage: true, requireBreadthConfirmation: true, useUsdCash: true, goldBallast: 0.18),
+            .init(kind: .cashConfirmedParity, id: "cfp_60_4_95_loose", title: "现金确认风险平价 宽松", rebalanceSessions: 60, topCount: 4, maxExposure: 0.95, perAssetCap: 0.35, minScore: 0.06, requireMovingAverage: true, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.10),
+            .init(kind: .goldNasdaqBarbell, id: "barbell_60_90_breadth_usd", title: "黄金纳指哑铃 60日", rebalanceSessions: 60, topCount: 2, maxExposure: 0.90, perAssetCap: 0.55, minScore: 0.08, requireMovingAverage: true, requireBreadthConfirmation: true, useUsdCash: true, goldBallast: 0.18),
+            .init(kind: .goldNasdaqBarbell, id: "barbell_80_85_breadth", title: "黄金纳指哑铃 80日", rebalanceSessions: 80, topCount: 2, maxExposure: 0.85, perAssetCap: 0.50, minScore: 0.10, requireMovingAverage: true, requireBreadthConfirmation: true, useUsdCash: false, goldBallast: 0.22),
+            .init(kind: .goldNasdaqBarbell, id: "barbell_40_95_loose_usd", title: "黄金纳指哑铃 宽松", rebalanceSessions: 40, topCount: 2, maxExposure: 0.95, perAssetCap: 0.60, minScore: 0.06, requireMovingAverage: true, requireBreadthConfirmation: false, useUsdCash: true, goldBallast: 0.12),
+            .init(kind: .goldAnchorEquityPulse, id: "anchor_pulse_80_95", title: "黄金锚美股脉冲 80日", rebalanceSessions: 80, topCount: 2, maxExposure: 0.95, perAssetCap: 0.72, minScore: 0.06, requireMovingAverage: true, requireBreadthConfirmation: true, useUsdCash: false, goldBallast: 0.42),
+            .init(kind: .goldAnchorEquityPulse, id: "anchor_pulse_120_90_usd", title: "黄金锚美股脉冲 120日", rebalanceSessions: 120, topCount: 2, maxExposure: 0.90, perAssetCap: 0.68, minScore: 0.08, requireMovingAverage: true, requireBreadthConfirmation: true, useUsdCash: true, goldBallast: 0.48),
+            .init(kind: .goldAnchorEquityPulse, id: "anchor_pulse_60_100_loose", title: "黄金锚美股脉冲 宽松", rebalanceSessions: 60, topCount: 2, maxExposure: 1.00, perAssetCap: 0.78, minScore: 0.04, requireMovingAverage: true, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.38),
+            .init(kind: .dualMomentumAnchor, id: "dual_anchor_80_95", title: "双动量锚 80日", rebalanceSessions: 80, topCount: 2, maxExposure: 0.95, perAssetCap: 0.75, minScore: 0.05, requireMovingAverage: true, requireBreadthConfirmation: true, useUsdCash: false, goldBallast: 0.18),
+            .init(kind: .dualMomentumAnchor, id: "dual_anchor_120_90_usd", title: "双动量锚 120日", rebalanceSessions: 120, topCount: 2, maxExposure: 0.90, perAssetCap: 0.70, minScore: 0.07, requireMovingAverage: true, requireBreadthConfirmation: true, useUsdCash: true, goldBallast: 0.20),
+            .init(kind: .staticGoldEquityAnchor, id: "static_anchor_50_50", title: "静态黄金美股锚 50/50", rebalanceSessions: 252, topCount: 2, maxExposure: 1.00, perAssetCap: 0.70, minScore: 0, requireMovingAverage: false, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.50),
+            .init(kind: .staticGoldEquityAnchor, id: "static_anchor_60_40", title: "静态黄金美股锚 60/40", rebalanceSessions: 252, topCount: 2, maxExposure: 1.00, perAssetCap: 0.70, minScore: 0, requireMovingAverage: false, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.60),
+            .init(kind: .staticGoldEquityAnchor, id: "static_anchor_70_30", title: "静态黄金美股锚 70/30", rebalanceSessions: 252, topCount: 2, maxExposure: 1.00, perAssetCap: 0.75, minScore: 0, requireMovingAverage: false, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.70),
+            .init(kind: .staticAnchorWithEquityFuse, id: "static_fuse_60_40_soft", title: "静态锚美股保险丝 60/40", rebalanceSessions: 60, topCount: 2, maxExposure: 1.00, perAssetCap: 0.78, minScore: 0.45, requireMovingAverage: false, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.60),
+            .init(kind: .staticAnchorWithEquityFuse, id: "static_fuse_55_45_mid", title: "静态锚美股保险丝 55/45", rebalanceSessions: 60, topCount: 2, maxExposure: 1.00, perAssetCap: 0.76, minScore: 0.35, requireMovingAverage: false, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.55),
+            .init(kind: .staticAnchorWithEquityFuse, id: "static_fuse_65_35_usd", title: "静态锚美股保险丝 65/35", rebalanceSessions: 80, topCount: 2, maxExposure: 1.00, perAssetCap: 0.82, minScore: 0.40, requireMovingAverage: false, requireBreadthConfirmation: false, useUsdCash: true, goldBallast: 0.65),
+            .init(kind: .staticAnchorWithEquityFuse, id: "static_fuse_60_40_strict", title: "静态锚美股保险丝 严格60/40", rebalanceSessions: 60, topCount: 2, maxExposure: 1.00, perAssetCap: 0.78, minScore: 0.25, requireMovingAverage: true, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.60),
+            .init(kind: .staticAnchorWithEquityFuse, id: "static_fuse_70_30_strict_usd", title: "静态锚美股保险丝 严格70/30", rebalanceSessions: 80, topCount: 2, maxExposure: 1.00, perAssetCap: 0.82, minScore: 0.20, requireMovingAverage: true, requireBreadthConfirmation: false, useUsdCash: true, goldBallast: 0.70),
+            .init(kind: .staticAnchorWithPortfolioFuse, id: "portfolio_fuse_60_40_soft", title: "静态锚水位保险丝 60/40", rebalanceSessions: 60, topCount: 2, maxExposure: 1.00, perAssetCap: 0.78, minScore: 0.35, requireMovingAverage: false, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.60),
+            .init(kind: .staticAnchorWithPortfolioFuse, id: "portfolio_fuse_55_45_hard", title: "静态锚水位保险丝 55/45", rebalanceSessions: 40, topCount: 2, maxExposure: 1.00, perAssetCap: 0.76, minScore: 0.20, requireMovingAverage: false, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.55),
+            .init(kind: .staticAnchorWithPortfolioFuse, id: "portfolio_fuse_70_30_usd", title: "静态锚水位保险丝 70/30", rebalanceSessions: 80, topCount: 2, maxExposure: 1.00, perAssetCap: 0.82, minScore: 0.25, requireMovingAverage: false, requireBreadthConfirmation: false, useUsdCash: true, goldBallast: 0.70),
+            .init(kind: .volTargetGoldEquityAnchor, id: "vol_target_anchor_10", title: "波动目标黄金美股锚 10波", rebalanceSessions: 40, topCount: 2, maxExposure: 1.00, perAssetCap: 0.80, minScore: 0.10, requireMovingAverage: false, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.60),
+            .init(kind: .volTargetGoldEquityAnchor, id: "vol_target_anchor_12", title: "波动目标黄金美股锚 12波", rebalanceSessions: 40, topCount: 2, maxExposure: 1.00, perAssetCap: 0.80, minScore: 0.12, requireMovingAverage: false, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.60),
+            .init(kind: .volTargetGoldEquityAnchor, id: "vol_target_anchor_14_55", title: "波动目标黄金美股锚 14波", rebalanceSessions: 60, topCount: 2, maxExposure: 1.00, perAssetCap: 0.78, minScore: 0.14, requireMovingAverage: false, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.55),
+            .init(kind: .anchorTrendFilter, id: "anchor_trend_60_40_soft", title: "锚组合趋势过滤 60/40", rebalanceSessions: 60, topCount: 2, maxExposure: 1.00, perAssetCap: 0.78, minScore: 0.45, requireMovingAverage: false, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.60),
+            .init(kind: .anchorTrendFilter, id: "anchor_trend_55_45_hard", title: "锚组合趋势过滤 55/45", rebalanceSessions: 40, topCount: 2, maxExposure: 1.00, perAssetCap: 0.76, minScore: 0.25, requireMovingAverage: false, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.55),
+            .init(kind: .goldEquityRiskParity, id: "gold_equity_rp_full", title: "黄金美股风险平价", rebalanceSessions: 60, topCount: 3, maxExposure: 1.00, perAssetCap: 0.55, minScore: 0, requireMovingAverage: false, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.60),
+            .init(kind: .goldEquityRiskParity, id: "gold_equity_rp_trend", title: "黄金美股趋势风险平价", rebalanceSessions: 60, topCount: 3, maxExposure: 0.95, perAssetCap: 0.55, minScore: 0, requireMovingAverage: true, requireBreadthConfirmation: false, useUsdCash: false, goldBallast: 0.60),
+            .init(kind: .trendPullbackReentry, id: "pullback_60_2_80_breadth", title: "趋势回撤再进入 60日", rebalanceSessions: 60, topCount: 2, maxExposure: 0.80, perAssetCap: 0.42, minScore: 1.10, requireMovingAverage: true, requireBreadthConfirmation: true, useUsdCash: false, goldBallast: 0.35),
+            .init(kind: .trendPullbackReentry, id: "pullback_40_3_90_loose_usd", title: "趋势回撤再进入 宽松", rebalanceSessions: 40, topCount: 3, maxExposure: 0.90, perAssetCap: 0.38, minScore: 0.85, requireMovingAverage: true, requireBreadthConfirmation: false, useUsdCash: true, goldBallast: 0.30)
+        ]
+        var sliceRows: [SliceMetricRow] = []
+        for variant in variants {
+            let symbols: [String]
+            switch variant.kind {
+            case .cashConfirmedParity:
+                symbols = [
+                    "gold_cny", "nasdaq", "sp500", "dowjones", "hsi", "nikkei",
+                    "csi300", "shanghai_composite"
+                ] + (variant.useUsdCash ? ["usd_cash"] : [])
+            case .goldNasdaqBarbell:
+                symbols = ["gold_cny", "nasdaq", "sp500", "dowjones"] + (variant.useUsdCash ? ["usd_cash"] : [])
+            case .goldAnchorEquityPulse, .dualMomentumAnchor:
+                symbols = ["gold_cny", "nasdaq", "sp500", "dowjones"] + (variant.useUsdCash ? ["usd_cash"] : [])
+            case .staticGoldEquityAnchor:
+                symbols = ["gold_cny", "nasdaq", "sp500"]
+            case .staticAnchorWithEquityFuse:
+                symbols = ["gold_cny", "nasdaq", "sp500"] + (variant.useUsdCash ? ["usd_cash"] : [])
+            case .staticAnchorWithPortfolioFuse:
+                symbols = ["gold_cny", "nasdaq", "sp500"] + (variant.useUsdCash ? ["usd_cash"] : [])
+            case .volTargetGoldEquityAnchor, .anchorTrendFilter, .goldEquityRiskParity:
+                symbols = ["gold_cny", "nasdaq", "sp500"] + (variant.useUsdCash ? ["usd_cash"] : [])
+            case .trendPullbackReentry:
+                symbols = ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite"] + (variant.useUsdCash ? ["usd_cash"] : [])
+            }
+            let inputs = symbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let config = ResearchTargetStrategyConfig(
+                symbol: variant.id,
+                title: variant.title,
+                warmupSessions: 252,
+                rebalanceSessions: variant.rebalanceSessions,
+                rebalanceBand: 0.03,
+                zeroFillBeforeFirstSymbols: ["usd_cash"],
+                buyReason: "新逻辑研究调仓"
+            )
+            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                config: config,
+                targetWeights: { context, data in
+                    newLogicWeights(variant: variant, context: context, data: data)
+                }
+            ) else {
+                sliceRows.append(SliceMetricRow(
+                    slice: "full",
+                    row: MetricRow(title: variant.title, id: variant.id, annualized: nil, maxDrawdown: nil, volatility: nil, sharpe: nil, start: "n/a", end: "n/a", pointCount: 0)
+                ))
+                continue
+            }
+            let fullRow = MetricRow(
+                title: variant.title,
+                id: variant.id,
+                annualized: report.annualizedReturn,
+                maxDrawdown: report.maxDrawdown,
+                volatility: report.annualizedVolatility,
+                sharpe: report.sharpeRatio,
+                start: report.points.first?.date.recordDateString ?? "n/a",
+                end: report.points.last?.date.recordDateString ?? "n/a",
+                pointCount: report.points.count
+            )
+            sliceRows.append(contentsOf: metricRowsForSlices(title: variant.title, id: variant.id, points: report.points, fullRow: fullRow))
+        }
+        printSliceRows(sliceRows, header: "APP_NEW_LOGIC_GRID")
+    }
+
+    private static func runAnchorTrendGrid(
+        seriesBySymbol: [String: PublicHistorySeries],
+        settings: AdvancedBacktestRiskSettings
+    ) {
+        let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+        let symbols = ["gold_cny", "nasdaq", "sp500"]
+        let inputs = symbols.compactMap { optionsBySymbol[$0] }.map { option in
+            BacktestEngine.advancedAssetInput(for: option) { symbol in
+                seriesBySymbol[normalizedHistorySymbol(symbol)]
+            }
+        }
+        let goldWeights = [0.56, 0.58, 0.60, 0.62, 0.64]
+        let defensiveScales = [0.18, 0.22, 0.26, 0.30]
+        let rebalances = [20, 30, 40]
+        print("APP_ANCHOR_TREND_GRID")
+        print("gold_weight,defensive_scale,rebalance,annualized,max_drawdown,volatility,sharpe,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,start,end,points")
+        for goldWeight in goldWeights {
+            for defensiveScale in defensiveScales {
+                for rebalance in rebalances {
+                    let variant = NewLogicVariant(
+                        kind: .anchorTrendFilter,
+                        id: "anchor_trend_grid",
+                        title: "锚组合趋势过滤网格",
+                        rebalanceSessions: rebalance,
+                        topCount: 2,
+                        maxExposure: 1.00,
+                        perAssetCap: 0.80,
+                        minScore: defensiveScale,
+                        requireMovingAverage: false,
+                        requireBreadthConfirmation: false,
+                        useUsdCash: false,
+                        goldBallast: goldWeight
+                    )
+                    let config = ResearchTargetStrategyConfig(
+                        symbol: variant.id,
+                        title: variant.title,
+                        warmupSessions: 252,
+                        rebalanceSessions: variant.rebalanceSessions,
+                        rebalanceBand: 0.03,
+                        buyReason: "锚趋势网格研究调仓"
+                    )
+                    guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                        assetInputs: inputs,
+                        initialCash: 100_000,
+                        settings: settings,
+                        config: config,
+                        targetWeights: { context, data in
+                            newLogicWeights(variant: variant, context: context, data: data)
+                        }
+                    ) else {
+                        print(String(format: "%.2f,%.2f,%d,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,0", goldWeight, defensiveScale, rebalance))
+                        continue
+                    }
+                    let full = MetricRow(
+                        title: variant.title,
+                        id: variant.id,
+                        annualized: report.annualizedReturn,
+                        maxDrawdown: report.maxDrawdown,
+                        volatility: report.annualizedVolatility,
+                        sharpe: report.sharpeRatio,
+                        start: report.points.first?.date.recordDateString ?? "n/a",
+                        end: report.points.last?.date.recordDateString ?? "n/a",
+                        pointCount: report.points.count
+                    )
+                    let calendar = Calendar(identifier: .gregorian)
+                    let since2020 = calendar.date(from: DateComponents(year: 2020, month: 1, day: 1))!
+                    let since2022 = calendar.date(from: DateComponents(year: 2022, month: 1, day: 1))!
+                    let row2020 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2020 })
+                    let row2022 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2022 })
+                    let annualizedText = full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let drawdownText = full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let volatilityText = full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let sharpeText = full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a"
+                    let annualized2020Text = row2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let drawdown2020Text = row2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let annualized2022Text = row2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let drawdown2022Text = row2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let columns: [String] = [
+                        String(format: "%.2f", goldWeight),
+                        String(format: "%.2f", defensiveScale),
+                        "\(rebalance)",
+                        annualizedText,
+                        drawdownText,
+                        volatilityText,
+                        sharpeText,
+                        annualized2020Text,
+                        drawdown2020Text,
+                        annualized2022Text,
+                        drawdown2022Text,
+                        full.start,
+                        full.end,
+                        "\(full.pointCount)"
+                    ]
+                    print(columns.joined(separator: ","))
+                }
+            }
+        }
+    }
+
+    private static func webLogicVariants() -> [WebLogicVariant] {
+        var variants: [WebLogicVariant] = []
+        for goldWeight in [0.56, 0.58, 0.60, 0.62] {
+            for rebalance in [30, 40, 50] {
+                for equityScale in [0.20, 0.25, 0.30] {
+                    for goldScale in [0.35, 0.50] {
+                        for targetVolatility in [0.12, 0.14] {
+                            let id = String(
+                                format: "web_anchor_g%.0f_eq%.0f_au%.0f_v%.0f_r%d",
+                                goldWeight * 100,
+                                equityScale * 100,
+                                goldScale * 100,
+                                targetVolatility * 100,
+                                rebalance
+                            )
+                            variants.append(WebLogicVariant(
+                                id: id,
+                                title: "网页研究锚趋势 \(id)",
+                                goldWeight: goldWeight,
+                                equityStressScale: equityScale,
+                                goldStressScale: goldScale,
+                                targetVolatility: targetVolatility,
+                                rebalanceSessions: rebalance
+                            ))
+                        }
+                    }
+                }
+            }
+        }
+        return variants
+    }
+
+    private static func webLogicWeights(
+        variant: WebLogicVariant,
+        context: StrategyTargetContext,
+        data: ResearchTargetDataContext
+    ) -> [String: Double] {
+        let pricesBySymbol = data.pricesBySymbol
+        let index = context.signalIndex
+        let equityWeight = max(1 - variant.goldWeight, 0)
+        var weights: [String: Double] = [
+            "gold_cny": variant.goldWeight,
+            "nasdaq": equityWeight * 0.70,
+            "sp500": equityWeight * 0.30,
+        ]
+
+        func isBelowMA220(_ symbol: String) -> Bool {
+            guard let prices = pricesBySymbol[symbol],
+                  prices.indices.contains(index),
+                  let average = movingAverage(prices, at: index, period: 220) else { return true }
+            return prices[index] < average
+        }
+
+        func momentum126IsNegative(_ symbol: String) -> Bool {
+            guard let prices = pricesBySymbol[symbol],
+                  let momentum = priceMomentum(prices, at: index, lookback: 126) else { return true }
+            return momentum < 0
+        }
+
+        let equityStress = isBelowMA220("nasdaq")
+            && isBelowMA220("sp500")
+            && momentum126IsNegative("nasdaq")
+            && momentum126IsNegative("sp500")
+        if equityStress {
+            weights["nasdaq"] = (weights["nasdaq"] ?? 0) * variant.equityStressScale
+            weights["sp500"] = (weights["sp500"] ?? 0) * variant.equityStressScale
+        }
+
+        let goldStress = isBelowMA220("gold_cny") && momentum126IsNegative("gold_cny")
+        if goldStress {
+            weights["gold_cny"] = (weights["gold_cny"] ?? 0) * variant.goldStressScale
+        }
+
+        if let volatility = weightedPortfolioAnnualizedVolatility(
+            weights: weights,
+            pricesBySymbol: pricesBySymbol,
+            at: index,
+            lookback: 63
+        ), volatility > variant.targetVolatility {
+            let grossExposure = max(weights.values.reduce(0, +), 0.0001)
+            let volatilityScale = min(variant.targetVolatility / volatility, 1)
+            let minimumExposureScale = min(0.35 / grossExposure, 1)
+            let scale = max(volatilityScale, minimumExposureScale)
+            weights = weights.mapValues { $0 * scale }
+        }
+
+        return weights.filter { $0.value > 0.0001 }
+    }
+
+    private static func runWebLogic(
+        variant: WebLogicVariant,
+        inputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        settings: AdvancedBacktestRiskSettings
+    ) -> WebLogicRun? {
+        let config = ResearchTargetStrategyConfig(
+            symbol: variant.id,
+            title: variant.title,
+            warmupSessions: 252,
+            rebalanceSessions: variant.rebalanceSessions,
+            rebalanceBand: 0.03,
+            buyReason: "网页研究策略调仓"
+        )
+        guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+            assetInputs: inputs,
+            initialCash: 100_000,
+            settings: settings,
+            config: config,
+            targetWeights: { context, data in
+                webLogicWeights(variant: variant, context: context, data: data)
+            }
+        ) else { return nil }
+
+        let report = run.report
+        let full = MetricRow(
+            title: variant.title,
+            id: variant.id,
+            annualized: report.annualizedReturn,
+            maxDrawdown: report.maxDrawdown,
+            volatility: report.annualizedVolatility,
+            sharpe: report.sharpeRatio,
+            start: report.points.first?.date.recordDateString ?? "n/a",
+            end: report.points.last?.date.recordDateString ?? "n/a",
+            pointCount: report.points.count
+        )
+        let calendar = Calendar(identifier: .gregorian)
+        let since2020Date = calendar.date(from: DateComponents(year: 2020, month: 1, day: 1))!
+        let since2022Date = calendar.date(from: DateComponents(year: 2022, month: 1, day: 1))!
+        let since2020 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2020Date })
+        let since2022 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2022Date })
+        let passed = (full.annualized ?? -Double.infinity) >= 0.095
+            && (full.maxDrawdown ?? Double.infinity) <= 0.18
+            && (full.sharpe ?? -Double.infinity) >= 0.84
+            && (since2020.annualized ?? -Double.infinity) >= 0.12
+            && (since2020.maxDrawdown ?? Double.infinity) <= 0.18
+            && (since2022.annualized ?? -Double.infinity) >= 0.14
+            && (since2022.maxDrawdown ?? Double.infinity) <= 0.16
+        return WebLogicRun(
+            variant: variant,
+            run: run,
+            full: full,
+            since2020: since2020,
+            since2022: since2022,
+            passed: passed
+        )
+    }
+
+    private static func webLogicInputs(
+        seriesBySymbol: [String: PublicHistorySeries]
+    ) -> [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)] {
+        let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+        return ["gold_cny", "nasdaq", "sp500"].compactMap { optionsBySymbol[$0] }.map { option in
+            BacktestEngine.advancedAssetInput(for: option) { symbol in
+                seriesBySymbol[normalizedHistorySymbol(symbol)]
+            }
+        }
+    }
+
+    private static func runWebLogicGrid(
+        seriesBySymbol: [String: PublicHistorySeries],
+        settings: AdvancedBacktestRiskSettings
+    ) {
+        let inputs = webLogicInputs(seriesBySymbol: seriesBySymbol)
+        var runs: [WebLogicRun] = []
+        print("APP_WEB_LOGIC_GRID")
+        print("id,gold_weight,equity_stress_scale,gold_stress_scale,target_volatility,rebalance,annualized,max_drawdown,volatility,sharpe,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        for variant in webLogicVariants() {
+            guard let run = runWebLogic(variant: variant, inputs: inputs, settings: settings) else {
+                print("\(variant.id),\(String(format: "%.2f", variant.goldWeight)),\(String(format: "%.2f", variant.equityStressScale)),\(String(format: "%.2f", variant.goldStressScale)),\(String(format: "%.2f", variant.targetVolatility)),\(variant.rebalanceSessions),n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+                continue
+            }
+            runs.append(run)
+            let columns: [String] = [
+                variant.id,
+                String(format: "%.2f", variant.goldWeight),
+                String(format: "%.2f", variant.equityStressScale),
+                String(format: "%.2f", variant.goldStressScale),
+                String(format: "%.2f", variant.targetVolatility),
+                "\(variant.rebalanceSessions)",
+                run.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+                run.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.passed ? "true" : "false",
+                run.full.start,
+                run.full.end,
+                "\(run.full.pointCount)"
+            ]
+            print(columns.joined(separator: ","))
+        }
+
+        let passingRuns = runs.filter(\.passed)
+        if let best = passingRuns.sorted(by: webLogicSort).first {
+            print("APP_WEB_LOGIC_BEST")
+            print("id,annualized,max_drawdown,volatility,sharpe,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown")
+            let annualizedText = best.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+            let drawdownText = best.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+            let volatilityText = best.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+            let sharpeText = best.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a"
+            let annualized2020Text = best.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+            let drawdown2020Text = best.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+            let annualized2022Text = best.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+            let drawdown2022Text = best.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+            let columns: [String] = [
+                best.variant.id,
+                annualizedText,
+                drawdownText,
+                volatilityText,
+                sharpeText,
+                annualized2020Text,
+                drawdown2020Text,
+                annualized2022Text,
+                drawdown2022Text
+            ]
+            print(columns.joined(separator: ","))
+        } else {
+            print("APP_WEB_LOGIC_BEST")
+            print("id,annualized,max_drawdown,volatility,sharpe,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown")
+            print("none,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a")
+        }
+    }
+
+    private static func webLogicSort(_ lhs: WebLogicRun, _ rhs: WebLogicRun) -> Bool {
+        let lhsSharpe = lhs.full.sharpe ?? -Double.infinity
+        let rhsSharpe = rhs.full.sharpe ?? -Double.infinity
+        if lhsSharpe != rhsSharpe { return lhsSharpe > rhsSharpe }
+        let lhsAnnualized = lhs.full.annualized ?? -Double.infinity
+        let rhsAnnualized = rhs.full.annualized ?? -Double.infinity
+        if lhsAnnualized != rhsAnnualized { return lhsAnnualized > rhsAnnualized }
+        return (lhs.full.maxDrawdown ?? Double.infinity) < (rhs.full.maxDrawdown ?? Double.infinity)
+    }
+
+    private static func runWebLogicTrace(
+        seriesBySymbol: [String: PublicHistorySeries],
+        settings: AdvancedBacktestRiskSettings,
+        requestedID: String
+    ) {
+        let inputs = webLogicInputs(seriesBySymbol: seriesBySymbol)
+        let variants = webLogicVariants()
+        let runs = variants.compactMap { runWebLogic(variant: $0, inputs: inputs, settings: settings) }
+        let selected: WebLogicRun?
+        if requestedID == "best" {
+            selected = runs.filter(\.passed).sorted(by: webLogicSort).first
+        } else {
+            selected = runs.first { $0.variant.id == requestedID }
+        }
+        guard let selected else {
+            print("APP_WEB_LOGIC_TRACE")
+            print("date,targetWeights,trades,cash,holdings,nav")
+            print("n/a,n/a,n/a,n/a,n/a,n/a")
+            return
+        }
+        let tradesByDate = Dictionary(grouping: selected.run.report.trades, by: { $0.date.recordDateString })
+        print("APP_WEB_LOGIC_TRACE")
+        print("id=\(selected.variant.id)")
+        print("date,targetWeights,trades,cash,holdings,nav")
+        var previousWeights = ""
+        for state in selected.run.dailyStates {
+            let weightText = joinedWeightMap(state.targetWeights)
+            let dayTrades = tradesByDate[state.date.recordDateString] ?? []
+            let tradeText = dayTrades.map {
+                "\($0.action.rawValue):\($0.assetSymbol):\(String(format: "%.2f", $0.cashAmount))"
+            }.joined(separator: "|")
+            let isRebalanceRow = weightText != previousWeights || !tradeText.isEmpty
+            previousWeights = weightText
+            guard isRebalanceRow else { continue }
+            print([
+                state.date.recordDateString,
+                weightText.isEmpty ? "cash" : weightText,
+                tradeText.isEmpty ? "-" : tradeText,
+                String(format: "%.2f", state.cash),
+                joinedWeightMap(state.holdingsBySymbol),
+                String(format: "%.2f", state.portfolioValue)
+            ].joined(separator: ","))
+        }
+    }
+
+    private static func adaptiveAnchorVariants() -> [AdaptiveAnchorVariant] {
+        var variants: [AdaptiveAnchorVariant] = []
+        for riskOnGold in [0.42, 0.48, 0.54] {
+            for neutralGold in [0.58, 0.64] where neutralGold >= riskOnGold {
+                for defensiveGold in [0.45, 0.60, 0.72] where defensiveGold >= riskOnGold {
+                    for equityStressScale in [0.05, 0.15, 0.30] {
+                        for portfolioBrake in [0.08, 0.10] {
+                            for targetVolatility in [0.12, 0.14] {
+                                for rebalance in [30, 40] {
+                                    let id = String(
+                                        format: "adaptive_anchor_ro%.0f_ng%.0f_dg%.0f_es%.0f_pb%.0f_v%.0f_r%d",
+                                        riskOnGold * 100,
+                                        neutralGold * 100,
+                                        defensiveGold * 100,
+                                        equityStressScale * 100,
+                                        portfolioBrake * 100,
+                                        targetVolatility * 100,
+                                        rebalance
+                                    )
+                                    variants.append(AdaptiveAnchorVariant(
+                                        id: id,
+                                        title: "自适应金股锚 \(id)",
+                                        riskOnGold: riskOnGold,
+                                        neutralGold: neutralGold,
+                                        defensiveGold: defensiveGold,
+                                        equityStressScale: equityStressScale,
+                                        portfolioBrake: portfolioBrake,
+                                        targetVolatility: targetVolatility,
+                                        rebalanceSessions: rebalance
+                                    ))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return variants
+    }
+
+    private static func adaptiveAnchorWeights(
+        variant: AdaptiveAnchorVariant,
+        context: StrategyTargetContext,
+        data: ResearchTargetDataContext
+    ) -> [String: Double] {
+        let pricesBySymbol = data.pricesBySymbol
+        let index = context.signalIndex
+
+        func momentum(_ symbol: String, _ lookback: Int) -> Double {
+            guard let prices = pricesBySymbol[symbol],
+                  let value = priceMomentum(prices, at: index, lookback: lookback) else { return 0 }
+            return value
+        }
+
+        func drawdown(_ symbol: String, _ lookback: Int) -> Double {
+            guard let prices = pricesBySymbol[symbol],
+                  let value = drawdownFromHigh(prices, at: index, lookback: lookback) else { return 0 }
+            return value
+        }
+
+        func aboveAverage(_ symbol: String, _ period: Int) -> Bool {
+            isAboveMovingAverage(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index, period: period)
+        }
+
+        let equitySymbols = ["nasdaq", "sp500"]
+        let healthyEquities = equitySymbols.reduce(0) { count, symbol in
+            let healthy = aboveAverage(symbol, 220)
+                && momentum(symbol, 126) > 0
+                && momentum(symbol, 252) > -0.03
+            return count + (healthy ? 1 : 0)
+        }
+        let equityStrong = healthyEquities == 2 && momentum("nasdaq", 63) > -0.02
+        let equityWeak = healthyEquities == 0
+            || (
+                !aboveAverage("nasdaq", 220)
+                && !aboveAverage("sp500", 220)
+                && momentum("nasdaq", 126) < 0
+                && momentum("sp500", 126) < 0
+            )
+            || (drawdown("nasdaq", 126) < -0.16 && drawdown("sp500", 126) < -0.10)
+
+        let goldHealthy = aboveAverage("gold_cny", 220)
+            && momentum("gold_cny", 126) > -0.02
+        let goldWeak = !aboveAverage("gold_cny", 220)
+            && momentum("gold_cny", 126) < 0
+
+        let goldWeight: Double
+        let equityWeight: Double
+        if equityStrong {
+            goldWeight = goldHealthy ? variant.riskOnGold : variant.riskOnGold * 0.75
+            equityWeight = max(1 - goldWeight, 0)
+        } else if equityWeak {
+            let stressedEquity = max(1 - variant.riskOnGold, 0) * variant.equityStressScale
+            goldWeight = goldHealthy ? variant.defensiveGold : min(variant.defensiveGold * 0.55, 0.36)
+            equityWeight = stressedEquity
+        } else {
+            goldWeight = goldHealthy ? variant.neutralGold : min(variant.neutralGold * 0.70, 0.45)
+            equityWeight = min(max(1 - goldWeight, 0), 0.42)
+        }
+
+        var weights: [String: Double] = [
+            "gold_cny": goldWeak ? goldWeight * 0.55 : goldWeight,
+            "nasdaq": equityWeight * 0.75,
+            "sp500": equityWeight * 0.25
+        ].filter { $0.value > 0.0001 }
+
+        let recentValues = context.points.suffix(252).map(\.portfolioValue) + [context.preRebalanceValue]
+        let recentPeak = recentValues.max() ?? context.preRebalanceValue
+        let portfolioDrawdown = recentPeak > 0 ? context.preRebalanceValue / recentPeak - 1 : 0
+        if portfolioDrawdown < -variant.portfolioBrake {
+            let equityScale = portfolioDrawdown < -(variant.portfolioBrake + 0.04) ? 0.35 : 0.55
+            let oldNasdaq = weights["nasdaq"] ?? 0
+            let oldSP500 = weights["sp500"] ?? 0
+            weights["nasdaq"] = oldNasdaq * equityScale
+            weights["sp500"] = oldSP500 * equityScale
+            let removedEquity = oldNasdaq + oldSP500 - (weights["nasdaq"] ?? 0) - (weights["sp500"] ?? 0)
+            if goldHealthy {
+                weights["gold_cny", default: 0] += min(removedEquity * 0.55, 0.82 - (weights["gold_cny"] ?? 0))
+            }
+        }
+
+        if let volatility = weightedPortfolioAnnualizedVolatility(
+            weights: weights,
+            pricesBySymbol: pricesBySymbol,
+            at: index,
+            lookback: 63
+        ), volatility > variant.targetVolatility {
+            let grossExposure = max(weights.values.reduce(0, +), 0.0001)
+            let volatilityScale = min(variant.targetVolatility / volatility, 1)
+            let minimumExposureScale = min(0.45 / grossExposure, 1)
+            let scale = max(volatilityScale, minimumExposureScale)
+            weights = weights.mapValues { $0 * scale }
+        }
+
+        return weights.filter { $0.value > 0.0001 }
+    }
+
+    private static func runAdaptiveAnchor(
+        variant: AdaptiveAnchorVariant,
+        inputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        settings: AdvancedBacktestRiskSettings
+    ) -> AdaptiveAnchorRun? {
+        let config = ResearchTargetStrategyConfig(
+            symbol: variant.id,
+            title: variant.title,
+            warmupSessions: 252,
+            rebalanceSessions: variant.rebalanceSessions,
+            rebalanceBand: 0.03,
+            buyReason: "自适应金股锚研究调仓"
+        )
+        guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+            assetInputs: inputs,
+            initialCash: 100_000,
+            settings: settings,
+            config: config,
+            targetWeights: { context, data in
+                adaptiveAnchorWeights(variant: variant, context: context, data: data)
+            }
+        ) else { return nil }
+
+        let full = MetricRow(
+            title: variant.title,
+            id: variant.id,
+            annualized: report.annualizedReturn,
+            maxDrawdown: report.maxDrawdown,
+            volatility: report.annualizedVolatility,
+            sharpe: report.sharpeRatio,
+            start: report.points.first?.date.recordDateString ?? "n/a",
+            end: report.points.last?.date.recordDateString ?? "n/a",
+            pointCount: report.points.count
+        )
+        let calendar = Calendar(identifier: .gregorian)
+        let last10yStart = calendar.date(byAdding: .year, value: -10, to: report.points.last?.date ?? Date()) ?? Date()
+        let since2020Date = calendar.date(from: DateComponents(year: 2020, month: 1, day: 1))!
+        let since2022Date = calendar.date(from: DateComponents(year: 2022, month: 1, day: 1))!
+        let last10y = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= last10yStart })
+        let since2020 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2020Date })
+        let since2022 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2022Date })
+        let passed = (full.annualized ?? -Double.infinity) >= 0.10
+            && (full.maxDrawdown ?? Double.infinity) <= 0.18
+            && (full.sharpe ?? -Double.infinity) >= 0.84
+            && (last10y.annualized ?? -Double.infinity) >= 0.08
+            && (last10y.maxDrawdown ?? Double.infinity) <= 0.18
+            && (since2020.annualized ?? -Double.infinity) >= 0.12
+            && (since2020.maxDrawdown ?? Double.infinity) <= 0.18
+            && (since2022.annualized ?? -Double.infinity) >= 0.13
+            && (since2022.maxDrawdown ?? Double.infinity) <= 0.16
+        return AdaptiveAnchorRun(
+            variant: variant,
+            full: full,
+            last10y: last10y,
+            since2020: since2020,
+            since2022: since2022,
+            passed: passed
+        )
+    }
+
+    private static func adaptiveAnchorSort(_ lhs: AdaptiveAnchorRun, _ rhs: AdaptiveAnchorRun) -> Bool {
+        if lhs.passed != rhs.passed { return lhs.passed }
+        let lhsAnnualized = lhs.full.annualized ?? -Double.infinity
+        let rhsAnnualized = rhs.full.annualized ?? -Double.infinity
+        let lhsDrawdown = lhs.full.maxDrawdown ?? Double.infinity
+        let rhsDrawdown = rhs.full.maxDrawdown ?? Double.infinity
+        let lhsRecent = lhs.last10y.annualized ?? -Double.infinity
+        let rhsRecent = rhs.last10y.annualized ?? -Double.infinity
+        let lhsSharpe = lhs.full.sharpe ?? -Double.infinity
+        let rhsSharpe = rhs.full.sharpe ?? -Double.infinity
+        let lhsScore = lhsAnnualized * 100 + lhsRecent * 45 + lhsSharpe * 2 - lhsDrawdown * 55
+        let rhsScore = rhsAnnualized * 100 + rhsRecent * 45 + rhsSharpe * 2 - rhsDrawdown * 55
+        if lhsScore != rhsScore { return lhsScore > rhsScore }
+        return lhsDrawdown < rhsDrawdown
+    }
+
+    private static func runAdaptiveAnchorGrid(
+        seriesBySymbol: [String: PublicHistorySeries],
+        settings: AdvancedBacktestRiskSettings
+    ) {
+        let inputs = webLogicInputs(seriesBySymbol: seriesBySymbol)
+        var runs: [AdaptiveAnchorRun] = []
+        print("APP_ADAPTIVE_ANCHOR_GRID")
+        print("id,risk_on_gold,neutral_gold,defensive_gold,equity_stress_scale,portfolio_brake,target_volatility,rebalance,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        for variant in adaptiveAnchorVariants() {
+            guard let run = runAdaptiveAnchor(variant: variant, inputs: inputs, settings: settings) else {
+                print("\(variant.id),n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+                continue
+            }
+            runs.append(run)
+            let columns: [String] = [
+                variant.id,
+                String(format: "%.2f", variant.riskOnGold),
+                String(format: "%.2f", variant.neutralGold),
+                String(format: "%.2f", variant.defensiveGold),
+                String(format: "%.2f", variant.equityStressScale),
+                String(format: "%.2f", variant.portfolioBrake),
+                String(format: "%.2f", variant.targetVolatility),
+                "\(variant.rebalanceSessions)",
+                run.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+                run.last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.passed ? "true" : "false",
+                run.full.start,
+                run.full.end,
+                "\(run.full.pointCount)"
+            ]
+            print(columns.joined(separator: ","))
+        }
+
+        print("APP_ADAPTIVE_ANCHOR_BEST")
+        print("id,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        guard let best = runs.sorted(by: adaptiveAnchorSort).first else {
+            print("none,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+            return
+        }
+        let bestColumns: [String] = [
+            best.variant.id,
+            best.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+            best.last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.passed ? "true" : "false",
+            best.full.start,
+            best.full.end,
+            "\(best.full.pointCount)"
+        ]
+        print(bestColumns.joined(separator: ","))
+    }
+
+    private static func mechanismVariants() -> [MechanismVariant] {
+        let broadSymbols = [
+            "gold_cny", "nasdaq", "sp500", "dowjones", "hsi", "nikkei",
+            "csi300", "shanghai_composite", "chinext", "oil_wti_cny", "usd_cash"
+        ]
+        let coreSymbols = ["gold_cny", "nasdaq", "sp500", "usd_cash"]
+        let zeroFill = Set([
+            "dowjones", "hsi", "nikkei", "csi300", "shanghai_composite",
+            "chinext", "oil_wti_cny", "usd_cash"
+        ])
+        return [
+            MechanismVariant(
+                kind: .broadMomentumRiskParity,
+                id: "mechanism_broad_momentum_risk_parity",
+                title: "跨资产动量风险平价",
+                rebalanceSessions: 40,
+                rebalanceBand: 0.04,
+                symbols: broadSymbols,
+                zeroFillBeforeFirstSymbols: zeroFill
+            ),
+            MechanismVariant(
+                kind: .crisisGoldShield,
+                id: "mechanism_crisis_gold_shield",
+                title: "危机金盾状态机",
+                rebalanceSessions: 30,
+                rebalanceBand: 0.03,
+                symbols: ["gold_cny", "nasdaq", "sp500", "hsi", "nikkei", "csi300", "usd_cash"],
+                zeroFillBeforeFirstSymbols: ["hsi", "nikkei", "csi300", "usd_cash"]
+            ),
+            MechanismVariant(
+                kind: .correlationFailureBrake,
+                id: "mechanism_correlation_failure_brake",
+                title: "相关性失效刹车",
+                rebalanceSessions: 30,
+                rebalanceBand: 0.03,
+                symbols: coreSymbols,
+                zeroFillBeforeFirstSymbols: ["usd_cash"]
+            ),
+            MechanismVariant(
+                kind: .portfolioRepairState,
+                id: "mechanism_portfolio_repair_state",
+                title: "组合水位修复状态机",
+                rebalanceSessions: 30,
+                rebalanceBand: 0.03,
+                symbols: coreSymbols,
+                zeroFillBeforeFirstSymbols: ["usd_cash"]
+            ),
+            MechanismVariant(
+                kind: .breakoutRetest,
+                id: "mechanism_breakout_retest",
+                title: "突破回踩再入场",
+                rebalanceSessions: 20,
+                rebalanceBand: 0.04,
+                symbols: coreSymbols,
+                zeroFillBeforeFirstSymbols: ["usd_cash"]
+            ),
+            MechanismVariant(
+                kind: .ohlcPanicAirbag,
+                id: "mechanism_ohlc_panic_airbag",
+                title: "OHLC恐慌气囊",
+                rebalanceSessions: 20,
+                rebalanceBand: 0.03,
+                symbols: ["gold_cny", "nasdaq", "sp500", "csi300", "usd_cash"],
+                zeroFillBeforeFirstSymbols: ["csi300", "usd_cash"]
+            ),
+            MechanismVariant(
+                kind: .dollarGoldDefense,
+                id: "mechanism_dollar_gold_defense",
+                title: "美元黄金双防守",
+                rebalanceSessions: 40,
+                rebalanceBand: 0.04,
+                symbols: coreSymbols,
+                zeroFillBeforeFirstSymbols: ["usd_cash"]
+            ),
+            MechanismVariant(
+                kind: .consensusRiskTier,
+                id: "mechanism_consensus_risk_tier",
+                title: "多信号投票风险档",
+                rebalanceSessions: 30,
+                rebalanceBand: 0.03,
+                symbols: ["gold_cny", "nasdaq", "sp500", "hsi", "nikkei", "csi300", "usd_cash"],
+                zeroFillBeforeFirstSymbols: ["hsi", "nikkei", "csi300", "usd_cash"]
+            )
+        ]
+    }
+
+    private static func mechanismWeights(
+        variant: MechanismVariant,
+        context: StrategyTargetContext,
+        data: ResearchTargetDataContext
+    ) -> [String: Double] {
+        let pricesBySymbol = data.pricesBySymbol
+        let index = context.signalIndex
+        let signalDate = context.signalDate
+
+        func prices(_ symbol: String) -> [Double]? {
+            pricesBySymbol[symbol]
+        }
+
+        func momentum(_ symbol: String, _ lookback: Int) -> Double {
+            guard let values = prices(symbol),
+                  let value = priceMomentum(values, at: index, lookback: lookback) else { return 0 }
+            return value
+        }
+
+        func volatility(_ symbol: String, _ lookback: Int = 63) -> Double {
+            guard let values = prices(symbol),
+                  let value = annualizedVolatility(values, at: index, lookback: lookback) else { return 0.18 }
+            return value
+        }
+
+        func drawdown(_ symbol: String, _ lookback: Int) -> Double {
+            guard let values = prices(symbol),
+                  let value = drawdownFromHigh(values, at: index, lookback: lookback) else { return 0 }
+            return value
+        }
+
+        func aboveAverage(_ symbol: String, _ period: Int) -> Bool {
+            isAboveMovingAverage(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index, period: period)
+        }
+
+        func trendHealthy(_ symbol: String) -> Bool {
+            aboveAverage(symbol, 220) && momentum(symbol, 126) > 0 && momentum(symbol, 252) > -0.03
+        }
+
+        func trendScoreForMechanism(_ symbol: String) -> Double? {
+            guard let values = prices(symbol),
+                  let momentum63 = priceMomentum(values, at: index, lookback: 63),
+                  let momentum126 = priceMomentum(values, at: index, lookback: 126),
+                  let momentum252 = priceMomentum(values, at: index, lookback: 252) else { return nil }
+            let blended = momentum63 * 0.20 + momentum126 * 0.35 + momentum252 * 0.45
+            return blended / max(volatility(symbol), 0.06)
+        }
+
+        func goldFallback(_ weight: Double = 0.65) -> [String: Double] {
+            if trendHealthy("gold_cny") || momentum("gold_cny", 126) > 0 {
+                return ["gold_cny": weight]
+            }
+            if momentum("usd_cash", 126) > 0 {
+                return ["usd_cash": min(weight, 0.60)]
+            }
+            return [:]
+        }
+
+        let usHealthyCount = ["nasdaq", "sp500"].reduce(0) { $0 + (trendHealthy($1) ? 1 : 0) }
+        let usStrong = usHealthyCount == 2 && momentum("nasdaq", 63) > -0.015
+        let usStress = (
+            !aboveAverage("nasdaq", 220)
+            && !aboveAverage("sp500", 220)
+            && momentum("nasdaq", 126) < 0
+            && momentum("sp500", 126) < 0
+        ) || (drawdown("nasdaq", 126) < -0.16 && drawdown("sp500", 126) < -0.10)
+        let goldHealthy = trendHealthy("gold_cny") || (aboveAverage("gold_cny", 220) && momentum("gold_cny", 63) > -0.02)
+
+        let rawWeights: [String: Double]
+        switch variant.kind {
+        case .broadMomentumRiskParity:
+            let candidates = variant.symbols.compactMap { symbol -> (symbol: String, score: Double)? in
+                guard prices(symbol)?.indices.contains(index) == true,
+                      let score = trendScoreForMechanism(symbol) else { return nil }
+                if symbol == "usd_cash" {
+                    return momentum(symbol, 63) > 0 ? (symbol, max(score, 0.10)) : nil
+                }
+                guard score > 0.12,
+                      momentum(symbol, 126) > -0.01,
+                      aboveAverage(symbol, symbol == "gold_cny" ? 180 : 220) else { return nil }
+                return (symbol, score)
+            }
+            .sorted { lhs, rhs in
+                if lhs.score == rhs.score { return lhs.symbol < rhs.symbol }
+                return lhs.score > rhs.score
+            }
+            let selected = Array(candidates.prefix(3))
+            rawWeights = selected.isEmpty
+                ? goldFallback(0.60)
+                : cappedRiskParityWeights(
+                    selected: selected,
+                    pricesBySymbol: pricesBySymbol,
+                    index: index,
+                    maxExposure: 0.92,
+                    perAssetCap: 0.42
+                )
+
+        case .crisisGoldShield:
+            let globalWeakCount = ["hsi", "nikkei", "csi300"].reduce(0) { count, symbol in
+                count + ((!trendHealthy(symbol) && momentum(symbol, 126) < 0) ? 1 : 0)
+            }
+            if usStress || globalWeakCount >= 2 {
+                rawWeights = goldHealthy ? ["gold_cny": 0.76, "sp500": 0.04] : goldFallback(0.70)
+            } else if usStrong {
+                rawWeights = ["gold_cny": 0.24, "nasdaq": 0.52, "sp500": 0.18]
+            } else {
+                rawWeights = ["gold_cny": goldHealthy ? 0.52 : 0.30, "nasdaq": 0.24, "sp500": 0.10]
+            }
+
+        case .correlationFailureBrake:
+            let goldNasdaqCorrelation = prices("gold_cny").flatMap { gold in
+                prices("nasdaq").flatMap { rollingCorrelation(gold, $0, at: index, lookback: 63) }
+            } ?? 0
+            let goldSPCorrelation = prices("gold_cny").flatMap { gold in
+                prices("sp500").flatMap { rollingCorrelation(gold, $0, at: index, lookback: 63) }
+            } ?? 0
+            let hedgeIsFailing = max(goldNasdaqCorrelation, goldSPCorrelation) > 0.28
+            if usStress && hedgeIsFailing {
+                rawWeights = ["gold_cny": goldHealthy ? 0.30 : 0.10, "usd_cash": 0.35]
+            } else if usStress {
+                rawWeights = goldHealthy ? ["gold_cny": 0.72, "sp500": 0.06] : goldFallback(0.62)
+            } else if usStrong && !hedgeIsFailing {
+                rawWeights = ["gold_cny": 0.32, "nasdaq": 0.48, "sp500": 0.15]
+            } else {
+                rawWeights = ["gold_cny": 0.48, "nasdaq": 0.28, "sp500": 0.12]
+            }
+
+        case .portfolioRepairState:
+            let portfolioDD = portfolioDrawdown(context: context, lookback: 252)
+            let equityReentry = momentum("nasdaq", 20) > 0.025
+                && momentum("nasdaq", 63) > 0
+                && aboveAverage("nasdaq", 60)
+                && momentum("sp500", 20) > 0
+            if portfolioDD < -0.12 {
+                rawWeights = equityReentry
+                    ? ["gold_cny": 0.48, "nasdaq": 0.26, "sp500": 0.10]
+                    : goldFallback(goldHealthy ? 0.70 : 0.50)
+            } else if portfolioDD < -0.07 {
+                rawWeights = ["gold_cny": goldHealthy ? 0.58 : 0.35, "nasdaq": 0.22, "sp500": 0.10]
+            } else if usStrong {
+                rawWeights = ["gold_cny": 0.34, "nasdaq": 0.48, "sp500": 0.15]
+            } else {
+                rawWeights = ["gold_cny": goldHealthy ? 0.55 : 0.32, "nasdaq": 0.22, "sp500": 0.10]
+            }
+
+        case .breakoutRetest:
+            func isBreakout(_ symbol: String, lookback: Int) -> Bool {
+                guard let values = prices(symbol),
+                      values.indices.contains(index),
+                      index - lookback >= 0 else { return false }
+                let high = values[(index - lookback)..<index].max() ?? 0
+                return high > 0 && values[index] >= high * 0.995
+            }
+            let nasdaqBreakout = isBreakout("nasdaq", lookback: 126)
+            let retestRecovery = drawdown("nasdaq", 126) > -0.10
+                && drawdown("nasdaq", 63) < -0.015
+                && momentum("nasdaq", 20) > 0.025
+                && aboveAverage("sp500", 120)
+            if (nasdaqBreakout || retestRecovery) && !usStress {
+                rawWeights = ["gold_cny": 0.14, "nasdaq": 0.62, "sp500": 0.18]
+            } else if goldHealthy {
+                rawWeights = ["gold_cny": 0.68, "nasdaq": 0.10]
+            } else {
+                rawWeights = ["sp500": aboveAverage("sp500", 220) ? 0.35 : 0, "usd_cash": 0.40]
+            }
+
+        case .ohlcPanicAirbag:
+            let usPanicCount = recentOHLCPanicCount(symbol: "nasdaq", signalDate: signalDate, data: data, lookbackBars: 8)
+                + recentOHLCPanicCount(symbol: "sp500", signalDate: signalDate, data: data, lookbackBars: 8)
+            let chinaPanicCount = recentOHLCPanicCount(symbol: "csi300", signalDate: signalDate, data: data, lookbackBars: 8)
+            let goldPanicCount = recentOHLCPanicCount(symbol: "gold_cny", signalDate: signalDate, data: data, lookbackBars: 8)
+            if usPanicCount >= 2 || chinaPanicCount >= 2 {
+                rawWeights = ["gold_cny": goldPanicCount >= 2 ? 0.24 : 0.68, "sp500": 0.06, "usd_cash": 0.16]
+            } else if goldPanicCount >= 2 {
+                rawWeights = ["gold_cny": 0.24, "nasdaq": usStrong ? 0.42 : 0.24, "sp500": 0.14]
+            } else {
+                rawWeights = ["gold_cny": 0.44, "nasdaq": 0.38, "sp500": 0.12]
+            }
+
+        case .dollarGoldDefense:
+            let goldScore = trendScoreForMechanism("gold_cny") ?? -Double.infinity
+            let dollarScore = trendScoreForMechanism("usd_cash") ?? -Double.infinity
+            if usStress {
+                rawWeights = goldScore >= dollarScore && goldHealthy
+                    ? ["gold_cny": 0.74, "usd_cash": 0.08]
+                    : ["usd_cash": 0.68, "gold_cny": goldHealthy ? 0.12 : 0]
+            } else if usStrong {
+                rawWeights = ["gold_cny": 0.22, "nasdaq": 0.48, "sp500": 0.18, "usd_cash": 0.05]
+            } else {
+                rawWeights = ["gold_cny": goldHealthy ? 0.48 : 0.24, "nasdaq": 0.22, "sp500": 0.10, "usd_cash": dollarScore > 0 ? 0.12 : 0]
+            }
+
+        case .consensusRiskTier:
+            let globalHealthyCount = ["hsi", "nikkei", "csi300"].reduce(0) { $0 + (trendHealthy($1) ? 1 : 0) }
+            let lowEquityVolatility = max(volatility("nasdaq"), volatility("sp500")) < 0.24
+            let portfolioHealthy = portfolioDrawdown(context: context, lookback: 126) > -0.055
+            let goldDiversifying = prices("gold_cny").flatMap { gold in
+                prices("nasdaq").flatMap { rollingCorrelation(gold, $0, at: index, lookback: 63) }
+            }.map { $0 < 0.35 } ?? true
+            let votes = [
+                usHealthyCount == 2,
+                globalHealthyCount >= 1,
+                lowEquityVolatility,
+                portfolioHealthy,
+                goldHealthy,
+                goldDiversifying
+            ].filter { $0 }.count
+            if votes >= 5 {
+                rawWeights = ["gold_cny": 0.30, "nasdaq": 0.52, "sp500": 0.14]
+            } else if votes >= 3 {
+                rawWeights = ["gold_cny": goldHealthy ? 0.52 : 0.30, "nasdaq": 0.28, "sp500": 0.10]
+            } else {
+                rawWeights = goldFallback(0.64)
+            }
+        }
+
+        var cleaned = rawWeights.filter { $0.value > 0.0001 }
+        if let portfolioVolatility = weightedPortfolioAnnualizedVolatility(
+            weights: cleaned,
+            pricesBySymbol: pricesBySymbol,
+            at: index,
+            lookback: 63
+        ), portfolioVolatility > 0.18 {
+            let exposure = cleaned.values.reduce(0, +)
+            let scale = max(min(0.18 / portfolioVolatility, 1), min(0.45 / max(exposure, 0.0001), 1))
+            cleaned = cleaned.mapValues { $0 * scale }
+        }
+        return scaledWeights(cleaned, toMaxExposure: 0.98)
+    }
+
+    private static func runMechanism(
+        variant: MechanismVariant,
+        inputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        settings: AdvancedBacktestRiskSettings
+    ) -> MechanismRun? {
+        let config = ResearchTargetStrategyConfig(
+            symbol: variant.id,
+            title: variant.title,
+            warmupSessions: 252,
+            rebalanceSessions: variant.rebalanceSessions,
+            rebalanceBand: variant.rebalanceBand,
+            zeroFillBeforeFirstSymbols: variant.zeroFillBeforeFirstSymbols,
+            buyReason: "机制研究调仓"
+        )
+        guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+            assetInputs: inputs,
+            initialCash: 100_000,
+            settings: settings,
+            config: config,
+            targetWeights: { context, data in
+                mechanismWeights(variant: variant, context: context, data: data)
+            }
+        ) else { return nil }
+        let full = MetricRow(
+            title: variant.title,
+            id: variant.id,
+            annualized: report.annualizedReturn,
+            maxDrawdown: report.maxDrawdown,
+            volatility: report.annualizedVolatility,
+            sharpe: report.sharpeRatio,
+            start: report.points.first?.date.recordDateString ?? "n/a",
+            end: report.points.last?.date.recordDateString ?? "n/a",
+            pointCount: report.points.count
+        )
+        let calendar = Calendar(identifier: .gregorian)
+        let last10yStart = calendar.date(byAdding: .year, value: -10, to: report.points.last?.date ?? Date()) ?? Date()
+        let since2020Date = calendar.date(from: DateComponents(year: 2020, month: 1, day: 1))!
+        let since2022Date = calendar.date(from: DateComponents(year: 2022, month: 1, day: 1))!
+        let last10y = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= last10yStart })
+        let since2020 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2020Date })
+        let since2022 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2022Date })
+        let passed = (full.annualized ?? -Double.infinity) >= 0.095
+            && (full.maxDrawdown ?? Double.infinity) <= 0.18
+            && (full.sharpe ?? -Double.infinity) >= 0.84
+            && (last10y.annualized ?? -Double.infinity) >= 0.055
+            && (last10y.maxDrawdown ?? Double.infinity) <= 0.18
+            && (since2020.annualized ?? -Double.infinity) >= 0.085
+            && (since2020.maxDrawdown ?? Double.infinity) <= 0.18
+            && (since2022.annualized ?? -Double.infinity) >= 0.085
+            && (since2022.maxDrawdown ?? Double.infinity) <= 0.16
+        return MechanismRun(
+            variant: variant,
+            full: full,
+            last10y: last10y,
+            since2020: since2020,
+            since2022: since2022,
+            passed: passed
+        )
+    }
+
+    private static func mechanismSort(_ lhs: MechanismRun, _ rhs: MechanismRun) -> Bool {
+        if lhs.passed != rhs.passed { return lhs.passed }
+        let lhsAnnualized = lhs.full.annualized ?? -Double.infinity
+        let rhsAnnualized = rhs.full.annualized ?? -Double.infinity
+        let lhsDrawdown = lhs.full.maxDrawdown ?? Double.infinity
+        let rhsDrawdown = rhs.full.maxDrawdown ?? Double.infinity
+        let lhsRecent = lhs.since2020.annualized ?? -Double.infinity
+        let rhsRecent = rhs.since2020.annualized ?? -Double.infinity
+        let lhsSharpe = lhs.full.sharpe ?? -Double.infinity
+        let rhsSharpe = rhs.full.sharpe ?? -Double.infinity
+        let lhsScore = lhsAnnualized * 100 + lhsRecent * 35 + lhsSharpe * 2 - lhsDrawdown * 55
+        let rhsScore = rhsAnnualized * 100 + rhsRecent * 35 + rhsSharpe * 2 - rhsDrawdown * 55
+        if lhsScore != rhsScore { return lhsScore > rhsScore }
+        return lhsDrawdown < rhsDrawdown
+    }
+
+    private static func runMechanismZoo(
+        seriesBySymbol: [String: PublicHistorySeries],
+        settings: AdvancedBacktestRiskSettings
+    ) {
+        let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+        let variants = mechanismVariants()
+        var runs: [MechanismRun] = []
+        print("APP_MECHANISM_ZOO")
+        print("title,id,kind,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        for variant in variants {
+            let inputs = variant.symbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let run = runMechanism(variant: variant, inputs: inputs, settings: settings) else {
+                print("\(variant.title),\(variant.id),\(variant.kind.rawValue),n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+                continue
+            }
+            runs.append(run)
+            let columns: [String] = [
+                run.variant.title,
+                run.variant.id,
+                run.variant.kind.rawValue,
+                run.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+                run.last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.passed ? "true" : "false",
+                run.full.start,
+                run.full.end,
+                "\(run.full.pointCount)"
+            ]
+            print(columns.joined(separator: ","))
+        }
+
+        print("APP_MECHANISM_ZOO_BEST")
+        print("title,id,kind,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        guard let best = runs.sorted(by: mechanismSort).first else {
+            print("none,none,none,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+            return
+        }
+        let bestColumns: [String] = [
+            best.variant.title,
+            best.variant.id,
+            best.variant.kind.rawValue,
+            best.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+            best.last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.passed ? "true" : "false",
+            best.full.start,
+            best.full.end,
+            "\(best.full.pointCount)"
+        ]
+        print(bestColumns.joined(separator: ","))
+    }
+
+    private static func engineRouterVariants() -> [EngineRouterVariant] {
+        [
+            EngineRouterVariant(
+                kind: .breadthWhenHealthy,
+                id: "engine_router_breadth_when_healthy",
+                title: "健康期权益宽度路由",
+                rebalanceSessions: 20
+            ),
+            EngineRouterVariant(
+                kind: .trailingScoreLeader,
+                id: "engine_router_trailing_score_leader",
+                title: "尾随效率冠军路由",
+                rebalanceSessions: 20
+            ),
+            EngineRouterVariant(
+                kind: .volatilityGovernor,
+                id: "engine_router_volatility_governor",
+                title: "波动总督引擎路由",
+                rebalanceSessions: 20
+            ),
+            EngineRouterVariant(
+                kind: .recoveryTorque,
+                id: "engine_router_recovery_torque",
+                title: "修复扭矩引擎路由",
+                rebalanceSessions: 20
+            ),
+            EngineRouterVariant(
+                kind: .stickyChampion,
+                id: "engine_router_sticky_champion",
+                title: "低换手粘性冠军路由",
+                rebalanceSessions: 40
+            ),
+            EngineRouterVariant(
+                kind: .staticRiskEquityBlend,
+                id: "engine_router_static_risk_equity_blend",
+                title: "静态风险权益双引擎",
+                rebalanceSessions: 20
+            ),
+            EngineRouterVariant(
+                kind: .staticRiskProfitBlend,
+                id: "engine_router_static_risk_profit_blend",
+                title: "静态风险锁盈双引擎",
+                rebalanceSessions: 20
+            ),
+            EngineRouterVariant(
+                kind: .staticTriBlend,
+                id: "engine_router_static_tri_blend",
+                title: "静态三引擎组合",
+                rebalanceSessions: 20
+            ),
+            EngineRouterVariant(
+                kind: .staticOffensiveCore,
+                id: "engine_router_static_offensive_core",
+                title: "静态进攻核心组合",
+                rebalanceSessions: 20
+            ),
+            EngineRouterVariant(
+                kind: .riskBudgetReplay,
+                id: "engine_router_risk_budget_replay",
+                title: "风险预算目标复刻",
+                rebalanceSessions: 20
+            ),
+            EngineRouterVariant(
+                kind: .equityCurveReplay,
+                id: "engine_router_equity_curve_replay",
+                title: "权益曲线目标复刻",
+                rebalanceSessions: 20
+            )
+        ]
+    }
+
+    private static let engineRouterModes: [AdvancedBacktestStrategyMode] = [
+        .coreGoldSatelliteRiskBudgetStateGateMomentum,
+        .coreGoldSatelliteEquityCurveStateGateMomentum,
+        .coreGoldSatelliteOneWayVolManagedMomentum,
+        .coreGoldSatelliteProfitLockMomentum,
+        .coreGoldSatelliteEquityBreadthMomentum
+    ]
+
+    private static func blendedEngineWeights(
+        allocations: [(AdvancedBacktestStrategyMode, Double)],
+        dateText: String,
+        weightsByModeDate: [AdvancedBacktestStrategyMode: [String: [String: Double]]]
+    ) -> [String: Double] {
+        var output: [String: Double] = [:]
+        var usedWeight = 0.0
+        for (mode, share) in allocations where share > 0 {
+            guard let weights = weightsByModeDate[mode]?[dateText], !weights.isEmpty else { continue }
+            usedWeight += share
+            for (symbol, weight) in weights where weight > 0 {
+                output[symbol, default: 0] += share * weight
+            }
+        }
+        guard usedWeight > 0 else { return [:] }
+        if usedWeight < 0.999 {
+            output = output.mapValues { $0 / usedWeight }
+        }
+        return scaledWeights(output, toMaxExposure: 1.0)
+    }
+
+    private static func latestDailyState(
+        in states: [BacktestDailyState],
+        onOrBefore date: Date
+    ) -> BacktestDailyState? {
+        guard !states.isEmpty else { return nil }
+        var low = 0
+        var high = states.count - 1
+        var match: BacktestDailyState?
+        while low <= high {
+            let mid = (low + high) / 2
+            if states[mid].date <= date {
+                match = states[mid]
+                low = mid + 1
+            } else {
+                high = mid - 1
+            }
+        }
+        return match
+    }
+
+    private static func latestSeriesPoint(
+        in points: [BacktestSeriesPoint],
+        onOrBefore date: Date
+    ) -> BacktestSeriesPoint? {
+        guard !points.isEmpty else { return nil }
+        var low = 0
+        var high = points.count - 1
+        var match: BacktestSeriesPoint?
+        while low <= high {
+            let mid = (low + high) / 2
+            if points[mid].date <= date {
+                match = points[mid]
+                low = mid + 1
+            } else {
+                high = mid - 1
+            }
+        }
+        return match
+    }
+
+    private static func blendedEngineWeights(
+        allocations: [(AdvancedBacktestStrategyMode, Double)],
+        signalDate: Date,
+        statesByMode: [AdvancedBacktestStrategyMode: [BacktestDailyState]]
+    ) -> [String: Double] {
+        var output: [String: Double] = [:]
+        var usedWeight = 0.0
+        for (mode, share) in allocations where share > 0 {
+            guard let states = statesByMode[mode],
+                  let weights = latestDailyState(in: states, onOrBefore: signalDate)?.targetWeights,
+                  !weights.isEmpty else { continue }
+            usedWeight += share
+            for (symbol, weight) in weights where weight > 0 {
+                output[symbol, default: 0] += share * weight
+            }
+        }
+        guard usedWeight > 0 else { return [:] }
+        if usedWeight < 0.999 {
+            output = output.mapValues { $0 / usedWeight }
+        }
+        return scaledWeights(output, toMaxExposure: 1.0)
+    }
+
+    private static func targetWeightDistance(
+        _ lhs: [String: Double],
+        _ rhs: [String: Double]
+    ) -> Double {
+        let keys = Set(lhs.keys).union(rhs.keys)
+        return keys.reduce(0.0) { partial, key in
+            partial + abs((lhs[key] ?? 0) - (rhs[key] ?? 0))
+        }
+    }
+
+    private static func feeAwareVariants() -> [FeeAwareVariant] {
+        [
+            FeeAwareVariant(
+                kind: .stickyRiskBudget,
+                id: "fee_aware_sticky_risk_budget",
+                title: "费用感知风险预算粘性层",
+                rebalanceSessions: 20,
+                switchThreshold: 0.28,
+                minimumHoldSessions: 40
+            ),
+            FeeAwareVariant(
+                kind: .stickyEquityCurve,
+                id: "fee_aware_sticky_equity_curve",
+                title: "费用感知权益曲线粘性层",
+                rebalanceSessions: 20,
+                switchThreshold: 0.26,
+                minimumHoldSessions: 40
+            ),
+            FeeAwareVariant(
+                kind: .stabilityBlend,
+                id: "fee_aware_stability_blend",
+                title: "费用感知稳定双引擎",
+                rebalanceSessions: 20,
+                switchThreshold: 0.24,
+                minimumHoldSessions: 40
+            ),
+            FeeAwareVariant(
+                kind: .defensiveHandoff,
+                id: "fee_aware_defensive_handoff",
+                title: "费用感知防守交接",
+                rebalanceSessions: 20,
+                switchThreshold: 0.22,
+                minimumHoldSessions: 40
+            ),
+            FeeAwareVariant(
+                kind: .offensiveSleeve,
+                id: "fee_aware_offensive_sleeve",
+                title: "费用感知进攻袖套",
+                rebalanceSessions: 20,
+                switchThreshold: 0.24,
+                minimumHoldSessions: 40
+            )
+        ]
+    }
+
+    private static func runEngineRouter(
+        variant: EngineRouterVariant,
+        inputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        modeRuns: [AdvancedBacktestStrategyMode: AdvancedRotationStrategyRun],
+        settings: AdvancedBacktestRiskSettings
+    ) -> EngineRouterRun? {
+        let statesByMode = Dictionary(uniqueKeysWithValues: modeRuns.map { mode, run in
+            (mode, run.dailyStates)
+        })
+        let pointsByMode = Dictionary(uniqueKeysWithValues: modeRuns.map { mode, run in
+            (mode, run.report.points)
+        })
+        let config = ResearchTargetStrategyConfig(
+            symbol: variant.id,
+            title: variant.title,
+            warmupSessions: 320,
+            rebalanceSessions: variant.rebalanceSessions,
+            rebalanceBand: 0.04,
+            zeroFillBeforeFirstSymbols: ["dowjones", "hsi", "nikkei", "csi300", "shanghai_composite", "shenzhen_component", "chinext", "oil_wti_cny", "usd_cash"],
+            buyReason: "引擎路由研究调仓"
+        )
+        var stickyActiveMode: AdvancedBacktestStrategyMode = .coreGoldSatelliteRiskBudgetStateGateMomentum
+        var stickyPendingMode: AdvancedBacktestStrategyMode?
+        var stickyConfirmations = 0
+        guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+            assetInputs: inputs,
+            initialCash: 100_000,
+            settings: settings,
+            config: config,
+            targetWeights: { context, data in
+                let pricesBySymbol = data.pricesBySymbol
+                let index = context.signalIndex
+
+                func momentum(_ symbol: String, _ lookback: Int) -> Double {
+                    guard let values = pricesBySymbol[symbol],
+                          let value = priceMomentum(values, at: index, lookback: lookback) else { return 0 }
+                    return value
+                }
+
+                func aboveAverage(_ symbol: String, _ period: Int) -> Bool {
+                    isAboveMovingAverage(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index, period: period)
+                }
+
+                func drawdown(_ symbol: String, _ lookback: Int) -> Double {
+                    guard let values = pricesBySymbol[symbol],
+                          let value = drawdownFromHigh(values, at: index, lookback: lookback) else { return 0 }
+                    return value
+                }
+
+                func volatility(_ symbol: String, _ lookback: Int = 63) -> Double {
+                    guard let values = pricesBySymbol[symbol],
+                          let value = annualizedVolatility(values, at: index, lookback: lookback) else { return 0.18 }
+                    return value
+                }
+
+                func modeReturn(_ mode: AdvancedBacktestStrategyMode, _ lookback: Int) -> Double? {
+                    guard index - lookback >= 0,
+                          data.dates.indices.contains(index),
+                          data.dates.indices.contains(index - lookback),
+                          let points = pointsByMode[mode],
+                          let current = latestSeriesPoint(in: points, onOrBefore: data.dates[index])?.portfolioValue,
+                          let previous = latestSeriesPoint(in: points, onOrBefore: data.dates[index - lookback])?.portfolioValue,
+                          previous > 0 else { return nil }
+                    return current / previous - 1
+                }
+
+                func modeDrawdown(_ mode: AdvancedBacktestStrategyMode, _ lookback: Int) -> Double {
+                    guard let points = pointsByMode[mode],
+                          index - lookback >= 0 else { return 0 }
+                    let values = (index - lookback...index).compactMap { cursor in
+                        data.dates.indices.contains(cursor)
+                            ? latestSeriesPoint(in: points, onOrBefore: data.dates[cursor])?.portfolioValue
+                            : nil
+                    }
+                    guard let current = values.last,
+                          let peak = values.max(),
+                          peak > 0 else { return 0 }
+                    return current / peak - 1
+                }
+
+                func trailingModeScores() -> [(AdvancedBacktestStrategyMode, Double)] {
+                    engineRouterModes.map { mode -> (AdvancedBacktestStrategyMode, Double) in
+                        let return126 = modeReturn(mode, 126) ?? 0
+                        let return252 = modeReturn(mode, 252) ?? 0
+                        let drawdown126 = abs(min(modeDrawdown(mode, 126), 0))
+                        let score = return126 * 0.55 + return252 * 0.45 - drawdown126 * 0.55
+                        return (mode, score)
+                    }
+                    .sorted { lhs, rhs in
+                        if lhs.1 == rhs.1 { return lhs.0.rawValue < rhs.0.rawValue }
+                        return lhs.1 > rhs.1
+                    }
+                }
+
+                func bestTrailingMode() -> AdvancedBacktestStrategyMode {
+                    let scored = trailingModeScores()
+                    return scored.first?.0 ?? .coreGoldSatelliteRiskBudgetStateGateMomentum
+                }
+
+                let usStrong = aboveAverage("nasdaq", 220)
+                    && aboveAverage("sp500", 220)
+                    && momentum("nasdaq", 126) > 0
+                    && momentum("sp500", 126) > 0
+                let usStress = !aboveAverage("nasdaq", 220)
+                    && !aboveAverage("sp500", 220)
+                    && momentum("nasdaq", 126) < 0
+                    && momentum("sp500", 126) < 0
+                let equityVolatilityHigh = max(volatility("nasdaq"), volatility("sp500")) > 0.25
+                let portfolioDD = portfolioDrawdown(context: context, lookback: 252)
+                let equityRecovery = drawdown("nasdaq", 126) < -0.06
+                    && momentum("nasdaq", 20) > 0.03
+                    && momentum("sp500", 20) > 0.01
+
+                let allocations: [(AdvancedBacktestStrategyMode, Double)]
+                switch variant.kind {
+                case .breadthWhenHealthy:
+                    if usStrong && portfolioDD > -0.06 {
+                        allocations = [
+                            (.coreGoldSatelliteEquityBreadthMomentum, 0.46),
+                            (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.34),
+                            (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.20)
+                        ]
+                    } else if usStress || portfolioDD < -0.10 {
+                        allocations = [
+                            (.coreGoldSatelliteProfitLockMomentum, 0.55),
+                            (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.30),
+                            (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.15)
+                        ]
+                    } else {
+                        allocations = [
+                            (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.55),
+                            (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.30),
+                            (.coreGoldSatelliteOneWayVolManagedMomentum, 0.15)
+                        ]
+                    }
+
+                case .trailingScoreLeader:
+                    let leader = bestTrailingMode()
+                    if portfolioDD < -0.09 && leader == .coreGoldSatelliteEquityBreadthMomentum {
+                        allocations = [
+                            (.coreGoldSatelliteProfitLockMomentum, 0.50),
+                            (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.35),
+                            (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.15)
+                        ]
+                    } else {
+                        allocations = [
+                            (leader, 0.68),
+                            (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.22),
+                            (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.10)
+                        ]
+                    }
+
+                case .volatilityGovernor:
+                    if equityVolatilityHigh || usStress {
+                        allocations = [
+                            (.coreGoldSatelliteProfitLockMomentum, 0.48),
+                            (.coreGoldSatelliteOneWayVolManagedMomentum, 0.32),
+                            (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.20)
+                        ]
+                    } else if usStrong {
+                        allocations = [
+                            (.coreGoldSatelliteEquityBreadthMomentum, 0.38),
+                            (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.42),
+                            (.coreGoldSatelliteOneWayVolManagedMomentum, 0.20)
+                        ]
+                    } else {
+                        allocations = [
+                            (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.45),
+                            (.coreGoldSatelliteOneWayVolManagedMomentum, 0.35),
+                            (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.20)
+                        ]
+                    }
+
+                case .recoveryTorque:
+                    if equityRecovery && !usStress && portfolioDD > -0.14 {
+                        allocations = [
+                            (.coreGoldSatelliteEquityBreadthMomentum, 0.50),
+                            (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.30),
+                            (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.20)
+                        ]
+                    } else if usStress || portfolioDD < -0.11 {
+                        allocations = [
+                            (.coreGoldSatelliteProfitLockMomentum, 0.58),
+                            (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.27),
+                            (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.15)
+                        ]
+                    } else {
+                        allocations = [
+                            (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.50),
+                            (.coreGoldSatelliteOneWayVolManagedMomentum, 0.30),
+                            (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.20)
+                        ]
+                    }
+
+                case .stickyChampion:
+                    let scores = trailingModeScores()
+                    let candidate = scores.first?.0 ?? .coreGoldSatelliteRiskBudgetStateGateMomentum
+                    let margin = scores.count > 1 ? scores[0].1 - scores[1].1 : 0
+                    if usStress || portfolioDD < -0.10 || equityVolatilityHigh {
+                        stickyActiveMode = .coreGoldSatelliteProfitLockMomentum
+                        stickyPendingMode = nil
+                        stickyConfirmations = 0
+                    } else if candidate != stickyActiveMode && margin > 0.018 {
+                        if stickyPendingMode == candidate {
+                            stickyConfirmations += 1
+                        } else {
+                            stickyPendingMode = candidate
+                            stickyConfirmations = 1
+                        }
+                        if stickyConfirmations >= 2 {
+                            stickyActiveMode = candidate
+                            stickyPendingMode = nil
+                            stickyConfirmations = 0
+                        }
+                    } else {
+                        stickyPendingMode = nil
+                        stickyConfirmations = 0
+                    }
+                    if stickyActiveMode == .coreGoldSatelliteEquityBreadthMomentum && portfolioDD < -0.06 {
+                        stickyActiveMode = .coreGoldSatelliteRiskBudgetStateGateMomentum
+                    }
+                    allocations = [
+                        (stickyActiveMode, 0.78),
+                        (.coreGoldSatelliteRiskBudgetStateGateMomentum, stickyActiveMode == .coreGoldSatelliteRiskBudgetStateGateMomentum ? 0.12 : 0.14),
+                        (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.08)
+                    ]
+
+                case .staticRiskEquityBlend:
+                    allocations = [
+                        (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.62),
+                        (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.38)
+                    ]
+
+                case .staticRiskProfitBlend:
+                    allocations = [
+                        (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.66),
+                        (.coreGoldSatelliteProfitLockMomentum, 0.34)
+                    ]
+
+                case .staticTriBlend:
+                    allocations = [
+                        (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.52),
+                        (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.28),
+                        (.coreGoldSatelliteProfitLockMomentum, 0.20)
+                    ]
+
+                case .staticOffensiveCore:
+                    allocations = [
+                        (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.64),
+                        (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.18),
+                        (.coreGoldSatelliteEquityBreadthMomentum, 0.18)
+                    ]
+
+                case .riskBudgetReplay:
+                    allocations = [
+                        (.coreGoldSatelliteRiskBudgetStateGateMomentum, 1.0)
+                    ]
+
+                case .equityCurveReplay:
+                    allocations = [
+                        (.coreGoldSatelliteEquityCurveStateGateMomentum, 1.0)
+                    ]
+                }
+
+                return blendedEngineWeights(
+                    allocations: allocations,
+                    signalDate: context.signalDate,
+                    statesByMode: statesByMode
+                )
+            }
+        ) else { return nil }
+
+        let report = run.report
+        let full = MetricRow(
+            title: variant.title,
+            id: variant.id,
+            annualized: report.annualizedReturn,
+            maxDrawdown: report.maxDrawdown,
+            volatility: report.annualizedVolatility,
+            sharpe: report.sharpeRatio,
+            start: report.points.first?.date.recordDateString ?? "n/a",
+            end: report.points.last?.date.recordDateString ?? "n/a",
+            pointCount: report.points.count
+        )
+        let calendar = Calendar(identifier: .gregorian)
+        let last10yStart = calendar.date(byAdding: .year, value: -10, to: report.points.last?.date ?? Date()) ?? Date()
+        let since2020Date = calendar.date(from: DateComponents(year: 2020, month: 1, day: 1))!
+        let since2022Date = calendar.date(from: DateComponents(year: 2022, month: 1, day: 1))!
+        let last10y = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= last10yStart })
+        let since2020 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2020Date })
+        let since2022 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2022Date })
+        let passed = (full.annualized ?? -Double.infinity) >= 0.10
+            && (full.maxDrawdown ?? Double.infinity) <= 0.18
+            && (full.sharpe ?? -Double.infinity) >= 0.88
+            && (last10y.annualized ?? -Double.infinity) >= 0.055
+            && (last10y.maxDrawdown ?? Double.infinity) <= 0.18
+            && (since2020.annualized ?? -Double.infinity) >= 0.085
+            && (since2020.maxDrawdown ?? Double.infinity) <= 0.18
+            && (since2022.annualized ?? -Double.infinity) >= 0.085
+            && (since2022.maxDrawdown ?? Double.infinity) <= 0.16
+        return EngineRouterRun(
+            variant: variant,
+            full: full,
+            last10y: last10y,
+            since2020: since2020,
+            since2022: since2022,
+            passed: passed
+        )
+    }
+
+    private static func engineRouterSort(_ lhs: EngineRouterRun, _ rhs: EngineRouterRun) -> Bool {
+        if lhs.passed != rhs.passed { return lhs.passed }
+        let lhsAnnualized = lhs.full.annualized ?? -Double.infinity
+        let rhsAnnualized = rhs.full.annualized ?? -Double.infinity
+        let lhsDrawdown = lhs.full.maxDrawdown ?? Double.infinity
+        let rhsDrawdown = rhs.full.maxDrawdown ?? Double.infinity
+        let lhsSharpe = lhs.full.sharpe ?? -Double.infinity
+        let rhsSharpe = rhs.full.sharpe ?? -Double.infinity
+        let lhsScore = lhsAnnualized * 100 + lhsSharpe * 2 - lhsDrawdown * 45
+        let rhsScore = rhsAnnualized * 100 + rhsSharpe * 2 - rhsDrawdown * 45
+        if lhsScore != rhsScore { return lhsScore > rhsScore }
+        return lhsDrawdown < rhsDrawdown
+    }
+
+    private static func runEngineRouterZoo(
+        seriesBySymbol: [String: PublicHistorySeries],
+        settings: AdvancedBacktestRiskSettings
+    ) {
+        let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+        let unionSymbols = Array(Set(engineRouterModes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+        let unionInputs = unionSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+            BacktestEngine.advancedAssetInput(for: option) { symbol in
+                seriesBySymbol[normalizedHistorySymbol(symbol)]
+            }
+        }
+        var modeRuns: [AdvancedBacktestStrategyMode: AdvancedRotationStrategyRun] = [:]
+        for mode in engineRouterModes {
+            let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: modeInputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else { continue }
+            modeRuns[mode] = run
+        }
+
+        var runs: [EngineRouterRun] = []
+        print("APP_ENGINE_ROUTER_ZOO")
+        print("title,id,kind,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        for variant in engineRouterVariants() {
+            guard let run = runEngineRouter(
+                variant: variant,
+                inputs: unionInputs,
+                modeRuns: modeRuns,
+                settings: settings
+            ) else {
+                print("\(variant.title),\(variant.id),\(variant.kind.rawValue),n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+                continue
+            }
+            runs.append(run)
+            let columns: [String] = [
+                run.variant.title,
+                run.variant.id,
+                run.variant.kind.rawValue,
+                run.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+                run.last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.passed ? "true" : "false",
+                run.full.start,
+                run.full.end,
+                "\(run.full.pointCount)"
+            ]
+            print(columns.joined(separator: ","))
+        }
+
+        print("APP_ENGINE_ROUTER_BEST")
+        print("title,id,kind,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        guard let best = runs.sorted(by: engineRouterSort).first else {
+            print("none,none,none,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+            return
+        }
+        let bestColumns: [String] = [
+            best.variant.title,
+            best.variant.id,
+            best.variant.kind.rawValue,
+            best.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+            best.last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.passed ? "true" : "false",
+            best.full.start,
+            best.full.end,
+            "\(best.full.pointCount)"
+        ]
+        print(bestColumns.joined(separator: ","))
+    }
+
+    private static let feeAwareModes: [AdvancedBacktestStrategyMode] = [
+        .coreGoldSatelliteRiskBudgetStateGateMomentum,
+        .coreGoldSatelliteEquityCurveStateGateMomentum,
+        .coreGoldSatelliteProfitLockMomentum,
+        .coreGoldSatelliteEquityBreadthMomentum
+    ]
+
+    private static func runFeeAware(
+        variant: FeeAwareVariant,
+        inputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        modeRuns: [AdvancedBacktestStrategyMode: AdvancedRotationStrategyRun],
+        settings: AdvancedBacktestRiskSettings
+    ) -> FeeAwareRun? {
+        let weightsByModeDate = Dictionary(uniqueKeysWithValues: modeRuns.map { mode, run in
+            (
+                mode,
+                Dictionary(uniqueKeysWithValues: run.dailyStates.map { state in
+                    (state.date.recordDateString, state.targetWeights)
+                })
+            )
+        })
+        let config = ResearchTargetStrategyConfig(
+            symbol: variant.id,
+            title: variant.title,
+            warmupSessions: 320,
+            rebalanceSessions: variant.rebalanceSessions,
+            rebalanceBand: 0.06,
+            zeroFillBeforeFirstSymbols: ["dowjones", "hsi", "nikkei", "csi300", "shanghai_composite", "shenzhen_component", "chinext", "oil_wti_cny", "usd_cash"],
+            buyReason: "费用感知研究调仓"
+        )
+        var activeWeights: [String: Double] = [:]
+        var lastAcceptedIndex = Int.min / 2
+        var pendingWeights: [String: Double] = [:]
+        var pendingConfirmations = 0
+
+        guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+            assetInputs: inputs,
+            initialCash: 100_000,
+            settings: settings,
+            config: config,
+            targetWeights: { context, data in
+                let dateText = context.signalDate.recordDateString
+                let pricesBySymbol = data.pricesBySymbol
+                let index = context.signalIndex
+
+                func weights(_ mode: AdvancedBacktestStrategyMode) -> [String: Double] {
+                    weightsByModeDate[mode]?[dateText] ?? [:]
+                }
+
+                func momentum(_ symbol: String, _ lookback: Int) -> Double {
+                    guard let values = pricesBySymbol[symbol],
+                          let value = priceMomentum(values, at: index, lookback: lookback) else { return 0 }
+                    return value
+                }
+
+                func aboveAverage(_ symbol: String, _ period: Int) -> Bool {
+                    isAboveMovingAverage(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index, period: period)
+                }
+
+                let usStrong = aboveAverage("nasdaq", 220)
+                    && aboveAverage("sp500", 220)
+                    && momentum("nasdaq", 126) > 0
+                    && momentum("sp500", 126) > 0
+                let usStress = !aboveAverage("nasdaq", 220)
+                    && !aboveAverage("sp500", 220)
+                    && momentum("nasdaq", 126) < 0
+                    && momentum("sp500", 126) < 0
+                let portfolioDD = portfolioDrawdown(context: context, lookback: 252)
+
+                let proposal: [String: Double]
+                switch variant.kind {
+                case .stickyRiskBudget:
+                    proposal = weights(.coreGoldSatelliteRiskBudgetStateGateMomentum)
+                case .stickyEquityCurve:
+                    proposal = weights(.coreGoldSatelliteEquityCurveStateGateMomentum)
+                case .stabilityBlend:
+                    proposal = blendedEngineWeights(
+                        allocations: [
+                            (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.62),
+                            (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.38)
+                        ],
+                        dateText: dateText,
+                        weightsByModeDate: weightsByModeDate
+                    )
+                case .defensiveHandoff:
+                    if usStress || portfolioDD < -0.085 {
+                        proposal = blendedEngineWeights(
+                            allocations: [
+                                (.coreGoldSatelliteProfitLockMomentum, 0.68),
+                                (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.20),
+                                (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.12)
+                            ],
+                            dateText: dateText,
+                            weightsByModeDate: weightsByModeDate
+                        )
+                    } else {
+                        proposal = blendedEngineWeights(
+                            allocations: [
+                                (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.58),
+                                (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.32),
+                                (.coreGoldSatelliteProfitLockMomentum, 0.10)
+                            ],
+                            dateText: dateText,
+                            weightsByModeDate: weightsByModeDate
+                        )
+                    }
+                case .offensiveSleeve:
+                    if usStrong && portfolioDD > -0.055 {
+                        proposal = blendedEngineWeights(
+                            allocations: [
+                                (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.66),
+                                (.coreGoldSatelliteEquityBreadthMomentum, 0.22),
+                                (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.12)
+                            ],
+                            dateText: dateText,
+                            weightsByModeDate: weightsByModeDate
+                        )
+                    } else if usStress || portfolioDD < -0.09 {
+                        proposal = blendedEngineWeights(
+                            allocations: [
+                                (.coreGoldSatelliteProfitLockMomentum, 0.56),
+                                (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.28),
+                                (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.16)
+                            ],
+                            dateText: dateText,
+                            weightsByModeDate: weightsByModeDate
+                        )
+                    } else {
+                        proposal = blendedEngineWeights(
+                            allocations: [
+                                (.coreGoldSatelliteRiskBudgetStateGateMomentum, 0.66),
+                                (.coreGoldSatelliteEquityCurveStateGateMomentum, 0.24),
+                                (.coreGoldSatelliteProfitLockMomentum, 0.10)
+                            ],
+                            dateText: dateText,
+                            weightsByModeDate: weightsByModeDate
+                        )
+                    }
+                }
+
+                guard !proposal.isEmpty else { return activeWeights }
+                if activeWeights.isEmpty {
+                    activeWeights = proposal
+                    lastAcceptedIndex = context.index
+                    return activeWeights
+                }
+
+                let distance = targetWeightDistance(activeWeights, proposal)
+                let activeExposure = activeWeights.values.reduce(0, +)
+                let proposalExposure = proposal.values.reduce(0, +)
+                let exposureReduction = proposalExposure < activeExposure - 0.12
+                let stressExit = (usStress || portfolioDD < -0.09) && exposureReduction
+                let minHoldPassed = context.index - lastAcceptedIndex >= variant.minimumHoldSessions
+                let majorChange = distance >= variant.switchThreshold
+
+                if stressExit || (minHoldPassed && majorChange) {
+                    if targetWeightDistance(pendingWeights, proposal) < 0.08 {
+                        pendingConfirmations += 1
+                    } else {
+                        pendingWeights = proposal
+                        pendingConfirmations = 1
+                    }
+                    if stressExit || pendingConfirmations >= 2 {
+                        activeWeights = proposal
+                        lastAcceptedIndex = context.index
+                        pendingWeights = [:]
+                        pendingConfirmations = 0
+                    }
+                } else if distance < 0.08 {
+                    pendingWeights = [:]
+                    pendingConfirmations = 0
+                }
+
+                return activeWeights
+            }
+        ) else { return nil }
+
+        let report = run.report
+        let full = MetricRow(
+            title: variant.title,
+            id: variant.id,
+            annualized: report.annualizedReturn,
+            maxDrawdown: report.maxDrawdown,
+            volatility: report.annualizedVolatility,
+            sharpe: report.sharpeRatio,
+            start: report.points.first?.date.recordDateString ?? "n/a",
+            end: report.points.last?.date.recordDateString ?? "n/a",
+            pointCount: report.points.count
+        )
+        let calendar = Calendar(identifier: .gregorian)
+        let last10yStart = calendar.date(byAdding: .year, value: -10, to: report.points.last?.date ?? Date()) ?? Date()
+        let since2020Date = calendar.date(from: DateComponents(year: 2020, month: 1, day: 1))!
+        let since2022Date = calendar.date(from: DateComponents(year: 2022, month: 1, day: 1))!
+        let last10y = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= last10yStart })
+        let since2020 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2020Date })
+        let since2022 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2022Date })
+        let passed = (full.annualized ?? -Double.infinity) >= 0.10
+            && (full.maxDrawdown ?? Double.infinity) <= 0.17
+            && (full.sharpe ?? -Double.infinity) >= 0.90
+            && (last10y.annualized ?? -Double.infinity) >= 0.055
+            && (last10y.maxDrawdown ?? Double.infinity) <= 0.17
+            && (since2020.annualized ?? -Double.infinity) >= 0.08
+            && (since2020.maxDrawdown ?? Double.infinity) <= 0.17
+            && (since2022.annualized ?? -Double.infinity) >= 0.08
+            && (since2022.maxDrawdown ?? Double.infinity) <= 0.15
+        return FeeAwareRun(
+            variant: variant,
+            full: full,
+            last10y: last10y,
+            since2020: since2020,
+            since2022: since2022,
+            passed: passed
+        )
+    }
+
+    private static func feeAwareSort(_ lhs: FeeAwareRun, _ rhs: FeeAwareRun) -> Bool {
+        if lhs.passed != rhs.passed { return lhs.passed }
+        let lhsAnnualized = lhs.full.annualized ?? -Double.infinity
+        let rhsAnnualized = rhs.full.annualized ?? -Double.infinity
+        let lhsDrawdown = lhs.full.maxDrawdown ?? Double.infinity
+        let rhsDrawdown = rhs.full.maxDrawdown ?? Double.infinity
+        let lhsSharpe = lhs.full.sharpe ?? -Double.infinity
+        let rhsSharpe = rhs.full.sharpe ?? -Double.infinity
+        let lhsScore = lhsAnnualized * 100 + lhsSharpe * 2 - lhsDrawdown * 45
+        let rhsScore = rhsAnnualized * 100 + rhsSharpe * 2 - rhsDrawdown * 45
+        if lhsScore != rhsScore { return lhsScore > rhsScore }
+        return lhsDrawdown < rhsDrawdown
+    }
+
+    private static func runFeeAwareZoo(
+        seriesBySymbol: [String: PublicHistorySeries],
+        settings: AdvancedBacktestRiskSettings
+    ) {
+        let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+        let unionSymbols = Array(Set(feeAwareModes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+        let unionInputs = unionSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+            BacktestEngine.advancedAssetInput(for: option) { symbol in
+                seriesBySymbol[normalizedHistorySymbol(symbol)]
+            }
+        }
+        var modeRuns: [AdvancedBacktestStrategyMode: AdvancedRotationStrategyRun] = [:]
+        for mode in feeAwareModes {
+            let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: modeInputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else { continue }
+            modeRuns[mode] = run
+        }
+
+        var runs: [FeeAwareRun] = []
+        print("APP_FEE_AWARE_ZOO")
+        print("title,id,kind,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        for variant in feeAwareVariants() {
+            guard let run = runFeeAware(
+                variant: variant,
+                inputs: unionInputs,
+                modeRuns: modeRuns,
+                settings: settings
+            ) else {
+                print("\(variant.title),\(variant.id),\(variant.kind.rawValue),n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+                continue
+            }
+            runs.append(run)
+            let columns: [String] = [
+                run.variant.title,
+                run.variant.id,
+                run.variant.kind.rawValue,
+                run.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+                run.last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.passed ? "true" : "false",
+                run.full.start,
+                run.full.end,
+                "\(run.full.pointCount)"
+            ]
+            print(columns.joined(separator: ","))
+        }
+
+        print("APP_FEE_AWARE_BEST")
+        print("title,id,kind,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        guard let best = runs.sorted(by: feeAwareSort).first else {
+            print("none,none,none,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+            return
+        }
+        let bestColumns: [String] = [
+            best.variant.title,
+            best.variant.id,
+            best.variant.kind.rawValue,
+            best.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+            best.last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.passed ? "true" : "false",
+            best.full.start,
+            best.full.end,
+            "\(best.full.pointCount)"
+        ]
+        print(bestColumns.joined(separator: ","))
+    }
+
+    private static func lowTurnoverVariants() -> [LowTurnoverVariant] {
+        [
+            LowTurnoverVariant(
+                kind: .annualPolicyClock,
+                id: "low_turnover_annual_policy_clock",
+                title: "年度政策钟",
+                rebalanceSessions: 126,
+                rebalanceBand: 0.06,
+                warmupSessions: 320
+            ),
+            LowTurnoverVariant(
+                kind: .drawdownLadderRepair,
+                id: "low_turnover_drawdown_ladder_repair",
+                title: "回撤阶梯修复",
+                rebalanceSessions: 63,
+                rebalanceBand: 0.05,
+                warmupSessions: 320
+            ),
+            LowTurnoverVariant(
+                kind: .correlationQuarantine,
+                id: "low_turnover_correlation_quarantine",
+                title: "相关性隔离",
+                rebalanceSessions: 63,
+                rebalanceBand: 0.05,
+                warmupSessions: 320
+            ),
+            LowTurnoverVariant(
+                kind: .globalGrowthInflationClock,
+                id: "low_turnover_global_growth_inflation",
+                title: "全球增长通胀钟",
+                rebalanceSessions: 84,
+                rebalanceBand: 0.05,
+                warmupSessions: 320
+            ),
+            LowTurnoverVariant(
+                kind: .riskContributionAnchor,
+                id: "low_turnover_risk_contribution_anchor",
+                title: "风险贡献金股锚",
+                rebalanceSessions: 63,
+                rebalanceBand: 0.04,
+                warmupSessions: 320
+            ),
+            LowTurnoverVariant(
+                kind: .seasonalRiskBudget,
+                id: "low_turnover_seasonal_risk_budget",
+                title: "季节风险预算",
+                rebalanceSessions: 63,
+                rebalanceBand: 0.05,
+                warmupSessions: 320
+            ),
+            LowTurnoverVariant(
+                kind: .capitalPreservationClock,
+                id: "low_turnover_capital_preservation_clock",
+                title: "资本保护政策钟",
+                rebalanceSessions: 21,
+                rebalanceBand: 0.04,
+                warmupSessions: 320
+            ),
+            LowTurnoverVariant(
+                kind: .highWaterThrottle,
+                id: "low_turnover_high_water_throttle",
+                title: "水位节流修复",
+                rebalanceSessions: 21,
+                rebalanceBand: 0.04,
+                warmupSessions: 320
+            ),
+            LowTurnoverVariant(
+                kind: .sparseGlobalSatellite,
+                id: "low_turnover_sparse_global_satellite",
+                title: "稀疏全球机会袖套",
+                rebalanceSessions: 42,
+                rebalanceBand: 0.04,
+                warmupSessions: 320
+            ),
+            LowTurnoverVariant(
+                kind: .relativeStrengthCarry,
+                id: "low_turnover_relative_strength_carry",
+                title: "相对强度持有袖套",
+                rebalanceSessions: 42,
+                rebalanceBand: 0.04,
+                warmupSessions: 320
+            ),
+            LowTurnoverVariant(
+                kind: .inflationOpportunitySleeve,
+                id: "low_turnover_inflation_opportunity",
+                title: "通胀机会袖套",
+                rebalanceSessions: 42,
+                rebalanceBand: 0.04,
+                warmupSessions: 320
+            ),
+            LowTurnoverVariant(
+                kind: .crashOpportunityLadder,
+                id: "low_turnover_crash_opportunity_ladder",
+                title: "危机机会阶梯",
+                rebalanceSessions: 21,
+                rebalanceBand: 0.04,
+                warmupSessions: 320
+            )
+        ]
+    }
+
+    private static func lowTurnoverWeights(
+        variant: LowTurnoverVariant,
+        context: StrategyTargetContext,
+        data: ResearchTargetDataContext
+    ) -> [String: Double] {
+        let pricesBySymbol = data.pricesBySymbol
+        let index = context.signalIndex
+
+        func momentum(_ symbol: String, _ lookback: Int) -> Double {
+            guard let values = pricesBySymbol[symbol],
+                  let value = priceMomentum(values, at: index, lookback: lookback) else { return 0 }
+            return value
+        }
+
+        func drawdown(_ symbol: String, _ lookback: Int) -> Double {
+            guard let values = pricesBySymbol[symbol],
+                  let value = drawdownFromHigh(values, at: index, lookback: lookback) else { return 0 }
+            return value
+        }
+
+        func volatility(_ symbol: String, _ lookback: Int = 63) -> Double {
+            guard let values = pricesBySymbol[symbol],
+                  let value = annualizedVolatility(values, at: index, lookback: lookback) else { return 0.18 }
+            return value
+        }
+
+        func aboveAverage(_ symbol: String, _ period: Int) -> Bool {
+            isAboveMovingAverage(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index, period: period)
+        }
+
+        func cleanup(_ weights: [String: Double]) -> [String: Double] {
+            let filtered = weights.filter { $0.value.isFinite && $0.value > 0.0001 }
+            return scaledWeights(filtered, toMaxExposure: 1.0).filter { $0.value > 0.0001 }
+        }
+
+        func applyPortfolioVolBrake(_ weights: [String: Double], targetVolatility: Double, minimumExposure: Double) -> [String: Double] {
+            guard let portfolioVolatility = weightedPortfolioAnnualizedVolatility(
+                weights: weights,
+                pricesBySymbol: pricesBySymbol,
+                at: index,
+                lookback: 63
+            ), portfolioVolatility > targetVolatility else {
+                return weights
+            }
+            let grossExposure = max(weights.values.reduce(0, +), 0.0001)
+            let volatilityScale = min(targetVolatility / portfolioVolatility, 1)
+            let minimumScale = min(minimumExposure / grossExposure, 1)
+            let scale = max(volatilityScale, minimumScale)
+            return weights.mapValues { $0 * scale }
+        }
+
+        func usdCashWeight(_ target: Double) -> [String: Double] {
+            let usdHealthy = aboveAverage("usd_cash", 126) && momentum("usd_cash", 126) > 0
+            return usdHealthy ? ["usd_cash": target] : [:]
+        }
+
+        let equityStrong = aboveAverage("nasdaq", 220)
+            && aboveAverage("sp500", 220)
+            && momentum("nasdaq", 126) > 0
+            && momentum("sp500", 126) > 0
+        let equityStress = !aboveAverage("nasdaq", 220)
+            && !aboveAverage("sp500", 220)
+            && momentum("nasdaq", 126) < 0
+            && momentum("sp500", 126) < 0
+        let goldHealthy = aboveAverage("gold_cny", 220) && momentum("gold_cny", 126) > 0
+        let goldWeak = !aboveAverage("gold_cny", 220) && momentum("gold_cny", 126) < 0
+        let portfolioDD = portfolioDrawdown(context: context, lookback: 252)
+
+        switch variant.kind {
+        case .annualPolicyClock:
+            var weights: [String: Double]
+            if equityStress || portfolioDD < -0.10 {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.62 : 0.34,
+                    "nasdaq": 0.12,
+                    "sp500": 0.06
+                ].merging(usdCashWeight(0.14), uniquingKeysWith: +)
+            } else if equityStrong {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.46 : 0.34,
+                    "nasdaq": 0.40,
+                    "sp500": 0.14
+                ]
+            } else {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.56 : 0.38,
+                    "nasdaq": 0.25,
+                    "sp500": 0.10
+                ].merging(goldHealthy ? [:] : usdCashWeight(0.10), uniquingKeysWith: +)
+            }
+            if goldWeak {
+                let oldGold = weights["gold_cny"] ?? 0
+                weights["gold_cny"] = oldGold * 0.55
+                weights.merge(usdCashWeight(min(oldGold * 0.30, 0.16)), uniquingKeysWith: +)
+            }
+            return cleanup(applyPortfolioVolBrake(weights, targetVolatility: 0.125, minimumExposure: 0.52))
+
+        case .drawdownLadderRepair:
+            let equityRecovery = drawdown("nasdaq", 252) < -0.18
+                && momentum("nasdaq", 20) > 0.035
+                && momentum("sp500", 20) > 0
+                && !equityStress
+            var weights: [String: Double] = equityRecovery
+                ? ["gold_cny": goldHealthy ? 0.46 : 0.34, "nasdaq": 0.42, "sp500": 0.12]
+                : ["gold_cny": goldHealthy ? 0.55 : 0.38, "nasdaq": 0.32, "sp500": 0.13]
+
+            if portfolioDD < -0.14 && !equityRecovery {
+                let scale = portfolioDD < -0.20 ? 0.30 : 0.45
+                weights["nasdaq"] = (weights["nasdaq"] ?? 0) * scale
+                weights["sp500"] = (weights["sp500"] ?? 0) * scale
+                if goldHealthy {
+                    weights["gold_cny", default: 0] += min(0.10, 0.72 - (weights["gold_cny"] ?? 0))
+                }
+                weights.merge(usdCashWeight(0.12), uniquingKeysWith: +)
+            }
+
+            let lateCycleHarvest = momentum("nasdaq", 252) > 0.32
+                && drawdown("nasdaq", 63) > -0.025
+                && volatility("nasdaq") > 0.22
+            if lateCycleHarvest {
+                let harvest = min((weights["nasdaq"] ?? 0) * 0.22, 0.09)
+                weights["nasdaq"] = (weights["nasdaq"] ?? 0) - harvest
+                weights["gold_cny", default: 0] += harvest * (goldHealthy ? 0.70 : 0.35)
+            }
+
+            if goldWeak {
+                weights["gold_cny"] = (weights["gold_cny"] ?? 0) * 0.55
+                weights.merge(usdCashWeight(0.10), uniquingKeysWith: +)
+            }
+            return cleanup(applyPortfolioVolBrake(weights, targetVolatility: 0.13, minimumExposure: 0.50))
+
+        case .correlationQuarantine:
+            let goldPrices = pricesBySymbol["gold_cny"] ?? []
+            let nasdaqPrices = pricesBySymbol["nasdaq"] ?? []
+            let sp500Prices = pricesBySymbol["sp500"] ?? []
+            let goldNasdaqCorrelation = rollingCorrelation(goldPrices, nasdaqPrices, at: index, lookback: 63) ?? 0
+            let goldSP500Correlation = rollingCorrelation(goldPrices, sp500Prices, at: index, lookback: 63) ?? 0
+            let diversificationFailure = max(goldNasdaqCorrelation, goldSP500Correlation) > 0.28
+                && (equityStress || portfolioDD < -0.08)
+
+            var weights: [String: Double]
+            if diversificationFailure {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.42 : 0.22,
+                    "nasdaq": 0.10,
+                    "sp500": 0.05
+                ].merging(usdCashWeight(0.18), uniquingKeysWith: +)
+            } else if goldHealthy && min(goldNasdaqCorrelation, goldSP500Correlation) < -0.05 && !equityStrong {
+                weights = ["gold_cny": 0.66, "nasdaq": 0.20, "sp500": 0.08]
+            } else if equityStrong {
+                weights = ["gold_cny": goldHealthy ? 0.45 : 0.34, "nasdaq": 0.40, "sp500": 0.15]
+            } else {
+                weights = ["gold_cny": goldHealthy ? 0.58 : 0.36, "nasdaq": 0.24, "sp500": 0.10]
+            }
+            if goldWeak {
+                weights["gold_cny"] = (weights["gold_cny"] ?? 0) * 0.50
+            }
+            return cleanup(applyPortfolioVolBrake(weights, targetVolatility: 0.12, minimumExposure: 0.48))
+
+        case .globalGrowthInflationClock:
+            let equitySymbols = ["nasdaq", "sp500", "dowjones", "nikkei", "hsi", "csi300"]
+            let trendCandidates = equitySymbols.compactMap { symbol -> (symbol: String, score: Double)? in
+                guard let score = trendScore(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index),
+                      score > 0.02,
+                      aboveAverage(symbol, 180),
+                      momentum(symbol, 126) > 0 else { return nil }
+                return (symbol, score)
+            }
+            .sorted { lhs, rhs in
+                if lhs.score == rhs.score { return lhs.symbol < rhs.symbol }
+                return lhs.score > rhs.score
+            }
+
+            let inflationStress = momentum("oil_wti_cny", 126) > 0.10
+                && (momentum("gold_cny", 126) > 0.04 || goldHealthy)
+                && trendCandidates.count <= 2
+            let deflationStress = trendCandidates.count <= 1
+                && momentum("oil_wti_cny", 126) < -0.08
+                && (equityStress || portfolioDD < -0.08)
+
+            var weights: [String: Double]
+            if deflationStress {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.44 : 0.28,
+                    "nasdaq": 0.08,
+                    "sp500": 0.05
+                ].merging(usdCashWeight(0.25), uniquingKeysWith: +)
+            } else if inflationStress {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.52 : 0.38,
+                    "oil_wti_cny": aboveAverage("oil_wti_cny", 180) ? 0.08 : 0.03,
+                    "nasdaq": 0.22,
+                    "sp500": 0.08
+                ]
+            } else if let leader = trendCandidates.first {
+                weights = ["gold_cny": goldHealthy ? 0.40 : 0.32]
+                weights[leader.symbol, default: 0] += 0.34
+                if trendCandidates.count > 1 {
+                    weights[trendCandidates[1].symbol, default: 0] += 0.16
+                } else {
+                    weights["sp500", default: 0] += 0.10
+                }
+            } else {
+                weights = ["gold_cny": goldHealthy ? 0.62 : 0.34]
+                weights.merge(usdCashWeight(0.18), uniquingKeysWith: +)
+            }
+            if goldWeak {
+                weights["gold_cny"] = (weights["gold_cny"] ?? 0) * 0.55
+            }
+            return cleanup(applyPortfolioVolBrake(weights, targetVolatility: 0.14, minimumExposure: 0.50))
+
+        case .riskContributionAnchor:
+            let raw = ["gold_cny", "nasdaq", "sp500"].compactMap { symbol -> (symbol: String, score: Double)? in
+                let assetVolatility = max(volatility(symbol), 0.06)
+                var score = 1 / assetVolatility
+                if symbol != "gold_cny", equityStress {
+                    score *= 0.45
+                }
+                if symbol == "gold_cny", goldWeak {
+                    score *= 0.45
+                }
+                if symbol != "gold_cny", equityStrong {
+                    score *= 1.12
+                }
+                return (symbol, score)
+            }
+            var weights = cappedRiskParityWeights(
+                selected: raw,
+                pricesBySymbol: pricesBySymbol,
+                index: index,
+                maxExposure: 0.96,
+                perAssetCap: 0.62
+            )
+            let equityWeight = (weights["nasdaq"] ?? 0) + (weights["sp500"] ?? 0)
+            if equityStress, equityWeight > 0.28 {
+                let scale = 0.28 / equityWeight
+                weights["nasdaq"] = (weights["nasdaq"] ?? 0) * scale
+                weights["sp500"] = (weights["sp500"] ?? 0) * scale
+            }
+            if goldHealthy, (weights["gold_cny"] ?? 0) < 0.36 {
+                weights["gold_cny"] = 0.36
+            }
+            return cleanup(applyPortfolioVolBrake(weights, targetVolatility: 0.115, minimumExposure: 0.55))
+
+        case .seasonalRiskBudget:
+            let month = Calendar(identifier: .gregorian).component(.month, from: context.signalDate)
+            let strongSeason = [11, 12, 1, 2, 3, 4].contains(month)
+            var weights: [String: Double]
+            if equityStress || portfolioDD < -0.10 {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.60 : 0.34,
+                    "nasdaq": 0.12,
+                    "sp500": 0.05
+                ].merging(usdCashWeight(0.12), uniquingKeysWith: +)
+            } else if strongSeason && equityStrong {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.44 : 0.34,
+                    "nasdaq": 0.42,
+                    "sp500": 0.14
+                ]
+            } else if strongSeason {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.52 : 0.36,
+                    "nasdaq": 0.31,
+                    "sp500": 0.10
+                ]
+            } else if equityStrong && momentum("nasdaq", 252) > 0.12 {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.54 : 0.36,
+                    "nasdaq": 0.30,
+                    "sp500": 0.11
+                ]
+            } else {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.63 : 0.38,
+                    "nasdaq": 0.22,
+                    "sp500": 0.07
+                ].merging(usdCashWeight(0.04), uniquingKeysWith: +)
+            }
+            if goldWeak {
+                weights["gold_cny"] = (weights["gold_cny"] ?? 0) * 0.55
+            }
+            return cleanup(applyPortfolioVolBrake(weights, targetVolatility: 0.125, minimumExposure: 0.50))
+
+        case .capitalPreservationClock:
+            let shortRecovery = momentum("nasdaq", 20) > 0.035
+                && momentum("sp500", 20) > 0.010
+                && momentum("gold_cny", 20) > -0.020
+            let mediumRecovery = momentum("nasdaq", 63) > 0
+                && momentum("sp500", 63) > -0.015
+                && !equityStress
+            var weights: [String: Double]
+            if portfolioDD < -0.14 && !(shortRecovery && mediumRecovery) {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.36 : 0.18,
+                    "nasdaq": 0.05,
+                    "sp500": 0.03
+                ].merging(usdCashWeight(0.22), uniquingKeysWith: +)
+            } else if portfolioDD < -0.09 && !mediumRecovery {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.50 : 0.28,
+                    "nasdaq": 0.11,
+                    "sp500": 0.05
+                ].merging(usdCashWeight(0.12), uniquingKeysWith: +)
+            } else if equityStrong && portfolioDD > -0.06 {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.46 : 0.34,
+                    "nasdaq": 0.39,
+                    "sp500": 0.13
+                ]
+            } else if shortRecovery && portfolioDD > -0.14 {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.48 : 0.34,
+                    "nasdaq": 0.34,
+                    "sp500": 0.10
+                ]
+            } else {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.58 : 0.34,
+                    "nasdaq": 0.22,
+                    "sp500": 0.08
+                ].merging(goldHealthy ? [:] : usdCashWeight(0.10), uniquingKeysWith: +)
+            }
+            if goldWeak {
+                weights["gold_cny"] = (weights["gold_cny"] ?? 0) * 0.50
+                weights.merge(usdCashWeight(0.10), uniquingKeysWith: +)
+            }
+            return cleanup(applyPortfolioVolBrake(weights, targetVolatility: 0.115, minimumExposure: 0.42))
+
+        case .highWaterThrottle:
+            let assetRepair = drawdown("nasdaq", 252) < -0.20
+                && momentum("nasdaq", 20) > 0.04
+                && momentum("sp500", 20) > 0
+            let throttle: Double
+            if portfolioDD < -0.16 && !assetRepair {
+                throttle = 0.38
+            } else if portfolioDD < -0.11 && !assetRepair {
+                throttle = 0.52
+            } else if portfolioDD < -0.07 && !equityStrong {
+                throttle = 0.68
+            } else {
+                throttle = 1.0
+            }
+
+            let baseGold = goldHealthy ? 0.52 : 0.34
+            let baseEquity = equityStrong ? 0.46 : 0.34
+            var weights: [String: Double] = [
+                "gold_cny": baseGold,
+                "nasdaq": baseEquity * 0.72,
+                "sp500": baseEquity * 0.28
+            ]
+            if assetRepair && !equityStress {
+                weights["gold_cny"] = goldHealthy ? 0.44 : 0.32
+                weights["nasdaq"] = 0.40
+                weights["sp500"] = 0.12
+            }
+            if throttle < 1 {
+                let equityScale = max(throttle * 0.80, 0.25)
+                weights["nasdaq"] = (weights["nasdaq"] ?? 0) * equityScale
+                weights["sp500"] = (weights["sp500"] ?? 0) * equityScale
+                weights["gold_cny"] = (weights["gold_cny"] ?? 0) * min(max(throttle + 0.18, 0.45), 1.0)
+                weights.merge(usdCashWeight(throttle < 0.5 ? 0.18 : 0.10), uniquingKeysWith: +)
+            }
+            if goldWeak {
+                weights["gold_cny"] = (weights["gold_cny"] ?? 0) * 0.55
+            }
+            return cleanup(applyPortfolioVolBrake(weights, targetVolatility: 0.12, minimumExposure: 0.42))
+
+        case .sparseGlobalSatellite:
+            let satelliteSymbols = ["dowjones", "nikkei", "hsi", "csi300", "oil_wti_cny"]
+            let candidates = satelliteSymbols.compactMap { symbol -> (symbol: String, score: Double)? in
+                guard let score = trendScore(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index),
+                      score > 0.08,
+                      aboveAverage(symbol, 180),
+                      momentum(symbol, 126) > 0.04 else { return nil }
+                let adjustedScore = symbol == "oil_wti_cny" ? score * 0.70 : score
+                return (symbol, adjustedScore)
+            }
+            .sorted { lhs, rhs in
+                if lhs.score == rhs.score { return lhs.symbol < rhs.symbol }
+                return lhs.score > rhs.score
+            }
+
+            var weights: [String: Double]
+            if equityStress || portfolioDD < -0.10 {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.58 : 0.32,
+                    "nasdaq": 0.12,
+                    "sp500": 0.05
+                ].merging(usdCashWeight(0.14), uniquingKeysWith: +)
+            } else {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.52 : 0.34,
+                    "nasdaq": equityStrong ? 0.29 : 0.24,
+                    "sp500": equityStrong ? 0.10 : 0.08
+                ]
+                if let leader = candidates.first {
+                    let sleeve = leader.symbol == "oil_wti_cny" ? 0.07 : 0.11
+                    weights[leader.symbol, default: 0] += sleeve
+                }
+            }
+            if goldWeak {
+                weights["gold_cny"] = (weights["gold_cny"] ?? 0) * 0.55
+            }
+            return cleanup(applyPortfolioVolBrake(weights, targetVolatility: 0.13, minimumExposure: 0.50))
+
+        case .relativeStrengthCarry:
+            let candidateSymbols = ["nasdaq", "sp500", "dowjones", "nikkei", "hsi", "csi300"]
+            let candidates = candidateSymbols.compactMap { symbol -> (symbol: String, score: Double)? in
+                guard let score = trendScore(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index),
+                      score > 0.04,
+                      aboveAverage(symbol, 220),
+                      momentum(symbol, 252) > 0 else { return nil }
+                let localRiskPenalty = ["hsi", "csi300"].contains(symbol) ? 0.82 : 1.0
+                return (symbol, score * localRiskPenalty)
+            }
+            .sorted { lhs, rhs in
+                if lhs.score == rhs.score { return lhs.symbol < rhs.symbol }
+                return lhs.score > rhs.score
+            }
+
+            var weights: [String: Double] = [
+                "gold_cny": goldHealthy ? 0.42 : 0.26
+            ]
+            if equityStress || portfolioDD < -0.11 {
+                weights["nasdaq"] = 0.12
+                weights["sp500"] = 0.05
+                weights.merge(usdCashWeight(0.12), uniquingKeysWith: +)
+            } else if let leader = candidates.first {
+                weights[leader.symbol, default: 0] += 0.38
+                if candidates.count > 1 {
+                    weights[candidates[1].symbol, default: 0] += 0.15
+                } else {
+                    weights["sp500", default: 0] += 0.10
+                }
+                if goldHealthy {
+                    weights["gold_cny", default: 0] += 0.05
+                }
+            } else {
+                weights["gold_cny"] = goldHealthy ? 0.62 : 0.32
+                weights.merge(usdCashWeight(0.16), uniquingKeysWith: +)
+            }
+            if goldWeak {
+                weights["gold_cny"] = (weights["gold_cny"] ?? 0) * 0.50
+            }
+            return cleanup(applyPortfolioVolBrake(weights, targetVolatility: 0.135, minimumExposure: 0.48))
+
+        case .inflationOpportunitySleeve:
+            let oilHealthy = aboveAverage("oil_wti_cny", 180)
+                && momentum("oil_wti_cny", 126) > 0.08
+                && momentum("oil_wti_cny", 20) > -0.04
+            let goldMomentumStrong = goldHealthy && momentum("gold_cny", 126) > 0.05
+            var weights: [String: Double]
+            if oilHealthy && goldMomentumStrong && !equityStrong {
+                weights = [
+                    "gold_cny": 0.54,
+                    "oil_wti_cny": 0.08,
+                    "nasdaq": 0.18,
+                    "sp500": 0.07
+                ]
+            } else if equityStress || portfolioDD < -0.10 {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.60 : 0.32,
+                    "nasdaq": 0.10,
+                    "sp500": 0.04
+                ].merging(usdCashWeight(0.12), uniquingKeysWith: +)
+            } else if equityStrong {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.48 : 0.34,
+                    "nasdaq": 0.36,
+                    "sp500": 0.12,
+                    "oil_wti_cny": oilHealthy ? 0.04 : 0
+                ]
+            } else {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.56 : 0.34,
+                    "nasdaq": 0.24,
+                    "sp500": 0.08,
+                    "oil_wti_cny": oilHealthy ? 0.05 : 0
+                ]
+            }
+            if goldWeak {
+                weights["gold_cny"] = (weights["gold_cny"] ?? 0) * 0.55
+            }
+            return cleanup(applyPortfolioVolBrake(weights, targetVolatility: 0.13, minimumExposure: 0.48))
+
+        case .crashOpportunityLadder:
+            let nasdaqDeepDrawdown = drawdown("nasdaq", 252) < -0.24
+            let repairSignal = nasdaqDeepDrawdown
+                && momentum("nasdaq", 20) > 0.045
+                && momentum("sp500", 20) > 0.005
+                && momentum("gold_cny", 20) > -0.025
+            let crashWithoutRepair = nasdaqDeepDrawdown
+                && !repairSignal
+                && (momentum("nasdaq", 63) < 0 || !aboveAverage("nasdaq", 126))
+
+            var weights: [String: Double]
+            if repairSignal && portfolioDD > -0.18 {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.44 : 0.32,
+                    "nasdaq": 0.41,
+                    "sp500": 0.12
+                ]
+            } else if crashWithoutRepair || portfolioDD < -0.12 {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.52 : 0.28,
+                    "nasdaq": 0.08,
+                    "sp500": 0.04
+                ].merging(usdCashWeight(0.18), uniquingKeysWith: +)
+            } else if equityStrong {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.48 : 0.34,
+                    "nasdaq": 0.37,
+                    "sp500": 0.13
+                ]
+            } else {
+                weights = [
+                    "gold_cny": goldHealthy ? 0.58 : 0.34,
+                    "nasdaq": 0.23,
+                    "sp500": 0.08
+                ].merging(goldHealthy ? [:] : usdCashWeight(0.10), uniquingKeysWith: +)
+            }
+            if goldWeak {
+                weights["gold_cny"] = (weights["gold_cny"] ?? 0) * 0.55
+            }
+            return cleanup(applyPortfolioVolBrake(weights, targetVolatility: 0.125, minimumExposure: 0.45))
+        }
+    }
+
+    private static func runLowTurnover(
+        variant: LowTurnoverVariant,
+        inputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        settings: AdvancedBacktestRiskSettings
+    ) -> LowTurnoverRun? {
+        let config = ResearchTargetStrategyConfig(
+            symbol: variant.id,
+            title: variant.title,
+            warmupSessions: variant.warmupSessions,
+            rebalanceSessions: variant.rebalanceSessions,
+            rebalanceBand: variant.rebalanceBand,
+            zeroFillBeforeFirstSymbols: ["hsi", "nikkei", "csi300", "shanghai_composite", "shenzhen_component", "chinext", "oil_wti_cny", "usd_cash"],
+            buyReason: "低换手结构研究调仓"
+        )
+        guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+            assetInputs: inputs,
+            initialCash: 100_000,
+            settings: settings,
+            config: config,
+            targetWeights: { context, data in
+                lowTurnoverWeights(variant: variant, context: context, data: data)
+            }
+        ) else { return nil }
+
+        let full = MetricRow(
+            title: variant.title,
+            id: variant.id,
+            annualized: report.annualizedReturn,
+            maxDrawdown: report.maxDrawdown,
+            volatility: report.annualizedVolatility,
+            sharpe: report.sharpeRatio,
+            start: report.points.first?.date.recordDateString ?? "n/a",
+            end: report.points.last?.date.recordDateString ?? "n/a",
+            pointCount: report.points.count
+        )
+        let calendar = Calendar(identifier: .gregorian)
+        let last10yStart = calendar.date(byAdding: .year, value: -10, to: report.points.last?.date ?? Date()) ?? Date()
+        let since2020Date = calendar.date(from: DateComponents(year: 2020, month: 1, day: 1))!
+        let since2022Date = calendar.date(from: DateComponents(year: 2022, month: 1, day: 1))!
+        let last10y = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= last10yStart })
+        let since2020 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2020Date })
+        let since2022 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2022Date })
+        let passed = (full.annualized ?? -Double.infinity) >= 0.10
+            && (full.maxDrawdown ?? Double.infinity) <= 0.17
+            && (full.sharpe ?? -Double.infinity) >= 0.90
+            && (last10y.annualized ?? -Double.infinity) >= 0.055
+            && (last10y.maxDrawdown ?? Double.infinity) <= 0.17
+            && (since2020.annualized ?? -Double.infinity) >= 0.08
+            && (since2020.maxDrawdown ?? Double.infinity) <= 0.17
+            && (since2022.annualized ?? -Double.infinity) >= 0.08
+            && (since2022.maxDrawdown ?? Double.infinity) <= 0.15
+        return LowTurnoverRun(
+            variant: variant,
+            full: full,
+            last10y: last10y,
+            since2020: since2020,
+            since2022: since2022,
+            passed: passed
+        )
+    }
+
+    private static func lowTurnoverSort(_ lhs: LowTurnoverRun, _ rhs: LowTurnoverRun) -> Bool {
+        if lhs.passed != rhs.passed { return lhs.passed }
+        let lhsAnnualized = lhs.full.annualized ?? -Double.infinity
+        let rhsAnnualized = rhs.full.annualized ?? -Double.infinity
+        let lhsDrawdown = lhs.full.maxDrawdown ?? Double.infinity
+        let rhsDrawdown = rhs.full.maxDrawdown ?? Double.infinity
+        let lhsSharpe = lhs.full.sharpe ?? -Double.infinity
+        let rhsSharpe = rhs.full.sharpe ?? -Double.infinity
+        let lhsRecent = lhs.since2020.annualized ?? -Double.infinity
+        let rhsRecent = rhs.since2020.annualized ?? -Double.infinity
+        let lhsScore = lhsAnnualized * 105 + lhsRecent * 25 + lhsSharpe * 2.5 - lhsDrawdown * 55
+        let rhsScore = rhsAnnualized * 105 + rhsRecent * 25 + rhsSharpe * 2.5 - rhsDrawdown * 55
+        if lhsScore != rhsScore { return lhsScore > rhsScore }
+        return lhsDrawdown < rhsDrawdown
+    }
+
+    private static func runLowTurnoverZoo(
+        seriesBySymbol: [String: PublicHistorySeries],
+        settings: AdvancedBacktestRiskSettings
+    ) {
+        let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+        let symbols = [
+            "gold_cny",
+            "nasdaq",
+            "sp500",
+            "dowjones",
+            "hsi",
+            "nikkei",
+            "csi300",
+            "oil_wti_cny",
+            "usd_cash"
+        ]
+        let inputs = symbols.compactMap { optionsBySymbol[$0] }.map { option in
+            BacktestEngine.advancedAssetInput(for: option) { symbol in
+                seriesBySymbol[normalizedHistorySymbol(symbol)]
+            }
+        }
+
+        var runs: [LowTurnoverRun] = []
+        print("APP_LOW_TURNOVER_ZOO")
+        print("title,id,kind,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        for variant in lowTurnoverVariants() {
+            guard let run = runLowTurnover(variant: variant, inputs: inputs, settings: settings) else {
+                print("\(variant.title),\(variant.id),\(variant.kind.rawValue),n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+                continue
+            }
+            runs.append(run)
+            let columns: [String] = [
+                run.variant.title,
+                run.variant.id,
+                run.variant.kind.rawValue,
+                run.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+                run.last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.passed ? "true" : "false",
+                run.full.start,
+                run.full.end,
+                "\(run.full.pointCount)"
+            ]
+            print(columns.joined(separator: ","))
+        }
+
+        print("APP_LOW_TURNOVER_BEST")
+        print("title,id,kind,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        guard let best = runs.sorted(by: lowTurnoverSort).first else {
+            print("none,none,none,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+            return
+        }
+        let bestColumns: [String] = [
+            best.variant.title,
+            best.variant.id,
+            best.variant.kind.rawValue,
+            best.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+            best.last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.passed ? "true" : "false",
+            best.full.start,
+            best.full.end,
+            "\(best.full.pointCount)"
+        ]
+        print(bestColumns.joined(separator: ","))
+    }
+
+    private static func qualityTargetVariants() -> [QualityTargetVariant] {
+        [
+            QualityTargetVariant(
+                kind: .tippTrendConvexity,
+                id: "quality_tipp_trend_convexity",
+                title: "TIPP趋势凸性",
+                maxGrossExposure: 2.40,
+                rebalanceSessions: 5,
+                rebalanceBand: 0.06,
+                floorDrawdown: 0.08,
+                targetVolatility: 0.18
+            ),
+            QualityTargetVariant(
+                kind: .highWaterPyramid,
+                id: "quality_high_water_pyramid",
+                title: "高水位趋势金字塔",
+                maxGrossExposure: 2.80,
+                rebalanceSessions: 5,
+                rebalanceBand: 0.07,
+                floorDrawdown: 0.08,
+                targetVolatility: 0.22
+            ),
+            QualityTargetVariant(
+                kind: .dualLeaderLeverage,
+                id: "quality_dual_leader_leverage",
+                title: "双资产领涨杠杆",
+                maxGrossExposure: 2.20,
+                rebalanceSessions: 10,
+                rebalanceBand: 0.08,
+                floorDrawdown: 0.08,
+                targetVolatility: 0.16
+            ),
+            QualityTargetVariant(
+                kind: .volTargetLeveredAnchor,
+                id: "quality_vol_target_levered_anchor",
+                title: "控波杠杆金股锚",
+                maxGrossExposure: 2.50,
+                rebalanceSessions: 5,
+                rebalanceBand: 0.06,
+                floorDrawdown: 0.08,
+                targetVolatility: 0.15
+            ),
+            QualityTargetVariant(
+                kind: .crashReentryConvexity,
+                id: "quality_crash_reentry_convexity",
+                title: "危机再入场凸性",
+                maxGrossExposure: 2.60,
+                rebalanceSessions: 5,
+                rebalanceBand: 0.07,
+                floorDrawdown: 0.08,
+                targetVolatility: 0.20
+            ),
+            QualityTargetVariant(
+                kind: .panicFloorCash,
+                id: "quality_panic_floor_cash",
+                title: "恐慌地板现金闸",
+                maxGrossExposure: 2.10,
+                rebalanceSessions: 3,
+                rebalanceBand: 0.05,
+                floorDrawdown: 0.075,
+                targetVolatility: 0.14
+            )
+        ]
+    }
+
+    private static func allTimePortfolioDrawdown(_ context: StrategyTargetContext) -> Double {
+        let values = context.points.map(\.portfolioValue) + [context.preRebalanceValue]
+        guard let current = values.last,
+              let peak = values.max(),
+              peak > 0 else { return 0 }
+        return current / peak - 1
+    }
+
+    private static func qualityTargetWeights(
+        variant: QualityTargetVariant,
+        context: StrategyTargetContext,
+        data: ResearchTargetDataContext
+    ) -> [String: Double] {
+        let pricesBySymbol = data.pricesBySymbol
+        let index = context.signalIndex
+
+        func momentum(_ symbol: String, _ lookback: Int) -> Double {
+            guard let values = pricesBySymbol[symbol],
+                  let value = priceMomentum(values, at: index, lookback: lookback) else { return 0 }
+            return value
+        }
+
+        func drawdown(_ symbol: String, _ lookback: Int) -> Double {
+            guard let values = pricesBySymbol[symbol],
+                  let value = drawdownFromHigh(values, at: index, lookback: lookback) else { return 0 }
+            return value
+        }
+
+        func aboveAverage(_ symbol: String, _ period: Int) -> Bool {
+            isAboveMovingAverage(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index, period: period)
+        }
+
+        func volatility(_ symbol: String, _ lookback: Int = 63) -> Double {
+            guard let values = pricesBySymbol[symbol],
+                  let value = annualizedVolatility(values, at: index, lookback: lookback) else { return 0.20 }
+            return value
+        }
+
+        func clean(_ weights: [String: Double]) -> [String: Double] {
+            weights.filter { $0.value.isFinite && $0.value > 0.0001 }
+        }
+
+        func cushionScale(floor: Double) -> Double {
+            let drawdown = allTimePortfolioDrawdown(context)
+            let cushion = max(floor + drawdown, 0)
+            return min(max(cushion / max(floor, 0.0001), 0), 1)
+        }
+
+        func volScale(for weights: [String: Double], targetVolatility: Double) -> Double {
+            guard let currentVolatility = weightedPortfolioAnnualizedVolatility(
+                weights: weights,
+                pricesBySymbol: pricesBySymbol,
+                at: index,
+                lookback: 63
+            ), currentVolatility > 0 else { return 1 }
+            return min(targetVolatility / max(currentVolatility, 0.04), 1.8)
+        }
+
+        func leaderWeights(symbols: [String], maxCount: Int) -> [String: Double] {
+            let candidates = symbols.compactMap { symbol -> (String, Double)? in
+                guard let score = trendScore(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index),
+                      score > 0,
+                      aboveAverage(symbol, symbol == "gold_cny" ? 180 : 220),
+                      momentum(symbol, 126) > 0 else { return nil }
+                return (symbol, score)
+            }
+            .sorted { lhs, rhs in
+                if lhs.1 == rhs.1 { return lhs.0 < rhs.0 }
+                return lhs.1 > rhs.1
+            }
+            guard !candidates.isEmpty else { return [:] }
+            var weights: [String: Double] = [:]
+            let selected = Array(candidates.prefix(max(maxCount, 1)))
+            if selected.count == 1 {
+                weights[selected[0].0] = 1
+            } else {
+                weights[selected[0].0] = 0.68
+                weights[selected[1].0] = 0.32
+            }
+            return weights
+        }
+
+        let equityStrong = aboveAverage("nasdaq", 220)
+            && aboveAverage("sp500", 220)
+            && momentum("nasdaq", 126) > 0.03
+            && momentum("sp500", 126) > 0
+        let equityStress = !aboveAverage("nasdaq", 220)
+            && !aboveAverage("sp500", 220)
+            && momentum("nasdaq", 126) < 0
+            && momentum("sp500", 126) < 0
+        let goldHealthy = aboveAverage("gold_cny", 180) && momentum("gold_cny", 126) > 0
+        let goldWeak = !aboveAverage("gold_cny", 180) && momentum("gold_cny", 126) < 0
+        let portfolioDD = allTimePortfolioDrawdown(context)
+        let cushion = cushionScale(floor: variant.floorDrawdown)
+
+        let baseWeights: [String: Double]
+        let gross: Double
+        switch variant.kind {
+        case .tippTrendConvexity:
+            if portfolioDD < -variant.floorDrawdown * 0.92 || equityStress && goldWeak {
+                baseWeights = goldHealthy ? ["gold_cny": 0.55] : [:]
+                gross = goldHealthy ? 0.35 : 0
+            } else if equityStrong && goldHealthy {
+                baseWeights = ["gold_cny": 0.28, "nasdaq": 0.54, "sp500": 0.18]
+                gross = min(variant.maxGrossExposure, 0.30 + 2.15 * cushion)
+            } else if equityStrong {
+                baseWeights = ["nasdaq": 0.72, "sp500": 0.28]
+                gross = min(variant.maxGrossExposure, 0.25 + 1.70 * cushion)
+            } else if goldHealthy {
+                baseWeights = ["gold_cny": 0.84, "sp500": 0.16]
+                gross = min(1.45, 0.30 + 1.10 * cushion)
+            } else {
+                baseWeights = ["nasdaq": 0.45, "sp500": 0.20, "gold_cny": 0.35]
+                gross = 0.45 * cushion
+            }
+
+        case .highWaterPyramid:
+            let veryHealthy = equityStrong
+                && momentum("nasdaq", 252) > 0.10
+                && drawdown("nasdaq", 63) > -0.06
+                && volatility("nasdaq") < 0.30
+            if portfolioDD < -0.055 || equityStress {
+                baseWeights = goldHealthy ? ["gold_cny": 0.75, "sp500": 0.25] : [:]
+                gross = goldHealthy ? 0.55 * cushion : 0
+            } else if veryHealthy {
+                baseWeights = ["nasdaq": 0.74, "sp500": 0.16, "gold_cny": goldHealthy ? 0.10 : 0]
+                gross = min(variant.maxGrossExposure, 1.20 + 1.60 * cushion)
+            } else if equityStrong {
+                baseWeights = ["nasdaq": 0.64, "sp500": 0.22, "gold_cny": goldHealthy ? 0.14 : 0]
+                gross = min(2.0, 0.70 + 1.15 * cushion)
+            } else {
+                baseWeights = goldHealthy ? ["gold_cny": 0.80, "sp500": 0.20] : [:]
+                gross = goldHealthy ? 0.70 * cushion : 0
+            }
+
+        case .dualLeaderLeverage:
+            let leaders = leaderWeights(symbols: ["gold_cny", "nasdaq", "sp500"], maxCount: 2)
+            baseWeights = leaders
+            if leaders.isEmpty || portfolioDD < -0.065 {
+                gross = 0
+            } else {
+                let leaderIsEquity = (leaders["nasdaq"] ?? 0) + (leaders["sp500"] ?? 0) > 0.5
+                gross = min(variant.maxGrossExposure, (leaderIsEquity ? 0.65 : 0.45) + 1.55 * cushion)
+            }
+
+        case .volTargetLeveredAnchor:
+            let anchor: [String: Double]
+            if equityStress {
+                anchor = ["gold_cny": goldHealthy ? 0.72 : 0.30, "sp500": 0.12]
+            } else {
+                anchor = ["gold_cny": goldHealthy ? 0.45 : 0.28, "nasdaq": 0.40, "sp500": 0.15]
+            }
+            baseWeights = anchor
+            let rawGross = volScale(for: anchor, targetVolatility: variant.targetVolatility)
+            gross = min(variant.maxGrossExposure, rawGross * (0.30 + 0.95 * cushion))
+
+        case .crashReentryConvexity:
+            let repair = drawdown("nasdaq", 252) < -0.20
+                && momentum("nasdaq", 20) > 0.045
+                && momentum("sp500", 20) > 0.005
+                && portfolioDD > -0.075
+            if repair {
+                baseWeights = ["nasdaq": 0.70, "sp500": 0.20, "gold_cny": goldHealthy ? 0.10 : 0]
+                gross = min(variant.maxGrossExposure, 1.15 + 1.25 * cushion)
+            } else if equityStrong && portfolioDD > -0.045 {
+                baseWeights = ["nasdaq": 0.58, "sp500": 0.22, "gold_cny": goldHealthy ? 0.20 : 0]
+                gross = min(1.85, 0.55 + 1.20 * cushion)
+            } else if goldHealthy {
+                baseWeights = ["gold_cny": 0.80, "sp500": 0.20]
+                gross = min(1.05, 0.35 + 0.65 * cushion)
+            } else {
+                baseWeights = [:]
+                gross = 0
+            }
+
+        case .panicFloorCash:
+            if portfolioDD < -0.060 || equityStress {
+                baseWeights = goldHealthy ? ["gold_cny": 0.60] : [:]
+                gross = goldHealthy ? 0.25 : 0
+            } else if equityStrong && goldHealthy {
+                baseWeights = ["gold_cny": 0.36, "nasdaq": 0.46, "sp500": 0.18]
+                gross = min(variant.maxGrossExposure, 0.55 + 1.35 * cushion)
+            } else if equityStrong {
+                baseWeights = ["nasdaq": 0.68, "sp500": 0.32]
+                gross = min(1.55, 0.45 + 0.95 * cushion)
+            } else if goldHealthy {
+                baseWeights = ["gold_cny": 1]
+                gross = min(0.90, 0.25 + 0.55 * cushion)
+            } else {
+                baseWeights = [:]
+                gross = 0
+            }
+        }
+
+        guard gross > 0 else { return [:] }
+        return clean(baseWeights.mapValues { $0 * gross })
+    }
+
+    private static func runQualityTarget(
+        variant: QualityTargetVariant,
+        inputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        settings: AdvancedBacktestRiskSettings
+    ) -> QualityTargetRun? {
+        let config = ResearchTargetStrategyConfig(
+            symbol: variant.id,
+            title: variant.title,
+            warmupSessions: 320,
+            rebalanceSessions: variant.rebalanceSessions,
+            rebalanceBand: variant.rebalanceBand,
+            zeroFillBeforeFirstSymbols: ["usd_cash"],
+            maxGrossExposure: variant.maxGrossExposure,
+            allowsFinancedExposure: true,
+            financingAnnualRate: 0.05,
+            buyReason: "质变目标研究调仓"
+        )
+        guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+            assetInputs: inputs,
+            initialCash: 100_000,
+            settings: settings,
+            config: config,
+            targetWeights: { context, data in
+                qualityTargetWeights(variant: variant, context: context, data: data)
+            }
+        ) else { return nil }
+
+        let full = MetricRow(
+            title: variant.title,
+            id: variant.id,
+            annualized: report.annualizedReturn,
+            maxDrawdown: report.maxDrawdown,
+            volatility: report.annualizedVolatility,
+            sharpe: report.sharpeRatio,
+            start: report.points.first?.date.recordDateString ?? "n/a",
+            end: report.points.last?.date.recordDateString ?? "n/a",
+            pointCount: report.points.count
+        )
+        let calendar = Calendar(identifier: .gregorian)
+        let last10yStart = calendar.date(byAdding: .year, value: -10, to: report.points.last?.date ?? Date()) ?? Date()
+        let since2020Date = calendar.date(from: DateComponents(year: 2020, month: 1, day: 1))!
+        let since2022Date = calendar.date(from: DateComponents(year: 2022, month: 1, day: 1))!
+        let last10y = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= last10yStart })
+        let since2020 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2020Date })
+        let since2022 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2022Date })
+        let passed = (full.annualized ?? -Double.infinity) >= 0.20
+            && (full.maxDrawdown ?? Double.infinity) <= 0.08
+            && (since2020.maxDrawdown ?? Double.infinity) <= 0.08
+            && (since2022.maxDrawdown ?? Double.infinity) <= 0.08
+        return QualityTargetRun(
+            variant: variant,
+            full: full,
+            last10y: last10y,
+            since2020: since2020,
+            since2022: since2022,
+            passed: passed
+        )
+    }
+
+    private static func qualityTargetSort(_ lhs: QualityTargetRun, _ rhs: QualityTargetRun) -> Bool {
+        if lhs.passed != rhs.passed { return lhs.passed }
+        let lhsAnnualized = lhs.full.annualized ?? -Double.infinity
+        let rhsAnnualized = rhs.full.annualized ?? -Double.infinity
+        let lhsDrawdown = lhs.full.maxDrawdown ?? Double.infinity
+        let rhsDrawdown = rhs.full.maxDrawdown ?? Double.infinity
+        let lhsSharpe = lhs.full.sharpe ?? -Double.infinity
+        let rhsSharpe = rhs.full.sharpe ?? -Double.infinity
+        let lhsScore = lhsAnnualized * 100 + lhsSharpe * 2 - lhsDrawdown * 160
+        let rhsScore = rhsAnnualized * 100 + rhsSharpe * 2 - rhsDrawdown * 160
+        if lhsScore != rhsScore { return lhsScore > rhsScore }
+        return lhsAnnualized > rhsAnnualized
+    }
+
+    private static func runQualityTargetZoo(
+        seriesBySymbol: [String: PublicHistorySeries],
+        settings: AdvancedBacktestRiskSettings
+    ) {
+        let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+        let symbols = ["gold_cny", "nasdaq", "sp500", "usd_cash"]
+        let inputs = symbols.compactMap { optionsBySymbol[$0] }.map { option in
+            BacktestEngine.advancedAssetInput(for: option) { symbol in
+                seriesBySymbol[normalizedHistorySymbol(symbol)]
+            }
+        }
+
+        var runs: [QualityTargetRun] = []
+        print("APP_QUALITY_TARGET_ZOO")
+        print("title,id,kind,max_gross,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        for variant in qualityTargetVariants() {
+            guard let run = runQualityTarget(variant: variant, inputs: inputs, settings: settings) else {
+                print("\(variant.title),\(variant.id),\(variant.kind.rawValue),\(String(format: "%.2f", variant.maxGrossExposure)),n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+                continue
+            }
+            runs.append(run)
+            let columns: [String] = [
+                run.variant.title,
+                run.variant.id,
+                run.variant.kind.rawValue,
+                String(format: "%.2f", run.variant.maxGrossExposure),
+                run.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+                run.last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.passed ? "true" : "false",
+                run.full.start,
+                run.full.end,
+                "\(run.full.pointCount)"
+            ]
+            print(columns.joined(separator: ","))
+        }
+
+        print("APP_QUALITY_TARGET_BEST")
+        print("title,id,kind,max_gross,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        guard let best = runs.sorted(by: qualityTargetSort).first else {
+            print("none,none,none,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+            return
+        }
+        let bestColumns: [String] = [
+            best.variant.title,
+            best.variant.id,
+            best.variant.kind.rawValue,
+            String(format: "%.2f", best.variant.maxGrossExposure),
+            best.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+            best.last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.passed ? "true" : "false",
+            best.full.start,
+            best.full.end,
+            "\(best.full.pointCount)"
+        ]
+        print(bestColumns.joined(separator: ","))
+    }
+
+    private static func strictTargetVariants() -> [StrictTargetVariant] {
+        [
+            StrictTargetVariant(
+                kind: .capitalFloorTrend,
+                id: "strict_capital_floor_trend_8",
+                title: "资本地板趋势 8回撤",
+                rebalanceSessions: 5,
+                rebalanceBand: 0.04,
+                floorDrawdown: 0.08,
+                targetVolatility: 0.09,
+                maxExposure: 1.00
+            ),
+            StrictTargetVariant(
+                kind: .capitalFloorTrend,
+                id: "strict_capital_floor_trend_7",
+                title: "资本地板趋势 7回撤",
+                rebalanceSessions: 5,
+                rebalanceBand: 0.035,
+                floorDrawdown: 0.07,
+                targetVolatility: 0.085,
+                maxExposure: 0.95
+            ),
+            StrictTargetVariant(
+                kind: .lowVolAnchor,
+                id: "strict_low_vol_anchor_8v",
+                title: "低波金股锚 8波",
+                rebalanceSessions: 10,
+                rebalanceBand: 0.04,
+                floorDrawdown: 0.08,
+                targetVolatility: 0.08,
+                maxExposure: 1.00
+            ),
+            StrictTargetVariant(
+                kind: .lowVolAnchor,
+                id: "strict_low_vol_anchor_9v",
+                title: "低波金股锚 9波",
+                rebalanceSessions: 10,
+                rebalanceBand: 0.04,
+                floorDrawdown: 0.08,
+                targetVolatility: 0.09,
+                maxExposure: 1.00
+            ),
+            StrictTargetVariant(
+                kind: .dualMomentumFloor,
+                id: "strict_dual_momentum_floor",
+                title: "双动量地板",
+                rebalanceSessions: 10,
+                rebalanceBand: 0.05,
+                floorDrawdown: 0.08,
+                targetVolatility: 0.10,
+                maxExposure: 0.95
+            ),
+            StrictTargetVariant(
+                kind: .canaryFloor,
+                id: "strict_canary_floor",
+                title: "双金丝雀地板",
+                rebalanceSessions: 5,
+                rebalanceBand: 0.04,
+                floorDrawdown: 0.075,
+                targetVolatility: 0.08,
+                maxExposure: 0.90
+            ),
+            StrictTargetVariant(
+                kind: .drawdownBudget,
+                id: "strict_drawdown_budget",
+                title: "回撤预算控仓",
+                rebalanceSessions: 5,
+                rebalanceBand: 0.035,
+                floorDrawdown: 0.08,
+                targetVolatility: 0.085,
+                maxExposure: 1.00
+            ),
+            StrictTargetVariant(
+                kind: .profitLockReentry,
+                id: "strict_profit_lock_reentry",
+                title: "锁盈再进入",
+                rebalanceSessions: 5,
+                rebalanceBand: 0.04,
+                floorDrawdown: 0.08,
+                targetVolatility: 0.095,
+                maxExposure: 0.95
+            )
+        ]
+    }
+
+    private static func strictTargetWeights(
+        variant: StrictTargetVariant,
+        context: StrategyTargetContext,
+        data: ResearchTargetDataContext
+    ) -> [String: Double] {
+        let pricesBySymbol = data.pricesBySymbol
+        let index = context.signalIndex
+
+        func momentum(_ symbol: String, _ lookback: Int) -> Double {
+            guard let values = pricesBySymbol[symbol],
+                  let value = priceMomentum(values, at: index, lookback: lookback) else { return 0 }
+            return value
+        }
+
+        func drawdown(_ symbol: String, _ lookback: Int) -> Double {
+            guard let values = pricesBySymbol[symbol],
+                  let value = drawdownFromHigh(values, at: index, lookback: lookback) else { return 0 }
+            return value
+        }
+
+        func volatility(_ symbol: String, _ lookback: Int = 63) -> Double {
+            guard let values = pricesBySymbol[symbol],
+                  let value = annualizedVolatility(values, at: index, lookback: lookback) else { return 0.18 }
+            return value
+        }
+
+        func aboveAverage(_ symbol: String, _ period: Int) -> Bool {
+            isAboveMovingAverage(symbol: symbol, pricesBySymbol: pricesBySymbol, index: index, period: period)
+        }
+
+        func clean(_ weights: [String: Double]) -> [String: Double] {
+            scaledWeights(
+                weights.filter { $0.value.isFinite && $0.value > 0.0001 },
+                toMaxExposure: variant.maxExposure
+            )
+        }
+
+        func volManaged(_ weights: [String: Double], target: Double, minimumExposure: Double) -> [String: Double] {
+            guard let currentVolatility = weightedPortfolioAnnualizedVolatility(
+                weights: weights,
+                pricesBySymbol: pricesBySymbol,
+                at: index,
+                lookback: 63
+            ), currentVolatility > target else {
+                return weights
+            }
+            let gross = max(weights.values.reduce(0, +), 0.0001)
+            let scale = max(min(target / currentVolatility, 1), min(minimumExposure / gross, 1))
+            return weights.mapValues { $0 * scale }
+        }
+
+        func floorThrottle(_ base: Double = 1) -> Double {
+            let portfolioDrawdown = allTimePortfolioDrawdown(context)
+            if portfolioDrawdown <= -variant.floorDrawdown {
+                return 0
+            }
+            let cushion = max(variant.floorDrawdown + portfolioDrawdown, 0) / max(variant.floorDrawdown, 0.0001)
+            if portfolioDrawdown < -variant.floorDrawdown * 0.75 {
+                return min(base, 0.20 + 0.45 * cushion)
+            }
+            if portfolioDrawdown < -variant.floorDrawdown * 0.50 {
+                return min(base, 0.35 + 0.55 * cushion)
+            }
+            return min(base, 0.55 + 0.45 * cushion)
+        }
+
+        let goldHealthy = aboveAverage("gold_cny", 180) && momentum("gold_cny", 126) > 0
+        let goldWeak = !aboveAverage("gold_cny", 180) && momentum("gold_cny", 126) < 0
+        let equityHealthy = aboveAverage("nasdaq", 220)
+            && aboveAverage("sp500", 220)
+            && momentum("nasdaq", 126) > 0
+            && momentum("sp500", 126) > -0.01
+        let equityStress = !aboveAverage("nasdaq", 220)
+            && !aboveAverage("sp500", 220)
+            && momentum("nasdaq", 126) < 0
+            && momentum("sp500", 126) < 0
+        let portfolioDD = allTimePortfolioDrawdown(context)
+        let nearFloor = portfolioDD < -variant.floorDrawdown * 0.72
+
+        switch variant.kind {
+        case .capitalFloorTrend:
+            var weights: [String: Double]
+            if nearFloor || (equityStress && goldWeak) {
+                weights = goldHealthy ? ["gold_cny": 0.25] : [:]
+            } else if equityHealthy && goldHealthy {
+                weights = ["gold_cny": 0.42, "nasdaq": 0.42, "sp500": 0.16]
+            } else if equityHealthy {
+                weights = ["nasdaq": 0.58, "sp500": 0.22]
+            } else if goldHealthy {
+                weights = ["gold_cny": 0.72, "sp500": 0.10]
+            } else {
+                weights = ["nasdaq": 0.20, "sp500": 0.08]
+            }
+            let throttle = floorThrottle()
+            weights = weights.mapValues { $0 * throttle }
+            return clean(volManaged(weights, target: variant.targetVolatility, minimumExposure: nearFloor ? 0 : 0.25))
+
+        case .lowVolAnchor:
+            let candidates = ["gold_cny", "nasdaq", "sp500"].compactMap { symbol -> (symbol: String, score: Double)? in
+                guard aboveAverage(symbol, symbol == "gold_cny" ? 160 : 220),
+                      momentum(symbol, 126) > -0.01 else { return nil }
+                let score = max(momentum(symbol, 126), 0.01) / max(volatility(symbol), 0.06)
+                return (symbol, score)
+            }
+            .sorted { lhs, rhs in
+                if lhs.score == rhs.score { return lhs.symbol < rhs.symbol }
+                return lhs.score > rhs.score
+            }
+            var weights: [String: Double] = [:]
+            for item in candidates.prefix(2) {
+                let assetVolatility = max(volatility(item.symbol), 0.06)
+                weights[item.symbol] = min(0.55, 0.10 / assetVolatility)
+            }
+            if goldHealthy, (weights["gold_cny"] ?? 0) < 0.30 {
+                weights["gold_cny"] = 0.30
+            }
+            if equityStress {
+                weights["nasdaq"] = (weights["nasdaq"] ?? 0) * 0.35
+                weights["sp500"] = (weights["sp500"] ?? 0) * 0.45
+            }
+            weights = weights.mapValues { $0 * floorThrottle() }
+            return clean(volManaged(weights, target: variant.targetVolatility, minimumExposure: 0.20))
+
+        case .dualMomentumFloor:
+            let scored = ["gold_cny", "nasdaq", "sp500"].compactMap { symbol -> (symbol: String, score: Double)? in
+                let medium = momentum(symbol, 126)
+                let long = momentum(symbol, 252)
+                guard medium > 0, long > -0.03, aboveAverage(symbol, symbol == "gold_cny" ? 180 : 220) else { return nil }
+                return (symbol, medium * 0.55 + long * 0.45)
+            }
+            .sorted { lhs, rhs in
+                if lhs.score == rhs.score { return lhs.symbol < rhs.symbol }
+                return lhs.score > rhs.score
+            }
+            guard let leader = scored.first, !nearFloor else {
+                return goldHealthy ? ["gold_cny": 0.20 * floorThrottle()] : [:]
+            }
+            var weights = [leader.symbol: 0.62]
+            if scored.count > 1 {
+                weights[scored[1].symbol] = 0.24
+            } else if leader.symbol != "gold_cny", goldHealthy {
+                weights["gold_cny"] = 0.18
+            }
+            if equityStress {
+                weights["nasdaq"] = (weights["nasdaq"] ?? 0) * 0.35
+                weights["sp500"] = (weights["sp500"] ?? 0) * 0.45
+            }
+            weights = weights.mapValues { $0 * floorThrottle() }
+            return clean(volManaged(weights, target: variant.targetVolatility, minimumExposure: 0.15))
+
+        case .canaryFloor:
+            let canaryScore = momentum("nasdaq", 63) + momentum("sp500", 63)
+                + momentum("nasdaq", 126) * 0.5
+                + momentum("sp500", 126) * 0.5
+            let canaryOK = canaryScore > 0
+                && (aboveAverage("nasdaq", 180) || aboveAverage("sp500", 180))
+            var weights: [String: Double]
+            if nearFloor || !canaryOK {
+                weights = goldHealthy ? ["gold_cny": 0.45] : [:]
+            } else if equityHealthy && goldHealthy {
+                weights = ["gold_cny": 0.40, "nasdaq": 0.40, "sp500": 0.14]
+            } else if equityHealthy {
+                weights = ["nasdaq": 0.52, "sp500": 0.22]
+            } else {
+                weights = goldHealthy ? ["gold_cny": 0.62] : [:]
+            }
+            weights = weights.mapValues { $0 * floorThrottle() }
+            return clean(volManaged(weights, target: variant.targetVolatility, minimumExposure: 0.10))
+
+        case .drawdownBudget:
+            var weights: [String: Double] = [
+                "gold_cny": goldHealthy ? 0.50 : 0.25,
+                "nasdaq": equityHealthy ? 0.34 : 0.16,
+                "sp500": equityHealthy ? 0.12 : 0.06
+            ]
+            if equityStress {
+                weights["nasdaq"] = (weights["nasdaq"] ?? 0) * 0.25
+                weights["sp500"] = (weights["sp500"] ?? 0) * 0.35
+            }
+            if goldWeak {
+                weights["gold_cny"] = (weights["gold_cny"] ?? 0) * 0.40
+            }
+            let recentDrawdown = portfolioDrawdown(context: context, lookback: 126)
+            if recentDrawdown < -0.045 {
+                let scale = recentDrawdown < -0.065 ? 0.28 : 0.50
+                weights = weights.mapValues { $0 * scale }
+            }
+            weights = weights.mapValues { $0 * floorThrottle() }
+            return clean(volManaged(weights, target: variant.targetVolatility, minimumExposure: 0.12))
+
+        case .profitLockReentry:
+            let equityOverheated = momentum("nasdaq", 126) > 0.22
+                && drawdown("nasdaq", 63) > -0.025
+                && volatility("nasdaq") > 0.22
+            let reentry = drawdown("nasdaq", 252) < -0.16
+                && momentum("nasdaq", 20) > 0.035
+                && momentum("sp500", 20) > 0
+                && !nearFloor
+            var weights: [String: Double]
+            if nearFloor || equityStress {
+                weights = goldHealthy ? ["gold_cny": 0.35] : [:]
+            } else if reentry {
+                weights = ["gold_cny": goldHealthy ? 0.32 : 0.18, "nasdaq": 0.48, "sp500": 0.14]
+            } else if equityHealthy {
+                weights = ["gold_cny": goldHealthy ? 0.44 : 0.26, "nasdaq": equityOverheated ? 0.28 : 0.42, "sp500": 0.14]
+            } else if goldHealthy {
+                weights = ["gold_cny": 0.68, "sp500": 0.08]
+            } else {
+                weights = [:]
+            }
+            weights = weights.mapValues { $0 * floorThrottle() }
+            return clean(volManaged(weights, target: variant.targetVolatility, minimumExposure: 0.12))
+        }
+    }
+
+    private static func runStrictTarget(
+        variant: StrictTargetVariant,
+        inputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        settings: AdvancedBacktestRiskSettings
+    ) -> StrictTargetRun? {
+        let config = ResearchTargetStrategyConfig(
+            symbol: variant.id,
+            title: variant.title,
+            warmupSessions: 320,
+            rebalanceSessions: variant.rebalanceSessions,
+            rebalanceBand: variant.rebalanceBand,
+            zeroFillBeforeFirstSymbols: ["usd_cash"],
+            maxGrossExposure: variant.maxExposure,
+            allowsFinancedExposure: false,
+            financingAnnualRate: 0,
+            buyReason: "12/8目标研究调仓"
+        )
+        guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+            assetInputs: inputs,
+            initialCash: 100_000,
+            settings: settings,
+            config: config,
+            targetWeights: { context, data in
+                strictTargetWeights(variant: variant, context: context, data: data)
+            }
+        ) else { return nil }
+
+        let full = MetricRow(
+            title: variant.title,
+            id: variant.id,
+            annualized: report.annualizedReturn,
+            maxDrawdown: report.maxDrawdown,
+            volatility: report.annualizedVolatility,
+            sharpe: report.sharpeRatio,
+            start: report.points.first?.date.recordDateString ?? "n/a",
+            end: report.points.last?.date.recordDateString ?? "n/a",
+            pointCount: report.points.count
+        )
+        let calendar = Calendar(identifier: .gregorian)
+        let last10yStart = calendar.date(byAdding: .year, value: -10, to: report.points.last?.date ?? Date()) ?? Date()
+        let since2020Date = calendar.date(from: DateComponents(year: 2020, month: 1, day: 1))!
+        let since2022Date = calendar.date(from: DateComponents(year: 2022, month: 1, day: 1))!
+        let last10y = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= last10yStart })
+        let since2020 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2020Date })
+        let since2022 = metricRow(title: variant.title, id: variant.id, points: report.points.filter { $0.date >= since2022Date })
+        let passed = (full.annualized ?? -Double.infinity) >= 0.12
+            && (full.maxDrawdown ?? Double.infinity) <= 0.08
+            && (last10y.maxDrawdown ?? Double.infinity) <= 0.08
+            && (since2020.maxDrawdown ?? Double.infinity) <= 0.08
+            && (since2022.maxDrawdown ?? Double.infinity) <= 0.08
+        return StrictTargetRun(
+            variant: variant,
+            full: full,
+            last10y: last10y,
+            since2020: since2020,
+            since2022: since2022,
+            passed: passed
+        )
+    }
+
+    private static func strictTargetSort(_ lhs: StrictTargetRun, _ rhs: StrictTargetRun) -> Bool {
+        if lhs.passed != rhs.passed { return lhs.passed }
+        let lhsAnnualized = lhs.full.annualized ?? -Double.infinity
+        let rhsAnnualized = rhs.full.annualized ?? -Double.infinity
+        let lhsDrawdown = lhs.full.maxDrawdown ?? Double.infinity
+        let rhsDrawdown = rhs.full.maxDrawdown ?? Double.infinity
+        let lhsSharpe = lhs.full.sharpe ?? -Double.infinity
+        let rhsSharpe = rhs.full.sharpe ?? -Double.infinity
+        let lhsScore = lhsAnnualized * 100 + lhsSharpe * 3 - lhsDrawdown * 120
+        let rhsScore = rhsAnnualized * 100 + rhsSharpe * 3 - rhsDrawdown * 120
+        if lhsScore != rhsScore { return lhsScore > rhsScore }
+        return lhsDrawdown < rhsDrawdown
+    }
+
+    private static func runStrictTargetZoo(
+        seriesBySymbol: [String: PublicHistorySeries],
+        settings: AdvancedBacktestRiskSettings
+    ) {
+        let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+        let symbols = ["gold_cny", "nasdaq", "sp500", "usd_cash"]
+        let inputs = symbols.compactMap { optionsBySymbol[$0] }.map { option in
+            BacktestEngine.advancedAssetInput(for: option) { symbol in
+                seriesBySymbol[normalizedHistorySymbol(symbol)]
+            }
+        }
+
+        var runs: [StrictTargetRun] = []
+        print("APP_STRICT_12_8_ZOO")
+        print("title,id,kind,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        for variant in strictTargetVariants() {
+            guard let run = runStrictTarget(variant: variant, inputs: inputs, settings: settings) else {
+                print("\(variant.title),\(variant.id),\(variant.kind.rawValue),n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+                continue
+            }
+            runs.append(run)
+            let columns: [String] = [
+                run.variant.title,
+                run.variant.id,
+                run.variant.kind.rawValue,
+                run.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+                run.last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                run.passed ? "true" : "false",
+                run.full.start,
+                run.full.end,
+                "\(run.full.pointCount)"
+            ]
+            print(columns.joined(separator: ","))
+        }
+
+        print("APP_STRICT_12_8_BEST")
+        print("title,id,kind,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        guard let best = runs.sorted(by: strictTargetSort).first else {
+            print("none,none,none,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+            return
+        }
+        let bestColumns: [String] = [
+            best.variant.title,
+            best.variant.id,
+            best.variant.kind.rawValue,
+            best.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+            best.last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.passed ? "true" : "false",
+            best.full.start,
+            best.full.end,
+            "\(best.full.pointCount)"
+        ]
+        print(bestColumns.joined(separator: ","))
+    }
+
+    private static func runSharpeFineGrid(
+        seriesBySymbol: [String: PublicHistorySeries],
+        settings: AdvancedBacktestRiskSettings
+    ) {
+        let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+        let options = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+            optionsBySymbol[$0]
+        }
+        let inputs = options.map { option in
+            BacktestEngine.advancedAssetInput(for: option) { symbol in
+                seriesBySymbol[normalizedHistorySymbol(symbol)]
+            }
+        }
+        let lowScales = [0.35, 0.38, 0.40, 0.42, 0.45, 0.48, 0.50, 0.52]
+        let multipliers = [1.45, 1.50, 1.55, 1.60, 1.65, 1.70, 1.75, 1.80, 1.85, 1.90]
+        let calendar = Calendar(identifier: .gregorian)
+        let since2020Date = calendar.date(from: DateComponents(year: 2020, month: 1, day: 1))!
+        let since2022Date = calendar.date(from: DateComponents(year: 2022, month: 1, day: 1))!
+
+        func rowFor(_ report: AdvancedBacktestReport, title: String, id: String) -> MetricRow {
+            MetricRow(
+                title: title,
+                id: id,
+                annualized: report.annualizedReturn,
+                maxDrawdown: report.maxDrawdown,
+                volatility: report.annualizedVolatility,
+                sharpe: report.sharpeRatio,
+                start: report.points.first?.date.recordDateString ?? "n/a",
+                end: report.points.last?.date.recordDateString ?? "n/a",
+                pointCount: report.points.count
+            )
+        }
+
+        var runs: [SharpeFineRun] = []
+        print("APP_SHARPE_FINE_GRID")
+        print("low_scale,multiplier,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        for lowScale in lowScales {
+            for multiplier in multipliers {
+                BacktestResearchOverrides.sharpeLowScale = lowScale
+                BacktestResearchOverrides.sharpeMultiplier = multiplier
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: .coreGoldSatelliteSharpeStateGateMomentum
+                ) else {
+                    print(String(format: "%.2f,%.2f,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0", lowScale, multiplier))
+                    continue
+                }
+                let id = String(format: "sharpe_fine_l%.0f_m%.0f", lowScale * 100, multiplier * 100)
+                let title = "高夏普细网格"
+                let full = rowFor(report, title: title, id: id)
+                let last10yStart = calendar.date(byAdding: .year, value: -10, to: report.points.last?.date ?? Date()) ?? Date()
+                let last10y = metricRow(title: title, id: id, points: report.points.filter { $0.date >= last10yStart })
+                let since2020 = metricRow(title: title, id: id, points: report.points.filter { $0.date >= since2020Date })
+                let since2022 = metricRow(title: title, id: id, points: report.points.filter { $0.date >= since2022Date })
+                let passed = (full.annualized ?? -Double.infinity) >= 0.10
+                    && (full.maxDrawdown ?? Double.infinity) <= 0.155
+                    && (full.sharpe ?? -Double.infinity) >= 0.95
+                    && (last10y.annualized ?? -Double.infinity) >= 0.06
+                    && (last10y.maxDrawdown ?? Double.infinity) <= 0.145
+                    && (since2020.annualized ?? -Double.infinity) >= 0.09
+                    && (since2020.maxDrawdown ?? Double.infinity) <= 0.14
+                    && (since2022.annualized ?? -Double.infinity) >= 0.105
+                    && (since2022.maxDrawdown ?? Double.infinity) <= 0.14
+                let run = SharpeFineRun(
+                    lowScale: lowScale,
+                    multiplier: multiplier,
+                    full: full,
+                    last10y: last10y,
+                    since2020: since2020,
+                    since2022: since2022,
+                    passed: passed
+                )
+                runs.append(run)
+                let columns: [String] = [
+                    String(format: "%.2f", lowScale),
+                    String(format: "%.2f", multiplier),
+                    full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+                    last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    passed ? "true" : "false",
+                    full.start,
+                    full.end,
+                    "\(full.pointCount)"
+                ]
+                print(columns.joined(separator: ","))
+            }
+        }
+        BacktestResearchOverrides.sharpeLowScale = nil
+        BacktestResearchOverrides.sharpeMultiplier = nil
+
+        func isBetter(_ lhs: SharpeFineRun, than rhs: SharpeFineRun) -> Bool {
+            if lhs.passed != rhs.passed { return lhs.passed }
+            let lhsAnnualized = lhs.full.annualized ?? -Double.infinity
+            let rhsAnnualized = rhs.full.annualized ?? -Double.infinity
+            let lhsDrawdown = lhs.full.maxDrawdown ?? Double.infinity
+            let rhsDrawdown = rhs.full.maxDrawdown ?? Double.infinity
+            let lhsSharpe = lhs.full.sharpe ?? -Double.infinity
+            let rhsSharpe = rhs.full.sharpe ?? -Double.infinity
+            if lhs.passed && rhs.passed {
+                if lhsAnnualized != rhsAnnualized { return lhsAnnualized > rhsAnnualized }
+                if lhsDrawdown != rhsDrawdown { return lhsDrawdown < rhsDrawdown }
+                return lhsSharpe > rhsSharpe
+            }
+            let lhsScore = lhsAnnualized * 100 + lhsSharpe * 2 - lhsDrawdown * 45
+            let rhsScore = rhsAnnualized * 100 + rhsSharpe * 2 - rhsDrawdown * 45
+            if lhsScore != rhsScore { return lhsScore > rhsScore }
+            return lhsDrawdown < rhsDrawdown
+        }
+
+        print("APP_SHARPE_FINE_BEST")
+        print("low_scale,multiplier,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_max_drawdown,since2020_annualized,since2020_max_drawdown,since2022_annualized,since2022_max_drawdown,passed,start,end,points")
+        guard let best = runs.sorted(by: isBetter).first else {
+            print("n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,false,n/a,n/a,0")
+            return
+        }
+        let bestColumns: [String] = [
+            String(format: "%.2f", best.lowScale),
+            String(format: "%.2f", best.multiplier),
+            best.full.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.volatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.full.sharpe.map { String(format: "%.6f", $0) } ?? "n/a",
+            best.last10y.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.last10y.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2020.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.annualized.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.since2022.maxDrawdown.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+            best.passed ? "true" : "false",
+            best.full.start,
+            best.full.end,
+            "\(best.full.pointCount)"
+        ]
+        print(bestColumns.joined(separator: ","))
+    }
+
     private static let allRotationModes: [AdvancedBacktestStrategyMode] = [
         .ultraDefensiveRotation,
         .defensiveRotation,
@@ -467,6 +5361,228 @@ struct StrategyMetricDump {
         )
     }
 
+    private static func collectAppStrategyRows(
+        seriesBySymbol: [String: PublicHistorySeries],
+        settings: AdvancedBacktestRiskSettings
+    ) -> (rows: [MetricRow], sliceRows: [SliceMetricRow]) {
+        var rows: [MetricRow] = []
+        var sliceRows: [SliceMetricRow] = []
+        for template in AdvancedBacktestStrategyTemplate.all {
+            let inputs = appFilteredInputs(for: template, seriesBySymbol: seriesBySymbol)
+            let report: AdvancedBacktestReport?
+            if template.mode.isRotation {
+                report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: template.mode
+                )
+            } else {
+                report = BacktestEngine.runAdvancedStrategies(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    tradeAmount: 100_000 * template.tradeAmountRatio,
+                    buyRule: template.buyRule,
+                    sellRule: template.sellRule,
+                    settings: AdvancedBacktestRiskSettings(
+                        feeRate: MetricDumpExecutionAssumptions.feeRatePercent,
+                        slippageRate: MetricDumpExecutionAssumptions.slippageRatePercent,
+                        maxPositionRatio: template.maxPositionRatio,
+                        cooldownDays: template.cooldownDays,
+                        stopLossRatio: template.stopLossRatio,
+                        takeProfitRatio: template.takeProfitRatio
+                    )
+                )
+            }
+            guard let report else {
+                rows.append(MetricRow(
+                    title: template.title,
+                    id: template.id,
+                    annualized: nil,
+                    maxDrawdown: nil,
+                    volatility: nil,
+                    sharpe: nil,
+                    start: "n/a",
+                    end: "n/a",
+                    pointCount: 0
+                ))
+                continue
+            }
+            let row = MetricRow(
+                title: template.title,
+                id: template.id,
+                annualized: report.annualizedReturn,
+                maxDrawdown: report.maxDrawdown,
+                volatility: report.annualizedVolatility,
+                sharpe: report.sharpeRatio,
+                start: report.points.first?.date.recordDateString ?? "n/a",
+                end: report.points.last?.date.recordDateString ?? "n/a",
+                pointCount: report.points.count
+            )
+            rows.append(row)
+            sliceRows.append(contentsOf: metricRowsForSlices(title: template.title, id: template.id, points: report.points, fullRow: row))
+        }
+        return (rows, sliceRows)
+    }
+
+    private struct BaselineDocument: Decodable {
+        let strategies: [BaselineStrategy]?
+        let strategy: BaselineStrategy?
+
+        var allStrategies: [BaselineStrategy] {
+            strategies ?? strategy.map { [$0] } ?? []
+        }
+    }
+
+    private struct BaselineStrategy: Decodable {
+        let title: String
+        let id: String
+        let metricsBySlice: [String: BaselineSlice]
+
+        enum CodingKeys: String, CodingKey {
+            case title
+            case id
+            case metricsBySlice = "metrics_by_slice"
+        }
+    }
+
+    private struct BaselineSlice: Decodable {
+        let metricsPercent: BaselineMetricsPercent
+        let start: String
+        let end: String
+        let pointCount: Int
+
+        enum CodingKeys: String, CodingKey {
+            case metricsPercent = "metrics_percent"
+            case start
+            case end
+            case pointCount = "point_count"
+        }
+    }
+
+    private struct BaselineMetricsPercent: Decodable {
+        let annualized: Double?
+        let maxDrawdown: Double?
+        let volatility: Double?
+        let sharpe: Double?
+
+        enum CodingKeys: String, CodingKey {
+            case annualized
+            case maxDrawdown = "max_drawdown"
+            case volatility
+            case sharpe
+        }
+    }
+
+    private static func verifyAppBaseline(
+        sliceRows: [SliceMetricRow],
+        baselinePath: String,
+        tolerance: Double = 0.0005
+    ) throws {
+        let data = try Data(contentsOf: URL(fileURLWithPath: baselinePath))
+        let document = try JSONDecoder().decode(BaselineDocument.self, from: data)
+        var actualRows: [String: MetricRow] = [:]
+        for sliceRow in sliceRows {
+            actualRows["\(sliceRow.row.id)|\(sliceRow.slice)"] = sliceRow.row
+        }
+        var failures: [String] = []
+
+        for strategy in document.allStrategies {
+            for (slice, expected) in strategy.metricsBySlice {
+                let key = "\(strategy.id)|\(slice)"
+                guard let actual = actualRows[key] else {
+                    failures.append("\(strategy.title) \(slice): missing actual row")
+                    continue
+                }
+                comparePercent(
+                    name: "annualized",
+                    actual: actual.annualized.map { $0 * 100 },
+                    expected: expected.metricsPercent.annualized,
+                    tolerance: tolerance,
+                    context: "\(strategy.title) \(slice)",
+                    failures: &failures
+                )
+                comparePercent(
+                    name: "max_drawdown",
+                    actual: actual.maxDrawdown.map { $0 * 100 },
+                    expected: expected.metricsPercent.maxDrawdown,
+                    tolerance: tolerance,
+                    context: "\(strategy.title) \(slice)",
+                    failures: &failures
+                )
+                comparePercent(
+                    name: "volatility",
+                    actual: actual.volatility.map { $0 * 100 },
+                    expected: expected.metricsPercent.volatility,
+                    tolerance: tolerance,
+                    context: "\(strategy.title) \(slice)",
+                    failures: &failures
+                )
+                comparePercent(
+                    name: "sharpe",
+                    actual: actual.sharpe,
+                    expected: expected.metricsPercent.sharpe,
+                    tolerance: tolerance,
+                    context: "\(strategy.title) \(slice)",
+                    failures: &failures
+                )
+                if actual.start != expected.start {
+                    failures.append("\(strategy.title) \(slice): start actual=\(actual.start) expected=\(expected.start)")
+                }
+                if actual.end != expected.end {
+                    failures.append("\(strategy.title) \(slice): end actual=\(actual.end) expected=\(expected.end)")
+                }
+                if actual.pointCount != expected.pointCount {
+                    failures.append("\(strategy.title) \(slice): points actual=\(actual.pointCount) expected=\(expected.pointCount)")
+                }
+            }
+        }
+
+        if failures.isEmpty {
+            print("APP_BASELINE_VERIFY_OK")
+            print("baseline=\(baselinePath)")
+        } else {
+            print("APP_BASELINE_VERIFY_FAILED")
+            for failure in failures {
+                print(failure)
+            }
+            fflush(stdout)
+            Darwin.exit(2)
+        }
+    }
+
+    private static func comparePercent(
+        name: String,
+        actual: Double?,
+        expected: Double?,
+        tolerance: Double,
+        context: String,
+        failures: inout [String]
+    ) {
+        switch (actual, expected) {
+        case let (actual?, expected?):
+            if abs(actual - expected) > tolerance {
+                failures.append("\(context) \(name) actual=\(formatted(actual)) expected=\(formatted(expected))")
+            }
+        case (nil, nil):
+            return
+        default:
+            failures.append("\(context) \(name) actual=\(actual.map(formatted) ?? "nil") expected=\(expected.map(formatted) ?? "nil")")
+        }
+    }
+
+    private static func formatted(_ value: Double) -> String {
+        String(format: "%.6f", value)
+    }
+
+    private static func argumentValue(after flag: String) -> String? {
+        let args = CommandLine.arguments
+        guard let index = args.firstIndex(of: flag) else { return nil }
+        let valueIndex = args.index(after: index)
+        guard args.indices.contains(valueIndex) else { return nil }
+        return args[valueIndex]
+    }
+
     static func main() async throws {
         let symbols = [
             "gold_cny",
@@ -475,28 +5591,9656 @@ struct StrategyMetricDump {
             "dow_jones",
             "hang_seng",
             "nikkei225",
+            "oil_wti_cny",
             "csi300",
             "shanghai_composite",
             "shenzhen_component",
             "chinext",
             "usd_per_cny"
         ]
-        let response = try await RemoteMarketClient.fetchHistory(symbols: symbols, period: "all", includeOHLC: false)
+        let response = try await RemoteMarketClient.fetchHistory(symbols: symbols, period: "all", includeOHLC: true)
         let seriesBySymbol = Dictionary(uniqueKeysWithValues: response.series.map { series in
             (normalizedHistorySymbol(series.symbol), series)
         })
         let settings = AdvancedBacktestRiskSettings(
-            feeRate: 1.0,
-            slippageRate: 0.05,
+            feeRate: MetricDumpExecutionAssumptions.feeRatePercent,
+            slippageRate: MetricDumpExecutionAssumptions.slippageRatePercent,
             maxPositionRatio: 100,
             cooldownDays: 0,
             stopLossRatio: 0,
             takeProfitRatio: 0
         )
 
+        if CommandLine.arguments.contains("--verify-app-baseline") {
+            let baselinePath = argumentValue(after: "--baseline")
+                ?? ProcessInfo.processInfo.environment["ATM_BASELINE_PATH"]
+                ?? "tools/expected_backtest_metrics/app/app_engine_strategy_baseline.json"
+            let collectedRows = collectAppStrategyRows(seriesBySymbol: seriesBySymbol, settings: settings)
+            try verifyAppBaseline(sliceRows: collectedRows.sliceRows, baselinePath: baselinePath)
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_NEW_LOGIC_GRID"] == "1" {
+            runNewLogicGrid(seriesBySymbol: seriesBySymbol, settings: settings)
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_ANCHOR_TREND_GRID"] == "1" {
+            runAnchorTrendGrid(seriesBySymbol: seriesBySymbol, settings: settings)
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_WEB_LOGIC_GRID"] == "1" {
+            runWebLogicGrid(seriesBySymbol: seriesBySymbol, settings: settings)
+            return
+        }
+
+        if let traceID = ProcessInfo.processInfo.environment["ATM_WEB_LOGIC_TRACE"] {
+            runWebLogicTrace(seriesBySymbol: seriesBySymbol, settings: settings, requestedID: traceID)
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_MECHANISM_ZOO"] == "1" {
+            runMechanismZoo(seriesBySymbol: seriesBySymbol, settings: settings)
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_ENGINE_ROUTER_ZOO"] == "1" {
+            runEngineRouterZoo(seriesBySymbol: seriesBySymbol, settings: settings)
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_BLEND_GOLD_INVALIDATION_GRID"] == "1" {
+            struct BlendGoldCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+                let transitions: Int
+            }
+
+            func blendGoldDDWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(riskMode.requiredSignalAssetSymbols + dualMode.requiredSignalAssetSymbols)).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            func trace(_ mode: AdvancedBacktestStrategyMode) -> [String: [String: Double]]? {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { return nil }
+                return Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            }
+
+            guard let riskTargets = trace(riskMode),
+                  let dualTargets = trace(dualMode),
+                  let fxSeries = seriesBySymbol["usd_per_cny"] else {
+                print("APP_BLEND_GOLD_INVALIDATION_GRID\nbase_trace_or_fx_missing")
+                return
+            }
+            let fxByDate = Dictionary(uniqueKeysWithValues: zip(fxSeries.dates, fxSeries.prices))
+            let macroPath = ProcessInfo.processInfo.environment["ATM_MACRO_RISK_FIXTURE"]
+                ?? "tools/fixtures/macro-risk/macro_risk_public.json"
+            guard let macroData = FileManager.default.contents(atPath: macroPath),
+                  let macroRoot = try? JSONSerialization.jsonObject(with: macroData) as? [String: Any],
+                  let macroSeries = macroRoot["series"] as? [String: Any],
+                  let cpRows = macroSeries["cp90"] as? [[String: Any]],
+                  let billRows = macroSeries["tbill3m"] as? [[String: Any]] else {
+                print("APP_BLEND_GOLD_INVALIDATION_GRID\nmacro_credit_missing")
+                return
+            }
+            let cpByDate = Dictionary(uniqueKeysWithValues: cpRows.compactMap { row -> (String, Double)? in
+                guard let date = row["date"] as? String, let value = row["value"] as? NSNumber else { return nil }
+                return (date, value.doubleValue)
+            })
+            let billByDate = Dictionary(uniqueKeysWithValues: billRows.compactMap { row -> (String, Double)? in
+                guard let date = row["date"] as? String, let value = row["value"] as? NSNumber else { return nil }
+                return (date, value.doubleValue)
+            })
+
+            let momentum20Options = [-0.03, -0.05]
+            let drawdown60Options = [-0.10, -0.15]
+            let exitConfirmOptions = [1, 2]
+            let recoveryConfirmOptions = [3, 5]
+            let minimumLockOptions = [10, 20]
+            let fxMomentum60Options = [-0.01, 0.0]
+            let creditZOptions = [0.5, 1.0, 1.5]
+            var candidates: [BlendGoldCandidate] = []
+
+            for momentum20Threshold in momentum20Options {
+                for drawdown60Threshold in drawdown60Options {
+                    for exitConfirm in exitConfirmOptions {
+                        for recoveryConfirm in recoveryConfirmOptions {
+                            for minimumLock in minimumLockOptions {
+                                for fxMomentum60Threshold in fxMomentum60Options {
+                                    for creditZThreshold in creditZOptions {
+                                let title = String(
+                                    format: "融合黄金失效-M%.0f-D%.0f-X%d-R%d-L%d-FX%.0f-C%.1f",
+                                    abs(momentum20Threshold) * 100,
+                                    abs(drawdown60Threshold) * 100,
+                                    exitConfirm,
+                                    recoveryConfirm,
+                                    minimumLock,
+                                    fxMomentum60Threshold * 100,
+                                    creditZThreshold
+                                )
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "blend_gold_invalidation",
+                                    title: title,
+                                    warmupSessions: 1,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: 0.08,
+                                    maxGrossExposure: 1.0,
+                                    allowsFinancedExposure: false,
+                                    financingAnnualRate: 0,
+                                    buyReason: "融合组合黄金失效调仓"
+                                )
+                                var latestRisk: [String: Double] = [:]
+                                var latestDual: [String: Double] = [:]
+                                var pending: [String: Double] = [:]
+                                var previous: [String: Double] = [:]
+                                var goldLocked = false
+                                var goldLockIndex = -10_000
+                                var exitStreak = 0
+                                var recoveryStreak = 0
+                                var transitionCount = 0
+                                var alignedFX: [Double?] = []
+                                var alignedSpread: [Double?] = []
+
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    rebalanceDecision: { index, signalIndex, data in
+                                        guard signalIndex >= 60,
+                                              data.dates.indices.contains(index),
+                                              data.dates.indices.contains(signalIndex),
+                                              let gold = data.pricesBySymbol["gold_cny"],
+                                              gold.indices.contains(signalIndex),
+                                              let goldMA20 = movingAverage(gold, at: signalIndex, period: 20),
+                                              let goldMA60 = movingAverage(gold, at: signalIndex, period: 60),
+                                              let goldM10 = priceMomentum(gold, at: signalIndex, lookback: 10),
+                                              let goldM20 = priceMomentum(gold, at: signalIndex, lookback: 20),
+                                              let goldM60 = priceMomentum(gold, at: signalIndex, lookback: 60) else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        if alignedFX.isEmpty {
+                                            var lastFX: Double?
+                                            var lastCP: Double?
+                                            var lastBill: Double?
+                                            alignedFX.reserveCapacity(data.dates.count)
+                                            alignedSpread.reserveCapacity(data.dates.count)
+                                            for date in data.dates {
+                                                let dateKey = date.recordDateString
+                                                if let value = fxByDate[dateKey] { lastFX = value }
+                                                if let value = cpByDate[dateKey] { lastCP = value }
+                                                if let value = billByDate[dateKey] { lastBill = value }
+                                                alignedFX.append(lastFX)
+                                                if let lastCP, let lastBill { alignedSpread.append(lastCP - lastBill) }
+                                                else { alignedSpread.append(nil) }
+                                            }
+                                        }
+                                        let executionKey = data.dates[index].recordDateString
+                                        if let weights = riskTargets[executionKey] { latestRisk = weights }
+                                        if let weights = dualTargets[executionKey] { latestDual = weights }
+                                        guard !latestRisk.isEmpty, !latestDual.isEmpty else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        var normal: [String: Double] = [:]
+                                        for (symbol, weight) in latestRisk {
+                                            normal[symbol, default: 0] += weight * 0.75
+                                        }
+                                        for (symbol, weight) in latestDual {
+                                            normal[symbol, default: 0] += weight * 0.75
+                                        }
+                                        let gross = normal.values.reduce(0, +)
+                                        if gross > 1, gross > 0 { normal = normal.mapValues { $0 / gross } }
+
+                                        let goldTargetWeight = normal["gold_cny"] ?? 0
+                                        let start60 = max(0, signalIndex - 59)
+                                        let high60 = gold[start60...signalIndex].max() ?? gold[signalIndex]
+                                        let drawdown60 = high60 > 0 ? gold[signalIndex] / high60 - 1 : 0
+                                        let fxCurrent = alignedFX[signalIndex]
+                                        let fxPrevious = signalIndex >= 60 ? alignedFX[signalIndex - 60] : nil
+                                        let fxMomentum60 = (fxCurrent != nil && fxPrevious != nil && fxPrevious! > 0)
+                                            ? fxCurrent! / fxPrevious! - 1
+                                            : 0
+                                        let currencyAllowsGoldExit = fxMomentum60 >= fxMomentum60Threshold
+                                        let creditIndex = max(signalIndex - 2, 0)
+                                        let creditStart = max(0, creditIndex - 251)
+                                        let creditSample = alignedSpread[creditStart...creditIndex].compactMap { $0 }
+                                        let creditCurrent = alignedSpread[creditIndex]
+                                        let creditMean = creditSample.isEmpty ? 0 : creditSample.reduce(0, +) / Double(creditSample.count)
+                                        let creditVariance = creditSample.count > 1
+                                            ? creditSample.reduce(0.0) { $0 + ($1 - creditMean) * ($1 - creditMean) } / Double(creditSample.count - 1)
+                                            : 0
+                                        let creditStd = sqrt(max(creditVariance, 0))
+                                        let creditZ = (creditCurrent != nil && creditStd > 0.0001)
+                                            ? (creditCurrent! - creditMean) / creditStd
+                                            : 0
+                                        let credit10Ago = alignedSpread[max(0, creditIndex - 10)] ?? creditCurrent
+                                        let creditChange10 = (creditCurrent != nil && credit10Ago != nil)
+                                            ? creditCurrent! - credit10Ago!
+                                            : 0
+                                        let systemicCreditStress = creditZ >= creditZThreshold
+                                            && creditChange10 >= 0.10
+                                        let exitSignal = goldTargetWeight > 0.01
+                                            && gold[signalIndex] < goldMA20
+                                            && gold[signalIndex] < goldMA60
+                                            && goldM20 <= momentum20Threshold
+                                            && goldM60 < 0
+                                            && drawdown60 <= drawdown60Threshold
+                                            && currencyAllowsGoldExit
+                                            && systemicCreditStress
+                                        exitStreak = exitSignal ? exitStreak + 1 : 0
+                                        let recovered = gold[signalIndex] > goldMA20
+                                            && goldM10 > 0
+                                            && goldM20 > 0
+                                            && goldM60 > -0.02
+                                        recoveryStreak = recovered ? recoveryStreak + 1 : 0
+
+                                        let oldLock = goldLocked
+                                        if !goldLocked, exitStreak >= exitConfirm {
+                                            goldLocked = true
+                                            goldLockIndex = signalIndex
+                                            recoveryStreak = 0
+                                        } else if goldLocked,
+                                                  signalIndex - goldLockIndex >= minimumLock,
+                                                  recoveryStreak >= recoveryConfirm {
+                                            goldLocked = false
+                                            exitStreak = 0
+                                            recoveryStreak = 0
+                                        }
+                                        if oldLock != goldLocked { transitionCount += 1 }
+                                        pending = normal
+                                        if goldLocked { pending.removeValue(forKey: "gold_cny") }
+                                        let symbols = Set(previous.keys).union(pending.keys)
+                                        let difference = symbols.reduce(0.0) {
+                                            $0 + abs((previous[$1] ?? 0) - (pending[$1] ?? 0))
+                                        }
+                                        let shouldRebalance = previous.isEmpty
+                                            ? !pending.isEmpty
+                                            : oldLock != goldLocked || difference > 0.0000001
+                                        previous = pending
+                                        return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                    },
+                                    targetWeights: { _, _ in pending }
+                                ) else { continue }
+
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "blend_gold_invalidation",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                let ddWindow = blendGoldDDWindow(report.points)
+                                candidates.append(BlendGoldCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility ?? -1,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(
+                                        title: title,
+                                        id: "blend_gold_invalidation",
+                                        points: report.points,
+                                        fullRow: fullRow
+                                    ),
+                                    trades: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio,
+                                    drawdownPeak: ddWindow.0,
+                                    drawdownTrough: ddWindow.1,
+                                    transitions: transitionCount
+                                ))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_BLEND_GOLD_INVALIDATION_NEAR_FRONTIER" : "APP_BLEND_GOLD_INVALIDATION_VALID")
+            print("APP_BLEND_GOLD_INVALIDATION_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough,transitions")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough + "," + String(candidate.transitions))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_REGIONAL_INVERSE_HEDGE_FRONTIER"] == "1" {
+            struct RegionalHedgeCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+                let transitions: Int
+            }
+
+            func regionalHedgeDDWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            func inverseCompositeSeries(
+                symbol: String,
+                label: String,
+                components: [PublicHistorySeries],
+                fxSeries: PublicHistorySeries?
+            ) -> PublicHistorySeries? {
+                guard let goldDates = seriesBySymbol["gold_cny"]?.dates else { return nil }
+                let dates = goldDates.filter { $0 >= "2002-01-04" }
+                let fxMap = fxSeries.map { Dictionary(uniqueKeysWithValues: zip($0.dates, $0.prices)) }
+                var componentPrices: [[Double]] = []
+                for component in components {
+                    let priceMap = Dictionary(uniqueKeysWithValues: zip(component.dates, component.prices))
+                    var values: [Double] = []
+                    values.reserveCapacity(dates.count)
+                    var lastPrice: Double?
+                    var lastFX: Double?
+                    for date in dates {
+                        if let value = priceMap[date], value.isFinite, value > 0 { lastPrice = value }
+                        if let fxMap, let value = fxMap[date], value.isFinite, value > 0 { lastFX = value }
+                        guard let price = lastPrice else { return nil }
+                        if fxMap != nil {
+                            guard let fx = lastFX else { return nil }
+                            values.append(price / fx)
+                        } else {
+                            values.append(price)
+                        }
+                    }
+                    componentPrices.append(values)
+                }
+                guard !componentPrices.isEmpty else { return nil }
+                var inverseValues = Array(repeating: 100.0, count: dates.count)
+                let annualExpense = 0.01 / 252
+                for index in 1..<dates.count {
+                    var returns: [Double] = []
+                    for values in componentPrices where values[index - 1] > 0 {
+                        returns.append(values[index] / values[index - 1] - 1)
+                    }
+                    let underlyingReturn = returns.isEmpty ? 0 : returns.reduce(0, +) / Double(returns.count)
+                    let inverseReturn = min(max(-underlyingReturn - annualExpense, -0.20), 0.20)
+                    inverseValues[index] = inverseValues[index - 1] * max(1 + inverseReturn, 0.50)
+                }
+                return PublicHistorySeries(
+                    symbol: symbol,
+                    category: "inverse_equity",
+                    label: label,
+                    currency: "CNY",
+                    unit: "index",
+                    source: "Synthetic daily-reset inverse index, 1% annual expense",
+                    dates: dates,
+                    prices: inverseValues,
+                    hasOHLC: false,
+                    ohlcSource: nil,
+                    ohlcCoverageRatio: nil,
+                    openPrices: nil,
+                    highPrices: nil,
+                    lowPrices: nil,
+                    closePrices: nil,
+                    volumes: nil
+                )
+            }
+
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            guard let nasdaq = seriesBySymbol["nasdaq"],
+                  let sp500 = seriesBySymbol["sp500"],
+                  let csi300 = seriesBySymbol["csi300"],
+                  let shanghai = seriesBySymbol["shanghai_composite"],
+                  let fx = seriesBySymbol["usd_per_cny"],
+                  let inverseUS = inverseCompositeSeries(symbol: "inverse_us_equity", label: "US Equity Inverse Hedge", components: [nasdaq, sp500], fxSeries: fx),
+                  let inverseChina = inverseCompositeSeries(symbol: "inverse_china_equity", label: "China Equity Inverse Hedge", components: [csi300, shanghai], fxSeries: nil) else {
+                print("APP_REGIONAL_INVERSE_HEDGE_FRONTIER\ninverse_series_missing")
+                return
+            }
+            let inverseUSOption = BacktestAssetOption(symbol: inverseUS.symbol, title: "美股反向对冲", color: AssetTheme.negative, requiresHistoricalFX: false, historicalFXSymbol: nil)
+            let inverseChinaOption = BacktestAssetOption(symbol: inverseChina.symbol, title: "A股反向对冲", color: AssetTheme.accentOrange, requiresHistoricalFX: false, historicalFXSymbol: nil)
+
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            var inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            inputs.append((assetSeries: inverseUS, assetOption: inverseUSOption, fxSeries: nil))
+            inputs.append((assetSeries: inverseChina, assetOption: inverseChinaOption, fxSeries: nil))
+
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(assetInputs: modeInputs, initialCash: 100_000, settings: settings, mode: mode) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            }
+            guard traces.count == modes.count else {
+                print("APP_REGIONAL_INVERSE_HEDGE_FRONTIER\ntrace_missing")
+                return
+            }
+
+            let mixes: [(String, Double, Double, Double)] = [
+                ("defensive", 0.50, 0.20, 0.30),
+                ("balanced", 0.35, 0.26, 0.39),
+                ("growth", 0.20, 0.32, 0.48)
+            ]
+            let riskScales = [1.50, 1.75, 2.00]
+            let hedgeRatios = [0.50, 0.75, 1.00]
+            let grossCaps = [1.00, 1.10, 1.20]
+            let usSymbols: Set<String> = ["nasdaq", "sp500", "dowjones"]
+            let chinaSymbols: Set<String> = ["csi300", "shanghai_composite", "shenzhen_component", "chinext"]
+            var candidates: [RegionalHedgeCandidate] = []
+
+            for mix in mixes {
+                for riskScale in riskScales {
+                    for hedgeRatio in hedgeRatios {
+                        for grossCap in grossCaps {
+                            let title = String(format: "区域反向对冲-%@-X%.2f-H%.0f-G%.0f", mix.0, riskScale, hedgeRatio * 100, grossCap * 100)
+                            let config = ResearchTargetStrategyConfig(
+                                symbol: "regional_inverse_hedge",
+                                title: title,
+                                warmupSessions: 60,
+                                rebalanceSessions: 1,
+                                rebalanceBand: 0.08,
+                                maxGrossExposure: grossCap,
+                                allowsFinancedExposure: grossCap > 1,
+                                financingAnnualRate: grossCap > 1 ? 0.05 : 0,
+                                buyReason: "区域极速反向对冲调仓"
+                            )
+                            var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                            var pending: [String: Double] = [:]
+                            var previous: [String: Double] = [:]
+                            var usHedgeActive = false
+                            var chinaHedgeActive = false
+                            var transitionCount = 0
+
+                            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                assetInputs: inputs,
+                                initialCash: 100_000,
+                                settings: settings,
+                                config: config,
+                                rebalanceDecision: { index, signalIndex, data in
+                                    guard signalIndex >= 60,
+                                          data.dates.indices.contains(index),
+                                          data.dates.indices.contains(signalIndex),
+                                          let nasdaqPrices = data.pricesBySymbol["nasdaq"],
+                                          let sp500Prices = data.pricesBySymbol["sp500"],
+                                          let csiPrices = data.pricesBySymbol["csi300"],
+                                          let shanghaiPrices = data.pricesBySymbol["shanghai_composite"] else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    func momentum(_ prices: [Double], _ lookback: Int) -> Double {
+                                        guard prices.indices.contains(signalIndex), signalIndex >= lookback, prices[signalIndex - lookback] > 0 else { return 0 }
+                                        return prices[signalIndex] / prices[signalIndex - lookback] - 1
+                                    }
+                                    func regionSignal(_ first: [Double], _ second: [Double], active: Bool) -> Bool {
+                                        let firstM5 = momentum(first, 5)
+                                        let secondM5 = momentum(second, 5)
+                                        let firstM10 = momentum(first, 10)
+                                        let secondM10 = momentum(second, 10)
+                                        let firstM20 = momentum(first, 20)
+                                        let secondM20 = momentum(second, 20)
+                                        let firstM60 = momentum(first, 60)
+                                        let secondM60 = momentum(second, 60)
+                                        let severeBreak = max(firstM5, secondM5) <= -0.03
+                                            || max(firstM10, secondM10) <= -0.05
+                                        let confirmedBreak = max(firstM20, secondM20) <= -0.04
+                                            && max(firstM60, secondM60) < 0
+                                        let release = min(firstM5, secondM5) > 0.02
+                                            && min(firstM20, secondM20) > 0
+                                        return severeBreak || confirmedBreak || (active && !release)
+                                    }
+                                    let oldUS = usHedgeActive
+                                    let oldChina = chinaHedgeActive
+                                    usHedgeActive = regionSignal(nasdaqPrices, sp500Prices, active: usHedgeActive)
+                                    chinaHedgeActive = regionSignal(csiPrices, shanghaiPrices, active: chinaHedgeActive)
+                                    if oldUS != usHedgeActive || oldChina != chinaHedgeActive { transitionCount += 1 }
+
+                                    let key = data.dates[index].recordDateString
+                                    var underlyingChanged = false
+                                    for mode in modes {
+                                        if let weights = traces[mode]?[key] {
+                                            let old = latest[mode] ?? [:]
+                                            let symbols = Set(old.keys).union(weights.keys)
+                                            if symbols.reduce(0.0, { $0 + abs((old[$1] ?? 0) - (weights[$1] ?? 0)) }) > 0.0000001 { underlyingChanged = true }
+                                            latest[mode] = weights
+                                        }
+                                    }
+                                    guard latest.count == modes.count else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    guard underlyingChanged || oldUS != usHedgeActive || oldChina != chinaHedgeActive || previous.isEmpty else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    let shares: [AdvancedBacktestStrategyMode: Double] = [sharpeMode: mix.1, riskMode: mix.2, dualMode: mix.3]
+                                    var target: [String: Double] = [:]
+                                    for (mode, share) in shares {
+                                        for (symbol, weight) in latest[mode] ?? [:] { target[symbol, default: 0] += weight * share * riskScale }
+                                    }
+                                    let usLong = target.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                                    let chinaLong = target.reduce(0.0) { $0 + (chinaSymbols.contains($1.key) ? $1.value : 0) }
+                                    if usHedgeActive, usLong > 0 { target[inverseUSOption.symbol] = usLong * hedgeRatio }
+                                    if chinaHedgeActive, chinaLong > 0 { target[inverseChinaOption.symbol] = chinaLong * hedgeRatio }
+                                    let gross = target.values.reduce(0, +)
+                                    if gross > grossCap, gross > 0 { target = target.mapValues { $0 * grossCap / gross } }
+
+                                    let symbols = Set(previous.keys).union(target.keys)
+                                    let difference = symbols.reduce(0.0) { $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0)) }
+                                    pending = target
+                                    let shouldRebalance = previous.isEmpty ? !target.isEmpty : difference > 0.04
+                                    if shouldRebalance { previous = target }
+                                    return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                },
+                                targetWeights: { _, _ in pending }
+                            ) else { continue }
+
+                            let fullRow = MetricRow(title: title, id: "regional_inverse_hedge", annualized: report.annualizedReturn, maxDrawdown: report.maxDrawdown, volatility: report.annualizedVolatility, sharpe: report.sharpeRatio, start: report.points.first?.date.recordDateString ?? "n/a", end: report.points.last?.date.recordDateString ?? "n/a", pointCount: report.points.count)
+                            let ddWindow = regionalHedgeDDWindow(report.points)
+                            candidates.append(RegionalHedgeCandidate(
+                                title: title,
+                                annualized: report.annualizedReturn ?? -1,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility ?? -1,
+                                sharpe: report.sharpeRatio ?? -1,
+                                sliceRows: metricRowsForSlices(title: title, id: "regional_inverse_hedge", points: report.points, fullRow: fullRow),
+                                trades: report.trades.count,
+                                averageCashRatio: report.averageCashRatio,
+                                drawdownPeak: ddWindow.0,
+                                drawdownTrough: ddWindow.1,
+                                transitions: transitionCount
+                            ))
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }.sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 10 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 10 + max(0.12 - rhs.annualized, 0) * 3
+                return lhsPenalty == rhsPenalty ? lhs.sharpe > rhs.sharpe : lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_REGIONAL_INVERSE_HEDGE_NEAR_FRONTIER" : "APP_REGIONAL_INVERSE_HEDGE_VALID")
+            print("APP_REGIONAL_INVERSE_HEDGE_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough,transitions")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough + "," + String(candidate.transitions))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_ONLINE_STRATEGY_ALLOCATOR_GRID"] == "1" {
+            struct OnlineAllocatorCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+                let allocationChanges: Int
+            }
+
+            func allocatorDDWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            let modes: [AdvancedBacktestStrategyMode] = [
+                .coreGoldSatelliteRiskBudgetStateGateMomentum,
+                .coreGoldSatelliteSharpeStateGateMomentum,
+                .coreGoldSatelliteProfitLockMomentum,
+                .goldNasdaqDualTrendBarbell
+            ]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            var targetMaps: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            var valueMaps: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                targetMaps[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+                valueMaps[mode] = Dictionary(uniqueKeysWithValues: run.report.points.map {
+                    ($0.date.recordDateString, $0.portfolioValue)
+                })
+            }
+            guard targetMaps.count == modes.count, valueMaps.count == modes.count else {
+                print("APP_ONLINE_STRATEGY_ALLOCATOR_GRID\nmode_trace_missing")
+                return
+            }
+
+            let lookbackOptions = [126, 252, 504]
+            let temperatureOptions = [0.25, 0.50, 1.00]
+            let inertiaOptions = [0.50, 0.75]
+            let scaleOptions = [1.0, 1.25]
+            var candidates: [OnlineAllocatorCandidate] = []
+
+            for lookback in lookbackOptions {
+                for temperature in temperatureOptions {
+                    for inertia in inertiaOptions {
+                        for scale in scaleOptions {
+                            let title = String(
+                                format: "在线策略分配-L%d-T%.2f-I%.0f-X%.2f",
+                                lookback,
+                                temperature,
+                                inertia * 100,
+                                scale
+                            )
+                            let config = ResearchTargetStrategyConfig(
+                                symbol: "online_strategy_allocator",
+                                title: title,
+                                warmupSessions: max(lookback, 60),
+                                rebalanceSessions: 1,
+                                rebalanceBand: 0.08,
+                                maxGrossExposure: min(scale, 1.25),
+                                allowsFinancedExposure: scale > 1,
+                                financingAnnualRate: 0.05,
+                                buyReason: "在线多策略质量分配调仓"
+                            )
+
+                            var alignedValues: [AdvancedBacktestStrategyMode: [Double?]] = [:]
+                            var latestTargets: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                            var allocatorShares = Dictionary(uniqueKeysWithValues: modes.map { ($0, 1.0 / Double(modes.count)) })
+                            var pendingWeights: [String: Double] = [:]
+                            var previousWeights: [String: Double] = [:]
+                            var lastAllocationIndex = -10_000
+                            var allocationChanges = 0
+
+                            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                assetInputs: inputs,
+                                initialCash: 100_000,
+                                settings: settings,
+                                config: config,
+                                rebalanceDecision: { index, signalIndex, data in
+                                    guard signalIndex >= lookback,
+                                          data.dates.indices.contains(index),
+                                          data.dates.indices.contains(signalIndex) else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    if alignedValues.isEmpty {
+                                        for mode in modes {
+                                            let map = valueMaps[mode] ?? [:]
+                                            var lastValue: Double?
+                                            var values: [Double?] = []
+                                            values.reserveCapacity(data.dates.count)
+                                            for date in data.dates {
+                                                if let value = map[date.recordDateString] { lastValue = value }
+                                                values.append(lastValue)
+                                            }
+                                            alignedValues[mode] = values
+                                        }
+                                    }
+
+                                    let executionKey = data.dates[index].recordDateString
+                                    var underlyingTargetChanged = false
+                                    for mode in modes {
+                                        if let weights = targetMaps[mode]?[executionKey] {
+                                            let previous = latestTargets[mode] ?? [:]
+                                            let symbols = Set(previous.keys).union(weights.keys)
+                                            let difference = symbols.reduce(0.0) {
+                                                $0 + abs((previous[$1] ?? 0) - (weights[$1] ?? 0))
+                                            }
+                                            if difference > 0.0000001 { underlyingTargetChanged = true }
+                                            latestTargets[mode] = weights
+                                        }
+                                    }
+                                    guard latestTargets.count == modes.count else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+
+                                    if lastAllocationIndex < 0 || signalIndex - lastAllocationIndex >= 63 {
+                                        var rawScores: [AdvancedBacktestStrategyMode: Double] = [:]
+                                        for mode in modes {
+                                            guard let values = alignedValues[mode],
+                                                  let current = values[signalIndex],
+                                                  let start = values[signalIndex - lookback],
+                                                  start > 0 else {
+                                                rawScores[mode] = -5
+                                                continue
+                                            }
+                                            let totalReturn = current / start - 1
+                                            var dailyReturns: [Double] = []
+                                            dailyReturns.reserveCapacity(lookback)
+                                            var peak = start
+                                            var maxDrawdown = 0.0
+                                            for cursor in (signalIndex - lookback + 1)...signalIndex {
+                                                guard let previous = values[cursor - 1],
+                                                      let value = values[cursor], previous > 0 else { continue }
+                                                dailyReturns.append(value / previous - 1)
+                                                peak = max(peak, value)
+                                                if peak > 0 { maxDrawdown = max(maxDrawdown, 1 - value / peak) }
+                                            }
+                                            let mean = dailyReturns.isEmpty ? 0 : dailyReturns.reduce(0, +) / Double(dailyReturns.count)
+                                            let variance = dailyReturns.count > 1
+                                                ? dailyReturns.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) } / Double(dailyReturns.count - 1)
+                                                : 0
+                                            let annualVol = sqrt(max(variance, 0)) * sqrt(252)
+                                            let annualReturn = pow(max(1 + totalReturn, 0.0001), 252 / Double(lookback)) - 1
+                                            let quality = annualReturn / max(annualVol, 0.03)
+                                                + 0.35 * annualReturn
+                                                - 2.0 * maxDrawdown
+                                            rawScores[mode] = min(max(quality, -3), 3)
+                                        }
+                                        let maxScore = rawScores.values.max() ?? 0
+                                        var exponentials: [AdvancedBacktestStrategyMode: Double] = [:]
+                                        for mode in modes {
+                                            exponentials[mode] = exp(((rawScores[mode] ?? -3) - maxScore) / max(temperature, 0.05))
+                                        }
+                                        let totalExp = exponentials.values.reduce(0, +)
+                                        var newShares: [AdvancedBacktestStrategyMode: Double] = [:]
+                                        for mode in modes {
+                                            let softmaxShare = totalExp > 0 ? (exponentials[mode] ?? 0) / totalExp : 1.0 / Double(modes.count)
+                                            let blendedShare = inertia * (allocatorShares[mode] ?? 0) + (1 - inertia) * softmaxShare
+                                            newShares[mode] = min(blendedShare, 0.70)
+                                        }
+                                        let shareTotal = newShares.values.reduce(0, +)
+                                        if shareTotal > 0 { newShares = newShares.mapValues { $0 / shareTotal } }
+                                        let shareDifference = modes.reduce(0.0) {
+                                            $0 + abs((allocatorShares[$1] ?? 0) - (newShares[$1] ?? 0))
+                                        }
+                                        if shareDifference > 0.05 { allocationChanges += 1 }
+                                        allocatorShares = newShares
+                                        lastAllocationIndex = signalIndex
+                                        underlyingTargetChanged = true
+                                    }
+
+                                    guard underlyingTargetChanged else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    var target: [String: Double] = [:]
+                                    for mode in modes {
+                                        let share = allocatorShares[mode] ?? 0
+                                        for (symbol, weight) in latestTargets[mode] ?? [:] {
+                                            target[symbol, default: 0] += share * weight * scale
+                                        }
+                                    }
+                                    let gross = target.values.reduce(0, +)
+                                    let cap = min(scale, 1.25)
+                                    if gross > cap, gross > 0 { target = target.mapValues { $0 * cap / gross } }
+                                    let symbols = Set(previousWeights.keys).union(target.keys)
+                                    let difference = symbols.reduce(0.0) {
+                                        $0 + abs((previousWeights[$1] ?? 0) - (target[$1] ?? 0))
+                                    }
+                                    pendingWeights = target
+                                    let shouldRebalance = previousWeights.isEmpty ? !target.isEmpty : difference > 0.0000001
+                                    previousWeights = target
+                                    return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                },
+                                targetWeights: { _, _ in pendingWeights }
+                            ) else { continue }
+
+                            let fullRow = MetricRow(
+                                title: title,
+                                id: "online_strategy_allocator",
+                                annualized: report.annualizedReturn,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility,
+                                sharpe: report.sharpeRatio,
+                                start: report.points.first?.date.recordDateString ?? "n/a",
+                                end: report.points.last?.date.recordDateString ?? "n/a",
+                                pointCount: report.points.count
+                            )
+                            let ddWindow = allocatorDDWindow(report.points)
+                            candidates.append(OnlineAllocatorCandidate(
+                                title: title,
+                                annualized: report.annualizedReturn ?? -1,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility ?? -1,
+                                sharpe: report.sharpeRatio ?? -1,
+                                sliceRows: metricRowsForSlices(
+                                    title: title,
+                                    id: "online_strategy_allocator",
+                                    points: report.points,
+                                    fullRow: fullRow
+                                ),
+                                trades: report.trades.count,
+                                averageCashRatio: report.averageCashRatio,
+                                drawdownPeak: ddWindow.0,
+                                drawdownTrough: ddWindow.1,
+                                allocationChanges: allocationChanges
+                            ))
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_ONLINE_STRATEGY_ALLOCATOR_NEAR_FRONTIER" : "APP_ONLINE_STRATEGY_ALLOCATOR_VALID")
+            print("APP_ONLINE_STRATEGY_ALLOCATOR_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough,allocation_changes")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough + "," + String(candidate.allocationChanges))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_TERNARY_CTA_OVERLAY_FRONTIER"] == "1" {
+            struct CTAOverlayCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+            }
+
+            func ctaOverlayDDWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            struct CTAConfig {
+                let name: String
+                let lookbacks: [Int]
+                let updateInterval: Int
+                let targetVolatility: Double
+                let longMultiplier: Double
+                let shortMultiplier: Double
+                let equityShortOnly: Bool
+            }
+
+            func syntheticCTASeries(config: CTAConfig) -> PublicHistorySeries? {
+                guard let gold = seriesBySymbol["gold_cny"],
+                      let nasdaq = seriesBySymbol["nasdaq"],
+                      let sp500 = seriesBySymbol["sp500"],
+                      let dow = seriesBySymbol["dowjones"],
+                      let csi300 = seriesBySymbol["csi300"],
+                      let shanghai = seriesBySymbol["shanghai_composite"],
+                      let shenzhen = seriesBySymbol["shenzhen_component"],
+                      let fx = seriesBySymbol["usd_per_cny"] else { return nil }
+
+                let baseDates = gold.dates.filter { $0 >= "2002-01-04" }
+                guard baseDates.count > 300 else { return nil }
+
+                func aligned(_ series: PublicHistorySeries, convertUSD: Bool = false) -> [Double]? {
+                    let map = Dictionary(uniqueKeysWithValues: zip(series.dates, series.prices))
+                    let fxMap = Dictionary(uniqueKeysWithValues: zip(fx.dates, fx.prices))
+                    var output: [Double] = []
+                    output.reserveCapacity(baseDates.count)
+                    var lastPrice: Double?
+                    var lastFX: Double?
+                    for date in baseDates {
+                        if let value = map[date], value.isFinite, value > 0 { lastPrice = value }
+                        if let value = fxMap[date], value.isFinite, value > 0 { lastFX = value }
+                        guard let price = lastPrice else { return nil }
+                        if convertUSD {
+                            guard let fxValue = lastFX else { return nil }
+                            output.append(price / fxValue)
+                        } else {
+                            output.append(price)
+                        }
+                    }
+                    return output
+                }
+
+                guard let goldPrices = aligned(gold),
+                      let nasdaqPrices = aligned(nasdaq, convertUSD: true),
+                      let sp500Prices = aligned(sp500, convertUSD: true),
+                      let dowPrices = aligned(dow, convertUSD: true),
+                      let csiPrices = aligned(csi300),
+                      let shanghaiPrices = aligned(shanghai),
+                      let shenzhenPrices = aligned(shenzhen),
+                      let usdStrength = aligned(fx)?.map({ 1 / max($0, 0.000001) }) else { return nil }
+
+                func composite(_ components: [[Double]]) -> [Double] {
+                    guard let first = components.first else { return [] }
+                    var output = Array(repeating: 100.0, count: first.count)
+                    for index in 1..<first.count {
+                        var dailyReturns: [Double] = []
+                        for component in components where component.indices.contains(index) && component[index - 1] > 0 {
+                            dailyReturns.append(component[index] / component[index - 1] - 1)
+                        }
+                        let averageReturn = dailyReturns.isEmpty ? 0 : dailyReturns.reduce(0, +) / Double(dailyReturns.count)
+                        output[index] = output[index - 1] * max(1 + averageReturn, 0.5)
+                    }
+                    return output
+                }
+
+                let usEquity = composite([nasdaqPrices, sp500Prices, dowPrices])
+                let chinaEquity = composite([csiPrices, shanghaiPrices, shenzhenPrices])
+                let markets = [goldPrices, usEquity, chinaEquity, usdStrength]
+                let groupWeights = [0.25, 0.30, 0.30, 0.15]
+                let warmup = max(config.lookbacks.max() ?? 252, 63)
+                guard baseDates.count > warmup + 2 else { return nil }
+
+                func annualizedVolatility(_ prices: [Double], end: Int, lookback: Int) -> Double {
+                    let start = max(1, end - lookback + 1)
+                    var returns: [Double] = []
+                    for index in start...end where prices[index - 1] > 0 {
+                        returns.append(prices[index] / prices[index - 1] - 1)
+                    }
+                    guard returns.count > 1 else { return 0.20 }
+                    let mean = returns.reduce(0, +) / Double(returns.count)
+                    let variance = returns.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) } / Double(returns.count - 1)
+                    return sqrt(max(variance, 0)) * sqrt(252)
+                }
+
+                var dates = Array(baseDates[warmup...])
+                var values = Array(repeating: 100.0, count: dates.count)
+                var positions = Array(repeating: 0.0, count: markets.count)
+                var previousPositions = positions
+                var lastUpdateIndex = warmup - config.updateInterval
+                let internalTurnoverCost = 0.0005
+
+                for sourceIndex in (warmup + 1)..<baseDates.count {
+                    if sourceIndex - lastUpdateIndex >= config.updateInterval {
+                        previousPositions = positions
+                        for marketIndex in markets.indices {
+                            let prices = markets[marketIndex]
+                            var vote = 0.0
+                            var voteCount = 0.0
+                            for lookback in config.lookbacks where sourceIndex - 1 >= lookback {
+                                let startPrice = prices[sourceIndex - 1 - lookback]
+                                guard startPrice > 0 else { continue }
+                                let momentum = prices[sourceIndex - 1] / startPrice - 1
+                                let threshold = 0.01 * sqrt(Double(lookback) / 63)
+                                if momentum > threshold { vote += 1 }
+                                else if momentum < -threshold { vote -= 1 }
+                                voteCount += 1
+                            }
+                            let trendScore = voteCount > 0 ? vote / voteCount : 0
+                            let volatility = annualizedVolatility(prices, end: sourceIndex - 1, lookback: 63)
+                            let volatilityScale = min(config.targetVolatility / max(volatility, 0.06), 1.50)
+                            let directionalScore: Double
+                            if config.name == "crash" {
+                                func momentum(_ lookback: Int) -> Double {
+                                    guard sourceIndex - 1 >= lookback,
+                                          prices[sourceIndex - 1 - lookback] > 0 else { return 0 }
+                                    return prices[sourceIndex - 1] / prices[sourceIndex - 1 - lookback] - 1
+                                }
+                                let m5 = momentum(5)
+                                let m10 = momentum(10)
+                                let m20 = momentum(20)
+                                let m60 = momentum(60)
+                                let severeBreak = m5 <= -0.03 || m10 <= -0.05
+                                let confirmedBreak = m20 <= -0.04 && m60 < 0
+                                let existingShort = positions[marketIndex] < 0
+                                let release = m5 > 0.02 && m20 > 0
+                                directionalScore = (marketIndex == 1 || marketIndex == 2)
+                                    && (severeBreak || confirmedBreak || (existingShort && !release))
+                                    ? -config.shortMultiplier
+                                    : 0
+                            } else if config.equityShortOnly {
+                                directionalScore = (marketIndex == 1 || marketIndex == 2) && trendScore < 0
+                                    ? trendScore * config.shortMultiplier
+                                    : 0
+                            } else if trendScore < 0 {
+                                directionalScore = trendScore * config.shortMultiplier
+                            } else {
+                                directionalScore = trendScore * config.longMultiplier
+                            }
+                            positions[marketIndex] = min(max(directionalScore * volatilityScale, -2.50), 1.50)
+                        }
+                        lastUpdateIndex = sourceIndex
+                    }
+
+                    var portfolioReturn = 0.0
+                    for marketIndex in markets.indices {
+                        let prices = markets[marketIndex]
+                        guard prices[sourceIndex - 1] > 0 else { continue }
+                        let marketReturn = prices[sourceIndex] / prices[sourceIndex - 1] - 1
+                        portfolioReturn += groupWeights[marketIndex] * positions[marketIndex] * marketReturn
+                    }
+                    let turnover = zip(positions, previousPositions).enumerated().reduce(0.0) { partial, item in
+                        partial + groupWeights[item.offset] * abs(item.element.0 - item.element.1)
+                    }
+                    if sourceIndex == lastUpdateIndex { portfolioReturn -= turnover * internalTurnoverCost }
+                    portfolioReturn = min(max(portfolioReturn, -0.12), 0.12)
+                    let outputIndex = sourceIndex - warmup
+                    if values.indices.contains(outputIndex), values.indices.contains(outputIndex - 1) {
+                        values[outputIndex] = values[outputIndex - 1] * max(1 + portfolioReturn, 0.50)
+                    }
+                    previousPositions = positions
+                }
+                if dates.count > values.count { dates = Array(dates.prefix(values.count)) }
+                return PublicHistorySeries(
+                    symbol: "cta_" + config.name,
+                    category: "managed_futures",
+                    label: "Synthetic Multi-Asset Trend " + config.name,
+                    currency: "CNY",
+                    unit: "index",
+                    source: "T-1 synthetic managed-futures trend",
+                    dates: dates,
+                    prices: values,
+                    hasOHLC: false,
+                    ohlcSource: nil,
+                    ohlcCoverageRatio: nil,
+                    openPrices: nil,
+                    highPrices: nil,
+                    lowPrices: nil,
+                    closePrices: nil,
+                    volumes: nil
+                )
+            }
+
+            let ctaConfigs = [
+                CTAConfig(name: "crash", lookbacks: [5, 10, 20, 60], updateInterval: 1, targetVolatility: 0.12, longMultiplier: 0.0, shortMultiplier: 3.00, equityShortOnly: true)
+            ]
+            let ctaSeries = ctaConfigs.compactMap { config in syntheticCTASeries(config: config).map { (config, $0) } }
+            guard ctaSeries.count == ctaConfigs.count else {
+                print("APP_TERNARY_CTA_OVERLAY_FRONTIER\ncta_series_missing")
+                return
+            }
+
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(assetInputs: modeInputs, initialCash: 100_000, settings: settings, mode: mode) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            }
+            guard traces.count == modes.count else {
+                print("APP_TERNARY_CTA_OVERLAY_FRONTIER\ntrace_missing")
+                return
+            }
+
+            let mixes: [(String, Double, Double, Double)] = [
+                ("defensive", 0.50, 0.20, 0.30),
+                ("balanced", 0.35, 0.26, 0.39),
+                ("growth", 0.20, 0.32, 0.48)
+            ]
+            let riskScales = [1.50, 1.75, 2.00]
+            let ctaWeights = [0.03, 0.05, 0.08, 0.10]
+            let grossCaps = [1.00, 1.05, 1.10]
+            var candidates: [CTAOverlayCandidate] = []
+
+            for (ctaConfig, cta) in ctaSeries {
+                let ctaOption = BacktestAssetOption(symbol: cta.symbol, title: "多空趋势防守", color: AssetTheme.accentOrange, requiresHistoricalFX: false, historicalFXSymbol: nil)
+                let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+                var inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+                }
+                inputs.append((assetSeries: cta, assetOption: ctaOption, fxSeries: nil))
+
+                for mix in mixes {
+                    for riskScale in riskScales {
+                        for ctaWeight in ctaWeights {
+                            for grossCap in grossCaps {
+                            let title = String(format: "三逻辑CTA-%@-%@-X%.2f-C%.0f-G%.0f", ctaConfig.name, mix.0, riskScale, ctaWeight * 100, grossCap * 100)
+                            let config = ResearchTargetStrategyConfig(
+                                symbol: "ternary_cta_overlay",
+                                title: title,
+                                warmupSessions: 1,
+                                rebalanceSessions: 1,
+                                rebalanceBand: 0.08,
+                                maxGrossExposure: grossCap,
+                                allowsFinancedExposure: grossCap > 1,
+                                financingAnnualRate: grossCap > 1 ? 0.05 : 0,
+                                buyReason: "三逻辑CTA防守调仓"
+                            )
+                            var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                            var pending: [String: Double] = [:]
+                            var previous: [String: Double] = [:]
+
+                            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                assetInputs: inputs,
+                                initialCash: 100_000,
+                                settings: settings,
+                                config: config,
+                                rebalanceDecision: { index, _, data in
+                                    guard data.dates.indices.contains(index) else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    let key = data.dates[index].recordDateString
+                                    for mode in modes {
+                                        if let weights = traces[mode]?[key] { latest[mode] = weights }
+                                    }
+                                    guard latest.count == modes.count else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    let shares: [AdvancedBacktestStrategyMode: Double] = [sharpeMode: mix.1, riskMode: mix.2, dualMode: mix.3]
+                                    var target: [String: Double] = [:]
+                                    for (mode, share) in shares {
+                                        for (symbol, weight) in latest[mode] ?? [:] {
+                                            target[symbol, default: 0] += weight * share * riskScale
+                                        }
+                                    }
+                                    let riskCap = max(grossCap - ctaWeight, 0)
+                                    let riskGross = target.values.reduce(0, +)
+                                    if riskGross > riskCap, riskGross > 0 { target = target.mapValues { $0 * riskCap / riskGross } }
+                                    target[ctaOption.symbol] = ctaWeight
+                                    let symbols = Set(previous.keys).union(target.keys)
+                                    let difference = symbols.reduce(0.0) { $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0)) }
+                                    pending = target
+                                    let shouldRebalance = previous.isEmpty ? !target.isEmpty : difference > 0.06
+                                    if shouldRebalance { previous = target }
+                                    return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                },
+                                targetWeights: { _, _ in pending }
+                            ) else { continue }
+
+                            let fullRow = MetricRow(title: title, id: "ternary_cta_overlay", annualized: report.annualizedReturn, maxDrawdown: report.maxDrawdown, volatility: report.annualizedVolatility, sharpe: report.sharpeRatio, start: report.points.first?.date.recordDateString ?? "n/a", end: report.points.last?.date.recordDateString ?? "n/a", pointCount: report.points.count)
+                            let ddWindow = ctaOverlayDDWindow(report.points)
+                            candidates.append(CTAOverlayCandidate(
+                                title: title,
+                                annualized: report.annualizedReturn ?? -1,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility ?? -1,
+                                sharpe: report.sharpeRatio ?? -1,
+                                sliceRows: metricRowsForSlices(title: title, id: "ternary_cta_overlay", points: report.points, fullRow: fullRow),
+                                trades: report.trades.count,
+                                averageCashRatio: report.averageCashRatio,
+                                drawdownPeak: ddWindow.0,
+                                drawdownTrough: ddWindow.1
+                            ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }.sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 9 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 9 + max(0.12 - rhs.annualized, 0) * 3
+                return lhsPenalty == rhsPenalty ? lhs.sharpe > rhs.sharpe : lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_TERNARY_CTA_OVERLAY_NEAR_FRONTIER" : "APP_TERNARY_CTA_OVERLAY_VALID")
+            print("APP_TERNARY_CTA_OVERLAY_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough)
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_TERNARY_BOND_DEFENSE_FRONTIER"] == "1" {
+            struct BondDefenseCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+            }
+
+            func bondDefenseDDWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            func researchDateFormatter() -> DateFormatter {
+                let formatter = DateFormatter()
+                formatter.calendar = Calendar(identifier: .gregorian)
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.timeZone = TimeZone(secondsFromGMT: 0)
+                formatter.dateFormat = "yyyy-MM-dd"
+                return formatter
+            }
+
+            func syntheticConstantDurationBondSeries(
+                csvPath: String,
+                symbol: String,
+                label: String,
+                duration: Double,
+                convexity: Double,
+                endDateText: String
+            ) -> PublicHistorySeries? {
+                guard let raw = try? String(contentsOfFile: csvPath, encoding: .utf8) else { return nil }
+                let formatter = researchDateFormatter()
+                let calendar = Calendar(identifier: .gregorian)
+                let rows = raw.split(whereSeparator: \.isNewline).dropFirst().compactMap { line -> (String, Date, Double)? in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 2 else { return nil }
+                    let dateText = String(fields[0])
+                    guard dateText <= endDateText,
+                          let date = formatter.date(from: dateText),
+                          let yield = Double(fields[1]),
+                          yield.isFinite else { return nil }
+                    return (dateText, date, yield)
+                }
+                guard let first = rows.first else { return nil }
+                var dates: [String] = [first.0]
+                var prices: [Double] = [100]
+                var previousDate = first.1
+                var previousYield = first.2
+                var value = 100.0
+                for row in rows.dropFirst() {
+                    let elapsedDays = max(calendar.dateComponents([.day], from: previousDate, to: row.1).day ?? 1, 1)
+                    let yieldChange = (row.2 - previousYield) / 100
+                    let carry = max(previousYield, 0) / 100 * Double(elapsedDays) / 365
+                    let priceReturn = -duration * yieldChange + 0.5 * convexity * yieldChange * yieldChange
+                    let totalReturn = max(carry + priceReturn, -0.25)
+                    value *= max(1 + totalReturn, 0.50)
+                    dates.append(row.0)
+                    prices.append(value)
+                    previousDate = row.1
+                    previousYield = row.2
+                }
+                return PublicHistorySeries(
+                    symbol: symbol,
+                    category: "bond_total_return",
+                    label: label,
+                    currency: "USD",
+                    unit: "index",
+                    source: "FRED constant-maturity yield synthetic total return",
+                    dates: dates,
+                    prices: prices,
+                    hasOHLC: false,
+                    ohlcSource: nil,
+                    ohlcCoverageRatio: nil,
+                    openPrices: nil,
+                    highPrices: nil,
+                    lowPrices: nil,
+                    closePrices: nil,
+                    volumes: nil
+                )
+            }
+
+            func syntheticTBillAccrualSeries(endDateText: String) -> PublicHistorySeries? {
+                let macroPath = ProcessInfo.processInfo.environment["ATM_MACRO_RISK_FIXTURE"]
+                    ?? "tools/fixtures/macro-risk/macro_risk_public.json"
+                guard let data = FileManager.default.contents(atPath: macroPath),
+                      let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let rawSeries = root["series"] as? [String: Any],
+                      let rows = rawSeries["tbill3m"] as? [[String: Any]] else { return nil }
+                let formatter = researchDateFormatter()
+                let calendar = Calendar(identifier: .gregorian)
+                let parsed = rows.compactMap { row -> (String, Date, Double)? in
+                    guard let dateText = row["date"] as? String,
+                          dateText <= endDateText,
+                          let date = formatter.date(from: dateText),
+                          let number = row["value"] as? NSNumber else { return nil }
+                    return (dateText, date, number.doubleValue)
+                }.sorted { $0.1 < $1.1 }
+                guard let first = parsed.first else { return nil }
+                var dates = [first.0]
+                var prices = [100.0]
+                var previousDate = first.1
+                var previousRate = max(first.2, 0)
+                var value = 100.0
+                for row in parsed.dropFirst() {
+                    let days = max(calendar.dateComponents([.day], from: previousDate, to: row.1).day ?? 1, 1)
+                    value *= pow(1 + previousRate / 100 / 365, Double(days))
+                    dates.append(row.0)
+                    prices.append(value)
+                    previousDate = row.1
+                    previousRate = max(row.2, 0)
+                }
+                return PublicHistorySeries(
+                    symbol: "tbill3m_total_return_usd",
+                    category: "cash_plus",
+                    label: "3M US Treasury Bill Total Return",
+                    currency: "USD",
+                    unit: "index",
+                    source: "FRED DTB3 synthetic accrual",
+                    dates: dates,
+                    prices: prices,
+                    hasOHLC: false,
+                    ohlcSource: nil,
+                    ohlcCoverageRatio: nil,
+                    openPrices: nil,
+                    highPrices: nil,
+                    lowPrices: nil,
+                    closePrices: nil,
+                    volumes: nil
+                )
+            }
+
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            guard let fxSeries = seriesBySymbol["usd_per_cny"],
+                  let endDateText = seriesBySymbol["gold_cny"]?.dates.last,
+                  let treasury10 = syntheticConstantDurationBondSeries(
+                    csvPath: "tools/fixtures/macro-risk/fred_dgs10.csv",
+                    symbol: "treasury10_total_return_usd",
+                    label: "10Y Treasury Synthetic Total Return",
+                    duration: 8.0,
+                    convexity: 70.0,
+                    endDateText: endDateText
+                  ),
+                  let treasury2 = syntheticConstantDurationBondSeries(
+                    csvPath: "tools/fixtures/macro-risk/fred_dgs2.csv",
+                    symbol: "treasury2_total_return_usd",
+                    label: "2Y Treasury Synthetic Total Return",
+                    duration: 1.9,
+                    convexity: 4.0,
+                    endDateText: endDateText
+                  ),
+                  let tbill = syntheticTBillAccrualSeries(endDateText: endDateText) else {
+                print("APP_TERNARY_BOND_DEFENSE_FRONTIER\nfixed_income_fixture_missing")
+                return
+            }
+
+            let treasury10Option = BacktestAssetOption(symbol: treasury10.symbol, title: "10年美债防守", color: AssetTheme.accentBlue, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny")
+            let treasury2Option = BacktestAssetOption(symbol: treasury2.symbol, title: "2年美债防守", color: AssetTheme.textPrimary, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny")
+            let tbillOption = BacktestAssetOption(symbol: tbill.symbol, title: "3个月美债现金", color: AssetTheme.textSecondary, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny")
+
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            var inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            inputs.append((assetSeries: treasury10, assetOption: treasury10Option, fxSeries: fxSeries))
+            inputs.append((assetSeries: treasury2, assetOption: treasury2Option, fxSeries: fxSeries))
+            inputs.append((assetSeries: tbill, assetOption: tbillOption, fxSeries: fxSeries))
+
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(assetInputs: modeInputs, initialCash: 100_000, settings: settings, mode: mode) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            }
+            guard traces.count == modes.count else {
+                print("APP_TERNARY_BOND_DEFENSE_FRONTIER\ntrace_missing")
+                return
+            }
+
+            let mixes: [(String, Double, Double, Double)] = [
+                ("defensive", 0.60, 0.16, 0.24),
+                ("balanced", 0.50, 0.20, 0.30),
+                ("growth", 0.35, 0.26, 0.39)
+            ]
+            let riskScales = [1.50, 1.75, 2.00]
+            let defensiveWeights = [0.15, 0.25, 0.35]
+            let selectorIntervals = [21, 63]
+            var candidates: [BondDefenseCandidate] = []
+
+            for mix in mixes {
+                for riskScale in riskScales {
+                    for defensiveWeight in defensiveWeights {
+                        for selectorInterval in selectorIntervals {
+                            let title = String(format: "三逻辑债券防守-%@-X%.2f-B%.0f-I%d", mix.0, riskScale, defensiveWeight * 100, selectorInterval)
+                            let config = ResearchTargetStrategyConfig(
+                                symbol: "ternary_bond_defense",
+                                title: title,
+                                warmupSessions: 126,
+                                rebalanceSessions: 1,
+                                rebalanceBand: 0.08,
+                                maxGrossExposure: 1.0,
+                                allowsFinancedExposure: false,
+                                financingAnnualRate: 0,
+                                buyReason: "三逻辑债券防守调仓"
+                            )
+                            var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                            var pending: [String: Double] = [:]
+                            var previous: [String: Double] = [:]
+                            var selectedDefense = tbillOption.symbol
+                            var lastSelectorIndex = -10_000
+
+                            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                assetInputs: inputs,
+                                initialCash: 100_000,
+                                settings: settings,
+                                config: config,
+                                rebalanceDecision: { index, signalIndex, data in
+                                    guard signalIndex >= 126,
+                                          data.dates.indices.contains(index),
+                                          data.dates.indices.contains(signalIndex),
+                                          let treasury10Prices = data.pricesBySymbol[treasury10Option.symbol],
+                                          let treasury2Prices = data.pricesBySymbol[treasury2Option.symbol],
+                                          let tbillPrices = data.pricesBySymbol[tbillOption.symbol] else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    let key = data.dates[index].recordDateString
+                                    for mode in modes {
+                                        if let weights = traces[mode]?[key] { latest[mode] = weights }
+                                    }
+                                    guard latest.count == modes.count else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    var selectorChanged = false
+                                    if signalIndex - lastSelectorIndex >= selectorInterval {
+                                        func defenseScore(_ prices: [Double]) -> Double {
+                                            guard let momentum63 = priceMomentum(prices, at: signalIndex, lookback: 63),
+                                                  let momentum126 = priceMomentum(prices, at: signalIndex, lookback: 126),
+                                                  let vol63 = annualizedVolatility(prices, at: signalIndex, lookback: 63) else { return -10 }
+                                            return momentum63 + 0.5 * momentum126 - 0.15 * vol63
+                                        }
+                                        let scores = [
+                                            treasury10Option.symbol: defenseScore(treasury10Prices),
+                                            treasury2Option.symbol: defenseScore(treasury2Prices),
+                                            tbillOption.symbol: defenseScore(tbillPrices)
+                                        ]
+                                        let newSelection = scores.max { lhs, rhs in lhs.value < rhs.value }?.key ?? tbillOption.symbol
+                                        selectorChanged = newSelection != selectedDefense
+                                        selectedDefense = newSelection
+                                        lastSelectorIndex = signalIndex
+                                    }
+
+                                    let shares: [AdvancedBacktestStrategyMode: Double] = [
+                                        sharpeMode: mix.1,
+                                        riskMode: mix.2,
+                                        dualMode: mix.3
+                                    ]
+                                    var target: [String: Double] = [:]
+                                    for (mode, share) in shares {
+                                        for (symbol, weight) in latest[mode] ?? [:] {
+                                            target[symbol, default: 0] += weight * share * riskScale
+                                        }
+                                    }
+                                    let riskCap = max(1 - defensiveWeight, 0)
+                                    let riskGross = target.values.reduce(0, +)
+                                    if riskGross > riskCap, riskGross > 0 { target = target.mapValues { $0 * riskCap / riskGross } }
+                                    target[selectedDefense] = defensiveWeight * 0.75
+                                    target[tbillOption.symbol, default: 0] += defensiveWeight * 0.25
+
+                                    let symbols = Set(previous.keys).union(target.keys)
+                                    let difference = symbols.reduce(0.0) { $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0)) }
+                                    pending = target
+                                    let shouldRebalance = previous.isEmpty ? !target.isEmpty : selectorChanged || difference > 0.06
+                                    if shouldRebalance { previous = target }
+                                    return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                },
+                                targetWeights: { _, _ in pending }
+                            ) else { continue }
+
+                            let fullRow = MetricRow(title: title, id: "ternary_bond_defense", annualized: report.annualizedReturn, maxDrawdown: report.maxDrawdown, volatility: report.annualizedVolatility, sharpe: report.sharpeRatio, start: report.points.first?.date.recordDateString ?? "n/a", end: report.points.last?.date.recordDateString ?? "n/a", pointCount: report.points.count)
+                            let ddWindow = bondDefenseDDWindow(report.points)
+                            candidates.append(BondDefenseCandidate(
+                                title: title,
+                                annualized: report.annualizedReturn ?? -1,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility ?? -1,
+                                sharpe: report.sharpeRatio ?? -1,
+                                sliceRows: metricRowsForSlices(title: title, id: "ternary_bond_defense", points: report.points, fullRow: fullRow),
+                                trades: report.trades.count,
+                                averageCashRatio: report.averageCashRatio,
+                                drawdownPeak: ddWindow.0,
+                                drawdownTrough: ddWindow.1
+                            ))
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }.sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 8 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 8 + max(0.12 - rhs.annualized, 0) * 3
+                return lhsPenalty == rhsPenalty ? lhs.sharpe > rhs.sharpe : lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_TERNARY_BOND_DEFENSE_NEAR_FRONTIER" : "APP_TERNARY_BOND_DEFENSE_VALID")
+            print("APP_TERNARY_BOND_DEFENSE_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough)
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_TERNARY_CASHPLUS_FRONTIER"] == "1" {
+            struct CashPlusCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+            }
+
+            func cashPlusDrawdownWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            func syntheticTBillSeries() -> PublicHistorySeries? {
+                let macroPath = ProcessInfo.processInfo.environment["ATM_MACRO_RISK_FIXTURE"]
+                    ?? "tools/fixtures/macro-risk/macro_risk_public.json"
+                guard let data = FileManager.default.contents(atPath: macroPath),
+                      let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let rawSeries = root["series"] as? [String: Any],
+                      let rows = rawSeries["tbill3m"] as? [[String: Any]] else { return nil }
+
+                let calendar = Calendar(identifier: .gregorian)
+                let dateFormatter = DateFormatter()
+                dateFormatter.calendar = calendar
+                dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+                dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+                dateFormatter.dateFormat = "yyyy-MM-dd"
+                let sortedRows = rows.compactMap { row -> (String, Date, Double)? in
+                    guard let dateText = row["date"] as? String,
+                          let date = dateFormatter.date(from: dateText),
+                          let number = row["value"] as? NSNumber,
+                          number.doubleValue.isFinite else { return nil }
+                    return (dateText, date, number.doubleValue)
+                }.sorted { $0.1 < $1.1 }
+                guard let first = sortedRows.first else { return nil }
+
+                var dates: [String] = [first.0]
+                var prices: [Double] = [100]
+                var previousDate = first.1
+                var previousRate = max(first.2, 0)
+                var value = 100.0
+                for row in sortedRows.dropFirst() {
+                    let elapsedDays = max(calendar.dateComponents([.day], from: previousDate, to: row.1).day ?? 1, 1)
+                    let dailyRate = previousRate / 100 / 365
+                    value *= pow(1 + dailyRate, Double(elapsedDays))
+                    dates.append(row.0)
+                    prices.append(value)
+                    previousDate = row.1
+                    previousRate = max(row.2, 0)
+                }
+                return PublicHistorySeries(
+                    symbol: "tbill3m_total_return_usd",
+                    category: "cash_plus",
+                    label: "3M US Treasury Bill Total Return",
+                    currency: "USD",
+                    unit: "index",
+                    source: "FRED DTB3 synthetic accrual",
+                    dates: dates,
+                    prices: prices,
+                    hasOHLC: false,
+                    ohlcSource: nil,
+                    ohlcCoverageRatio: nil,
+                    openPrices: nil,
+                    highPrices: nil,
+                    lowPrices: nil,
+                    closePrices: nil,
+                    volumes: nil
+                )
+            }
+
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            guard let tbillSeries = syntheticTBillSeries(),
+                  let fxSeries = seriesBySymbol["usd_per_cny"] else {
+                print("APP_TERNARY_CASHPLUS_FRONTIER\ntbill_or_fx_missing")
+                return
+            }
+            let tbillOption = BacktestAssetOption(
+                symbol: "tbill3m_total_return_usd",
+                title: "3M美债现金增强",
+                color: AssetTheme.textSecondary,
+                requiresHistoricalFX: true,
+                historicalFXSymbol: "usd_per_cny"
+            )
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            var inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            inputs.append((assetSeries: tbillSeries, assetOption: tbillOption, fxSeries: fxSeries))
+
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+            }
+            guard traces.count == modes.count else {
+                print("APP_TERNARY_CASHPLUS_FRONTIER\ntrace_missing")
+                return
+            }
+
+            let sharpeShares = [0.45, 0.55, 0.65, 0.75]
+            let riskFractions = [0.35, 0.50, 0.65]
+            let riskScales = [1.25, 1.50, 1.75, 2.00]
+            let minimumTBillWeights = [0.0, 0.10, 0.20]
+            var candidates: [CashPlusCandidate] = []
+
+            for sharpeShare in sharpeShares {
+                for riskFraction in riskFractions {
+                    let satelliteShare = 1 - sharpeShare
+                    let riskShare = satelliteShare * riskFraction
+                    let dualShare = satelliteShare - riskShare
+                    for riskScale in riskScales {
+                        for minimumTBillWeight in minimumTBillWeights {
+                            let title = String(
+                                format: "三逻辑现金增强-S%.0f-R%.0f-D%.0f-X%.2f-B%.0f",
+                                sharpeShare * 100,
+                                riskShare * 100,
+                                dualShare * 100,
+                                riskScale,
+                                minimumTBillWeight * 100
+                            )
+                            let config = ResearchTargetStrategyConfig(
+                                symbol: "ternary_cashplus_frontier",
+                                title: title,
+                                warmupSessions: 1,
+                                rebalanceSessions: 1,
+                                rebalanceBand: 0.08,
+                                maxGrossExposure: 1.0,
+                                allowsFinancedExposure: false,
+                                financingAnnualRate: 0,
+                                buyReason: "三逻辑现金增强调仓"
+                            )
+                            var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                            var pending: [String: Double] = [:]
+                            var previous: [String: Double] = [:]
+
+                            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                assetInputs: inputs,
+                                initialCash: 100_000,
+                                settings: settings,
+                                config: config,
+                                rebalanceDecision: { index, _, data in
+                                    guard data.dates.indices.contains(index) else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    let dateKey = data.dates[index].recordDateString
+                                    for mode in modes {
+                                        if let weights = traces[mode]?[dateKey] { latest[mode] = weights }
+                                    }
+                                    guard latest.count == modes.count else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    let shares: [AdvancedBacktestStrategyMode: Double] = [
+                                        sharpeMode: sharpeShare,
+                                        riskMode: riskShare,
+                                        dualMode: dualShare
+                                    ]
+                                    var target: [String: Double] = [:]
+                                    for (mode, share) in shares {
+                                        for (symbol, weight) in latest[mode] ?? [:] {
+                                            target[symbol, default: 0] += weight * share * riskScale
+                                        }
+                                    }
+                                    let riskGross = target.values.reduce(0, +)
+                                    let maximumRiskGross = max(1 - minimumTBillWeight, 0)
+                                    if riskGross > maximumRiskGross, riskGross > 0 {
+                                        target = target.mapValues { $0 * maximumRiskGross / riskGross }
+                                    }
+                                    let adjustedRiskGross = target.values.reduce(0, +)
+                                    let tbillWeight = max(1 - adjustedRiskGross, minimumTBillWeight)
+                                    target[tbillOption.symbol] = min(tbillWeight, 1)
+                                    let gross = target.values.reduce(0, +)
+                                    if gross > 1, gross > 0 { target = target.mapValues { $0 / gross } }
+
+                                    let symbols = Set(previous.keys).union(target.keys)
+                                    let difference = symbols.reduce(0.0) {
+                                        $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0))
+                                    }
+                                    pending = target
+                                    let shouldRebalance = previous.isEmpty ? !target.isEmpty : difference > 0.0000001
+                                    previous = target
+                                    return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                },
+                                targetWeights: { _, _ in pending }
+                            ) else { continue }
+
+                            let fullRow = MetricRow(
+                                title: title,
+                                id: "ternary_cashplus_frontier",
+                                annualized: report.annualizedReturn,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility,
+                                sharpe: report.sharpeRatio,
+                                start: report.points.first?.date.recordDateString ?? "n/a",
+                                end: report.points.last?.date.recordDateString ?? "n/a",
+                                pointCount: report.points.count
+                            )
+                            let ddWindow = cashPlusDrawdownWindow(report.points)
+                            candidates.append(CashPlusCandidate(
+                                title: title,
+                                annualized: report.annualizedReturn ?? -1,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility ?? -1,
+                                sharpe: report.sharpeRatio ?? -1,
+                                sliceRows: metricRowsForSlices(
+                                    title: title,
+                                    id: "ternary_cashplus_frontier",
+                                    points: report.points,
+                                    fullRow: fullRow
+                                ),
+                                trades: report.trades.count,
+                                averageCashRatio: report.averageCashRatio,
+                                drawdownPeak: ddWindow.0,
+                                drawdownTrough: ddWindow.1
+                            ))
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 7 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 7 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_TERNARY_CASHPLUS_NEAR_FRONTIER" : "APP_TERNARY_CASHPLUS_VALID")
+            print("APP_TERNARY_CASHPLUS_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough)
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_TERNARY_SCHEDULED_VOL_TARGET"] == "1" {
+            struct ScheduledVolCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+            }
+
+            func scheduledVolDDWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+            }
+            guard traces.count == modes.count else {
+                print("APP_TERNARY_SCHEDULED_VOL_TARGET\ntrace_missing")
+                return
+            }
+
+            let mixes: [(String, Double, Double, Double)] = [
+                ("balanced", 0.35, 0.26, 0.39),
+                ("defensive", 0.50, 0.20, 0.30),
+                ("growth", 0.20, 0.32, 0.48)
+            ]
+            let targetVolOptions = [0.09, 0.105, 0.12]
+            let minimumGrossOptions = [0.60, 0.80]
+            let maximumGrossOptions = [1.00, 1.15]
+            let rawScale = 1.50
+            var candidates: [ScheduledVolCandidate] = []
+
+            for mix in mixes {
+                for targetVol in targetVolOptions {
+                    for minimumGross in minimumGrossOptions {
+                        for maximumGross in maximumGrossOptions where maximumGross >= minimumGross {
+                            let title = String(
+                                format: "三逻辑定期控波-%@-V%.1f-Min%.0f-Max%.0f",
+                                mix.0,
+                                targetVol * 100,
+                                minimumGross * 100,
+                                maximumGross * 100
+                            )
+                            let config = ResearchTargetStrategyConfig(
+                                symbol: "ternary_scheduled_vol_target",
+                                title: title,
+                                warmupSessions: 1,
+                                rebalanceSessions: 1,
+                                rebalanceBand: 0.08,
+                                maxGrossExposure: maximumGross,
+                                allowsFinancedExposure: maximumGross > 1,
+                                financingAnnualRate: 0.05,
+                                buyReason: "三逻辑定期组合控波调仓"
+                            )
+                            var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                            var previousRaw: [String: Double] = [:]
+                            var previousTarget: [String: Double] = [:]
+                            var pending: [String: Double] = [:]
+
+                            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                assetInputs: inputs,
+                                initialCash: 100_000,
+                                settings: settings,
+                                config: config,
+                                rebalanceDecision: { index, signalIndex, data in
+                                    guard signalIndex >= 126,
+                                          data.dates.indices.contains(index),
+                                          data.dates.indices.contains(signalIndex) else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    let dateKey = data.dates[index].recordDateString
+                                    for mode in modes {
+                                        if let weights = traces[mode]?[dateKey] { latest[mode] = weights }
+                                    }
+                                    guard latest.count == modes.count else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    let shares: [AdvancedBacktestStrategyMode: Double] = [
+                                        sharpeMode: mix.1,
+                                        riskMode: mix.2,
+                                        dualMode: mix.3
+                                    ]
+                                    var raw: [String: Double] = [:]
+                                    for (mode, share) in shares {
+                                        for (symbol, weight) in latest[mode] ?? [:] {
+                                            raw[symbol, default: 0] += weight * share * rawScale
+                                        }
+                                    }
+                                    let rawSymbols = Set(previousRaw.keys).union(raw.keys)
+                                    let rawDifference = rawSymbols.reduce(0.0) {
+                                        $0 + abs((previousRaw[$1] ?? 0) - (raw[$1] ?? 0))
+                                    }
+                                    let scheduledChange = previousRaw.isEmpty ? !raw.isEmpty : rawDifference > 0.0000001
+                                    guard scheduledChange else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    previousRaw = raw
+
+                                    let rawGross = raw.values.reduce(0, +)
+                                    guard rawGross > 0 else {
+                                        pending = [:]
+                                        let shouldRebalance = !previousTarget.isEmpty
+                                        previousTarget = [:]
+                                        return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                    }
+                                    let normalized = raw.mapValues { $0 / rawGross }
+                                    let estimatedVol = weightedPortfolioAnnualizedVolatility(
+                                        weights: normalized,
+                                        pricesBySymbol: data.pricesBySymbol,
+                                        at: signalIndex,
+                                        lookback: 63
+                                    ) ?? targetVol
+                                    let volatilityGross = targetVol / max(estimatedVol, 0.04)
+                                    let desiredGross = min(max(rawGross, minimumGross), maximumGross, max(volatilityGross, minimumGross))
+                                    let target = normalized.mapValues { $0 * desiredGross }
+                                    let targetSymbols = Set(previousTarget.keys).union(target.keys)
+                                    let targetDifference = targetSymbols.reduce(0.0) {
+                                        $0 + abs((previousTarget[$1] ?? 0) - (target[$1] ?? 0))
+                                    }
+                                    pending = target
+                                    let shouldRebalance = previousTarget.isEmpty ? !target.isEmpty : targetDifference > 0.0000001
+                                    previousTarget = target
+                                    return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                },
+                                targetWeights: { _, _ in pending }
+                            ) else { continue }
+
+                            let fullRow = MetricRow(
+                                title: title,
+                                id: "ternary_scheduled_vol_target",
+                                annualized: report.annualizedReturn,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility,
+                                sharpe: report.sharpeRatio,
+                                start: report.points.first?.date.recordDateString ?? "n/a",
+                                end: report.points.last?.date.recordDateString ?? "n/a",
+                                pointCount: report.points.count
+                            )
+                            let ddWindow = scheduledVolDDWindow(report.points)
+                            candidates.append(ScheduledVolCandidate(
+                                title: title,
+                                annualized: report.annualizedReturn ?? -1,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility ?? -1,
+                                sharpe: report.sharpeRatio ?? -1,
+                                sliceRows: metricRowsForSlices(
+                                    title: title,
+                                    id: "ternary_scheduled_vol_target",
+                                    points: report.points,
+                                    fullRow: fullRow
+                                ),
+                                trades: report.trades.count,
+                                averageCashRatio: report.averageCashRatio,
+                                drawdownPeak: ddWindow.0,
+                                drawdownTrough: ddWindow.1
+                            ))
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_TERNARY_SCHEDULED_VOL_NEAR_FRONTIER" : "APP_TERNARY_SCHEDULED_VOL_VALID")
+            print("APP_TERNARY_SCHEDULED_VOL_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough)
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_TERNARY_TARGET_BLEND_FRONTIER"] == "1" {
+            struct TernaryBlendCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+            }
+
+            func ternaryDrawdownWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+            }
+            guard traces.count == modes.count else {
+                print("APP_TERNARY_TARGET_BLEND_FRONTIER\ntrace_missing")
+                return
+            }
+
+            let sharpeShares = [0.20, 0.35, 0.50]
+            let riskFractions = [0.40, 0.60]
+            let scales = [1.50, 2.00, 2.50]
+            let totalCaps = [1.00, 1.15]
+            var candidates: [TernaryBlendCandidate] = []
+
+            for sharpeShare in sharpeShares {
+                for riskFraction in riskFractions {
+                    let satelliteShare = 1 - sharpeShare
+                    let riskShare = satelliteShare * riskFraction
+                    let dualShare = satelliteShare - riskShare
+                    for scale in scales {
+                        for totalCap in totalCaps {
+                            let title = String(
+                                format: "三逻辑融合-S%.0f-R%.0f-D%.0f-X%.1f-C%.2f",
+                                sharpeShare * 100,
+                                riskShare * 100,
+                                dualShare * 100,
+                                scale,
+                                totalCap
+                            )
+                            let config = ResearchTargetStrategyConfig(
+                                symbol: "ternary_target_blend",
+                                title: title,
+                                warmupSessions: 1,
+                                rebalanceSessions: 1,
+                                rebalanceBand: 0.08,
+                                maxGrossExposure: totalCap,
+                                allowsFinancedExposure: totalCap > 1,
+                                financingAnnualRate: 0.05,
+                                buyReason: "高夏普核心三逻辑融合调仓"
+                            )
+                            var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                            var pending: [String: Double] = [:]
+                            var previous: [String: Double] = [:]
+
+                            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                assetInputs: inputs,
+                                initialCash: 100_000,
+                                settings: settings,
+                                config: config,
+                                rebalanceDecision: { index, _, data in
+                                    guard data.dates.indices.contains(index) else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    let key = data.dates[index].recordDateString
+                                    for mode in modes {
+                                        if let weights = traces[mode]?[key] { latest[mode] = weights }
+                                    }
+                                    guard latest.count == modes.count else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    let shares: [AdvancedBacktestStrategyMode: Double] = [
+                                        sharpeMode: sharpeShare,
+                                        riskMode: riskShare,
+                                        dualMode: dualShare
+                                    ]
+                                    var target: [String: Double] = [:]
+                                    for (mode, share) in shares {
+                                        for (symbol, weight) in latest[mode] ?? [:] {
+                                            target[symbol, default: 0] += weight * share * scale
+                                        }
+                                    }
+                                    let gross = target.values.reduce(0, +)
+                                    if gross > totalCap, gross > 0 {
+                                        target = target.mapValues { $0 * totalCap / gross }
+                                    }
+                                    let symbols = Set(previous.keys).union(target.keys)
+                                    let difference = symbols.reduce(0.0) {
+                                        $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0))
+                                    }
+                                    pending = target
+                                    let shouldRebalance = previous.isEmpty ? !target.isEmpty : difference > 0.0000001
+                                    previous = target
+                                    return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                },
+                                targetWeights: { _, _ in pending }
+                            ) else { continue }
+
+                            let fullRow = MetricRow(
+                                title: title,
+                                id: "ternary_target_blend",
+                                annualized: report.annualizedReturn,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility,
+                                sharpe: report.sharpeRatio,
+                                start: report.points.first?.date.recordDateString ?? "n/a",
+                                end: report.points.last?.date.recordDateString ?? "n/a",
+                                pointCount: report.points.count
+                            )
+                            let ddWindow = ternaryDrawdownWindow(report.points)
+                            candidates.append(TernaryBlendCandidate(
+                                title: title,
+                                annualized: report.annualizedReturn ?? -1,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility ?? -1,
+                                sharpe: report.sharpeRatio ?? -1,
+                                sliceRows: metricRowsForSlices(
+                                    title: title,
+                                    id: "ternary_target_blend",
+                                    points: report.points,
+                                    fullRow: fullRow
+                                ),
+                                trades: report.trades.count,
+                                averageCashRatio: report.averageCashRatio,
+                                drawdownPeak: ddWindow.0,
+                                drawdownTrough: ddWindow.1
+                            ))
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_TERNARY_TARGET_BLEND_NEAR_FRONTIER" : "APP_TERNARY_TARGET_BLEND_VALID")
+            print("APP_TERNARY_TARGET_BLEND_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough)
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_ONLINE_CRISIS_CLASSIFIER_GRID"] == "1" {
+            struct OnlineClassifierCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+                let stateChanges: Int
+            }
+
+            func onlineClassifierDDWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            func loadOnlineMacro() -> [String: [String: Double]]? {
+                let path = ProcessInfo.processInfo.environment["ATM_MACRO_RISK_FIXTURE"]
+                    ?? "tools/fixtures/macro-risk/macro_risk_public.json"
+                guard let data = FileManager.default.contents(atPath: path),
+                      let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let rawSeries = root["series"] as? [String: Any] else { return nil }
+                var output: [String: [String: Double]] = [:]
+                for (name, value) in rawSeries {
+                    guard let rows = value as? [[String: Any]] else { continue }
+                    var values: [String: Double] = [:]
+                    for row in rows {
+                        guard let date = row["date"] as? String,
+                              let number = row["value"] as? NSNumber else { continue }
+                        values[date] = number.doubleValue
+                    }
+                    output[name] = values
+                }
+                return output
+            }
+
+            guard let macro = loadOnlineMacro(),
+                  let vixMap = macro["vix"],
+                  let vix3mMap = macro["vix3m"],
+                  let cpMap = macro["cp90"],
+                  let tbillMap = macro["tbill3m"] else {
+                print("APP_ONLINE_CRISIS_CLASSIFIER_GRID\nmacro_fixture_missing")
+                return
+            }
+
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(riskMode.requiredSignalAssetSymbols + dualMode.requiredSignalAssetSymbols)).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            func targetTrace(_ mode: AdvancedBacktestStrategyMode) -> [String: [String: Double]]? {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { return nil }
+                return Dictionary(uniqueKeysWithValues: run.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+            }
+
+            guard let riskTargets = targetTrace(riskMode),
+                  let dualTargets = targetTrace(dualMode) else {
+                print("APP_ONLINE_CRISIS_CLASSIFIER_GRID\nbase_trace_missing")
+                return
+            }
+
+            func blend(dateKey: String, risk: inout [String: Double], dual: inout [String: Double]) -> [String: Double] {
+                if let value = riskTargets[dateKey] { risk = value }
+                if let value = dualTargets[dateKey] { dual = value }
+                guard !risk.isEmpty, !dual.isEmpty else { return [:] }
+                var weights: [String: Double] = [:]
+                for (symbol, value) in risk { weights[symbol, default: 0] += value * 0.75 }
+                for (symbol, value) in dual { weights[symbol, default: 0] += value * 0.75 }
+                let gross = weights.values.reduce(0, +)
+                if gross > 1, gross > 0 { weights = weights.mapValues { $0 / gross } }
+                return weights
+            }
+
+            let shadowConfig = ResearchTargetStrategyConfig(
+                symbol: "online_classifier_shadow",
+                title: "在线危机分类影子组合",
+                warmupSessions: 1,
+                rebalanceSessions: 1,
+                rebalanceBand: 0.08,
+                maxGrossExposure: 1.0,
+                allowsFinancedExposure: false,
+                financingAnnualRate: 0,
+                buyReason: "在线危机分类影子调仓"
+            )
+            var shadowRisk: [String: Double] = [:]
+            var shadowDual: [String: Double] = [:]
+            var shadowPending: [String: Double] = [:]
+            var shadowPrevious: [String: Double] = [:]
+            guard let shadow = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                config: shadowConfig,
+                rebalanceDecision: { index, _, data in
+                    guard data.dates.indices.contains(index) else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    shadowPending = blend(
+                        dateKey: data.dates[index].recordDateString,
+                        risk: &shadowRisk,
+                        dual: &shadowDual
+                    )
+                    let symbols = Set(shadowPrevious.keys).union(shadowPending.keys)
+                    let difference = symbols.reduce(0.0) {
+                        $0 + abs((shadowPrevious[$1] ?? 0) - (shadowPending[$1] ?? 0))
+                    }
+                    let shouldRebalance = shadowPrevious.isEmpty ? !shadowPending.isEmpty : difference > 0.0000001
+                    shadowPrevious = shadowPending
+                    return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                },
+                targetWeights: { _, _ in shadowPending }
+            ) else {
+                print("APP_ONLINE_CRISIS_CLASSIFIER_GRID\nshadow_missing")
+                return
+            }
+
+            let shadowPoints = shadow.report.points
+            var shadowValueByDate: [String: Double] = [:]
+            var futureCrashLabelByDate: [String: Double] = [:]
+            var shadowDrawdownByDate: [String: Double] = [:]
+            var shadowFastByDate: [String: Bool] = [:]
+            var shadowStrongByDate: [String: Bool] = [:]
+            var shadowPeak = 0.0
+            for index in shadowPoints.indices {
+                let point = shadowPoints[index]
+                let key = point.date.recordDateString
+                shadowValueByDate[key] = point.portfolioValue
+                shadowPeak = max(shadowPeak, point.portfolioValue)
+                shadowDrawdownByDate[key] = shadowPeak > 0 ? max(1 - point.portfolioValue / shadowPeak, 0) : 0
+                if index >= 30 {
+                    let ma10 = shadowPoints[(index - 9)...index].map(\.portfolioValue).reduce(0, +) / 10
+                    let ma30 = shadowPoints[(index - 29)...index].map(\.portfolioValue).reduce(0, +) / 30
+                    let mom5 = point.portfolioValue / shadowPoints[index - 5].portfolioValue - 1
+                    let mom20 = point.portfolioValue / shadowPoints[index - 20].portfolioValue - 1
+                    shadowFastByDate[key] = point.portfolioValue > ma10 && mom5 > 0
+                    shadowStrongByDate[key] = point.portfolioValue > ma30 && mom5 > 0 && mom20 > 0
+                } else {
+                    shadowFastByDate[key] = false
+                    shadowStrongByDate[key] = false
+                }
+                if index + 20 < shadowPoints.count, point.portfolioValue > 0 {
+                    let futureMinimum = shadowPoints[(index + 1)...(index + 20)].map(\.portfolioValue).min() ?? point.portfolioValue
+                    futureCrashLabelByDate[key] = futureMinimum / point.portfolioValue - 1 <= -0.05 ? 1 : 0
+                }
+            }
+
+            let signalConfig = ResearchTargetStrategyConfig(
+                symbol: "online_classifier_signal",
+                title: "在线危机概率信号",
+                warmupSessions: 1,
+                rebalanceSessions: 1,
+                rebalanceBand: 1,
+                maxGrossExposure: 1,
+                allowsFinancedExposure: false,
+                financingAnnualRate: 0,
+                buyReason: "在线危机概率信号"
+            )
+            var probabilityByDate: [String: Double] = [:]
+            var coefficients = Array(repeating: 0.0, count: 9)
+            var updateCount = 0
+            var alignedVIX: [Double?] = []
+            var alignedVIX3M: [Double?] = []
+            var alignedSpread: [Double?] = []
+
+            func sigmoid(_ value: Double) -> Double {
+                if value >= 0 {
+                    let expValue = exp(-min(value, 40))
+                    return 1 / (1 + expValue)
+                }
+                let expValue = exp(max(value, -40))
+                return expValue / (1 + expValue)
+            }
+
+            guard BacktestEngine.runResearchTargetProviderStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                config: signalConfig,
+                rebalanceDecision: { _, signalIndex, data in
+                    guard signalIndex >= 272,
+                          data.dates.indices.contains(signalIndex),
+                          let nasdaq = data.pricesBySymbol["nasdaq"],
+                          let sp500 = data.pricesBySymbol["sp500"],
+                          nasdaq.indices.contains(signalIndex), sp500.indices.contains(signalIndex) else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+
+                    if alignedVIX.isEmpty {
+                        func align(_ map: [String: Double]) -> [Double?] {
+                            var output: [Double?] = []
+                            output.reserveCapacity(data.dates.count)
+                            var lastValue: Double?
+                            for date in data.dates {
+                                if let value = map[date.recordDateString] { lastValue = value }
+                                output.append(lastValue)
+                            }
+                            return output
+                        }
+                        alignedVIX = align(vixMap)
+                        alignedVIX3M = align(vix3mMap)
+                        let cp = align(cpMap)
+                        let tbill = align(tbillMap)
+                        alignedSpread = zip(cp, tbill).map { cpValue, billValue in
+                            guard let cpValue, let billValue else { return nil }
+                            return cpValue - billValue
+                        }
+                    }
+
+                    func rollingZ(_ values: [Double?], at index: Int, lookback: Int) -> Double {
+                        let start = max(0, index - lookback + 1)
+                        let sample = values[start...index].compactMap { $0 }
+                        guard sample.count >= max(20, lookback / 3), let current = values[index] else { return 0 }
+                        let mean = sample.reduce(0, +) / Double(sample.count)
+                        let variance = sample.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) } / Double(max(sample.count - 1, 1))
+                        let std = sqrt(max(variance, 0))
+                        return std > 0.0001 ? (current - mean) / std : 0
+                    }
+
+                    func features(at index: Int) -> [Double]? {
+                        guard index >= 252,
+                              nasdaq.indices.contains(index), sp500.indices.contains(index),
+                              let nasdaqMA60 = movingAverage(nasdaq, at: index, period: 60),
+                              let nasdaqM20 = priceMomentum(nasdaq, at: index, lookback: 20),
+                              let spM20 = priceMomentum(sp500, at: index, lookback: 20) else { return nil }
+                        let vixZ = rollingZ(alignedVIX, at: max(index - 1, 0), lookback: 252)
+                        let vix = alignedVIX[max(index - 1, 0)]
+                        let vix3m = alignedVIX3M[max(index - 1, 0)]
+                        let term = (vix != nil && vix3m != nil && vix3m! > 0) ? vix! / vix3m! - 1 : 0
+                        let spreadZ = rollingZ(alignedSpread, at: max(index - 2, 0), lookback: 252)
+                        let vol20 = annualizedVolatility(nasdaq, at: index, lookback: 20) ?? 0.20
+                        let vol63 = annualizedVolatility(nasdaq, at: index, lookback: 63) ?? max(vol20, 0.01)
+                        let shadowDD = shadowDrawdownByDate[data.dates[index].recordDateString] ?? 0
+                        let rawFeatures = [
+                            vixZ,
+                            term * 8,
+                            spreadZ,
+                            nasdaqM20 * 10,
+                            spM20 * 10,
+                            (vol20 / max(vol63, 0.04) - 1) * 3,
+                            (nasdaq[index] / max(nasdaqMA60, 0.0001) - 1) * 10,
+                            shadowDD * 15
+                        ]
+                        return [1] + rawFeatures.map { min(max($0, -3), 3) }
+                    }
+
+                    let trainingIndex = signalIndex - 20
+                    let trainingKey = data.dates[trainingIndex].recordDateString
+                    if let trainingFeatures = features(at: trainingIndex),
+                       let label = futureCrashLabelByDate[trainingKey] {
+                        let score = zip(coefficients, trainingFeatures).reduce(0.0) { $0 + $1.0 * $1.1 }
+                        let prediction = sigmoid(score)
+                        let classWeight = label > 0.5 ? 4.0 : 1.0
+                        let learningRate = 0.025 / sqrt(1 + Double(updateCount) / 500)
+                        for featureIndex in coefficients.indices {
+                            let gradient = classWeight * (label - prediction) * trainingFeatures[featureIndex]
+                                - 0.001 * coefficients[featureIndex]
+                            coefficients[featureIndex] += learningRate * gradient
+                        }
+                        updateCount += 1
+                    }
+
+                    if let currentFeatures = features(at: signalIndex) {
+                        let score = zip(coefficients, currentFeatures).reduce(0.0) { $0 + $1.0 * $1.1 }
+                        probabilityByDate[data.dates[signalIndex].recordDateString] = sigmoid(score)
+                    }
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                },
+                targetWeights: { _, _ in [:] }
+            ) != nil else {
+                print("APP_ONLINE_CRISIS_CLASSIFIER_GRID\nsignal_precompute_failed")
+                return
+            }
+
+            let probabilityValues = Array(probabilityByDate.values)
+            let labelValues = Array(futureCrashLabelByDate.values)
+            print("APP_ONLINE_CRISIS_CLASSIFIER_SIGNAL")
+            print("predictions,positive_label_rate,p_ge_40,p_ge_50,p_ge_60,p_ge_70")
+            let positiveRate = labelValues.isEmpty ? 0 : labelValues.reduce(0, +) / Double(labelValues.count)
+            let probabilityCount40 = probabilityValues.filter { $0 >= 0.40 }.count
+            let probabilityCount50 = probabilityValues.filter { $0 >= 0.50 }.count
+            let probabilityCount60 = probabilityValues.filter { $0 >= 0.60 }.count
+            let probabilityCount70 = probabilityValues.filter { $0 >= 0.70 }.count
+            let signalFields = [
+                String(probabilityValues.count),
+                String(format: "%.6f", positiveRate),
+                String(probabilityCount40),
+                String(probabilityCount50),
+                String(probabilityCount60),
+                String(probabilityCount70)
+            ]
+            print(signalFields.joined(separator: ","))
+
+            let warningProbabilityOptions = [0.45, 0.55]
+            let crisisProbabilityOptions = [0.60, 0.70]
+            let recoveryProbabilityOptions = [0.30, 0.40]
+            let warningScaleOptions = [0.80, 0.90]
+            let crisisEquityCapOptions = [0.0, 0.20]
+            let equitySymbols: Set<String> = [
+                "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite",
+                "shenzhen_component", "chinext", "hsi", "nikkei"
+            ]
+            var candidates: [OnlineClassifierCandidate] = []
+
+            for warningProbability in warningProbabilityOptions {
+                for crisisProbability in crisisProbabilityOptions where crisisProbability > warningProbability {
+                    for recoveryProbability in recoveryProbabilityOptions where recoveryProbability < warningProbability {
+                        for warningScale in warningScaleOptions {
+                            for crisisEquityCap in crisisEquityCapOptions {
+                                let title = String(
+                                    format: "在线危机概率-W%.0f-C%.0f-R%.0f-S%.0f-E%.0f",
+                                    warningProbability * 100,
+                                    crisisProbability * 100,
+                                    recoveryProbability * 100,
+                                    warningScale * 100,
+                                    crisisEquityCap * 100
+                                )
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "online_crisis_classifier",
+                                    title: title,
+                                    warmupSessions: 1,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: 0.08,
+                                    maxGrossExposure: 1.0,
+                                    allowsFinancedExposure: false,
+                                    financingAnnualRate: 0,
+                                    buyReason: "在线危机概率调仓"
+                                )
+                                var latestRisk: [String: Double] = [:]
+                                var latestDual: [String: Double] = [:]
+                                var pending: [String: Double] = [:]
+                                var previous: [String: Double] = [:]
+                                var state = 0
+                                var stateEnteredIndex = -10_000
+                                var warningStreak = 0
+                                var crisisStreak = 0
+                                var recoveryStreak = 0
+                                var stateChanges = 0
+
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    rebalanceDecision: { index, signalIndex, data in
+                                        guard signalIndex >= 1,
+                                              data.dates.indices.contains(index),
+                                              data.dates.indices.contains(signalIndex),
+                                              let nasdaq = data.pricesBySymbol["nasdaq"],
+                                              let sp500 = data.pricesBySymbol["sp500"],
+                                              nasdaq.indices.contains(signalIndex), sp500.indices.contains(signalIndex),
+                                              let nasdaqMA20 = movingAverage(nasdaq, at: signalIndex, period: 20),
+                                              let spMA20 = movingAverage(sp500, at: signalIndex, period: 20),
+                                              let nasdaqM5 = priceMomentum(nasdaq, at: signalIndex, lookback: 5),
+                                              let nasdaqM20 = priceMomentum(nasdaq, at: signalIndex, lookback: 20),
+                                              let spM20 = priceMomentum(sp500, at: signalIndex, lookback: 20) else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+
+                                        let executionKey = data.dates[index].recordDateString
+                                        let signalKey = data.dates[signalIndex].recordDateString
+                                        let normal = blend(
+                                            dateKey: executionKey,
+                                            risk: &latestRisk,
+                                            dual: &latestDual
+                                        )
+                                        guard !normal.isEmpty else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        let probability = probabilityByDate[signalKey] ?? 0
+                                        let priceWeak = nasdaq[signalIndex] < nasdaqMA20
+                                            && sp500[signalIndex] < spMA20
+                                            && nasdaqM5 < 0
+                                            && nasdaqM20 <= 0
+                                            && spM20 <= 0
+                                        let hardCrash = nasdaqM5 <= -0.075 || nasdaqM20 <= -0.13
+                                        let warningSignal = probability >= warningProbability && priceWeak
+                                        let crisisSignal = probability >= crisisProbability && priceWeak
+                                        warningStreak = warningSignal ? warningStreak + 1 : 0
+                                        crisisStreak = crisisSignal ? crisisStreak + 1 : 0
+                                        let previousState = state
+
+                                        if hardCrash || crisisStreak >= 2 {
+                                            state = 2
+                                            if previousState != 2 { stateEnteredIndex = index }
+                                            recoveryStreak = 0
+                                        } else if state == 0, warningStreak >= 2 {
+                                            state = 1
+                                            stateEnteredIndex = index
+                                            recoveryStreak = 0
+                                        } else if state == 1 {
+                                            if probability <= recoveryProbability && (shadowStrongByDate[signalKey] ?? false) {
+                                                recoveryStreak += 1
+                                                if index - stateEnteredIndex >= 5 && recoveryStreak >= 5 {
+                                                    state = 0
+                                                    recoveryStreak = 0
+                                                }
+                                            } else {
+                                                recoveryStreak = 0
+                                            }
+                                        } else if state == 2 {
+                                            if probability <= warningProbability && (shadowFastByDate[signalKey] ?? false) {
+                                                recoveryStreak += 1
+                                                if index - stateEnteredIndex >= 5 && recoveryStreak >= 3 {
+                                                    state = 1
+                                                    stateEnteredIndex = index
+                                                    recoveryStreak = 0
+                                                }
+                                            } else {
+                                                recoveryStreak = 0
+                                            }
+                                        }
+                                        if state != previousState { stateChanges += 1 }
+
+                                        if state == 0 {
+                                            pending = normal
+                                        } else if state == 1 {
+                                            pending = normal.mapValues { $0 * warningScale }
+                                        } else {
+                                            var defensive = normal
+                                            let equityTotal = defensive.reduce(0.0) {
+                                                $0 + (equitySymbols.contains($1.key) ? $1.value : 0)
+                                            }
+                                            if equityTotal > crisisEquityCap, equityTotal > 0 {
+                                                let factor = crisisEquityCap / equityTotal
+                                                for symbol in equitySymbols where defensive[symbol] != nil {
+                                                    defensive[symbol] = (defensive[symbol] ?? 0) * factor
+                                                }
+                                            }
+                                            pending = defensive
+                                        }
+
+                                        let symbols = Set(previous.keys).union(pending.keys)
+                                        let difference = symbols.reduce(0.0) {
+                                            $0 + abs((previous[$1] ?? 0) - (pending[$1] ?? 0))
+                                        }
+                                        let shouldRebalance = previous.isEmpty
+                                            ? !pending.isEmpty
+                                            : state != previousState || difference > 0.0000001
+                                        previous = pending
+                                        return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                    },
+                                    targetWeights: { _, _ in pending }
+                                ) else { continue }
+
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "online_crisis_classifier",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                let ddWindow = onlineClassifierDDWindow(report.points)
+                                candidates.append(OnlineClassifierCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility ?? -1,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(
+                                        title: title,
+                                        id: "online_crisis_classifier",
+                                        points: report.points,
+                                        fullRow: fullRow
+                                    ),
+                                    trades: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio,
+                                    drawdownPeak: ddWindow.0,
+                                    drawdownTrough: ddWindow.1,
+                                    stateChanges: stateChanges
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_ONLINE_CRISIS_CLASSIFIER_NEAR_FRONTIER" : "APP_ONLINE_CRISIS_CLASSIFIER_VALID")
+            print("APP_ONLINE_CRISIS_CLASSIFIER_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough,state_changes")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough + "," + String(candidate.stateChanges))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_BLEND_CONSENSUS_FRONTIER"] == "1" {
+            struct ConsensusCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+                let mediumCount: Int
+                let lowCount: Int
+            }
+
+            func consensusDrawdownWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(riskMode.requiredSignalAssetSymbols + dualMode.requiredSignalAssetSymbols)).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            func trace(_ mode: AdvancedBacktestStrategyMode) -> [String: [String: Double]]? {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { return nil }
+                return Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            }
+
+            guard let riskTargets = trace(riskMode), let dualTargets = trace(dualMode) else {
+                print("APP_BLEND_CONSENSUS_FRONTIER\nbase_trace_missing")
+                return
+            }
+
+            let riskShares = [0.40, 0.50, 0.60]
+            let highThresholds = [0.70, 0.80]
+            let mediumCaps = [0.80, 0.90]
+            let lowCaps = [0.50, 0.70]
+            let scale = 1.50
+            var candidates: [ConsensusCandidate] = []
+
+            func grouped(_ weights: [String: Double]) -> [String: Double] {
+                let usSymbols: Set<String> = ["nasdaq", "sp500", "dowjones"]
+                let chinaSymbols: Set<String> = ["csi300", "shanghai_composite", "shenzhen_component", "chinext"]
+                let asiaSymbols: Set<String> = ["hsi", "nikkei"]
+                var groups: [String: Double] = ["gold": 0, "us": 0, "china": 0, "asia": 0, "other": 0]
+                let gross = weights.values.reduce(0, +)
+                guard gross > 0 else { return groups }
+                for (symbol, weight) in weights {
+                    let normalized = max(weight, 0) / gross
+                    if symbol == "gold_cny" { groups["gold", default: 0] += normalized }
+                    else if usSymbols.contains(symbol) { groups["us", default: 0] += normalized }
+                    else if chinaSymbols.contains(symbol) { groups["china", default: 0] += normalized }
+                    else if asiaSymbols.contains(symbol) { groups["asia", default: 0] += normalized }
+                    else { groups["other", default: 0] += normalized }
+                }
+                return groups
+            }
+
+            for riskShare in riskShares {
+                for highThreshold in highThresholds {
+                    let lowThreshold = 0.45
+                    for mediumCap in mediumCaps {
+                        for lowCap in lowCaps where lowCap <= mediumCap {
+                            let title = String(
+                                format: "融合共识-R%.0f-H%.0f-M%.0f-L%.0f",
+                                riskShare * 100,
+                                highThreshold * 100,
+                                mediumCap * 100,
+                                lowCap * 100
+                            )
+                            let config = ResearchTargetStrategyConfig(
+                                symbol: "blend_consensus_frontier",
+                                title: title,
+                                warmupSessions: 1,
+                                rebalanceSessions: 1,
+                                rebalanceBand: 0.08,
+                                maxGrossExposure: 1.0,
+                                allowsFinancedExposure: false,
+                                financingAnnualRate: 0,
+                                buyReason: "多逻辑共识调仓"
+                            )
+                            var latestRisk: [String: Double] = [:]
+                            var latestDual: [String: Double] = [:]
+                            var pending: [String: Double] = [:]
+                            var previous: [String: Double] = [:]
+                            var mediumCount = 0
+                            var lowCount = 0
+
+                            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                assetInputs: inputs,
+                                initialCash: 100_000,
+                                settings: settings,
+                                config: config,
+                                rebalanceDecision: { index, _, data in
+                                    guard data.dates.indices.contains(index) else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    let key = data.dates[index].recordDateString
+                                    if let weights = riskTargets[key] { latestRisk = weights }
+                                    if let weights = dualTargets[key] { latestDual = weights }
+                                    guard !latestRisk.isEmpty, !latestDual.isEmpty else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+
+                                    let riskGroups = grouped(latestRisk)
+                                    let dualGroups = grouped(latestDual)
+                                    let groupKeys = Set(riskGroups.keys).union(dualGroups.keys)
+                                    let l1 = groupKeys.reduce(0.0) {
+                                        $0 + abs((riskGroups[$1] ?? 0) - (dualGroups[$1] ?? 0))
+                                    }
+                                    let similarity = max(0, min(1, 1 - 0.5 * l1))
+                                    let confidenceCap: Double
+                                    if similarity >= highThreshold {
+                                        confidenceCap = 1.0
+                                    } else if similarity >= lowThreshold {
+                                        confidenceCap = mediumCap
+                                        mediumCount += 1
+                                    } else {
+                                        confidenceCap = lowCap
+                                        lowCount += 1
+                                    }
+
+                                    var blended: [String: Double] = [:]
+                                    for (symbol, weight) in latestRisk {
+                                        blended[symbol, default: 0] += weight * riskShare * scale
+                                    }
+                                    for (symbol, weight) in latestDual {
+                                        blended[symbol, default: 0] += weight * (1 - riskShare) * scale
+                                    }
+                                    let gross = blended.values.reduce(0, +)
+                                    let allowedGross = min(confidenceCap, 1.0)
+                                    if gross > allowedGross, gross > 0 {
+                                        blended = blended.mapValues { $0 * allowedGross / gross }
+                                    }
+                                    let symbols = Set(previous.keys).union(blended.keys)
+                                    let difference = symbols.reduce(0.0) {
+                                        $0 + abs((previous[$1] ?? 0) - (blended[$1] ?? 0))
+                                    }
+                                    pending = blended
+                                    let shouldRebalance = previous.isEmpty ? !blended.isEmpty : difference > 0.0000001
+                                    previous = blended
+                                    return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                },
+                                targetWeights: { _, _ in pending }
+                            ) else { continue }
+
+                            let fullRow = MetricRow(
+                                title: title,
+                                id: "blend_consensus_frontier",
+                                annualized: report.annualizedReturn,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility,
+                                sharpe: report.sharpeRatio,
+                                start: report.points.first?.date.recordDateString ?? "n/a",
+                                end: report.points.last?.date.recordDateString ?? "n/a",
+                                pointCount: report.points.count
+                            )
+                            let ddWindow = consensusDrawdownWindow(report.points)
+                            candidates.append(ConsensusCandidate(
+                                title: title,
+                                annualized: report.annualizedReturn ?? -1,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility ?? -1,
+                                sharpe: report.sharpeRatio ?? -1,
+                                sliceRows: metricRowsForSlices(
+                                    title: title,
+                                    id: "blend_consensus_frontier",
+                                    points: report.points,
+                                    fullRow: fullRow
+                                ),
+                                trades: report.trades.count,
+                                averageCashRatio: report.averageCashRatio,
+                                drawdownPeak: ddWindow.0,
+                                drawdownTrough: ddWindow.1,
+                                mediumCount: mediumCount,
+                                lowCount: lowCount
+                            ))
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_BLEND_CONSENSUS_NEAR_FRONTIER" : "APP_BLEND_CONSENSUS_VALID")
+            print("APP_BLEND_CONSENSUS_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough,medium_count,low_count")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough + "," + String(candidate.mediumCount) + "," + String(candidate.lowCount))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_BLEND_MACRO_SCHEDULED_CAP_GRID"] == "1" {
+            struct ScheduledCapCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+                let warningCount: Int
+                let crisisCount: Int
+            }
+
+            func scheduledCapDrawdownWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            func loadScheduledCapMacro() -> [String: [String: Double]]? {
+                let path = ProcessInfo.processInfo.environment["ATM_MACRO_RISK_FIXTURE"]
+                    ?? "tools/fixtures/macro-risk/macro_risk_public.json"
+                guard let data = FileManager.default.contents(atPath: path),
+                      let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let rawSeries = root["series"] as? [String: Any] else { return nil }
+                var output: [String: [String: Double]] = [:]
+                for (name, value) in rawSeries {
+                    guard let rows = value as? [[String: Any]] else { continue }
+                    var values: [String: Double] = [:]
+                    for row in rows {
+                        guard let date = row["date"] as? String,
+                              let number = row["value"] as? NSNumber else { continue }
+                        values[date] = number.doubleValue
+                    }
+                    output[name] = values
+                }
+                return output
+            }
+
+            guard let macro = loadScheduledCapMacro(),
+                  let vixMap = macro["vix"],
+                  let vix3mMap = macro["vix3m"],
+                  let cpMap = macro["cp90"],
+                  let tbillMap = macro["tbill3m"] else {
+                print("APP_BLEND_MACRO_SCHEDULED_CAP_GRID\nmacro_fixture_missing")
+                return
+            }
+
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(riskMode.requiredSignalAssetSymbols + dualMode.requiredSignalAssetSymbols)).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            func targetTrace(_ mode: AdvancedBacktestStrategyMode) -> [String: [String: Double]]? {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { return nil }
+                return Dictionary(uniqueKeysWithValues: run.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+            }
+
+            guard let riskTargets = targetTrace(riskMode),
+                  let dualTargets = targetTrace(dualMode) else {
+                print("APP_BLEND_MACRO_SCHEDULED_CAP_GRID\nbase_trace_missing")
+                return
+            }
+
+            let crisisVIXOptions = [30.0, 35.0]
+            let crisisTermOptions = [0.98, 1.02]
+            let creditZOptions = [1.5, 2.0]
+            let warningCapOptions = [0.80, 0.90]
+            let crisisCapOptions = [0.40, 0.60]
+            var candidates: [ScheduledCapCandidate] = []
+
+            for crisisVIX in crisisVIXOptions {
+                for crisisTerm in crisisTermOptions {
+                    for creditZThreshold in creditZOptions {
+                        for warningCap in warningCapOptions {
+                            for crisisCap in crisisCapOptions where crisisCap <= warningCap {
+                                let title = String(
+                                    format: "融合定期宏观上限-V%.0f-T%.2f-C%.1f-W%.0f-X%.0f",
+                                    crisisVIX,
+                                    crisisTerm,
+                                    creditZThreshold,
+                                    warningCap * 100,
+                                    crisisCap * 100
+                                )
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "blend_macro_scheduled_cap",
+                                    title: title,
+                                    warmupSessions: 1,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: 0.08,
+                                    maxGrossExposure: 1.0,
+                                    allowsFinancedExposure: false,
+                                    financingAnnualRate: 0,
+                                    buyReason: "融合组合定期宏观上限调仓"
+                                )
+
+                                var latestRisk: [String: Double] = [:]
+                                var latestDual: [String: Double] = [:]
+                                var previousNormal: [String: Double] = [:]
+                                var previousTarget: [String: Double] = [:]
+                                var pendingTarget: [String: Double] = [:]
+                                var alignedVIX: [Double?] = []
+                                var alignedVIX3M: [Double?] = []
+                                var alignedSpread: [Double?] = []
+                                var warningCount = 0
+                                var crisisCount = 0
+
+                                func align(_ map: [String: Double], dates: [Date]) -> [Double?] {
+                                    var output: [Double?] = []
+                                    output.reserveCapacity(dates.count)
+                                    var lastValue: Double?
+                                    for date in dates {
+                                        if let value = map[date.recordDateString] { lastValue = value }
+                                        output.append(lastValue)
+                                    }
+                                    return output
+                                }
+
+                                func rollingStats(_ values: [Double?], end: Int, lookback: Int) -> (mean: Double, std: Double)? {
+                                    let start = max(0, end - lookback + 1)
+                                    let sample = values[start...end].compactMap { $0 }
+                                    guard sample.count >= max(20, lookback / 3) else { return nil }
+                                    let mean = sample.reduce(0, +) / Double(sample.count)
+                                    let variance = sample.reduce(0.0) { partial, item in
+                                        partial + (item - mean) * (item - mean)
+                                    } / Double(max(sample.count - 1, 1))
+                                    return (mean, sqrt(max(variance, 0)))
+                                }
+
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    rebalanceDecision: { index, signalIndex, data in
+                                        guard signalIndex >= 252,
+                                              data.dates.indices.contains(index),
+                                              data.dates.indices.contains(signalIndex),
+                                              let nasdaq = data.pricesBySymbol["nasdaq"],
+                                              let sp500 = data.pricesBySymbol["sp500"],
+                                              nasdaq.indices.contains(signalIndex),
+                                              sp500.indices.contains(signalIndex),
+                                              let nasdaqMA20 = movingAverage(nasdaq, at: signalIndex, period: 20),
+                                              let nasdaqMA60 = movingAverage(nasdaq, at: signalIndex, period: 60),
+                                              let spMA20 = movingAverage(sp500, at: signalIndex, period: 20),
+                                              let spMA60 = movingAverage(sp500, at: signalIndex, period: 60),
+                                              let nasdaqM5 = priceMomentum(nasdaq, at: signalIndex, lookback: 5),
+                                              let nasdaqM20 = priceMomentum(nasdaq, at: signalIndex, lookback: 20),
+                                              let nasdaqM60 = priceMomentum(nasdaq, at: signalIndex, lookback: 60),
+                                              let spM20 = priceMomentum(sp500, at: signalIndex, lookback: 20),
+                                              let spM60 = priceMomentum(sp500, at: signalIndex, lookback: 60) else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+
+                                        if alignedVIX.isEmpty {
+                                            alignedVIX = align(vixMap, dates: data.dates)
+                                            alignedVIX3M = align(vix3mMap, dates: data.dates)
+                                            let cp = align(cpMap, dates: data.dates)
+                                            let tbill = align(tbillMap, dates: data.dates)
+                                            alignedSpread = zip(cp, tbill).map { cpValue, billValue in
+                                                guard let cpValue, let billValue else { return nil }
+                                                return cpValue - billValue
+                                            }
+                                        }
+
+                                        let executionDateKey = data.dates[index].recordDateString
+                                        if let weights = riskTargets[executionDateKey] { latestRisk = weights }
+                                        if let weights = dualTargets[executionDateKey] { latestDual = weights }
+                                        guard !latestRisk.isEmpty, !latestDual.isEmpty else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+
+                                        var normal: [String: Double] = [:]
+                                        for (symbol, weight) in latestRisk {
+                                            normal[symbol, default: 0] += weight * 0.75
+                                        }
+                                        for (symbol, weight) in latestDual {
+                                            normal[symbol, default: 0] += weight * 0.75
+                                        }
+                                        let gross = normal.values.reduce(0, +)
+                                        if gross > 1, gross > 0 { normal = normal.mapValues { $0 / gross } }
+
+                                        let normalSymbols = Set(previousNormal.keys).union(normal.keys)
+                                        let normalDifference = normalSymbols.reduce(0.0) {
+                                            $0 + abs((previousNormal[$1] ?? 0) - (normal[$1] ?? 0))
+                                        }
+                                        let scheduledTargetChange = previousNormal.isEmpty
+                                            ? !normal.isEmpty
+                                            : normalDifference > 0.0000001
+                                        guard scheduledTargetChange else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        previousNormal = normal
+
+                                        let macroIndex = max(signalIndex - 1, 0)
+                                        let creditIndex = max(signalIndex - 2, 0)
+                                        let vix = alignedVIX[macroIndex]
+                                        let vix3m = alignedVIX3M[macroIndex]
+                                        let termRatio = (vix != nil && vix3m != nil && vix3m! > 0)
+                                            ? vix! / vix3m!
+                                            : nil
+                                        let spread = alignedSpread[creditIndex]
+                                        let spreadStats = rollingStats(alignedSpread, end: creditIndex, lookback: 252)
+                                        let spreadZ: Double
+                                        if let spread, let spreadStats, spreadStats.std > 0.0001 {
+                                            spreadZ = (spread - spreadStats.mean) / spreadStats.std
+                                        } else {
+                                            spreadZ = 0
+                                        }
+                                        let spread10 = alignedSpread[max(0, creditIndex - 10)] ?? spread
+                                        let spreadChange10 = (spread != nil && spread10 != nil)
+                                            ? spread! - spread10!
+                                            : 0
+
+                                        let priceWarning = nasdaq[signalIndex] < nasdaqMA20
+                                            && sp500[signalIndex] < spMA20
+                                            && nasdaqM5 < 0
+                                            && nasdaqM20 <= 0
+                                            && spM20 <= 0
+                                        let broadBreak = nasdaq[signalIndex] < nasdaqMA60
+                                            && sp500[signalIndex] < spMA60
+                                            && nasdaqM20 < -0.02
+                                            && spM20 < -0.015
+                                            && nasdaqM60 < 0
+                                            && spM60 < 0
+                                        let hardCrash = nasdaqM5 <= -0.075 || nasdaqM20 <= -0.13
+                                        let volatilityCrisis = (vix ?? 0) >= crisisVIX
+                                            && (termRatio == nil || termRatio! >= crisisTerm)
+                                            && priceWarning
+                                        let creditCrisis = spreadZ >= creditZThreshold
+                                            && spreadChange10 >= 0.15
+                                            && broadBreak
+                                        let crisis = hardCrash || volatilityCrisis || creditCrisis
+                                        let warning = !crisis && (
+                                            priceWarning
+                                            || (vix ?? 0) >= 22
+                                            || (termRatio ?? 0) >= 0.94
+                                            || spreadZ >= 1.0
+                                            || spreadChange10 >= 0.10
+                                        )
+
+                                        let cap: Double
+                                        if crisis {
+                                            cap = crisisCap
+                                            crisisCount += 1
+                                        } else if warning {
+                                            cap = warningCap
+                                            warningCount += 1
+                                        } else {
+                                            cap = 1.0
+                                        }
+                                        pendingTarget = normal.mapValues { $0 * cap }
+                                        let targetSymbols = Set(previousTarget.keys).union(pendingTarget.keys)
+                                        let targetDifference = targetSymbols.reduce(0.0) {
+                                            $0 + abs((previousTarget[$1] ?? 0) - (pendingTarget[$1] ?? 0))
+                                        }
+                                        let shouldRebalance = previousTarget.isEmpty
+                                            ? !pendingTarget.isEmpty
+                                            : targetDifference > 0.0000001
+                                        previousTarget = pendingTarget
+                                        return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                    },
+                                    targetWeights: { _, _ in pendingTarget }
+                                ) else { continue }
+
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "blend_macro_scheduled_cap",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                let ddWindow = scheduledCapDrawdownWindow(report.points)
+                                candidates.append(ScheduledCapCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility ?? -1,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(
+                                        title: title,
+                                        id: "blend_macro_scheduled_cap",
+                                        points: report.points,
+                                        fullRow: fullRow
+                                    ),
+                                    trades: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio,
+                                    drawdownPeak: ddWindow.0,
+                                    drawdownTrough: ddWindow.1,
+                                    warningCount: warningCount,
+                                    crisisCount: crisisCount
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_BLEND_MACRO_SCHEDULED_CAP_NEAR_FRONTIER" : "APP_BLEND_MACRO_SCHEDULED_CAP_VALID")
+            print("APP_BLEND_MACRO_SCHEDULED_CAP_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough,warning_count,crisis_count")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough + "," + String(candidate.warningCount) + "," + String(candidate.crisisCount))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_BLEND_SHADOW_DD_GUARD_GRID"] == "1" {
+            struct BlendShadowCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+                let stateChanges: Int
+            }
+
+            func blendShadowDDWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(riskMode.requiredSignalAssetSymbols + dualMode.requiredSignalAssetSymbols)).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            func trace(_ mode: AdvancedBacktestStrategyMode) -> [String: [String: Double]]? {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { return nil }
+                return Dictionary(uniqueKeysWithValues: run.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+            }
+            guard let riskTargets = trace(riskMode), let dualTargets = trace(dualMode) else {
+                print("APP_BLEND_SHADOW_DD_GUARD_GRID\nbase_trace_missing")
+                return
+            }
+
+            func blend(dateKey: String, risk: inout [String: Double], dual: inout [String: Double]) -> [String: Double] {
+                if let value = riskTargets[dateKey] { risk = value }
+                if let value = dualTargets[dateKey] { dual = value }
+                guard !risk.isEmpty, !dual.isEmpty else { return [:] }
+                var weights: [String: Double] = [:]
+                for (symbol, value) in risk { weights[symbol, default: 0] += value * 0.75 }
+                for (symbol, value) in dual { weights[symbol, default: 0] += value * 0.75 }
+                let gross = weights.values.reduce(0, +)
+                if gross > 1, gross > 0 { weights = weights.mapValues { $0 / gross } }
+                return weights
+            }
+
+            let shadowConfig = ResearchTargetStrategyConfig(
+                symbol: "blend_shadow_dd_source",
+                title: "融合影子净值",
+                warmupSessions: 1,
+                rebalanceSessions: 1,
+                rebalanceBand: 0.08,
+                maxGrossExposure: 1.0,
+                allowsFinancedExposure: false,
+                financingAnnualRate: 0,
+                buyReason: "融合影子净值调仓"
+            )
+            var shadowRisk: [String: Double] = [:]
+            var shadowDual: [String: Double] = [:]
+            var shadowPending: [String: Double] = [:]
+            var shadowPrevious: [String: Double] = [:]
+            guard let shadow = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                config: shadowConfig,
+                rebalanceDecision: { index, _, data in
+                    guard data.dates.indices.contains(index) else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    shadowPending = blend(
+                        dateKey: data.dates[index].recordDateString,
+                        risk: &shadowRisk,
+                        dual: &shadowDual
+                    )
+                    let symbols = Set(shadowPrevious.keys).union(shadowPending.keys)
+                    let difference = symbols.reduce(0.0) {
+                        $0 + abs((shadowPrevious[$1] ?? 0) - (shadowPending[$1] ?? 0))
+                    }
+                    let shouldRebalance = shadowPrevious.isEmpty
+                        ? !shadowPending.isEmpty
+                        : difference > 0.0000001
+                    shadowPrevious = shadowPending
+                    return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                },
+                targetWeights: { _, _ in shadowPending }
+            ) else {
+                print("APP_BLEND_SHADOW_DD_GUARD_GRID\nshadow_missing")
+                return
+            }
+
+            var shadowPeak = 0.0
+            var shadowDrawdownByDate: [String: Double] = [:]
+            var shadowFastByDate: [String: Bool] = [:]
+            var shadowStrongByDate: [String: Bool] = [:]
+            for index in shadow.report.points.indices {
+                let point = shadow.report.points[index]
+                shadowPeak = max(shadowPeak, point.portfolioValue)
+                shadowDrawdownByDate[point.date.recordDateString] = shadowPeak > 0
+                    ? max(1 - point.portfolioValue / shadowPeak, 0)
+                    : 0
+                guard index >= 40 else {
+                    shadowFastByDate[point.date.recordDateString] = false
+                    shadowStrongByDate[point.date.recordDateString] = false
+                    continue
+                }
+                let ma10 = shadow.report.points[(index - 9)...index].map(\.portfolioValue).reduce(0, +) / 10
+                let ma30 = shadow.report.points[(index - 29)...index].map(\.portfolioValue).reduce(0, +) / 30
+                let mom5 = point.portfolioValue / shadow.report.points[index - 5].portfolioValue - 1
+                let mom20 = point.portfolioValue / shadow.report.points[index - 20].portfolioValue - 1
+                shadowFastByDate[point.date.recordDateString] = point.portfolioValue > ma10 && mom5 > 0
+                shadowStrongByDate[point.date.recordDateString] = point.portfolioValue > ma30 && mom5 > 0 && mom20 > 0
+            }
+
+            let traceOnly = ProcessInfo.processInfo.environment["ATM_BLEND_SHADOW_TRACE"] == "1"
+            let warningDDOptions = traceOnly ? [0.055] : [0.040, 0.050, 0.060]
+            let crisisDDOptions = traceOnly ? [0.090] : [0.070, 0.090, 0.110]
+            let warningScaleOptions = traceOnly ? [0.70] : [0.50, 0.70, 0.85]
+            let crisisScaleOptions = traceOnly ? [0.20] : [0.0, 0.20, 0.40]
+            let recoveryConfirmOptions = traceOnly ? [3] : [2, 3, 5]
+            var candidates: [BlendShadowCandidate] = []
+
+            for warningDD in warningDDOptions {
+                for crisisDD in crisisDDOptions where crisisDD > warningDD {
+                    for warningScale in warningScaleOptions {
+                        for crisisScale in crisisScaleOptions where crisisScale <= warningScale {
+                            for recoveryConfirm in recoveryConfirmOptions {
+                                let title = String(
+                                    format: "融合影子回撤-W%.1f/%.0f-C%.1f/%.0f-R%d",
+                                    warningDD * 100,
+                                    warningScale * 100,
+                                    crisisDD * 100,
+                                    crisisScale * 100,
+                                    recoveryConfirm
+                                )
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "blend_shadow_dd_guard",
+                                    title: title,
+                                    warmupSessions: 1,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: 0.08,
+                                    maxGrossExposure: 1.0,
+                                    allowsFinancedExposure: false,
+                                    financingAnnualRate: 0,
+                                    buyReason: "融合影子回撤调仓"
+                                )
+
+                                var state = 0
+                                var stateEnteredIndex = -10_000
+                                var recoveryStreak = 0
+                                var stateChanges = 0
+                                var latestRisk: [String: Double] = [:]
+                                var latestDual: [String: Double] = [:]
+                                var pendingWeights: [String: Double] = [:]
+                                var previousWeights: [String: Double] = [:]
+
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    rebalanceDecision: { index, signalIndex, data in
+                                        guard signalIndex >= 1,
+                                              data.dates.indices.contains(index),
+                                              data.dates.indices.contains(signalIndex) else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        let executionKey = data.dates[index].recordDateString
+                                        let signalKey = data.dates[signalIndex].recordDateString
+                                        let normal = blend(
+                                            dateKey: executionKey,
+                                            risk: &latestRisk,
+                                            dual: &latestDual
+                                        )
+                                        guard !normal.isEmpty else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        let shadowDD = shadowDrawdownByDate[signalKey] ?? 0
+                                        let fast = shadowFastByDate[signalKey] ?? false
+                                        let strong = shadowStrongByDate[signalKey] ?? false
+                                        let previousState = state
+
+                                        if state == 0 {
+                                            if shadowDD >= crisisDD {
+                                                state = 2
+                                                recoveryStreak = 0
+                                            } else if shadowDD >= warningDD {
+                                                state = 1
+                                                recoveryStreak = 0
+                                            }
+                                        } else if state == 1 {
+                                            if shadowDD >= crisisDD {
+                                                state = 2
+                                                recoveryStreak = 0
+                                            } else if shadowDD <= warningDD * 0.55 {
+                                                recoveryStreak = strong ? recoveryStreak + 1 : 0
+                                                if index - stateEnteredIndex >= 5,
+                                                   recoveryStreak >= recoveryConfirm + 1 {
+                                                    state = 0
+                                                    recoveryStreak = 0
+                                                }
+                                            } else {
+                                                recoveryStreak = 0
+                                            }
+                                        } else {
+                                            if shadowDD <= warningDD {
+                                                recoveryStreak = fast ? recoveryStreak + 1 : 0
+                                                if index - stateEnteredIndex >= 5,
+                                                   recoveryStreak >= recoveryConfirm {
+                                                    state = 1
+                                                    recoveryStreak = 0
+                                                }
+                                            } else {
+                                                recoveryStreak = 0
+                                            }
+                                        }
+
+                                        if state != previousState {
+                                            stateChanges += 1
+                                            stateEnteredIndex = index
+                                        }
+                                        let scale = state == 0 ? 1.0 : (state == 1 ? warningScale : crisisScale)
+                                        pendingWeights = normal.mapValues { $0 * scale }
+                                        let symbols = Set(previousWeights.keys).union(pendingWeights.keys)
+                                        let difference = symbols.reduce(0.0) {
+                                            $0 + abs((previousWeights[$1] ?? 0) - (pendingWeights[$1] ?? 0))
+                                        }
+                                        let shouldRebalance = previousWeights.isEmpty
+                                            ? !pendingWeights.isEmpty
+                                            : state != previousState || difference > 0.0000001
+                                        previousWeights = pendingWeights
+                                        return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                    },
+                                    targetWeights: { _, _ in pendingWeights }
+                                ) else { continue }
+
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "blend_shadow_dd_guard",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                let ddWindow = blendShadowDDWindow(report.points)
+                                candidates.append(BlendShadowCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility ?? -1,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(
+                                        title: title,
+                                        id: "blend_shadow_dd_guard",
+                                        points: report.points,
+                                        fullRow: fullRow
+                                    ),
+                                    trades: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio,
+                                    drawdownPeak: ddWindow.0,
+                                    drawdownTrough: ddWindow.1,
+                                    stateChanges: stateChanges
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_BLEND_SHADOW_DD_NEAR_FRONTIER" : "APP_BLEND_SHADOW_DD_VALID")
+            print("APP_BLEND_SHADOW_DD_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough,state_changes")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough + "," + String(candidate.stateChanges))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_BLEND_DRAWDOWN_GUARD_GRID"] == "1" {
+            struct BlendDrawdownCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+                let stateChanges: Int
+            }
+
+            func blendDDWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(riskMode.requiredSignalAssetSymbols + dualMode.requiredSignalAssetSymbols)).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            func targetTrace(_ mode: AdvancedBacktestStrategyMode) -> [String: [String: Double]]? {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { return nil }
+                return Dictionary(uniqueKeysWithValues: run.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+            }
+            guard let riskTargets = targetTrace(riskMode),
+                  let dualTargets = targetTrace(dualMode) else {
+                print("APP_BLEND_DRAWDOWN_GUARD_GRID\nbase_trace_missing")
+                return
+            }
+
+            func normalBlend(dateKey: String, risk: inout [String: Double], dual: inout [String: Double]) -> [String: Double] {
+                if let weights = riskTargets[dateKey] { risk = weights }
+                if let weights = dualTargets[dateKey] { dual = weights }
+                guard !risk.isEmpty, !dual.isEmpty else { return [:] }
+                var blended: [String: Double] = [:]
+                for (symbol, weight) in risk { blended[symbol, default: 0] += weight * 0.75 }
+                for (symbol, weight) in dual { blended[symbol, default: 0] += weight * 0.75 }
+                let gross = blended.values.reduce(0, +)
+                if gross > 1, gross > 0 { blended = blended.mapValues { $0 / gross } }
+                return blended
+            }
+
+            let baseConfig = ResearchTargetStrategyConfig(
+                symbol: "blend_drawdown_shadow",
+                title: "融合组合影子净值",
+                warmupSessions: 1,
+                rebalanceSessions: 1,
+                rebalanceBand: 0.08,
+                maxGrossExposure: 1.0,
+                allowsFinancedExposure: false,
+                financingAnnualRate: 0,
+                buyReason: "融合组合影子调仓"
+            )
+            var shadowRisk: [String: Double] = [:]
+            var shadowDual: [String: Double] = [:]
+            var shadowPending: [String: Double] = [:]
+            var shadowPrevious: [String: Double] = [:]
+            guard let shadow = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                config: baseConfig,
+                rebalanceDecision: { index, _, data in
+                    guard data.dates.indices.contains(index) else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    shadowPending = normalBlend(
+                        dateKey: data.dates[index].recordDateString,
+                        risk: &shadowRisk,
+                        dual: &shadowDual
+                    )
+                    let symbols = Set(shadowPrevious.keys).union(shadowPending.keys)
+                    let difference = symbols.reduce(0.0) {
+                        $0 + abs((shadowPrevious[$1] ?? 0) - (shadowPending[$1] ?? 0))
+                    }
+                    let shouldRebalance = shadowPrevious.isEmpty
+                        ? !shadowPending.isEmpty
+                        : difference > 0.0000001
+                    shadowPrevious = shadowPending
+                    return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                },
+                targetWeights: { _, _ in shadowPending }
+            ) else {
+                print("APP_BLEND_DRAWDOWN_GUARD_GRID\nshadow_missing")
+                return
+            }
+
+            let shadowPoints = shadow.report.points
+            var shadowFastByDate: [String: Bool] = [:]
+            var shadowStrongByDate: [String: Bool] = [:]
+            for index in shadowPoints.indices {
+                let key = shadowPoints[index].date.recordDateString
+                guard index >= 60 else {
+                    shadowFastByDate[key] = false
+                    shadowStrongByDate[key] = false
+                    continue
+                }
+                let value = shadowPoints[index].portfolioValue
+                let ma10 = shadowPoints[(index - 9)...index].map(\.portfolioValue).reduce(0, +) / 10
+                let ma30 = shadowPoints[(index - 29)...index].map(\.portfolioValue).reduce(0, +) / 30
+                let mom5 = value / shadowPoints[index - 5].portfolioValue - 1
+                let mom20 = value / shadowPoints[index - 20].portfolioValue - 1
+                shadowFastByDate[key] = value > ma10 && mom5 > 0
+                shadowStrongByDate[key] = value > ma30 && mom5 > 0 && mom20 > 0
+            }
+
+            let traceOnly = ProcessInfo.processInfo.environment["ATM_BLEND_DD_TRACE"] == "1"
+            let warningDDOptions = traceOnly ? [0.045] : [0.035, 0.045, 0.055]
+            let hardDDOptions = traceOnly ? [0.070] : [0.060, 0.075, 0.090]
+            let warningScaleOptions = traceOnly ? [0.60] : [0.50, 0.65, 0.80]
+            let hardScaleOptions = traceOnly ? [0.15] : [0.0, 0.15, 0.30]
+            let recoveryConfirmOptions = traceOnly ? [3] : [2, 3, 5]
+            var candidates: [BlendDrawdownCandidate] = []
+
+            for warningDD in warningDDOptions {
+                for hardDD in hardDDOptions where hardDD > warningDD {
+                    for warningScale in warningScaleOptions {
+                        for hardScale in hardScaleOptions where hardScale <= warningScale {
+                            for recoveryConfirm in recoveryConfirmOptions {
+                                let title = String(
+                                    format: "融合回撤闸门-W%.1f/%.0f-H%.1f/%.0f-R%d",
+                                    warningDD * 100,
+                                    warningScale * 100,
+                                    hardDD * 100,
+                                    hardScale * 100,
+                                    recoveryConfirm
+                                )
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "blend_drawdown_guard",
+                                    title: title,
+                                    warmupSessions: 1,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: 0.08,
+                                    maxGrossExposure: 1.0,
+                                    allowsFinancedExposure: false,
+                                    financingAnnualRate: 0,
+                                    buyReason: "融合组合回撤闸门调仓"
+                                )
+
+                                var state = 0
+                                var stateEnteredIndex = -10_000
+                                var controlPeak = 100_000.0
+                                var entryDrawdown = 0.0
+                                var recoveryStreak = 0
+                                var stateChanges = 0
+                                var latestRisk: [String: Double] = [:]
+                                var latestDual: [String: Double] = [:]
+                                var pendingWeights: [String: Double] = [:]
+                                var previousWeights: [String: Double] = [:]
+
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    contextualRebalanceDecision: { context, data in
+                                        guard context.signalIndex >= 1,
+                                              data.dates.indices.contains(context.index),
+                                              data.dates.indices.contains(context.signalIndex) else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        let executionKey = data.dates[context.index].recordDateString
+                                        let signalKey = data.dates[context.signalIndex].recordDateString
+                                        let normalWeights = normalBlend(
+                                            dateKey: executionKey,
+                                            risk: &latestRisk,
+                                            dual: &latestDual
+                                        )
+                                        guard !normalWeights.isEmpty else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+
+                                        if state == 0 { controlPeak = max(controlPeak, context.preRebalanceValue) }
+                                        let drawdown = controlPeak > 0
+                                            ? max(1 - context.preRebalanceValue / controlPeak, 0)
+                                            : 0
+                                        let fast = shadowFastByDate[signalKey] ?? false
+                                        let strong = shadowStrongByDate[signalKey] ?? false
+                                        let previousState = state
+
+                                        if state == 0 {
+                                            if drawdown >= hardDD {
+                                                state = 2
+                                                recoveryStreak = 0
+                                            } else if drawdown >= warningDD {
+                                                state = 1
+                                                recoveryStreak = 0
+                                            }
+                                        } else if state == 1 {
+                                            if drawdown >= max(hardDD, entryDrawdown + 0.02) {
+                                                state = 2
+                                                recoveryStreak = 0
+                                            } else {
+                                                recoveryStreak = strong ? recoveryStreak + 1 : 0
+                                                if context.index - stateEnteredIndex >= 5,
+                                                   recoveryStreak >= recoveryConfirm + 2 {
+                                                    state = 0
+                                                    recoveryStreak = 0
+                                                }
+                                            }
+                                        } else {
+                                            recoveryStreak = fast ? recoveryStreak + 1 : 0
+                                            if context.index - stateEnteredIndex >= 5,
+                                               recoveryStreak >= recoveryConfirm {
+                                                state = 1
+                                                recoveryStreak = 0
+                                            }
+                                        }
+
+                                        if state != previousState {
+                                            stateChanges += 1
+                                            stateEnteredIndex = context.index
+                                            entryDrawdown = drawdown
+                                            if state == 0 {
+                                                controlPeak = context.preRebalanceValue
+                                                entryDrawdown = 0
+                                            }
+                                        }
+                                        let scale = state == 0 ? 1.0 : (state == 1 ? warningScale : hardScale)
+                                        pendingWeights = normalWeights.mapValues { $0 * scale }
+                                        let symbols = Set(previousWeights.keys).union(pendingWeights.keys)
+                                        let difference = symbols.reduce(0.0) {
+                                            $0 + abs((previousWeights[$1] ?? 0) - (pendingWeights[$1] ?? 0))
+                                        }
+                                        let shouldRebalance = previousWeights.isEmpty
+                                            ? !pendingWeights.isEmpty
+                                            : state != previousState || difference > 0.0000001
+                                        previousWeights = pendingWeights
+                                        return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                    },
+                                    targetWeights: { _, _ in pendingWeights }
+                                ) else { continue }
+
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "blend_drawdown_guard",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                let ddWindow = blendDDWindow(report.points)
+                                candidates.append(BlendDrawdownCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility ?? -1,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(
+                                        title: title,
+                                        id: "blend_drawdown_guard",
+                                        points: report.points,
+                                        fullRow: fullRow
+                                    ),
+                                    trades: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio,
+                                    drawdownPeak: ddWindow.0,
+                                    drawdownTrough: ddWindow.1,
+                                    stateChanges: stateChanges
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 6 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_BLEND_DRAWDOWN_GUARD_NEAR_FRONTIER" : "APP_BLEND_DRAWDOWN_GUARD_VALID")
+            print("APP_BLEND_DRAWDOWN_GUARD_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough,state_changes")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough + "," + String(candidate.stateChanges))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_BLEND_SLEEVE_GUARD_GRID"] == "1" {
+            struct BlendSleeveCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+                let transitions: Int
+            }
+
+            func blendSleeveDrawdownWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            func loadBlendSleeveMacro() -> [String: [String: Double]]? {
+                let path = ProcessInfo.processInfo.environment["ATM_MACRO_RISK_FIXTURE"]
+                    ?? "tools/fixtures/macro-risk/macro_risk_public.json"
+                guard let data = FileManager.default.contents(atPath: path),
+                      let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let rawSeries = root["series"] as? [String: Any] else { return nil }
+                var output: [String: [String: Double]] = [:]
+                for (name, value) in rawSeries {
+                    guard let rows = value as? [[String: Any]] else { continue }
+                    var values: [String: Double] = [:]
+                    for row in rows {
+                        guard let date = row["date"] as? String,
+                              let number = row["value"] as? NSNumber else { continue }
+                        values[date] = number.doubleValue
+                    }
+                    output[name] = values
+                }
+                return output
+            }
+
+            guard let macro = loadBlendSleeveMacro(),
+                  let vixMap = macro["vix"],
+                  let vix3mMap = macro["vix3m"] else {
+                print("APP_BLEND_SLEEVE_GUARD_GRID\nmacro_fixture_missing")
+                return
+            }
+
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(riskMode.requiredSignalAssetSymbols + dualMode.requiredSignalAssetSymbols)).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            func trace(_ mode: AdvancedBacktestStrategyMode) -> [String: [String: Double]]? {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { return nil }
+                return Dictionary(uniqueKeysWithValues: run.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+            }
+            guard let riskTargets = trace(riskMode),
+                  let dualTargets = trace(dualMode) else {
+                print("APP_BLEND_SLEEVE_GUARD_GRID\nbase_trace_missing")
+                return
+            }
+
+            let chinaSymbols: Set<String> = ["csi300", "shanghai_composite", "shenzhen_component", "chinext"]
+            let usSymbols: Set<String> = ["nasdaq", "sp500", "dowjones"]
+            let yellowCapOptions = [0.50, 0.65, 0.80]
+            let vixThresholdOptions = [25.0, 30.0]
+            let termThresholdOptions = [0.96, 1.00]
+            let usCooldownOptions = [10, 20]
+            let chinaCooldownOptions = [15, 30]
+            var candidates: [BlendSleeveCandidate] = []
+
+            for yellowCap in yellowCapOptions {
+                for vixThreshold in vixThresholdOptions {
+                    for termThreshold in termThresholdOptions {
+                        for usCooldown in usCooldownOptions {
+                            for chinaCooldown in chinaCooldownOptions {
+                                let title = String(
+                                    format: "融合分袖套-Y%.0f-V%.0f-T%.2f-U%d-C%d",
+                                    yellowCap * 100,
+                                    vixThreshold,
+                                    termThreshold,
+                                    usCooldown,
+                                    chinaCooldown
+                                )
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "blend_sleeve_guard",
+                                    title: title,
+                                    warmupSessions: 1,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: 0.08,
+                                    maxGrossExposure: 1.0,
+                                    allowsFinancedExposure: false,
+                                    financingAnnualRate: 0,
+                                    buyReason: "融合组合分袖套保护调仓"
+                                )
+
+                                var latestRisk: [String: Double] = [:]
+                                var latestDual: [String: Double] = [:]
+                                var pendingWeights: [String: Double] = [:]
+                                var previousWeights: [String: Double] = [:]
+                                var usLocked = false
+                                var chinaLocked = false
+                                var usLockIndex = -10_000
+                                var chinaLockIndex = -10_000
+                                var usRecoveryStreak = 0
+                                var chinaRecoveryStreak = 0
+                                var transitionCount = 0
+                                var alignedVIX: [Double?] = []
+                                var alignedVIX3M: [Double?] = []
+
+                                func align(_ map: [String: Double], dates: [Date]) -> [Double?] {
+                                    var output: [Double?] = []
+                                    output.reserveCapacity(dates.count)
+                                    var lastValue: Double?
+                                    for date in dates {
+                                        if let value = map[date.recordDateString] { lastValue = value }
+                                        output.append(lastValue)
+                                    }
+                                    return output
+                                }
+
+                                func rangePosition(_ prices: [Double], at index: Int, lookback: Int) -> Double {
+                                    let start = max(0, index - lookback + 1)
+                                    let window = prices[start...index]
+                                    guard let low = window.min(), let high = window.max(), high > low else { return 0.5 }
+                                    return (prices[index] - low) / (high - low)
+                                }
+
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    rebalanceDecision: { index, signalIndex, data in
+                                        guard signalIndex >= 240,
+                                              data.dates.indices.contains(index),
+                                              data.dates.indices.contains(signalIndex),
+                                              let nasdaq = data.pricesBySymbol["nasdaq"],
+                                              let sp500 = data.pricesBySymbol["sp500"],
+                                              let csi300 = data.pricesBySymbol["csi300"],
+                                              let shanghai = data.pricesBySymbol["shanghai_composite"],
+                                              nasdaq.indices.contains(signalIndex),
+                                              sp500.indices.contains(signalIndex),
+                                              csi300.indices.contains(signalIndex),
+                                              shanghai.indices.contains(signalIndex),
+                                              let nasdaqMA20 = movingAverage(nasdaq, at: signalIndex, period: 20),
+                                              let nasdaqMA60 = movingAverage(nasdaq, at: signalIndex, period: 60),
+                                              let spMA20 = movingAverage(sp500, at: signalIndex, period: 20),
+                                              let spMA60 = movingAverage(sp500, at: signalIndex, period: 60),
+                                              let csiMA20 = movingAverage(csi300, at: signalIndex, period: 20),
+                                              let shMA20 = movingAverage(shanghai, at: signalIndex, period: 20),
+                                              let nasdaqM5 = priceMomentum(nasdaq, at: signalIndex, lookback: 5),
+                                              let nasdaqM20 = priceMomentum(nasdaq, at: signalIndex, lookback: 20),
+                                              let nasdaqM60 = priceMomentum(nasdaq, at: signalIndex, lookback: 60),
+                                              let spM20 = priceMomentum(sp500, at: signalIndex, lookback: 20),
+                                              let spM60 = priceMomentum(sp500, at: signalIndex, lookback: 60),
+                                              let csiM5 = priceMomentum(csi300, at: signalIndex, lookback: 5),
+                                              let csiM10 = priceMomentum(csi300, at: signalIndex, lookback: 10),
+                                              let csiM20 = priceMomentum(csi300, at: signalIndex, lookback: 20),
+                                              let csiM120 = priceMomentum(csi300, at: signalIndex, lookback: 120),
+                                              let shM5 = priceMomentum(shanghai, at: signalIndex, lookback: 5),
+                                              let shM10 = priceMomentum(shanghai, at: signalIndex, lookback: 10),
+                                              let shM20 = priceMomentum(shanghai, at: signalIndex, lookback: 20),
+                                              let shM120 = priceMomentum(shanghai, at: signalIndex, lookback: 120) else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+
+                                        if alignedVIX.isEmpty {
+                                            alignedVIX = align(vixMap, dates: data.dates)
+                                            alignedVIX3M = align(vix3mMap, dates: data.dates)
+                                        }
+                                        let executionDateKey = data.dates[index].recordDateString
+                                        if let weights = riskTargets[executionDateKey] { latestRisk = weights }
+                                        if let weights = dualTargets[executionDateKey] { latestDual = weights }
+                                        guard !latestRisk.isEmpty, !latestDual.isEmpty else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+
+                                        var normalWeights: [String: Double] = [:]
+                                        for (symbol, weight) in latestRisk {
+                                            normalWeights[symbol, default: 0] += weight * 0.75
+                                        }
+                                        for (symbol, weight) in latestDual {
+                                            normalWeights[symbol, default: 0] += weight * 0.75
+                                        }
+                                        let gross = normalWeights.values.reduce(0, +)
+                                        if gross > 1, gross > 0 {
+                                            normalWeights = normalWeights.mapValues { $0 / gross }
+                                        }
+
+                                        let macroIndex = max(signalIndex - 1, 0)
+                                        let vix = alignedVIX[macroIndex]
+                                        let vix3m = alignedVIX3M[macroIndex]
+                                        let termRatio = (vix != nil && vix3m != nil && vix3m! > 0)
+                                            ? vix! / vix3m!
+                                            : nil
+
+                                        let oldUS = usLocked
+                                        let oldChina = chinaLocked
+                                        let usBreak = nasdaq[signalIndex] < nasdaqMA20
+                                            && sp500[signalIndex] < spMA20
+                                            && nasdaqM5 < 0
+                                            && nasdaqM20 < -0.01
+                                            && spM20 < -0.01
+                                        let usCrisis = nasdaqM5 <= -0.075
+                                            || nasdaqM20 <= -0.13
+                                            || ((vix ?? 0) >= vixThreshold
+                                                && (termRatio == nil || termRatio! >= termThreshold)
+                                                && usBreak)
+                                        let usRecovered = nasdaq[signalIndex] > nasdaqMA60
+                                            && sp500[signalIndex] > spMA60
+                                            && nasdaqM20 > 0
+                                            && spM20 > 0
+                                            && nasdaqM60 > -0.01
+                                            && spM60 > -0.01
+                                            && (termRatio == nil || termRatio! < 0.98)
+                                        usRecoveryStreak = usRecovered ? usRecoveryStreak + 1 : 0
+                                        if !usLocked, usCrisis {
+                                            usLocked = true
+                                            usLockIndex = signalIndex
+                                            usRecoveryStreak = 0
+                                        } else if usLocked,
+                                                  signalIndex - usLockIndex >= usCooldown,
+                                                  usRecoveryStreak >= 3 {
+                                            usLocked = false
+                                            usRecoveryStreak = 0
+                                        }
+
+                                        let chinaExtreme = min(csiM120, shM120) >= 0.45
+                                            && min(
+                                                rangePosition(csi300, at: signalIndex, lookback: 240),
+                                                rangePosition(shanghai, at: signalIndex, lookback: 240)
+                                            ) >= 0.88
+                                        let chinaEarlyRollover = chinaExtreme && csiM5 < 0 && shM5 < 0
+                                        let chinaConfirmedBreak = csi300[signalIndex] < csiMA20
+                                            && shanghai[signalIndex] < shMA20
+                                            && min(csiM10, shM10) <= -0.06
+                                            && csiM20 < 0
+                                            && shM20 < 0
+                                        let chinaRecovered = csi300[signalIndex] > csiMA20
+                                            && shanghai[signalIndex] > shMA20
+                                            && csiM10 > 0
+                                            && shM10 > 0
+                                            && csiM20 > -0.01
+                                            && shM20 > -0.01
+                                        chinaRecoveryStreak = chinaRecovered ? chinaRecoveryStreak + 1 : 0
+                                        if !chinaLocked, chinaEarlyRollover || chinaConfirmedBreak {
+                                            chinaLocked = true
+                                            chinaLockIndex = signalIndex
+                                            chinaRecoveryStreak = 0
+                                        } else if chinaLocked,
+                                                  signalIndex - chinaLockIndex >= chinaCooldown,
+                                                  chinaRecoveryStreak >= 3 {
+                                            chinaLocked = false
+                                            chinaRecoveryStreak = 0
+                                        }
+                                        if oldUS != usLocked || oldChina != chinaLocked { transitionCount += 1 }
+
+                                        pendingWeights = normalWeights.filter { symbol, _ in
+                                            if usLocked && usSymbols.contains(symbol) { return false }
+                                            if chinaLocked && chinaSymbols.contains(symbol) { return false }
+                                            return true
+                                        }
+                                        let proposedUS = pendingWeights.reduce(0.0) {
+                                            $0 + (usSymbols.contains($1.key) ? $1.value : 0)
+                                        }
+                                        let yellowWarning = !usLocked
+                                            && proposedUS > yellowCap
+                                            && nasdaq[signalIndex] < nasdaqMA20
+                                            && sp500[signalIndex] < spMA20
+                                            && nasdaqM5 < 0
+                                            && nasdaqM20 <= 0
+                                            && spM20 <= 0
+                                            && ((vix ?? 0) >= 22 || (termRatio ?? 0) >= 0.93)
+                                        if yellowWarning, proposedUS > 0 {
+                                            let factor = yellowCap / proposedUS
+                                            for symbol in usSymbols where pendingWeights[symbol] != nil {
+                                                pendingWeights[symbol] = (pendingWeights[symbol] ?? 0) * factor
+                                            }
+                                        }
+
+                                        let symbols = Set(previousWeights.keys).union(pendingWeights.keys)
+                                        let difference = symbols.reduce(0.0) {
+                                            $0 + abs((previousWeights[$1] ?? 0) - (pendingWeights[$1] ?? 0))
+                                        }
+                                        let shouldRebalance = previousWeights.isEmpty
+                                            ? !pendingWeights.isEmpty
+                                            : oldUS != usLocked || oldChina != chinaLocked || difference > 0.0000001
+                                        previousWeights = pendingWeights
+                                        return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                    },
+                                    targetWeights: { _, _ in pendingWeights }
+                                ) else { continue }
+
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "blend_sleeve_guard",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                let ddWindow = blendSleeveDrawdownWindow(report.points)
+                                candidates.append(BlendSleeveCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility ?? -1,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(
+                                        title: title,
+                                        id: "blend_sleeve_guard",
+                                        points: report.points,
+                                        fullRow: fullRow
+                                    ),
+                                    trades: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio,
+                                    drawdownPeak: ddWindow.0,
+                                    drawdownTrough: ddWindow.1,
+                                    transitions: transitionCount
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 5 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 5 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_BLEND_SLEEVE_GUARD_NEAR_FRONTIER" : "APP_BLEND_SLEEVE_GUARD_VALID")
+            print("APP_BLEND_SLEEVE_GUARD_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough,transitions")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough + "," + String(candidate.transitions))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_BLEND_CRISIS_GATE_GRID"] == "1" {
+            struct BlendCrisisCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+                let transitions: Int
+            }
+
+            func blendCrisisDrawdownWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            func loadBlendMacroSeries() -> [String: [String: Double]]? {
+                let path = ProcessInfo.processInfo.environment["ATM_MACRO_RISK_FIXTURE"]
+                    ?? "tools/fixtures/macro-risk/macro_risk_public.json"
+                guard let data = FileManager.default.contents(atPath: path),
+                      let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let rawSeries = root["series"] as? [String: Any] else { return nil }
+                var output: [String: [String: Double]] = [:]
+                for (name, value) in rawSeries {
+                    guard let rows = value as? [[String: Any]] else { continue }
+                    var values: [String: Double] = [:]
+                    for row in rows {
+                        guard let date = row["date"] as? String,
+                              let number = row["value"] as? NSNumber else { continue }
+                        values[date] = number.doubleValue
+                    }
+                    output[name] = values
+                }
+                return output
+            }
+
+            guard let macro = loadBlendMacroSeries(),
+                  let vixMap = macro["vix"],
+                  let vix3mMap = macro["vix3m"],
+                  let cpMap = macro["cp90"],
+                  let tbillMap = macro["tbill3m"] else {
+                print("APP_BLEND_CRISIS_GATE_GRID\nmacro_fixture_missing")
+                return
+            }
+
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(riskMode.requiredSignalAssetSymbols + dualMode.requiredSignalAssetSymbols)).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            func modeTrace(_ mode: AdvancedBacktestStrategyMode) -> [String: [String: Double]]? {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { return nil }
+                return Dictionary(uniqueKeysWithValues: run.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+            }
+            guard let riskTargets = modeTrace(riskMode),
+                  let dualTargets = modeTrace(dualMode) else {
+                print("APP_BLEND_CRISIS_GATE_GRID\nbase_trace_missing")
+                return
+            }
+
+            let equitySymbols: Set<String> = [
+                "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite",
+                "shenzhen_component", "chinext", "hsi", "nikkei"
+            ]
+            let vixThresholdOptions = [25.0, 30.0]
+            let termThresholdOptions = [0.96, 1.00]
+            let exitConfirmOptions = [1, 2]
+            let minimumLockOptions = [5, 10]
+            let recoveryConfirmOptions = [2, 3]
+            let crisisEquityCapOptions = [0.0, 0.15]
+            var candidates: [BlendCrisisCandidate] = []
+
+            for vixThreshold in vixThresholdOptions {
+                for termThreshold in termThresholdOptions {
+                    for exitConfirm in exitConfirmOptions {
+                        for minimumLock in minimumLockOptions {
+                            for recoveryConfirm in recoveryConfirmOptions {
+                                for crisisEquityCap in crisisEquityCapOptions {
+                                    let title = String(
+                                        format: "融合危机门-V%.0f-T%.2f-X%d-L%d-R%d-E%.0f",
+                                        vixThreshold,
+                                        termThreshold,
+                                        exitConfirm,
+                                        minimumLock,
+                                        recoveryConfirm,
+                                        crisisEquityCap * 100
+                                    )
+                                    let config = ResearchTargetStrategyConfig(
+                                        symbol: "blend_crisis_gate",
+                                        title: title,
+                                        warmupSessions: 1,
+                                        rebalanceSessions: 1,
+                                        rebalanceBand: 0.08,
+                                        maxGrossExposure: 1.0,
+                                        allowsFinancedExposure: false,
+                                        financingAnnualRate: 0,
+                                        buyReason: "融合组合危机门调仓"
+                                    )
+
+                                    var state = 0
+                                    var stateEnteredIndex = -10_000
+                                    var crisisStreak = 0
+                                    var fastRecoveryStreak = 0
+                                    var fullRecoveryStreak = 0
+                                    var transitionCount = 0
+                                    var latestRisk: [String: Double] = [:]
+                                    var latestDual: [String: Double] = [:]
+                                    var pendingWeights: [String: Double] = [:]
+                                    var previousWeights: [String: Double] = [:]
+                                    var alignedVIX: [Double?] = []
+                                    var alignedVIX3M: [Double?] = []
+                                    var alignedSpread: [Double?] = []
+
+                                    func align(_ map: [String: Double], dates: [Date]) -> [Double?] {
+                                        var output: [Double?] = []
+                                        output.reserveCapacity(dates.count)
+                                        var lastValue: Double?
+                                        for date in dates {
+                                            if let value = map[date.recordDateString] { lastValue = value }
+                                            output.append(lastValue)
+                                        }
+                                        return output
+                                    }
+
+                                    func stats(_ values: [Double?], end: Int, lookback: Int) -> (mean: Double, std: Double)? {
+                                        let start = max(0, end - lookback + 1)
+                                        let sample = values[start...end].compactMap { $0 }
+                                        guard sample.count >= max(20, lookback / 3) else { return nil }
+                                        let mean = sample.reduce(0, +) / Double(sample.count)
+                                        let variance = sample.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) } / Double(max(sample.count - 1, 1))
+                                        return (mean, sqrt(max(variance, 0)))
+                                    }
+
+                                    guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                        assetInputs: inputs,
+                                        initialCash: 100_000,
+                                        settings: settings,
+                                        config: config,
+                                        rebalanceDecision: { index, signalIndex, data in
+                                            guard signalIndex >= 252,
+                                                  data.dates.indices.contains(index),
+                                                  data.dates.indices.contains(signalIndex),
+                                                  let nasdaq = data.pricesBySymbol["nasdaq"],
+                                                  let sp500 = data.pricesBySymbol["sp500"],
+                                                  nasdaq.indices.contains(signalIndex),
+                                                  sp500.indices.contains(signalIndex),
+                                                  let nasdaqMA20 = movingAverage(nasdaq, at: signalIndex, period: 20),
+                                                  let nasdaqMA60 = movingAverage(nasdaq, at: signalIndex, period: 60),
+                                                  let spMA20 = movingAverage(sp500, at: signalIndex, period: 20),
+                                                  let spMA60 = movingAverage(sp500, at: signalIndex, period: 60),
+                                                  let nasdaqM5 = priceMomentum(nasdaq, at: signalIndex, lookback: 5),
+                                                  let nasdaqM20 = priceMomentum(nasdaq, at: signalIndex, lookback: 20),
+                                                  let nasdaqM60 = priceMomentum(nasdaq, at: signalIndex, lookback: 60),
+                                                  let spM20 = priceMomentum(sp500, at: signalIndex, lookback: 20),
+                                                  let spM60 = priceMomentum(sp500, at: signalIndex, lookback: 60) else {
+                                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                            }
+                                            if alignedVIX.isEmpty {
+                                                alignedVIX = align(vixMap, dates: data.dates)
+                                                alignedVIX3M = align(vix3mMap, dates: data.dates)
+                                                let cp = align(cpMap, dates: data.dates)
+                                                let tbill = align(tbillMap, dates: data.dates)
+                                                alignedSpread = zip(cp, tbill).map { cpValue, billValue in
+                                                    guard let cpValue, let billValue else { return nil }
+                                                    return cpValue - billValue
+                                                }
+                                            }
+
+                                            let executionDateKey = data.dates[index].recordDateString
+                                            if let weights = riskTargets[executionDateKey] { latestRisk = weights }
+                                            if let weights = dualTargets[executionDateKey] { latestDual = weights }
+                                            guard !latestRisk.isEmpty, !latestDual.isEmpty else {
+                                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                            }
+                                            var normalWeights: [String: Double] = [:]
+                                            for (symbol, weight) in latestRisk {
+                                                normalWeights[symbol, default: 0] += weight * 0.75
+                                            }
+                                            for (symbol, weight) in latestDual {
+                                                normalWeights[symbol, default: 0] += weight * 0.75
+                                            }
+                                            let normalGross = normalWeights.values.reduce(0, +)
+                                            if normalGross > 1, normalGross > 0 {
+                                                normalWeights = normalWeights.mapValues { $0 / normalGross }
+                                            }
+
+                                            let macroIndex = max(signalIndex - 1, 0)
+                                            let creditIndex = max(signalIndex - 2, 0)
+                                            let vix = alignedVIX[macroIndex]
+                                            let vix3m = alignedVIX3M[macroIndex]
+                                            let termRatio = (vix != nil && vix3m != nil && vix3m! > 0)
+                                                ? vix! / vix3m!
+                                                : nil
+                                            let spread = alignedSpread[creditIndex]
+                                            let spreadStats = stats(alignedSpread, end: creditIndex, lookback: 252)
+                                            let spreadZ: Double
+                                            if let spread, let spreadStats, spreadStats.std > 0.0001 {
+                                                spreadZ = (spread - spreadStats.mean) / spreadStats.std
+                                            } else {
+                                                spreadZ = 0
+                                            }
+                                            let spread10 = alignedSpread[max(0, creditIndex - 10)] ?? spread
+                                            let spreadChange10 = (spread != nil && spread10 != nil)
+                                                ? spread! - spread10!
+                                                : 0
+
+                                            let priceWeak = nasdaq[signalIndex] < nasdaqMA20
+                                                && sp500[signalIndex] < spMA20
+                                                && nasdaqM5 < 0
+                                                && nasdaqM20 < 0
+                                                && spM20 < 0
+                                            let broadBreak = nasdaq[signalIndex] < nasdaqMA60
+                                                && sp500[signalIndex] < spMA60
+                                                && nasdaqM20 < -0.025
+                                                && spM20 < -0.02
+                                                && nasdaqM60 < 0
+                                                && spM60 < 0
+                                            let volatilityCrisis = (vix ?? 0) >= vixThreshold
+                                                && (termRatio == nil || termRatio! >= termThreshold)
+                                                && priceWeak
+                                            let creditCrisis = spreadZ >= 1.75
+                                                && spreadChange10 >= 0.15
+                                                && broadBreak
+                                            let hardCrash = nasdaqM5 <= -0.075 || nasdaqM20 <= -0.13
+                                            let crisis = hardCrash || volatilityCrisis || creditCrisis
+                                            crisisStreak = crisis ? crisisStreak + 1 : 0
+
+                                            let vixCooling = vix == nil || vix! < vixThreshold * 0.90
+                                            let termCooling = termRatio == nil || termRatio! < max(termThreshold - 0.04, 0.93)
+                                            let creditCooling = spreadZ < 1 && spreadChange10 <= 0.05
+                                            let fastRecovered = nasdaq[signalIndex] > nasdaqMA20
+                                                && sp500[signalIndex] > spMA20
+                                                && nasdaqM5 > 0
+                                                && nasdaqM20 > -0.01
+                                                && spM20 > -0.01
+                                                && vixCooling
+                                                && termCooling
+                                            let fullRecovered = nasdaq[signalIndex] > nasdaqMA60
+                                                && sp500[signalIndex] > spMA60
+                                                && nasdaqM20 > 0
+                                                && spM20 > 0
+                                                && nasdaqM60 > -0.01
+                                                && spM60 > -0.01
+                                                && vixCooling
+                                                && termCooling
+                                                && creditCooling
+                                            fastRecoveryStreak = fastRecovered ? fastRecoveryStreak + 1 : 0
+                                            fullRecoveryStreak = fullRecovered ? fullRecoveryStreak + 1 : 0
+
+                                            let previousState = state
+                                            if hardCrash || crisisStreak >= exitConfirm {
+                                                state = 1
+                                                if previousState != 1 { stateEnteredIndex = signalIndex }
+                                                fastRecoveryStreak = 0
+                                                fullRecoveryStreak = 0
+                                            } else if state == 1,
+                                                      signalIndex - stateEnteredIndex >= minimumLock,
+                                                      fastRecoveryStreak >= recoveryConfirm {
+                                                state = 2
+                                                stateEnteredIndex = signalIndex
+                                                fastRecoveryStreak = 0
+                                            } else if state == 2 {
+                                                if hardCrash || crisisStreak >= exitConfirm {
+                                                    state = 1
+                                                    stateEnteredIndex = signalIndex
+                                                } else if signalIndex - stateEnteredIndex >= 5,
+                                                          fullRecoveryStreak >= recoveryConfirm + 1 {
+                                                    state = 0
+                                                    stateEnteredIndex = signalIndex
+                                                    fullRecoveryStreak = 0
+                                                }
+                                            }
+                                            if state != previousState { transitionCount += 1 }
+
+                                            if state == 0 {
+                                                pendingWeights = normalWeights
+                                            } else {
+                                                var defensive = normalWeights
+                                                let equityTotal = defensive.reduce(0.0) {
+                                                    $0 + (equitySymbols.contains($1.key) ? $1.value : 0)
+                                                }
+                                                if equityTotal > crisisEquityCap, equityTotal > 0 {
+                                                    let factor = crisisEquityCap / equityTotal
+                                                    for symbol in equitySymbols where defensive[symbol] != nil {
+                                                        defensive[symbol] = (defensive[symbol] ?? 0) * factor
+                                                    }
+                                                }
+                                                pendingWeights = state == 1
+                                                    ? defensive
+                                                    : normalWeights.mapValues { $0 * 0.50 }
+                                            }
+
+                                            let symbols = Set(previousWeights.keys).union(pendingWeights.keys)
+                                            let difference = symbols.reduce(0.0) {
+                                                $0 + abs((previousWeights[$1] ?? 0) - (pendingWeights[$1] ?? 0))
+                                            }
+                                            let shouldRebalance = previousWeights.isEmpty
+                                                ? !pendingWeights.isEmpty
+                                                : state != previousState || difference > 0.0000001
+                                            previousWeights = pendingWeights
+                                            return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                        },
+                                        targetWeights: { _, _ in pendingWeights }
+                                    ) else { continue }
+
+                                    let fullRow = MetricRow(
+                                        title: title,
+                                        id: "blend_crisis_gate",
+                                        annualized: report.annualizedReturn,
+                                        maxDrawdown: report.maxDrawdown,
+                                        volatility: report.annualizedVolatility,
+                                        sharpe: report.sharpeRatio,
+                                        start: report.points.first?.date.recordDateString ?? "n/a",
+                                        end: report.points.last?.date.recordDateString ?? "n/a",
+                                        pointCount: report.points.count
+                                    )
+                                    let ddWindow = blendCrisisDrawdownWindow(report.points)
+                                    candidates.append(BlendCrisisCandidate(
+                                        title: title,
+                                        annualized: report.annualizedReturn ?? -1,
+                                        maxDrawdown: report.maxDrawdown,
+                                        volatility: report.annualizedVolatility ?? -1,
+                                        sharpe: report.sharpeRatio ?? -1,
+                                        sliceRows: metricRowsForSlices(
+                                            title: title,
+                                            id: "blend_crisis_gate",
+                                            points: report.points,
+                                            fullRow: fullRow
+                                        ),
+                                        trades: report.trades.count,
+                                        averageCashRatio: report.averageCashRatio,
+                                        drawdownPeak: ddWindow.0,
+                                        drawdownTrough: ddWindow.1,
+                                        transitions: transitionCount
+                                    ))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 5 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 5 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_BLEND_CRISIS_GATE_NEAR_FRONTIER" : "APP_BLEND_CRISIS_GATE_VALID")
+            print("APP_BLEND_CRISIS_GATE_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough,transitions")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough + "," + String(candidate.transitions))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_TARGET_BLEND_FRONTIER"] == "1" {
+            struct TargetBlendCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+            }
+
+            func targetBlendDrawdownWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            let modes: [AdvancedBacktestStrategyMode] = [
+                .coreGoldSatelliteRiskBudgetStateGateMomentum,
+                .coreGoldSatelliteSharpeStateGateMomentum,
+                .coreGoldSatelliteProfitLockMomentum,
+                .goldNasdaqDualTrendBarbell
+            ]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allRequiredSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            let inputs = allRequiredSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            var targetMaps: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                targetMaps[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+            }
+            guard targetMaps.count == modes.count else {
+                print("APP_TARGET_BLEND_FRONTIER\nmissing_mode_trace")
+                return
+            }
+
+            let stepValues = [0.0, 0.50, 1.0]
+            let scaleOptions = [1.5, 2.5, 3.0]
+            let totalCapOptions = [1.0, 1.25]
+            var candidates: [TargetBlendCandidate] = []
+
+            for riskBudgetShare in stepValues {
+                for sharpeShare in stepValues {
+                    for profitLockShare in stepValues {
+                        let dualShare = 1 - riskBudgetShare - sharpeShare - profitLockShare
+                        guard dualShare >= -0.000001,
+                              dualShare <= 1.000001,
+                              riskBudgetShare + sharpeShare + profitLockShare <= 1.000001 else { continue }
+                        let shares: [AdvancedBacktestStrategyMode: Double] = [
+                            .coreGoldSatelliteRiskBudgetStateGateMomentum: riskBudgetShare,
+                            .coreGoldSatelliteSharpeStateGateMomentum: sharpeShare,
+                            .coreGoldSatelliteProfitLockMomentum: profitLockShare,
+                            .goldNasdaqDualTrendBarbell: max(dualShare, 0)
+                        ]
+                        guard shares.values.filter({ $0 > 0 }).count >= 2 else { continue }
+
+                        for scale in scaleOptions {
+                            for totalCap in totalCapOptions where totalCap <= scale + 0.000001 {
+                                let title = String(
+                                    format: "目标融合-R%.0f-S%.0f-P%.0f-D%.0f-X%.1f-C%.2f",
+                                    riskBudgetShare * 100,
+                                    sharpeShare * 100,
+                                    profitLockShare * 100,
+                                    max(dualShare, 0) * 100,
+                                    scale,
+                                    totalCap
+                                )
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "target_blend_frontier",
+                                    title: title,
+                                    warmupSessions: 1,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: 0.08,
+                                    maxGrossExposure: totalCap,
+                                    allowsFinancedExposure: totalCap > 1,
+                                    financingAnnualRate: 0.05,
+                                    buyReason: "多逻辑目标融合调仓"
+                                )
+                                var pendingWeights: [String: Double] = [:]
+                                var previousWeights: [String: Double] = [:]
+                                var latestByMode: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    rebalanceDecision: { index, _, data in
+                                        guard data.dates.indices.contains(index) else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        let dateKey = data.dates[index].recordDateString
+                                        for mode in modes {
+                                            if let weights = targetMaps[mode]?[dateKey] {
+                                                latestByMode[mode] = weights
+                                            }
+                                        }
+                                        guard latestByMode.count == modes.count else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        var blended: [String: Double] = [:]
+                                        for (mode, share) in shares where share > 0 {
+                                            for (symbol, weight) in latestByMode[mode] ?? [:] {
+                                                blended[symbol, default: 0] += share * weight * scale
+                                            }
+                                        }
+                                        let gross = blended.values.reduce(0, +)
+                                        if gross > totalCap, gross > 0 {
+                                            blended = blended.mapValues { $0 * totalCap / gross }
+                                        }
+                                        let symbols = Set(previousWeights.keys).union(blended.keys)
+                                        let difference = symbols.reduce(0.0) {
+                                            $0 + abs((previousWeights[$1] ?? 0) - (blended[$1] ?? 0))
+                                        }
+                                        pendingWeights = blended
+                                        let shouldRebalance = previousWeights.isEmpty
+                                            ? !blended.isEmpty
+                                            : difference > 0.0000001
+                                        previousWeights = blended
+                                        return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                    },
+                                    targetWeights: { _, _ in pendingWeights }
+                                ) else { continue }
+
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "target_blend_frontier",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                let ddWindow = targetBlendDrawdownWindow(report.points)
+                                candidates.append(TargetBlendCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility ?? -1,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(
+                                        title: title,
+                                        id: "target_blend_frontier",
+                                        points: report.points,
+                                        fullRow: fullRow
+                                    ),
+                                    trades: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio,
+                                    drawdownPeak: ddWindow.0,
+                                    drawdownTrough: ddWindow.1
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 5 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 5 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_TARGET_BLEND_NEAR_FRONTIER" : "APP_TARGET_BLEND_VALID")
+            print("APP_TARGET_BLEND_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough)
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_HIDDEN_MODE_SCAN"] == "1" {
+            let modes: [AdvancedBacktestStrategyMode] = [
+                .coreGoldSatelliteContagionRepairMomentum,
+                .coreGoldSatelliteCurrencyCashMomentum,
+                .coreGoldSatelliteGoldPanicLockMomentum,
+                .coreGoldSatelliteRiskEfficiencyMomentum,
+                .coreGoldSatelliteAggressiveMomentum,
+                .coreGoldSatelliteMonthlyHeatCappedMomentum,
+                .coreGoldSatelliteConfirmedExcessMomentum,
+                .coreGoldSatelliteAssetRiskGateMomentum,
+                .coreGoldSatelliteSharpeStateGateMomentum,
+                .coreGoldSatelliteOneWayVolManagedMomentum
+            ]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            var rows: [SliceMetricRow] = []
+            print("APP_HIDDEN_MODE_SCAN_DIAGNOSTICS")
+            print("title,id,trades,average_cash_ratio")
+            for mode in modes {
+                let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else {
+                    print(mode.title + "," + mode.rawValue + ",NO_REPORT,n/a")
+                    continue
+                }
+                let fullRow = MetricRow(
+                    title: mode.title,
+                    id: mode.rawValue,
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+                rows.append(contentsOf: metricRowsForSlices(
+                    title: mode.title,
+                    id: mode.rawValue,
+                    points: report.points,
+                    fullRow: fullRow
+                ))
+                print(mode.title + "," + mode.rawValue + "," + String(report.trades.count) + "," + String(format: "%.6f", report.averageCashRatio))
+            }
+            printSliceRows(rows, header: "APP_HIDDEN_MODE_SCAN")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_ACTUAL_DRAWDOWN_GOVERNOR_GRID"] == "1" {
+            struct ActualGovernorCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+                let stateChanges: Int
+            }
+
+            func actualGovernorDrawdownWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            let mode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else {
+                print("APP_ACTUAL_DRAWDOWN_GOVERNOR_GRID\nbase_missing")
+                return
+            }
+            let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            let shadowPoints = baseRun.report.points
+            var shadowFastByDate: [String: Bool] = [:]
+            var shadowStrongByDate: [String: Bool] = [:]
+            for index in shadowPoints.indices {
+                guard index >= 60 else {
+                    shadowFastByDate[shadowPoints[index].date.recordDateString] = false
+                    shadowStrongByDate[shadowPoints[index].date.recordDateString] = false
+                    continue
+                }
+                let value = shadowPoints[index].portfolioValue
+                let ma20 = shadowPoints[(index - 19)...index].map(\.portfolioValue).reduce(0, +) / 20
+                let ma60 = shadowPoints[(index - 59)...index].map(\.portfolioValue).reduce(0, +) / 60
+                let mom20 = shadowPoints[index - 20].portfolioValue > 0
+                    ? value / shadowPoints[index - 20].portfolioValue - 1
+                    : 0
+                let mom60 = shadowPoints[index - 60].portfolioValue > 0
+                    ? value / shadowPoints[index - 60].portfolioValue - 1
+                    : 0
+                shadowFastByDate[shadowPoints[index].date.recordDateString] = value > ma20 && mom20 > 0
+                shadowStrongByDate[shadowPoints[index].date.recordDateString] = value > ma60 && mom20 > 0 && mom60 > 0
+            }
+
+            let traceOnly = ProcessInfo.processInfo.environment["ATM_ACTUAL_GOVERNOR_TRACE"] == "1"
+            let normalScaleOptions = traceOnly ? [3.50] : [3.00, 3.50, 4.00]
+            let warningDDOptions = traceOnly ? [0.025] : [0.020, 0.025, 0.030]
+            let crisisDDOptions = traceOnly ? [0.050] : [0.045, 0.050, 0.060]
+            let warningScaleOptions = traceOnly ? [1.75] : [1.50, 1.75, 2.00]
+            let crisisScaleOptions = traceOnly ? [0.75] : [0.50, 0.75, 1.00]
+            let hardScaleOptions = traceOnly ? [0.25] : [0.0, 0.25, 0.50]
+            var candidates: [ActualGovernorCandidate] = []
+
+            for normalScale in normalScaleOptions {
+                for warningDD in warningDDOptions {
+                    for crisisDD in crisisDDOptions where crisisDD > warningDD {
+                        for warningScale in warningScaleOptions where warningScale < normalScale {
+                            for crisisScale in crisisScaleOptions where crisisScale <= warningScale {
+                                for hardScale in hardScaleOptions where hardScale <= crisisScale {
+                                    let hardDD = 0.075
+                                    let title = String(
+                                        format: "实际回撤杠杆闸门-N%.0f-W%.1f/%.0f-C%.1f/%.0f-H%.0f",
+                                        normalScale * 100,
+                                        warningDD * 100,
+                                        warningScale * 100,
+                                        crisisDD * 100,
+                                        crisisScale * 100,
+                                        hardScale * 100
+                                    )
+                                    let config = ResearchTargetStrategyConfig(
+                                        symbol: "actual_drawdown_governor",
+                                        title: title,
+                                        warmupSessions: 1,
+                                        rebalanceSessions: 1,
+                                        rebalanceBand: 0.08,
+                                        maxGrossExposure: normalScale,
+                                        allowsFinancedExposure: true,
+                                        financingAnnualRate: 0.05,
+                                        buyReason: "实际回撤杠杆闸门调仓"
+                                    )
+
+                                    var state = 0
+                                    var recoveryStreak = 0
+                                    var stateEnteredIndex = -10_000
+                                    var stateChanges = 0
+                                    var controlPeak = 100_000.0
+                                    var stateEntryDrawdown = 0.0
+                                    var latestBaseWeights: [String: Double] = [:]
+                                    var pendingWeights: [String: Double] = [:]
+                                    var previousWeights: [String: Double] = [:]
+
+                                    guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                        assetInputs: inputs,
+                                        initialCash: 100_000,
+                                        settings: settings,
+                                        config: config,
+                                        contextualRebalanceDecision: { context, data in
+                                            guard context.signalIndex >= 1,
+                                                  data.dates.indices.contains(context.index),
+                                                  data.dates.indices.contains(context.signalIndex) else {
+                                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                            }
+                                            let executionDateKey = data.dates[context.index].recordDateString
+                                            let signalDateKey = data.dates[context.signalIndex].recordDateString
+                                            if let raw = baseTargetsByDate[executionDateKey], !raw.isEmpty {
+                                                latestBaseWeights = raw
+                                            }
+                                            guard !latestBaseWeights.isEmpty else {
+                                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                            }
+
+                                            if state == 0 {
+                                                controlPeak = max(controlPeak, context.preRebalanceValue)
+                                            }
+                                            let accountDrawdown = controlPeak > 0
+                                                ? max(1 - context.preRebalanceValue / controlPeak, 0)
+                                                : 0
+                                            let shadowFast = shadowFastByDate[signalDateKey] ?? false
+                                            let shadowStrong = shadowStrongByDate[signalDateKey] ?? false
+                                            let previousState = state
+
+                                            if state == 0 {
+                                                if accountDrawdown >= hardDD {
+                                                    state = 3
+                                                    recoveryStreak = 0
+                                                } else if accountDrawdown >= crisisDD {
+                                                    state = 2
+                                                    recoveryStreak = 0
+                                                } else if accountDrawdown >= warningDD {
+                                                    state = 1
+                                                    recoveryStreak = 0
+                                                }
+                                            } else if state == 1 {
+                                                if accountDrawdown >= stateEntryDrawdown + 0.015 {
+                                                    state = accountDrawdown >= hardDD ? 3 : 2
+                                                    recoveryStreak = 0
+                                                } else {
+                                                    recoveryStreak = shadowStrong ? recoveryStreak + 1 : 0
+                                                    if context.index - stateEnteredIndex >= 5 && recoveryStreak >= 5 {
+                                                        state = 0
+                                                        recoveryStreak = 0
+                                                    }
+                                                }
+                                            } else if state == 2 {
+                                                if accountDrawdown >= stateEntryDrawdown + 0.0125 {
+                                                    state = 3
+                                                    recoveryStreak = 0
+                                                } else {
+                                                    recoveryStreak = shadowFast ? recoveryStreak + 1 : 0
+                                                    if context.index - stateEnteredIndex >= 5 && recoveryStreak >= 3 {
+                                                        state = 1
+                                                        recoveryStreak = 0
+                                                    }
+                                                }
+                                            } else {
+                                                recoveryStreak = shadowFast ? recoveryStreak + 1 : 0
+                                                if context.index - stateEnteredIndex >= 5 && recoveryStreak >= 5 {
+                                                    state = 2
+                                                    recoveryStreak = 0
+                                                }
+                                            }
+
+                                            if state != previousState {
+                                                stateChanges += 1
+                                                stateEnteredIndex = context.index
+                                                stateEntryDrawdown = accountDrawdown
+                                                if state == 0 {
+                                                    controlPeak = context.preRebalanceValue
+                                                    stateEntryDrawdown = 0
+                                                }
+                                            }
+                                            let scale = state == 0
+                                                ? normalScale
+                                                : (state == 1 ? warningScale : (state == 2 ? crisisScale : hardScale))
+                                            pendingWeights = latestBaseWeights.mapValues { $0 * scale }
+                                            let symbols = Set(previousWeights.keys).union(pendingWeights.keys)
+                                            let difference = symbols.reduce(0.0) {
+                                                $0 + abs((previousWeights[$1] ?? 0) - (pendingWeights[$1] ?? 0))
+                                            }
+                                            let shouldRebalance = previousWeights.isEmpty
+                                                ? !pendingWeights.isEmpty
+                                                : state != previousState || difference > 0.0000001
+                                            previousWeights = pendingWeights
+                                            return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                        },
+                                        targetWeights: { _, _ in pendingWeights }
+                                    ) else { continue }
+
+                                    let fullRow = MetricRow(
+                                        title: title,
+                                        id: "actual_drawdown_governor",
+                                        annualized: report.annualizedReturn,
+                                        maxDrawdown: report.maxDrawdown,
+                                        volatility: report.annualizedVolatility,
+                                        sharpe: report.sharpeRatio,
+                                        start: report.points.first?.date.recordDateString ?? "n/a",
+                                        end: report.points.last?.date.recordDateString ?? "n/a",
+                                        pointCount: report.points.count
+                                    )
+                                    let ddWindow = actualGovernorDrawdownWindow(report.points)
+                                    candidates.append(ActualGovernorCandidate(
+                                        title: title,
+                                        annualized: report.annualizedReturn ?? -1,
+                                        maxDrawdown: report.maxDrawdown,
+                                        volatility: report.annualizedVolatility ?? -1,
+                                        sharpe: report.sharpeRatio ?? -1,
+                                        sliceRows: metricRowsForSlices(
+                                            title: title,
+                                            id: "actual_drawdown_governor",
+                                            points: report.points,
+                                            fullRow: fullRow
+                                        ),
+                                        trades: report.trades.count,
+                                        averageCashRatio: report.averageCashRatio,
+                                        drawdownPeak: ddWindow.0,
+                                        drawdownTrough: ddWindow.1,
+                                        stateChanges: stateChanges
+                                    ))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 5 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 5 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_ACTUAL_DRAWDOWN_GOVERNOR_NEAR_FRONTIER" : "APP_ACTUAL_DRAWDOWN_GOVERNOR_VALID")
+            print("APP_ACTUAL_DRAWDOWN_GOVERNOR_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough,state_changes")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough + "," + String(candidate.stateChanges))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_GROSS_CAP_FRONTIER"] == "1" {
+            struct GrossCapCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+            }
+
+            func grossCapDrawdownWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            let mode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else {
+                print("APP_GROSS_CAP_FRONTIER\nbase_missing")
+                return
+            }
+            let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            let chinaSymbols: Set<String> = ["csi300", "shanghai_composite", "shenzhen_component", "chinext"]
+            let usSymbols: Set<String> = ["nasdaq", "sp500", "dowjones"]
+            let multipliers = [2.50, 3.00, 3.50, 4.00]
+            let totalCaps = [0.80, 1.00, 1.20, 1.40]
+            let regionalCaps = [0.60, 0.80, 1.00]
+            var candidates: [GrossCapCandidate] = []
+
+            for multiplier in multipliers {
+                for totalCap in totalCaps {
+                    for regionalCap in regionalCaps where regionalCap <= totalCap {
+                        let title = String(
+                            format: "高夏普风险上限-M%.0f-T%.0f-R%.0f",
+                            multiplier * 100,
+                            totalCap * 100,
+                            regionalCap * 100
+                        )
+                        let config = ResearchTargetStrategyConfig(
+                            symbol: "gross_cap_frontier",
+                            title: title,
+                            warmupSessions: 1,
+                            rebalanceSessions: 1,
+                            rebalanceBand: 0.08,
+                            maxGrossExposure: totalCap,
+                            allowsFinancedExposure: totalCap > 1,
+                            financingAnnualRate: 0.05,
+                            buyReason: "高夏普风险上限调仓"
+                        )
+                        var pendingWeights: [String: Double] = [:]
+                        var previousWeights: [String: Double] = [:]
+
+                        guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                            assetInputs: inputs,
+                            initialCash: 100_000,
+                            settings: settings,
+                            config: config,
+                            rebalanceDecision: { index, _, data in
+                                guard data.dates.indices.contains(index) else {
+                                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                }
+                                let rawBase = baseTargetsByDate[data.dates[index].recordDateString]
+                                    ?? previousWeights.mapValues { $0 / max(multiplier, 0.0001) }
+                                var next = rawBase.mapValues { $0 * multiplier }
+
+                                func capGroup(_ symbols: Set<String>) {
+                                    let groupTotal = next.reduce(0.0) {
+                                        $0 + (symbols.contains($1.key) ? $1.value : 0)
+                                    }
+                                    guard groupTotal > regionalCap, groupTotal > 0 else { return }
+                                    let factor = regionalCap / groupTotal
+                                    for symbol in symbols where next[symbol] != nil {
+                                        next[symbol] = (next[symbol] ?? 0) * factor
+                                    }
+                                }
+                                capGroup(chinaSymbols)
+                                capGroup(usSymbols)
+                                if let goldWeight = next["gold_cny"], goldWeight > regionalCap {
+                                    next["gold_cny"] = regionalCap
+                                }
+                                let gross = next.values.reduce(0, +)
+                                if gross > totalCap, gross > 0 {
+                                    next = next.mapValues { $0 * totalCap / gross }
+                                }
+
+                                let symbols = Set(previousWeights.keys).union(next.keys)
+                                let difference = symbols.reduce(0.0) {
+                                    $0 + abs((previousWeights[$1] ?? 0) - (next[$1] ?? 0))
+                                }
+                                pendingWeights = next
+                                let shouldRebalance = previousWeights.isEmpty ? !next.isEmpty : difference > 0.0000001
+                                previousWeights = next
+                                return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                            },
+                            targetWeights: { _, _ in pendingWeights }
+                        ) else { continue }
+
+                        let fullRow = MetricRow(
+                            title: title,
+                            id: "gross_cap_frontier",
+                            annualized: report.annualizedReturn,
+                            maxDrawdown: report.maxDrawdown,
+                            volatility: report.annualizedVolatility,
+                            sharpe: report.sharpeRatio,
+                            start: report.points.first?.date.recordDateString ?? "n/a",
+                            end: report.points.last?.date.recordDateString ?? "n/a",
+                            pointCount: report.points.count
+                        )
+                        let ddWindow = grossCapDrawdownWindow(report.points)
+                        candidates.append(GrossCapCandidate(
+                            title: title,
+                            annualized: report.annualizedReturn ?? -1,
+                            maxDrawdown: report.maxDrawdown,
+                            volatility: report.annualizedVolatility ?? -1,
+                            sharpe: report.sharpeRatio ?? -1,
+                            sliceRows: metricRowsForSlices(
+                                title: title,
+                                id: "gross_cap_frontier",
+                                points: report.points,
+                                fullRow: fullRow
+                            ),
+                            trades: report.trades.count,
+                            averageCashRatio: report.averageCashRatio,
+                            drawdownPeak: ddWindow.0,
+                            drawdownTrough: ddWindow.1
+                        ))
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 4 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 4 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_GROSS_CAP_NEAR_FRONTIER" : "APP_GROSS_CAP_VALID")
+            print("APP_GROSS_CAP_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough)
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_SHADOW_LEVERAGE_GOVERNOR_GRID"] == "1" {
+            struct ShadowGovernorCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+                let stateChanges: Int
+            }
+
+            func governorDrawdownWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            let mode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else {
+                print("APP_SHADOW_LEVERAGE_GOVERNOR_GRID\nbase_missing")
+                return
+            }
+            let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            var shadowPeak = 0.0
+            var shadowDrawdownByDate: [String: Double] = [:]
+            for point in baseRun.report.points {
+                shadowPeak = max(shadowPeak, point.portfolioValue)
+                shadowDrawdownByDate[point.date.recordDateString] = shadowPeak > 0
+                    ? max(1 - point.portfolioValue / shadowPeak, 0)
+                    : 0
+            }
+
+            let traceOnly = ProcessInfo.processInfo.environment["ATM_SHADOW_GOVERNOR_TRACE"] == "1"
+            let normalScaleOptions = traceOnly ? [2.75] : [2.50, 2.75, 3.00]
+            let warningTriggerOptions = traceOnly ? [0.015] : [0.0125, 0.015, 0.020]
+            let crisisTriggerOptions = traceOnly ? [0.030] : [0.025, 0.030, 0.040]
+            let warningScaleOptions = traceOnly ? [1.50] : [1.25, 1.50, 1.75]
+            let crisisScaleOptions = traceOnly ? [0.75] : [0.50, 0.75, 1.00]
+            var candidates: [ShadowGovernorCandidate] = []
+
+            for normalScale in normalScaleOptions {
+                for warningTrigger in warningTriggerOptions {
+                    for crisisTrigger in crisisTriggerOptions where crisisTrigger > warningTrigger {
+                        for warningScale in warningScaleOptions where warningScale < normalScale {
+                            for crisisScale in crisisScaleOptions where crisisScale <= warningScale {
+                                let title = String(
+                                    format: "影子净值杠杆闸门-N%.0f-W%.2f/%.0f-C%.2f/%.0f",
+                                    normalScale * 100,
+                                    warningTrigger * 100,
+                                    warningScale * 100,
+                                    crisisTrigger * 100,
+                                    crisisScale * 100
+                                )
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "shadow_leverage_governor",
+                                    title: title,
+                                    warmupSessions: 1,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: 0.08,
+                                    maxGrossExposure: normalScale,
+                                    allowsFinancedExposure: true,
+                                    financingAnnualRate: 0.05,
+                                    buyReason: "影子净值杠杆闸门调仓"
+                                )
+
+                                var state = 0
+                                var currentScale = normalScale
+                                var stateChanges = 0
+                                var latestBaseWeights: [String: Double] = [:]
+                                var pendingWeights: [String: Double] = [:]
+                                var previousWeights: [String: Double] = [:]
+
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    rebalanceDecision: { index, signalIndex, data in
+                                        guard signalIndex >= 1,
+                                              data.dates.indices.contains(index),
+                                              data.dates.indices.contains(signalIndex) else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        let executionDateKey = data.dates[index].recordDateString
+                                        let signalDateKey = data.dates[signalIndex].recordDateString
+                                        if let raw = baseTargetsByDate[executionDateKey], !raw.isEmpty {
+                                            latestBaseWeights = raw
+                                        }
+                                        guard !latestBaseWeights.isEmpty else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+
+                                        let shadowDrawdown = shadowDrawdownByDate[signalDateKey] ?? 0
+                                        let previousState = state
+                                        if state == 0 {
+                                            if shadowDrawdown >= crisisTrigger { state = 2 }
+                                            else if shadowDrawdown >= warningTrigger { state = 1 }
+                                        } else if state == 1 {
+                                            if shadowDrawdown >= crisisTrigger { state = 2 }
+                                            else if shadowDrawdown <= max(warningTrigger - 0.0075, 0.0025) { state = 0 }
+                                        } else {
+                                            if shadowDrawdown <= max(warningTrigger - 0.0025, 0.005) { state = 1 }
+                                        }
+                                        if previousState != state { stateChanges += 1 }
+                                        currentScale = state == 0 ? normalScale : (state == 1 ? warningScale : crisisScale)
+                                        pendingWeights = latestBaseWeights.mapValues { $0 * currentScale }
+                                        let symbols = Set(previousWeights.keys).union(pendingWeights.keys)
+                                        let difference = symbols.reduce(0.0) {
+                                            $0 + abs((previousWeights[$1] ?? 0) - (pendingWeights[$1] ?? 0))
+                                        }
+                                        let shouldRebalance = previousWeights.isEmpty
+                                            ? !pendingWeights.isEmpty
+                                            : previousState != state || difference > 0.0000001
+                                        previousWeights = pendingWeights
+                                        return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                    },
+                                    targetWeights: { _, _ in pendingWeights }
+                                ) else { continue }
+
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "shadow_leverage_governor",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                let ddWindow = governorDrawdownWindow(report.points)
+                                candidates.append(ShadowGovernorCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility ?? -1,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(
+                                        title: title,
+                                        id: "shadow_leverage_governor",
+                                        points: report.points,
+                                        fullRow: fullRow
+                                    ),
+                                    trades: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio,
+                                    drawdownPeak: ddWindow.0,
+                                    drawdownTrough: ddWindow.1,
+                                    stateChanges: stateChanges
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 4 + max(0.12 - lhs.annualized, 0) * 3
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 4 + max(0.12 - rhs.annualized, 0) * 3
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_SHADOW_LEVERAGE_GOVERNOR_NEAR_FRONTIER" : "APP_SHADOW_LEVERAGE_GOVERNOR_VALID")
+            print("APP_SHADOW_LEVERAGE_GOVERNOR_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough,state_changes")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough + "," + String(candidate.stateChanges))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_SLEEVE_INVALIDATION_GRID"] == "1" {
+            struct SleeveCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+                let transitionCount: Int
+                let transitions: [String]
+                let traceLines: [String]
+            }
+
+            func loadSleeveMacroSeries() -> [String: [String: Double]]? {
+                let path = ProcessInfo.processInfo.environment["ATM_MACRO_RISK_FIXTURE"]
+                    ?? "tools/fixtures/macro-risk/macro_risk_public.json"
+                guard let data = FileManager.default.contents(atPath: path),
+                      let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let rawSeries = root["series"] as? [String: Any] else { return nil }
+                var output: [String: [String: Double]] = [:]
+                for (name, value) in rawSeries {
+                    guard let rows = value as? [[String: Any]] else { continue }
+                    var values: [String: Double] = [:]
+                    for row in rows {
+                        guard let date = row["date"] as? String,
+                              let number = row["value"] as? NSNumber else { continue }
+                        values[date] = number.doubleValue
+                    }
+                    output[name] = values
+                }
+                return output
+            }
+
+            func sleeveDrawdownWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            guard let macro = loadSleeveMacroSeries(),
+                  let vixMap = macro["vix"],
+                  let vix3mMap = macro["vix3m"] else {
+                print("APP_SLEEVE_INVALIDATION_GRID\nmacro_fixture_missing")
+                return
+            }
+
+            let mode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else {
+                print("APP_SLEEVE_INVALIDATION_GRID\nbase_missing")
+                return
+            }
+            let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+
+            let chinaSymbols: Set<String> = ["csi300", "shanghai_composite", "shenzhen_component", "chinext"]
+            let usSymbols: Set<String> = ["nasdaq", "sp500", "dowjones"]
+            let traceOnly = ProcessInfo.processInfo.environment["ATM_SLEEVE_TRACE"] == "1"
+            let traceScale = Double(ProcessInfo.processInfo.environment["ATM_SLEEVE_TRACE_SCALE"] ?? "2.0") ?? 2.0
+            let usCooldown = Int(ProcessInfo.processInfo.environment["ATM_SLEEVE_US_COOLDOWN"] ?? "5") ?? 5
+            let usRecoveryMode = Int(ProcessInfo.processInfo.environment["ATM_SLEEVE_US_RECOVERY_MODE"] ?? "0") ?? 0
+            let goldGuardEnabled = ProcessInfo.processInfo.environment["ATM_SLEEVE_GOLD_GUARD"] != "0"
+            let earlyChinaRolloverEnabled = ProcessInfo.processInfo.environment["ATM_SLEEVE_EARLY_CHINA"] == "1"
+            let usNoIncreaseEnabled = ProcessInfo.processInfo.environment["ATM_SLEEVE_US_NO_INCREASE"] == "1"
+            let usYellowCap = Double(ProcessInfo.processInfo.environment["ATM_SLEEVE_US_YELLOW_CAP"] ?? "0") ?? 0
+            let scales = traceOnly ? [traceScale] : [2.0, 2.25, 2.50]
+            let chinaLongMomentumOptions = traceOnly ? [0.50] : [0.35, 0.50]
+            let chinaDrawdownOptions = traceOnly ? [0.08] : [0.08, 0.10]
+            let chinaCooldownOptions = traceOnly ? [15] : [15, 30]
+            let chinaExitConfirmOptions = traceOnly ? [2] : [1, 2]
+            var candidates: [SleeveCandidate] = []
+
+            for scale in scales {
+                for chinaLongMomentum in chinaLongMomentumOptions {
+                    for chinaDrawdownThreshold in chinaDrawdownOptions {
+                        for chinaCooldown in chinaCooldownOptions {
+                            for chinaExitConfirm in chinaExitConfirmOptions {
+                                let title = String(
+                                    format: "分袖套断路器-L%.0f-CM%.0f-CD%.0f-CL%d-CX%d-UL%d-UR%d-G%d-EC%d-NI%d-Y%.0f",
+                                    scale * 100,
+                                    chinaLongMomentum * 100,
+                                    chinaDrawdownThreshold * 100,
+                                    chinaCooldown,
+                                    chinaExitConfirm,
+                                    usCooldown,
+                                    usRecoveryMode,
+                                    goldGuardEnabled ? 1 : 0,
+                                    earlyChinaRolloverEnabled ? 1 : 0,
+                                    usNoIncreaseEnabled ? 1 : 0,
+                                    usYellowCap * 100
+                                )
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "sleeve_invalidation",
+                                    title: title,
+                                    warmupSessions: 1,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: 0.08,
+                                    maxGrossExposure: scale,
+                                    allowsFinancedExposure: true,
+                                    financingAnnualRate: 0.05,
+                                    buyReason: "分袖套风险断路器调仓"
+                                )
+
+                                var latestBaseWeights: [String: Double] = [:]
+                                var pendingWeights: [String: Double] = [:]
+                                var previousPendingWeights: [String: Double] = [:]
+                                var chinaLocked = false
+                                var usLocked = false
+                                var goldLocked = false
+                                var chinaExitStreak = 0
+                                var chinaRecoveryStreak = 0
+                                var usExitStreak = 0
+                                var usRecoveryStreak = 0
+                                var goldExitStreak = 0
+                                var goldRecoveryStreak = 0
+                                var chinaLockIndex = -10_000
+                                var usLockIndex = -10_000
+                                var goldLockIndex = -10_000
+                                var transitionCount = 0
+                                var transitionDates: [String] = []
+                                var alignedVIX: [Double?] = []
+                                var alignedVIX3M: [Double?] = []
+
+                                func align(_ map: [String: Double], dates: [Date]) -> [Double?] {
+                                    var output: [Double?] = []
+                                    output.reserveCapacity(dates.count)
+                                    var lastValue: Double?
+                                    for date in dates {
+                                        if let value = map[date.recordDateString] { lastValue = value }
+                                        output.append(lastValue)
+                                    }
+                                    return output
+                                }
+
+                                func rangePosition(_ prices: [Double], at index: Int, lookback: Int) -> Double {
+                                    let start = max(0, index - lookback + 1)
+                                    let window = prices[start...index]
+                                    guard let low = window.min(), let high = window.max(), high > low else { return 0.5 }
+                                    return (prices[index] - low) / (high - low)
+                                }
+
+                                func drawdownFromHigh(_ prices: [Double], at index: Int, lookback: Int) -> Double {
+                                    let start = max(0, index - lookback + 1)
+                                    let high = prices[start...index].max() ?? prices[index]
+                                    return high > 0 ? prices[index] / high - 1 : 0
+                                }
+
+                                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    rebalanceDecision: { index, signalIndex, data in
+                                        guard signalIndex >= 240,
+                                              data.dates.indices.contains(index),
+                                              data.dates.indices.contains(signalIndex),
+                                              let csi300 = data.pricesBySymbol["csi300"],
+                                              let shanghai = data.pricesBySymbol["shanghai_composite"],
+                                              let nasdaq = data.pricesBySymbol["nasdaq"],
+                                              let sp500 = data.pricesBySymbol["sp500"],
+                                              let gold = data.pricesBySymbol["gold_cny"],
+                                              csi300.indices.contains(signalIndex),
+                                              shanghai.indices.contains(signalIndex),
+                                              nasdaq.indices.contains(signalIndex),
+                                              sp500.indices.contains(signalIndex),
+                                              gold.indices.contains(signalIndex),
+                                              let csiMA20 = movingAverage(csi300, at: signalIndex, period: 20),
+                                              let shMA20 = movingAverage(shanghai, at: signalIndex, period: 20),
+                                              let nasdaqMA20 = movingAverage(nasdaq, at: signalIndex, period: 20),
+                                              let nasdaqMA60 = movingAverage(nasdaq, at: signalIndex, period: 60),
+                                              let spMA20 = movingAverage(sp500, at: signalIndex, period: 20),
+                                              let spMA60 = movingAverage(sp500, at: signalIndex, period: 60),
+                                              let goldMA20 = movingAverage(gold, at: signalIndex, period: 20),
+                                              let goldMA60 = movingAverage(gold, at: signalIndex, period: 60),
+                                              let csiM5 = priceMomentum(csi300, at: signalIndex, lookback: 5),
+                                              let csiM10 = priceMomentum(csi300, at: signalIndex, lookback: 10),
+                                              let csiM20 = priceMomentum(csi300, at: signalIndex, lookback: 20),
+                                              let csiM120 = priceMomentum(csi300, at: signalIndex, lookback: 120),
+                                              let csiM240 = priceMomentum(csi300, at: signalIndex, lookback: 240),
+                                              let shM5 = priceMomentum(shanghai, at: signalIndex, lookback: 5),
+                                              let shM10 = priceMomentum(shanghai, at: signalIndex, lookback: 10),
+                                              let shM20 = priceMomentum(shanghai, at: signalIndex, lookback: 20),
+                                              let shM120 = priceMomentum(shanghai, at: signalIndex, lookback: 120),
+                                              let shM240 = priceMomentum(shanghai, at: signalIndex, lookback: 240),
+                                              let nasdaqM5 = priceMomentum(nasdaq, at: signalIndex, lookback: 5),
+                                              let nasdaqM20 = priceMomentum(nasdaq, at: signalIndex, lookback: 20),
+                                              let nasdaqM60 = priceMomentum(nasdaq, at: signalIndex, lookback: 60),
+                                              let spM20 = priceMomentum(sp500, at: signalIndex, lookback: 20),
+                                              let spM60 = priceMomentum(sp500, at: signalIndex, lookback: 60),
+                                              let goldM10 = priceMomentum(gold, at: signalIndex, lookback: 10),
+                                              let goldM20 = priceMomentum(gold, at: signalIndex, lookback: 20),
+                                              let goldM60 = priceMomentum(gold, at: signalIndex, lookback: 60),
+                                              let goldM90 = priceMomentum(gold, at: signalIndex, lookback: 90) else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+
+                                        if alignedVIX.isEmpty {
+                                            alignedVIX = align(vixMap, dates: data.dates)
+                                            alignedVIX3M = align(vix3mMap, dates: data.dates)
+                                        }
+
+                                        let executionDateKey = data.dates[index].recordDateString
+                                        let rawBase = baseTargetsByDate[executionDateKey]
+                                            ?? latestBaseWeights.mapValues { $0 / max(scale, 0.0001) }
+                                        latestBaseWeights = rawBase.mapValues { $0 * scale }
+
+                                        let chinaTargetWeight = latestBaseWeights.reduce(0.0) {
+                                            $0 + (chinaSymbols.contains($1.key) ? $1.value : 0)
+                                        }
+                                        let usTargetWeight = latestBaseWeights.reduce(0.0) {
+                                            $0 + (usSymbols.contains($1.key) ? $1.value : 0)
+                                        }
+                                        let goldTargetWeight = latestBaseWeights["gold_cny"] ?? 0
+
+                                        let chinaLongStrong = max(csiM120, shM120) >= chinaLongMomentum
+                                            || max(csiM240, shM240) >= chinaLongMomentum + 0.10
+                                        let chinaHighZone = max(
+                                            rangePosition(csi300, at: signalIndex, lookback: 240),
+                                            rangePosition(shanghai, at: signalIndex, lookback: 240)
+                                        ) >= 0.70
+                                        let chinaFastBreak = min(csiM5, shM5) <= -0.055
+                                            || min(csiM10, shM10) <= -0.075
+                                        let chinaDrawdown = min(
+                                            drawdownFromHigh(csi300, at: signalIndex, lookback: 20),
+                                            drawdownFromHigh(shanghai, at: signalIndex, lookback: 20)
+                                        ) <= -chinaDrawdownThreshold
+                                        let chinaBreadthBreak = csi300[signalIndex] < csiMA20
+                                            && shanghai[signalIndex] < shMA20
+                                            && csiM20 < 0
+                                            && shM20 < 0
+                                        let chinaExtremeOverheat = min(csiM120, shM120) >= 0.50
+                                            && min(
+                                                rangePosition(csi300, at: signalIndex, lookback: 240),
+                                                rangePosition(shanghai, at: signalIndex, lookback: 240)
+                                            ) >= 0.90
+                                            && min(csiM20, shM20) >= 0.08
+                                        let chinaEarlyRollover = earlyChinaRolloverEnabled
+                                            && chinaExtremeOverheat
+                                            && csiM5 < 0
+                                            && shM5 < 0
+                                        let chinaConfirmedBreak = (chinaFastBreak || chinaDrawdown)
+                                            && chinaBreadthBreak
+                                        let chinaExitSignal = chinaTargetWeight > 0.01
+                                            && chinaLongStrong
+                                            && chinaHighZone
+                                            && (chinaEarlyRollover || chinaConfirmedBreak)
+                                        chinaExitStreak = chinaExitSignal ? chinaExitStreak + 1 : 0
+                                        let chinaRecovered = csi300[signalIndex] > csiMA20
+                                            && shanghai[signalIndex] > shMA20
+                                            && csiM10 > 0
+                                            && shM10 > 0
+                                            && csiM20 > -0.01
+                                            && shM20 > -0.01
+                                        chinaRecoveryStreak = chinaRecovered ? chinaRecoveryStreak + 1 : 0
+
+                                        let macroIndex = max(signalIndex - 1, 0)
+                                        let vix = alignedVIX[macroIndex]
+                                        let vix3m = alignedVIX3M[macroIndex]
+                                        let termRatio = (vix != nil && vix3m != nil && vix3m! > 0) ? vix! / vix3m! : nil
+                                        let usPriceBreak = nasdaq[signalIndex] < nasdaqMA20
+                                            && sp500[signalIndex] < spMA20
+                                            && nasdaqM20 < -0.02
+                                            && spM20 < -0.015
+                                        let usCrisis = usTargetWeight > 0.01 && (
+                                            nasdaqM5 <= -0.075
+                                            || nasdaqM20 <= -0.13
+                                            || ((vix ?? 0) >= 30 && (termRatio == nil || termRatio! >= 1.0) && usPriceBreak)
+                                        )
+                                        usExitStreak = usCrisis ? usExitStreak + 1 : 0
+                                        let usFastRecovered = nasdaq[signalIndex] > nasdaqMA20
+                                            && sp500[signalIndex] > spMA20
+                                            && nasdaqM5 > 0
+                                            && nasdaqM20 > -0.01
+                                            && spM20 > -0.01
+                                            && (termRatio == nil || termRatio! < 0.98)
+                                        let usStrongRecovered = nasdaq[signalIndex] > nasdaqMA60
+                                            && sp500[signalIndex] > spMA60
+                                            && nasdaqM20 > 0
+                                            && spM20 > 0
+                                            && nasdaqM60 > -0.01
+                                            && spM60 > -0.01
+                                            && (termRatio == nil || termRatio! < 0.98)
+                                        let usRecovered = usRecoveryMode == 0 ? usFastRecovered : usStrongRecovered
+                                        usRecoveryStreak = usRecovered ? usRecoveryStreak + 1 : 0
+
+                                        let goldBlowoff = goldTargetWeight > 0.01
+                                            && goldM90 > 0.08
+                                            && gold[signalIndex] < goldMA20
+                                            && goldM10 < -0.025
+                                            && goldM20 < 0
+                                        let goldStructuralBreak = goldTargetWeight > 0.01
+                                            && gold[signalIndex] < goldMA60
+                                            && goldM20 < -0.04
+                                            && goldM60 < 0
+                                        let goldExitSignal = goldGuardEnabled && (goldBlowoff || goldStructuralBreak)
+                                        goldExitStreak = goldExitSignal ? goldExitStreak + 1 : 0
+                                        let goldRecovered = gold[signalIndex] > goldMA20
+                                            && goldM10 > 0
+                                            && goldM20 > 0
+                                        goldRecoveryStreak = goldRecovered ? goldRecoveryStreak + 1 : 0
+
+                                        let oldChina = chinaLocked
+                                        let oldUS = usLocked
+                                        let oldGold = goldLocked
+
+                                        if !chinaLocked, chinaExitStreak >= chinaExitConfirm {
+                                            chinaLocked = true
+                                            chinaLockIndex = signalIndex
+                                            chinaRecoveryStreak = 0
+                                        } else if chinaLocked,
+                                                  signalIndex - chinaLockIndex >= chinaCooldown,
+                                                  chinaRecoveryStreak >= 3 {
+                                            chinaLocked = false
+                                            chinaRecoveryStreak = 0
+                                        }
+
+                                        if !usLocked, usExitStreak >= 1 {
+                                            usLocked = true
+                                            usLockIndex = signalIndex
+                                            usRecoveryStreak = 0
+                                        } else if usLocked,
+                                                  signalIndex - usLockIndex >= usCooldown,
+                                                  usRecoveryStreak >= (usRecoveryMode == 0 ? 2 : 3) {
+                                            usLocked = false
+                                            usRecoveryStreak = 0
+                                        }
+
+                                        if goldGuardEnabled, !goldLocked, goldExitStreak >= 2 {
+                                            goldLocked = true
+                                            goldLockIndex = signalIndex
+                                            goldRecoveryStreak = 0
+                                        } else if goldGuardEnabled, goldLocked,
+                                                  signalIndex - goldLockIndex >= 10,
+                                                  goldRecoveryStreak >= 3 {
+                                            goldLocked = false
+                                            goldRecoveryStreak = 0
+                                        }
+
+                                        pendingWeights = latestBaseWeights.filter { symbol, _ in
+                                            if chinaLocked && chinaSymbols.contains(symbol) { return false }
+                                            if usLocked && usSymbols.contains(symbol) { return false }
+                                            if goldLocked && symbol == "gold_cny" { return false }
+                                            return true
+                                        }
+                                        let previousUSWeight = previousPendingWeights.reduce(0.0) {
+                                            $0 + (usSymbols.contains($1.key) ? $1.value : 0)
+                                        }
+                                        let proposedUSWeight = pendingWeights.reduce(0.0) {
+                                            $0 + (usSymbols.contains($1.key) ? $1.value : 0)
+                                        }
+                                        let usYellowWarning = usNoIncreaseEnabled
+                                            && !usLocked
+                                            && proposedUSWeight > 0
+                                            && nasdaq[signalIndex] < nasdaqMA20
+                                            && sp500[signalIndex] < spMA20
+                                            && nasdaqM5 < 0
+                                            && nasdaqM20 <= 0
+                                            && spM20 <= 0
+                                            && ((vix ?? 0) >= 22 || (termRatio ?? 0) >= 0.93)
+                                        if usYellowWarning {
+                                            let noIncreaseCap = previousUSWeight > 0 ? previousUSWeight : proposedUSWeight
+                                            let absoluteCap = usYellowCap > 0 ? usYellowCap : proposedUSWeight
+                                            let allowedUSWeight = min(proposedUSWeight, noIncreaseCap, absoluteCap)
+                                            if allowedUSWeight < proposedUSWeight {
+                                                let capScale = allowedUSWeight / proposedUSWeight
+                                                for symbol in usSymbols where pendingWeights[symbol] != nil {
+                                                    pendingWeights[symbol] = (pendingWeights[symbol] ?? 0) * capScale
+                                                }
+                                            }
+                                        }
+                                        let symbols = Set(previousPendingWeights.keys).union(pendingWeights.keys)
+                                        let targetDifference = symbols.reduce(0.0) {
+                                            $0 + abs((previousPendingWeights[$1] ?? 0) - (pendingWeights[$1] ?? 0))
+                                        }
+                                        let lockChanged = oldChina != chinaLocked || oldUS != usLocked || oldGold != goldLocked
+                                        let shouldRebalance = previousPendingWeights.isEmpty
+                                            ? !pendingWeights.isEmpty
+                                            : lockChanged || targetDifference > 0.0000001
+                                        if lockChanged {
+                                            transitionCount += 1
+                                            var changes: [String] = []
+                                            if oldChina != chinaLocked { changes.append("CN:" + String(oldChina) + "->" + String(chinaLocked)) }
+                                            if oldUS != usLocked { changes.append("US:" + String(oldUS) + "->" + String(usLocked)) }
+                                            if oldGold != goldLocked { changes.append("GOLD:" + String(oldGold) + "->" + String(goldLocked)) }
+                                            transitionDates.append(data.dates[signalIndex].recordDateString + ":" + changes.joined(separator: ";"))
+                                        }
+                                        previousPendingWeights = pendingWeights
+                                        return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                    },
+                                    targetWeights: { _, _ in pendingWeights }
+                                ) else { continue }
+                                let report = run.report
+                                let requestedSleeveTraceDates = ProcessInfo.processInfo.environment["ATM_SLEEVE_TRACE_DATES"]
+                                    ?? "2010-04-23,2010-05-06,2010-05-07,2010-05-25,2010-06-16,2010-07-05,2010-07-27,2010-09-15"
+                                let traceDates = Set(requestedSleeveTraceDates.split(separator: ",").map(String.init))
+                                let traceLines = run.dailyStates.filter { traceDates.contains($0.date.recordDateString) }.map { state in
+                                    let weights = state.targetWeights.sorted { $0.key < $1.key }.map { $0.key + "=" + String(format: "%.4f", $0.value) }.joined(separator: ";")
+                                    let holdings = state.holdingsBySymbol.sorted { $0.key < $1.key }.map { $0.key + "=" + String(format: "%.2f", $0.value) }.joined(separator: ";")
+                                    return state.date.recordDateString + ",target:" + weights + ",holdings:" + holdings + ",cash:" + String(format: "%.2f", state.cash) + ",value:" + String(format: "%.2f", state.portfolioValue)
+                                }
+
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "sleeve_invalidation",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                let ddWindow = sleeveDrawdownWindow(report.points)
+                                candidates.append(SleeveCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility ?? -1,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(
+                                        title: title,
+                                        id: "sleeve_invalidation",
+                                        points: report.points,
+                                        fullRow: fullRow
+                                    ),
+                                    trades: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio,
+                                    drawdownPeak: ddWindow.0,
+                                    drawdownTrough: ddWindow.1,
+                                    transitionCount: transitionCount,
+                                    transitions: transitionDates,
+                                    traceLines: traceLines
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - lhs.annualized, 0) * 2
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - rhs.annualized, 0) * 2
+                return lhsPenalty == rhsPenalty ? lhs.sharpe > rhs.sharpe : lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(20))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_SLEEVE_INVALIDATION_NEAR_FRONTIER" : "APP_SLEEVE_INVALIDATION_VALID")
+            print("APP_SLEEVE_INVALIDATION_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,dd_peak,dd_trough,transition_count")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough + "," + String(candidate.transitionCount))
+            }
+            if let first = selected.first {
+                print("APP_SLEEVE_INVALIDATION_FIRST_TRANSITIONS")
+                for transition in first.transitions { print(transition) }
+                print("APP_SLEEVE_INVALIDATION_FIRST_STATES")
+                for line in first.traceLines { print(line) }
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_BASE_SCALE_FRONTIER"] == "1" {
+            struct ScaleCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let tradeCount: Int
+                let averageCashRatio: Double
+            }
+            let modes: [AdvancedBacktestStrategyMode] = [
+                .coreGoldSatelliteSharpeStateGateMomentum,
+                .coreGoldSatelliteOneWayVolManagedMomentum,
+                .coreGoldSatelliteEquityCurveStateGateMomentum,
+                .coreGoldSatelliteRiskBudgetStateGateMomentum,
+                .coreGoldSatelliteProfitLockMomentum
+            ]
+            let scales = [1.0, 1.25, 1.50, 1.75, 2.0, 2.25, 2.50]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            var rows: [ScaleCandidate] = []
+
+            for mode in modes {
+                let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+
+                for scale in scales {
+                    let title = String(format: "%@-x%.2f", mode.title, scale)
+                    let config = ResearchTargetStrategyConfig(
+                        symbol: "base_scale_frontier",
+                        title: title,
+                        warmupSessions: 1,
+                        rebalanceSessions: 1,
+                        rebalanceBand: 0.08,
+                        maxGrossExposure: 3.0,
+                        allowsFinancedExposure: true,
+                        financingAnnualRate: 0.05,
+                        buyReason: "底仓缩放前沿"
+                    )
+                    var pending: [String: Double] = [:]
+                    var previous: [String: Double] = [:]
+                    guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                        assetInputs: inputs,
+                        initialCash: 100_000,
+                        settings: settings,
+                        config: config,
+                        rebalanceDecision: { index, _, data in
+                            guard data.dates.indices.contains(index) else {
+                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                            }
+                            let raw = baseTargetsByDate[data.dates[index].recordDateString] ?? previous.mapValues { $0 / max(scale, 0.0001) }
+                            let next = raw.mapValues { $0 * scale }
+                            let symbols = Set(previous.keys).union(next.keys)
+                            let difference = symbols.reduce(0.0) {
+                                $0 + abs((previous[$1] ?? 0) - (next[$1] ?? 0))
+                            }
+                            pending = next
+                            let shouldRebalance = previous.isEmpty ? !next.isEmpty : difference > 0.0000001
+                            previous = next
+                            return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                        },
+                        targetWeights: { _, _ in pending }
+                    ) else { continue }
+                    rows.append(ScaleCandidate(
+                        title: title,
+                        annualized: report.annualizedReturn ?? -1,
+                        maxDrawdown: report.maxDrawdown,
+                        volatility: report.annualizedVolatility ?? -1,
+                        sharpe: report.sharpeRatio ?? -1,
+                        tradeCount: report.trades.count,
+                        averageCashRatio: report.averageCashRatio
+                    ))
+                }
+            }
+
+            rows.sort { lhs, rhs in
+                let lhsScore = lhs.annualized - max(lhs.maxDrawdown - 0.08, 0) * 2
+                let rhsScore = rhs.annualized - max(rhs.maxDrawdown - 0.08, 0) * 2
+                if lhsScore == rhsScore { return lhs.sharpe > rhs.sharpe }
+                return lhsScore > rhsScore
+            }
+            print("APP_BASE_SCALE_FRONTIER")
+            print("title,annualized,max_drawdown,volatility,sharpe,trades,average_cash_ratio")
+            for row in rows {
+                print(row.title + "," + String(format: "%.6f", row.annualized * 100) + "," + String(format: "%.6f", row.maxDrawdown * 100) + "," + String(format: "%.6f", row.volatility * 100) + "," + String(format: "%.6f", row.sharpe) + "," + String(row.tradeCount) + "," + String(format: "%.6f", row.averageCashRatio))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_BASE_TARGET_REPLAY_CONTROL"] == "1" {
+            let requestedMode = ProcessInfo.processInfo.environment["ATM_BASE_TRACE_MODE"] ?? "risk_budget"
+            let mode: AdvancedBacktestStrategyMode
+            if requestedMode == "high_sharpe" {
+                mode = .coreGoldSatelliteSharpeStateGateMomentum
+            } else if requestedMode == "dual" {
+                mode = .goldNasdaqDualTrendBarbell
+            } else {
+                mode = .coreGoldSatelliteRiskBudgetStateGateMomentum
+            }
+            let traceScale = Double(ProcessInfo.processInfo.environment["ATM_BASE_TRACE_SCALE"] ?? "1") ?? 1
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else {
+                print("APP_BASE_TARGET_REPLAY_CONTROL\nbase_missing")
+                return
+            }
+            let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            let config = ResearchTargetStrategyConfig(
+                symbol: "base_target_replay_control",
+                title: "基础目标精确回放",
+                warmupSessions: 1,
+                rebalanceSessions: 1,
+                rebalanceBand: 0.08,
+                maxGrossExposure: max(traceScale, 1),
+                allowsFinancedExposure: traceScale > 1,
+                financingAnnualRate: traceScale > 1 ? 0.05 : 0,
+                buyReason: "基础目标精确回放"
+            )
+            var pendingWeights: [String: Double] = [:]
+            var previousWeights: [String: Double] = [:]
+            guard let replay = BacktestEngine.runResearchTargetProviderStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                config: config,
+                rebalanceDecision: { index, _, data in
+                    guard data.dates.indices.contains(index) else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    let raw = baseTargetsByDate[data.dates[index].recordDateString]
+                        ?? previousWeights.mapValues { $0 / max(traceScale, 0.0001) }
+                    let next = raw.mapValues { $0 * traceScale }
+                    let symbols = Set(previousWeights.keys).union(next.keys)
+                    let difference = symbols.reduce(0.0) {
+                        $0 + abs((previousWeights[$1] ?? 0) - (next[$1] ?? 0))
+                    }
+                    pendingWeights = next
+                    let shouldRebalance = previousWeights.isEmpty ? !next.isEmpty : difference > 0.0000001
+                    previousWeights = next
+                    return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                },
+                targetWeights: { _, _ in pendingWeights }
+            ) else {
+                print("APP_BASE_TARGET_REPLAY_CONTROL\nreplay_missing")
+                return
+            }
+            print("APP_BASE_TARGET_REPLAY_CONTROL")
+            print("kind,annualized,max_drawdown,volatility,sharpe,trades,start,end,points")
+            print("base,\(String(format: "%.6f", (baseRun.report.annualizedReturn ?? 0) * 100)),\(String(format: "%.6f", baseRun.report.maxDrawdown * 100)),\(String(format: "%.6f", (baseRun.report.annualizedVolatility ?? 0) * 100)),\(String(format: "%.6f", baseRun.report.sharpeRatio ?? 0)),\(baseRun.report.trades.count),\(baseRun.report.points.first?.date.recordDateString ?? "n/a"),\(baseRun.report.points.last?.date.recordDateString ?? "n/a"),\(baseRun.report.points.count)")
+            print("replay,\(String(format: "%.6f", (replay.annualizedReturn ?? 0) * 100)),\(String(format: "%.6f", replay.maxDrawdown * 100)),\(String(format: "%.6f", (replay.annualizedVolatility ?? 0) * 100)),\(String(format: "%.6f", replay.sharpeRatio ?? 0)),\(replay.trades.count),\(replay.points.first?.date.recordDateString ?? "n/a"),\(replay.points.last?.date.recordDateString ?? "n/a"),\(replay.points.count)")
+            let requestedTraceDates = ProcessInfo.processInfo.environment["ATM_BASE_TRACE_DATES"]
+                ?? "2015-05-27,2015-06-30,2015-08-24,2015-10-29,2016-02-05"
+            let traceDates = Set(requestedTraceDates.split(separator: ",").map(String.init))
+            print("APP_BASE_TARGET_REPLAY_STATES")
+            for state in baseRun.dailyStates where traceDates.contains(state.date.recordDateString) {
+                let weights = state.targetWeights.sorted { $0.key < $1.key }.map { $0.key + "=" + String(format: "%.4f", $0.value) }.joined(separator: ";")
+                let holdings = state.holdingsBySymbol.sorted { $0.key < $1.key }.map { $0.key + "=" + String(format: "%.2f", $0.value) }.joined(separator: ";")
+                print(state.date.recordDateString + ",target:" + weights + ",holdings:" + holdings + ",cash:" + String(format: "%.2f", state.cash) + ",value:" + String(format: "%.2f", state.portfolioValue))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_MACRO_CRISIS_GATE_GRID"] == "1" {
+            struct MacroCrisisCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let tradeCount: Int
+                let averageCashRatio: Double
+                let drawdownPeak: String
+                let drawdownTrough: String
+                let transitions: [String]
+            }
+
+            func drawdownWindow(_ points: [BacktestSeriesPoint]) -> (String, String) {
+                guard let first = points.first else { return ("n/a", "n/a") }
+                var peakValue = first.portfolioValue
+                var peakDate = first.date
+                var worst = 0.0
+                var worstPeak = first.date
+                var worstTrough = first.date
+                for point in points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    let drawdown = peakValue > 0 ? (peakValue - point.portfolioValue) / peakValue : 0
+                    if drawdown > worst {
+                        worst = drawdown
+                        worstPeak = peakDate
+                        worstTrough = point.date
+                    }
+                }
+                return (worstPeak.recordDateString, worstTrough.recordDateString)
+            }
+
+            func loadMacroCrisisSeries() -> [String: [String: Double]]? {
+                let path = ProcessInfo.processInfo.environment["ATM_MACRO_RISK_FIXTURE"]
+                    ?? "tools/fixtures/macro-risk/macro_risk_public.json"
+                guard let data = FileManager.default.contents(atPath: path),
+                      let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let rawSeries = root["series"] as? [String: Any] else { return nil }
+                var output: [String: [String: Double]] = [:]
+                for (name, value) in rawSeries {
+                    guard let rows = value as? [[String: Any]] else { continue }
+                    var values: [String: Double] = [:]
+                    for row in rows {
+                        guard let date = row["date"] as? String,
+                              let number = row["value"] as? NSNumber else { continue }
+                        values[date] = number.doubleValue
+                    }
+                    output[name] = values
+                }
+                return output
+            }
+
+            guard let macro = loadMacroCrisisSeries(),
+                  let vixMap = macro["vix"],
+                  let vix3mMap = macro["vix3m"],
+                  let cpMap = macro["cp90"],
+                  let tbillMap = macro["tbill3m"] else {
+                print("APP_MACRO_CRISIS_GATE_GRID\nmacro_fixture_missing")
+                return
+            }
+
+            let requestedBase = ProcessInfo.processInfo.environment["ATM_MACRO_CRISIS_BASE"] ?? "risk_budget"
+            let mode: AdvancedBacktestStrategyMode = requestedBase == "high_sharpe"
+                ? .coreGoldSatelliteSharpeStateGateMomentum
+                : .coreGoldSatelliteRiskBudgetStateGateMomentum
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let options = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else {
+                print("APP_MACRO_CRISIS_GATE_GRID\nbase_missing")
+                return
+            }
+            let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+
+            let traceOnly = ProcessInfo.processInfo.environment["ATM_MACRO_CRISIS_TRACE"] == "1"
+            let vixThresholdOptions = traceOnly ? [30.0] : [25.0, 30.0]
+            let termThresholdOptions = traceOnly ? [1.02] : [0.98, 1.02]
+            let creditZOptions = traceOnly ? [2.0] : [1.5, 2.0]
+            let exitConfirmOptions = traceOnly ? [1] : [1, 2]
+            let recoveryConfirmOptions = traceOnly ? [2] : [1, 2]
+            let normalScaleOptions = traceOnly
+                ? [requestedBase == "high_sharpe" ? 2.0 : 1.15]
+                : (requestedBase == "high_sharpe" ? [2.0, 2.25, 2.50] : [1.15, 1.30, 1.45])
+            var candidates: [MacroCrisisCandidate] = []
+
+            for vixThreshold in vixThresholdOptions {
+                for termThreshold in termThresholdOptions {
+                    for creditZThreshold in creditZOptions {
+                        for exitConfirm in exitConfirmOptions {
+                            for recoveryConfirm in recoveryConfirmOptions {
+                                for normalScale in normalScaleOptions {
+                                    let title = String(
+                                        format: "宏观危机门-%@-V%.0f-T%.2f-C%.1f-X%d-R%d-L%.0f",
+                                        mode.title,
+                                        vixThreshold,
+                                        termThreshold,
+                                        creditZThreshold,
+                                        exitConfirm,
+                                        recoveryConfirm,
+                                        normalScale * 100
+                                    )
+                                    let config = ResearchTargetStrategyConfig(
+                                        symbol: "macro_crisis_gate",
+                                        title: title,
+                                        warmupSessions: 1,
+                                        rebalanceSessions: 1,
+                                        rebalanceBand: 0.08,
+                                        maxGrossExposure: normalScale,
+                                        allowsFinancedExposure: normalScale > 1,
+                                        financingAnnualRate: 0.05,
+                                        buyReason: "宏观危机门调仓"
+                                    )
+
+                                    var state = 0
+                                    var crisisStreak = 0
+                                    var firstRecoveryStreak = 0
+                                    var fullRecoveryStreak = 0
+                                    var stateEnteredIndex = -10_000
+                                    var latchedBaseWeights: [String: Double] = [:]
+                                    var latestBaseWeights: [String: Double] = [:]
+                                    var pendingWeights: [String: Double] = [:]
+                                    var alignedVIX: [Double?] = []
+                                    var alignedVIX3M: [Double?] = []
+                                    var alignedSpread: [Double?] = []
+                                    var transitionDates: [String] = []
+
+                                    func align(_ map: [String: Double], dates: [Date]) -> [Double?] {
+                                        var output: [Double?] = []
+                                        output.reserveCapacity(dates.count)
+                                        var lastValue: Double?
+                                        for date in dates {
+                                            if let value = map[date.recordDateString] { lastValue = value }
+                                            output.append(lastValue)
+                                        }
+                                        return output
+                                    }
+
+                                    func stats(_ values: [Double?], end: Int, lookback: Int) -> (Double, Double)? {
+                                        let start = max(0, end - lookback + 1)
+                                        let sample = values[start...end].compactMap { $0 }
+                                        guard sample.count >= max(20, lookback / 3) else { return nil }
+                                        let mean = sample.reduce(0, +) / Double(sample.count)
+                                        let variance = sample.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) } / Double(max(sample.count - 1, 1))
+                                        return (mean, sqrt(max(variance, 0)))
+                                    }
+
+                                    guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                        assetInputs: inputs,
+                                        initialCash: 100_000,
+                                        settings: settings,
+                                        config: config,
+                                        rebalanceDecision: { index, signalIndex, data in
+                                            guard signalIndex >= 300,
+                                                  data.dates.indices.contains(signalIndex),
+                                                  let nasdaq = data.pricesBySymbol["nasdaq"],
+                                                  let sp500 = data.pricesBySymbol["sp500"],
+                                                  let gold = data.pricesBySymbol["gold_cny"],
+                                                  nasdaq.indices.contains(signalIndex),
+                                                  sp500.indices.contains(signalIndex),
+                                                  gold.indices.contains(signalIndex),
+                                                  let nasdaqMA20 = movingAverage(nasdaq, at: signalIndex, period: 20),
+                                                  let nasdaqMA60 = movingAverage(nasdaq, at: signalIndex, period: 60),
+                                                  let spMA20 = movingAverage(sp500, at: signalIndex, period: 20),
+                                                  let spMA60 = movingAverage(sp500, at: signalIndex, period: 60),
+                                                  let goldMA100 = movingAverage(gold, at: signalIndex, period: 100),
+                                                  let nasdaqM5 = priceMomentum(nasdaq, at: signalIndex, lookback: 5),
+                                                  let nasdaqM20 = priceMomentum(nasdaq, at: signalIndex, lookback: 20),
+                                                  let nasdaqM60 = priceMomentum(nasdaq, at: signalIndex, lookback: 60),
+                                                  let spM20 = priceMomentum(sp500, at: signalIndex, lookback: 20),
+                                                  let spM60 = priceMomentum(sp500, at: signalIndex, lookback: 60),
+                                                  let goldM20 = priceMomentum(gold, at: signalIndex, lookback: 20),
+                                                  let goldM60 = priceMomentum(gold, at: signalIndex, lookback: 60) else {
+                                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                            }
+
+                                            if alignedVIX.isEmpty {
+                                                alignedVIX = align(vixMap, dates: data.dates)
+                                                alignedVIX3M = align(vix3mMap, dates: data.dates)
+                                                let alignedCP = align(cpMap, dates: data.dates)
+                                                let alignedTBill = align(tbillMap, dates: data.dates)
+                                                alignedSpread = zip(alignedCP, alignedTBill).map { cp, tbill in
+                                                    guard let cp, let tbill else { return nil }
+                                                    return cp - tbill
+                                                }
+                                            }
+
+                                            guard data.dates.indices.contains(index) else {
+                                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                            }
+                                            let executionDateKey = data.dates[index].recordDateString
+                                                                                        var baseRefresh = false
+                                            if let baseWeights = baseTargetsByDate[executionDateKey], !baseWeights.isEmpty {
+                                                latestBaseWeights = baseWeights.mapValues { $0 * normalScale }
+                                                if state == 0 {
+                                                    let symbols = Set(latchedBaseWeights.keys).union(latestBaseWeights.keys)
+                                                    let difference = symbols.reduce(0.0) {
+                                                        $0 + abs((latchedBaseWeights[$1] ?? 0) - (latestBaseWeights[$1] ?? 0))
+                                                    }
+                                                    if latchedBaseWeights.isEmpty || difference > 0.0000001 {
+                                                        latchedBaseWeights = latestBaseWeights
+                                                        baseRefresh = true
+                                                    }
+                                                }
+                                            }
+                                            guard !latchedBaseWeights.isEmpty || !latestBaseWeights.isEmpty else {
+                                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                            }
+
+                                            let macroIndex = max(signalIndex - 1, 0)
+                                            let creditIndex = max(signalIndex - 2, 0)
+                                            let vix = alignedVIX[macroIndex]
+                                            let vix3m = alignedVIX3M[macroIndex]
+                                            let spread = alignedSpread[creditIndex]
+                                            let spreadStats = stats(alignedSpread, end: creditIndex, lookback: 252)
+                                            let spreadZ: Double
+                                            if let spread, let spreadStats, spreadStats.1 > 0.0001 {
+                                                spreadZ = (spread - spreadStats.0) / spreadStats.1
+                                            } else {
+                                                spreadZ = 0
+                                            }
+                                            let spread10 = alignedSpread[max(0, creditIndex - 10)] ?? spread
+                                            let spreadChange = (spread != nil && spread10 != nil) ? spread! - spread10! : 0
+                                            let termRatio = (vix != nil && vix3m != nil && vix3m! > 0) ? vix! / vix3m! : nil
+
+                                            let priceWeak = nasdaq[signalIndex] < nasdaqMA20
+                                                && sp500[signalIndex] < spMA20
+                                                && nasdaqM5 < 0
+                                            let broadBreak = nasdaq[signalIndex] < nasdaqMA60
+                                                && sp500[signalIndex] < spMA60
+                                                && nasdaqM20 < -0.02
+                                                && spM20 < -0.015
+                                                && nasdaqM60 < 0
+                                                && spM60 < 0
+                                            let volatilityCrisis = (vix ?? 0) >= vixThreshold
+                                                && (termRatio == nil || termRatio! >= termThreshold)
+                                                && priceWeak
+                                            let creditCrisis = spreadZ >= creditZThreshold
+                                                && spreadChange >= 0.15
+                                                && broadBreak
+                                            let crossConfirmed = volatilityCrisis && (spreadZ >= 1 || broadBreak)
+                                            let hardCrash = nasdaqM5 <= -0.075 || nasdaqM20 <= -0.13
+                                            let crisis = hardCrash || crossConfirmed || creditCrisis
+                                            crisisStreak = crisis ? crisisStreak + 1 : 0
+
+                                            let vixCooling = vix == nil || vix! < vixThreshold * 0.92
+                                            let termCooling = termRatio == nil || termRatio! < max(termThreshold - 0.04, 0.94)
+                                            let creditCooling = spreadZ < max(creditZThreshold - 0.5, 0.75) && spreadChange <= 0.05
+                                            let fastRecovered = nasdaq[signalIndex] > nasdaqMA20
+                                                && sp500[signalIndex] > spMA20
+                                                && nasdaqM5 > 0
+                                                && nasdaqM20 > -0.01
+                                                && spM20 > -0.01
+                                                && vixCooling
+                                                && termCooling
+                                            let fullRecovered = nasdaq[signalIndex] > nasdaqMA60
+                                                && sp500[signalIndex] > spMA60
+                                                && nasdaqM20 > 0
+                                                && spM20 > 0
+                                                && nasdaqM60 > -0.01
+                                                && spM60 > -0.01
+                                                && vixCooling
+                                                && termCooling
+                                                && creditCooling
+                                            firstRecoveryStreak = fastRecovered ? firstRecoveryStreak + 1 : 0
+                                            fullRecoveryStreak = fullRecovered ? fullRecoveryStreak + 1 : 0
+
+                                            let previousState = state
+                                            if hardCrash || crisisStreak >= exitConfirm {
+                                                state = 1
+                                                if previousState != 1 { stateEnteredIndex = signalIndex }
+                                                firstRecoveryStreak = 0
+                                                fullRecoveryStreak = 0
+                                            } else if state == 1,
+                                                      signalIndex - stateEnteredIndex >= 2,
+                                                      firstRecoveryStreak >= recoveryConfirm {
+                                                state = 2
+                                                stateEnteredIndex = signalIndex
+                                                firstRecoveryStreak = 0
+                                            } else if state == 2 {
+                                                if hardCrash || crisisStreak >= exitConfirm {
+                                                    state = 1
+                                                    stateEnteredIndex = signalIndex
+                                                } else if signalIndex - stateEnteredIndex >= 3,
+                                                          fullRecoveryStreak >= recoveryConfirm + 1 {
+                                                    state = 0
+                                                    stateEnteredIndex = signalIndex
+                                                    if !latestBaseWeights.isEmpty { latchedBaseWeights = latestBaseWeights }
+                                                }
+                                            }
+
+                                            if state != previousState {
+                                                transitionDates.append(data.dates[signalIndex].recordDateString + ":" + String(previousState) + "->" + String(state))
+                                            }
+
+                                            if state == 1 {
+                                                let goldHealthy = gold[signalIndex] > goldMA100
+                                                    && goldM20 > 0
+                                                    && goldM60 > 0
+                                                    && goldM20 - nasdaqM20 > 0.03
+                                                pendingWeights = goldHealthy ? ["gold_cny": 0.50] : latchedBaseWeights.mapValues { $0 * 0.15 }
+                                            } else if state == 2 {
+                                                pendingWeights = (latestBaseWeights.isEmpty ? latchedBaseWeights : latestBaseWeights).mapValues { $0 * 0.65 }
+                                            } else {
+                                                pendingWeights = latestBaseWeights.isEmpty ? latchedBaseWeights : latestBaseWeights
+                                            }
+
+                                            return BacktestRebalanceDecision(
+                                                shouldRebalance: state != previousState || baseRefresh,
+                                                refreshOverlay: false
+                                            )
+                                        },
+                                        targetWeights: { _, _ in pendingWeights }
+                                    ) else { continue }
+
+                                    let fullRow = MetricRow(
+                                        title: title,
+                                        id: "macro_crisis_gate",
+                                        annualized: report.annualizedReturn,
+                                        maxDrawdown: report.maxDrawdown,
+                                        volatility: report.annualizedVolatility,
+                                        sharpe: report.sharpeRatio,
+                                        start: report.points.first?.date.recordDateString ?? "n/a",
+                                        end: report.points.last?.date.recordDateString ?? "n/a",
+                                        pointCount: report.points.count
+                                    )
+                                    let ddWindow = drawdownWindow(report.points)
+                                    candidates.append(MacroCrisisCandidate(
+                                        title: title,
+                                        annualized: report.annualizedReturn ?? -1,
+                                        maxDrawdown: report.maxDrawdown,
+                                        sharpe: report.sharpeRatio ?? -1,
+                                        sliceRows: metricRowsForSlices(
+                                            title: title,
+                                            id: "macro_crisis_gate",
+                                            points: report.points,
+                                            fullRow: fullRow
+                                        ),
+                                        tradeCount: report.trades.count,
+                                        averageCashRatio: report.averageCashRatio,
+                                        drawdownPeak: ddWindow.0,
+                                        drawdownTrough: ddWindow.1,
+                                        transitions: transitionDates
+                                    ))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.maxDrawdown <= 0.08 && $0.annualized >= 0.12 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - lhs.annualized, 0) * 2
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - rhs.annualized, 0) * 2
+                return lhsPenalty == rhsPenalty ? lhs.sharpe > rhs.sharpe : lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(20))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_MACRO_CRISIS_GATE_NEAR_FRONTIER" : "APP_MACRO_CRISIS_GATE_VALID")
+            print("APP_MACRO_CRISIS_GATE_DIAGNOSTICS")
+            print("title,trade_count,average_cash_ratio,dd_peak,dd_trough,transition_count")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.tradeCount) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + candidate.drawdownPeak + "," + candidate.drawdownTrough + "," + String(candidate.transitions.count))
+            }
+            if let first = selected.first {
+                print("APP_MACRO_CRISIS_GATE_FIRST_TRANSITIONS")
+                for transition in first.transitions { print(transition) }
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_MACRO_LEADING_EVENT_GRID"] == "1" {
+            struct MacroLeadingCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let tradeCount: Int
+                let averageCashRatio: Double
+            }
+
+            func loadMacroSeries() -> [String: [String: Double]]? {
+                let path = ProcessInfo.processInfo.environment["ATM_MACRO_RISK_FIXTURE"]
+                    ?? "tools/fixtures/macro-risk/macro_risk_public.json"
+                guard let data = FileManager.default.contents(atPath: path),
+                      let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let rawSeries = root["series"] as? [String: Any] else { return nil }
+                var result: [String: [String: Double]] = [:]
+                for (name, value) in rawSeries {
+                    guard let rows = value as? [[String: Any]] else { continue }
+                    var values: [String: Double] = [:]
+                    for row in rows {
+                        guard let date = row["date"] as? String,
+                              let number = row["value"] as? NSNumber else { continue }
+                        values[date] = number.doubleValue
+                    }
+                    result[name] = values
+                }
+                return result
+            }
+
+            guard let macro = loadMacroSeries(),
+                  let vixMap = macro["vix"],
+                  let vix3mMap = macro["vix3m"],
+                  let cp90Map = macro["cp90"],
+                  let tbillMap = macro["tbill3m"] else {
+                print("APP_MACRO_LEADING_EVENT_GRID\nmacro_fixture_missing")
+                return
+            }
+
+            let modes: [AdvancedBacktestStrategyMode] = [
+                .coreGoldSatelliteRiskBudgetStateGateMomentum,
+                .coreGoldSatelliteEquityBreadthMomentum
+            ]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let exitThresholdOptions = [4, 5]
+            let exitConfirmOptions = [1, 2]
+            let recoveryConfirmOptions = [2, 3]
+            let normalScaleOptions = [1.0, 1.15, 1.30]
+            var candidates: [MacroLeadingCandidate] = []
+
+            for mode in modes {
+                let options = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }
+                let inputs = options.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+
+                for exitThreshold in exitThresholdOptions {
+                    for exitConfirm in exitConfirmOptions {
+                        for recoveryConfirm in recoveryConfirmOptions {
+                            for normalScale in normalScaleOptions {
+                                let title = String(
+                                    format: "领先宏观雷达-%@-S%d-X%d-R%d-L%.0f",
+                                    mode.title,
+                                    exitThreshold,
+                                    exitConfirm,
+                                    recoveryConfirm,
+                                    normalScale * 100
+                                )
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "macro_leading_event",
+                                    title: title,
+                                    warmupSessions: 300,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: 0.08,
+                                    maxGrossExposure: normalScale,
+                                    allowsFinancedExposure: normalScale > 1,
+                                    financingAnnualRate: 0.05,
+                                    buyReason: "领先宏观风险雷达调仓"
+                                )
+
+                                var state = 0
+                                var riskStreak = 0
+                                var firstRecoveryStreak = 0
+                                var secondRecoveryStreak = 0
+                                var stateEnteredIndex = -10_000
+                                var lastBaseRefreshIndex = -10_000
+                                var latchedBaseWeights: [String: Double] = [:]
+                                var pendingTargetWeights: [String: Double] = [:]
+                                var alignedVIX: [Double?] = []
+                                var alignedVIX3M: [Double?] = []
+                                var alignedCP: [Double?] = []
+                                var alignedTBill: [Double?] = []
+
+                                func align(_ map: [String: Double], dates: [Date]) -> [Double?] {
+                                    var result: [Double?] = []
+                                    result.reserveCapacity(dates.count)
+                                    var lastValue: Double?
+                                    for date in dates {
+                                        if let value = map[date.recordDateString] {
+                                            lastValue = value
+                                        }
+                                        result.append(lastValue)
+                                    }
+                                    return result
+                                }
+
+                                func rollingStats(_ values: [Double?], end: Int, lookback: Int) -> (mean: Double, std: Double)? {
+                                    guard end >= 0 else { return nil }
+                                    let start = max(0, end - lookback + 1)
+                                    let sample = values[start...end].compactMap { $0 }
+                                    guard sample.count >= max(20, lookback / 3) else { return nil }
+                                    let mean = sample.reduce(0, +) / Double(sample.count)
+                                    let variance = sample.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) } / Double(max(sample.count - 1, 1))
+                                    return (mean, sqrt(max(variance, 0)))
+                                }
+
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    rebalanceDecision: { _, signalIndex, data in
+                                        guard signalIndex >= 300,
+                                              data.dates.indices.contains(signalIndex),
+                                              let nasdaq = data.pricesBySymbol["nasdaq"],
+                                              let sp500 = data.pricesBySymbol["sp500"],
+                                              let gold = data.pricesBySymbol["gold_cny"],
+                                              nasdaq.indices.contains(signalIndex),
+                                              sp500.indices.contains(signalIndex),
+                                              gold.indices.contains(signalIndex),
+                                              let nasdaqMA20 = movingAverage(nasdaq, at: signalIndex, period: 20),
+                                              let nasdaqMA60 = movingAverage(nasdaq, at: signalIndex, period: 60),
+                                              let nasdaqMA100 = movingAverage(nasdaq, at: signalIndex, period: 100),
+                                              let spMA20 = movingAverage(sp500, at: signalIndex, period: 20),
+                                              let spMA60 = movingAverage(sp500, at: signalIndex, period: 60),
+                                              let spMA100 = movingAverage(sp500, at: signalIndex, period: 100),
+                                              let goldMA100 = movingAverage(gold, at: signalIndex, period: 100),
+                                              let nasdaqM5 = priceMomentum(nasdaq, at: signalIndex, lookback: 5),
+                                              let nasdaqM20 = priceMomentum(nasdaq, at: signalIndex, lookback: 20),
+                                              let nasdaqM60 = priceMomentum(nasdaq, at: signalIndex, lookback: 60),
+                                              let spM20 = priceMomentum(sp500, at: signalIndex, lookback: 20),
+                                              let spM60 = priceMomentum(sp500, at: signalIndex, lookback: 60),
+                                              let goldM20 = priceMomentum(gold, at: signalIndex, lookback: 20),
+                                              let goldM60 = priceMomentum(gold, at: signalIndex, lookback: 60) else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+
+                                        if alignedVIX.isEmpty {
+                                            alignedVIX = align(vixMap, dates: data.dates)
+                                            alignedVIX3M = align(vix3mMap, dates: data.dates)
+                                            alignedCP = align(cp90Map, dates: data.dates)
+                                            alignedTBill = align(tbillMap, dates: data.dates)
+                                        }
+
+                                        let dateKey = data.dates[signalIndex].recordDateString
+                                        var baseRefresh = false
+                                        if latchedBaseWeights.isEmpty || (state == 0 && signalIndex - lastBaseRefreshIndex >= 60) {
+                                            if let baseWeights = baseTargetsByDate[dateKey], !baseWeights.isEmpty {
+                                                let scaled = baseWeights.mapValues { $0 * normalScale }
+                                                let symbols = Set(latchedBaseWeights.keys).union(scaled.keys)
+                                                let difference = symbols.reduce(0.0) {
+                                                    $0 + abs((latchedBaseWeights[$1] ?? 0) - (scaled[$1] ?? 0))
+                                                }
+                                                if latchedBaseWeights.isEmpty || difference >= 0.10 {
+                                                    latchedBaseWeights = scaled
+                                                    baseRefresh = true
+                                                }
+                                                lastBaseRefreshIndex = signalIndex
+                                            }
+                                        }
+                                        guard !latchedBaseWeights.isEmpty else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+
+                                        let macroIndex = max(signalIndex - 1, 0)
+                                        let creditIndex = max(signalIndex - 2, 0)
+                                        let vix = alignedVIX[macroIndex]
+                                        let vix3m = alignedVIX3M[macroIndex]
+                                        let vix5 = alignedVIX[max(0, macroIndex - 5)]
+                                        let cp = alignedCP[creditIndex]
+                                        let tbill = alignedTBill[creditIndex]
+                                        let cpSpread = (cp != nil && tbill != nil) ? cp! - tbill! : nil
+
+                                        var spreadSeries = Array(repeating: Optional<Double>.none, count: alignedCP.count)
+                                        if creditIndex >= 0 {
+                                            let start = max(0, creditIndex - 252)
+                                            if start <= creditIndex {
+                                                for cursor in start...creditIndex {
+                                                    if let cpValue = alignedCP[cursor], let tbillValue = alignedTBill[cursor] {
+                                                        spreadSeries[cursor] = cpValue - tbillValue
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        let spreadStats = rollingStats(spreadSeries, end: creditIndex, lookback: 252)
+                                        let spreadZ: Double
+                                        if let cpSpread, let spreadStats, spreadStats.std > 0.0001 {
+                                            spreadZ = (cpSpread - spreadStats.mean) / spreadStats.std
+                                        } else {
+                                            spreadZ = 0
+                                        }
+                                        let spread10Ago = spreadSeries[max(0, creditIndex - 10)] ?? cpSpread
+                                        let spreadChange10 = (cpSpread != nil && spread10Ago != nil) ? cpSpread! - spread10Ago! : 0
+
+                                        var volatilityScore = 0
+                                        if let vix {
+                                            if vix >= 35 { volatilityScore = 2 }
+                                            else if vix >= 25 { volatilityScore = 1 }
+                                            if let vix3m, vix3m > 0 {
+                                                let ratio = vix / vix3m
+                                                if ratio >= 1.05 { volatilityScore = max(volatilityScore, 2) }
+                                                else if ratio >= 0.98 { volatilityScore = max(volatilityScore, 1) }
+                                            }
+                                            if let vix5, vix5 > 0, vix / vix5 - 1 >= 0.35 {
+                                                volatilityScore = max(volatilityScore, 1)
+                                            }
+                                        }
+
+                                        var creditScore = 0
+                                        if spreadZ >= 2 || spreadChange10 >= 0.45 { creditScore = 2 }
+                                        else if spreadZ >= 1 || spreadChange10 >= 0.25 { creditScore = 1 }
+
+                                        let realizedVol20 = annualizedVolatility(nasdaq, at: signalIndex, lookback: 20) ?? 0
+                                        let realizedVol63 = annualizedVolatility(nasdaq, at: signalIndex, lookback: 63) ?? max(realizedVol20, 0.01)
+                                        let broadBreak = nasdaq[signalIndex] < nasdaqMA100
+                                            && sp500[signalIndex] < spMA100
+                                            && nasdaqM20 < -0.03
+                                            && spM20 < -0.02
+                                            && nasdaqM60 < 0
+                                            && spM60 < 0
+                                        let volatilityExpansion = realizedVol20 > 0.30
+                                            && realizedVol20 > realizedVol63 * 1.35
+                                            && nasdaqM20 < 0
+                                        var priceScore = 0
+                                        if broadBreak { priceScore = 2 }
+                                        else if volatilityExpansion || (nasdaq[signalIndex] < nasdaqMA60 && sp500[signalIndex] < spMA60 && nasdaqM20 < 0) {
+                                            priceScore = 1
+                                        }
+
+                                        let hardCrash = nasdaqM5 <= -0.075 || nasdaqM20 <= -0.13
+                                        let domainCount = [volatilityScore, creditScore, priceScore].filter { $0 > 0 }.count
+                                        let totalScore = volatilityScore + creditScore + priceScore
+                                        let riskConfirmed = totalScore >= exitThreshold && domainCount >= 2
+                                        riskStreak = riskConfirmed ? riskStreak + 1 : 0
+
+                                        let termNormal = vix3m == nil || vix == nil || vix! / max(vix3m!, 0.01) < 0.98
+                                        let creditImproving = spreadZ < 1 && spreadChange10 <= 0.05
+                                        let fastRecovered = nasdaq[signalIndex] > nasdaqMA20
+                                            && sp500[signalIndex] > spMA20
+                                            && nasdaqM5 > 0
+                                            && nasdaqM20 > 0
+                                            && spM20 > 0
+                                            && termNormal
+                                        let fullRecovered = nasdaq[signalIndex] > nasdaqMA60
+                                            && sp500[signalIndex] > spMA60
+                                            && nasdaqM20 > 0
+                                            && spM20 > 0
+                                            && nasdaqM60 > -0.01
+                                            && spM60 > -0.01
+                                            && termNormal
+                                            && creditImproving
+
+                                        firstRecoveryStreak = fastRecovered ? firstRecoveryStreak + 1 : 0
+                                        secondRecoveryStreak = fullRecovered ? secondRecoveryStreak + 1 : 0
+
+                                        let previousState = state
+                                        if hardCrash || riskStreak >= exitConfirm {
+                                            state = 1
+                                            if previousState != 1 { stateEnteredIndex = signalIndex }
+                                            firstRecoveryStreak = 0
+                                            secondRecoveryStreak = 0
+                                        } else if state == 1,
+                                                  signalIndex - stateEnteredIndex >= 3,
+                                                  firstRecoveryStreak >= recoveryConfirm {
+                                            state = 2
+                                            stateEnteredIndex = signalIndex
+                                            firstRecoveryStreak = 0
+                                        } else if state == 2 {
+                                            if hardCrash || riskStreak >= exitConfirm {
+                                                state = 1
+                                                stateEnteredIndex = signalIndex
+                                            } else if signalIndex - stateEnteredIndex >= 5,
+                                                      secondRecoveryStreak >= recoveryConfirm + 1 {
+                                                state = 3
+                                                stateEnteredIndex = signalIndex
+                                                secondRecoveryStreak = 0
+                                            }
+                                        } else if state == 3 {
+                                            if hardCrash || riskStreak >= exitConfirm {
+                                                state = 1
+                                                stateEnteredIndex = signalIndex
+                                            } else if signalIndex - stateEnteredIndex >= 8,
+                                                      secondRecoveryStreak >= recoveryConfirm + 2 {
+                                                state = 0
+                                                stateEnteredIndex = signalIndex
+                                                if let baseWeights = baseTargetsByDate[dateKey], !baseWeights.isEmpty {
+                                                    latchedBaseWeights = baseWeights.mapValues { $0 * normalScale }
+                                                    lastBaseRefreshIndex = signalIndex
+                                                }
+                                            }
+                                        }
+
+                                        if state == 1 {
+                                            let goldHealthy = gold[signalIndex] > goldMA100
+                                                && goldM20 > 0
+                                                && goldM60 > 0
+                                                && goldM20 - nasdaqM20 > 0.03
+                                            pendingTargetWeights = goldHealthy ? ["gold_cny": 0.45] : [:]
+                                        } else if state == 2 {
+                                            pendingTargetWeights = latchedBaseWeights.mapValues { $0 * 0.45 }
+                                        } else if state == 3 {
+                                            pendingTargetWeights = latchedBaseWeights.mapValues { $0 * 0.75 }
+                                        } else {
+                                            pendingTargetWeights = latchedBaseWeights
+                                        }
+
+                                        return BacktestRebalanceDecision(
+                                            shouldRebalance: state != previousState || baseRefresh,
+                                            refreshOverlay: false
+                                        )
+                                    },
+                                    targetWeights: { _, _ in pendingTargetWeights }
+                                ) else { continue }
+
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "macro_leading_event",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                candidates.append(MacroLeadingCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(
+                                        title: title,
+                                        id: "macro_leading_event",
+                                        points: report.points,
+                                        fullRow: fullRow
+                                    ),
+                                    tradeCount: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.maxDrawdown <= 0.08 && $0.annualized >= 0.12 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - lhs.annualized, 0) * 2
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - rhs.annualized, 0) * 2
+                return lhsPenalty == rhsPenalty ? lhs.sharpe > rhs.sharpe : lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(20))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_MACRO_LEADING_EVENT_NEAR_FRONTIER" : "APP_MACRO_LEADING_EVENT_VALID")
+            print("APP_MACRO_LEADING_EVENT_DIAGNOSTICS")
+            print("title,trade_count,average_cash_ratio")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.tradeCount) + "," + String(format: "%.6f", candidate.averageCashRatio))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_EVENT_LATCH_EXACT_GRID"] == "1" {
+            struct EventLatchCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let tradeCount: Int
+                let averageCashRatio: Double
+            }
+
+            let modes: [AdvancedBacktestStrategyMode] = [
+                .coreGoldSatelliteEquityBreadthMomentum,
+                .coreGoldSatelliteRiskBudgetStateGateMomentum
+            ]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let exitConfirmOptions = [1, 2]
+            let cooldownOptions = [10, 20]
+            let recoveryConfirmOptions = [3, 5]
+            let normalScaleOptions = [1.0, 1.10]
+            var candidates: [EventLatchCandidate] = []
+
+            for mode in modes {
+                let options = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }
+                let inputs = options.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+
+                for exitConfirm in exitConfirmOptions {
+                    for cooldownSessions in cooldownOptions {
+                        for recoveryConfirm in recoveryConfirmOptions {
+                            for normalScale in normalScaleOptions {
+                                let title = String(
+                                    format: "事件锁存-%@-X%d-C%d-R%d-L%.0f",
+                                    mode.title,
+                                    exitConfirm,
+                                    cooldownSessions,
+                                    recoveryConfirm,
+                                    normalScale * 100
+                                )
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "event_latch_exact",
+                                    title: title,
+                                    warmupSessions: 300,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: 0.08,
+                                    maxGrossExposure: normalScale,
+                                    allowsFinancedExposure: normalScale > 1,
+                                    financingAnnualRate: 0.05,
+                                    buyReason: "日频事件锁存调仓"
+                                )
+
+                                var state = 0
+                                var riskStreak = 0
+                                var recoveryStreak = 0
+                                var stateEnteredIndex = -10_000
+                                var lastBaseRefreshIndex = -10_000
+                                var latchedBaseWeights: [String: Double] = [:]
+                                var pendingTargetWeights: [String: Double] = [:]
+
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    rebalanceDecision: { _, signalIndex, data in
+                                        guard signalIndex >= 240,
+                                              data.dates.indices.contains(signalIndex),
+                                              let nasdaq = data.pricesBySymbol["nasdaq"],
+                                              let sp500 = data.pricesBySymbol["sp500"],
+                                              let gold = data.pricesBySymbol["gold_cny"],
+                                              let csi300 = data.pricesBySymbol["csi300"],
+                                              let shanghai = data.pricesBySymbol["shanghai_composite"],
+                                              nasdaq.indices.contains(signalIndex),
+                                              sp500.indices.contains(signalIndex),
+                                              gold.indices.contains(signalIndex),
+                                              csi300.indices.contains(signalIndex),
+                                              shanghai.indices.contains(signalIndex),
+                                              let nasdaqMA20 = movingAverage(nasdaq, at: signalIndex, period: 20),
+                                              let nasdaqMA60 = movingAverage(nasdaq, at: signalIndex, period: 60),
+                                              let nasdaqMA100 = movingAverage(nasdaq, at: signalIndex, period: 100),
+                                              let spMA20 = movingAverage(sp500, at: signalIndex, period: 20),
+                                              let spMA60 = movingAverage(sp500, at: signalIndex, period: 60),
+                                              let spMA100 = movingAverage(sp500, at: signalIndex, period: 100),
+                                              let goldMA100 = movingAverage(gold, at: signalIndex, period: 100),
+                                              let nasdaqM5 = priceMomentum(nasdaq, at: signalIndex, lookback: 5),
+                                              let nasdaqM20 = priceMomentum(nasdaq, at: signalIndex, lookback: 20),
+                                              let nasdaqM60 = priceMomentum(nasdaq, at: signalIndex, lookback: 60),
+                                              let spM20 = priceMomentum(sp500, at: signalIndex, lookback: 20),
+                                              let spM60 = priceMomentum(sp500, at: signalIndex, lookback: 60),
+                                              let goldM20 = priceMomentum(gold, at: signalIndex, lookback: 20),
+                                              let goldM60 = priceMomentum(gold, at: signalIndex, lookback: 60),
+                                              let csiM20 = priceMomentum(csi300, at: signalIndex, lookback: 20),
+                                              let csiM240 = priceMomentum(csi300, at: signalIndex, lookback: 240),
+                                              let shM20 = priceMomentum(shanghai, at: signalIndex, lookback: 20),
+                                              let shM240 = priceMomentum(shanghai, at: signalIndex, lookback: 240) else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+
+                                        let dateKey = data.dates[signalIndex].recordDateString
+                                        var baseRefresh = false
+                                        if latchedBaseWeights.isEmpty || (state == 0 && signalIndex - lastBaseRefreshIndex >= 60) {
+                                            if let baseWeights = baseTargetsByDate[dateKey], !baseWeights.isEmpty {
+                                                let scaledWeights = baseWeights.mapValues { $0 * normalScale }
+                                                let symbols = Set(latchedBaseWeights.keys).union(scaledWeights.keys)
+                                                let targetDifference = symbols.reduce(0.0) { partial, symbol in
+                                                    partial + abs((latchedBaseWeights[symbol] ?? 0) - (scaledWeights[symbol] ?? 0))
+                                                }
+                                                if latchedBaseWeights.isEmpty || targetDifference >= 0.10 {
+                                                    latchedBaseWeights = scaledWeights
+                                                    baseRefresh = true
+                                                }
+                                                lastBaseRefreshIndex = signalIndex
+                                            }
+                                        }
+                                        guard !latchedBaseWeights.isEmpty else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+
+                                        let vol20 = annualizedVolatility(nasdaq, at: signalIndex, lookback: 20) ?? 0
+                                        let vol63 = annualizedVolatility(nasdaq, at: signalIndex, lookback: 63) ?? max(vol20, 0.01)
+                                        let peak20 = nasdaq[max(0, signalIndex - 19)...signalIndex].max() ?? nasdaq[signalIndex]
+                                        let drawdown20 = peak20 > 0 ? nasdaq[signalIndex] / peak20 - 1 : 0
+                                        let hardCrash = nasdaqM5 <= -0.075 || nasdaqM20 <= -0.13
+                                        let broadBreak = nasdaq[signalIndex] < nasdaqMA100
+                                            && sp500[signalIndex] < spMA100
+                                            && nasdaqM20 < -0.035
+                                            && spM20 < -0.025
+                                            && nasdaqM60 < 0
+                                            && spM60 < 0
+                                        let volatilityExpansion = vol20 > 0.30
+                                            && vol20 > vol63 * 1.35
+                                            && nasdaqM20 < 0
+                                        let fastDrawdown = drawdown20 < -0.10 && nasdaqM5 < 0
+
+                                        func bubbleRollover(_ prices: [Double], longMomentum: Double, shortMomentum: Double) -> Bool {
+                                            let start = max(0, signalIndex - 239)
+                                            let window = prices[start...signalIndex]
+                                            guard let low = window.min(), let high = window.max(), high > low else { return false }
+                                            let position = (prices[signalIndex] - low) / (high - low)
+                                            let peak60 = prices[max(0, signalIndex - 59)...signalIndex].max() ?? prices[signalIndex]
+                                            let drawdown60 = peak60 > 0 ? prices[signalIndex] / peak60 - 1 : 0
+                                            return longMomentum > 0.55
+                                                && position > 0.75
+                                                && (shortMomentum < -0.04 || drawdown60 < -0.10)
+                                        }
+                                        let contagion = bubbleRollover(csi300, longMomentum: csiM240, shortMomentum: csiM20)
+                                            || bubbleRollover(shanghai, longMomentum: shM240, shortMomentum: shM20)
+
+                                        var riskScore = 0
+                                        if broadBreak { riskScore += 2 }
+                                        if volatilityExpansion { riskScore += 1 }
+                                        if fastDrawdown { riskScore += 1 }
+                                        if contagion { riskScore += 2 }
+                                        riskStreak = riskScore >= 3 ? riskStreak + 1 : 0
+
+                                        let fastRecovered = nasdaq[signalIndex] > nasdaqMA20
+                                            && sp500[signalIndex] > spMA20
+                                            && nasdaqM5 > 0
+                                            && nasdaqM20 > 0
+                                            && spM20 > 0
+                                            && vol20 < max(vol63 * 1.15, 0.32)
+                                        let fullRecovered = nasdaq[signalIndex] > nasdaqMA60
+                                            && sp500[signalIndex] > spMA60
+                                            && nasdaqM20 > 0
+                                            && spM20 > 0
+                                            && nasdaqM60 > -0.01
+                                            && spM60 > -0.01
+                                            && vol20 < max(vol63 * 1.10, 0.30)
+                                        let recoveryCondition = state == 1 ? fastRecovered : fullRecovered
+                                        recoveryStreak = recoveryCondition ? recoveryStreak + 1 : 0
+
+                                        let previousState = state
+                                        if hardCrash || riskStreak >= exitConfirm {
+                                            state = 1
+                                            if previousState != 1 { stateEnteredIndex = signalIndex }
+                                            recoveryStreak = 0
+                                        } else if state == 1,
+                                                  signalIndex - stateEnteredIndex >= cooldownSessions,
+                                                  recoveryStreak >= recoveryConfirm {
+                                            state = 2
+                                            stateEnteredIndex = signalIndex
+                                            recoveryStreak = 0
+                                        } else if state == 2 {
+                                            if hardCrash || riskStreak >= exitConfirm {
+                                                state = 1
+                                                stateEnteredIndex = signalIndex
+                                                recoveryStreak = 0
+                                            } else if signalIndex - stateEnteredIndex >= 10,
+                                                      recoveryStreak >= recoveryConfirm {
+                                                state = 0
+                                                stateEnteredIndex = signalIndex
+                                                recoveryStreak = 0
+                                                if let baseWeights = baseTargetsByDate[dateKey], !baseWeights.isEmpty {
+                                                    latchedBaseWeights = baseWeights.mapValues { $0 * normalScale }
+                                                    lastBaseRefreshIndex = signalIndex
+                                                }
+                                            }
+                                        }
+
+                                        let stateChanged = state != previousState
+                                        if state == 1 {
+                                            let goldHealthy = gold[signalIndex] > goldMA100
+                                                && goldM20 > 0
+                                                && goldM60 > 0
+                                                && goldM20 - nasdaqM20 > 0.03
+                                            pendingTargetWeights = goldHealthy ? ["gold_cny": 0.50] : [:]
+                                        } else if state == 2 {
+                                            pendingTargetWeights = latchedBaseWeights.mapValues { $0 * 0.55 }
+                                        } else {
+                                            pendingTargetWeights = latchedBaseWeights
+                                        }
+                                        return BacktestRebalanceDecision(
+                                            shouldRebalance: stateChanged || baseRefresh,
+                                            refreshOverlay: false
+                                        )
+                                    },
+                                    targetWeights: { _, _ in pendingTargetWeights }
+                                ) else { continue }
+
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "event_latch_exact",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                candidates.append(EventLatchCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(
+                                        title: title,
+                                        id: "event_latch_exact",
+                                        points: report.points,
+                                        fullRow: fullRow
+                                    ),
+                                    tradeCount: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.maxDrawdown <= 0.08 && $0.annualized >= 0.12 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - lhs.annualized, 0) * 2
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - rhs.annualized, 0) * 2
+                return lhsPenalty == rhsPenalty ? lhs.sharpe > rhs.sharpe : lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(20))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_EVENT_LATCH_EXACT_NEAR_FRONTIER" : "APP_EVENT_LATCH_EXACT_VALID")
+            print("APP_EVENT_LATCH_EXACT_DIAGNOSTICS")
+            print("title,trade_count,average_cash_ratio")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.tradeCount) + "," + String(format: "%.6f", candidate.averageCashRatio))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_SPARSE_EVENT_12_8_GRID"] == "1" {
+            struct SparseCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let tradeCount: Int
+                let averageCashRatio: Double
+            }
+
+            let modes: [AdvancedBacktestStrategyMode] = [
+                .coreGoldSatelliteEquityBreadthMomentum,
+                .coreGoldSatelliteRiskBudgetStateGateMomentum
+            ]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let scoreThresholdOptions = [2, 3]
+            let exitConfirmOptions = [1, 2]
+            let cooldownOptions = [10, 20]
+            let recoveryConfirmOptions = [3, 5]
+            let normalScaleOptions = [1.0, 1.10]
+            var candidates: [SparseCandidate] = []
+
+            for mode in modes {
+                let options = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }
+                let inputs = options.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+
+                for scoreThreshold in scoreThresholdOptions {
+                    for exitConfirm in exitConfirmOptions {
+                        for cooldownSessions in cooldownOptions {
+                            for recoveryConfirm in recoveryConfirmOptions {
+                                for normalScale in normalScaleOptions {
+                                    let title = String(
+                                        format: "稀疏五证据-%@-S%d-X%d-C%d-R%d-L%.0f",
+                                        mode.title,
+                                        scoreThreshold,
+                                        exitConfirm,
+                                        cooldownSessions,
+                                        recoveryConfirm,
+                                        normalScale * 100
+                                    )
+                                    let config = ResearchTargetStrategyConfig(
+                                        symbol: "sparse_event_12_8",
+                                        title: title,
+                                        warmupSessions: 300,
+                                        rebalanceSessions: 1,
+                                        rebalanceBand: 0.18,
+                                        maxGrossExposure: normalScale,
+                                        allowsFinancedExposure: normalScale > 1,
+                                        financingAnnualRate: 0.05,
+                                        buyReason: "稀疏五证据状态切换"
+                                    )
+
+                                    var state = 0
+                                    var riskStreak = 0
+                                    var recoveryStreak = 0
+                                    var stateEnteredIndex = -10_000
+                                    var lastBaseRefreshIndex = -10_000
+                                    var latchedBaseWeights: [String: Double] = [:]
+                                    var lastProcessedIndex = -1
+
+                                    guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                        assetInputs: inputs,
+                                        initialCash: 100_000,
+                                        settings: settings,
+                                        config: config,
+                                        targetWeights: { context, data in
+                                            let index = context.signalIndex
+                                            guard index != lastProcessedIndex,
+                                                  data.dates.indices.contains(index),
+                                                  let nasdaq = data.pricesBySymbol["nasdaq"],
+                                                  let sp500 = data.pricesBySymbol["sp500"],
+                                                  let gold = data.pricesBySymbol["gold_cny"],
+                                                  let csi300 = data.pricesBySymbol["csi300"],
+                                                  let shanghai = data.pricesBySymbol["shanghai_composite"],
+                                                  nasdaq.indices.contains(index), sp500.indices.contains(index),
+                                                  gold.indices.contains(index), csi300.indices.contains(index),
+                                                  shanghai.indices.contains(index),
+                                                  let nasdaqMA100 = movingAverage(nasdaq, at: index, period: 100),
+                                                  let spMA100 = movingAverage(sp500, at: index, period: 100),
+                                                  let goldMA100 = movingAverage(gold, at: index, period: 100),
+                                                  let nasdaqM5 = priceMomentum(nasdaq, at: index, lookback: 5),
+                                                  let nasdaqM20 = priceMomentum(nasdaq, at: index, lookback: 20),
+                                                  let nasdaqM60 = priceMomentum(nasdaq, at: index, lookback: 60),
+                                                  let spM20 = priceMomentum(sp500, at: index, lookback: 20),
+                                                  let spM60 = priceMomentum(sp500, at: index, lookback: 60),
+                                                  let goldM60 = priceMomentum(gold, at: index, lookback: 60),
+                                                  let csiM20 = priceMomentum(csi300, at: index, lookback: 20),
+                                                  let csiM240 = priceMomentum(csi300, at: index, lookback: 240),
+                                                  let shM20 = priceMomentum(shanghai, at: index, lookback: 20),
+                                                  let shM240 = priceMomentum(shanghai, at: index, lookback: 240) else {
+                                                return latchedBaseWeights
+                                            }
+                                            lastProcessedIndex = index
+                                            let dateKey = data.dates[index].recordDateString
+                                            if latchedBaseWeights.isEmpty || (state == 0 && index - lastBaseRefreshIndex >= 60) {
+                                                if let baseWeights = baseTargetsByDate[dateKey], !baseWeights.isEmpty {
+                                                    latchedBaseWeights = baseWeights.mapValues { $0 * normalScale }
+                                                    lastBaseRefreshIndex = index
+                                                }
+                                            }
+                                            guard !latchedBaseWeights.isEmpty else { return [:] }
+
+                                            let vol20 = annualizedVolatility(nasdaq, at: index, lookback: 20) ?? 0
+                                            let vol63 = annualizedVolatility(nasdaq, at: index, lookback: 63) ?? max(vol20, 0.01)
+                                            let nasdaqPeak20 = nasdaq[max(0, index - 19)...index].max() ?? nasdaq[index]
+                                            let nasdaqDrawdown20 = nasdaqPeak20 > 0 ? nasdaq[index] / nasdaqPeak20 - 1 : 0
+                                            let hardCrash = nasdaqM5 <= -0.075 || nasdaqM20 <= -0.13
+                                            let broadBreak = nasdaq[index] < nasdaqMA100
+                                                && sp500[index] < spMA100
+                                                && nasdaqM20 < -0.035
+                                                && spM20 < -0.025
+                                                && nasdaqM60 < 0
+                                                && spM60 < 0
+                                            let volatilityExpansion = vol20 > 0.30
+                                                && vol20 > vol63 * 1.35
+                                                && nasdaqM20 < 0
+                                            let fastDrawdown = nasdaqDrawdown20 < -0.10 && nasdaqM5 < 0
+
+                                            func bubbleRollover(_ prices: [Double], longMomentum: Double, shortMomentum: Double) -> Bool {
+                                                let start = max(0, index - 239)
+                                                let window = prices[start...index]
+                                                guard let low = window.min(), let high = window.max(), high > low else { return false }
+                                                let position = (prices[index] - low) / (high - low)
+                                                let peak60 = prices[max(0, index - 59)...index].max() ?? prices[index]
+                                                let drawdown60 = peak60 > 0 ? prices[index] / peak60 - 1 : 0
+                                                return longMomentum > 0.55
+                                                    && position > 0.75
+                                                    && (shortMomentum < -0.04 || drawdown60 < -0.10)
+                                            }
+                                            let contagion = bubbleRollover(csi300, longMomentum: csiM240, shortMomentum: csiM20)
+                                                || bubbleRollover(shanghai, longMomentum: shM240, shortMomentum: shM20)
+
+                                            var riskScore = 0
+                                            if broadBreak { riskScore += 2 }
+                                            if volatilityExpansion { riskScore += 1 }
+                                            if fastDrawdown { riskScore += 1 }
+                                            if contagion { riskScore += 2 }
+                                            riskStreak = (riskScore >= scoreThreshold) ? riskStreak + 1 : 0
+
+                                            let recovered = nasdaq[index] > nasdaqMA100
+                                                && sp500[index] > spMA100
+                                                && nasdaqM20 > 0
+                                                && spM20 > 0
+                                                && nasdaqM60 > 0
+                                                && spM60 > 0
+                                                && vol20 < max(vol63 * 1.05, 0.24)
+                                            recoveryStreak = recovered ? recoveryStreak + 1 : 0
+
+                                            if hardCrash || riskStreak >= exitConfirm {
+                                                if state != 1 { stateEnteredIndex = index }
+                                                state = 1
+                                                recoveryStreak = 0
+                                            } else if state == 1 {
+                                                if index - stateEnteredIndex >= cooldownSessions
+                                                    && recoveryStreak >= recoveryConfirm {
+                                                    state = 2
+                                                    stateEnteredIndex = index
+                                                    recoveryStreak = 0
+                                                }
+                                            } else if state == 2 {
+                                                if hardCrash || riskStreak >= exitConfirm {
+                                                    state = 1
+                                                    stateEnteredIndex = index
+                                                    recoveryStreak = 0
+                                                } else if index - stateEnteredIndex >= 10
+                                                            && recoveryStreak >= recoveryConfirm {
+                                                    state = 0
+                                                    stateEnteredIndex = index
+                                                    recoveryStreak = 0
+                                                }
+                                            }
+
+                                            if state == 1 {
+                                                let goldHealthy = gold[index] > goldMA100 && goldM60 > 0
+                                                return goldHealthy ? ["gold_cny": 0.40] : [:]
+                                            }
+                                            if state == 2 {
+                                                return latchedBaseWeights.mapValues { $0 * 0.55 }
+                                            }
+                                            return latchedBaseWeights
+                                        }
+                                    ) else { continue }
+
+                                    let fullRow = MetricRow(
+                                        title: title,
+                                        id: "sparse_event_12_8",
+                                        annualized: report.annualizedReturn,
+                                        maxDrawdown: report.maxDrawdown,
+                                        volatility: report.annualizedVolatility,
+                                        sharpe: report.sharpeRatio,
+                                        start: report.points.first?.date.recordDateString ?? "n/a",
+                                        end: report.points.last?.date.recordDateString ?? "n/a",
+                                        pointCount: report.points.count
+                                    )
+                                    candidates.append(SparseCandidate(
+                                        title: title,
+                                        annualized: report.annualizedReturn ?? -1,
+                                        maxDrawdown: report.maxDrawdown,
+                                        sharpe: report.sharpeRatio ?? -1,
+                                        sliceRows: metricRowsForSlices(
+                                            title: title,
+                                            id: "sparse_event_12_8",
+                                            points: report.points,
+                                            fullRow: fullRow
+                                        ),
+                                        tradeCount: report.trades.count,
+                                        averageCashRatio: report.averageCashRatio
+                                    ))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.maxDrawdown <= 0.08 && $0.annualized >= 0.12 }
+                .sorted { lhs, rhs in lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - lhs.annualized, 0) * 2
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - rhs.annualized, 0) * 2
+                return lhsPenalty == rhsPenalty ? lhs.sharpe > rhs.sharpe : lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(20))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_SPARSE_EVENT_12_8_NEAR_FRONTIER" : "APP_SPARSE_EVENT_12_8_VALID")
+            print("APP_SPARSE_EVENT_12_8_DIAGNOSTICS")
+            print("title,trade_count,average_cash_ratio")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.tradeCount) + "," + String(format: "%.6f", candidate.averageCashRatio))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_DAILY_EMERGENCY_OVERLAY_GRID"] == "1" {
+            struct EmergencyCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let tradeCount: Int
+                let averageCashRatio: Double
+            }
+
+            let mode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let options = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else {
+                print("APP_DAILY_EMERGENCY_OVERLAY_GRID\nno_base")
+                return
+            }
+            let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+
+            let crash5Options = [-0.05, -0.07]
+            let crash20Options = [-0.09, -0.12]
+            let recoverConfirmOptions = [5, 10]
+            let defenseGrossOptions = [0.15, 0.30]
+            let healthyBoostOptions = [1.10, 1.25]
+            var candidates: [EmergencyCandidate] = []
+
+            for crash5 in crash5Options {
+                for crash20 in crash20Options {
+                    for recoverConfirm in recoverConfirmOptions {
+                        for defenseGross in defenseGrossOptions {
+                            for healthyBoost in healthyBoostOptions {
+                                let title = String(
+                                    format: "日频紧急刹车-C5%.0f-C20%.0f-R%d-D%.0f-B%.0f",
+                                    abs(crash5) * 100,
+                                    abs(crash20) * 100,
+                                    recoverConfirm,
+                                    defenseGross * 100,
+                                    healthyBoost * 100
+                                )
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "daily_emergency_overlay",
+                                    title: title,
+                                    warmupSessions: 300,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: 0.10,
+                                    maxGrossExposure: healthyBoost,
+                                    allowsFinancedExposure: true,
+                                    financingAnnualRate: 0.05,
+                                    buyReason: "日频紧急刹车调仓"
+                                )
+
+                                var state = 0
+                                var recoverStreak = 0
+                                var defenseUsesGold = false
+                                var lastProcessedIndex = -1
+
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    targetWeights: { context, data in
+                                        let index = context.signalIndex
+                                        guard index != lastProcessedIndex,
+                                              data.dates.indices.contains(index),
+                                              let nasdaq = data.pricesBySymbol["nasdaq"],
+                                              let sp500 = data.pricesBySymbol["sp500"],
+                                              let gold = data.pricesBySymbol["gold_cny"],
+                                              nasdaq.indices.contains(index),
+                                              sp500.indices.contains(index),
+                                              gold.indices.contains(index),
+                                              let nasdaqMA20 = movingAverage(nasdaq, at: index, period: 20),
+                                              let nasdaqMA60 = movingAverage(nasdaq, at: index, period: 60),
+                                              let spMA60 = movingAverage(sp500, at: index, period: 60),
+                                              let goldMA100 = movingAverage(gold, at: index, period: 100),
+                                              let nasdaqM5 = priceMomentum(nasdaq, at: index, lookback: 5),
+                                              let nasdaqM20 = priceMomentum(nasdaq, at: index, lookback: 20),
+                                              let nasdaqM60 = priceMomentum(nasdaq, at: index, lookback: 60),
+                                              let spM20 = priceMomentum(sp500, at: index, lookback: 20),
+                                              let goldM60 = priceMomentum(gold, at: index, lookback: 60) else {
+                                            return [:]
+                                        }
+                                        lastProcessedIndex = index
+
+                                        let dateKey = data.dates[index].recordDateString
+                                        guard let baseWeights = baseTargetsByDate[dateKey], !baseWeights.isEmpty else { return [:] }
+                                        let broadBreak = nasdaq[index] < nasdaqMA60
+                                            && sp500[index] < spMA60
+                                            && nasdaqM20 < -0.035
+                                            && spM20 < -0.025
+                                        let volatilityShock = (annualizedVolatility(nasdaq, at: index, lookback: 20) ?? 0) > 0.42
+                                            && nasdaqM20 < -0.02
+                                        let crisis = nasdaqM5 <= crash5 || nasdaqM20 <= crash20 || broadBreak || volatilityShock
+                                        let recovered = nasdaq[index] > nasdaqMA20
+                                            && nasdaq[index] > nasdaqMA60
+                                            && sp500[index] > spMA60
+                                            && nasdaqM5 > 0
+                                            && nasdaqM20 > 0
+                                            && nasdaqM60 > -0.01
+                                            && spM20 > -0.005
+                                        let stronglyHealthy = recovered
+                                            && nasdaqM60 > 0.04
+                                            && (annualizedVolatility(nasdaq, at: index, lookback: 20) ?? 1) < 0.28
+
+                                        if crisis {
+                                            state = 1
+                                            recoverStreak = 0
+                                            defenseUsesGold = gold[index] > goldMA100 && goldM60 > 0
+                                        } else if state == 1 {
+                                            recoverStreak = recovered ? recoverStreak + 1 : 0
+                                            if recoverStreak >= recoverConfirm {
+                                                state = 2
+                                                recoverStreak = 0
+                                            }
+                                        } else if state == 2 {
+                                            recoverStreak = recovered ? recoverStreak + 1 : 0
+                                            if crisis {
+                                                state = 1
+                                                recoverStreak = 0
+                                            } else if recoverStreak >= recoverConfirm {
+                                                state = 0
+                                                recoverStreak = 0
+                                            }
+                                        }
+
+                                        if state == 1 {
+                                            return defenseUsesGold ? ["gold_cny": defenseGross] : [:]
+                                        }
+                                        let scale = state == 2 ? 0.60 : (stronglyHealthy ? healthyBoost : 1.0)
+                                        return baseWeights.mapValues { $0 * scale }
+                                    }
+                                ) else { continue }
+
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "daily_emergency_overlay",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                candidates.append(EmergencyCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(
+                                        title: title,
+                                        id: "daily_emergency_overlay",
+                                        points: report.points,
+                                        fullRow: fullRow
+                                    ),
+                                    tradeCount: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter {
+                $0.maxDrawdown <= 0.08 && $0.annualized >= 0.12
+            }.sorted { lhs, rhs in
+                if lhs.annualized == rhs.annualized { return lhs.sharpe > rhs.sharpe }
+                return lhs.annualized > rhs.annualized
+            }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - lhs.annualized, 0) * 2
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - rhs.annualized, 0) * 2
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(20))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_DAILY_EMERGENCY_OVERLAY_NEAR_FRONTIER" : "APP_DAILY_EMERGENCY_OVERLAY_VALID")
+            print("APP_DAILY_EMERGENCY_OVERLAY_DIAGNOSTICS")
+            print("title,trade_count,average_cash_ratio")
+            for candidate in selected {
+                print("\(candidate.title),\(candidate.tradeCount),\(String(format: "%.6f", candidate.averageCashRatio))")
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_DAILY_RESPONSIVE_12_8_GRID"] == "1" {
+            struct DailyCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let tradeCount: Int
+                let averageCashRatio: Double
+            }
+
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = ["gold_cny", "nasdaq", "sp500"].compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let exitConfirmOptions = [1, 2]
+            let entryConfirmOptions = [3, 5, 8]
+            let maxGrossOptions = [1.15, 1.30]
+            let targetVolatilityOptions = [0.0]
+            var candidates: [DailyCandidate] = []
+
+            for exitConfirm in exitConfirmOptions {
+                for entryConfirm in entryConfirmOptions {
+                    for maxGross in maxGrossOptions {
+                        for targetVolatility in targetVolatilityOptions {
+                            let title = String(
+                                format: "日频快退慢进-X%d-E%d-L%.0f-V%.0f",
+                                exitConfirm,
+                                entryConfirm,
+                                maxGross * 100,
+                                targetVolatility * 100
+                            )
+                            let config = ResearchTargetStrategyConfig(
+                                symbol: "daily_responsive_12_8",
+                                title: title,
+                                warmupSessions: 300,
+                                rebalanceSessions: 1,
+                                rebalanceBand: 0.10,
+                                maxGrossExposure: maxGross,
+                                allowsFinancedExposure: true,
+                                financingAnnualRate: 0.05,
+                                buyReason: "日频快退慢进调仓"
+                            )
+
+                            var regime = 0
+                            var warningStreak = 0
+                            var healthyStreak = 0
+                            var strongStreak = 0
+                            var lastProcessedIndex = -1
+
+                            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                assetInputs: inputs,
+                                initialCash: 100_000,
+                                settings: settings,
+                                config: config,
+                                targetWeights: { context, data in
+                                    let index = context.signalIndex
+                                    guard index != lastProcessedIndex,
+                                          let gold = data.pricesBySymbol["gold_cny"],
+                                          let nasdaq = data.pricesBySymbol["nasdaq"],
+                                          let sp500 = data.pricesBySymbol["sp500"],
+                                          gold.indices.contains(index),
+                                          nasdaq.indices.contains(index),
+                                          sp500.indices.contains(index),
+                                          let goldMA100 = movingAverage(gold, at: index, period: 100),
+                                          let goldMA200 = movingAverage(gold, at: index, period: 200),
+                                          let nasdaqMA60 = movingAverage(nasdaq, at: index, period: 60),
+                                          let nasdaqMA100 = movingAverage(nasdaq, at: index, period: 100),
+                                          let nasdaqMA200 = movingAverage(nasdaq, at: index, period: 200),
+                                          let spMA60 = movingAverage(sp500, at: index, period: 60),
+                                          let spMA100 = movingAverage(sp500, at: index, period: 100),
+                                          let spMA200 = movingAverage(sp500, at: index, period: 200),
+                                          let goldM60 = priceMomentum(gold, at: index, lookback: 60),
+                                          let goldM126 = priceMomentum(gold, at: index, lookback: 126),
+                                          let nasdaqM5 = priceMomentum(nasdaq, at: index, lookback: 5),
+                                          let nasdaqM20 = priceMomentum(nasdaq, at: index, lookback: 20),
+                                          let nasdaqM60 = priceMomentum(nasdaq, at: index, lookback: 60),
+                                          let nasdaqM126 = priceMomentum(nasdaq, at: index, lookback: 126),
+                                          let spM20 = priceMomentum(sp500, at: index, lookback: 20),
+                                          let spM60 = priceMomentum(sp500, at: index, lookback: 60) else {
+                                        return [:]
+                                    }
+                                    lastProcessedIndex = index
+
+                                    let nasdaqVol20 = annualizedVolatility(nasdaq, at: index, lookback: 20) ?? 0.30
+                                    let nasdaqVol63 = annualizedVolatility(nasdaq, at: index, lookback: 63) ?? 0.25
+                                    let goldHealthy = gold[index] > goldMA100 && goldM60 > -0.01
+                                    let goldStrong = gold[index] > goldMA200 && goldM60 > 0 && goldM126 > 0
+
+                                    let immediateCrash = nasdaqM5 <= -0.07 || nasdaqM20 <= -0.12
+                                    let broadBreak = nasdaq[index] < nasdaqMA60
+                                        && sp500[index] < spMA60
+                                        && nasdaqM20 < -0.025
+                                        && spM20 < -0.02
+                                    let structuralBreak = nasdaq[index] < nasdaqMA200
+                                        && sp500[index] < spMA200
+                                        && nasdaqM60 < 0
+                                        && spM60 < 0
+                                    let volatilityShock = nasdaqVol20 >= 0.36 && nasdaqM20 < 0
+                                    let warning = immediateCrash || broadBreak || structuralBreak || volatilityShock
+
+                                    let healthy = nasdaq[index] > nasdaqMA100
+                                        && sp500[index] > spMA100
+                                        && nasdaqM20 > 0
+                                        && nasdaqM60 > 0
+                                        && spM20 > -0.005
+                                        && spM60 > 0
+                                        && nasdaqVol20 < 0.30
+                                    let strong = healthy
+                                        && nasdaq[index] > nasdaqMA200
+                                        && sp500[index] > spMA200
+                                        && nasdaqM126 > 0.04
+                                        && nasdaqVol63 < 0.24
+
+                                    warningStreak = warning ? warningStreak + 1 : 0
+                                    healthyStreak = healthy ? healthyStreak + 1 : 0
+                                    strongStreak = strong ? strongStreak + 1 : 0
+
+                                    if immediateCrash || warningStreak >= exitConfirm {
+                                        regime = 0
+                                    } else {
+                                        switch regime {
+                                        case 0:
+                                            if healthyStreak >= entryConfirm { regime = 1 }
+                                        case 1:
+                                            if warningStreak >= exitConfirm { regime = 0 }
+                                            else if healthyStreak >= entryConfirm + 3 { regime = 2 }
+                                        case 2:
+                                            if warningStreak >= exitConfirm { regime = 0 }
+                                            else if strongStreak >= max(entryConfirm, 5) { regime = 3 }
+                                            else if !healthy { regime = 1 }
+                                        default:
+                                            if warningStreak >= exitConfirm { regime = 0 }
+                                            else if !strong { regime = 2 }
+                                        }
+                                    }
+
+                                    var rawWeights: [String: Double]
+                                    var desiredGross: Double
+                                    switch regime {
+                                    case 0:
+                                        rawWeights = goldHealthy ? ["gold_cny": 1.0] : [:]
+                                        desiredGross = goldStrong ? 0.55 : (goldHealthy ? 0.30 : 0)
+                                    case 1:
+                                        rawWeights = goldHealthy
+                                            ? ["gold_cny": 0.50, "nasdaq": 0.50]
+                                            : ["nasdaq": 1.0]
+                                        desiredGross = 0.70
+                                    case 2:
+                                        rawWeights = goldHealthy
+                                            ? ["gold_cny": 0.38, "nasdaq": 0.62]
+                                            : ["nasdaq": 1.0]
+                                        desiredGross = 1.0
+                                    default:
+                                        rawWeights = goldStrong
+                                            ? ["gold_cny": 0.25, "nasdaq": 0.75]
+                                            : ["nasdaq": 1.0]
+                                        desiredGross = maxGross
+                                    }
+                                    let rawGross = rawWeights.values.reduce(0, +)
+                                    guard rawGross > 0, desiredGross > 0 else { return [:] }
+                                    let normalizedWeights = rawWeights.mapValues { $0 / rawGross }
+                                    desiredGross = min(desiredGross, maxGross)
+                                    return normalizedWeights.mapValues { $0 * max(desiredGross, 0) }
+                                }
+                            ) else { continue }
+
+                            let fullRow = MetricRow(
+                                title: title,
+                                id: "daily_responsive_12_8",
+                                annualized: report.annualizedReturn,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility,
+                                sharpe: report.sharpeRatio,
+                                start: report.points.first?.date.recordDateString ?? "n/a",
+                                end: report.points.last?.date.recordDateString ?? "n/a",
+                                pointCount: report.points.count
+                            )
+                            candidates.append(DailyCandidate(
+                                title: title,
+                                annualized: report.annualizedReturn ?? -1,
+                                maxDrawdown: report.maxDrawdown,
+                                sharpe: report.sharpeRatio ?? -1,
+                                sliceRows: metricRowsForSlices(
+                                    title: title,
+                                    id: "daily_responsive_12_8",
+                                    points: report.points,
+                                    fullRow: fullRow
+                                ),
+                                tradeCount: report.trades.count,
+                                averageCashRatio: report.averageCashRatio
+                            ))
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter {
+                $0.maxDrawdown <= 0.08 && $0.annualized >= 0.12
+            }.sorted { lhs, rhs in
+                if lhs.annualized == rhs.annualized { return lhs.sharpe > rhs.sharpe }
+                return lhs.annualized > rhs.annualized
+            }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - lhs.annualized, 0) * 2
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - rhs.annualized, 0) * 2
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(20))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_DAILY_RESPONSIVE_12_8_NEAR_FRONTIER" : "APP_DAILY_RESPONSIVE_12_8_VALID")
+            print("APP_DAILY_RESPONSIVE_12_8_DIAGNOSTICS")
+            print("title,trade_count,average_cash_ratio")
+            for candidate in selected {
+                print("\(candidate.title),\(candidate.tradeCount),\(String(format: "%.6f", candidate.averageCashRatio))")
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_MACRO_VIX_12_8_GRID"] == "1" {
+            struct MacroCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let tradeCount: Int
+                let averageCashRatio: Double
+            }
+
+            func fetchFREDSeries(_ identifier: String) async throws -> [String: Double] {
+                guard let url = URL(string: "https://fred.stlouisfed.org/graph/fredgraph.csv?id=\(identifier)") else {
+                    return [:]
+                }
+                let (data, _) = try await URLSession.shared.data(from: url)
+                guard let text = String(data: data, encoding: .utf8) else { return [:] }
+                var values: [String: Double] = [:]
+                for line in text.split(whereSeparator: \.isNewline).dropFirst() {
+                    let columns = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard columns.count >= 2,
+                          let value = Double(columns[1]),
+                          value.isFinite else { continue }
+                    values[String(columns[0])] = value
+                }
+                return values
+            }
+
+            let vixByDate: [String: Double]
+            let tenYearByDate: [String: Double]
+            let twoYearByDate: [String: Double]
+            do {
+                vixByDate = try await fetchFREDSeries("VIXCLS")
+                tenYearByDate = try await fetchFREDSeries("DGS10")
+                twoYearByDate = try await fetchFREDSeries("DGS2")
+            } catch {
+                print("APP_MACRO_VIX_12_8_GRID\nmacro_fetch_failed,\(error)")
+                return
+            }
+            guard !vixByDate.isEmpty, !tenYearByDate.isEmpty, !twoYearByDate.isEmpty else {
+                print("APP_MACRO_VIX_12_8_GRID\nmacro_data_empty")
+                return
+            }
+
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = ["gold_cny", "nasdaq"].compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let reviewOptions = [42, 63]
+            let calmVIXOptions = [18.0, 22.0]
+            let stressVIXOptions = [30.0, 35.0]
+            let maxGrossOptions = [1.10, 1.25]
+            let targetVolatilityOptions = [0.11, 0.13]
+            var candidates: [MacroCandidate] = []
+
+            for reviewSessions in reviewOptions {
+                for calmVIX in calmVIXOptions {
+                    for stressVIX in stressVIXOptions {
+                        for maxGross in maxGrossOptions {
+                            for targetVolatility in targetVolatilityOptions {
+                                let title = String(
+                                    format: "宏观VIX杠铃-R%d-C%.0f-S%.0f-L%.0f-V%.0f",
+                                    reviewSessions,
+                                    calmVIX,
+                                    stressVIX,
+                                    maxGross * 100,
+                                    targetVolatility * 100
+                                )
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "macro_vix_12_8",
+                                    title: title,
+                                    warmupSessions: 300,
+                                    rebalanceSessions: reviewSessions,
+                                    rebalanceBand: 0.10,
+                                    maxGrossExposure: maxGross,
+                                    allowsFinancedExposure: true,
+                                    financingAnnualRate: 0.05,
+                                    buyReason: "宏观VIX期限利差调仓"
+                                )
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    targetWeights: { context, data in
+                                        let index = context.signalIndex
+                                        guard let gold = data.pricesBySymbol["gold_cny"],
+                                              let nasdaq = data.pricesBySymbol["nasdaq"],
+                                              gold.indices.contains(index), nasdaq.indices.contains(index),
+                                              let goldMA200 = movingAverage(gold, at: index, period: 200),
+                                              let nasdaqMA60 = movingAverage(nasdaq, at: index, period: 60),
+                                              let nasdaqMA200 = movingAverage(nasdaq, at: index, period: 200),
+                                              let goldM126 = priceMomentum(gold, at: index, lookback: 126),
+                                              let nasdaqM20 = priceMomentum(nasdaq, at: index, lookback: 20),
+                                              let nasdaqM126 = priceMomentum(nasdaq, at: index, lookback: 126) else { return [:] }
+
+                                        func recentMacroValue(_ values: [String: Double]) -> Double? {
+                                            for offset in 0...7 {
+                                                let lookupIndex = max(index - offset, 0)
+                                                let key = data.dates[lookupIndex].recordDateString
+                                                if let value = values[key] { return value }
+                                            }
+                                            return nil
+                                        }
+                                        guard let vix = recentMacroValue(vixByDate),
+                                              let tenYear = recentMacroValue(tenYearByDate),
+                                              let twoYear = recentMacroValue(twoYearByDate) else { return [:] }
+                                        let curveSpread = tenYear - twoYear
+                                        let nasdaqLongTrend = nasdaq[index] > nasdaqMA200 && nasdaqM126 > 0
+                                        let nasdaqFastWeak = nasdaq[index] < nasdaqMA60 && nasdaqM20 < 0
+                                        let goldTrend = gold[index] > goldMA200 && goldM126 > 0
+                                        let crisis = vix >= 45 && nasdaqM20 <= -0.07
+                                        let stress = vix >= stressVIX && nasdaqFastWeak
+                                        let calm = vix <= calmVIX && curveSpread > -0.75 && nasdaqLongTrend
+
+                                        var baseWeights: [String: Double] = ["gold_cny": 0.55, "nasdaq": 0.45]
+                                        var desiredGross = 1.0
+                                        if crisis {
+                                            baseWeights = goldTrend
+                                                ? ["gold_cny": 1.0]
+                                                : ["gold_cny": 0.75, "nasdaq": 0.25]
+                                            desiredGross = 0.25
+                                        } else if stress {
+                                            baseWeights = goldTrend
+                                                ? ["gold_cny": 0.80, "nasdaq": 0.20]
+                                                : ["gold_cny": 0.65, "nasdaq": 0.35]
+                                            desiredGross = 0.60
+                                        } else if !nasdaqLongTrend {
+                                            baseWeights = goldTrend
+                                                ? ["gold_cny": 0.75, "nasdaq": 0.25]
+                                                : ["gold_cny": 0.55, "nasdaq": 0.45]
+                                            desiredGross = 0.80
+                                        } else if calm {
+                                            baseWeights = goldTrend
+                                                ? ["gold_cny": 0.35, "nasdaq": 0.65]
+                                                : ["gold_cny": 0.25, "nasdaq": 0.75]
+                                            desiredGross = maxGross
+                                        } else if !goldTrend {
+                                            baseWeights = ["gold_cny": 0.35, "nasdaq": 0.65]
+                                        }
+                                        let baseGross = baseWeights.values.reduce(0, +)
+                                        guard baseGross > 0, desiredGross > 0 else { return [:] }
+                                        let normalizedWeights = baseWeights.mapValues { $0 / baseGross }
+                                        let estimatedVolatility = weightedPortfolioAnnualizedVolatility(
+                                            weights: normalizedWeights,
+                                            pricesBySymbol: data.pricesBySymbol,
+                                            at: index,
+                                            lookback: 63
+                                        ) ?? targetVolatility
+                                        desiredGross = min(
+                                            desiredGross,
+                                            targetVolatility / max(estimatedVolatility, 0.04),
+                                            maxGross
+                                        )
+                                        return normalizedWeights.mapValues { $0 * desiredGross }
+                                    }
+                                ) else { continue }
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "macro_vix_12_8",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                candidates.append(MacroCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(
+                                        title: title,
+                                        id: "macro_vix_12_8",
+                                        points: report.points,
+                                        fullRow: fullRow
+                                    ),
+                                    tradeCount: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter {
+                $0.maxDrawdown <= 0.08 && $0.annualized >= 0.12
+            }.sorted { lhs, rhs in
+                if lhs.annualized == rhs.annualized { return lhs.sharpe > rhs.sharpe }
+                return lhs.annualized > rhs.annualized
+            }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - lhs.annualized, 0) * 2
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - rhs.annualized, 0) * 2
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(20))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_MACRO_VIX_12_8_NEAR_FRONTIER" : "APP_MACRO_VIX_12_8_VALID")
+            print("APP_MACRO_VIX_12_8_DIAGNOSTICS")
+            print("title,trade_count,average_cash_ratio")
+            for candidate in selected {
+                print("\(candidate.title),\(candidate.tradeCount),\(String(format: "%.6f", candidate.averageCashRatio))")
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_ASYMMETRIC_BARBELL_12_8_GRID"] == "1" {
+            struct BarbellCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let tradeCount: Int
+                let averageCashRatio: Double
+            }
+
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = ["gold_cny", "nasdaq"].compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let reviewOptions = [10, 20]
+            let maxGrossOptions = [1.25, 1.50, 1.75]
+            let bothGoldWeightOptions = [0.45, 0.55]
+            let targetVolatilityOptions = [0.12, 0.15]
+            let fastCrackOptions = [-0.03, -0.05]
+            var candidates: [BarbellCandidate] = []
+
+            for reviewSessions in reviewOptions {
+                for maxGross in maxGrossOptions {
+                    for bothGoldWeight in bothGoldWeightOptions {
+                        for targetVolatility in targetVolatilityOptions {
+                            for fastCrack in fastCrackOptions {
+                                let title = String(
+                                    format: "非对称杠铃-R%d-G%.0f-L%.0f-V%.0f-C%.0f",
+                                    reviewSessions,
+                                    bothGoldWeight * 100,
+                                    maxGross * 100,
+                                    targetVolatility * 100,
+                                    abs(fastCrack) * 100
+                                )
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "asymmetric_barbell_12_8",
+                                    title: title,
+                                    warmupSessions: 300,
+                                    rebalanceSessions: reviewSessions,
+                                    rebalanceBand: 0.10,
+                                    maxGrossExposure: maxGross,
+                                    allowsFinancedExposure: true,
+                                    financingAnnualRate: 0.05,
+                                    buyReason: "非对称金纳杠铃调仓"
+                                )
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    targetWeights: { context, data in
+                                        let index = context.signalIndex
+                                        guard let gold = data.pricesBySymbol["gold_cny"],
+                                              let nasdaq = data.pricesBySymbol["nasdaq"],
+                                              gold.indices.contains(index), nasdaq.indices.contains(index),
+                                              let goldMA60 = movingAverage(gold, at: index, period: 60),
+                                              let goldMA200 = movingAverage(gold, at: index, period: 200),
+                                              let nasdaqMA60 = movingAverage(nasdaq, at: index, period: 60),
+                                              let nasdaqMA200 = movingAverage(nasdaq, at: index, period: 200),
+                                              let goldM20 = priceMomentum(gold, at: index, lookback: 20),
+                                              let goldM60 = priceMomentum(gold, at: index, lookback: 60),
+                                              let goldM126 = priceMomentum(gold, at: index, lookback: 126),
+                                              let nasdaqM20 = priceMomentum(nasdaq, at: index, lookback: 20),
+                                              let nasdaqM60 = priceMomentum(nasdaq, at: index, lookback: 60),
+                                              let nasdaqM126 = priceMomentum(nasdaq, at: index, lookback: 126) else { return [:] }
+
+                                        let goldStrong = gold[index] > goldMA200 && goldM60 > 0 && goldM126 > 0
+                                        let nasdaqStrong = nasdaq[index] > nasdaqMA200 && nasdaqM60 > 0 && nasdaqM126 > 0
+                                        let goldCracked = gold[index] < goldMA60 || goldM20 < fastCrack
+                                        let nasdaqCracked = nasdaq[index] < nasdaqMA60 || nasdaqM20 < fastCrack
+
+                                        var baseWeights: [String: Double] = [:]
+                                        if goldStrong && nasdaqStrong && !goldCracked && !nasdaqCracked {
+                                            baseWeights = [
+                                                "gold_cny": bothGoldWeight,
+                                                "nasdaq": 1 - bothGoldWeight
+                                            ]
+                                        } else if nasdaqStrong && !nasdaqCracked {
+                                            baseWeights = ["nasdaq": 1.0]
+                                        } else if goldStrong && !goldCracked {
+                                            baseWeights = ["gold_cny": 1.0]
+                                        } else {
+                                            if !goldCracked && goldM126 > -0.015 && gold[index] > goldMA200 {
+                                                baseWeights["gold_cny"] = 0.35
+                                            }
+                                            if !nasdaqCracked && nasdaqM126 > -0.015 && nasdaq[index] > nasdaqMA200 {
+                                                baseWeights["nasdaq"] = 0.25
+                                            }
+                                        }
+                                        let baseGross = baseWeights.values.reduce(0, +)
+                                        guard baseGross > 0 else { return [:] }
+                                        let normalizedWeights = baseWeights.mapValues { $0 / baseGross }
+                                        let estimatedVolatility = weightedPortfolioAnnualizedVolatility(
+                                            weights: normalizedWeights,
+                                            pricesBySymbol: data.pricesBySymbol,
+                                            at: index,
+                                            lookback: 63
+                                        ) ?? targetVolatility
+
+                                        let bothHealthy = goldStrong && nasdaqStrong && !goldCracked && !nasdaqCracked
+                                        var grossExposure = bothHealthy ? maxGross : min(maxGross * 0.70, 1.0)
+                                        grossExposure = min(
+                                            grossExposure,
+                                            targetVolatility / max(estimatedVolatility, 0.04)
+                                        )
+
+                                        let currentValue = max(context.preRebalanceValue, 1)
+                                        let accountPeak = max(
+                                            currentValue,
+                                            context.portfolioValuesByIndex.prefix(index).filter { $0 > 0 }.max() ?? currentValue
+                                        )
+                                        let accountDrawdown = max(1 - currentValue / accountPeak, 0)
+                                        if accountDrawdown >= 0.075 {
+                                            grossExposure = min(grossExposure, 0.08)
+                                        } else if accountDrawdown >= 0.06 {
+                                            grossExposure = min(grossExposure, bothHealthy ? 0.55 : 0.20)
+                                        } else if accountDrawdown >= 0.04 {
+                                            grossExposure = min(grossExposure, 0.70)
+                                        }
+                                        return normalizedWeights.mapValues { $0 * max(grossExposure, 0) }
+                                    }
+                                ) else { continue }
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "asymmetric_barbell_12_8",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                candidates.append(BarbellCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(
+                                        title: title,
+                                        id: "asymmetric_barbell_12_8",
+                                        points: report.points,
+                                        fullRow: fullRow
+                                    ),
+                                    tradeCount: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter {
+                $0.maxDrawdown <= 0.08 && $0.annualized >= 0.12
+            }.sorted { lhs, rhs in
+                if lhs.annualized == rhs.annualized { return lhs.sharpe > rhs.sharpe }
+                return lhs.annualized > rhs.annualized
+            }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - lhs.annualized, 0) * 2
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - rhs.annualized, 0) * 2
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(20))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_ASYMMETRIC_BARBELL_12_8_NEAR_FRONTIER" : "APP_ASYMMETRIC_BARBELL_12_8_VALID")
+            print("APP_ASYMMETRIC_BARBELL_12_8_DIAGNOSTICS")
+            print("title,trade_count,average_cash_ratio")
+            for candidate in selected {
+                print("\(candidate.title),\(candidate.tradeCount),\(String(format: "%.6f", candidate.averageCashRatio))")
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_SHADOW_REENTRY_12_8_GRID"] == "1" {
+            struct ShadowCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let tradeCount: Int
+                let averageCashRatio: Double
+            }
+
+            let mode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let options = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else {
+                print("APP_SHADOW_REENTRY_12_8_GRID\nno_base")
+                return
+            }
+            let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            let baseValuesByDate = Dictionary(uniqueKeysWithValues: baseRun.report.points.map {
+                ($0.date.recordDateString, $0.portfolioValue)
+            })
+
+            let boostOptions = [1.25, 1.40]
+            let mediumDrawdownOptions = [0.035, 0.045]
+            let deepDrawdownOptions = [0.055, 0.065]
+            let mediumGrossOptions = [0.45, 0.60]
+            let reentryGrossOptions = [0.65, 0.85]
+            let targetVolatilityOptions = [0.13, 0.15]
+            var candidates: [ShadowCandidate] = []
+
+            for boost in boostOptions {
+                for mediumDrawdown in mediumDrawdownOptions {
+                    for deepDrawdown in deepDrawdownOptions {
+                        for mediumGross in mediumGrossOptions {
+                            for reentryGross in reentryGrossOptions {
+                                for targetVolatility in targetVolatilityOptions {
+                                    let title = String(
+                                        format: "影子再入场-B%.0f-D%.1f/%.1f-M%.0f-R%.0f-V%.0f",
+                                        boost * 100,
+                                        mediumDrawdown * 100,
+                                        deepDrawdown * 100,
+                                        mediumGross * 100,
+                                        reentryGross * 100,
+                                        targetVolatility * 100
+                                    )
+                                    let config = ResearchTargetStrategyConfig(
+                                        symbol: "shadow_reentry_12_8",
+                                        title: title,
+                                        warmupSessions: 300,
+                                        rebalanceSessions: 5,
+                                        rebalanceBand: 0.08,
+                                        maxGrossExposure: boost,
+                                        allowsFinancedExposure: true,
+                                        financingAnnualRate: 0.05,
+                                        buyReason: "影子组合恢复再入场"
+                                    )
+                                    guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                        assetInputs: inputs,
+                                        initialCash: 100_000,
+                                        settings: settings,
+                                        config: config,
+                                        targetWeights: { context, data in
+                                            let index = context.signalIndex
+                                            guard data.dates.indices.contains(index) else { return [:] }
+                                            let dateKey = data.dates[index].recordDateString
+                                            guard let rawWeights = baseTargetsByDate[dateKey], !rawWeights.isEmpty else { return [:] }
+                                            let baseGross = rawWeights.values.reduce(0, +)
+                                            guard baseGross > 0 else { return [:] }
+                                            let normalizedWeights = rawWeights.mapValues { $0 / baseGross }
+
+                                            let currentValue = max(context.preRebalanceValue, 1)
+                                            let accountPeak = max(
+                                                currentValue,
+                                                context.portfolioValuesByIndex.prefix(index).filter { $0 > 0 }.max() ?? currentValue
+                                            )
+                                            let accountDrawdown = max(1 - currentValue / accountPeak, 0)
+
+                                            let shadowCurrent = baseValuesByDate[dateKey] ?? 0
+                                            var shadow20: Double?
+                                            var shadowAverage60: Double?
+                                            var shadowDrawdown60: Double?
+                                            if shadowCurrent > 0 {
+                                                let prior20Index = max(index - 20, 0)
+                                                let prior20 = baseValuesByDate[data.dates[prior20Index].recordDateString] ?? 0
+                                                if prior20 > 0 { shadow20 = shadowCurrent / prior20 - 1 }
+
+                                                let start60 = max(index - 59, 0)
+                                                let window60 = data.dates[start60...index].compactMap {
+                                                    baseValuesByDate[$0.recordDateString]
+                                                }.filter { $0 > 0 }
+                                                if !window60.isEmpty {
+                                                    shadowAverage60 = window60.reduce(0, +) / Double(window60.count)
+                                                    let peak60 = window60.max() ?? shadowCurrent
+                                                    if peak60 > 0 { shadowDrawdown60 = shadowCurrent / peak60 - 1 }
+                                                }
+                                            }
+                                            let shadowRecovering = shadowCurrent > (shadowAverage60 ?? shadowCurrent + 1)
+                                                && (shadow20 ?? -1) > 0
+                                                && (shadowDrawdown60 ?? -1) > -0.035
+
+                                            var grossExposure: Double
+                                            if accountDrawdown >= deepDrawdown {
+                                                grossExposure = 0.12
+                                            } else if accountDrawdown >= mediumDrawdown {
+                                                grossExposure = mediumGross
+                                            } else if accountDrawdown >= 0.02 {
+                                                grossExposure = 0.85
+                                            } else {
+                                                grossExposure = boost
+                                            }
+                                            if accountDrawdown >= mediumDrawdown, shadowRecovering {
+                                                grossExposure = max(grossExposure, reentryGross)
+                                            }
+                                            if (shadowDrawdown60 ?? 0) < -0.07 {
+                                                grossExposure = min(grossExposure, 0.25)
+                                            }
+
+                                            let estimatedVolatility = weightedPortfolioAnnualizedVolatility(
+                                                weights: normalizedWeights,
+                                                pricesBySymbol: data.pricesBySymbol,
+                                                at: index,
+                                                lookback: 63
+                                            ) ?? targetVolatility
+                                            grossExposure = min(
+                                                grossExposure,
+                                                targetVolatility / max(estimatedVolatility, 0.04),
+                                                boost
+                                            )
+                                            return normalizedWeights.mapValues { $0 * max(grossExposure, 0) }
+                                        }
+                                    ) else { continue }
+                                    let fullRow = MetricRow(
+                                        title: title,
+                                        id: "shadow_reentry_12_8",
+                                        annualized: report.annualizedReturn,
+                                        maxDrawdown: report.maxDrawdown,
+                                        volatility: report.annualizedVolatility,
+                                        sharpe: report.sharpeRatio,
+                                        start: report.points.first?.date.recordDateString ?? "n/a",
+                                        end: report.points.last?.date.recordDateString ?? "n/a",
+                                        pointCount: report.points.count
+                                    )
+                                    candidates.append(ShadowCandidate(
+                                        title: title,
+                                        annualized: report.annualizedReturn ?? -1,
+                                        maxDrawdown: report.maxDrawdown,
+                                        sharpe: report.sharpeRatio ?? -1,
+                                        sliceRows: metricRowsForSlices(
+                                            title: title,
+                                            id: "shadow_reentry_12_8",
+                                            points: report.points,
+                                            fullRow: fullRow
+                                        ),
+                                        tradeCount: report.trades.count,
+                                        averageCashRatio: report.averageCashRatio
+                                    ))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter {
+                $0.maxDrawdown <= 0.08 && $0.annualized >= 0.12
+            }.sorted { lhs, rhs in
+                if lhs.annualized == rhs.annualized { return lhs.sharpe > rhs.sharpe }
+                return lhs.annualized > rhs.annualized
+            }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - lhs.annualized, 0) * 2
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 3 + max(0.12 - rhs.annualized, 0) * 2
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(20))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_SHADOW_REENTRY_12_8_NEAR_FRONTIER" : "APP_SHADOW_REENTRY_12_8_VALID")
+            print("APP_SHADOW_REENTRY_12_8_DIAGNOSTICS")
+            print("title,trade_count,average_cash_ratio")
+            for candidate in selected {
+                print("\(candidate.title),\(candidate.tradeCount),\(String(format: "%.6f", candidate.averageCashRatio))")
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_TIPP_12_8_GRID"] == "1" {
+            struct TippCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let tradeCount: Int
+                let averageCashRatio: Double
+            }
+
+            let modes: [AdvancedBacktestStrategyMode] = [
+                .coreGoldSatelliteRiskBudgetStateGateMomentum,
+                .coreGoldSatelliteEquityCurveStateGateMomentum,
+                .goldNasdaqDualTrendBarbell
+            ]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let floorDrawdowns = [0.075, 0.08]
+            let multipliers = [14.0, 18.0]
+            let maxGrossOptions = [1.20, 1.35]
+            let targetVolatilityOptions = [0.11, 0.13]
+            let minimumGrossOptions = [0.05]
+            let rebalanceBands = [0.08]
+            var candidates: [TippCandidate] = []
+
+            for mode in modes {
+                let options = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }
+                let inputs = options.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+
+                for floorDrawdown in floorDrawdowns {
+                    for multiplier in multipliers {
+                        for maxGross in maxGrossOptions {
+                            for targetVolatility in targetVolatilityOptions {
+                                for minimumGross in minimumGrossOptions {
+                                    for rebalanceBand in rebalanceBands {
+                                        let title = String(
+                                            format: "TIPP-%@-F%.1f-M%.0f-G%.0f-V%.0f-Min%.0f-B%.0f",
+                                            mode.title,
+                                            floorDrawdown * 100,
+                                            multiplier,
+                                            maxGross * 100,
+                                            targetVolatility * 100,
+                                            minimumGross * 100,
+                                            rebalanceBand * 100
+                                        )
+                                        let config = ResearchTargetStrategyConfig(
+                                            symbol: "tipp_12_8_grid",
+                                            title: title,
+                                            warmupSessions: 300,
+                                            rebalanceSessions: 1,
+                                            rebalanceBand: rebalanceBand,
+                                            maxGrossExposure: maxGross,
+                                            allowsFinancedExposure: true,
+                                            financingAnnualRate: 0.05,
+                                            buyReason: "TIPP动态保本调仓"
+                                        )
+                                        guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                            assetInputs: inputs,
+                                            initialCash: 100_000,
+                                            settings: settings,
+                                            config: config,
+                                            targetWeights: { context, data in
+                                                let index = context.signalIndex
+                                                guard data.dates.indices.contains(index) else { return [:] }
+                                                let dateKey = data.dates[index].recordDateString
+                                                guard let rawWeights = baseTargetsByDate[dateKey], !rawWeights.isEmpty else { return [:] }
+                                                let baseGross = rawWeights.values.reduce(0, +)
+                                                guard baseGross > 0 else { return [:] }
+                                                let normalizedWeights = rawWeights.mapValues { $0 / baseGross }
+
+                                                let currentValue = max(context.preRebalanceValue, 1)
+                                                let priorPeak = context.portfolioValuesByIndex
+                                                    .prefix(index)
+                                                    .filter { $0 > 0 }
+                                                    .max() ?? currentValue
+                                                let peakValue = max(priorPeak, currentValue)
+                                                let floorValue = peakValue * (1 - floorDrawdown)
+                                                let cushionRatio = max((currentValue - floorValue) / currentValue, 0)
+                                                let tippGross = min(maxGross, max(minimumGross, multiplier * cushionRatio))
+
+                                                let estimatedVolatility = weightedPortfolioAnnualizedVolatility(
+                                                    weights: normalizedWeights,
+                                                    pricesBySymbol: data.pricesBySymbol,
+                                                    at: index,
+                                                    lookback: 63
+                                                ) ?? targetVolatility
+                                                let volatilityGross = min(maxGross, targetVolatility / max(estimatedVolatility, 0.04))
+                                                let grossExposure = min(tippGross, volatilityGross)
+                                                return normalizedWeights.mapValues { $0 * grossExposure }
+                                            }
+                                        ) else { continue }
+                                        let fullRow = MetricRow(
+                                            title: title,
+                                            id: "tipp_12_8_grid",
+                                            annualized: report.annualizedReturn,
+                                            maxDrawdown: report.maxDrawdown,
+                                            volatility: report.annualizedVolatility,
+                                            sharpe: report.sharpeRatio,
+                                            start: report.points.first?.date.recordDateString ?? "n/a",
+                                            end: report.points.last?.date.recordDateString ?? "n/a",
+                                            pointCount: report.points.count
+                                        )
+                                        candidates.append(TippCandidate(
+                                            title: title,
+                                            annualized: report.annualizedReturn ?? -1,
+                                            maxDrawdown: report.maxDrawdown,
+                                            sharpe: report.sharpeRatio ?? -1,
+                                            sliceRows: metricRowsForSlices(
+                                                title: title,
+                                                id: "tipp_12_8_grid",
+                                                points: report.points,
+                                                fullRow: fullRow
+                                            ),
+                                            tradeCount: report.trades.count,
+                                            averageCashRatio: report.averageCashRatio
+                                        ))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates
+                .filter { $0.maxDrawdown <= 0.08 }
+                .sorted { lhs, rhs in
+                    if lhs.annualized == rhs.annualized { return lhs.sharpe > rhs.sharpe }
+                    return lhs.annualized > rhs.annualized
+                }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsScore = lhs.annualized - max(lhs.maxDrawdown - 0.08, 0) * 2.5
+                let rhsScore = rhs.annualized - max(rhs.maxDrawdown - 0.08, 0) * 2.5
+                if lhsScore == rhsScore { return lhs.sharpe > rhs.sharpe }
+                return lhsScore > rhsScore
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(20))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_TIPP_12_8_NEAR_FRONTIER" : "APP_TIPP_12_8_VALID")
+            print("APP_TIPP_12_8_DIAGNOSTICS")
+            print("title,trade_count,average_cash_ratio")
+            for candidate in selected {
+                print("\(candidate.title),\(candidate.tradeCount),\(String(format: "%.6f", candidate.averageCashRatio))")
+            }
+            return
+        }
+
+        if let variant = ProcessInfo.processInfo.environment["ATM_DUAL_TREND_VARIANT"] {
+            let parts = variant.split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+            guard parts.count == 4 else {
+                print("APP_DUAL_TREND_VARIANT\ninvalid")
+                return
+            }
+            let baseGoldWeight = parts[0]
+            let reviewSessions = Int(parts[1].rounded())
+            let neutralScale = parts[2]
+            let weakScale = parts[3]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = ["gold_cny", "nasdaq"].compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            let title = String(format: "双趋势金纳杠铃-G%.0f-R%d-N%.0f-W%.0f", baseGoldWeight * 100, reviewSessions, neutralScale * 100, weakScale * 100)
+            let config = ResearchTargetStrategyConfig(
+                symbol: "dual_trend_variant",
+                title: title,
+                warmupSessions: 300,
+                rebalanceSessions: reviewSessions,
+                rebalanceBand: 0.10,
+                maxGrossExposure: 1.0,
+                allowsFinancedExposure: false,
+                buyReason: "双趋势金纳杠铃调仓"
+            )
+            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                config: config,
+                targetWeights: { context, data in
+                    let index = context.signalIndex
+                    guard let gold = data.pricesBySymbol["gold_cny"],
+                          let nasdaq = data.pricesBySymbol["nasdaq"],
+                          gold.indices.contains(index), nasdaq.indices.contains(index),
+                          let goldMA = movingAverage(gold, at: index, period: 200),
+                          let nasdaqMA = movingAverage(nasdaq, at: index, period: 200),
+                          let goldM126 = priceMomentum(gold, at: index, lookback: 126),
+                          let nasdaqM126 = priceMomentum(nasdaq, at: index, lookback: 126),
+                          let goldM252 = priceMomentum(gold, at: index, lookback: 252),
+                          let nasdaqM252 = priceMomentum(nasdaq, at: index, lookback: 252) else { return [:] }
+                    let goldStrong = gold[index] > goldMA && goldM126 > 0
+                    let nasdaqStrong = nasdaq[index] > nasdaqMA && nasdaqM126 > 0
+                    let goldWeak = gold[index] < goldMA && goldM252 < 0
+                    let nasdaqWeak = nasdaq[index] < nasdaqMA && nasdaqM252 < 0
+                    let nasdaqNeutralScale = max(neutralScale - 0.05, 0.25)
+                    let nasdaqWeakScale = max(weakScale - 0.05, 0.03)
+                    let goldScale = goldStrong ? 1.0 : (goldWeak ? weakScale : neutralScale)
+                    let nasdaqScale = nasdaqStrong ? 1.0 : (nasdaqWeak ? nasdaqWeakScale : nasdaqNeutralScale)
+                    return [
+                        "gold_cny": baseGoldWeight * goldScale,
+                        "nasdaq": (1 - baseGoldWeight) * nasdaqScale
+                    ]
+                }
+            ) else {
+                print("APP_DUAL_TREND_VARIANT\nno_report")
+                return
+            }
+            let fullRow = MetricRow(
+                title: title,
+                id: "dual_trend_variant",
+                annualized: report.annualizedReturn,
+                maxDrawdown: report.maxDrawdown,
+                volatility: report.annualizedVolatility,
+                sharpe: report.sharpeRatio,
+                start: report.points.first?.date.recordDateString ?? "n/a",
+                end: report.points.last?.date.recordDateString ?? "n/a",
+                pointCount: report.points.count
+            )
+            printSliceRows(metricRowsForSlices(
+                title: title,
+                id: fullRow.id,
+                points: report.points,
+                fullRow: fullRow
+            ), header: "APP_DUAL_TREND_VARIANT")
+            let totalTradeCash = report.trades.reduce(0) { $0 + abs($1.cashAmount) }
+            print("APP_DUAL_TREND_TRADE_DIAGNOSTICS")
+            print("trade_count,total_trade_cash,average_cash_ratio,final_portfolio_value")
+            print(String(format: "%d,%.2f,%.6f,%.2f", report.trades.count, totalTradeCash, report.averageCashRatio, report.finalPortfolioValue))
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_DUAL_TREND_FOCUSED_GRID"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = ["gold_cny", "nasdaq"].compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            let baseGoldWeights = [0.50, 0.55, 0.60]
+            let reviewOptions = [42, 63, 84]
+            let neutralScales = [0.45, 0.55, 0.65]
+            let weakScales = [0.08, 0.15, 0.22]
+            var rows: [SliceMetricRow] = []
+            for baseGoldWeight in baseGoldWeights {
+                for reviewSessions in reviewOptions {
+                    for neutralScale in neutralScales {
+                        for weakScale in weakScales {
+                            let id = String(format: "dual_trend_focus_g%.0f_r%d_n%.0f_w%.0f", baseGoldWeight * 100, reviewSessions, neutralScale * 100, weakScale * 100)
+                            let title = String(format: "双趋势聚焦-G%.0f-R%d-N%.0f-W%.0f", baseGoldWeight * 100, reviewSessions, neutralScale * 100, weakScale * 100)
+                            let config = ResearchTargetStrategyConfig(
+                                symbol: id,
+                                title: title,
+                                warmupSessions: 300,
+                                rebalanceSessions: reviewSessions,
+                                rebalanceBand: 0.10,
+                                maxGrossExposure: 1.0,
+                                allowsFinancedExposure: false,
+                                buyReason: "双趋势聚焦调仓"
+                            )
+                            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                assetInputs: inputs,
+                                initialCash: 100_000,
+                                settings: settings,
+                                config: config,
+                                targetWeights: { context, data in
+                                    let index = context.signalIndex
+                                    guard let gold = data.pricesBySymbol["gold_cny"],
+                                          let nasdaq = data.pricesBySymbol["nasdaq"],
+                                          gold.indices.contains(index), nasdaq.indices.contains(index),
+                                          let goldMA = movingAverage(gold, at: index, period: 200),
+                                          let nasdaqMA = movingAverage(nasdaq, at: index, period: 200),
+                                          let goldM126 = priceMomentum(gold, at: index, lookback: 126),
+                                          let nasdaqM126 = priceMomentum(nasdaq, at: index, lookback: 126),
+                                          let goldM252 = priceMomentum(gold, at: index, lookback: 252),
+                                          let nasdaqM252 = priceMomentum(nasdaq, at: index, lookback: 252) else { return [:] }
+                                    let goldStrong = gold[index] > goldMA && goldM126 > 0
+                                    let nasdaqStrong = nasdaq[index] > nasdaqMA && nasdaqM126 > 0
+                                    let goldWeak = gold[index] < goldMA && goldM252 < 0
+                                    let nasdaqWeak = nasdaq[index] < nasdaqMA && nasdaqM252 < 0
+                                    let nasdaqNeutralScale = max(neutralScale - 0.05, 0.25)
+                                    let nasdaqWeakScale = max(weakScale - 0.05, 0.03)
+                                    let goldScale = goldStrong ? 1.0 : (goldWeak ? weakScale : neutralScale)
+                                    let nasdaqScale = nasdaqStrong ? 1.0 : (nasdaqWeak ? nasdaqWeakScale : nasdaqNeutralScale)
+                                    return [
+                                        "gold_cny": baseGoldWeight * goldScale,
+                                        "nasdaq": (1 - baseGoldWeight) * nasdaqScale
+                                    ]
+                                }
+                            ) else { continue }
+                            let fullRow = MetricRow(
+                                title: title,
+                                id: id,
+                                annualized: report.annualizedReturn,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility,
+                                sharpe: report.sharpeRatio,
+                                start: report.points.first?.date.recordDateString ?? "n/a",
+                                end: report.points.last?.date.recordDateString ?? "n/a",
+                                pointCount: report.points.count
+                            )
+                            rows.append(contentsOf: metricRowsForSlices(
+                                title: title,
+                                id: id,
+                                points: report.points,
+                                fullRow: fullRow
+                            ))
+                        }
+                    }
+                }
+            }
+            printSliceRows(rows, header: "APP_DUAL_TREND_FOCUSED_GRID")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_DUAL_TREND_BARBELL_ZOO"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = ["gold_cny", "nasdaq"].compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            enum GuardKind: String, CaseIterable { case strictTrend, trendTransfer, drawdownTrend, portfolioBreadth }
+            let baseGoldWeights = [0.45, 0.55, 0.65]
+            let reviewOptions = [63, 126, 252]
+            let guardKinds = GuardKind.allCases
+            var rows: [SliceMetricRow] = []
+            for guardKind in guardKinds {
+                for baseGoldWeight in baseGoldWeights {
+                    for reviewSessions in reviewOptions {
+                        let id = String(format: "dual_trend_%@_g%.0f_r%d", guardKind.rawValue, baseGoldWeight * 100, reviewSessions)
+                        let title = String(format: "双趋势金纳杠铃-%@-G%.0f-R%d", guardKind.rawValue, baseGoldWeight * 100, reviewSessions)
+                        let config = ResearchTargetStrategyConfig(
+                            symbol: id, title: title, warmupSessions: 300, rebalanceSessions: reviewSessions,
+                            rebalanceBand: 0.10, maxGrossExposure: 1.0, allowsFinancedExposure: false,
+                            buyReason: "双趋势金纳杠铃调仓"
+                        )
+                        guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                            assetInputs: inputs, initialCash: 100_000, settings: settings, config: config,
+                            targetWeights: { context, data in
+                                let index = context.signalIndex
+                                guard let gold = data.pricesBySymbol["gold_cny"],
+                                      let nasdaq = data.pricesBySymbol["nasdaq"],
+                                      gold.indices.contains(index), nasdaq.indices.contains(index),
+                                      let goldMA = movingAverage(gold, at: index, period: 200),
+                                      let nasdaqMA = movingAverage(nasdaq, at: index, period: 200),
+                                      let goldM126 = priceMomentum(gold, at: index, lookback: 126),
+                                      let nasdaqM126 = priceMomentum(nasdaq, at: index, lookback: 126),
+                                      let goldM252 = priceMomentum(gold, at: index, lookback: 252),
+                                      let nasdaqM252 = priceMomentum(nasdaq, at: index, lookback: 252) else { return [:] }
+                                let goldStrong = gold[index] > goldMA && goldM126 > 0
+                                let nasdaqStrong = nasdaq[index] > nasdaqMA && nasdaqM126 > 0
+                                let goldWeak = gold[index] < goldMA && goldM252 < 0
+                                let nasdaqWeak = nasdaq[index] < nasdaqMA && nasdaqM252 < 0
+                                var goldScale = goldStrong ? 1.0 : (goldWeak ? 0.15 : 0.55)
+                                var nasdaqScale = nasdaqStrong ? 1.0 : (nasdaqWeak ? 0.10 : 0.50)
+
+                                if guardKind == .drawdownTrend {
+                                    let goldStart = max(0, index - 252)
+                                    let nasdaqStart = max(0, index - 252)
+                                    let goldPeak = gold[goldStart...index].max() ?? gold[index]
+                                    let nasdaqPeak = nasdaq[nasdaqStart...index].max() ?? nasdaq[index]
+                                    let goldDrawdown = goldPeak > 0 ? gold[index] / goldPeak - 1 : 0
+                                    let nasdaqDrawdown = nasdaqPeak > 0 ? nasdaq[index] / nasdaqPeak - 1 : 0
+                                    if goldDrawdown < -0.12 && goldM126 < 0 { goldScale = min(goldScale, 0.25) }
+                                    if nasdaqDrawdown < -0.15 && nasdaqM126 < 0 { nasdaqScale = min(nasdaqScale, 0.18) }
+                                }
+
+                                var goldWeight = baseGoldWeight * goldScale
+                                var nasdaqWeight = (1 - baseGoldWeight) * nasdaqScale
+                                if guardKind == .trendTransfer || guardKind == .drawdownTrend {
+                                    let releasedGold = baseGoldWeight - goldWeight
+                                    let releasedNasdaq = (1 - baseGoldWeight) - nasdaqWeight
+                                    if goldStrong && !nasdaqStrong { goldWeight += releasedNasdaq * 0.55 }
+                                    if nasdaqStrong && !goldStrong { nasdaqWeight += releasedGold * 0.55 }
+                                }
+                                if guardKind == .portfolioBreadth {
+                                    let confirmed = (goldStrong ? 1 : 0) + (nasdaqStrong ? 1 : 0)
+                                    let maxGross = confirmed == 2 ? 1.0 : (confirmed == 1 ? 0.72 : 0.38)
+                                    let gross = goldWeight + nasdaqWeight
+                                    if gross > maxGross, gross > 0 {
+                                        let scale = maxGross / gross
+                                        goldWeight *= scale
+                                        nasdaqWeight *= scale
+                                    }
+                                }
+                                return ["gold_cny": max(goldWeight, 0), "nasdaq": max(nasdaqWeight, 0)]
+                            }
+                        ) else { continue }
+                        let fullRow = MetricRow(title: title, id: id, annualized: report.annualizedReturn, maxDrawdown: report.maxDrawdown, volatility: report.annualizedVolatility, sharpe: report.sharpeRatio, start: report.points.first?.date.recordDateString ?? "n/a", end: report.points.last?.date.recordDateString ?? "n/a", pointCount: report.points.count)
+                        rows.append(contentsOf: metricRowsForSlices(title: title, id: id, points: report.points, fullRow: fullRow))
+                    }
+                }
+            }
+            printSliceRows(rows, header: "APP_DUAL_TREND_BARBELL_ZOO")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_GOLD_NASDAQ_REBALANCE_ZOO"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = ["gold_cny", "nasdaq"].compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            enum Kind: String, CaseIterable { case staticBand, ratioContrarian, boundedRiskParity, contrarianTrendGuard }
+            let baseGoldWeights = [0.35, 0.45, 0.55, 0.65]
+            let rebalanceOptions = [63, 126, 252]
+            let kinds = Kind.allCases
+            var rows: [SliceMetricRow] = []
+            for kind in kinds {
+                for baseGoldWeight in baseGoldWeights {
+                    for rebalanceSessions in rebalanceOptions {
+                        let id = String(format: "gold_nasdaq_%@_g%.0f_r%d", kind.rawValue, baseGoldWeight * 100, rebalanceSessions)
+                        let title = String(format: "金纳战略再平衡-%@-G%.0f-R%d", kind.rawValue, baseGoldWeight * 100, rebalanceSessions)
+                        let config = ResearchTargetStrategyConfig(
+                            symbol: id,
+                            title: title,
+                            warmupSessions: 540,
+                            rebalanceSessions: rebalanceSessions,
+                            rebalanceBand: 0.12,
+                            maxGrossExposure: 1.0,
+                            allowsFinancedExposure: false,
+                            buyReason: "金纳战略再平衡调仓"
+                        )
+                        guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                            assetInputs: inputs,
+                            initialCash: 100_000,
+                            settings: settings,
+                            config: config,
+                            targetWeights: { context, data in
+                                let index = context.signalIndex
+                                guard let gold = data.pricesBySymbol["gold_cny"],
+                                      let nasdaq = data.pricesBySymbol["nasdaq"],
+                                      gold.indices.contains(index), nasdaq.indices.contains(index),
+                                      gold[index] > 0, nasdaq[index] > 0 else { return [:] }
+                                var goldWeight = baseGoldWeight
+                                var nasdaqWeight = 1 - baseGoldWeight
+
+                                if kind == .boundedRiskParity {
+                                    guard let goldVol = annualizedVolatility(gold, at: index, lookback: 126),
+                                          let nasdaqVol = annualizedVolatility(nasdaq, at: index, lookback: 126) else {
+                                        return ["gold_cny": goldWeight, "nasdaq": nasdaqWeight]
+                                    }
+                                    let inverseGold = 1 / max(goldVol, 0.08)
+                                    let inverseNasdaq = 1 / max(nasdaqVol, 0.08)
+                                    let total = inverseGold + inverseNasdaq
+                                    let riskParityGold = inverseGold / total
+                                    goldWeight = min(max(0.50 * baseGoldWeight + 0.50 * riskParityGold, 0.30), 0.70)
+                                    nasdaqWeight = 1 - goldWeight
+                                }
+
+                                if kind == .ratioContrarian || kind == .contrarianTrendGuard {
+                                    let lookback = 504
+                                    guard index >= lookback else { return ["gold_cny": goldWeight, "nasdaq": nasdaqWeight] }
+                                    var ratios: [Double] = []
+                                    ratios.reserveCapacity(lookback)
+                                    for offset in 0..<lookback {
+                                        let position = index - offset
+                                        guard gold[position] > 0, nasdaq[position] > 0 else { continue }
+                                        ratios.append(log(gold[position] / nasdaq[position]))
+                                    }
+                                    if ratios.count >= 120 {
+                                        let mean = ratios.reduce(0, +) / Double(ratios.count)
+                                        let variance = ratios.reduce(0) { $0 + pow($1 - mean, 2) } / Double(max(ratios.count - 1, 1))
+                                        let deviation = sqrt(max(variance, 0))
+                                        if deviation > 0 {
+                                            let current = log(gold[index] / nasdaq[index])
+                                            let z = (current - mean) / deviation
+                                            let tilt = min(max(abs(z) - 0.35, 0) / 1.65, 1) * 0.18
+                                            if z > 0 {
+                                                goldWeight -= tilt
+                                                nasdaqWeight += tilt
+                                            } else {
+                                                goldWeight += tilt
+                                                nasdaqWeight -= tilt
+                                            }
+                                        }
+                                    }
+                                }
+
+                                goldWeight = min(max(goldWeight, 0.22), 0.78)
+                                nasdaqWeight = min(max(nasdaqWeight, 0.22), 0.78)
+                                let gross = goldWeight + nasdaqWeight
+                                if gross > 1 { goldWeight /= gross; nasdaqWeight /= gross }
+
+                                if kind == .contrarianTrendGuard {
+                                    let goldMomentum = priceMomentum(gold, at: index, lookback: 252) ?? 0
+                                    let nasdaqMomentum = priceMomentum(nasdaq, at: index, lookback: 252) ?? 0
+                                    let goldMA = movingAverage(gold, at: index, period: 200) ?? gold[index]
+                                    let nasdaqMA = movingAverage(nasdaq, at: index, period: 200) ?? nasdaq[index]
+                                    let goldBroken = gold[index] < goldMA && goldMomentum < -0.05
+                                    let nasdaqBroken = nasdaq[index] < nasdaqMA && nasdaqMomentum < -0.05
+                                    if goldBroken {
+                                        let released = goldWeight * 0.65
+                                        goldWeight -= released
+                                        if !nasdaqBroken && nasdaqMomentum > 0 { nasdaqWeight += released * 0.60 }
+                                    }
+                                    if nasdaqBroken {
+                                        let released = nasdaqWeight * 0.65
+                                        nasdaqWeight -= released
+                                        if !goldBroken && goldMomentum > 0 { goldWeight += released * 0.60 }
+                                    }
+                                }
+                                return ["gold_cny": goldWeight, "nasdaq": nasdaqWeight]
+                            }
+                        ) else { continue }
+                        let fullRow = MetricRow(
+                            title: title, id: id, annualized: report.annualizedReturn, maxDrawdown: report.maxDrawdown,
+                            volatility: report.annualizedVolatility, sharpe: report.sharpeRatio,
+                            start: report.points.first?.date.recordDateString ?? "n/a",
+                            end: report.points.last?.date.recordDateString ?? "n/a", pointCount: report.points.count
+                        )
+                        rows.append(contentsOf: metricRowsForSlices(title: title, id: id, points: report.points, fullRow: fullRow))
+                    }
+                }
+            }
+            printSliceRows(rows, header: "APP_GOLD_NASDAQ_REBALANCE_ZOO")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_REGIONAL_TREND_BUCKET_ZOO"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let symbols = ["gold_cny", "nasdaq", "sp500", "dowjones", "hsi", "nikkei", "csi300", "shanghai_composite", "shenzhen_component", "chinext"]
+            let inputs = symbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            let buckets: [(name: String, symbols: [String], prior: Double)] = [
+                ("gold", ["gold_cny"], 1.10),
+                ("us", ["nasdaq", "sp500", "dowjones"], 1.00),
+                ("china", ["csi300", "shanghai_composite", "shenzhen_component", "chinext"], 0.85),
+                ("asia", ["hsi", "nikkei"], 0.85)
+            ]
+            let rebalanceOptions = [63, 84, 126]
+            let targetVolatilityOptions = [0.10, 0.12]
+            let minimumVoteOptions = [2, 3]
+            let trendTiltOptions = [0.0, 0.6]
+            var rows: [SliceMetricRow] = []
+            for rebalanceSessions in rebalanceOptions {
+                for targetVolatility in targetVolatilityOptions {
+                    for minimumVotes in minimumVoteOptions {
+                        for trendTilt in trendTiltOptions {
+                            let id = String(format: "regional_trend_r%d_v%.0f_q%d_t%.1f", rebalanceSessions, targetVolatility * 100, minimumVotes, trendTilt)
+                            let title = String(format: "区域趋势风险桶-R%d-V%.0f-Q%d-T%.1f", rebalanceSessions, targetVolatility * 100, minimumVotes, trendTilt)
+                            let config = ResearchTargetStrategyConfig(symbol: id, title: title, warmupSessions: 280, rebalanceSessions: rebalanceSessions, rebalanceBand: 0.10, zeroFillBeforeFirstSymbols: Set(symbols), maxGrossExposure: 1.0, allowsFinancedExposure: false, buyReason: "区域趋势风险桶调仓")
+                            guard let report = BacktestEngine.runResearchTargetProviderStrategy(assetInputs: inputs, initialCash: 100_000, settings: settings, config: config, targetWeights: { context, data in
+                                let index = context.signalIndex
+                                var leaders: [(symbol: String, score: Double, volatility: Double, prior: Double)] = []
+                                for bucket in buckets {
+                                    var best: (symbol: String, score: Double, volatility: Double)?
+                                    for symbol in bucket.symbols {
+                                        guard let prices = data.pricesBySymbol[symbol], prices.indices.contains(index), prices[index] > 0,
+                                              let m63 = priceMomentum(prices, at: index, lookback: 63),
+                                              let m126 = priceMomentum(prices, at: index, lookback: 126),
+                                              let m252 = priceMomentum(prices, at: index, lookback: 252),
+                                              let vol = annualizedVolatility(prices, at: index, lookback: 126),
+                                              let ma200 = movingAverage(prices, at: index, period: 200) else { continue }
+                                        let votes = [m63 > 0, m126 > 0, m252 > 0, prices[index] > ma200].filter { $0 }.count
+                                        guard votes >= minimumVotes, m252 > -0.05 else { continue }
+                                        let score = (m63 * 0.20 + m126 * 0.35 + m252 * 0.45) / max(vol, 0.08)
+                                        guard score > 0 else { continue }
+                                        if best == nil || score > best!.score { best = (symbol, score, vol) }
+                                    }
+                                    if let best { leaders.append((best.symbol, best.score, best.volatility, bucket.prior)) }
+                                }
+                                guard !leaders.isEmpty else { return [:] }
+                                var raw: [String: Double] = [:]
+                                for leader in leaders {
+                                    let tilt = 1 + trendTilt * min(max(leader.score, 0), 1.5)
+                                    raw[leader.symbol] = leader.prior * tilt / max(leader.volatility, 0.08)
+                                }
+                                let total = raw.values.reduce(0, +)
+                                guard total > 0 else { return [:] }
+                                var weights = raw.mapValues { $0 / total }
+                                for symbol in Array(weights.keys) { weights[symbol] = min(weights[symbol] ?? 0, symbol == "gold_cny" ? 0.45 : 0.42) }
+                                let activeScale: Double = leaders.count == 1 ? 0.68 : (leaders.count == 2 ? 0.86 : 1.0)
+                                let portfolioVol = weightedPortfolioAnnualizedVolatility(weights: weights, pricesBySymbol: data.pricesBySymbol, at: index, lookback: 126) ?? targetVolatility
+                                let volScale = min(targetVolatility / max(portfolioVol, 0.04), 1.0)
+                                let grossScale = min(activeScale, volScale)
+                                return weights.mapValues { $0 * grossScale }
+                            }) else { continue }
+                            let fullRow = MetricRow(title: title, id: id, annualized: report.annualizedReturn, maxDrawdown: report.maxDrawdown, volatility: report.annualizedVolatility, sharpe: report.sharpeRatio, start: report.points.first?.date.recordDateString ?? "n/a", end: report.points.last?.date.recordDateString ?? "n/a", pointCount: report.points.count)
+                            rows.append(contentsOf: metricRowsForSlices(title: title, id: id, points: report.points, fullRow: fullRow))
+                        }
+                    }
+                }
+            }
+            printSliceRows(rows, header: "APP_REGIONAL_TREND_BUCKET_ZOO")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_TREND_RISK_PARITY_ZOO"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let symbols = ["gold_cny", "nasdaq", "sp500", "dowjones", "hsi", "nikkei", "csi300", "shanghai_composite", "shenzhen_component", "chinext"]
+            let inputs = symbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let rebalanceOptions = [63, 84, 126]
+            let targetVolatilityOptions = [0.10, 0.12]
+            let topCountOptions = [3, 5]
+            let correlationPenaltyOptions = [0.0, 1.5]
+            var rows: [SliceMetricRow] = []
+
+            for rebalanceSessions in rebalanceOptions {
+                for targetVolatility in targetVolatilityOptions {
+                    for topCount in topCountOptions {
+                        for correlationPenalty in correlationPenaltyOptions {
+                            let id = String(format: "trend_rp_r%d_v%.0f_n%d_c%.1f", rebalanceSessions, targetVolatility * 100, topCount, correlationPenalty)
+                            let title = String(format: "多周期趋势风险平价-R%d-V%.0f-N%d-C%.1f", rebalanceSessions, targetVolatility * 100, topCount, correlationPenalty)
+                            let config = ResearchTargetStrategyConfig(
+                                symbol: id,
+                                title: title,
+                                warmupSessions: 280,
+                                rebalanceSessions: rebalanceSessions,
+                                rebalanceBand: 0.10,
+                                maxGrossExposure: 1.0,
+                                allowsFinancedExposure: false,
+                                buyReason: "多周期趋势风险平价调仓"
+                            )
+                            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                assetInputs: inputs,
+                                initialCash: 100_000,
+                                settings: settings,
+                                config: config,
+                                targetWeights: { context, data in
+                                    let index = context.signalIndex
+                                    var candidates: [(symbol: String, score: Double, volatility: Double)] = []
+                                    for symbol in data.tradableSymbols {
+                                        guard let prices = data.pricesBySymbol[symbol],
+                                              let momentum63 = priceMomentum(prices, at: index, lookback: 63),
+                                              let momentum126 = priceMomentum(prices, at: index, lookback: 126),
+                                              let momentum252 = priceMomentum(prices, at: index, lookback: 252),
+                                              let volatility = annualizedVolatility(prices, at: index, lookback: 126),
+                                              let average200 = movingAverage(prices, at: index, period: 200),
+                                              prices.indices.contains(index), prices[index] > 0 else { continue }
+                                        let positiveVotes = [momentum63 > 0, momentum126 > 0, momentum252 > 0, prices[index] > average200].filter { $0 }.count
+                                        guard positiveVotes >= 3, momentum252 > -0.03 else { continue }
+                                        let blendedMomentum = momentum63 * 0.20 + momentum126 * 0.30 + momentum252 * 0.50
+                                        let normalizedTrend = blendedMomentum / max(volatility, 0.08)
+                                        guard normalizedTrend > 0 else { continue }
+                                        candidates.append((symbol, normalizedTrend, volatility))
+                                    }
+                                    candidates.sort { lhs, rhs in lhs.score == rhs.score ? lhs.symbol < rhs.symbol : lhs.score > rhs.score }
+                                    let selected = Array(candidates.prefix(topCount))
+                                    guard !selected.isEmpty else { return [:] }
+
+                                    var rawWeights: [String: Double] = [:]
+                                    for candidate in selected {
+                                        var averagePositiveCorrelation = 0.0
+                                        var correlationCount = 0
+                                        if correlationPenalty > 0, let candidatePrices = data.pricesBySymbol[candidate.symbol] {
+                                            for peer in selected where peer.symbol != candidate.symbol {
+                                                guard let peerPrices = data.pricesBySymbol[peer.symbol],
+                                                      let correlation = rollingCorrelation(candidatePrices, peerPrices, at: index, lookback: 126) else { continue }
+                                                averagePositiveCorrelation += max(correlation, 0)
+                                                correlationCount += 1
+                                            }
+                                        }
+                                        if correlationCount > 0 { averagePositiveCorrelation /= Double(correlationCount) }
+                                        let trendTilt = 0.60 + min(max(candidate.score, 0), 1.50)
+                                        let diversificationPenalty = 1 + correlationPenalty * averagePositiveCorrelation
+                                        rawWeights[candidate.symbol] = trendTilt / max(candidate.volatility, 0.08) / diversificationPenalty
+                                    }
+                                    let rawTotal = rawWeights.values.reduce(0, +)
+                                    guard rawTotal > 0 else { return [:] }
+                                    var normalized = rawWeights.mapValues { $0 / rawTotal }
+                                    for symbol in Array(normalized.keys) { normalized[symbol] = min(normalized[symbol] ?? 0, symbol == "gold_cny" ? 0.45 : 0.40) }
+                                    let usSymbols = ["nasdaq", "sp500", "dowjones"]
+                                    let chinaSymbols = ["csi300", "shanghai_composite", "shenzhen_component", "chinext"]
+                                    func capCluster(_ cluster: [String], at cap: Double) {
+                                        let total = cluster.reduce(0.0) { $0 + (normalized[$1] ?? 0) }
+                                        guard total > cap, total > 0 else { return }
+                                        let scale = cap / total
+                                        for symbol in cluster where normalized[symbol] != nil { normalized[symbol]! *= scale }
+                                    }
+                                    capCluster(usSymbols, at: 0.58)
+                                    capCluster(chinaSymbols, at: 0.38)
+                                    let breadthScale = min(1.0, 0.60 + 0.40 * Double(candidates.count) / Double(max(data.tradableSymbols.count, 1)))
+                                    let currentVolatility = weightedPortfolioAnnualizedVolatility(weights: normalized, pricesBySymbol: data.pricesBySymbol, at: index, lookback: 126) ?? targetVolatility
+                                    let grossScale = min(breadthScale, min(targetVolatility / max(currentVolatility, 0.04), 1.0))
+                                    return normalized.mapValues { $0 * grossScale }
+                                }
+                            ) else { continue }
+                            let fullRow = MetricRow(title: title, id: id, annualized: report.annualizedReturn, maxDrawdown: report.maxDrawdown, volatility: report.annualizedVolatility, sharpe: report.sharpeRatio, start: report.points.first?.date.recordDateString ?? "n/a", end: report.points.last?.date.recordDateString ?? "n/a", pointCount: report.points.count)
+                            rows.append(contentsOf: metricRowsForSlices(title: title, id: id, points: report.points, fullRow: fullRow))
+                        }
+                    }
+                }
+            }
+            printSliceRows(rows, header: "APP_TREND_RISK_PARITY_ZOO")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_ALL_MODE_ZOO"] == "1" {
+            let modes: [AdvancedBacktestStrategyMode] = [
+                .ultraDefensiveRotation,
+                .defensiveRotation,
+                .lowDrawdownRotation,
+                .balancedRotation,
+                .enhancedRotation,
+                .longTermDefensiveTrend,
+                .longTermEnhancedLowDrawdownTrend,
+                .steadyDrawdownLadderTrend,
+                .septemberGuardLadderTrend,
+                .longTermGrowthTrend,
+                .longTermLowVolMomentum,
+                .robustLowVolMomentum,
+                .overheatGuardMomentum,
+                .highZoneDecelerationMomentum,
+                .pairConfirmDoubleGuardMomentum,
+                .tailBreakdownLockMomentum,
+                .recentLossVolatilityMetaMomentum,
+                .coreGoldSatelliteConservativeMomentum,
+                .coreGoldSatelliteBalancedMomentum,
+                .coreGoldSatelliteFullMomentum,
+                .coreGoldSatelliteHeatCappedMomentum,
+                .coreGoldSatelliteGoldHandoffMomentum,
+                .coreGoldSatelliteEquityBreadthMomentum,
+                .coreGoldSatelliteOneWayVolManagedMomentum,
+                .coreGoldSatelliteEquityCurveStateGateMomentum,
+                .coreGoldSatelliteSharpeStateGateMomentum,
+                .coreGoldSatelliteAssetRiskGateMomentum,
+                .coreGoldSatelliteRiskBudgetStateGateMomentum,
+                .coreGoldSatelliteConfirmedAccelerationMomentum,
+                .coreGoldSatelliteProfitLockMomentum,
+                .coreGoldSatelliteDynamicSleeveMomentum,
+                .coreGoldSatelliteContagionRepairMomentum,
+                .coreGoldSatelliteCurrencyCashMomentum,
+                .coreGoldSatelliteGoldPanicLockMomentum,
+                .coreGoldSatelliteRiskEfficiencyMomentum,
+                .coreGoldSatelliteMonthlyHeatCappedMomentum,
+                .coreGoldSatelliteConfirmedExcessMomentum,
+                .coreGoldSatelliteAggressiveMomentum,
+                .canaryMomentumDefense,
+                .drawdownReentryMomentum,
+                .goldCoreTrendSatellite,
+                .goldNasdaqSteadyRotation,
+                .goldNasdaqPortfolioScheduler,
+                .strongVolControlledRotation,
+                .momentumRotation,
+            ]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            var sliceRows: [SliceMetricRow] = []
+            for mode in modes {
+                let options = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }
+                let inputs = options.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else {
+                    sliceRows.append(SliceMetricRow(
+                        slice: "full",
+                        row: MetricRow(
+                            title: mode.title,
+                            id: mode.rawValue,
+                            annualized: nil,
+                            maxDrawdown: nil,
+                            volatility: nil,
+                            sharpe: nil,
+                            start: "n/a",
+                            end: "n/a",
+                            pointCount: 0
+                        )
+                    ))
+                    continue
+                }
+                let fullRow = MetricRow(
+                    title: mode.title,
+                    id: mode.rawValue,
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+                sliceRows.append(contentsOf: metricRowsForSlices(
+                    title: mode.title,
+                    id: mode.rawValue,
+                    points: report.points,
+                    fullRow: fullRow
+                ))
+            }
+            printSliceRows(sliceRows, header: "APP_ALL_MODE_ZOO")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_FEE_AWARE_ZOO"] == "1" {
+            runFeeAwareZoo(seriesBySymbol: seriesBySymbol, settings: settings)
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_LOW_TURNOVER_ZOO"] == "1" {
+            runLowTurnoverZoo(seriesBySymbol: seriesBySymbol, settings: settings)
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_QUALITY_TARGET_ZOO"] == "1" {
+            runQualityTargetZoo(seriesBySymbol: seriesBySymbol, settings: settings)
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_STRICT_12_8_ZOO"] == "1" {
+            runStrictTargetZoo(seriesBySymbol: seriesBySymbol, settings: settings)
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_ADAPTIVE_ANCHOR_GRID"] == "1" {
+            runAdaptiveAnchorGrid(seriesBySymbol: seriesBySymbol, settings: settings)
+            return
+        }
+
         if ProcessInfo.processInfo.environment["ATM_ASSET_RISK_GRID"] == "1"
             || ProcessInfo.processInfo.environment["ATM_ASSET_RISK_FOCUSED_GRID"] == "1" {
-            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
             let options = AdvancedBacktestStrategyMode.coreGoldSatelliteAssetRiskGateMomentum.requiredSignalAssetSymbols.compactMap {
                 optionsBySymbol[$0]
             }
@@ -547,7 +15291,7 @@ struct StrategyMetricDump {
 
         if ProcessInfo.processInfo.environment["ATM_SHARPE_GRID"] == "1"
             || ProcessInfo.processInfo.environment["ATM_SHARPE_FOCUSED_GRID"] == "1" {
-            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
             let options = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum.requiredSignalAssetSymbols.compactMap {
                 optionsBySymbol[$0]
             }
@@ -596,8 +15340,225 @@ struct StrategyMetricDump {
             return
         }
 
+        if ProcessInfo.processInfo.environment["ATM_SHARPE_FINE_GRID"] == "1" {
+            runSharpeFineGrid(seriesBySymbol: seriesBySymbol, settings: settings)
+            return
+        }
+
+        if let variant = ProcessInfo.processInfo.environment["ATM_RISK_BUDGET_ROUTER_VARIANT"] {
+            let parts = variant.split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+            guard parts.count == 4 else {
+                print("APP_RISK_BUDGET_ROUTER_VARIANT")
+                print("invalid")
+                return
+            }
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            BacktestResearchOverrides.riskBudgetLowScale = 1.0
+            BacktestResearchOverrides.riskBudgetMultiplier = 1.0
+            BacktestResearchOverrides.riskBudgetVolatilityScaleFloor = parts[0]
+            BacktestResearchOverrides.riskBudgetReturnLookbackSessions = Int(parts[1].rounded())
+            BacktestResearchOverrides.riskBudgetRebalanceBand = parts[2]
+            BacktestResearchOverrides.riskBudgetDefensiveShare = parts[3]
+            defer {
+                BacktestResearchOverrides.riskBudgetLowScale = nil
+                BacktestResearchOverrides.riskBudgetMultiplier = nil
+                BacktestResearchOverrides.riskBudgetVolatilityScaleFloor = nil
+                BacktestResearchOverrides.riskBudgetReturnLookbackSessions = nil
+                BacktestResearchOverrides.riskBudgetRebalanceBand = nil
+                BacktestResearchOverrides.riskBudgetDefensiveShare = nil
+            }
+            guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: .coreGoldSatelliteRiskBudgetStateGateMomentum
+            ) else {
+                print("APP_RISK_BUDGET_ROUTER_VARIANT")
+                print("no_report")
+                return
+            }
+            let title = String(format: "风险预算路由-保留%.0f%%-观察%d-阈值%.0f%%-防守%.0f%%", parts[0] * 100, Int(parts[1].rounded()), parts[2] * 100, parts[3] * 100)
+            let fullRow = MetricRow(
+                title: title,
+                id: "risk_budget_router_variant",
+                annualized: report.annualizedReturn,
+                maxDrawdown: report.maxDrawdown,
+                volatility: report.annualizedVolatility,
+                sharpe: report.sharpeRatio,
+                start: report.points.first?.date.recordDateString ?? "n/a",
+                end: report.points.last?.date.recordDateString ?? "n/a",
+                pointCount: report.points.count
+            )
+            printSliceRows(metricRowsForSlices(
+                title: title,
+                id: fullRow.id,
+                points: report.points,
+                fullRow: fullRow
+            ), header: "APP_RISK_BUDGET_ROUTER_VARIANT")
+            let totalTradeCash = report.trades.reduce(0) { $0 + abs($1.cashAmount) }
+            print("APP_RISK_BUDGET_ROUTER_TRADE_DIAGNOSTICS")
+            print("trade_count,total_trade_cash,average_cash_ratio,final_portfolio_value")
+            print(String(format: "%d,%.2f,%.6f,%.2f", report.trades.count, totalTradeCash, report.averageCashRatio, report.finalPortfolioValue))
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_RISK_BUDGET_ROUTER_GRID"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let scaleFloors = [0.60, 0.90, 1.00]
+            let returnLookbacks = [120, 240, 360, 480]
+            let rebalanceBands = [0.08, 0.12, 0.16]
+            var sliceRows: [SliceMetricRow] = []
+            for scaleFloor in scaleFloors {
+                for returnLookback in returnLookbacks {
+                    for rebalanceBand in rebalanceBands {
+                        BacktestResearchOverrides.riskBudgetLowScale = 1.0
+                        BacktestResearchOverrides.riskBudgetMultiplier = 1.0
+                        BacktestResearchOverrides.riskBudgetDefensiveShare = 0.50
+                        BacktestResearchOverrides.riskBudgetVolatilityScaleFloor = scaleFloor
+                        BacktestResearchOverrides.riskBudgetReturnLookbackSessions = returnLookback
+                        BacktestResearchOverrides.riskBudgetRebalanceBand = rebalanceBand
+                        let title = String(format: "风险预算保留%.0f%%-观察%d-阈值%.0f%%", scaleFloor * 100, returnLookback, rebalanceBand * 100)
+                        let id = String(format: "risk_budget_router_%.2f_%d_%.2f", scaleFloor, returnLookback, rebalanceBand)
+                        guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                            assetInputs: inputs,
+                            initialCash: 100_000,
+                            settings: settings,
+                            mode: .coreGoldSatelliteRiskBudgetStateGateMomentum
+                        ) else {
+                            sliceRows.append(SliceMetricRow(
+                                slice: "full",
+                                row: MetricRow(
+                                    title: title,
+                                    id: id,
+                                    annualized: nil,
+                                    maxDrawdown: nil,
+                                    volatility: nil,
+                                    sharpe: nil,
+                                    start: "n/a",
+                                    end: "n/a",
+                                    pointCount: 0
+                                )
+                            ))
+                            continue
+                        }
+                        let fullRow = MetricRow(
+                            title: title,
+                            id: id,
+                            annualized: report.annualizedReturn,
+                            maxDrawdown: report.maxDrawdown,
+                            volatility: report.annualizedVolatility,
+                            sharpe: report.sharpeRatio,
+                            start: report.points.first?.date.recordDateString ?? "n/a",
+                            end: report.points.last?.date.recordDateString ?? "n/a",
+                            pointCount: report.points.count
+                        )
+                        sliceRows.append(contentsOf: metricRowsForSlices(
+                            title: title,
+                            id: id,
+                            points: report.points,
+                            fullRow: fullRow
+                        ))
+                    }
+                }
+            }
+            BacktestResearchOverrides.riskBudgetLowScale = nil
+            BacktestResearchOverrides.riskBudgetMultiplier = nil
+            BacktestResearchOverrides.riskBudgetDefensiveShare = nil
+            BacktestResearchOverrides.riskBudgetVolatilityScaleFloor = nil
+            BacktestResearchOverrides.riskBudgetReturnLookbackSessions = nil
+            BacktestResearchOverrides.riskBudgetRebalanceBand = nil
+            printSliceRows(sliceRows, header: "APP_RISK_BUDGET_ROUTER_GRID")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_RISK_BUDGET_VOL_FLOOR_GRID"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let scaleFloors = [0.00, 0.40, 0.60, 0.75, 0.90, 1.00]
+            let defensiveShares = [0.00, 0.25, 0.50, 0.70]
+            var sliceRows: [SliceMetricRow] = []
+            for scaleFloor in scaleFloors {
+                for defensiveShare in defensiveShares {
+                    BacktestResearchOverrides.riskBudgetLowScale = 1.0
+                    BacktestResearchOverrides.riskBudgetMultiplier = 1.0
+                    BacktestResearchOverrides.riskBudgetDefensiveShare = defensiveShare
+                    BacktestResearchOverrides.riskBudgetVolatilityScaleFloor = scaleFloor
+                    let title = String(format: "风险预算波动保留%.0f%%-防守%.0f%%", scaleFloor * 100, defensiveShare * 100)
+                    let id = String(format: "risk_budget_vol_floor_%.2f_def_%.2f", scaleFloor, defensiveShare)
+                    guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                        assetInputs: inputs,
+                        initialCash: 100_000,
+                        settings: settings,
+                        mode: .coreGoldSatelliteRiskBudgetStateGateMomentum
+                    ) else {
+                        sliceRows.append(SliceMetricRow(
+                            slice: "full",
+                            row: MetricRow(
+                                title: title,
+                                id: id,
+                                annualized: nil,
+                                maxDrawdown: nil,
+                                volatility: nil,
+                                sharpe: nil,
+                                start: "n/a",
+                                end: "n/a",
+                                pointCount: 0
+                            )
+                        ))
+                        continue
+                    }
+                    let fullRow = MetricRow(
+                        title: title,
+                        id: id,
+                        annualized: report.annualizedReturn,
+                        maxDrawdown: report.maxDrawdown,
+                        volatility: report.annualizedVolatility,
+                        sharpe: report.sharpeRatio,
+                        start: report.points.first?.date.recordDateString ?? "n/a",
+                        end: report.points.last?.date.recordDateString ?? "n/a",
+                        pointCount: report.points.count
+                    )
+                    sliceRows.append(contentsOf: metricRowsForSlices(
+                        title: title,
+                        id: id,
+                        points: report.points,
+                        fullRow: fullRow
+                    ))
+                }
+            }
+            BacktestResearchOverrides.riskBudgetLowScale = nil
+            BacktestResearchOverrides.riskBudgetMultiplier = nil
+            BacktestResearchOverrides.riskBudgetDefensiveShare = nil
+            BacktestResearchOverrides.riskBudgetVolatilityScaleFloor = nil
+            printSliceRows(sliceRows, header: "APP_RISK_BUDGET_VOL_FLOOR_GRID")
+            return
+        }
+
         if ProcessInfo.processInfo.environment["ATM_RISK_BUDGET_FOCUSED_GRID"] == "1" {
-            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
             let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
                 optionsBySymbol[$0]
             }
@@ -662,7 +15623,7 @@ struct StrategyMetricDump {
                 return
             }
 
-            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
             let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
                 optionsBySymbol[$0]
             }
@@ -719,6 +15680,215 @@ struct StrategyMetricDump {
             return
         }
 
+        if ProcessInfo.processInfo.environment["ATM_OHLC_OVERLAY_GRID"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let overlaySymbols = [
+                "gold_cny", "nasdaq", "sp500", "dowjones", "hsi", "nikkei",
+                "csi300", "shanghai_composite", "shenzhen_component", "chinext"
+            ]
+            let candidateModes: [AdvancedBacktestStrategyMode] = [
+                .coreGoldSatelliteOneWayVolManagedMomentum,
+                .coreGoldSatelliteEquityCurveStateGateMomentum,
+                .coreGoldSatelliteAssetRiskGateMomentum,
+                .coreGoldSatelliteRiskBudgetStateGateMomentum,
+                .coreGoldSatelliteConfirmedAccelerationMomentum,
+                .coreGoldSatelliteProfitLockMomentum,
+                .coreGoldSatelliteDynamicSleeveMomentum
+            ]
+            let variants = ["balanced", "risk_first"]
+            var sliceRows: [SliceMetricRow] = []
+
+            func orderedUnion(_ first: [String], _ second: [String]) -> [String] {
+                var seen = Set<String>()
+                var output: [String] = []
+                for symbol in first + second where !seen.contains(symbol) {
+                    seen.insert(symbol)
+                    output.append(symbol)
+                }
+                return output
+            }
+
+            for variant in variants {
+                BacktestResearchOverrides.ohlcRiskOverlayVariant = variant
+                for mode in candidateModes {
+                    let symbols = orderedUnion(mode.requiredSignalAssetSymbols, overlaySymbols)
+                    let options = symbols.compactMap { optionsBySymbol[$0] }
+                    let inputs = options.map { option in
+                        BacktestEngine.advancedAssetInput(for: option) { symbol in
+                            seriesBySymbol[normalizedHistorySymbol(symbol)]
+                        }
+                    }
+                    let title = "\(mode.title)-OHLC-\(variant)"
+                    let id = "\(mode.rawValue)-ohlc-\(variant)"
+                    guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                        assetInputs: inputs,
+                        initialCash: 100_000,
+                        settings: settings,
+                        mode: mode
+                    ) else {
+                        sliceRows.append(SliceMetricRow(
+                            slice: "full",
+                            row: MetricRow(
+                                title: title,
+                                id: id,
+                                annualized: nil,
+                                maxDrawdown: nil,
+                                volatility: nil,
+                                sharpe: nil,
+                                start: "n/a",
+                                end: "n/a",
+                                pointCount: 0
+                            )
+                        ))
+                        continue
+                    }
+                    let fullRow = MetricRow(
+                        title: title,
+                        id: id,
+                        annualized: report.annualizedReturn,
+                        maxDrawdown: report.maxDrawdown,
+                        volatility: report.annualizedVolatility,
+                        sharpe: report.sharpeRatio,
+                        start: report.points.first?.date.recordDateString ?? "n/a",
+                        end: report.points.last?.date.recordDateString ?? "n/a",
+                        pointCount: report.points.count
+                    )
+                    sliceRows.append(contentsOf: metricRowsForSlices(
+                        title: title,
+                        id: id,
+                        points: report.points,
+                        fullRow: fullRow
+                    ))
+                }
+            }
+            BacktestResearchOverrides.ohlcRiskOverlayVariant = nil
+            printSliceRows(sliceRows, header: "APP_OHLC_OVERLAY_GRID")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_EQUITY_CURVE_GRID"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteEquityCurveStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let offensiveShares = [1.00]
+            let defensiveShares = [0.50, 0.70, 0.90]
+            let lowScales = [0.70, 0.85, 1.00]
+            let enterDrawdowns = [0.020, 0.025, 0.030]
+            let exitReturns = [0.020]
+            print("APP_EQUITY_CURVE_GRID")
+            print("offensive_share,defensive_share,low_scale,enter_drawdown,exit_return,annualized,max_drawdown,volatility,sharpe,start,end,points")
+            for offensiveShare in offensiveShares {
+                for defensiveShare in defensiveShares {
+                    for lowScale in lowScales {
+                        for enterDrawdown in enterDrawdowns {
+                            for exitReturn in exitReturns {
+                                BacktestResearchOverrides.equityCurveOffensiveShare = offensiveShare
+                                BacktestResearchOverrides.equityCurveDefensiveShare = defensiveShare
+                                BacktestResearchOverrides.equityCurveLowScale = lowScale
+                                BacktestResearchOverrides.equityCurveEnterDrawdown = enterDrawdown
+                                BacktestResearchOverrides.equityCurveExitReturn = exitReturn
+                                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    mode: .coreGoldSatelliteEquityCurveStateGateMomentum
+                                ) else {
+                                    print(String(format: "%.2f,%.2f,%.2f,%.3f,%.3f,n/a,n/a,n/a,n/a,n/a,n/a,0", offensiveShare, defensiveShare, lowScale, enterDrawdown, exitReturn))
+                                    continue
+                                }
+                                print([
+                                    String(format: "%.2f", offensiveShare),
+                                    String(format: "%.2f", defensiveShare),
+                                    String(format: "%.2f", lowScale),
+                                    String(format: "%.3f", enterDrawdown),
+                                    String(format: "%.3f", exitReturn),
+                                    report.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                                    String(format: "%.6f", report.maxDrawdown * 100),
+                                    report.annualizedVolatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                                    report.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a",
+                                    report.points.first?.date.recordDateString ?? "n/a",
+                                    report.points.last?.date.recordDateString ?? "n/a",
+                                    "\(report.points.count)"
+                                ].joined(separator: ","))
+                            }
+                        }
+                    }
+                }
+            }
+            BacktestResearchOverrides.equityCurveOffensiveShare = nil
+            BacktestResearchOverrides.equityCurveDefensiveShare = nil
+            BacktestResearchOverrides.equityCurveLowScale = nil
+            BacktestResearchOverrides.equityCurveEnterDrawdown = nil
+            BacktestResearchOverrides.equityCurveExitReturn = nil
+            return
+        }
+
+        if let variant = ProcessInfo.processInfo.environment["ATM_EQUITY_CURVE_VARIANT"] {
+            let parts = variant.split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+            guard parts.count == 5 else {
+                print("APP_EQUITY_CURVE_VARIANT")
+                print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points")
+                print("权益曲线参数候选,invalid,n/a,n/a,n/a,n/a,n/a,n/a,0")
+                return
+            }
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteEquityCurveStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            BacktestResearchOverrides.equityCurveOffensiveShare = parts[0]
+            BacktestResearchOverrides.equityCurveDefensiveShare = parts[1]
+            BacktestResearchOverrides.equityCurveLowScale = parts[2]
+            BacktestResearchOverrides.equityCurveEnterDrawdown = parts[3]
+            BacktestResearchOverrides.equityCurveExitReturn = parts[4]
+            defer {
+                BacktestResearchOverrides.equityCurveOffensiveShare = nil
+                BacktestResearchOverrides.equityCurveDefensiveShare = nil
+                BacktestResearchOverrides.equityCurveLowScale = nil
+                BacktestResearchOverrides.equityCurveEnterDrawdown = nil
+                BacktestResearchOverrides.equityCurveExitReturn = nil
+            }
+            guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: .coreGoldSatelliteEquityCurveStateGateMomentum
+            ) else {
+                print("APP_EQUITY_CURVE_VARIANT")
+                print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points")
+                print("权益曲线参数候选,equity_curve_variant,n/a,n/a,n/a,n/a,n/a,n/a,0")
+                return
+            }
+            let fullRow = MetricRow(
+                title: "权益曲线参数候选",
+                id: "equity_curve_variant",
+                annualized: report.annualizedReturn,
+                maxDrawdown: report.maxDrawdown,
+                volatility: report.annualizedVolatility,
+                sharpe: report.sharpeRatio,
+                start: report.points.first?.date.recordDateString ?? "n/a",
+                end: report.points.last?.date.recordDateString ?? "n/a",
+                pointCount: report.points.count
+            )
+            printSliceRows(metricRowsForSlices(
+                title: fullRow.title,
+                id: fullRow.id,
+                points: report.points,
+                fullRow: fullRow
+            ), header: "APP_EQUITY_CURVE_VARIANT")
+            return
+        }
+
         if let variant = ProcessInfo.processInfo.environment["ATM_ASSET_RISK_VARIANT"] {
             let parts = variant.split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
             guard parts.count == 2 else {
@@ -728,7 +15898,7 @@ struct StrategyMetricDump {
                 return
             }
 
-            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
             let options = AdvancedBacktestStrategyMode.coreGoldSatelliteAssetRiskGateMomentum.requiredSignalAssetSymbols.compactMap {
                 optionsBySymbol[$0]
             }
@@ -775,8 +15945,8 @@ struct StrategyMetricDump {
         }
 
         if ProcessInfo.processInfo.environment["ATM_DUMP_ALL_MODES"] == "1" {
-            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
-            let allAppAssetOptions = BacktestDefaults.dcaAssetOptions
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allAppAssetOptions = BacktestDefaults.strategyAssetOptions
             var rows: [MetricRow] = []
             for mode in allRotationModes {
                 let requiredSymbols = mode.requiredSignalAssetSymbols
@@ -826,8 +15996,115 @@ struct StrategyMetricDump {
             return
         }
 
+        if ProcessInfo.processInfo.environment["ATM_DUMP_COMPOSITES"] == "1" {
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
+                optionsBySymbol[$0]
+            }
+            let inputs = options.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            var sliceRows: [SliceMetricRow] = []
+
+            func appendReport(title: String, id: String, report: AdvancedBacktestReport?) {
+                guard let report else {
+                    sliceRows.append(SliceMetricRow(
+                        slice: "full",
+                        row: MetricRow(
+                            title: title,
+                            id: id,
+                            annualized: nil,
+                            maxDrawdown: nil,
+                            volatility: nil,
+                            sharpe: nil,
+                            start: "n/a",
+                            end: "n/a",
+                            pointCount: 0
+                        )
+                    ))
+                    return
+                }
+                let fullRow = MetricRow(
+                    title: title,
+                    id: id,
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+                sliceRows.append(contentsOf: metricRowsForSlices(
+                    title: title,
+                    id: id,
+                    points: report.points,
+                    fullRow: fullRow
+                ))
+            }
+
+            appendReport(
+                title: "日历桶风险预算复合",
+                id: "calendar_bucket_turbo_composite",
+                report: BacktestEngine.runCalendarBucketTurboCompositeStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings
+                )
+            )
+            appendReport(
+                title: "粗日历桶风险预算复合",
+                id: "coarse_calendar_bucket_turbo_composite",
+                report: BacktestEngine.runCoarseCalendarBucketTurboCompositeStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings
+                )
+            )
+            appendReport(
+                title: "压缩日历桶风险预算复合",
+                id: "compact_calendar_bucket_turbo_composite",
+                report: BacktestEngine.runCompactCalendarBucketTurboCompositeStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings
+                )
+            )
+            appendReport(
+                title: "无日历低回撤复合",
+                id: "no_calendar_lowdd_composite",
+                report: BacktestEngine.runNoCalendarLowDrawdownCompositeStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings
+                )
+            )
+            appendReport(
+                title: "无日历高收益复合",
+                id: "no_calendar_high_return_composite",
+                report: BacktestEngine.runNoCalendarHighReturnCompositeStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings
+                )
+            )
+            appendReport(
+                title: "无日历三袖套复合",
+                id: "no_calendar_three_sleeve_composite",
+                report: BacktestEngine.runNoCalendarThreeSleeveCompositeStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings
+                )
+            )
+            printSliceRows(sliceRows, header: "APP_COMPOSITE_SLICE_METRICS")
+            return
+        }
+
         if ProcessInfo.processInfo.environment["ATM_CALENDAR_BUCKET_TURBO"] == "1" {
-            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
             let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
                 optionsBySymbol[$0]
             }
@@ -863,7 +16140,7 @@ struct StrategyMetricDump {
         }
 
         if ProcessInfo.processInfo.environment["ATM_COARSE_CALENDAR_BUCKET_TURBO"] == "1" {
-            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
             let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
                 optionsBySymbol[$0]
             }
@@ -899,7 +16176,7 @@ struct StrategyMetricDump {
         }
 
         if ProcessInfo.processInfo.environment["ATM_COMPACT_CALENDAR_BUCKET_TURBO"] == "1" {
-            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
             let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
                 optionsBySymbol[$0]
             }
@@ -935,7 +16212,7 @@ struct StrategyMetricDump {
         }
 
         if ProcessInfo.processInfo.environment["ATM_NO_CALENDAR_LOWDD_COMPOSITE"] == "1" {
-            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
             let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
                 optionsBySymbol[$0]
             }
@@ -971,7 +16248,7 @@ struct StrategyMetricDump {
         }
 
         if ProcessInfo.processInfo.environment["ATM_NO_CALENDAR_HIGH_RETURN_COMPOSITE"] == "1" {
-            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
             let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
                 optionsBySymbol[$0]
             }
@@ -1007,7 +16284,7 @@ struct StrategyMetricDump {
         }
 
         if ProcessInfo.processInfo.environment["ATM_NO_CALENDAR_THREE_SLEEVE_COMPOSITE"] == "1" {
-            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
             let options = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum.requiredSignalAssetSymbols.compactMap {
                 optionsBySymbol[$0]
             }
@@ -1042,68 +16319,12 @@ struct StrategyMetricDump {
             return
         }
 
-        var rows: [MetricRow] = []
-        var sliceRows: [SliceMetricRow] = []
-        for template in AdvancedBacktestStrategyTemplate.all {
-            let inputs = appFilteredInputs(for: template, seriesBySymbol: seriesBySymbol)
-            let report: AdvancedBacktestReport?
-            if template.mode.isRotation {
-                report = BacktestEngine.runAdvancedRotationStrategy(
-                    assetInputs: inputs,
-                    initialCash: 100_000,
-                    settings: settings,
-                    mode: template.mode
-                )
-            } else {
-                report = BacktestEngine.runAdvancedStrategies(
-                    assetInputs: inputs,
-                    initialCash: 100_000,
-                    tradeAmount: 100_000 * template.tradeAmountRatio,
-                    buyRule: template.buyRule,
-                    sellRule: template.sellRule,
-                    settings: AdvancedBacktestRiskSettings(
-                        feeRate: 1.0,
-                        slippageRate: 0.05,
-                        maxPositionRatio: template.maxPositionRatio,
-                        cooldownDays: template.cooldownDays,
-                        stopLossRatio: template.stopLossRatio,
-                        takeProfitRatio: template.takeProfitRatio
-                    )
-                )
-            }
-            guard let report else {
-                rows.append(MetricRow(
-                    title: template.title,
-                    id: template.id,
-                    annualized: nil,
-                    maxDrawdown: nil,
-                    volatility: nil,
-                    sharpe: nil,
-                    start: "n/a",
-                    end: "n/a",
-                    pointCount: 0
-                ))
-                continue
-            }
-            let row = MetricRow(
-                title: template.title,
-                id: template.id,
-                annualized: report.annualizedReturn,
-                maxDrawdown: report.maxDrawdown,
-                volatility: report.annualizedVolatility,
-                sharpe: report.sharpeRatio,
-                start: report.points.first?.date.recordDateString ?? "n/a",
-                end: report.points.last?.date.recordDateString ?? "n/a",
-                pointCount: report.points.count
-            )
-            rows.append(row)
-            sliceRows.append(contentsOf: metricRowsForSlices(title: template.title, id: template.id, points: report.points, fullRow: row))
-        }
+        let collectedRows = collectAppStrategyRows(seriesBySymbol: seriesBySymbol, settings: settings)
 
         if ProcessInfo.processInfo.environment["ATM_DUMP_SLICES"] == "1" {
-            printSliceRows(sliceRows, header: "APP_STRATEGY_SLICE_METRICS")
+            printSliceRows(collectedRows.sliceRows, header: "APP_STRATEGY_SLICE_METRICS")
         } else {
-            printRows(rows, header: "APP_STRATEGY_METRICS")
+            printRows(collectedRows.rows, header: "APP_STRATEGY_METRICS")
         }
     }
 
@@ -1153,6 +16374,8 @@ struct StrategyMetricDump {
             return "hsi"
         case "nikkei225", "nikkei":
             return "nikkei"
+        case "oil_wti", "oil_wti_cny", "wti":
+            return "oil_wti_cny"
         case "dow_jones", "dowjones":
             return "dowjones"
         default:

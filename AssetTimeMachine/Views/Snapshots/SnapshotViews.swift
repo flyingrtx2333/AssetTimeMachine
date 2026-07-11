@@ -75,12 +75,13 @@ enum SnapshotRecordLayoutBuilder {
         includeLatestEntryFallback: Bool = true,
         includeInactiveSnapshotItems: Bool = false
     ) -> SnapshotListLayout {
-        let snapshotEntriesByItemID: [UUID: AssetEntry] = Dictionary(
-            uniqueKeysWithValues: snapshot.entries.compactMap { entry in
-                guard let itemID = entry.item?.id else { return nil }
-                return (itemID, entry)
+        let snapshotEntriesByItemID: [UUID: AssetEntry] = snapshot.entries.reduce(into: [:]) { result, entry in
+            guard let itemID = entry.item?.id else { return }
+            if let existing = result[itemID], existing.updatedAt > entry.updatedAt {
+                return
             }
-        )
+            result[itemID] = entry
+        }
         let snapshotItems = includeInactiveSnapshotItems
             ? snapshot.entries.compactMap(\.item)
             : []
@@ -184,6 +185,7 @@ struct SnapshotListView: View {
     @State private var cachedListLayout: SnapshotListLayout?
     @State private var cachedItemsByID: [UUID: AssetItem] = [:]
     @State private var itemsByIDCacheToken: String = ""
+    @State private var persistenceErrorMessage: String?
 
     private var currentSnapshot: AssetSnapshot? {
         if let currentSnapshotID,
@@ -212,10 +214,13 @@ struct SnapshotListView: View {
 
     private var currentSnapshotEntriesByItemID: [UUID: AssetEntry] {
         guard let currentSnapshot else { return [:] }
-        return Dictionary(uniqueKeysWithValues: currentSnapshot.entries.compactMap { entry in
-            guard let itemID = entry.item?.id else { return nil }
-            return (itemID, entry)
-        })
+        return currentSnapshot.entries.reduce(into: [:]) { result, entry in
+            guard let itemID = entry.item?.id else { return }
+            if let existing = result[itemID], existing.updatedAt > entry.updatedAt {
+                return
+            }
+            result[itemID] = entry
+        }
     }
 
     private var listLayoutCacheToken: String {
@@ -422,6 +427,14 @@ struct SnapshotListView: View {
                   let item = item(for: previousField) else { return }
             schedulePersist(item: item)
         }
+        .alert(AppLocalization.string("保存失败"), isPresented: Binding(
+            get: { persistenceErrorMessage != nil },
+            set: { if !$0 { persistenceErrorMessage = nil } }
+        )) {
+            Button(AppLocalization.string("知道了"), role: .cancel) {}
+        } message: {
+            Text(persistenceErrorMessage ?? AppLocalization.string("请稍后再试"))
+        }
     }
 
     @MainActor
@@ -468,9 +481,12 @@ struct SnapshotListView: View {
         }
         let token = String(hasher.finalize())
         guard token != itemsByIDCacheToken else { return }
-        cachedItemsByID = Dictionary(
-            uniqueKeysWithValues: categories.flatMap(\.items).map { ($0.id, $0) }
-        )
+        cachedItemsByID = categories.flatMap(\.items).reduce(into: [:]) { result, item in
+            if let existing = result[item.id], existing.updatedAt > item.updatedAt {
+                return
+            }
+            result[item.id] = item
+        }
         itemsByIDCacheToken = token
     }
 
@@ -681,6 +697,7 @@ struct SnapshotListView: View {
                 refreshCachedListLayout()
             }
         } catch {
+            persistenceErrorMessage = AppLocalization.string("记录未能保存，请检查后重试。")
             print("[AssetTimeMachine] persist entry failed: \(error)")
         }
     }
@@ -688,7 +705,8 @@ struct SnapshotListView: View {
     private func normalizedNumber(from text: String?, forcePositive: Bool = false) -> Double? {
         guard let raw = text?.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines),
               !raw.isEmpty,
-              let value = Double(raw) else {
+              let value = Double(raw),
+              value.isFinite else {
             return nil
         }
         return forcePositive ? abs(value) : value
@@ -977,14 +995,11 @@ struct RecordCategoryCard: View {
 
     private enum InputBlock: Identifiable {
         case compact([AssetItem])
-        case expanded(AssetItem)
 
         var id: String {
             switch self {
             case let .compact(items):
                 return "compact-\(items.map(\.id.uuidString).joined(separator: "-"))"
-            case let .expanded(item):
-                return "expanded-\(item.id.uuidString)"
             }
         }
     }
@@ -1026,26 +1041,7 @@ struct RecordCategoryCard: View {
     }
 
     private var inputBlocks: [InputBlock] {
-        var blocks: [InputBlock] = []
-        var compactItems: [AssetItem] = []
-
-        func flushCompactItems() {
-            guard !compactItems.isEmpty else { return }
-            blocks.append(.compact(compactItems))
-            compactItems.removeAll()
-        }
-
-        for item in items {
-            if item.prefersCompactRecordInput {
-                compactItems.append(item)
-            } else {
-                flushCompactItems()
-                blocks.append(.expanded(item))
-            }
-        }
-
-        flushCompactItems()
-        return blocks
+        items.isEmpty ? [] : [.compact(items)]
     }
 
     private func showsRightDivider(at index: Int, total: Int) -> Bool {
@@ -1119,47 +1115,6 @@ struct RecordCategoryCard: View {
                                         }
                                     }
                                 }
-                            }
-                        }
-                    case let .expanded(item):
-                        RecordMatrixSurface {
-                            ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID, allowsReorder: !isReadOnly) {
-                                AssetEntryInputRow(
-                                    item: item,
-                                    snapshotEntry: snapshotEntry(for: item),
-                                    amountText: Binding(
-                                        get: { amountInputs[item.id] ?? "" },
-                                        set: { newValue in
-                                            amountInputs[item.id] = newValue
-                                        }
-                                    ),
-                                    quantityText: Binding(
-                                        get: { quantityInputs[item.id] ?? "" },
-                                        set: { newValue in
-                                            quantityInputs[item.id] = newValue
-                                        }
-                                    ),
-                                    unitPriceText: Binding(
-                                        get: { unitPriceInputs[item.id] ?? "" },
-                                        set: { newValue in
-                                            unitPriceInputs[item.id] = newValue
-                                        }
-                                    ),
-                                    focusedField: $focusedField,
-                                    inlineEditingField: inlineEditingField,
-                                    onBeginInlineEdit: onBeginInlineEdit,
-                                    inputWidth: inputWidth,
-                                    isOnboardingTarget: item.id == onboardingInputItemID,
-                                    showsOnboardingInputPreview: onboardingActiveAnchorID == .recordsFirstInput && item.id == onboardingInputItemID,
-                                    onEdit: {
-                                        onEdit(item)
-                                    },
-                                    onEditValue: {
-                                        onEditValue(item)
-                                    },
-                                    isReadOnly: isReadOnly,
-                                    onReadOnlyEdit: onReadOnlyEdit
-                                )
                             }
                         }
                     }
@@ -1605,93 +1560,6 @@ struct AssetEntryCompactCard: View {
             }
         }
         return "--"
-    }
-}
-
-struct AssetEntryInputRow: View {
-    let item: AssetItem
-    let snapshotEntry: AssetEntry?
-    @Binding var amountText: String
-    @Binding var quantityText: String
-    @Binding var unitPriceText: String
-    @FocusState.Binding var focusedField: RecordInputField?
-    let inlineEditingField: RecordInputField?
-    let onBeginInlineEdit: (RecordInputField) -> Void
-    let inputWidth: CGFloat
-    let isOnboardingTarget: Bool
-    let showsOnboardingInputPreview: Bool
-    let onEdit: () -> Void
-    let onEditValue: () -> Void
-    var isReadOnly: Bool = false
-    var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
-
-    private var isEditing: Bool {
-        !isReadOnly && (inlineEditingField == .quantity(item.id) || inlineEditingField == .unitPrice(item.id))
-    }
-
-    private var resolvedValueText: String {
-        if !quantityText.isEmpty { return quantityText }
-        return snapshotEntry?.quantity?.plainNumberString() ?? "--"
-    }
-
-    private var hasResolvedValue: Bool {
-        resolvedValueText != "--"
-    }
-
-    var body: some View {
-        RecordInputCard {
-            HStack(alignment: .top, spacing: 8) {
-                Button {
-                    if isReadOnly, let entry = snapshotEntry {
-                        onReadOnlyEdit?(entry)
-                    } else {
-                        onEdit()
-                    }
-                } label: {
-                    HStack(alignment: .top, spacing: 6) {
-                        RecordEntryGlyph(item: item, tint: hasResolvedValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.74))
-
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(AppLocalization.string(item.name))
-                                .font(AppTypography.chartLegendMedium)
-                                .foregroundStyle(hasResolvedValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                                .allowsTightening(true)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .layoutPriority(1)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    RecordInlineLabeledValueSlot(
-                        title: AppLocalization.string("数量"),
-                        text: $quantityText,
-                        displayValue: resolvedValueText,
-                        placeholder: AppLocalization.string("数量"),
-                        focusedField: $focusedField,
-                        focusValue: .quantity(item.id),
-                        isEditing: isEditing,
-                        showsInputPreview: showsOnboardingInputPreview,
-                        width: inputWidth,
-                        onTap: {
-                            if isReadOnly, let entry = snapshotEntry {
-                                onReadOnlyEdit?(entry)
-                            } else if item.autoPricedAssetKind == nil {
-                                onBeginInlineEdit(.quantity(item.id))
-                            } else {
-                                onEditValue()
-                            }
-                        },
-                        hasDisplayValue: hasResolvedValue
-                    )
-                    .onboardingAnchorIf(isOnboardingTarget, .recordsFirstInput)
-                }
-            }
-        }
     }
 }
 
@@ -2532,7 +2400,8 @@ struct QuickRecordValueSheet: View {
     private func normalizedReadonlyNumber(from text: String) -> Double? {
         let raw = text.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
         guard !raw.isEmpty else { return nil }
-        return Double(raw)
+        guard let value = Double(raw), value.isFinite else { return nil }
+        return value
     }
 }
 
@@ -2543,7 +2412,7 @@ struct QuickRecordValueValidationError: Error {
 private func validatedQuickRecordNumber(from text: String, forcePositive: Bool = false, fieldName: String) throws -> Double? {
     let raw = text.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
     guard !raw.isEmpty else { return nil }
-    guard let value = Double(raw) else {
+    guard let value = Double(raw), value.isFinite else {
         throw QuickRecordValueValidationError(message: AppLocalization.format("%@请输入有效数字", fieldName))
     }
     return forcePositive ? abs(value) : value
@@ -2747,7 +2616,7 @@ struct EditAssetItemSheet: View {
 
     private func normalizedNumber(from text: String) -> Double? {
         let raw = text.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !raw.isEmpty, let value = Double(raw) else { return nil }
+        guard !raw.isEmpty, let value = Double(raw), value.isFinite else { return nil }
         return value
     }
 }
@@ -2779,6 +2648,7 @@ struct SnapshotArchiveView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
     @State private var pendingDeletionSnapshot: AssetSnapshot?
+    @State private var deletionErrorMessage: String?
 
     var body: some View {
         ZStack {
@@ -2837,14 +2707,25 @@ struct SnapshotArchiveView: View {
                 snapshot.date.longDateString
             ))
         }
+        .alert(AppLocalization.string("删除失败"), isPresented: Binding(
+            get: { deletionErrorMessage != nil },
+            set: { if !$0 { deletionErrorMessage = nil } }
+        )) {
+            Button(AppLocalization.string("知道了"), role: .cancel) {}
+        } message: {
+            Text(deletionErrorMessage ?? AppLocalization.string("请稍后再试"))
+        }
     }
 
     @MainActor
     private func delete(snapshot: AssetSnapshot) {
         do {
+            try SyncDeletionService.record(entityID: snapshot.id, kind: .snapshot, in: modelContext)
             modelContext.delete(snapshot)
             try modelContext.save()
         } catch {
+            modelContext.rollback()
+            deletionErrorMessage = AppLocalization.string("这条记录未被删除，请稍后重试。")
             print("[AssetTimeMachine] delete snapshot failed: \(error)")
         }
     }

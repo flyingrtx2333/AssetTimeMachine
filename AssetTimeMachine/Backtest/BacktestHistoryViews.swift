@@ -1142,7 +1142,7 @@ struct BacktestRecordDetailView: View {
                 BacktestMetricCard(title: AppLocalization.string("总收益"), value: record.totalReturn.percentString(), accent: record.totalReturn >= 0 ? AssetTheme.positive : AssetTheme.negative)
                 BacktestMetricCard(title: AppLocalization.string("年化收益"), value: record.annualizedReturn?.percentString() ?? "--")
                 BacktestMetricCard(title: AppLocalization.string("最大回撤"), value: record.maxDrawdown.percentString(), accent: AssetTheme.negative)
-                BacktestMetricCard(title: AppLocalization.string("夏普比率"), value: record.sharpeRatio.map { String(format: "%.2f", $0) } ?? "--")
+                BacktestMetricCard(title: AppLocalization.string("夏普"), value: record.sharpeRatio.map { String(format: "%.2f", $0) } ?? "--")
                 BacktestMetricCard(title: AppLocalization.string("期末资产"), value: record.finalValue?.currencyString() ?? "--")
                 BacktestMetricCard(title: AppLocalization.string("交易次数"), value: record.tradeCount > 0 ? AppLocalization.format("%d次", record.tradeCount) : "--")
             }

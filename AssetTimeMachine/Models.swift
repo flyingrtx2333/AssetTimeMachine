@@ -112,6 +112,13 @@ enum AutoPricedAssetKind: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum SyncDeletedEntityKind: String, Codable, CaseIterable {
+    case category
+    case item
+    case snapshot
+    case entry
+}
+
 @Model
 final class AssetCategory {
     var id: UUID
@@ -366,5 +373,29 @@ final class BacktestRecord: Identifiable {
         self.tradeCount = tradeCount
         self.pointsJSON = pointsJSON
         self.configJSON = configJSON
+    }
+}
+
+@Model
+final class SyncDeletionTombstone {
+    var id: UUID
+    var entityID: UUID
+    var entityKindRawValue: String
+    var deletedAt: Date
+
+    init(
+        id: UUID = UUID(),
+        entityID: UUID,
+        entityKind: SyncDeletedEntityKind,
+        deletedAt: Date = .now
+    ) {
+        self.id = id
+        self.entityID = entityID
+        self.entityKindRawValue = entityKind.rawValue
+        self.deletedAt = deletedAt
+    }
+
+    var entityKind: SyncDeletedEntityKind? {
+        SyncDeletedEntityKind(rawValue: entityKindRawValue)
     }
 }

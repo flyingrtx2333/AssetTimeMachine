@@ -57,7 +57,7 @@ enum AssetItemService {
 
         for item in items {
             guard item.autoPricedAssetKind == nil,
-                  let inferredKind = inferLegacyAutoPricedAssetKind(for: item.name) else {
+                  let inferredKind = inferredAutoPricedAssetKind(for: item.name) else {
                 continue
             }
             item.autoPricedAssetKind = inferredKind
@@ -113,7 +113,7 @@ enum AssetItemService {
         AssetIconRegistry.symbolName(for: resolvedIconKey(for: item), categoryGroup: item.category?.group)
     }
 
-    private static func inferLegacyAutoPricedAssetKind(for name: String) -> AutoPricedAssetKind? {
+    static func inferredAutoPricedAssetKind(for name: String) -> AutoPricedAssetKind? {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return nil }
 

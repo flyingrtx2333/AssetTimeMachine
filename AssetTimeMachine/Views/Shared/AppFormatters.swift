@@ -171,36 +171,7 @@ extension AssetItem {
     }
 
     var inferredAutoPricedAssetKind: AutoPricedAssetKind? {
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else { return nil }
-
-        if trimmedName == AppLocalization.string("黄金") || trimmedName.caseInsensitiveCompare("gold") == .orderedSame {
-            return .gold
-        }
-
-        let uppercasedName = trimmedName.uppercased()
-        let legacyMappings: [(AutoPricedAssetKind, [String])] = [
-            (.btc, ["BTC", "BITCOIN"]),
-            (.eth, ["ETH", "ETHEREUM"]),
-            (.bnb, ["BNB"]),
-            (.sol, ["SOL", "SOLANA"]),
-            (.xrp, ["XRP"]),
-            (.doge, ["DOGE", "DOGECOIN"]),
-        ]
-
-        for (kind, candidates) in legacyMappings {
-            if candidates.contains(uppercasedName) {
-                return kind
-            }
-        }
-
-        for currencyCode in ["USD", "EUR", "GBP", "JPY", "HKD", "SGD", "AUD", "CAD", "KRW"] {
-            if uppercasedName.hasSuffix(" \(currencyCode)") || uppercasedName == currencyCode {
-                return AutoPricedAssetKind(rawValue: currencyCode.lowercased())
-            }
-        }
-
-        return nil
+        AssetItemService.inferredAutoPricedAssetKind(for: name)
     }
 
     var resolvedAutoPricedAssetKind: AutoPricedAssetKind? {
@@ -217,10 +188,6 @@ extension AssetItem {
             return nil
         }
         return kind.rawValue.uppercased()
-    }
-
-    var prefersCompactRecordInput: Bool {
-        true
     }
 
     var compactRecordPlaceholder: String {
@@ -323,10 +290,6 @@ extension Date {
     }
 
     var longDateString: String {
-        AppFormatterCache.dateFormatter(format: AppLocalization.string("yyyy年M月d日")).string(from: self)
-    }
-
-    var chineseLongDateString: String {
         AppFormatterCache.dateFormatter(format: AppLocalization.string("yyyy年M月d日")).string(from: self)
     }
 

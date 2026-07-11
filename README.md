@@ -90,17 +90,22 @@
 
 ### 7. 量化策略回测
 
-App 内策略指标必须以当前 Swift `BacktestEngine` 的实际运行为准，不能直接使用 research/spike 脚本结果作为产品展示或对外结论。
+App 内策略指标必须以当前 Swift `BacktestEngine` 的实际运行为准。策略只允许通过 Swift target provider 输出目标仓位；成交、费用、滑点、现金收益、持仓、净值和指标统一由 `BacktestDailySimulator` 计算。
 
-当前准口径：
+当前产品口径：
 
 - 回测引擎：`AssetTimeMachine/Backtest/BacktestEngine.swift`
-- 策略模板：`AssetTimeMachine/Backtest/BacktestModels.swift` 中的 `AdvancedBacktestStrategyTemplate.all`
+- 统一底座：`MarketDataFrame`、`StrategyTargetProvider`、`BacktestExecutionConfig`、`BacktestDailySimulator`
+- 产品策略库：`AdvancedBacktestStrategyTemplate.productCatalog`
+- 完整研究策略库：`AdvancedBacktestStrategyTemplate.all`
 - 行情数据：`https://api.flyingrtx.com/api/v1/money/public/history`
 - 回测区间：全历史，按各策略可用数据起点自动决定
 - 初始资金：100,000 CNY
-- 手续费：1%
-- 滑点：0.05%
+- App 默认交易费：1.00%
+- App 默认滑点：0.05%
+- 夏普比率：按日收益计算，当前采用无风险利率为 0 的口径
+
+1% 交易费是产品默认和基线口径，不得为了改善回测数字擅自降低。成本敏感性测试可以通过环境变量临时运行，但不能替代 App 默认结果。
 
 实际验证命令：
 
@@ -111,35 +116,38 @@ xcrun swiftc \
   -parse-as-library \
   -module-cache-path /private/tmp/atm-swift-module-cache \
   AssetTimeMachine/Backtest/BacktestModels.swift \
+  AssetTimeMachine/Backtest/BacktestMetricsCalculator.swift \
+  AssetTimeMachine/Backtest/BacktestSeriesAlignment.swift \
+  AssetTimeMachine/Backtest/BacktestFXConverter.swift \
+  AssetTimeMachine/Backtest/BacktestAdvancedSeriesPreparer.swift \
   AssetTimeMachine/Backtest/BacktestEngine.swift \
   tools/strategy_metric_dump.swift \
   -o /private/tmp/strategy_metric_dump
 
-/private/tmp/strategy_metric_dump
+ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json \
+  /private/tmp/strategy_metric_dump --verify-app-baseline
+
+ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json \
+  /private/tmp/strategy_metric_dump \
+  --verify-app-baseline \
+  --baseline tools/expected_backtest_metrics/app/current_app_default.json
 ```
 
-最近一次 App 引擎实测结果（2026-06-26，当前线上历史数据）：
+固定历史数据实测结果（2026-07-10 运行，数据截至 2026-07-03；交易费 1%、滑点 0.05%）：
 
-| 策略 | 年化 | 最大回撤 | 夏普 |
-|---|---:|---:|---:|
-| 权益曲线状态机 | 11.00% | 10.24% | 1.10 |
-| 单向控波元策略 | 10.61% | 11.23% | 1.04 |
-| 动态袖套夏普策略 | 10.05% | 11.65% | 1.03 |
-| 增强热度上限元 | 9.65% | 12.04% | 0.93 |
-| 热度上限元策略 | 9.44% | 12.04% | 0.93 |
-| 黄金交接保护 | 9.39% | 11.38% | 0.92 |
-| 月度热度上限元 | 8.82% | 16.57% | 0.85 |
-| 全球修复传染控制 | 3.45% | 23.43% | 0.43 |
-| 双金丝雀动量防守 | 1.86% | 31.89% | 0.28 |
-| 美元现金修复策略 | 1.24% | 24.44% | 0.20 |
-| 黄金恐慌锁盈策略 | 1.14% | 25.29% | 0.19 |
-| 风险效率增强策略 | 1.01% | 25.76% | 0.17 |
-| MA金叉死叉 | 0.75% | 43.40% | 0.12 |
-| BOLL下轨反弹 | -5.89% | 80.30% | -0.76 |
-| MA60趋势 | -6.41% | 87.05% | -0.46 |
-| MA20趋势 | -18.78% | 99.60% | -1.48 |
+| 产品策略 | 全历史年化 | 全历史最大回撤 | 最近10年年化 | 最近10年最大回撤 | 全历史夏普 |
+|---|---:|---:|---:|---:|---:|
+| 进取风险预算 | 10.50% | 14.09% | 6.62% | 12.63% | 1.02 |
+| 均衡权益状态 | 9.60% | 13.02% | 5.67% | 13.02% | 1.01 |
+| 稳健锁盈防守 | 8.55% | 11.67% | 5.56% | 11.67% | 0.99 |
+| 双趋势金纳杠铃 | 10.15% | 16.98% | 13.56% | 16.98% | 0.89 |
 
-如果新策略来自 `spikes/` 或 Python 搜索脚本，必须先通过上面的 Swift App 引擎验证，再更新 README 或 App 可见指标。
+前三条精选策略共享黄金/权益元策略底座，分别代表进取、均衡和稳健风险档位。`双趋势金纳杠铃` 是独立路线：固定黄金55%与纳指45%的战略预算，两边分别用MA200和126/252日动量判断强势、震荡或弱势，约每63个交易日复核；弱势袖套缩到小仓位，未投入资金留现金。它的全历史风险收益不全面优于前三条，但最近十年表现明显更强，因此作为逻辑分散选项展示，不替换默认均衡策略。所有数字均已扣除1%交易费与0.05%滑点。
+
+当前后端序列按价格变化计算，回测引擎不会额外注入股票股息再投资；若未来接入总回报指数，需要建立新的独立基线，不能与当前数字直接混用。
+
+
+新策略研究只能新增 Swift `StrategyTargetProvider`/Swift CLI 搜索入口，并必须通过同一个 `BacktestDailySimulator` 与 pinned fixture baseline 验证后，才能更新 README 或 App 可见指标。
 
 ## 资产分类设计
 
@@ -239,58 +247,32 @@ xcrun swiftc \
 
 ## 技术方案
 
-### 当前技术栈
+- SwiftUI + SwiftData
+- Apple Charts 走势图
+- Xcode iOS 工程，TestFlight 分发
 
-- SwiftUI
-- SwiftData
-- Xcode iOS 工程
+## 当前进度
 
-### 计划引入
+项目已进入 **持续迭代 / TestFlight 发布阶段**，当前版本 1.0.6。
 
-- Apple Charts，用于走势图
-- JSON 导入导出
-- 更细的共享层与平台适配层拆分
+已完成并在线上运行的功能：
 
-## 当前开发阶段
+- 每日资产快照记录，默认继承前一天数据，自动汇总总资产 / 总负债 / 净资产
+- 仪表盘走势图与统计卡片，历史高低点、最大回撤、阶段涨跌
+- 时光机视图：查看任意一天的财富状态与构成，并与今天 / 历史高点对比
+- 资产构成分析（大类占比、细项占比）
+- 价值锚点分析：黄金 / BTC / 纳指 / 房价等值
+- 本地 JSON 导入导出，走势视频导出
+- 云同步（AssetTimeMachine cloud，经 Flyingrtx 后端）
+- 行情数据接入 `https://api.flyingrtx.com`，含本地缓存
+- 量化策略回测模块：内置高级策略模板、单资产 / 多资产 / 轮动策略、回测历史记录与调仓提醒
+- 多语言（中英字符串目录）、通知服务、新手引导
 
-当前项目处于 **初始化阶段**：
+当前迭代重心：
 
-- [x] 创建 Xcode 工程
-- [x] 确定中文产品名：资产时光机
-- [x] 确定英文项目名：Asset Time Machine
-- [x] 确定当前路线：iOS-only，暂不维护 macOS
-- [ ] 设计 SwiftData 数据模型
-- [ ] 移除默认模板代码
-- [ ] 搭建首页 / 记录页 / 时光机页基础骨架
-- [ ] 实现资产分类与可配置项目
-- [ ] 实现每日继承前一日逻辑
-- [ ] 实现走势图与统计卡片
-- [ ] 实现价值锚点附加分析
-
-## 近期路线图
-
-### Phase 1: 跑通基础资产记录
-
-- 资产分类模型
-- 自定义资产项
-- 每日快照
-- 默认继承前一天
-- 总资产 / 净资产计算
-
-### Phase 2: 跑通时光机与趋势
-
-- 历史曲线
-- 历史快照查看
-- 资产构成变化
-- 阶段涨跌和高低点
-
-### Phase 3: 跑通附加分析
-
-- 黄金等值
-- BTC 等值
-- 纳指等值
-- 房价等值
-- 数据导出导入
+- 回测引擎重构与指标基线固化（golden metrics 固定 fixture 校验）
+- 策略模板持续筛选与调优（以 App 引擎实测为准）
+- App Store / TestFlight 发布节奏维护
 
 ## 项目信息
 

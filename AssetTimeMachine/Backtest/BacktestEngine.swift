@@ -15,6 +15,400 @@ nonisolated enum BacktestResearchOverrides {
     nonisolated(unsafe) static var riskBudgetLowScale: Double?
     nonisolated(unsafe) static var riskBudgetMultiplier: Double?
     nonisolated(unsafe) static var riskBudgetDefensiveShare: Double?
+    nonisolated(unsafe) static var riskBudgetVolatilityScaleFloor: Double?
+    nonisolated(unsafe) static var riskBudgetReturnLookbackSessions: Int?
+    nonisolated(unsafe) static var riskBudgetRebalanceBand: Double?
+    nonisolated(unsafe) static var ohlcRiskOverlayVariant: String?
+    nonisolated(unsafe) static var equityCurveOffensiveShare: Double?
+    nonisolated(unsafe) static var equityCurveDefensiveShare: Double?
+    nonisolated(unsafe) static var equityCurveLowScale: Double?
+    nonisolated(unsafe) static var equityCurveEnterDrawdown: Double?
+    nonisolated(unsafe) static var equityCurveExitReturn: Double?
+}
+
+nonisolated struct MarketDataFrame {
+    let dates: [Date]
+    let pricesBySymbol: [String: [Double]]
+    let ohlcBySymbol: [String: [(date: Date, open: Double, high: Double, low: Double, close: Double)]]
+    let tradableSymbols: [String]
+    let optionBySymbol: [String: BacktestAssetOption]
+    let simulationRange: ClosedRange<Int>
+}
+
+nonisolated struct BacktestExecutionConfig {
+    let initialCash: Double
+    let feeRate: Double
+    let slippageRate: Double
+    let rebalanceBand: Double
+    let financingAnnualRate: Double
+    let allowsFinancedExposure: Bool
+    let buyReason: String
+}
+
+nonisolated struct StrategyTargetContext {
+    let index: Int
+    let signalIndex: Int
+    let date: Date
+    let signalDate: Date
+    let preRebalanceValue: Double
+    let points: [BacktestSeriesPoint]
+    let portfolioValuesByIndex: [Double]
+    let refreshOverlay: Bool
+}
+
+nonisolated struct StrategyTargetProvider {
+    let targetWeights: (StrategyTargetContext) -> [String: Double]
+}
+
+nonisolated struct ResearchTargetStrategyConfig {
+    let symbol: String
+    let title: String
+    let warmupSessions: Int
+    let rebalanceSessions: Int
+    let rebalanceBand: Double
+    let zeroFillBeforeFirstSymbols: Set<String>
+    let maxGrossExposure: Double
+    let allowsFinancedExposure: Bool
+    let financingAnnualRate: Double
+    let buyReason: String
+
+    init(
+        symbol: String,
+        title: String,
+        warmupSessions: Int,
+        rebalanceSessions: Int,
+        rebalanceBand: Double = 0,
+        zeroFillBeforeFirstSymbols: Set<String> = [],
+        maxGrossExposure: Double = 1,
+        allowsFinancedExposure: Bool = false,
+        financingAnnualRate: Double = 0,
+        buyReason: String = "研究策略调仓"
+    ) {
+        self.symbol = symbol
+        self.title = title
+        self.warmupSessions = warmupSessions
+        self.rebalanceSessions = rebalanceSessions
+        self.rebalanceBand = rebalanceBand
+        self.zeroFillBeforeFirstSymbols = zeroFillBeforeFirstSymbols
+        self.maxGrossExposure = maxGrossExposure
+        self.allowsFinancedExposure = allowsFinancedExposure
+        self.financingAnnualRate = financingAnnualRate
+        self.buyReason = buyReason
+    }
+}
+
+nonisolated struct ResearchTargetDataContext {
+    let dates: [Date]
+    let pricesBySymbol: [String: [Double]]
+    let ohlcBySymbol: [String: [(date: Date, open: Double, high: Double, low: Double, close: Double)]]
+    let tradableSymbols: [String]
+}
+
+nonisolated struct BacktestDailyState {
+    let date: Date
+    let targetWeights: [String: Double]
+    let cash: Double
+    let holdingsBySymbol: [String: Double]
+    let portfolioValue: Double
+}
+
+nonisolated struct ResearchTargetStrategyRun {
+    let report: AdvancedBacktestReport
+    let dailyStates: [BacktestDailyState]
+}
+
+nonisolated struct AdvancedRotationStrategyRun {
+    let report: AdvancedBacktestReport
+    let dailyStates: [BacktestDailyState]
+}
+
+nonisolated struct BacktestRebalanceDecision {
+    let shouldRebalance: Bool
+    let refreshOverlay: Bool
+}
+
+nonisolated struct BacktestDailySimulationResult {
+    let points: [BacktestSeriesPoint]
+    let benchmarkPoints: [BacktestSeriesPoint]
+    let trades: [AdvancedBacktestTrade]
+    let finalCash: Double
+    let finalUnits: Double
+    let exposureRatio: Double
+    let cashYieldSummary: CashYieldSummary
+    let portfolioValuesByIndex: [Double]
+    let dailyStates: [BacktestDailyState]
+}
+
+nonisolated enum BacktestDailySimulator {
+    static func run(
+        frame: MarketDataFrame,
+        execution: BacktestExecutionConfig,
+        provider: StrategyTargetProvider,
+        rebalanceDecision: (Int, Int) -> BacktestRebalanceDecision,
+        contextualRebalanceDecision: ((StrategyTargetContext) -> BacktestRebalanceDecision)? = nil
+    ) -> BacktestDailySimulationResult? {
+        guard execution.initialCash > 0,
+              frame.simulationRange.count > 1,
+              !frame.tradableSymbols.isEmpty else { return nil }
+
+        var cash = execution.initialCash
+        var unitsBySymbol = Dictionary(uniqueKeysWithValues: frame.tradableSymbols.map { ($0, 0.0) })
+        var averageCostBySymbol = Dictionary(uniqueKeysWithValues: frame.tradableSymbols.map { ($0, 0.0) })
+        var entryDateBySymbol: [String: Date] = [:]
+        var heldSymbols = Set<String>()
+        var points: [BacktestSeriesPoint] = []
+        var benchmarkPoints: [BacktestSeriesPoint] = []
+        var trades: [AdvancedBacktestTrade] = []
+        var dailyStates: [BacktestDailyState] = []
+        var currentTargetWeights: [String: Double] = [:]
+        var portfolioValuesByIndex = Array(repeating: 0.0, count: frame.dates.count)
+        var exposureSum = 0.0
+        var exposureSamples = 0
+        var cashRatioSum = 0.0
+        var cashRatioSamples = 0
+        var cashInterestEarned = 0.0
+        var cashAnnualRateSum = 0.0
+        var cashAnnualRateSamples = 0
+
+        func portfolioValue(at index: Int) -> Double {
+            cash + frame.tradableSymbols.reduce(0.0) { partial, symbol in
+                partial + (unitsBySymbol[symbol] ?? 0) * (frame.pricesBySymbol[symbol]?[index] ?? 0)
+            }
+        }
+
+        for index in frame.simulationRange {
+            guard !Task.isCancelled else { return nil }
+            let date = frame.dates[index]
+
+            if index > frame.simulationRange.lowerBound {
+                let annualCashRate = CashYieldCNY.annualRate(on: frame.dates[index - 1])
+                cashAnnualRateSum += annualCashRate
+                cashAnnualRateSamples += 1
+                if cash > 0 {
+                    let cashInterest = cash * CashYieldCNY.dailyReturn(fromAnnualRate: annualCashRate)
+                    if cashInterest.isFinite, cashInterest > 0 {
+                        cash += cashInterest
+                        cashInterestEarned += cashInterest
+                    }
+                } else if cash < 0, execution.financingAnnualRate > 0 {
+                    let financingCost = abs(cash) * CashYieldCNY.dailyReturn(fromAnnualRate: execution.financingAnnualRate)
+                    if financingCost.isFinite, financingCost > 0 {
+                        cash -= financingCost
+                    }
+                }
+            }
+
+            let signalIndex = index - 1
+            let preRebalanceValue = portfolioValue(at: index)
+            let signalDate = signalIndex >= 0 && frame.dates.indices.contains(signalIndex)
+                ? frame.dates[signalIndex]
+                : date
+            let decisionContext = StrategyTargetContext(
+                index: index,
+                signalIndex: signalIndex,
+                date: date,
+                signalDate: signalDate,
+                preRebalanceValue: preRebalanceValue,
+                points: points,
+                portfolioValuesByIndex: portfolioValuesByIndex,
+                refreshOverlay: false
+            )
+            let decision = contextualRebalanceDecision?(decisionContext)
+                ?? rebalanceDecision(index, signalIndex)
+            if decision.shouldRebalance {
+                let targetWeights: [String: Double]
+                if signalIndex >= 0, frame.dates.indices.contains(signalIndex) {
+                    targetWeights = provider.targetWeights(
+                        StrategyTargetContext(
+                            index: index,
+                            signalIndex: signalIndex,
+                            date: date,
+                            signalDate: signalDate,
+                            preRebalanceValue: preRebalanceValue,
+                            points: points,
+                            portfolioValuesByIndex: portfolioValuesByIndex,
+                            refreshOverlay: decision.refreshOverlay
+                        )
+                    )
+                } else {
+                    targetWeights = [:]
+                }
+                currentTargetWeights = targetWeights
+                let targetSymbols = Set(targetWeights.keys)
+
+                for symbol in heldSymbols.subtracting(targetSymbols).sorted() {
+                    guard let price = frame.pricesBySymbol[symbol]?[index],
+                          let units = unitsBySymbol[symbol],
+                          units > 0,
+                          let option = frame.optionBySymbol[symbol] else { continue }
+                    let executionPrice = max(price * (1 - execution.slippageRate), 0)
+                    let grossValue = units * executionPrice
+                    let cashAmount = grossValue * (1 - execution.feeRate)
+                    cash += cashAmount
+                    unitsBySymbol[symbol] = 0
+                    let averageCost = averageCostBySymbol[symbol] ?? 0
+                    let realizedCostBasis = averageCost * units
+                    let realizedProfit = cashAmount - realizedCostBasis
+                    let realizedReturn = realizedCostBasis > 0 ? realizedProfit / realizedCostBasis : nil
+                    let holdingDays = entryDateBySymbol[symbol].map { Calendar.current.dateComponents([.day], from: $0, to: date).day ?? 0 }
+                    trades.append(.init(
+                        assetSymbol: symbol,
+                        assetTitle: option.title,
+                        date: date,
+                        action: .sell,
+                        price: executionPrice,
+                        cashAmount: cashAmount,
+                        units: units,
+                        reason: AppLocalization.string("轮动切换/空仓"),
+                        realizedProfit: realizedProfit,
+                        realizedReturn: realizedReturn,
+                        holdingDays: holdingDays
+                    ))
+                    averageCostBySymbol[symbol] = 0
+                    entryDateBySymbol[symbol] = nil
+                }
+
+                heldSymbols = heldSymbols.intersection(targetSymbols)
+
+                for symbol in targetSymbols.sorted() {
+                    guard let targetWeight = targetWeights[symbol],
+                          let price = frame.pricesBySymbol[symbol]?[index],
+                          price > 0,
+                          let currentUnits = unitsBySymbol[symbol],
+                          currentUnits > 0,
+                          let option = frame.optionBySymbol[symbol] else { continue }
+                    let currentValue = currentUnits * price
+                    let targetValue = preRebalanceValue * targetWeight
+                    let grossValueToSell = currentValue > targetValue * (1 + execution.rebalanceBand)
+                        ? Swift.max(currentValue - targetValue, 0.0)
+                        : 0.0
+                    guard grossValueToSell > 0 else { continue }
+                    let unitsToSell = Swift.min(currentUnits, grossValueToSell / price)
+                    guard unitsToSell > 0 else { continue }
+                    let executionPrice = max(price * (1 - execution.slippageRate), 0)
+                    let grossValue = unitsToSell * executionPrice
+                    let cashAmount = grossValue * (1 - execution.feeRate)
+                    cash += cashAmount
+                    let remainingUnits = Swift.max(currentUnits - unitsToSell, 0)
+                    unitsBySymbol[symbol] = remainingUnits
+                    let averageCost = averageCostBySymbol[symbol] ?? 0
+                    let realizedCostBasis = averageCost * unitsToSell
+                    let realizedProfit = cashAmount - realizedCostBasis
+                    let realizedReturn = realizedCostBasis > 0 ? realizedProfit / realizedCostBasis : nil
+                    let holdingDays = entryDateBySymbol[symbol].map { Calendar.current.dateComponents([.day], from: $0, to: date).day ?? 0 }
+                    trades.append(.init(
+                        assetSymbol: symbol,
+                        assetTitle: option.title,
+                        date: date,
+                        action: .sell,
+                        price: executionPrice,
+                        cashAmount: cashAmount,
+                        units: unitsToSell,
+                        reason: AppLocalization.string("轮动再平衡"),
+                        realizedProfit: realizedProfit,
+                        realizedReturn: realizedReturn,
+                        holdingDays: holdingDays
+                    ))
+                    if remainingUnits <= Double.leastNonzeroMagnitude {
+                        averageCostBySymbol[symbol] = 0
+                        entryDateBySymbol[symbol] = nil
+                        heldSymbols.remove(symbol)
+                    }
+                }
+
+                let totalValue = portfolioValue(at: index)
+                for symbol in targetSymbols.sorted() {
+                    guard let targetWeight = targetWeights[symbol],
+                          let price = frame.pricesBySymbol[symbol]?[index],
+                          price > 0,
+                          let option = frame.optionBySymbol[symbol] else { continue }
+                    let currentValue = (unitsBySymbol[symbol] ?? 0) * price
+                    let targetValue = totalValue * targetWeight
+                    let targetGap = Swift.max(targetValue - currentValue, 0.0)
+                    let amountToInvest = currentValue < targetValue * (1 - execution.rebalanceBand)
+                        ? (execution.allowsFinancedExposure ? targetGap : Swift.min(cash, targetGap))
+                        : 0.0
+                    if amountToInvest > 0 {
+                        let executionPrice = price * (1 + execution.slippageRate)
+                        let invested = amountToInvest * (1 - execution.feeRate)
+                        let units = executionPrice > 0 ? invested / executionPrice : 0
+                        let previousUnits = unitsBySymbol[symbol] ?? 0
+                        let previousCost = (averageCostBySymbol[symbol] ?? 0) * previousUnits
+                        unitsBySymbol[symbol] = previousUnits + units
+                        averageCostBySymbol[symbol] = (previousCost + amountToInvest) / Swift.max(previousUnits + units, Double.leastNonzeroMagnitude)
+                        cash -= amountToInvest
+                        heldSymbols.insert(symbol)
+                        if entryDateBySymbol[symbol] == nil { entryDateBySymbol[symbol] = date }
+                        trades.append(.init(
+                            assetSymbol: symbol,
+                            assetTitle: option.title,
+                            date: date,
+                            action: .buy,
+                            price: executionPrice,
+                            cashAmount: amountToInvest,
+                            units: units,
+                            reason: execution.buyReason,
+                            realizedProfit: nil,
+                            realizedReturn: nil,
+                            holdingDays: nil
+                        ))
+                    }
+                }
+            }
+
+            let value = portfolioValue(at: index)
+            points.append(.init(date: date, portfolioValue: value, sequence: points.count))
+            portfolioValuesByIndex[index] = value
+            var holdingsBySymbol: [String: Double] = [:]
+            for symbol in frame.tradableSymbols {
+                let holdingValue = (unitsBySymbol[symbol] ?? 0) * (frame.pricesBySymbol[symbol]?[index] ?? 0)
+                if holdingValue > 0.0001 {
+                    holdingsBySymbol[symbol] = holdingValue
+                }
+            }
+            let investedValue = holdingsBySymbol.values.reduce(0, +)
+            dailyStates.append(BacktestDailyState(
+                date: date,
+                targetWeights: currentTargetWeights,
+                cash: cash,
+                holdingsBySymbol: holdingsBySymbol,
+                portfolioValue: value
+            ))
+            exposureSum += value > 0 ? investedValue / value : 0
+            exposureSamples += 1
+            cashRatioSum += value > 0 ? min(max(cash / value, 0), 1) : 0
+            cashRatioSamples += 1
+
+            let benchmarkValue = frame.tradableSymbols.reduce(0.0) { partial, symbol in
+                guard let prices = frame.pricesBySymbol[symbol],
+                      prices.indices.contains(frame.simulationRange.lowerBound),
+                      prices.indices.contains(index) else { return partial }
+                let firstPrice = prices[frame.simulationRange.lowerBound]
+                guard firstPrice > 0 else { return partial }
+                return partial + execution.initialCash / Double(frame.tradableSymbols.count) * prices[index] / firstPrice
+            }
+            benchmarkPoints.append(.init(date: date, portfolioValue: benchmarkValue, sequence: benchmarkPoints.count))
+        }
+
+        let cashYieldSummary = CashYieldCNY.summary(
+            startDate: points.first?.date,
+            endDate: points.last?.date,
+            totalCashInterest: cashInterestEarned,
+            averageCashRatio: cashRatioSamples > 0 ? cashRatioSum / Double(cashRatioSamples) : 0,
+            averageAnnualRate: cashAnnualRateSamples > 0 ? cashAnnualRateSum / Double(cashAnnualRateSamples) : 0
+        )
+        return BacktestDailySimulationResult(
+            points: points,
+            benchmarkPoints: benchmarkPoints,
+            trades: trades.sorted { lhs, rhs in lhs.date < rhs.date },
+            finalCash: cash,
+            finalUnits: unitsBySymbol.values.reduce(0, +),
+            exposureRatio: exposureSamples > 0 ? exposureSum / Double(exposureSamples) : 0,
+            cashYieldSummary: cashYieldSummary,
+            portfolioValuesByIndex: portfolioValuesByIndex,
+            dailyStates: dailyStates
+        )
+    }
 }
 
 nonisolated enum BacktestEngine {
@@ -679,6 +1073,70 @@ nonisolated enum BacktestEngine {
         )
     }
 
+    private static func runGoldNasdaqDualTrendBarbellWithTrace(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings,
+        dateBounds: ClosedRange<Date>? = nil
+    ) -> ResearchTargetStrategyRun? {
+        let config = ResearchTargetStrategyConfig(
+            symbol: "gold_nasdaq_dual_trend_barbell",
+            title: AppLocalization.string("双趋势金纳杠铃"),
+            warmupSessions: 300,
+            rebalanceSessions: 63,
+            rebalanceBand: 0.10,
+            maxGrossExposure: 1.0,
+            allowsFinancedExposure: false,
+            buyReason: AppLocalization.string("双趋势金纳杠铃调仓")
+        )
+        return runResearchTargetProviderStrategyWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            config: config,
+            dateBounds: dateBounds,
+            targetWeights: { context, data in
+                let signalIndex = context.signalIndex
+                guard let gold = data.pricesBySymbol["gold_cny"],
+                      let nasdaq = data.pricesBySymbol["nasdaq"],
+                      gold.indices.contains(signalIndex),
+                      nasdaq.indices.contains(signalIndex),
+                      let goldMA200 = movingAverageAt(values: gold, at: signalIndex, period: 200),
+                      let nasdaqMA200 = movingAverageAt(values: nasdaq, at: signalIndex, period: 200),
+                      let goldMomentum126 = priceMomentum(values: gold, at: signalIndex, lookback: 126),
+                      let nasdaqMomentum126 = priceMomentum(values: nasdaq, at: signalIndex, lookback: 126),
+                      let goldMomentum252 = priceMomentum(values: gold, at: signalIndex, lookback: 252),
+                      let nasdaqMomentum252 = priceMomentum(values: nasdaq, at: signalIndex, lookback: 252) else { return [:] }
+
+                let goldStrong = gold[signalIndex] > goldMA200 && goldMomentum126 > 0
+                let nasdaqStrong = nasdaq[signalIndex] > nasdaqMA200 && nasdaqMomentum126 > 0
+                let goldWeak = gold[signalIndex] < goldMA200 && goldMomentum252 < 0
+                let nasdaqWeak = nasdaq[signalIndex] < nasdaqMA200 && nasdaqMomentum252 < 0
+
+                let goldScale = goldStrong ? 1.0 : (goldWeak ? 0.15 : 0.65)
+                let nasdaqScale = nasdaqStrong ? 1.0 : (nasdaqWeak ? 0.10 : 0.60)
+                return [
+                    "gold_cny": 0.55 * goldScale,
+                    "nasdaq": 0.45 * nasdaqScale
+                ]
+            }
+        )
+    }
+
+    static func runGoldNasdaqDualTrendBarbell(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings,
+        dateBounds: ClosedRange<Date>? = nil
+    ) -> AdvancedBacktestReport? {
+        runGoldNasdaqDualTrendBarbellWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            dateBounds: dateBounds
+        )?.report
+    }
+
     static func runAdvancedRotationStrategy(
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
         initialCash: Double,
@@ -686,6 +1144,14 @@ nonisolated enum BacktestEngine {
         mode: AdvancedBacktestStrategyMode,
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedBacktestReport? {
+        if mode == .goldNasdaqDualTrendBarbell {
+            return runGoldNasdaqDualTrendBarbell(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                dateBounds: dateBounds
+            )
+        }
         guard let config = advancedRotationConfig(for: mode) else { return nil }
         return runAdvancedRotation(
             assetInputs: assetInputs,
@@ -694,6 +1160,223 @@ nonisolated enum BacktestEngine {
             config: config,
             dateBounds: dateBounds
         )
+    }
+
+    static func runAdvancedRotationStrategyWithTrace(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings,
+        mode: AdvancedBacktestStrategyMode,
+        dateBounds: ClosedRange<Date>? = nil
+    ) -> AdvancedRotationStrategyRun? {
+        if mode == .goldNasdaqDualTrendBarbell {
+            guard let run = runGoldNasdaqDualTrendBarbellWithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                dateBounds: dateBounds
+            ) else { return nil }
+            return AdvancedRotationStrategyRun(report: run.report, dailyStates: run.dailyStates)
+        }
+        guard let config = advancedRotationConfig(for: mode) else { return nil }
+        return runAdvancedRotationWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            config: config,
+            dateBounds: dateBounds
+        )
+    }
+
+    static func runResearchTargetProviderStrategy(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings,
+        config: ResearchTargetStrategyConfig,
+        dateBounds: ClosedRange<Date>? = nil,
+        rebalanceDecision: ((Int, Int, ResearchTargetDataContext) -> BacktestRebalanceDecision)? = nil,
+        contextualRebalanceDecision: ((StrategyTargetContext, ResearchTargetDataContext) -> BacktestRebalanceDecision)? = nil,
+        targetWeights: @escaping (StrategyTargetContext, ResearchTargetDataContext) -> [String: Double]
+    ) -> AdvancedBacktestReport? {
+        runResearchTargetProviderStrategyWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            config: config,
+            dateBounds: dateBounds,
+            rebalanceDecision: rebalanceDecision,
+            contextualRebalanceDecision: contextualRebalanceDecision,
+            targetWeights: targetWeights
+        )?.report
+    }
+
+    static func runResearchTargetProviderStrategyWithTrace(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings,
+        config: ResearchTargetStrategyConfig,
+        dateBounds: ClosedRange<Date>? = nil,
+        rebalanceDecision: ((Int, Int, ResearchTargetDataContext) -> BacktestRebalanceDecision)? = nil,
+        contextualRebalanceDecision: ((StrategyTargetContext, ResearchTargetDataContext) -> BacktestRebalanceDecision)? = nil,
+        targetWeights: @escaping (StrategyTargetContext, ResearchTargetDataContext) -> [String: Double]
+    ) -> ResearchTargetStrategyRun? {
+        let preparedSeries: [PreparedAdvancedSeries] = assetInputs.compactMap { input -> PreparedAdvancedSeries? in
+            guard input.assetSeries != nil,
+                  !input.assetOption.requiresHistoricalFX || input.fxSeries != nil else { return nil }
+            return preparedAdvancedSeries(assetSeries: input.assetSeries, assetOption: input.assetOption, fxSeries: input.fxSeries)
+        }
+        guard preparedSeries.count >= 2 else { return nil }
+
+        let normalizedInitialCash = max(initialCash, 0)
+        let normalizedFeeRate = max(settings.feeRate, 0) / 100
+        let normalizedSlippageRate = max(settings.slippageRate, 0) / 100
+        guard normalizedInitialCash > 0 else { return nil }
+
+        let aligned = alignedRotationPriceSeries(
+            from: preparedSeries,
+            zeroFillBeforeFirstSymbols: config.zeroFillBeforeFirstSymbols
+        )
+        let commonDates = aligned.dates
+        let pricesBySymbol = aligned.pricesBySymbol
+        let optionBySymbol = Dictionary(uniqueKeysWithValues: preparedSeries.map { ($0.assetOption.symbol, $0.assetOption) })
+        let tradableSymbols = preparedSeries.map(\.assetOption.symbol)
+        guard !commonDates.isEmpty, !tradableSymbols.isEmpty else { return nil }
+
+        let requestedRange: ClosedRange<Int>
+        if let dateBounds {
+            guard let startIndex = commonDates.firstIndex(where: { $0 >= dateBounds.lowerBound }),
+                  let endIndex = commonDates.lastIndex(where: { $0 <= dateBounds.upperBound }),
+                  startIndex <= endIndex else { return nil }
+            requestedRange = startIndex...endIndex
+        } else {
+            requestedRange = 0...(commonDates.count - 1)
+        }
+        let firstSignalReadyIndex = max(requestedRange.lowerBound, max(config.warmupSessions, 1))
+        guard firstSignalReadyIndex < requestedRange.upperBound else { return nil }
+        let simulationRange = firstSignalReadyIndex...requestedRange.upperBound
+
+        let ohlcBySymbol = Dictionary(uniqueKeysWithValues: preparedSeries.map { ($0.assetOption.symbol, $0.ohlcPoints) })
+        let dataContext = ResearchTargetDataContext(
+            dates: commonDates,
+            pricesBySymbol: pricesBySymbol,
+            ohlcBySymbol: ohlcBySymbol,
+            tradableSymbols: tradableSymbols
+        )
+        let frame = MarketDataFrame(
+            dates: commonDates,
+            pricesBySymbol: pricesBySymbol,
+            ohlcBySymbol: ohlcBySymbol,
+            tradableSymbols: tradableSymbols,
+            optionBySymbol: optionBySymbol,
+            simulationRange: simulationRange
+        )
+        let execution = BacktestExecutionConfig(
+            initialCash: normalizedInitialCash,
+            feeRate: normalizedFeeRate,
+            slippageRate: normalizedSlippageRate,
+            rebalanceBand: max(config.rebalanceBand, 0),
+            financingAnnualRate: max(config.financingAnnualRate, 0),
+            allowsFinancedExposure: config.allowsFinancedExposure,
+            buyReason: config.buyReason
+        )
+        let provider = StrategyTargetProvider { context in
+            let allowedSymbols = Set(tradableSymbols)
+            var cleanedWeights: [String: Double] = [:]
+            for (symbol, weight) in targetWeights(context, dataContext) where allowedSymbols.contains(symbol) {
+                guard weight.isFinite, weight > 0 else { continue }
+                cleanedWeights[symbol, default: 0] += weight
+            }
+            let grossWeight = cleanedWeights.values.reduce(0, +)
+            guard grossWeight > 0 else { return [:] }
+            let maxGrossExposure = max(config.maxGrossExposure, 0)
+            guard maxGrossExposure > 0 else { return [:] }
+            if grossWeight <= maxGrossExposure {
+                return cleanedWeights
+            }
+            return cleanedWeights.mapValues { $0 * maxGrossExposure / grossWeight }
+        }
+
+        var lastRebalanceIndex = Int.min / 2
+        let firstRebalanceIndex = simulationRange.lowerBound
+        let contextualDecision: ((StrategyTargetContext) -> BacktestRebalanceDecision)?
+        if let contextualRebalanceDecision {
+            contextualDecision = { context in contextualRebalanceDecision(context, dataContext) }
+        } else {
+            contextualDecision = nil
+        }
+        guard let simulation = BacktestDailySimulator.run(
+            frame: frame,
+            execution: execution,
+            provider: provider,
+            rebalanceDecision: { index, signalIndex in
+                if let rebalanceDecision {
+                    return rebalanceDecision(index, signalIndex, dataContext)
+                }
+                let shouldRebalance = index == firstRebalanceIndex
+                    || (index > firstRebalanceIndex && index - lastRebalanceIndex >= max(config.rebalanceSessions, 1))
+                if shouldRebalance {
+                    lastRebalanceIndex = index
+                }
+                return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+            },
+            contextualRebalanceDecision: contextualDecision
+        ) else { return nil }
+
+        guard let last = simulation.points.last,
+              let metrics = performanceMetrics(from: simulation.points) else { return nil }
+
+        let perAssetBenchmarkSeries = tradableSymbols.compactMap { symbol -> AdvancedBacktestBenchmarkSeries? in
+            guard let prices = pricesBySymbol[symbol],
+                  prices.indices.contains(simulationRange.lowerBound),
+                  prices.indices.contains(simulationRange.upperBound),
+                  let option = optionBySymbol[symbol] else { return nil }
+            let firstPrice = prices[simulationRange.lowerBound]
+            guard firstPrice > 0 else { return nil }
+            let seriesPoints = simulationRange.enumerated().map { sequence, index in
+                BacktestSeriesPoint(
+                    date: commonDates[index],
+                    portfolioValue: normalizedInitialCash / Double(tradableSymbols.count) * prices[index] / firstPrice,
+                    sequence: sequence
+                )
+            }
+            return AdvancedBacktestBenchmarkSeries(id: symbol, title: option.title, points: seriesPoints)
+        }
+
+        let syntheticReport = AdvancedBacktestAssetReport(
+            symbol: config.symbol,
+            title: config.title,
+            points: simulation.points,
+            benchmarkPoints: simulation.benchmarkPoints,
+            pricePoints: [],
+            trades: simulation.trades,
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: simulation.finalCash,
+            finalUnits: simulation.finalUnits,
+            exposureRatio: simulation.exposureRatio
+        )
+        let riskSignalSummary = MarketRiskSignalHistory.summary(
+            dates: Array(commonDates[simulationRange]),
+            pricesBySymbol: pricesBySymbol.mapValues { Array($0[simulationRange]) }
+        )
+
+        let report = AdvancedBacktestReport(
+            points: simulation.points,
+            benchmarkPoints: simulation.benchmarkPoints,
+            benchmarkSeries: perAssetBenchmarkSeries,
+            trades: simulation.trades.sorted { lhs, rhs in lhs.date < rhs.date },
+            assetReports: [syntheticReport],
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: simulation.finalCash,
+            finalUnits: simulation.finalUnits,
+            totalReturn: metrics.totalReturn,
+            annualizedReturn: metrics.annualizedReturn,
+            maxDrawdown: metrics.maxDrawdown,
+            annualizedVolatility: metrics.annualizedVolatility,
+            sharpeRatio: metrics.sharpeRatio,
+            cashYieldSummary: simulation.cashYieldSummary,
+            riskSignalSummary: riskSignalSummary
+        )
+        return ResearchTargetStrategyRun(report: report, dailyStates: simulation.dailyStates)
     }
 
     static func runCalendarBucketTurboCompositeStrategy(
@@ -1527,6 +2210,7 @@ nonisolated enum BacktestEngine {
         dynamicSleeveSelector: AdvancedRotationDynamicSleeveSelector? = nil,
         globalRepairStack: AdvancedRotationGlobalRepairStack? = nil,
         currencyCashSelector: AdvancedRotationCurrencyCashSelector? = nil,
+        ohlcRiskOverlay: AdvancedRotationOHLCRiskOverlay? = nil,
         goldPanicLock: AdvancedRotationGoldPanicLock? = nil,
         riskEfficiencyGovernor: AdvancedRotationRiskEfficiencyGovernor? = nil,
         canaryRiskBrake: AdvancedRotationCanaryRiskBrake? = nil,
@@ -1575,6 +2259,7 @@ nonisolated enum BacktestEngine {
             dynamicSleeveSelector: dynamicSleeveSelector,
             globalRepairStack: globalRepairStack,
             currencyCashSelector: currencyCashSelector,
+            ohlcRiskOverlay: ohlcRiskOverlay,
             goldPanicLock: goldPanicLock,
             riskEfficiencyGovernor: riskEfficiencyGovernor,
             canaryRiskBrake: canaryRiskBrake,
@@ -1583,7 +2268,12 @@ nonisolated enum BacktestEngine {
             buyReason: buyReason ?? AppLocalization.string("近期亏损波动元策略建仓")
         )
         if confirmedAccelerationSatellite != nil || dynamicSleeveSelector != nil {
-            config.zeroFillBeforeFirstSymbols = ["chinext"]
+            config.zeroFillBeforeFirstSymbols.formUnion(["chinext"])
+        }
+        if globalRepairStack != nil || ohlcRiskOverlay != nil {
+            config.zeroFillBeforeFirstSymbols.formUnion([
+                "dowjones", "hsi", "nikkei", "shenzhen_component", "chinext", "oil_wti_cny", "usd_cash",
+            ])
         }
         if let coreScale {
             config.goldSatelliteOverlay = .init(
@@ -1611,6 +2301,21 @@ nonisolated enum BacktestEngine {
                     maxEquityExposure: 0.35
                 )
             )
+        }
+        if let variant = BacktestResearchOverrides.ohlcRiskOverlayVariant {
+            switch variant {
+            case "balanced":
+                config.ohlcRiskOverlay = ohlcRiskOverlayBalancedConfig()
+            case "risk_first":
+                config.ohlcRiskOverlay = ohlcRiskOverlayRiskFirstConfig()
+            default:
+                break
+            }
+            if config.ohlcRiskOverlay != nil {
+                config.zeroFillBeforeFirstSymbols.formUnion([
+                    "dowjones", "hsi", "nikkei", "shenzhen_component", "chinext", "oil_wti_cny", "usd_cash",
+                ])
+            }
         }
         return config
     }
@@ -1692,14 +2397,87 @@ nonisolated enum BacktestEngine {
         )
     }
 
-    private static func currencyCashSelectorConfig() -> AdvancedRotationCurrencyCashSelector {
+    private static func contagionRepairStack061() -> AdvancedRotationGlobalRepairStack {
+        .init(
+            repairSymbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "shenzhen_component", "chinext"],
+            globalSymbols: ["hsi", "nikkei", "oil_wti_cny"],
+            overlayRebalanceSessions: 21,
+            repairDrawdownLookbackSessions: 105,
+            repairDrawdownThreshold: 0.10,
+            repairReboundLookbackSessions: 30,
+            repairReboundThreshold: 0.055,
+            repairConfirmationMAPeriod: 40,
+            repairMomentumLookbackSessions: 20,
+            repairTopCount: 1,
+            repairOverlayCap: 0.35,
+            repairPerAssetCap: 0.15,
+            globalOverlayCap: 0.08,
+            globalPerAssetCap: 0.06,
+            globalPerAssetCapBySymbol: ["oil_wti_cny": 0.04],
+            globalTopCount: 1,
+            phaseHotLookbackSessions: 126,
+            phaseHotThreshold: 0.22,
+            phaseCrackLookbackSessions: 20,
+            phaseCrackThreshold: -0.020,
+            phaseRolloverDrawdown: 0.08,
+            phaseLockScale: 0.25,
+            phaseMaxLockSessions: 126,
+            contagion: .init(
+                chinaHkSymbols: ["csi300", "shanghai_composite", "shenzhen_component", "chinext", "hsi"],
+                globalCheckSymbols: ["nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "hsi", "nikkei"],
+                cooldownSessions: 42,
+                equityScale: 0.45,
+                globalOverlayScale: 0,
+                redeployGoldRatio: 0,
+                releaseMode: "us_repair",
+                triggerMode: "cluster"
+            )
+        )
+    }
+
+    private static func currencyCashSelectorConfig(
+        lookbackSessions: Int = 40,
+        movingAveragePeriod: Int = 80
+    ) -> AdvancedRotationCurrencyCashSelector {
         .init(
             symbol: "usd_cash",
             mode: "idle_hurdle",
-            lookbackSessions: 40,
-            movingAveragePeriod: 80,
+            lookbackSessions: lookbackSessions,
+            movingAveragePeriod: movingAveragePeriod,
             cap: 1.0,
             cnyCashHurdleScale: 1.0
+        )
+    }
+
+    private static func ohlcRiskOverlayBalancedConfig() -> AdvancedRotationOHLCRiskOverlay {
+        .init(
+            usSymbols: ["nasdaq", "sp500", "dowjones"],
+            chinaSymbols: ["csi300", "shanghai_composite", "shenzhen_component", "chinext"],
+            otherEquitySymbols: ["hsi", "nikkei"],
+            minClusterScore: 6,
+            minClusterWeak: 1,
+            cooldownSessions: 42,
+            usScale: 0.75,
+            chinaScale: 0.65,
+            otherEquityScale: 0.50,
+            redeployGoldRatio: 0.25,
+            releaseHealthyCount: 4
+        )
+    }
+
+    private static func ohlcRiskOverlayRiskFirstConfig() -> AdvancedRotationOHLCRiskOverlay {
+        .init(
+            usSymbols: ["nasdaq", "sp500", "dowjones"],
+            chinaSymbols: ["csi300", "shanghai_composite", "shenzhen_component", "chinext"],
+            otherEquitySymbols: ["hsi", "nikkei"],
+            minClusterScore: 6,
+            minClusterWeak: 1,
+            cooldownSessions: 42,
+            usScale: 0.65,
+            chinaScale: 0.50,
+            otherEquityScale: 0.25,
+            redeployGoldRatio: 0.25,
+            releaseHealthyCount: 4
         )
     }
 
@@ -1730,6 +2508,8 @@ nonisolated enum BacktestEngine {
 
     private static func advancedRotationConfig(for mode: AdvancedBacktestStrategyMode) -> AdvancedRotationConfig? {
         switch mode {
+        case .goldNasdaqDualTrendBarbell:
+            return nil
         case .ultraDefensiveRotation:
             return .init(
                 symbol: "ultra_defensive_rotation",
@@ -1933,7 +2713,7 @@ nonisolated enum BacktestEngine {
                     "nasdaq": 0.35,
                 ],
                 renormalizesFixedBaseWeights: true,
-                buyReason: AppLocalization.string("长期进取趋势建仓")
+                buyReason: AppLocalization.string("长期趋势配置建仓")
             )
         case .longTermLowVolMomentum:
             return .init(
@@ -2391,6 +3171,11 @@ nonisolated enum BacktestEngine {
                 buyReason: AppLocalization.string("单向控波元策略建仓")
             )
         case .coreGoldSatelliteEquityCurveStateGateMomentum:
+            let offensiveShare = BacktestResearchOverrides.equityCurveOffensiveShare ?? 1.0
+            let defensiveShare = BacktestResearchOverrides.equityCurveDefensiveShare ?? 0.70
+            let lowScale = BacktestResearchOverrides.equityCurveLowScale ?? 0.70
+            let enterDrawdown = BacktestResearchOverrides.equityCurveEnterDrawdown ?? 0.025
+            let exitReturn = BacktestResearchOverrides.equityCurveExitReturn ?? 0.02
             return recentLossVolatilityMetaConfig(
                 mode: mode,
                 symbol: "core_gold_satellite_equity_curve_state_gate_momentum",
@@ -2403,19 +3188,19 @@ nonisolated enum BacktestEngine {
                     drawdownLookbackSessions: 120,
                     drawdownThreshold: 0.08,
                     volatilityLookbackSessions: 240,
-                    offensiveBlendShare: 1.0,
-                    defensiveBlendCurrentShare: 0.70
+                    offensiveBlendShare: offensiveShare,
+                    defensiveBlendCurrentShare: defensiveShare
                 ),
                 equityCurveStateGate: .init(
                     lookbackSessions: 90,
                     enterReturnThreshold: 0,
-                    enterDrawdownThreshold: 0.025,
-                    exitReturnThreshold: 0.02,
+                    enterDrawdownThreshold: enterDrawdown,
+                    exitReturnThreshold: exitReturn,
                     exitDrawdownThreshold: 0.03,
-                    lowRiskScale: 0.70
+                    lowRiskScale: lowScale
                 ),
                 rebalanceBand: 0.08,
-                buyReason: AppLocalization.string("权益曲线状态机建仓")
+                buyReason: AppLocalization.string("均衡权益状态建仓")
             )
         case .coreGoldSatelliteSharpeStateGateMomentum:
             let lowRiskScale = researchOverrideDouble("ATM_SHARPE_LOW_SCALE", default: 0.35)
@@ -2518,7 +3303,10 @@ nonisolated enum BacktestEngine {
         case .coreGoldSatelliteRiskBudgetStateGateMomentum:
             let riskBudgetLowScale = BacktestResearchOverrides.riskBudgetLowScale ?? 1.0
             let riskBudgetMultiplier = BacktestResearchOverrides.riskBudgetMultiplier ?? 1.0
-            let riskBudgetDefensiveShare = BacktestResearchOverrides.riskBudgetDefensiveShare ?? 0.0
+            let riskBudgetDefensiveShare = BacktestResearchOverrides.riskBudgetDefensiveShare ?? 0.50
+            let riskBudgetVolatilityScaleFloor = BacktestResearchOverrides.riskBudgetVolatilityScaleFloor ?? 0.50
+            let riskBudgetReturnLookbackSessions = BacktestResearchOverrides.riskBudgetReturnLookbackSessions ?? 420
+            let riskBudgetRebalanceBand = BacktestResearchOverrides.riskBudgetRebalanceBand ?? 0.08
             return recentLossVolatilityMetaConfig(
                 mode: mode,
                 symbol: "core_gold_satellite_risk_budget_state_gate_momentum",
@@ -2541,12 +3329,13 @@ nonisolated enum BacktestEngine {
                 engineRouter: .init(
                     currentMode: .coreGoldSatelliteGoldHandoffMomentum,
                     offensiveMode: .coreGoldSatelliteEquityBreadthMomentum,
-                    returnLookbackSessions: 240,
+                    returnLookbackSessions: riskBudgetReturnLookbackSessions,
                     drawdownLookbackSessions: 120,
                     drawdownThreshold: 0.08,
                     volatilityLookbackSessions: 240,
                     offensiveBlendShare: 1.0,
-                    defensiveBlendCurrentShare: riskBudgetDefensiveShare
+                    defensiveBlendCurrentShare: riskBudgetDefensiveShare,
+                    volatilityScaleFloor: riskBudgetVolatilityScaleFloor
                 ),
                 equityCurveStateGate: .init(
                     lookbackSessions: 75,
@@ -2561,8 +3350,8 @@ nonisolated enum BacktestEngine {
                 riskBudgetEnhancer: riskBudgetMultiplier > 1.0001
                     ? .init(multiplier: riskBudgetMultiplier, annualFinancingRate: 0.03)
                     : nil,
-                rebalanceBand: 0.08,
-                buyReason: AppLocalization.string("风险预算状态机建仓")
+                rebalanceBand: riskBudgetRebalanceBand,
+                buyReason: AppLocalization.string("进取风险预算建仓")
             )
         case .coreGoldSatelliteConfirmedAccelerationMomentum:
             return recentLossVolatilityMetaConfig(
@@ -2618,7 +3407,7 @@ nonisolated enum BacktestEngine {
                     shallowDrawdownThreshold: 0.02,
                     profitScale: 0.90
                 ),
-                buyReason: AppLocalization.string("锁盈防守袖套建仓")
+                buyReason: AppLocalization.string("稳健锁盈防守建仓")
             )
         case .coreGoldSatelliteDynamicSleeveMomentum:
             return recentLossVolatilityMetaConfig(
@@ -2945,6 +3734,7 @@ nonisolated enum BacktestEngine {
         var dynamicSleeveSelector: AdvancedRotationDynamicSleeveSelector? = nil
         var globalRepairStack: AdvancedRotationGlobalRepairStack? = nil
         var currencyCashSelector: AdvancedRotationCurrencyCashSelector? = nil
+        var ohlcRiskOverlay: AdvancedRotationOHLCRiskOverlay? = nil
         var goldPanicLock: AdvancedRotationGoldPanicLock? = nil
         var riskEfficiencyGovernor: AdvancedRotationRiskEfficiencyGovernor? = nil
         var canaryRiskBrake: AdvancedRotationCanaryRiskBrake? = nil
@@ -2987,6 +3777,7 @@ nonisolated enum BacktestEngine {
         let repairPerAssetCap: Double
         let globalOverlayCap: Double
         let globalPerAssetCap: Double
+        var globalPerAssetCapBySymbol: [String: Double] = [:]
         let globalTopCount: Int
         let phaseHotLookbackSessions: Int
         let phaseHotThreshold: Double
@@ -3016,6 +3807,32 @@ nonisolated enum BacktestEngine {
         let movingAveragePeriod: Int
         let cap: Double
         let cnyCashHurdleScale: Double
+    }
+
+    private struct AdvancedRotationOHLCRiskOverlay {
+        let usSymbols: [String]
+        let chinaSymbols: [String]
+        let otherEquitySymbols: [String]
+        let minClusterScore: Int
+        let minClusterWeak: Int
+        let cooldownSessions: Int
+        let usScale: Double
+        let chinaScale: Double
+        let otherEquityScale: Double
+        let redeployGoldRatio: Double
+        let releaseHealthyCount: Int
+    }
+
+    private struct AdvancedRotationOHLCBar {
+        let date: Date
+        let open: Double
+        let high: Double
+        let low: Double
+        let close: Double
+    }
+
+    private struct AdvancedRotationOHLCRiskFeature {
+        let score: Int
     }
 
     private struct AdvancedRotationGoldPanicLock {
@@ -3058,6 +3875,29 @@ nonisolated enum BacktestEngine {
         let volatilityLookbackSessions: Int
         let offensiveBlendShare: Double
         let defensiveBlendCurrentShare: Double
+        let volatilityScaleFloor: Double
+
+        init(
+            currentMode: AdvancedBacktestStrategyMode,
+            offensiveMode: AdvancedBacktestStrategyMode,
+            returnLookbackSessions: Int,
+            drawdownLookbackSessions: Int,
+            drawdownThreshold: Double,
+            volatilityLookbackSessions: Int,
+            offensiveBlendShare: Double,
+            defensiveBlendCurrentShare: Double,
+            volatilityScaleFloor: Double = 0
+        ) {
+            self.currentMode = currentMode
+            self.offensiveMode = offensiveMode
+            self.returnLookbackSessions = returnLookbackSessions
+            self.drawdownLookbackSessions = drawdownLookbackSessions
+            self.drawdownThreshold = drawdownThreshold
+            self.volatilityLookbackSessions = volatilityLookbackSessions
+            self.offensiveBlendShare = offensiveBlendShare
+            self.defensiveBlendCurrentShare = defensiveBlendCurrentShare
+            self.volatilityScaleFloor = volatilityScaleFloor
+        }
     }
 
     private struct AdvancedRotationConfirmedAccelerationSatellite {
@@ -3376,6 +4216,7 @@ nonisolated enum BacktestEngine {
         var contagionUntilIndex: Int = -1
         var goldPanicArmed: Bool = false
         var goldPanicUntilIndex: Int = -1
+        var ohlcRiskUntilIndex: Int = -1
         var equityCurveStateGateDefensive: Bool = false
         var assetRiskDefensiveUntilIndex: Int = -1
         var assetRiskRecoveryUntilIndex: Int = -1
@@ -3422,7 +4263,8 @@ nonisolated enum BacktestEngine {
             config.assetRiskStateGate?.chinaDrawdownLookbackSessions ?? 0,
             config.assetRiskStateGate?.portfolioDrawdownLookbackSessions ?? 0
         ].max() ?? 0
-        return max(repairWarmup, currencyWarmup, goldPanicWarmup, governorWarmup, equityCurveStateWarmup, assetRiskWarmup)
+        let ohlcRiskWarmup = config.ohlcRiskOverlay == nil ? 0 : 120
+        return max(repairWarmup, currencyWarmup, goldPanicWarmup, governorWarmup, equityCurveStateWarmup, assetRiskWarmup, ohlcRiskWarmup)
     }
 
     static func advancedRotationRebalanceAdvice(
@@ -3433,8 +4275,8 @@ nonisolated enum BacktestEngine {
     ) -> StrategyRebalanceAdvice? {
         guard let config = advancedRotationConfig(for: mode) else { return nil }
         let normalizedInitialCash = max(initialCash, 0)
-        let normalizedFeeRate = max(settings?.feeRate ?? 1.0, 0) / 100
-        let normalizedSlippageRate = max(settings?.slippageRate ?? 0.05, 0) / 100
+        let normalizedFeeRate = max(settings?.feeRate ?? BacktestDefaults.advancedFeeRatePercent, 0) / 100
+        let normalizedSlippageRate = max(settings?.slippageRate ?? BacktestDefaults.advancedSlippageRatePercent, 0) / 100
         guard normalizedInitialCash > 0 else { return nil }
 
         let preparedSeries: [PreparedAdvancedSeries] = assetInputs.compactMap { input -> PreparedAdvancedSeries? in
@@ -3684,9 +4526,8 @@ nonisolated enum BacktestEngine {
                 config: config
             )
             portfolioGuardScale = 1
-            targetWeightItems = metaWeights.compactMap { item -> AdvancedRotationTargetWeight? in
-                let symbol = item.key
-                let weight = item.value
+            targetWeightItems = metaWeights.keys.sorted().compactMap { symbol -> AdvancedRotationTargetWeight? in
+                let weight = metaWeights[symbol] ?? 0
                 guard !config.signalOnlySymbols.contains(symbol),
                       let prices = pricesBySymbol[symbol],
                       prices.indices.contains(signalIndex) else { return nil }
@@ -3804,7 +4645,7 @@ nonisolated enum BacktestEngine {
                       prices[index - 1] > 0 else { continue }
                 dailyReturn += weight * (prices[index] / prices[index - 1] - 1)
             }
-            let investedWeight = weightsBySymbol.values.reduce(0) { $0 + max($1, 0) }
+            let investedWeight = positiveWeightSum(weightsBySymbol)
             let cashWeight = max(0, 1 - investedWeight)
             dailyReturn += cashWeight * CashYieldCNY.dailyReturn(on: commonDates[index - 1])
             value *= 1 + dailyReturn
@@ -3822,7 +4663,7 @@ nonisolated enum BacktestEngine {
                     config: config
                 ).map { ($0.symbol, $0.weight) })
                 let scale = guardScale(currentValue: value, historyValues: values)
-                weightsBySymbol = baseWeights.mapValues { $0 * scale }
+                weightsBySymbol = scaledWeightMap(baseWeights, by: scale)
             }
 
             values.append(value)
@@ -3855,7 +4696,7 @@ nonisolated enum BacktestEngine {
             let drawdownFromPeak = currentValue / recentPeak - 1
             guard drawdownFromPeak < -max(guardConfig.drawdownThreshold, 0) else { return targetWeights }
             let scale = min(max(guardConfig.scale, 0), 1)
-            return targetWeights.mapValues { $0 * scale }
+            return scaledWeightMap(targetWeights, by: scale)
         }
 
         for index in commonDates.indices.dropFirst() {
@@ -3869,7 +4710,7 @@ nonisolated enum BacktestEngine {
                       prices[index - 1] > 0 else { continue }
                 dailyReturn += weight * (prices[index] / prices[index - 1] - 1)
             }
-            let investedWeight = weightsBySymbol.values.reduce(0) { $0 + max($1, 0) }
+            let investedWeight = positiveWeightSum(weightsBySymbol)
             let cashWeight = max(0, 1 - investedWeight)
             dailyReturn += cashWeight * CashYieldCNY.dailyReturn(on: commonDates[index - 1])
             value *= 1 + dailyReturn
@@ -3984,7 +4825,7 @@ nonisolated enum BacktestEngine {
         config: AdvancedRotationConfig
     ) -> [String: Double] {
         guard let overlay = config.goldSatelliteOverlay else { return rawWeights }
-        var finalWeights = rawWeights.mapValues { max($0, 0) * min(max(overlay.coreScale, 0), 1) }
+        var finalWeights = clampedScaledWeightMap(rawWeights, by: min(max(overlay.coreScale, 0), 1))
 
         func priceMomentum(symbol: String, lookback: Int) -> Double? {
             guard let prices = pricesBySymbol[symbol] else { return nil }
@@ -4219,11 +5060,11 @@ nonisolated enum BacktestEngine {
             }
         }
 
-        let totalExposure = finalWeights.reduce(0.0) { $0 + max($1.value, 0) }
+        let totalExposure = positiveWeightSum(finalWeights)
         let maxTotalExposure = min(max(overlay.maxTotalExposure, 0), 1)
         if totalExposure > maxTotalExposure, totalExposure > 0 {
             let scale = maxTotalExposure / totalExposure
-            finalWeights = finalWeights.mapValues { max($0, 0) * scale }
+            finalWeights = clampedScaledWeightMap(finalWeights, by: scale)
         }
 
         return finalWeights.filter { $0.value > 0.0001 }
@@ -4233,14 +5074,51 @@ nonisolated enum BacktestEngine {
         _ weights: [String: Double],
         maxTotalExposure: Double = 1
     ) -> [String: Double] {
-        var normalized = weights.filter { $0.value > 0.0001 }.mapValues { max($0, 0) }
-        let totalExposure = normalized.reduce(0.0) { $0 + max($1.value, 0) }
+        var normalized: [String: Double] = [:]
+        for symbol in weights.keys.sorted() {
+            let value = max(weights[symbol] ?? 0, 0)
+            if value > 0.0001 {
+                normalized[symbol] = value
+            }
+        }
+        let totalExposure = normalized.keys.sorted().reduce(0.0) { $0 + max(normalized[$1] ?? 0, 0) }
         let cappedMaxTotalExposure = min(max(maxTotalExposure, 0), 1)
         if totalExposure > cappedMaxTotalExposure, totalExposure > 0 {
             let scale = cappedMaxTotalExposure / totalExposure
-            normalized = normalized.mapValues { max($0, 0) * scale }
+            for symbol in normalized.keys.sorted() {
+                normalized[symbol] = max(normalized[symbol] ?? 0, 0) * scale
+            }
         }
-        return normalized.filter { $0.value > 0.0001 }
+        var output: [String: Double] = [:]
+        for symbol in normalized.keys.sorted() {
+            let value = normalized[symbol] ?? 0
+            if value > 0.0001 {
+                output[symbol] = value
+            }
+        }
+        return output
+    }
+
+    private static func positiveWeightSum(_ weights: [String: Double]) -> Double {
+        weights.keys.sorted().reduce(0.0) { partial, symbol in
+            partial + max(weights[symbol] ?? 0, 0)
+        }
+    }
+
+    private static func scaledWeightMap(_ weights: [String: Double], by scale: Double) -> [String: Double] {
+        var output: [String: Double] = [:]
+        for symbol in weights.keys.sorted() {
+            output[symbol] = (weights[symbol] ?? 0) * scale
+        }
+        return output
+    }
+
+    private static func clampedScaledWeightMap(_ weights: [String: Double], by scale: Double) -> [String: Double] {
+        var output: [String: Double] = [:]
+        for symbol in weights.keys.sorted() {
+            output[symbol] = max(weights[symbol] ?? 0, 0) * scale
+        }
+        return output
     }
 
     private static func blendedWeightMap(
@@ -4250,11 +5128,11 @@ nonisolated enum BacktestEngine {
     ) -> [String: Double] {
         let normalizedFirstShare = min(max(firstShare, 0), 1)
         var output: [String: Double] = [:]
-        for item in first {
-            output[item.key, default: 0] += max(item.value, 0) * normalizedFirstShare
+        for symbol in first.keys.sorted() {
+            output[symbol, default: 0] += max(first[symbol] ?? 0, 0) * normalizedFirstShare
         }
-        for item in second {
-            output[item.key, default: 0] += max(item.value, 0) * (1 - normalizedFirstShare)
+        for symbol in second.keys.sorted() {
+            output[symbol, default: 0] += max(second[symbol] ?? 0, 0) * (1 - normalizedFirstShare)
         }
         return normalizedWeightMap(output)
     }
@@ -4290,7 +5168,7 @@ nonisolated enum BacktestEngine {
         }
 
         var finalWeights = rawWeights
-        let currentExposure = finalWeights.reduce(0.0) { $0 + max($1.value, 0) }
+        let currentExposure = positiveWeightSum(finalWeights)
         let maxTotalExposure = min(max(breadth.maxTotalExposure, 0), 1)
         let budget = max(0, maxTotalExposure - currentExposure)
         guard budget > 0 else {
@@ -4438,7 +5316,7 @@ nonisolated enum BacktestEngine {
         let selected = Array(scored.prefix(max(satellite.topCount, 1)))
         let scoreTotal = selected.reduce(0.0) { $0 + $1.score }
         var finalWeights = rawWeights
-        let availableBudget = min(max(1 - finalWeights.reduce(0.0) { $0 + max($1.value, 0) }, 0), max(satellite.cap, 0))
+        let availableBudget = min(max(1 - positiveWeightSum(finalWeights), 0), max(satellite.cap, 0))
         guard availableBudget > 0, scoreTotal > 0 else {
             return normalizedWeightMap(finalWeights)
         }
@@ -4497,7 +5375,7 @@ nonisolated enum BacktestEngine {
         } else {
             profitScale = baseScale
         }
-        return normalizedWeightMap(rawWeights.mapValues { $0 * min(max(profitScale, 0), 1) })
+        return normalizedWeightMap(scaledWeightMap(rawWeights, by: min(max(profitScale, 0), 1)))
     }
 
     private static func applyEquityCurveStateGate(
@@ -4535,7 +5413,7 @@ nonisolated enum BacktestEngine {
         let scale = state.equityCurveStateGateDefensive
             ? min(max(gate.lowRiskScale, 0), 1)
             : 1
-        return normalizedWeightMap(rawWeights.mapValues { $0 * scale })
+        return normalizedWeightMap(scaledWeightMap(rawWeights, by: scale))
     }
 
     private static func applyAssetRiskStateGate(
@@ -4652,11 +5530,11 @@ nonisolated enum BacktestEngine {
         } else {
             scale = gate.normalScale
         }
-        return normalizedWeightMap(guardedWeights.mapValues { $0 * min(max(scale, 0), 1) })
+        return normalizedWeightMap(scaledWeightMap(guardedWeights, by: min(max(scale, 0), 1)))
     }
 
     private static func overlayTotalWeight(_ weights: [String: Double]) -> Double {
-        weights.reduce(0.0) { $0 + max($1.value, 0) }
+        positiveWeightSum(weights)
     }
 
     private static func movingAverageAt(values: [Double], at index: Int, period: Int) -> Double? {
@@ -4699,8 +5577,8 @@ nonisolated enum BacktestEngine {
     private static func addOverlayWeights(_ overlays: [[String: Double]], to base: [String: Double]) -> [String: Double] {
         var output = base
         for overlay in overlays {
-            for item in overlay {
-                output[item.key, default: 0] += max(item.value, 0)
+            for symbol in overlay.keys.sorted() {
+                output[symbol, default: 0] += max(overlay[symbol] ?? 0, 0)
             }
         }
         return output
@@ -4816,7 +5694,7 @@ nonisolated enum BacktestEngine {
     ) -> Bool {
         var checked = 0
         var healthy = 0
-        for symbol in ["nasdaq", "sp500", "hsi", "csi300", "shanghai_composite"] {
+        for symbol in ["nasdaq", "sp500", "hsi", "nikkei", "csi300", "shanghai_composite"] {
             guard let prices = pricesBySymbol[symbol],
                   prices.indices.contains(signalIndex),
                   let ma60 = movingAverageAt(values: prices, at: signalIndex, period: 60),
@@ -4842,14 +5720,29 @@ nonisolated enum BacktestEngine {
               let momentum20 = priceMomentum(values: prices, at: signalIndex, lookback: 20),
               let momentum60 = priceMomentum(values: prices, at: signalIndex, lookback: 60),
               let ma20 = movingAverageAt(values: prices, at: signalIndex, period: 20),
-              let ma40 = movingAverageAt(values: prices, at: signalIndex, period: 40) else { return nil }
+              let ma40 = movingAverageAt(values: prices, at: signalIndex, period: 40),
+              let ma120 = movingAverageAt(values: prices, at: signalIndex, period: 120) else { return nil }
         guard drawdown <= -0.10,
               rebound >= 0.055,
               prices[signalIndex] >= ma20,
               prices[signalIndex] >= ma40,
               momentum20 >= 0,
-              momentum60 >= -0.02,
-              globalBreadthOK(pricesBySymbol: pricesBySymbol, signalIndex: signalIndex) else { return nil }
+              momentum60 >= -0.02 else { return nil }
+
+        if ["hsi", "nikkei"].contains(symbol),
+           !globalBreadthOK(pricesBySymbol: pricesBySymbol, signalIndex: signalIndex) {
+            return nil
+        }
+        if symbol == "oil_wti_cny" {
+            guard let goldPrices = pricesBySymbol["gold_cny"],
+                  goldPrices.indices.contains(signalIndex),
+                  let goldMomentum60 = priceMomentum(values: goldPrices, at: signalIndex, lookback: 60),
+                  let goldMA120 = movingAverageAt(values: goldPrices, at: signalIndex, period: 120),
+                  goldMomentum60 >= 0,
+                  goldPrices[signalIndex] >= goldMA120,
+                  momentum60 >= 0.04,
+                  prices[signalIndex] >= ma120 else { return nil }
+        }
         let volatility = annualizedVolatilityAt(values: prices, at: signalIndex, lookback: 60) ?? 9.0
         let score = max(0, rebound * 1.3 + momentum20 * 0.5 + momentum60 * 0.45 + max(drawdown, -0.50) * 0.15) / max(volatility, 0.04)
         return score > 0 ? score : nil
@@ -4879,7 +5772,8 @@ nonisolated enum BacktestEngine {
         guard scoreTotal > 0 else { return [:] }
         var output: [String: Double] = [:]
         for item in selected {
-            output[item.symbol] = min(max(stack.globalPerAssetCap, 0), budget * item.score / scoreTotal)
+            let cap = stack.globalPerAssetCapBySymbol[item.symbol] ?? stack.globalPerAssetCap
+            output[item.symbol] = min(max(cap, 0), budget * item.score / scoreTotal)
         }
         return normalizedWeightMap(output, maxTotalExposure: budget)
     }
@@ -4926,7 +5820,7 @@ nonisolated enum BacktestEngine {
         guard !state.phaseLockedStartIndexBySymbol.isEmpty else { return normalizedWeightMap(rawWeights) }
         var output = rawWeights
         let scale = min(max(stack.phaseLockScale, 0), 1)
-        for symbol in state.phaseLockedStartIndexBySymbol.keys {
+        for symbol in state.phaseLockedStartIndexBySymbol.keys.sorted() {
             if let weight = output[symbol], weight > 0 {
                 output[symbol] = weight * scale
             }
@@ -5079,12 +5973,12 @@ nonisolated enum BacktestEngine {
 
         let equitySymbols: Set<String> = [
             "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite",
-            "shenzhen_component", "chinext", "hsi",
+            "shenzhen_component", "chinext", "hsi", "nikkei",
         ]
         let globalSymbols = Set(stack.globalSymbols)
         var output = rawWeights
         var removed = 0.0
-        for symbol in Array(output.keys) {
+        for symbol in output.keys.sorted() {
             guard equitySymbols.contains(symbol) else { continue }
             let scale = globalSymbols.contains(symbol) ? control.globalOverlayScale : control.equityScale
             let oldWeight = max(output[symbol] ?? 0, 0)
@@ -5230,6 +6124,238 @@ nonisolated enum BacktestEngine {
         return normalizedWeightMap(output)
     }
 
+    private static func ohlcRiskFeatures(
+        bars: [AdvancedRotationOHLCBar]
+    ) -> [Date: AdvancedRotationOHLCRiskFeature] {
+        guard !bars.isEmpty else { return [:] }
+        let closes = bars.map(\.close)
+        let highs = bars.map(\.high)
+        let lows = bars.map(\.low)
+        let opens = bars.map(\.open)
+        let trueRanges = bars.indices.map { index -> Double in
+            let previousClose = index > 0 ? closes[index - 1] : closes[index]
+            guard previousClose > 0 else { return 0 }
+            let range = max(
+                highs[index] - lows[index],
+                abs(highs[index] - previousClose),
+                abs(lows[index] - previousClose)
+            ) / previousClose
+            return range.isFinite ? range : 0
+        }
+
+        func average(_ values: [Double], at index: Int, period: Int) -> Double? {
+            guard period > 0, index - period + 1 >= 0 else { return nil }
+            let window = values[(index - period + 1)...index]
+            guard window.allSatisfy({ $0.isFinite }) else { return nil }
+            return window.reduce(0, +) / Double(period)
+        }
+
+        var output: [Date: AdvancedRotationOHLCRiskFeature] = [:]
+        for index in bars.indices {
+            let close = closes[index]
+            let previousClose = index > 0 ? closes[index - 1] : close
+            guard close > 0, previousClose > 0 else { continue }
+            let rangePercent = (highs[index] - lows[index]) / previousClose
+            let atr20 = average(trueRanges, at: index, period: 20)
+            let atr120 = average(trueRanges, at: index, period: 120)
+            let atrRatio: Double?
+            if let atr20, let atr120, atr120 > 0 {
+                atrRatio = atr20 / atr120
+            } else {
+                atrRatio = nil
+            }
+            let closeLocation = highs[index] > lows[index]
+                ? (close - lows[index]) / (highs[index] - lows[index])
+                : nil
+            let momentum20 = priceMomentum(values: closes, at: index, lookback: 20)
+            let momentum60 = priceMomentum(values: closes, at: index, lookback: 60)
+            let momentum120 = priceMomentum(values: closes, at: index, lookback: 120)
+            let ma40 = movingAverageAt(values: closes, at: index, period: 40)
+            let ma60 = movingAverageAt(values: closes, at: index, period: 60)
+            let ma120 = movingAverageAt(values: closes, at: index, period: 120)
+            let low20 = index >= 19 ? lows[(index - 19)...index].min() : nil
+            let low60 = index >= 59 ? lows[(index - 59)...index].min() : nil
+
+            var score = 0
+            if close / previousClose - 1 < -0.035 {
+                score += 2
+            }
+            if opens[index] / previousClose - 1 < -0.025 {
+                score += 1
+            }
+            if let low20, lows[index] <= low20, let atrRatio, atrRatio > 1.12 {
+                score += 1
+            }
+            if let low60, lows[index] <= low60, let atrRatio, atrRatio > 1.03 {
+                score += 1
+            }
+            if let closeLocation, let atr20, closeLocation < 0.28, rangePercent > atr20 * 1.08 {
+                score += 1
+            }
+            let hot = (momentum120.map { $0 > 0.28 } ?? false)
+                || (momentum60.map { $0 > 0.16 } ?? false)
+                || (ma120.map { close > $0 * 1.16 } ?? false)
+            let rollover = (momentum20.map { $0 < -0.025 } ?? false)
+                || (ma40.map { close < $0 } ?? false)
+                || (low20.map { lows[index] <= $0 } ?? false)
+            if hot && rollover {
+                score += 2
+            }
+            if let ma60,
+               let momentum20,
+               let momentum60,
+               close < ma60,
+               momentum20 < -0.02,
+               momentum60 < -0.03 {
+                score += 1
+            }
+            output[bars[index].date] = .init(score: score)
+        }
+        return output
+    }
+
+    private static func alignedOHLCRiskFeatures(
+        from preparedSeries: [PreparedAdvancedSeries],
+        commonDates: [Date]
+    ) -> [String: [AdvancedRotationOHLCRiskFeature?]] {
+        let calendar = Calendar(identifier: .gregorian)
+        var output: [String: [AdvancedRotationOHLCRiskFeature?]] = [:]
+        for prepared in preparedSeries where !prepared.ohlcPoints.isEmpty {
+            let bars = prepared.ohlcPoints.map {
+                AdvancedRotationOHLCBar(date: $0.date, open: $0.open, high: $0.high, low: $0.low, close: $0.close)
+            }
+            let featuresByDate = ohlcRiskFeatures(bars: bars)
+            let featureDates = featuresByDate.keys.sorted()
+            var cursor = 0
+            var latestDate: Date?
+            var latestFeature: AdvancedRotationOHLCRiskFeature?
+            var values: [AdvancedRotationOHLCRiskFeature?] = []
+            values.reserveCapacity(commonDates.count)
+
+            for currentDate in commonDates {
+                while cursor < featureDates.count && featureDates[cursor] <= currentDate {
+                    latestDate = featureDates[cursor]
+                    latestFeature = featuresByDate[featureDates[cursor]]
+                    cursor += 1
+                }
+                if let latestDate,
+                   let latestFeature,
+                   (calendar.dateComponents([.day], from: latestDate, to: currentDate).day ?? 999) <= 7 {
+                    values.append(latestFeature)
+                } else {
+                    values.append(nil)
+                }
+            }
+            output[prepared.assetOption.symbol] = values
+        }
+        return output
+    }
+
+    private static func ohlcClusterIsActive(
+        featuresBySymbol: [String: [AdvancedRotationOHLCRiskFeature?]],
+        symbols: [String],
+        signalIndex: Int,
+        overlay: AdvancedRotationOHLCRiskOverlay
+    ) -> Bool {
+        var totalScore = 0
+        var weak = 0
+        for symbol in symbols {
+            guard let features = featuresBySymbol[symbol],
+                  features.indices.contains(signalIndex),
+                  let feature = features[signalIndex] else { continue }
+            totalScore += feature.score
+            if feature.score >= 2 {
+                weak += 1
+            }
+        }
+        return totalScore >= overlay.minClusterScore && weak >= overlay.minClusterWeak
+    }
+
+    private static func ohlcRiskReleaseOK(
+        pricesBySymbol: [String: [Double]],
+        signalIndex: Int,
+        overlay: AdvancedRotationOHLCRiskOverlay
+    ) -> Bool {
+        var checked = 0
+        var healthy = 0
+        for symbol in overlay.usSymbols + overlay.chinaSymbols {
+            guard let prices = pricesBySymbol[symbol],
+                  prices.indices.contains(signalIndex),
+                  let ma60 = movingAverageAt(values: prices, at: signalIndex, period: 60),
+                  let momentum20 = priceMomentum(values: prices, at: signalIndex, lookback: 20) else { continue }
+            checked += 1
+            if prices[signalIndex] > ma60 && momentum20 > 0 {
+                healthy += 1
+            }
+        }
+        return checked >= 5 && healthy >= overlay.releaseHealthyCount
+    }
+
+    private static func applyOHLCRiskOverlay(
+        to rawWeights: [String: Double],
+        signalIndex: Int,
+        pricesBySymbol: [String: [Double]],
+        ohlcFeaturesBySymbol: [String: [AdvancedRotationOHLCRiskFeature?]]?,
+        config: AdvancedRotationConfig,
+        state: inout AdvancedRotationOverlayState
+    ) -> [String: Double] {
+        guard let overlay = config.ohlcRiskOverlay,
+              let ohlcFeaturesBySymbol,
+              signalIndex >= 0 else {
+            return normalizedWeightMap(rawWeights)
+        }
+        let usActive = ohlcClusterIsActive(
+            featuresBySymbol: ohlcFeaturesBySymbol,
+            symbols: overlay.usSymbols,
+            signalIndex: signalIndex,
+            overlay: overlay
+        )
+        let chinaActive = ohlcClusterIsActive(
+            featuresBySymbol: ohlcFeaturesBySymbol,
+            symbols: overlay.chinaSymbols,
+            signalIndex: signalIndex,
+            overlay: overlay
+        )
+        if usActive || chinaActive {
+            state.ohlcRiskUntilIndex = max(state.ohlcRiskUntilIndex, signalIndex + overlay.cooldownSessions)
+        }
+
+        var active = state.ohlcRiskUntilIndex >= signalIndex
+        if active && ohlcRiskReleaseOK(pricesBySymbol: pricesBySymbol, signalIndex: signalIndex, overlay: overlay) {
+            active = false
+            state.ohlcRiskUntilIndex = signalIndex - 1
+        }
+        guard active else { return normalizedWeightMap(rawWeights) }
+
+        let usSymbols = Set(overlay.usSymbols)
+        let chinaSymbols = Set(overlay.chinaSymbols)
+        let otherEquitySymbols = Set(overlay.otherEquitySymbols)
+        var output = rawWeights
+        var removed = 0.0
+        for symbol in output.keys.sorted() {
+            let scale: Double
+            if usSymbols.contains(symbol) {
+                scale = overlay.usScale
+            } else if chinaSymbols.contains(symbol) {
+                scale = overlay.chinaScale
+            } else if otherEquitySymbols.contains(symbol) {
+                scale = overlay.otherEquityScale
+            } else {
+                continue
+            }
+            let originalWeight = max(output[symbol] ?? 0, 0)
+            let scaledWeight = originalWeight * min(max(scale, 0), 1)
+            output[symbol] = scaledWeight
+            removed += max(originalWeight - scaledWeight, 0)
+        }
+        if removed > 0,
+           overlay.redeployGoldRatio > 0,
+           goldTrendOK(pricesBySymbol: pricesBySymbol, signalIndex: signalIndex) {
+            output["gold_cny", default: 0] += removed * min(max(overlay.redeployGoldRatio, 0), 1)
+        }
+        return normalizedWeightMap(output)
+    }
+
     private static func goldPanicOverheated(
         prices: [Double],
         signalIndex: Int,
@@ -5325,9 +6451,8 @@ nonisolated enum BacktestEngine {
         var momentumWeight = 0.0
         var checked = 0
         var healthy = 0
-        for item in weights {
-            let symbol = item.key
-            let weight = max(item.value, 0)
+        for symbol in weights.keys.sorted() {
+            let weight = max(weights[symbol] ?? 0, 0)
             guard symbol != "usd_cash",
                   weight > 0,
                   let prices = pricesBySymbol[symbol],
@@ -5392,7 +6517,7 @@ nonisolated enum BacktestEngine {
         let scale = min(1, governor.targetVolatility / max(expectedVolatility, 0.001))
         guard scale < 0.995 else { return normalizedWeightMap(rawWeights) }
         var output = rawWeights
-        for symbol in Array(output.keys) where symbol != "usd_cash" {
+        for symbol in output.keys.sorted() where symbol != "usd_cash" {
             output[symbol] = max(output[symbol] ?? 0, 0) * scale
         }
         return normalizedWeightMap(output)
@@ -5433,7 +6558,7 @@ nonisolated enum BacktestEngine {
         let scale = min(max(brake.scale, 0), 1)
         var output = rawWeights
         var removedWeight = 0.0
-        for symbol in Array(output.keys) where symbol != "usd_cash" {
+        for symbol in output.keys.sorted() where symbol != "usd_cash" {
             let originalWeight = max(output[symbol] ?? 0, 0)
             let scaledWeight = originalWeight * scale
             output[symbol] = scaledWeight
@@ -5457,6 +6582,7 @@ nonisolated enum BacktestEngine {
         config: AdvancedRotationConfig,
         state: inout AdvancedRotationOverlayState,
         refreshRepairOverlay: Bool,
+        ohlcFeaturesBySymbol: [String: [AdvancedRotationOHLCRiskFeature?]]? = nil,
         portfolioValues: [Double]? = nil
     ) -> [String: Double] {
         var weights = applyGlobalRepairStack(
@@ -5508,6 +6634,14 @@ nonisolated enum BacktestEngine {
             config: config,
             state: state
         )
+        weights = applyOHLCRiskOverlay(
+            to: weights,
+            signalIndex: signalIndex,
+            pricesBySymbol: pricesBySymbol,
+            ohlcFeaturesBySymbol: ohlcFeaturesBySymbol,
+            config: config,
+            state: &state
+        )
         return normalizedWeightMap(weights)
     }
 
@@ -5551,16 +6685,16 @@ nonisolated enum BacktestEngine {
         signalIndex: Int,
         config: AdvancedRotationConfig
     ) -> [AdvancedRotationTargetWeight] {
-        weights.compactMap { item -> AdvancedRotationTargetWeight? in
-            let symbol = item.key
-            guard item.value > 0.0001,
+        weights.keys.sorted().compactMap { symbol -> AdvancedRotationTargetWeight? in
+            guard let weight = weights[symbol],
+                  weight > 0.0001,
                   symbols.contains(symbol),
                   !config.signalOnlySymbols.contains(symbol),
                   let prices = pricesBySymbol[symbol],
                   prices.indices.contains(signalIndex) else { return nil }
             return AdvancedRotationTargetWeight(
                 symbol: symbol,
-                weight: item.value,
+                weight: weight,
                 momentum: priceMomentum(values: prices, at: signalIndex, lookback: config.lookbackSessions) ?? 0,
                 annualizedVolatility: volatilityBySymbol[symbol]?[signalIndex] ?? nil
             )
@@ -5707,8 +6841,10 @@ nonisolated enum BacktestEngine {
            ),
            offensiveVolatility > currentVolatility,
            offensiveVolatility > 0 {
-            let scale = min(max(currentVolatility / offensiveVolatility, 0), 1)
-            routedWeights = routedWeights.mapValues { $0 * scale }
+            let volatilityRatio = currentVolatility / offensiveVolatility
+            let scaleFloor = min(max(engineRouter.volatilityScaleFloor, 0), 1)
+            let scale = min(max(volatilityRatio, scaleFloor), 1)
+            routedWeights = scaledWeightMap(routedWeights, by: scale)
         }
 
         return normalizedWeightMap(routedWeights)
@@ -5954,17 +7090,30 @@ nonisolated enum BacktestEngine {
         slippageRate: Double = 0.0005
     ) -> AdvancedRotationSimulatedTrace {
         let tradableSymbols = symbols.filter { !config.signalOnlySymbols.contains($0) }
-        var weightsBySymbol: [String: Double] = [:]
-        var unitsBySymbol: [String: Double] = Dictionary(uniqueKeysWithValues: tradableSymbols.map { ($0, 0.0) })
-        var heldSymbols = Set<String>()
-        var cash = max(initialCash, 0)
-        var values: [Double] = [max(initialCash, 0)]
-        var weightsByIndex: [[String: Double]] = [weightsBySymbol]
+        guard !tradableSymbols.isEmpty, !commonDates.isEmpty else {
+            return AdvancedRotationSimulatedTrace(values: [max(initialCash, 0)], weightsByIndex: [[:]])
+        }
+        let optionBySymbol = Dictionary(uniqueKeysWithValues: tradableSymbols.map { symbol in
+            (
+                symbol,
+                BacktestAssetOption(
+                    symbol: symbol,
+                    title: symbol,
+                    color: AssetTheme.textSecondary,
+                    requiresHistoricalFX: false,
+                    historicalFXSymbol: nil
+                )
+            )
+        })
+        var weightsByIndex = Array(repeating: [String: Double](), count: commonDates.count)
+        var didSetWeightsByIndex = Array(repeating: false, count: commonDates.count)
         let rebalanceSessions = max(config.rebalanceSessions, 1)
         var lastRebalanceIndex = Int.min / 2
-        let band = max(config.rebalanceBand, 0)
         let normalizedFeeRate = max(feeRate, 0)
         let normalizedSlippageRate = max(slippageRate, 0)
+        let normalizedRiskBudgetMultiplier = max(config.riskBudgetEnhancer?.multiplier ?? 1, 0)
+        let normalizedFinancingAnnualRate = max(config.riskBudgetEnhancer?.annualFinancingRate ?? 0, 0)
+        let allowsFinancedExposure = normalizedRiskBudgetMultiplier > 1.0001
         let metaTracesByMode = config.metaSwitch.flatMap { metaSwitch in
             metaEngineTraces(
                 for: metaSwitch,
@@ -6004,142 +7153,142 @@ nonisolated enum BacktestEngine {
         var dynamicSleeveWeight = config.dynamicSleeveSelector?.initialSatelliteWeight ?? 0.80
         var overlayState = AdvancedRotationOverlayState()
 
-        func portfolioValue(at index: Int) -> Double {
-            cash + tradableSymbols.reduce(0.0) { partial, symbol in
-                partial + (unitsBySymbol[symbol] ?? 0) * (pricesBySymbol[symbol]?[index] ?? 0)
-            }
-        }
-
-        func applyPortfolioGuard(to targetWeights: [String: Double], currentValue: Double) -> [String: Double] {
+        func applyPortfolioGuard(
+            to targetWeights: [String: Double],
+            currentValue: Double,
+            currentPoints: [BacktestSeriesPoint]
+        ) -> [String: Double] {
             guard let guardConfig = config.portfolioDrawdownGuard,
-                  !targetWeights.isEmpty else { return targetWeights }
+                  !targetWeights.isEmpty,
+                  !currentPoints.isEmpty else { return targetWeights }
             let lookbackSessions = max(guardConfig.lookbackSessions, 1)
-            var recentValues = Array(values.suffix(lookbackSessions))
+            var recentValues = currentPoints.suffix(lookbackSessions).map(\.portfolioValue)
             recentValues.append(currentValue)
             guard let recentPeak = recentValues.max(), recentPeak > 0 else { return targetWeights }
             let drawdownFromPeak = currentValue / recentPeak - 1
             guard drawdownFromPeak < -max(guardConfig.drawdownThreshold, 0) else { return targetWeights }
             let scale = min(max(guardConfig.scale, 0), 1)
-            return targetWeights.mapValues { $0 * scale }
+            return scaledWeightMap(targetWeights, by: scale)
         }
 
-        for index in commonDates.indices.dropFirst() {
-            if cash > 0 {
-                let interest = cash * CashYieldCNY.dailyReturn(on: commonDates[index - 1])
-                if interest.isFinite, interest > 0 {
-                    cash += interest
-                }
-            }
-
-            let overlayRebalanceSessions = config.globalRepairStack.map { max($0.overlayRebalanceSessions, 1) }
-            let shouldOverlayRebalance = overlayRebalanceSessions.map { index == 1 || index % $0 == 0 } ?? false
-            let shouldBaseRebalance: Bool
-            if config.rebalancesFromFirstSignal {
-                shouldBaseRebalance = index > 0 && index - lastRebalanceIndex >= rebalanceSessions
+        let firstRebalanceIndex = commonDates.count > 1 ? 1 : 0
+        let frame = MarketDataFrame(
+            dates: commonDates,
+            pricesBySymbol: pricesBySymbol,
+            ohlcBySymbol: [:],
+            tradableSymbols: tradableSymbols,
+            optionBySymbol: optionBySymbol,
+            simulationRange: 0...(commonDates.count - 1)
+        )
+        let execution = BacktestExecutionConfig(
+            initialCash: max(initialCash, 0),
+            feeRate: normalizedFeeRate,
+            slippageRate: normalizedSlippageRate,
+            rebalanceBand: max(config.rebalanceBand, 0),
+            financingAnnualRate: normalizedFinancingAnnualRate,
+            allowsFinancedExposure: allowsFinancedExposure,
+            buyReason: config.buyReason
+        )
+        let provider = StrategyTargetProvider { context in
+            let signalIndex = context.signalIndex
+            let baseWeights: [String: Double]
+            if let selector = config.dynamicSleeveSelector,
+               let dynamicSleeveTracesByMode,
+               let routed = dynamicSleeveSelectorTargetWeights(
+                selector: selector,
+                signalIndex: signalIndex,
+                weightIndex: context.index,
+                tracesByMode: dynamicSleeveTracesByMode,
+                strategyValues: context.points.map(\.portfolioValue),
+                previousWeight: dynamicSleeveWeight
+               ) {
+                dynamicSleeveWeight = routed.satelliteWeight
+                baseWeights = routed.weights
             } else {
-                shouldBaseRebalance = index == 1 || index % rebalanceSessions == 0
-            }
-            let shouldRebalance = shouldBaseRebalance || shouldOverlayRebalance
-
-            if shouldRebalance {
-                let signalIndex = index - 1
-                let preRebalanceValue = portfolioValue(at: index)
-                let baseWeights: [String: Double]
-                if let selector = config.dynamicSleeveSelector,
-                   let dynamicSleeveTracesByMode,
-                   let routed = dynamicSleeveSelectorTargetWeights(
-                    selector: selector,
-                    signalIndex: signalIndex,
-                    weightIndex: index,
-                    tracesByMode: dynamicSleeveTracesByMode,
-                    strategyValues: values,
-                    previousWeight: dynamicSleeveWeight
-                   ) {
-                    dynamicSleeveWeight = routed.satelliteWeight
-                    baseWeights = routed.weights
-                } else {
-                    baseWeights = resolvedAdvancedRotationTargetWeights(
-                        symbols: symbols,
-                        pricesBySymbol: pricesBySymbol,
-                        maBySymbol: maBySymbol,
-                        volatilityBySymbol: volatilityBySymbol,
-                        signalIndex: signalIndex,
-                        signalDate: commonDates[signalIndex],
-                        traceIndex: index,
-                        config: config,
-                        metaTracesByMode: metaTracesByMode,
-                        engineRouterTracesByMode: engineRouterTracesByMode,
-                        portfolioValues: values
-                    )
-                }
-                let rawWeights = applyAdvancedOverlayStack(
-                    to: baseWeights,
-                    signalIndex: signalIndex,
+                baseWeights = resolvedAdvancedRotationTargetWeights(
+                    symbols: symbols,
                     pricesBySymbol: pricesBySymbol,
+                    maBySymbol: maBySymbol,
+                    volatilityBySymbol: volatilityBySymbol,
+                    signalIndex: signalIndex,
+                    signalDate: commonDates[signalIndex],
+                    traceIndex: context.index,
                     config: config,
-                    state: &overlayState,
-                    refreshRepairOverlay: shouldOverlayRebalance,
-                    portfolioValues: values
+                    metaTracesByMode: metaTracesByMode,
+                    engineRouterTracesByMode: engineRouterTracesByMode,
+                    portfolioValues: context.portfolioValuesByIndex
                 )
-                weightsBySymbol = config.metaSwitch == nil
-                    ? applyPortfolioGuard(to: rawWeights, currentValue: preRebalanceValue)
-                    : rawWeights
-                let targetSymbols = Set(weightsBySymbol.keys)
-
-                for symbol in heldSymbols.subtracting(targetSymbols) {
-                    guard let price = pricesBySymbol[symbol]?[index],
-                          let units = unitsBySymbol[symbol],
-                          units > 0 else { continue }
-                    let executionPrice = max(price * (1 - normalizedSlippageRate), 0)
-                    cash += units * executionPrice * (1 - normalizedFeeRate)
-                    unitsBySymbol[symbol] = 0
-                }
-                heldSymbols.formIntersection(targetSymbols)
-
-                for symbol in targetSymbols.sorted() {
-                    guard let targetWeight = weightsBySymbol[symbol],
-                          let price = pricesBySymbol[symbol]?[index],
-                          price > 0 else { continue }
-                    let currentUnits = unitsBySymbol[symbol] ?? 0
-                    let currentValue = currentUnits * price
-                    let targetValue = preRebalanceValue * targetWeight
-                    guard currentValue > targetValue * (1 + band) else { continue }
-                    let unitsToSell = min(currentUnits, max(currentValue - targetValue, 0) / price)
-                    guard unitsToSell > 0 else { continue }
-                    let executionPrice = max(price * (1 - normalizedSlippageRate), 0)
-                    cash += unitsToSell * executionPrice * (1 - normalizedFeeRate)
-                    unitsBySymbol[symbol] = max(currentUnits - unitsToSell, 0)
-                    if (unitsBySymbol[symbol] ?? 0) <= Double.leastNonzeroMagnitude {
-                        heldSymbols.remove(symbol)
-                    }
-                }
-
-                let totalValue = portfolioValue(at: index)
-                for symbol in targetSymbols.sorted() {
-                    guard let targetWeight = weightsBySymbol[symbol],
-                          let price = pricesBySymbol[symbol]?[index],
-                          price > 0 else { continue }
-                    let currentValue = (unitsBySymbol[symbol] ?? 0) * price
-                    let targetValue = totalValue * targetWeight
-                    guard currentValue < targetValue * (1 - band) else { continue }
-                    let amount = min(cash, max(targetValue - currentValue, 0))
-                    guard amount > 0 else { continue }
-                    let executionPrice = price * (1 + normalizedSlippageRate)
-                    let boughtUnits = amount * (1 - normalizedFeeRate) / executionPrice
-                    guard boughtUnits.isFinite, boughtUnits > 0 else { continue }
-                    unitsBySymbol[symbol, default: 0] += boughtUnits
-                    cash -= amount
-                    heldSymbols.insert(symbol)
-                }
-                lastRebalanceIndex = index
             }
-
-            let value = portfolioValue(at: index)
-            values.append(value.isFinite && value > 0 ? value : (values.last ?? max(initialCash, 0)))
-            weightsByIndex.append(weightsBySymbol)
+            let rawWeights = applyAdvancedOverlayStack(
+                to: baseWeights,
+                signalIndex: signalIndex,
+                pricesBySymbol: pricesBySymbol,
+                config: config,
+                state: &overlayState,
+                refreshRepairOverlay: context.refreshOverlay,
+                ohlcFeaturesBySymbol: nil,
+                portfolioValues: context.portfolioValuesByIndex
+            )
+            .filter { !config.signalOnlySymbols.contains($0.key) }
+            let guardedWeights = config.metaSwitch == nil
+                ? applyPortfolioGuard(
+                    to: rawWeights,
+                    currentValue: context.preRebalanceValue,
+                    currentPoints: context.points
+                )
+                : rawWeights
+            let finalWeights = normalizedRiskBudgetMultiplier == 1
+                ? guardedWeights
+                : scaledWeightMap(guardedWeights, by: normalizedRiskBudgetMultiplier)
+            if weightsByIndex.indices.contains(context.index) {
+                weightsByIndex[context.index] = finalWeights
+                didSetWeightsByIndex[context.index] = true
+            }
+            return finalWeights
         }
 
-        return AdvancedRotationSimulatedTrace(values: values, weightsByIndex: weightsByIndex)
+        let simulation = BacktestDailySimulator.run(
+            frame: frame,
+            execution: execution,
+            provider: provider,
+            rebalanceDecision: { index, _ in
+                let overlayRebalanceSessions = config.globalRepairStack.map { max($0.overlayRebalanceSessions, 1) }
+                let shouldOverlayRebalance = overlayRebalanceSessions.map {
+                    index == firstRebalanceIndex || (index > 0 && index % $0 == 0)
+                } ?? false
+                let shouldBaseRebalance: Bool
+                if config.rebalancesFromFirstSignal {
+                    shouldBaseRebalance = index > 0 && index - lastRebalanceIndex >= rebalanceSessions
+                } else {
+                    shouldBaseRebalance = index == firstRebalanceIndex || (index > 0 && index % rebalanceSessions == 0)
+                }
+                let shouldRebalance = shouldBaseRebalance || shouldOverlayRebalance
+                if shouldRebalance {
+                    lastRebalanceIndex = index
+                }
+                return BacktestRebalanceDecision(
+                    shouldRebalance: shouldRebalance,
+                    refreshOverlay: shouldOverlayRebalance
+                )
+            }
+        )
+
+        guard let simulation else {
+            return AdvancedRotationSimulatedTrace(values: [max(initialCash, 0)], weightsByIndex: [[:]])
+        }
+
+        var currentWeights: [String: Double] = [:]
+        for index in weightsByIndex.indices {
+            if didSetWeightsByIndex[index] {
+                currentWeights = weightsByIndex[index]
+            } else {
+                weightsByIndex[index] = currentWeights
+            }
+        }
+        return AdvancedRotationSimulatedTrace(
+            values: simulation.points.map(\.portfolioValue),
+            weightsByIndex: weightsByIndex
+        )
     }
 
     private static func multiPeriodMomentum(
@@ -6267,21 +7416,22 @@ nonisolated enum BacktestEngine {
             targetWeights[regime.defensiveSymbol] = max(regime.defensiveOnlyWeight, 0)
         }
 
-        let grossExposure = targetWeights.reduce(0.0) { $0 + max($1.value, 0) }
+        let grossExposure = positiveWeightSum(targetWeights)
         let maxExposure = min(max(config.maxExposure, 0), 1)
         if grossExposure > maxExposure, grossExposure > 0 {
-            targetWeights = targetWeights.mapValues { max($0, 0) * maxExposure / grossExposure }
+            targetWeights = clampedScaledWeightMap(targetWeights, by: maxExposure / grossExposure)
         }
 
-        return targetWeights.compactMap { item -> AdvancedRotationTargetWeight? in
-            guard item.value > 0.0001,
-                  let prices = pricesBySymbol[item.key],
+        return targetWeights.keys.sorted().compactMap { symbol -> AdvancedRotationTargetWeight? in
+            let weight = targetWeights[symbol] ?? 0
+            guard weight > 0.0001,
+                  let prices = pricesBySymbol[symbol],
                   prices.indices.contains(signalIndex) else { return nil }
             return AdvancedRotationTargetWeight(
-                symbol: item.key,
-                weight: item.value,
-                momentum: multiMomentum(item.key) ?? 0,
-                annualizedVolatility: volatilityBySymbol[item.key]?[signalIndex] ?? nil
+                symbol: symbol,
+                weight: weight,
+                momentum: multiMomentum(symbol) ?? 0,
+                annualizedVolatility: volatilityBySymbol[symbol]?[signalIndex] ?? nil
             )
         }
         .sorted { lhs, rhs in
@@ -6419,10 +7569,10 @@ nonisolated enum BacktestEngine {
                     baseWeights[item.symbol] = fixedWeight
                 }
             }
-            let totalFixedWeight = baseWeights.reduce(0.0) { $0 + $1.value }
+            let totalFixedWeight = baseWeights.keys.sorted().reduce(0.0) { $0 + max(baseWeights[$1] ?? 0, 0) }
             guard totalFixedWeight > 0 else { return [] }
             if config.renormalizesFixedBaseWeights {
-                baseWeights = baseWeights.mapValues { $0 / totalFixedWeight }
+                baseWeights = scaledWeightMap(baseWeights, by: 1 / totalFixedWeight)
             }
         } else {
             let sortedCandidates: [(score: Double, momentum: Double, symbol: String)]
@@ -6493,17 +7643,15 @@ nonisolated enum BacktestEngine {
         if let targetAnnualVolatility = config.targetAnnualVolatility {
             let weightedVolatility: Double
             if config.weighting == .lowVolMomentumInverseVolatility {
-                let squaredWeightedVolatility = baseWeights.reduce(0.0) { partial, item in
-                    let symbol = item.key
-                    let weight = item.value
+                let squaredWeightedVolatility = baseWeights.keys.sorted().reduce(0.0) { partial, symbol in
+                    let weight = baseWeights[symbol] ?? 0
                     let annualizedVolatility = max(volatilityBySymbol[symbol]?[signalIndex] ?? 9, 0.01)
                     return partial + pow(weight * annualizedVolatility, 2)
                 }
                 weightedVolatility = sqrt(squaredWeightedVolatility)
             } else {
-                weightedVolatility = baseWeights.reduce(0.0) { partial, item in
-                    let symbol = item.key
-                    let weight = item.value
+                weightedVolatility = baseWeights.keys.sorted().reduce(0.0) { partial, symbol in
+                    let weight = baseWeights[symbol] ?? 0
                     let annualizedVolatility = max(volatilityBySymbol[symbol]?[signalIndex] ?? 9, 0.01)
                     return partial + weight * annualizedVolatility
                 }
@@ -6511,7 +7659,7 @@ nonisolated enum BacktestEngine {
             exposure = min(exposure, targetAnnualVolatility / max(weightedVolatility, 0.01))
         }
 
-        var finalWeights = baseWeights.mapValues { $0 * exposure }
+        var finalWeights = scaledWeightMap(baseWeights, by: exposure)
         var didUseDecelerationLock = false
 
         func canRedeploy(to symbol: String) -> Bool {
@@ -6523,15 +7671,15 @@ nonisolated enum BacktestEngine {
         }
 
         func capTotalExposure(maxExposure: Double, redeploySymbol: String?, redeployRatio: Double) {
-            let currentExposure = finalWeights.reduce(0.0) { $0 + max($1.value, 0) }
+            let currentExposure = positiveWeightSum(finalWeights)
             let normalizedMaxExposure = min(max(maxExposure, 0), 1)
             guard currentExposure > normalizedMaxExposure, currentExposure > 0 else { return }
             let scale = normalizedMaxExposure / currentExposure
             var removedWeight = 0.0
-            for item in finalWeights {
-                let originalWeight = max(item.value, 0)
+            for symbol in finalWeights.keys.sorted() {
+                let originalWeight = max(finalWeights[symbol] ?? 0, 0)
                 let scaledWeight = originalWeight * scale
-                finalWeights[item.key] = scaledWeight
+                finalWeights[symbol] = scaledWeight
                 removedWeight += originalWeight - scaledWeight
             }
             if let redeploySymbol,
@@ -6541,9 +7689,8 @@ nonisolated enum BacktestEngine {
         }
 
         if let pairConfirmationGuard = config.pairConfirmationGuard {
-            let isPairBroken = pairConfirmationGuard.peerBySymbol.contains { item in
-                let symbol = item.key
-                let peer = item.value
+            let isPairBroken = pairConfirmationGuard.peerBySymbol.keys.sorted().contains { symbol in
+                let peer = pairConfirmationGuard.peerBySymbol[symbol] ?? ""
                 guard (finalWeights[symbol] ?? 0) > 0,
                       let peerPrices = pricesBySymbol[peer],
                       peerPrices.indices.contains(signalIndex) else { return false }
@@ -6583,15 +7730,15 @@ nonisolated enum BacktestEngine {
             }
 
             if isOverheated {
-                let currentExposure = finalWeights.reduce(0.0) { $0 + max($1.value, 0) }
+                let currentExposure = positiveWeightSum(finalWeights)
                 let maxExposure = min(max(overheatBrake.maxExposure, 0), 1)
                 if currentExposure > maxExposure, currentExposure > 0 {
                     let scale = maxExposure / currentExposure
                     var removedWeight = 0.0
-                    for item in finalWeights {
-                        let originalWeight = max(item.value, 0)
+                    for symbol in finalWeights.keys.sorted() {
+                        let originalWeight = max(finalWeights[symbol] ?? 0, 0)
                         let scaledWeight = originalWeight * scale
-                        finalWeights[item.key] = scaledWeight
+                        finalWeights[symbol] = scaledWeight
                         removedWeight += originalWeight - scaledWeight
                     }
 
@@ -6624,15 +7771,15 @@ nonisolated enum BacktestEngine {
 
             if isDeceleratingAtHighZone {
                 didUseDecelerationLock = true
-                let currentExposure = finalWeights.reduce(0.0) { $0 + max($1.value, 0) }
+                let currentExposure = positiveWeightSum(finalWeights)
                 let maxExposure = min(max(decelerationLock.maxExposure, 0), 1)
                 if currentExposure > maxExposure, currentExposure > 0 {
                     let scale = maxExposure / currentExposure
                     var removedWeight = 0.0
-                    for item in finalWeights {
-                        let originalWeight = max(item.value, 0)
+                    for symbol in finalWeights.keys.sorted() {
+                        let originalWeight = max(finalWeights[symbol] ?? 0, 0)
                         let scaledWeight = originalWeight * scale
-                        finalWeights[item.key] = scaledWeight
+                        finalWeights[symbol] = scaledWeight
                         removedWeight += originalWeight - scaledWeight
                     }
 
@@ -6677,15 +7824,15 @@ nonisolated enum BacktestEngine {
             }
 
             if isShortWeaknessTriggered {
-                let currentExposure = finalWeights.reduce(0.0) { $0 + max($1.value, 0) }
+                let currentExposure = positiveWeightSum(finalWeights)
                 let maxExposure = min(max(shortWeaknessLock.maxExposure, 0), 1)
                 if currentExposure > maxExposure, currentExposure > 0 {
                     let scale = maxExposure / currentExposure
                     var removedWeight = 0.0
-                    for item in finalWeights {
-                        let originalWeight = max(item.value, 0)
+                    for symbol in finalWeights.keys.sorted() {
+                        let originalWeight = max(finalWeights[symbol] ?? 0, 0)
                         let scaledWeight = originalWeight * scale
-                        finalWeights[item.key] = scaledWeight
+                        finalWeights[symbol] = scaledWeight
                         removedWeight += originalWeight - scaledWeight
                     }
 
@@ -6823,9 +7970,8 @@ nonisolated enum BacktestEngine {
         if let drawdownLadderBrake = config.drawdownLadderBrake {
             var shouldUseHardScale = false
             var shouldUseSoftScale = false
-            for item in drawdownLadderBrake.triggerThresholdRatiosBySymbol {
-                let symbol = item.key
-                let thresholdRatio = max(item.value, 0.0001)
+            for symbol in drawdownLadderBrake.triggerThresholdRatiosBySymbol.keys.sorted() {
+                let thresholdRatio = max(drawdownLadderBrake.triggerThresholdRatiosBySymbol[symbol] ?? 0, 0.0001)
                 guard let prices = pricesBySymbol[symbol],
                       prices.indices.contains(signalIndex) else { continue }
                 let startIndex = max(0, signalIndex - max(drawdownLadderBrake.lookbackSessions, 1) + 1)
@@ -6888,7 +8034,8 @@ nonisolated enum BacktestEngine {
             }
         }
 
-        return finalWeights.compactMap { symbol, weight in
+        return finalWeights.keys.sorted().compactMap { symbol in
+            guard let weight = finalWeights[symbol] else { return nil }
             guard let prices = pricesBySymbol[symbol],
                   prices.indices.contains(signalIndex) else { return nil }
             let momentum = ranked.first(where: { $0.symbol == symbol })?.momentum
@@ -6910,6 +8057,22 @@ nonisolated enum BacktestEngine {
         config: AdvancedRotationConfig,
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedBacktestReport? {
+        runAdvancedRotationWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            config: config,
+            dateBounds: dateBounds
+        )?.report
+    }
+
+    private static func runAdvancedRotationWithTrace(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings,
+        config: AdvancedRotationConfig,
+        dateBounds: ClosedRange<Date>? = nil
+    ) -> AdvancedRotationStrategyRun? {
         let preparedSeries: [PreparedAdvancedSeries] = assetInputs.compactMap { input -> PreparedAdvancedSeries? in
             guard input.assetSeries != nil,
                   !input.assetOption.requiresHistoricalFX || input.fxSeries != nil else { return nil }
@@ -6932,6 +8095,9 @@ nonisolated enum BacktestEngine {
         )
         let commonDates = aligned.dates
         let pricesBySymbol = aligned.pricesBySymbol
+        let ohlcFeaturesBySymbol = config.ohlcRiskOverlay == nil
+            ? nil
+            : alignedOHLCRiskFeatures(from: preparedSeries, commonDates: commonDates)
         let optionBySymbol = Dictionary(uniqueKeysWithValues: preparedSeries.map { ($0.assetOption.symbol, $0.assetOption) })
         let symbols = preparedSeries.map { $0.assetOption.symbol }
         let tradableSymbols = symbols.filter { !config.signalOnlySymbols.contains($0) }
@@ -7093,35 +8259,15 @@ nonisolated enum BacktestEngine {
             return nil
         }
 
-        var cash = normalizedInitialCash
-        var unitsBySymbol: [String: Double] = Dictionary(uniqueKeysWithValues: tradableSymbols.map { ($0, 0.0) })
-        var averageCostBySymbol: [String: Double] = Dictionary(uniqueKeysWithValues: tradableSymbols.map { ($0, 0.0) })
-        var entryDateBySymbol: [String: Date] = [:]
-        var heldSymbols = Set<String>()
-        var points: [BacktestSeriesPoint] = []
-        var benchmarkPoints: [BacktestSeriesPoint] = []
-        var portfolioValuesByCommonIndex = Array(repeating: 0.0, count: commonDates.count)
-        var trades: [AdvancedBacktestTrade] = []
-        var exposureSum = 0.0
-        var exposureSamples = 0
-        var cashRatioSum = 0.0
-        var cashRatioSamples = 0
-        var cashInterestEarned = 0.0
-        var cashAnnualRateSum = 0.0
-        var cashAnnualRateSamples = 0
         var dynamicSleeveWeight = config.dynamicSleeveSelector?.initialSatelliteWeight ?? 0.80
         var overlayState = AdvancedRotationOverlayState()
-
-        func portfolioValue(at index: Int) -> Double {
-            cash + tradableSymbols.reduce(0.0) { partial, symbol in
-                partial + (unitsBySymbol[symbol] ?? 0) * (pricesBySymbol[symbol]?[index] ?? 0)
-            }
-        }
 
         func targetWeights(
             at signalIndex: Int,
             traceIndex: Int,
-            refreshRepairOverlay: Bool
+            refreshRepairOverlay: Bool,
+            currentPoints: [BacktestSeriesPoint],
+            portfolioValuesByCommonIndex: [Double]
         ) -> [String: Double] {
             let baseWeights: [String: Double]
             if let selector = config.dynamicSleeveSelector,
@@ -7131,7 +8277,7 @@ nonisolated enum BacktestEngine {
                 signalIndex: signalIndex,
                 weightIndex: traceIndex,
                 tracesByMode: dynamicSleeveTracesByMode,
-                strategyValues: points.map(\.portfolioValue),
+                strategyValues: currentPoints.map(\.portfolioValue),
                 previousWeight: dynamicSleeveWeight
                ) {
                 dynamicSleeveWeight = routed.satelliteWeight
@@ -7207,6 +8353,7 @@ nonisolated enum BacktestEngine {
                 config: config,
                 state: &overlayState,
                 refreshRepairOverlay: refreshRepairOverlay,
+                ohlcFeaturesBySymbol: ohlcFeaturesBySymbol,
                 portfolioValues: portfolioValuesByCommonIndex
             )
             .filter { !config.signalOnlySymbols.contains($0.key) }
@@ -7214,222 +8361,92 @@ nonisolated enum BacktestEngine {
 
         func applyPortfolioDrawdownGuard(
             to targetWeights: [String: Double],
-            currentValue: Double
+            currentValue: Double,
+            currentPoints: [BacktestSeriesPoint]
         ) -> [String: Double] {
             guard let guardConfig = config.portfolioDrawdownGuard,
                   !targetWeights.isEmpty,
-                  !points.isEmpty else { return targetWeights }
+                  !currentPoints.isEmpty else { return targetWeights }
             let lookbackSessions = max(guardConfig.lookbackSessions, 1)
-            var recentValues = points.suffix(lookbackSessions).map(\.portfolioValue)
+            var recentValues = currentPoints.suffix(lookbackSessions).map(\.portfolioValue)
             recentValues.append(currentValue)
             guard let recentPeak = recentValues.max(), recentPeak > 0 else { return targetWeights }
             let drawdownFromPeak = currentValue / recentPeak - 1
             guard drawdownFromPeak < -max(guardConfig.drawdownThreshold, 0) else { return targetWeights }
             let scale = min(max(guardConfig.scale, 0), 1)
-            return targetWeights.mapValues { $0 * scale }
+            return scaledWeightMap(targetWeights, by: scale)
         }
 
         var lastRebalanceIndex = Int.min / 2
         let firstRebalanceIndex = max(simulationRange.lowerBound, 1)
-
-        for index in simulationRange {
-            let date = commonDates[index]
-
-            if index > simulationRange.lowerBound {
-                let annualCashRate = CashYieldCNY.annualRate(on: commonDates[index - 1])
-                cashAnnualRateSum += annualCashRate
-                cashAnnualRateSamples += 1
-                if cash > 0 {
-                    let cashInterest = cash * CashYieldCNY.dailyReturn(fromAnnualRate: annualCashRate)
-                    if cashInterest.isFinite, cashInterest > 0 {
-                        cash += cashInterest
-                        cashInterestEarned += cashInterest
-                    }
-                } else if cash < 0, normalizedFinancingAnnualRate > 0 {
-                    let financingCost = abs(cash) * CashYieldCNY.dailyReturn(fromAnnualRate: normalizedFinancingAnnualRate)
-                    if financingCost.isFinite, financingCost > 0 {
-                        cash -= financingCost
-                    }
-                }
-            }
-
-            let rebalanceSessions = max(config.rebalanceSessions, 1)
-            let overlayRebalanceSessions = config.globalRepairStack.map { max($0.overlayRebalanceSessions, 1) }
-            let shouldOverlayRebalance = overlayRebalanceSessions.map {
-                index == firstRebalanceIndex || (index > 0 && index % $0 == 0)
-            } ?? false
-            let shouldBaseRebalance: Bool
-            if config.rebalancesFromFirstSignal {
-                shouldBaseRebalance = index == firstRebalanceIndex
-                    || (index > 0 && index - lastRebalanceIndex >= rebalanceSessions)
-            } else {
-                shouldBaseRebalance = index == firstRebalanceIndex || (index > 0 && index % rebalanceSessions == 0)
-            }
-            let shouldRebalance = shouldBaseRebalance || shouldOverlayRebalance
-
-            if shouldRebalance {
-                let signalIndex = index - 1
-                let preRebalanceValue = portfolioValue(at: index)
-                let baseTargetWeights = signalIndex >= 0
-                    ? targetWeights(
-                        at: signalIndex,
-                        traceIndex: index,
-                        refreshRepairOverlay: shouldOverlayRebalance
-                    )
-                    : [:]
-                let guardedTargetWeights = config.metaSwitch == nil
-                    ? applyPortfolioDrawdownGuard(
-                        to: baseTargetWeights,
-                        currentValue: preRebalanceValue
-                    )
-                    : baseTargetWeights
-                let targetWeights = normalizedRiskBudgetMultiplier == 1
-                    ? guardedTargetWeights
-                    : guardedTargetWeights.mapValues { $0 * normalizedRiskBudgetMultiplier }
-                let targetSymbols = Set(targetWeights.keys)
-
-                for symbol in heldSymbols.subtracting(targetSymbols) {
-                    guard let price = pricesBySymbol[symbol]?[index],
-                          let units = unitsBySymbol[symbol],
-                          units > 0,
-                          let option = optionBySymbol[symbol] else { continue }
-                    let executionPrice = max(price * (1 - normalizedSlippageRate), 0)
-                    let grossValue = units * executionPrice
-                    let cashAmount = grossValue * (1 - normalizedFeeRate)
-                    cash += cashAmount
-                    unitsBySymbol[symbol] = 0
-                    let averageCost = averageCostBySymbol[symbol] ?? 0
-                    let realizedCostBasis = averageCost * units
-                    let realizedProfit = cashAmount - realizedCostBasis
-                    let realizedReturn = realizedCostBasis > 0 ? realizedProfit / realizedCostBasis : nil
-                    let holdingDays = entryDateBySymbol[symbol].map { Calendar.current.dateComponents([.day], from: $0, to: date).day ?? 0 }
-                    trades.append(.init(
-                        assetSymbol: symbol,
-                        assetTitle: option.title,
-                        date: date,
-                        action: .sell,
-                        price: executionPrice,
-                        cashAmount: cashAmount,
-                        units: units,
-                        reason: AppLocalization.string("轮动切换/空仓"),
-                        realizedProfit: realizedProfit,
-                        realizedReturn: realizedReturn,
-                        holdingDays: holdingDays
-                    ))
-                    averageCostBySymbol[symbol] = 0
-                    entryDateBySymbol[symbol] = nil
-                }
-
-                heldSymbols = heldSymbols.intersection(targetSymbols)
-
-                for symbol in targetSymbols.sorted() {
-                    guard let targetWeight = targetWeights[symbol],
-                          let price = pricesBySymbol[symbol]?[index],
-                          price > 0,
-                          let currentUnits = unitsBySymbol[symbol],
-                          currentUnits > 0,
-                          let option = optionBySymbol[symbol] else { continue }
-                    let currentValue = currentUnits * price
-                    let targetValue = preRebalanceValue * targetWeight
-                    let grossValueToSell = currentValue > targetValue * (1 + normalizedRebalanceBand)
-                        ? Swift.max(currentValue - targetValue, 0.0)
-                        : 0.0
-                    guard grossValueToSell > 0 else { continue }
-                    let unitsToSell = Swift.min(currentUnits, grossValueToSell / price)
-                    guard unitsToSell > 0 else { continue }
-                    let executionPrice = max(price * (1 - normalizedSlippageRate), 0)
-                    let grossValue = unitsToSell * executionPrice
-                    let cashAmount = grossValue * (1 - normalizedFeeRate)
-                    cash += cashAmount
-                    let remainingUnits = Swift.max(currentUnits - unitsToSell, 0)
-                    unitsBySymbol[symbol] = remainingUnits
-                    let averageCost = averageCostBySymbol[symbol] ?? 0
-                    let realizedCostBasis = averageCost * unitsToSell
-                    let realizedProfit = cashAmount - realizedCostBasis
-                    let realizedReturn = realizedCostBasis > 0 ? realizedProfit / realizedCostBasis : nil
-                    let holdingDays = entryDateBySymbol[symbol].map { Calendar.current.dateComponents([.day], from: $0, to: date).day ?? 0 }
-                    trades.append(.init(
-                        assetSymbol: symbol,
-                        assetTitle: option.title,
-                        date: date,
-                        action: .sell,
-                        price: executionPrice,
-                        cashAmount: cashAmount,
-                        units: unitsToSell,
-                        reason: AppLocalization.string("轮动再平衡"),
-                        realizedProfit: realizedProfit,
-                        realizedReturn: realizedReturn,
-                        holdingDays: holdingDays
-                    ))
-                    if remainingUnits <= Double.leastNonzeroMagnitude {
-                        averageCostBySymbol[symbol] = 0
-                        entryDateBySymbol[symbol] = nil
-                        heldSymbols.remove(symbol)
-                    }
-                }
-
-                let totalValue = portfolioValue(at: index)
-                for symbol in targetSymbols.sorted() {
-                    guard let targetWeight = targetWeights[symbol],
-                          let price = pricesBySymbol[symbol]?[index],
-                          price > 0,
-                          let option = optionBySymbol[symbol] else { continue }
-                    let currentValue = (unitsBySymbol[symbol] ?? 0) * price
-                    let targetValue = totalValue * targetWeight
-                    let targetGap = Swift.max(targetValue - currentValue, 0.0)
-                    let amountToInvest = currentValue < targetValue * (1 - normalizedRebalanceBand)
-                        ? (allowsFinancedExposure ? targetGap : Swift.min(cash, targetGap))
-                        : 0.0
-                    if amountToInvest > 0 {
-                        let executionPrice = price * (1 + normalizedSlippageRate)
-                        let invested = amountToInvest * (1 - normalizedFeeRate)
-                        let units = executionPrice > 0 ? invested / executionPrice : 0
-                        let previousUnits = unitsBySymbol[symbol] ?? 0
-                        let previousCost = (averageCostBySymbol[symbol] ?? 0) * previousUnits
-                        unitsBySymbol[symbol] = previousUnits + units
-                        averageCostBySymbol[symbol] = (previousCost + amountToInvest) / Swift.max(previousUnits + units, Double.leastNonzeroMagnitude)
-                        cash -= amountToInvest
-                        heldSymbols.insert(symbol)
-                        if entryDateBySymbol[symbol] == nil { entryDateBySymbol[symbol] = date }
-                        trades.append(.init(
-                            assetSymbol: symbol,
-                            assetTitle: option.title,
-                            date: date,
-                            action: .buy,
-                            price: executionPrice,
-                            cashAmount: amountToInvest,
-                            units: units,
-                            reason: config.buyReason,
-                            realizedProfit: nil,
-                            realizedReturn: nil,
-                            holdingDays: nil
-                        ))
-                    }
-                }
-                lastRebalanceIndex = index
-            }
-
-            let value = portfolioValue(at: index)
-            points.append(.init(date: date, portfolioValue: value, sequence: points.count))
-            portfolioValuesByCommonIndex[index] = value
-            let investedValue = tradableSymbols.reduce(0.0) { partial, symbol in
-                partial + (unitsBySymbol[symbol] ?? 0) * (pricesBySymbol[symbol]?[index] ?? 0)
-            }
-            exposureSum += value > 0 ? investedValue / value : 0
-            exposureSamples += 1
-            cashRatioSum += value > 0 ? min(max(cash / value, 0), 1) : 0
-            cashRatioSamples += 1
-
-            let benchmarkValue = tradableSymbols.reduce(0.0) { partial, symbol in
-                guard let prices = pricesBySymbol[symbol],
-                      prices.indices.contains(simulationRange.lowerBound),
-                      prices.indices.contains(index) else { return partial }
-                let firstPrice = prices[simulationRange.lowerBound]
-                guard firstPrice > 0 else { return partial }
-                return partial + normalizedInitialCash / Double(tradableSymbols.count) * prices[index] / firstPrice
-            }
-            benchmarkPoints.append(.init(date: date, portfolioValue: benchmarkValue, sequence: benchmarkPoints.count))
+        let rebalanceSessions = max(config.rebalanceSessions, 1)
+        let overlayRebalanceSessions = config.globalRepairStack.map { max($0.overlayRebalanceSessions, 1) }
+        let frame = MarketDataFrame(
+            dates: commonDates,
+            pricesBySymbol: pricesBySymbol,
+            ohlcBySymbol: Dictionary(uniqueKeysWithValues: preparedSeries.map { ($0.assetOption.symbol, $0.ohlcPoints) }),
+            tradableSymbols: tradableSymbols,
+            optionBySymbol: optionBySymbol,
+            simulationRange: simulationRange
+        )
+        let execution = BacktestExecutionConfig(
+            initialCash: normalizedInitialCash,
+            feeRate: normalizedFeeRate,
+            slippageRate: normalizedSlippageRate,
+            rebalanceBand: normalizedRebalanceBand,
+            financingAnnualRate: normalizedFinancingAnnualRate,
+            allowsFinancedExposure: allowsFinancedExposure,
+            buyReason: config.buyReason
+        )
+        let provider = StrategyTargetProvider { context in
+            let baseTargetWeights = targetWeights(
+                at: context.signalIndex,
+                traceIndex: context.index,
+                refreshRepairOverlay: context.refreshOverlay,
+                currentPoints: context.points,
+                portfolioValuesByCommonIndex: context.portfolioValuesByIndex
+            )
+            let guardedTargetWeights = config.metaSwitch == nil
+                ? applyPortfolioDrawdownGuard(
+                    to: baseTargetWeights,
+                    currentValue: context.preRebalanceValue,
+                    currentPoints: context.points
+                )
+                : baseTargetWeights
+            return normalizedRiskBudgetMultiplier == 1
+                ? guardedTargetWeights
+                : scaledWeightMap(guardedTargetWeights, by: normalizedRiskBudgetMultiplier)
         }
+
+        guard let simulation = BacktestDailySimulator.run(
+            frame: frame,
+            execution: execution,
+            provider: provider,
+            rebalanceDecision: { index, _ in
+                let shouldOverlayRebalance = overlayRebalanceSessions.map {
+                    index == firstRebalanceIndex || (index > 0 && index % $0 == 0)
+                } ?? false
+                let shouldBaseRebalance: Bool
+                if config.rebalancesFromFirstSignal {
+                    shouldBaseRebalance = index == firstRebalanceIndex
+                        || (index > 0 && index - lastRebalanceIndex >= rebalanceSessions)
+                } else {
+                    shouldBaseRebalance = index == firstRebalanceIndex || (index > 0 && index % rebalanceSessions == 0)
+                }
+                let shouldRebalance = shouldBaseRebalance || shouldOverlayRebalance
+                if shouldRebalance {
+                    lastRebalanceIndex = index
+                }
+                return BacktestRebalanceDecision(
+                    shouldRebalance: shouldRebalance,
+                    refreshOverlay: shouldOverlayRebalance
+                )
+            }
+        ) else { return nil }
+
+        let points = simulation.points
+        let benchmarkPoints = simulation.benchmarkPoints
+        let trades = simulation.trades
 
         guard let last = points.last,
               let metrics = performanceMetrics(from: points) else { return nil }
@@ -7459,46 +8476,42 @@ nonisolated enum BacktestEngine {
             pricePoints: [],
             trades: trades,
             finalPortfolioValue: last.portfolioValue,
-            finalCash: cash,
-            finalUnits: unitsBySymbol.values.reduce(0, +),
-            exposureRatio: exposureSamples > 0 ? exposureSum / Double(exposureSamples) : 0
-        )
-        let cashYieldSummary = CashYieldCNY.summary(
-            startDate: points.first?.date,
-            endDate: points.last?.date,
-            totalCashInterest: cashInterestEarned,
-            averageCashRatio: cashRatioSamples > 0 ? cashRatioSum / Double(cashRatioSamples) : 0,
-            averageAnnualRate: cashAnnualRateSamples > 0 ? cashAnnualRateSum / Double(cashAnnualRateSamples) : 0
+            finalCash: simulation.finalCash,
+            finalUnits: simulation.finalUnits,
+            exposureRatio: simulation.exposureRatio
         )
         let riskSignalSummary = MarketRiskSignalHistory.summary(
             dates: Array(commonDates[simulationRange]),
             pricesBySymbol: pricesBySymbol.mapValues { Array($0[simulationRange]) }
         )
 
-        return AdvancedBacktestReport(
+        let report = AdvancedBacktestReport(
             points: points,
             benchmarkPoints: benchmarkPoints,
             benchmarkSeries: perAssetBenchmarkSeries,
             trades: trades.sorted { lhs, rhs in lhs.date < rhs.date },
             assetReports: [syntheticReport],
             finalPortfolioValue: last.portfolioValue,
-            finalCash: cash,
-            finalUnits: unitsBySymbol.values.reduce(0, +),
+            finalCash: simulation.finalCash,
+            finalUnits: simulation.finalUnits,
             totalReturn: metrics.totalReturn,
             annualizedReturn: metrics.annualizedReturn,
             maxDrawdown: metrics.maxDrawdown,
             annualizedVolatility: metrics.annualizedVolatility,
             sharpeRatio: metrics.sharpeRatio,
-            cashYieldSummary: cashYieldSummary,
+            cashYieldSummary: simulation.cashYieldSummary,
             riskSignalSummary: riskSignalSummary
         )
+        return AdvancedRotationStrategyRun(report: report, dailyStates: simulation.dailyStates)
     }
 
     private static func alignedRotationPriceSeries(
         from preparedSeries: [PreparedAdvancedSeries],
         zeroFillBeforeFirstSymbols: Set<String> = []
     ) -> (dates: [Date], pricesBySymbol: [String: [Double]]) {
-        let allDates = Set(preparedSeries.flatMap { $0.pricePoints.map(\.date) }).sorted()
+        let calendarSeries = preparedSeries.filter { !zeroFillBeforeFirstSymbols.contains($0.assetOption.symbol) }
+        let dateSourceSeries = calendarSeries.isEmpty ? preparedSeries : calendarSeries
+        let allDates = Set(dateSourceSeries.flatMap { $0.pricePoints.map(\.date) }).sorted()
         var indices = Dictionary(uniqueKeysWithValues: preparedSeries.map { ($0.assetOption.symbol, 0) })
         var latestPrices: [String: Double] = [:]
         var latestPriceDates: [String: Date] = [:]
@@ -7506,6 +8519,7 @@ nonisolated enum BacktestEngine {
         var pricesBySymbol = Dictionary(uniqueKeysWithValues: preparedSeries.map { ($0.assetOption.symbol, [Double]()) })
 
         for date in allDates {
+            if Task.isCancelled { return (outputDates, pricesBySymbol) }
             for series in preparedSeries {
                 let symbol = series.assetOption.symbol
                 var index = indices[symbol] ?? 0
@@ -7576,6 +8590,7 @@ nonisolated enum BacktestEngine {
         combinedBenchmarkPoints.reserveCapacity(allDates.count)
 
         for date in allDates {
+            guard !Task.isCancelled else { return nil }
             for reportIndex in reports.indices {
                 let reportPoints = reports[reportIndex].points
                 var cursor = cursors[reportIndex]

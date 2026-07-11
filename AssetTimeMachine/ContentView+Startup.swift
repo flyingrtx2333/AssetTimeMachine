@@ -47,7 +47,6 @@ extension ContentView {
         #endif
 
         await Task.yield()
-        ensureDefaultFinancialItemsForStartup()
         migrateLegacyAutoPricedItemsForStartup()
 
         if !hasCompletedOnboarding {
@@ -67,15 +66,6 @@ extension ContentView {
             try SeedDataService.seedDefaultCategoriesIfNeeded(in: modelContext)
         } catch {
             print("[AssetTimeMachine] seed default categories failed: \(error)")
-        }
-    }
-
-    @MainActor
-    private func ensureDefaultFinancialItemsForStartup() {
-        do {
-            try SeedDataService.ensureDefaultFinancialItems(in: modelContext)
-        } catch {
-            print("[AssetTimeMachine] ensure default financial items failed: \(error)")
         }
     }
 

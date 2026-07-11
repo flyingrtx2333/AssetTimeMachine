@@ -21,6 +21,8 @@ struct DashboardView: View {
     let cloudStore: AssetTimeMachineCloudStore
     let isActive: Bool
     @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
+    @Query private var recentlyUpdatedItems: [AssetItem]
+    @Query private var recentDeletionTombstones: [SyncDeletionTombstone]
     @State private var cachedAllocationSlices: [DashboardAllocationSlice] = []
     @State private var cachedTrendPoints: [TimeMachineTrendPoint] = []
     @State private var cachedFreedomProjection: FinancialFreedomProjection?
@@ -45,6 +47,18 @@ struct DashboardView: View {
         )
         snapshotDescriptor.fetchLimit = 400
         _snapshots = Query(snapshotDescriptor)
+
+        var itemDescriptor = FetchDescriptor<AssetItem>(
+            sortBy: [SortDescriptor(\AssetItem.updatedAt, order: .reverse)]
+        )
+        itemDescriptor.fetchLimit = 1
+        _recentlyUpdatedItems = Query(itemDescriptor)
+
+        var tombstoneDescriptor = FetchDescriptor<SyncDeletionTombstone>(
+            sortBy: [SortDescriptor(\SyncDeletionTombstone.deletedAt, order: .reverse)]
+        )
+        tombstoneDescriptor.fetchLimit = 1
+        _recentDeletionTombstones = Query(tombstoneDescriptor)
     }
 
     private var latestSnapshot: AssetSnapshot? { snapshots.first }
@@ -76,12 +90,10 @@ struct DashboardView: View {
     }
 
     private var autoSyncTrigger: String {
-        let latestSnapshotUpdate = latestSnapshot?.updatedAt.timeIntervalSince1970 ?? 0
-        let latestSnapshotID = latestSnapshot?.id.uuidString ?? "none"
         return [
-            latestSnapshotID,
-            String(Int(latestSnapshotUpdate)),
-            String(snapshots.count)
+            String(SnapshotRevisionToken.revision(for: snapshots, includeOldest: true, includeMarketAnchorsUpdatedAt: true)),
+            recentlyUpdatedItems.first.map { "\($0.id.uuidString):\($0.updatedAt.timeIntervalSinceReferenceDate)" } ?? "no-item",
+            recentDeletionTombstones.first.map { "\($0.entityKindRawValue):\($0.entityID.uuidString):\($0.deletedAt.timeIntervalSinceReferenceDate)" } ?? "no-deletion"
         ].joined(separator: ":")
     }
 

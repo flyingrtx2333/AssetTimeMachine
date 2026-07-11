@@ -6,6 +6,11 @@ struct ExportPayload: Codable {
     let categories: [CategoryPayload]
     let items: [ItemPayload]
     let snapshots: [SnapshotPayload]
+    let deletions: [DeletionPayload]?
+
+    var deletionRecords: [DeletionPayload] {
+        deletions ?? []
+    }
 
     struct CategoryPayload: Codable {
         let id: UUID
@@ -56,6 +61,12 @@ struct ExportPayload: Codable {
         let updatedAt: Date
         let itemID: UUID?
     }
+
+    struct DeletionPayload: Codable {
+        let entityID: UUID
+        let entityKind: String
+        let deletedAt: Date
+    }
 }
 
 enum ImportExportService {
@@ -64,6 +75,7 @@ enum ImportExportService {
         let categories = try context.fetch(FetchDescriptor<AssetCategory>())
         let items = try context.fetch(FetchDescriptor<AssetItem>())
         let snapshots = try context.fetch(FetchDescriptor<AssetSnapshot>())
+        let tombstones = try context.fetch(FetchDescriptor<SyncDeletionTombstone>())
 
         return ExportPayload(
             exportedAt: .now,
@@ -119,6 +131,14 @@ enum ImportExportService {
                         )
                     }
                 )
+            },
+            deletions: tombstones.compactMap { tombstone in
+                guard let entityKind = tombstone.entityKind else { return nil }
+                return .init(
+                    entityID: tombstone.entityID,
+                    entityKind: entityKind.rawValue,
+                    deletedAt: tombstone.deletedAt
+                )
             }
         )
     }
@@ -144,15 +164,16 @@ enum ImportExportService {
 
     @MainActor
     static func importPayload(_ payload: ExportPayload, into context: ModelContext, replaceExisting: Bool = false) throws {
+        let payload = SyncMergeService.payloadApplyingDeletions(payload)
         try validate(payload)
-
-        if replaceExisting {
-            try clearAll(in: context)
-        }
 
         let existingCategories = try context.fetch(FetchDescriptor<AssetCategory>())
         if !existingCategories.isEmpty && !replaceExisting {
             return
+        }
+
+        if replaceExisting {
+            try stageClearAll(in: context)
         }
 
         var categoryMap: [UUID: AssetCategory] = [:]
@@ -221,29 +242,60 @@ enum ImportExportService {
             }
         }
 
-        try context.save()
+        for deletion in payload.deletionRecords {
+            guard let kind = SyncDeletedEntityKind(rawValue: deletion.entityKind) else { continue }
+            context.insert(SyncDeletionTombstone(
+                entityID: deletion.entityID,
+                entityKind: kind,
+                deletedAt: deletion.deletedAt
+            ))
+        }
+
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
     }
 
     @MainActor
-    private static func clearAll(in context: ModelContext) throws {
-        for entry in try context.fetch(FetchDescriptor<AssetEntry>()) {
+    private static func stageClearAll(in context: ModelContext) throws {
+        let entries = try context.fetch(FetchDescriptor<AssetEntry>())
+        let snapshots = try context.fetch(FetchDescriptor<AssetSnapshot>())
+        let items = try context.fetch(FetchDescriptor<AssetItem>())
+        let categories = try context.fetch(FetchDescriptor<AssetCategory>())
+        let tombstones = try context.fetch(FetchDescriptor<SyncDeletionTombstone>())
+
+        for entry in entries {
             context.delete(entry)
         }
-        for snapshot in try context.fetch(FetchDescriptor<AssetSnapshot>()) {
+        for snapshot in snapshots {
             context.delete(snapshot)
         }
-        for item in try context.fetch(FetchDescriptor<AssetItem>()) {
+        for item in items {
             context.delete(item)
         }
-        for category in try context.fetch(FetchDescriptor<AssetCategory>()) {
+        for category in categories {
             context.delete(category)
         }
-        try context.save()
+        for tombstone in tombstones {
+            context.delete(tombstone)
+        }
     }
 
     private static func validate(_ payload: ExportPayload) throws {
         let categoryIDs = Set(payload.categories.map(\.id))
         let itemIDs = Set(payload.items.map(\.id))
+
+        try requireUniqueIDs(payload.categories.map(\.id), entityName: AppLocalization.string("资产分类"))
+        try requireUniqueIDs(payload.items.map(\.id), entityName: AppLocalization.string("资产项目"))
+        try requireUniqueIDs(payload.snapshots.map(\.id), entityName: AppLocalization.string("资产记录"))
+
+        for snapshot in payload.snapshots {
+            try requireUniqueIDs(snapshot.entries.map(\.id), entityName: AppLocalization.string("资产条目"))
+            try requireUniqueIDs(snapshot.entries.compactMap(\.itemID), entityName: AppLocalization.string("资产项目引用"))
+        }
 
         for item in payload.items {
             if let categoryID = item.categoryID, !categoryIDs.contains(categoryID) {
@@ -267,23 +319,65 @@ enum ImportExportService {
             }
         }
     }
+
+    private static func requireUniqueIDs<ID: Hashable>(_ ids: [ID], entityName: String) throws {
+        guard Set(ids).count == ids.count else {
+            throw NSError(
+                domain: "ImportExportService",
+                code: 422,
+                userInfo: [NSLocalizedDescriptionKey: AppLocalization.format("云端数据中存在重复的%@", entityName)]
+            )
+        }
+    }
+}
+
+enum SyncDeletionService {
+    @MainActor
+    static func record(
+        entityID: UUID,
+        kind: SyncDeletedEntityKind,
+        deletedAt: Date = .now,
+        in context: ModelContext
+    ) throws {
+        let kindRawValue = kind.rawValue
+        let predicate = #Predicate<SyncDeletionTombstone> { tombstone in
+            tombstone.entityID == entityID && tombstone.entityKindRawValue == kindRawValue
+        }
+        var descriptor = FetchDescriptor<SyncDeletionTombstone>(predicate: predicate)
+        descriptor.fetchLimit = 1
+
+        if let existing = try context.fetch(descriptor).first {
+            existing.deletedAt = max(existing.deletedAt, deletedAt)
+        } else {
+            context.insert(SyncDeletionTombstone(
+                entityID: entityID,
+                entityKind: kind,
+                deletedAt: deletedAt
+            ))
+        }
+    }
 }
 
 enum SyncMergeService {
     static func mergedPayload(local: ExportPayload, remote: ExportPayload) -> ExportPayload {
         let localNormalized = normalized(local)
         let remoteNormalized = normalized(remote)
+        let deletions = mergeDeletions(
+            local: localNormalized.deletionRecords,
+            remote: remoteNormalized.deletionRecords
+        )
 
         let categories = mergeCategories(local: localNormalized.categories, remote: remoteNormalized.categories)
         let items = mergeByUpdatedAt(local: localNormalized.items, remote: remoteNormalized.items, id: \.id, updatedAt: \.updatedAt)
         let snapshots = mergeSnapshots(local: localNormalized.snapshots, remote: remoteNormalized.snapshots)
 
-        return normalized(ExportPayload(
+        return normalized(payloadApplyingDeletions(ExportPayload(
             exportedAt: max(local.exportedAt, remote.exportedAt, Date()),
             categories: categories,
             items: items,
-            snapshots: snapshots
-        ))
+            snapshots: snapshots,
+            deletions: deletions
+        )))
     }
 
     static func canonicalData(for payload: ExportPayload) throws -> Data {
@@ -294,7 +388,8 @@ enum SyncMergeService {
             exportedAt: Date(timeIntervalSince1970: 0),
             categories: payload.categories,
             items: payload.items,
-            snapshots: payload.snapshots
+            snapshots: payload.snapshots,
+            deletions: payload.deletionRecords
         )
         return try encoder.encode(normalized(contentPayload))
     }
@@ -304,7 +399,7 @@ enum SyncMergeService {
     }
 
     static func looksLikeSeedOnly(_ payload: ExportPayload) -> Bool {
-        guard payload.snapshots.isEmpty else { return false }
+        guard payload.snapshots.isEmpty, payload.deletionRecords.isEmpty else { return false }
         let categoryGroups = Set(payload.categories.map(\.group))
         guard categoryGroups.isSubset(of: [AssetGroup.financial.rawValue, AssetGroup.physical.rawValue, AssetGroup.liability.rawValue]) else {
             return false
@@ -319,11 +414,69 @@ enum SyncMergeService {
     }
 
     static func isEmptyUserData(_ payload: ExportPayload) -> Bool {
-        payload.snapshots.isEmpty && payload.items.isEmpty && payload.categories.isEmpty
+        payload.snapshots.isEmpty
+            && payload.items.isEmpty
+            && payload.categories.isEmpty
+            && payload.deletionRecords.isEmpty
+    }
+
+    static func payloadApplyingDeletions(_ payload: ExportPayload) -> ExportPayload {
+        let deletions = mergeDeletions(local: payload.deletionRecords, remote: [])
+        let deletionKeys = Set(deletions.compactMap { deletion -> DeletionKey? in
+            guard let kind = SyncDeletedEntityKind(rawValue: deletion.entityKind) else { return nil }
+            return DeletionKey(kind: kind, entityID: deletion.entityID)
+        })
+
+        let categories = payload.categories.filter {
+            !deletionKeys.contains(DeletionKey(kind: .category, entityID: $0.id))
+        }
+        let categoryIDs = Set(categories.map(\.id))
+        let items = payload.items.filter { item in
+            !deletionKeys.contains(DeletionKey(kind: .item, entityID: item.id))
+                && item.categoryID.map { categoryIDs.contains($0) } != false
+        }
+        let itemIDs = Set(items.map(\.id))
+        let snapshots = payload.snapshots.compactMap { snapshot -> ExportPayload.SnapshotPayload? in
+            guard !deletionKeys.contains(DeletionKey(kind: .snapshot, entityID: snapshot.id)) else {
+                return nil
+            }
+            let entries = snapshot.entries.filter { entry in
+                !deletionKeys.contains(DeletionKey(kind: .entry, entityID: entry.id))
+                    && entry.itemID.map { itemIDs.contains($0) } != false
+            }
+            return ExportPayload.SnapshotPayload(
+                id: snapshot.id,
+                date: snapshot.date,
+                note: snapshot.note,
+                createdAt: snapshot.createdAt,
+                updatedAt: snapshot.updatedAt,
+                goldAnchorPriceCNY: snapshot.goldAnchorPriceCNY,
+                goldAnchorPriceDate: snapshot.goldAnchorPriceDate,
+                btcAnchorPriceUSD: snapshot.btcAnchorPriceUSD,
+                btcAnchorPriceDate: snapshot.btcAnchorPriceDate,
+                nasdaqAnchorPriceUSD: snapshot.nasdaqAnchorPriceUSD,
+                nasdaqAnchorPriceDate: snapshot.nasdaqAnchorPriceDate,
+                usdPerCNY: snapshot.usdPerCNY,
+                usdPerCNYDate: snapshot.usdPerCNYDate,
+                marketAnchorsUpdatedAt: snapshot.marketAnchorsUpdatedAt,
+                entries: entries
+            )
+        }
+
+        return ExportPayload(
+            exportedAt: payload.exportedAt,
+            categories: categories,
+            items: items,
+            snapshots: snapshots,
+            deletions: deletions
+        )
     }
 
     private static func mergeCategories(local: [ExportPayload.CategoryPayload], remote: [ExportPayload.CategoryPayload]) -> [ExportPayload.CategoryPayload] {
-        var merged: [UUID: ExportPayload.CategoryPayload] = Dictionary(uniqueKeysWithValues: remote.map { ($0.id, $0) })
+        var merged: [UUID: ExportPayload.CategoryPayload] = [:]
+        for category in remote {
+            merged[category.id] = category
+        }
         for category in local {
             // Category currently has no updatedAt in the persisted model. Prefer the local copy for same UUID,
             // while still preserving remote-only categories. This avoids destructive category loss during sync.
@@ -333,8 +486,8 @@ enum SyncMergeService {
     }
 
     private static func mergeSnapshots(local: [ExportPayload.SnapshotPayload], remote: [ExportPayload.SnapshotPayload]) -> [ExportPayload.SnapshotPayload] {
-        let remoteByID = Dictionary(uniqueKeysWithValues: remote.map { ($0.id, $0) })
-        let localByID = Dictionary(uniqueKeysWithValues: local.map { ($0.id, $0) })
+        let remoteByID = keyedByID(remote, id: \.id)
+        let localByID = keyedByID(local, id: \.id)
         let allIDs = Set(remoteByID.keys).union(localByID.keys)
 
         return allIDs.compactMap { id in
@@ -374,7 +527,15 @@ enum SyncMergeService {
     }
 
     private static func mergeByUpdatedAt<T, ID: Hashable>(local: [T], remote: [T], id: KeyPath<T, ID>, updatedAt: KeyPath<T, Date>) -> [T] {
-        var merged = Dictionary(uniqueKeysWithValues: remote.map { ($0[keyPath: id], $0) })
+        var merged: [ID: T] = [:]
+        for value in remote {
+            let key = value[keyPath: id]
+            if let existing = merged[key] {
+                merged[key] = value[keyPath: updatedAt] >= existing[keyPath: updatedAt] ? value : existing
+            } else {
+                merged[key] = value
+            }
+        }
         for value in local {
             let key = value[keyPath: id]
             if let existing = merged[key] {
@@ -382,6 +543,28 @@ enum SyncMergeService {
             } else {
                 merged[key] = value
             }
+        }
+        return Array(merged.values)
+    }
+
+    private static func keyedByID<T, ID: Hashable>(_ values: [T], id: KeyPath<T, ID>) -> [ID: T] {
+        values.reduce(into: [:]) { result, value in
+            result[value[keyPath: id]] = value
+        }
+    }
+
+    private static func mergeDeletions(
+        local: [ExportPayload.DeletionPayload],
+        remote: [ExportPayload.DeletionPayload]
+    ) -> [ExportPayload.DeletionPayload] {
+        var merged: [DeletionKey: ExportPayload.DeletionPayload] = [:]
+        for deletion in remote + local {
+            guard let kind = SyncDeletedEntityKind(rawValue: deletion.entityKind) else { continue }
+            let key = DeletionKey(kind: kind, entityID: deletion.entityID)
+            if let existing = merged[key], existing.deletedAt > deletion.deletedAt {
+                continue
+            }
+            merged[key] = deletion
         }
         return Array(merged.values)
     }
@@ -424,7 +607,18 @@ enum SyncMergeService {
                         entries: snapshot.entries.sorted { $0.id.uuidString < $1.id.uuidString }
                     )
                 }
-                .sorted { $0.id.uuidString < $1.id.uuidString }
+                .sorted { $0.id.uuidString < $1.id.uuidString },
+            deletions: payload.deletionRecords.sorted {
+                if $0.entityKind == $1.entityKind {
+                    return $0.entityID.uuidString < $1.entityID.uuidString
+                }
+                return $0.entityKind < $1.entityKind
+            }
         )
+    }
+
+    private struct DeletionKey: Hashable {
+        let kind: SyncDeletedEntityKind
+        let entityID: UUID
     }
 }
