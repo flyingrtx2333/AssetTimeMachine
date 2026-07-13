@@ -9626,25 +9626,25 @@
         }
       }
     },
-    "研究型综合增强组合：先按40%高夏普状态机、25%进取风险预算、35%双趋势金纳生成目标仓位，并按底层仓位共识使用1.00/1.20/1.40倍风险档。每42个交易日估计最多126日协方差；当单一资产风险贡献超过65%时，将60%目标权重按低波动与低正相关方向重新分配。当美股既有仓位至少10%、目标拟一次增加10%至20%，且纳指与标普近5日动量同时转负时，仅执行新增仓位的60%，避免弱势阶段突然加速暴露。总风险封顶110%，负现金按5%年化融资，目标权重变化超过8%才成交，统一计入1%交易费与0.05%滑点。": {
+    "研究型综合增强组合：先按40%高夏普状态机、25%进取风险预算、35%双趋势金纳生成目标仓位，并按底层仓位共识使用1.00/1.20/1.40倍风险档。每42个交易日估计最多126日协方差；当单一资产风险贡献超过65%时，将60%目标权重按低波动与低正相关方向重新分配。当美股既有仓位至少10%、目标拟一次增加10%至20%，且纳指与标普近5日动量同时转负时，仅执行新增仓位的60%。当A股目标一次减少至少15%、美股目标拟增加5%至10%，且纳指或标普近5日动量至少一个未转正时，仅执行美股新增仓位的50%，避免区域风险退出后立即把风险转移到美股。总风险封顶110%，负现金按5%年化融资，目标权重变化超过8%才成交，统一计入1%交易费与0.05%滑点。": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Experimental all-round enhancement: first builds target weights from the High-Sharpe State Engine (40%), Aggressive Risk Budget (25%), and Dual-Trend Gold–Nasdaq Barbell (35%), then applies 1.00×, 1.20×, or 1.40× risk scaling according to the underlying engines’ exposure consensus. Every 42 trading sessions it estimates up to 126 sessions of covariance. When one asset contributes more than 65% of portfolio risk, 60% of target weights are reallocated toward lower-volatility and less positively correlated assets. When existing US-equity exposure is at least 10%, the target proposes a single 10%–20% increase, and both Nasdaq and S&P 500 five-session momentum are negative, only 60% of the incremental exposure is executed to avoid abruptly accelerating risk in a weakening market. Gross exposure is capped at 110%, negative cash is financed at 5% annually, and trades require more than 8% target-weight change. All trades use the unified 1% fee and 0.05% slippage assumptions."
+            "value": "Experimental all-round enhancement: first builds target weights from the High-Sharpe State Engine (40%), Aggressive Risk Budget (25%), and Dual-Trend Gold–Nasdaq Barbell (35%), then applies 1.00×, 1.20×, or 1.40× risk scaling according to the underlying engines’ exposure consensus. Every 42 trading sessions it estimates up to 126 sessions of covariance. When one asset contributes more than 65% of portfolio risk, 60% of target weights are reallocated toward lower-volatility and less positively correlated assets. When existing US-equity exposure is at least 10%, the target proposes a single 10%–20% increase, and both Nasdaq and S&P 500 five-session momentum are negative, only 60% of the incremental exposure is executed. When China-equity targets fall by at least 15%, US-equity targets rise by 5%–10%, and either Nasdaq or S&P 500 five-session momentum has not turned positive, only 50% of the incremental US exposure is executed to avoid immediately transferring regional exit risk into US equities. Gross exposure is capped at 110%, negative cash is financed at 5% annually, and trades require more than 8% target-weight change. All trades use the unified 1% fee and 0.05% slippage assumptions."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "研究型综合增强组合：先按40%高夏普状态机、25%进取风险预算、35%双趋势金纳生成目标仓位，并按底层仓位共识使用1.00/1.20/1.40倍风险档。每42个交易日估计最多126日协方差；当单一资产风险贡献超过65%时，将60%目标权重按低波动与低正相关方向重新分配。当美股既有仓位至少10%、目标拟一次增加10%至20%，且纳指与标普近5日动量同时转负时，仅执行新增仓位的60%，避免弱势阶段突然加速暴露。总风险封顶110%，负现金按5%年化融资，目标权重变化超过8%才成交，统一计入1%交易费与0.05%滑点。"
+            "value": "研究型综合增强组合：先按40%高夏普状态机、25%进取风险预算、35%双趋势金纳生成目标仓位，并按底层仓位共识使用1.00/1.20/1.40倍风险档。每42个交易日估计最多126日协方差；当单一资产风险贡献超过65%时，将60%目标权重按低波动与低正相关方向重新分配。当美股既有仓位至少10%、目标拟一次增加10%至20%，且纳指与标普近5日动量同时转负时，仅执行新增仓位的60%。当A股目标一次减少至少15%、美股目标拟增加5%至10%，且纳指或标普近5日动量至少一个未转正时，仅执行美股新增仓位的50%，避免区域风险退出后立即把风险转移到美股。总风险封顶110%，负现金按5%年化融资，目标权重变化超过8%才成交，统一计入1%交易费与0.05%滑点。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "研究型綜合增強組合：先按40%高夏普狀態機、25%進取風險預算、35%雙趨勢金納槓鈴產生目標倉位，並依底層倉位共識使用1.00／1.20／1.40倍風險檔。每42個交易日估計最多126日共變異數；當單一資產風險貢獻超過65%時，將60%目標權重往低波動與低正相關資產重新分配。當美股既有倉位至少10%、目標擬一次增加10%至20%，且納指與標普近5日動量同時轉負時，僅執行新增倉位的60%，避免弱勢階段突然加速曝險。總風險封頂110%，負現金按5%年化融資，目標權重變化超過8%才成交，並統一計入1%交易費與0.05%滑點。"
+            "value": "研究型綜合增強組合：先按40%高夏普狀態機、25%進取風險預算、35%雙趨勢金納槓鈴產生目標倉位，並依底層倉位共識使用1.00／1.20／1.40倍風險檔。每42個交易日估計最多126日共變異數；當單一資產風險貢獻超過65%時，將60%目標權重往低波動與低正相關資產重新分配。當美股既有倉位至少10%、目標擬一次增加10%至20%，且納指與標普近5日動量同時轉負時，僅執行新增倉位的60%。當A股目標一次減少至少15%、美股目標擬增加5%至10%，且納指或標普近5日動量至少一個尚未轉正時，僅執行美股新增倉位的50%，避免區域風險退出後立即把風險轉移到美股。總風險封頂110%，負現金按5%年化融資，目標權重變化超過8%才成交，並統一計入1%交易費與0.05%滑點。"
           }
         }
       }

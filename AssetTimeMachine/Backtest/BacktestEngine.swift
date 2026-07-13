@@ -1188,6 +1188,11 @@ nonisolated enum BacktestEngine {
         let usJumpBrakeMinimumIncrease = 0.10
         let usJumpBrakeMaximumIncrease = 0.20
         let usJumpBrakeIncreasePassThrough = 0.60
+        let crossMarketHandoffMomentumLookback = 5
+        let crossMarketHandoffMinimumUSIncrease = 0.05
+        let crossMarketHandoffMaximumUSIncrease = 0.10
+        let crossMarketHandoffMinimumChinaReduction = 0.15
+        let crossMarketHandoffIncreasePassThrough = 0.50
         let config = ResearchTargetStrategyConfig(
             symbol: "risk_contribution_reallocation",
             title: AppLocalization.string("风险贡献再分配"),
@@ -1419,6 +1424,44 @@ nonisolated enum BacktestEngine {
                    sp500Momentum <= 0 {
                     let allowedUSWeight = previousUSWeight
                         + usJumpBrakeIncreasePassThrough * proposedUSIncrease
+                    if proposedUSWeight > 0, allowedUSWeight < proposedUSWeight {
+                        let scale = allowedUSWeight / proposedUSWeight
+                        for symbol in usSymbols where target[symbol] != nil {
+                            target[symbol] = (target[symbol] ?? 0) * scale
+                        }
+                    }
+                }
+
+                // T-1 cross-market handoff brake: when a large China-equity reduction
+                // is immediately redirected into a moderate US-equity increase, require
+                // short-term confirmation before executing the new US exposure in full.
+                let chinaSymbols: Set<String> = ["csi300", "shanghai_composite"]
+                let previousChinaWeight = previousWeights.reduce(0.0) {
+                    $0 + (chinaSymbols.contains($1.key) ? $1.value : 0)
+                }
+                let proposedChinaWeight = target.reduce(0.0) {
+                    $0 + (chinaSymbols.contains($1.key) ? $1.value : 0)
+                }
+                let chinaReduction = previousChinaWeight - proposedChinaWeight
+                let handoffUSIncrease = proposedUSWeight - previousUSWeight
+                if handoffUSIncrease > crossMarketHandoffMinimumUSIncrease,
+                   handoffUSIncrease <= crossMarketHandoffMaximumUSIncrease,
+                   chinaReduction >= crossMarketHandoffMinimumChinaReduction,
+                   let nasdaqPrices = data.pricesBySymbol["nasdaq"],
+                   let sp500Prices = data.pricesBySymbol["sp500"],
+                   let nasdaqMomentum = priceMomentum(
+                       values: nasdaqPrices,
+                       at: signalIndex,
+                       lookback: crossMarketHandoffMomentumLookback
+                   ),
+                   let sp500Momentum = priceMomentum(
+                       values: sp500Prices,
+                       at: signalIndex,
+                       lookback: crossMarketHandoffMomentumLookback
+                   ),
+                   nasdaqMomentum <= 0 || sp500Momentum <= 0 {
+                    let allowedUSWeight = previousUSWeight
+                        + crossMarketHandoffIncreasePassThrough * handoffUSIncrease
                     if proposedUSWeight > 0, allowedUSWeight < proposedUSWeight {
                         let scale = allowedUSWeight / proposedUSWeight
                         for symbol in usSymbols where target[symbol] != nil {
