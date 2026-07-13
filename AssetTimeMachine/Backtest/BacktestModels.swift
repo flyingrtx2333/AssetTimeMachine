@@ -295,6 +295,7 @@ enum AdvancedBacktestStrategyMode: String, Codable {
     case convexCrashHedgeComposite
     case onlineStrategyAllocator
     case riskContributionReallocation
+    case riskContributionRegimeRouter
     case strongVolControlledRotation
     case momentumRotation
 
@@ -396,6 +397,8 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("在线策略分配器")
         case .riskContributionReallocation:
             return AppLocalization.string("风险贡献再分配")
+        case .riskContributionRegimeRouter:
+            return AppLocalization.string("双引擎制度路由")
         case .strongVolControlledRotation:
             return AppLocalization.string("强势控波轮动")
         case .momentumRotation:
@@ -501,6 +504,8 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("研究型低回撤组合：在进取风险预算、高夏普状态机、稳健锁盈防守和双趋势金纳之间，每63个交易日根据过去504日的收益、波动和最大回撤重新分配；采用75%惯性并限制单条逻辑最高约70%，全程无融资，按1%交易费统一成交。")
         case .riskContributionReallocation:
             return AppLocalization.string("研究型综合增强组合：先按40%高夏普状态机、25%进取风险预算、35%双趋势金纳生成目标仓位，并按底层仓位共识使用1.00/1.20/1.40倍风险档。每42个交易日估计最多126日协方差；当单一资产风险贡献超过65%时，将60%目标权重按低波动与低正相关方向重新分配。当美股既有仓位至少10%、目标拟一次增加10%至20%，且纳指与标普近5日动量同时转负时，仅执行新增仓位的60%。当A股目标一次减少至少15%、美股目标拟增加5%至10%，且纳指或标普近5日动量至少一个未转正时，仅执行美股新增仓位的50%，避免区域风险退出后立即把风险转移到美股。总风险封顶110%，负现金按5%年化融资，目标权重变化超过8%才成交，统一计入1%交易费与0.05%滑点。")
+        case .riskContributionRegimeRouter:
+            return AppLocalization.string("质变型实验策略：同时运行稳健风险贡献引擎与进攻风险贡献引擎。每63个交易日只用T−1数据比较两者过去252日净值；进攻引擎领先至少2.5%且站上自身63日均值时切换进攻，落后3%或跌破均值3%时切回稳健。历史固定数据中仅发生3次制度切换，总风险封顶120%，负现金按5%年化融资，目标变化超过8%才成交，统一计入1%交易费与0.05%滑点。")
         case .strongVolControlledRotation:
             return AppLocalization.string("20日强弱排序，每20个交易日持有最强资产；目标波动12%，最高投入90%")
         case .momentumRotation:
@@ -556,7 +561,8 @@ enum AdvancedBacktestStrategyMode: String, Codable {
         case .convexCrashHedgeComposite:
             return ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "shenzhen_component"]
         case .onlineStrategyAllocator,
-             .riskContributionReallocation:
+             .riskContributionReallocation,
+             .riskContributionRegimeRouter:
             return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
         default:
             return []
@@ -565,7 +571,8 @@ enum AdvancedBacktestStrategyMode: String, Codable {
 
     nonisolated var dateBoundaryAssetSymbols: Set<String>? {
         switch self {
-        case .riskContributionReallocation:
+        case .riskContributionReallocation,
+             .riskContributionRegimeRouter:
             return ["gold_cny", "nasdaq"]
         case .convexCrashHedgeComposite,
              .onlineStrategyAllocator,
@@ -1705,6 +1712,23 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             sellRule: .init(direction: .priceBelowMA60, days: 1),
             tradeAmountRatio: 1,
             maxPositionRatio: 110,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "risk-contribution-regime-router",
+            mode: .riskContributionRegimeRouter,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            category: AppLocalization.string("实验策略"),
+            title: AppLocalization.string("双引擎制度路由"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 120,
             cooldownDays: 0,
             stopLossRatio: 0,
             takeProfitRatio: 0

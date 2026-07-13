@@ -1367,6 +1367,13 @@ struct AdvancedStrategyTemplateRow: View {
                 AppLocalization.string("60%再分配"),
                 AppLocalization.string("8%调仓带")
             ]
+        case .riskContributionRegimeRouter:
+            return [
+                AppLocalization.string("双引擎"),
+                AppLocalization.string("252日制度判断"),
+                AppLocalization.string("每63交易日"),
+                AppLocalization.string("总风险120%")
+            ]
         case .strongVolControlledRotation:
             return [
                 AppLocalization.string("20日强弱"),
@@ -1607,6 +1614,8 @@ extension AdvancedBacktestStrategyTemplate {
             growth = 0.76; stability = 0.94; defense = 0.94; flexibility = 0.98
         case .riskContributionReallocation:
             growth = 0.92; stability = 0.98; defense = 0.98; flexibility = 1.00
+        case .riskContributionRegimeRouter:
+            growth = 0.98; stability = 0.96; defense = 0.96; flexibility = 1.00
         case .strongVolControlledRotation:
             growth = 0.78; stability = 0.66; defense = 0.66; flexibility = 0.78
         case .momentumRotation:

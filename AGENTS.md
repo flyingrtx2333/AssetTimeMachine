@@ -484,8 +484,8 @@ Pull requests should describe the user-facing change, list verification commands
 
 ## Current Known Operational Notes
 
-- Latest TestFlight release: version `1.10` build `146`, Delivery UUID `5b25142d-6430-4efa-a817-8a0fd8dede8d`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.10-146`.
-- Build 146 contains the first US-equity jump brake. The cross-market China-to-US handoff brake and its 10.59% / 9.49% / 1.16 working-tree baseline were added after that upload and require a later TestFlight build.
+- Latest TestFlight release: version `1.10` build `147`, Delivery UUID `b8036775-8002-457d-a468-13e2ea4879b1`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.10-147`.
+- Build 147 contains the cross-market China-to-US handoff brake and the new `双引擎制度路由` experimental strategy. On the pinned App-engine history fixture, the router records 11.60% annualized return, 9.49% maximum drawdown, and 1.18 Sharpe after the unified 1% fee and 0.05% slippage assumptions.
 - The app base API should return from `https://api.flyingrtx.com`.
 - If market-data freshness looks wrong, separate these layers before fixing:
   - app cache / `RemoteMarketStore.historySeries`

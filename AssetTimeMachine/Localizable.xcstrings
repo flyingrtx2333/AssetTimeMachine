@@ -9488,6 +9488,144 @@
         }
       }
     },
+    "双引擎制度路由": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dual-Engine Regime Router"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "双引擎制度路由"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雙引擎制度路由"
+          }
+        }
+      }
+    },
+    "双引擎制度路由调仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dual-engine regime-router rebalance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "双引擎制度路由调仓"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雙引擎制度路由調倉"
+          }
+        }
+      }
+    },
+    "双引擎": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dual Engine"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "双引擎"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雙引擎"
+          }
+        }
+      }
+    },
+    "252日制度判断": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "252-Day Regime Signal"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "252日制度判断"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "252日制度判斷"
+          }
+        }
+      }
+    },
+    "总风险120%": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "120% Gross Exposure"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "总风险120%"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "總風險120%"
+          }
+        }
+      }
+    },
+    "质变型实验策略：同时运行稳健风险贡献引擎与进攻风险贡献引擎。每63个交易日只用T−1数据比较两者过去252日净值；进攻引擎领先至少2.5%且站上自身63日均值时切换进攻，落后3%或跌破均值3%时切回稳健。历史固定数据中仅发生3次制度切换，总风险封顶120%，负现金按5%年化融资，目标变化超过8%才成交，统一计入1%交易费与0.05%滑点。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regime-switching experimental strategy: runs a stable risk-contribution engine and a growth risk-contribution engine in parallel. Every 63 trading sessions, using T−1 data only, it compares their trailing 252-session equity curves. It switches to growth when growth leads by at least 2.5% and is above its own 63-session average; it switches back when growth lags by 3% or falls 3% below that average. On the pinned history, the router switched regimes only three times. Gross exposure is capped at 120%, negative cash is financed at 5% annually, and trades require more than an 8% target-weight change. All trades include a 1% fee and 0.05% slippage."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "质变型实验策略：同时运行稳健风险贡献引擎与进攻风险贡献引擎。每63个交易日只用T−1数据比较两者过去252日净值；进攻引擎领先至少2.5%且站上自身63日均值时切换进攻，落后3%或跌破均值3%时切回稳健。历史固定数据中仅发生3次制度切换，总风险封顶120%，负现金按5%年化融资，目标变化超过8%才成交，统一计入1%交易费与0.05%滑点。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "質變型實驗策略：同步運行穩健風險貢獻引擎與進攻風險貢獻引擎。每63個交易日只使用T−1資料比較兩者過去252日淨值；進攻引擎領先至少2.5%且站上自身63日均值時切換進攻，落後3%或跌破均值3%時切回穩健。固定歷史資料中僅發生3次制度切換，總風險封頂120%，負現金按5%年化融資，目標變化超過8%才成交，統一計入1%交易費與0.05%滑點。"
+          }
+        }
+      }
+    },
     "风险贡献再分配": {
       "extractionState": "manual",
       "localizations": {

@@ -1145,20 +1145,59 @@ nonisolated enum BacktestEngine {
         return assetInputs.filter { required.contains($0.assetOption.symbol) }
     }
 
+    private struct RiskContributionReallocationParameters {
+        let sharpeShare: Double
+        let riskShare: Double
+        let dualShare: Double
+        let highScale: Double
+        let mediumScale: Double
+        let grossCap: Double
+        let reallocationRatio: Double
+        let volatilityExponent: Double
+        let correlationPenalty: Double
+
+        static let stable = RiskContributionReallocationParameters(
+            sharpeShare: 0.40,
+            riskShare: 0.25,
+            dualShare: 0.35,
+            highScale: 1.40,
+            mediumScale: 1.20,
+            grossCap: 1.10,
+            reallocationRatio: 0.60,
+            volatilityExponent: 1.40,
+            correlationPenalty: 1.75
+        )
+
+        static let growth = RiskContributionReallocationParameters(
+            sharpeShare: 0.35,
+            riskShare: 0.30,
+            dualShare: 0.35,
+            highScale: 1.60,
+            mediumScale: 1.30,
+            grossCap: 1.20,
+            reallocationRatio: 1.00,
+            volatilityExponent: 2.00,
+            correlationPenalty: 3.00
+        )
+    }
+
     private static func runRiskContributionReallocationWithTrace(
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
         initialCash: Double,
         settings: AdvancedBacktestRiskSettings,
-        dateBounds: ClosedRange<Date>? = nil
+        dateBounds: ClosedRange<Date>? = nil,
+        parameters: RiskContributionReallocationParameters = .stable,
+        strategySymbol: String = "risk_contribution_reallocation",
+        strategyTitle: String? = nil
     ) -> ResearchTargetStrategyRun? {
         let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
         let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
         let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
         let modes = [sharpeMode, riskMode, dualMode]
         let shares: [AdvancedBacktestStrategyMode: Double] = [
-            sharpeMode: 0.40,
-            riskMode: 0.25,
-            dualMode: 0.35,
+            sharpeMode: parameters.sharpeShare,
+            riskMode: parameters.riskShare,
+            dualMode: parameters.dualShare,
         ]
         let requiredSymbols = Set(modes.flatMap(\.requiredSignalAssetSymbols))
         let simulationInputs = assetInputs.filter { requiredSymbols.contains($0.assetOption.symbol) }
@@ -1179,9 +1218,9 @@ nonisolated enum BacktestEngine {
         let lookback = 126
         let reviewSessions = 42
         let riskContributionTrigger = 0.65
-        let reallocationRatio = 0.60
-        let volatilityExponent = 1.40
-        let correlationPenalty = 1.75
+        let reallocationRatio = parameters.reallocationRatio
+        let volatilityExponent = parameters.volatilityExponent
+        let correlationPenalty = parameters.correlationPenalty
         let tradeBand = 0.08
         let usJumpBrakeMomentumLookback = 5
         let usJumpBrakeMinimumPreviousWeight = 0.10
@@ -1194,15 +1233,15 @@ nonisolated enum BacktestEngine {
         let crossMarketHandoffMinimumChinaReduction = 0.15
         let crossMarketHandoffIncreasePassThrough = 0.50
         let config = ResearchTargetStrategyConfig(
-            symbol: "risk_contribution_reallocation",
-            title: AppLocalization.string("风险贡献再分配"),
+            symbol: strategySymbol,
+            title: strategyTitle ?? AppLocalization.string("风险贡献再分配"),
             warmupSessions: 21,
             rebalanceSessions: 1,
             rebalanceBand: tradeBand,
-            maxGrossExposure: 1.10,
+            maxGrossExposure: parameters.grossCap,
             allowsFinancedExposure: true,
             financingAnnualRate: 0.05,
-            buyReason: AppLocalization.string("风险贡献再分配调仓")
+            buyReason: strategyTitle ?? AppLocalization.string("风险贡献再分配调仓")
         )
         var latestTargets: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
         var pendingWeights: [String: Double] = [:]
@@ -1257,9 +1296,9 @@ nonisolated enum BacktestEngine {
                 let minimumModeGross = modeGrosses.min() ?? 0
                 let scale: Double
                 if baseGross >= 0.75, minimumModeGross >= 0.20 {
-                    scale = 1.40
+                    scale = parameters.highScale
                 } else if baseGross >= 0.30 {
-                    scale = 1.20
+                    scale = parameters.mediumScale
                 } else {
                     scale = 1.00
                 }
@@ -1390,8 +1429,8 @@ nonisolated enum BacktestEngine {
                 }
 
                 let gross = target.values.reduce(0, +)
-                if gross > 1.10, gross > 0 {
-                    target = target.mapValues { $0 * 1.10 / gross }
+                if gross > parameters.grossCap, gross > 0 {
+                    target = target.mapValues { $0 * parameters.grossCap / gross }
                 }
 
                 // T-1 jump brake: do not fully accelerate US-equity exposure when
@@ -1478,6 +1517,161 @@ nonisolated enum BacktestEngine {
                 let shouldRebalance = previousWeights.isEmpty
                     ? !target.isEmpty
                     : difference > tradeBand
+                if shouldRebalance { previousWeights = target }
+                return BacktestRebalanceDecision(
+                    shouldRebalance: shouldRebalance,
+                    refreshOverlay: false
+                )
+            },
+            targetWeights: { _, _ in pendingWeights }
+        )
+    }
+
+    private static func runRiskContributionRegimeRouterWithTrace(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings,
+        dateBounds: ClosedRange<Date>? = nil
+    ) -> ResearchTargetStrategyRun? {
+        guard let stableRun = runRiskContributionReallocationWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            parameters: .stable,
+            strategySymbol: "risk_contribution_router_stable",
+            strategyTitle: AppLocalization.string("制度路由稳健引擎")
+        ), let growthRun = runRiskContributionReallocationWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            parameters: .growth,
+            strategySymbol: "risk_contribution_router_growth",
+            strategyTitle: AppLocalization.string("制度路由进攻引擎")
+        ) else { return nil }
+
+        let stableTargets = Dictionary(uniqueKeysWithValues: stableRun.dailyStates.map {
+            ($0.date.recordDateString, $0.targetWeights)
+        })
+        let growthTargets = Dictionary(uniqueKeysWithValues: growthRun.dailyStates.map {
+            ($0.date.recordDateString, $0.targetWeights)
+        })
+        let stableValues = Dictionary(uniqueKeysWithValues: stableRun.report.points.map {
+            ($0.date.recordDateString, $0.portfolioValue)
+        })
+        let growthValues = Dictionary(uniqueKeysWithValues: growthRun.report.points.map {
+            ($0.date.recordDateString, $0.portfolioValue)
+        })
+
+        let lookback = 252
+        let reviewSessions = 63
+        let entryRelativeReturn = 0.025
+        let exitRelativeReturn = -0.03
+        let growthTrendLookback = 63
+        let exitTrendRatio = 0.97
+        let tradeBand = 0.08
+        let grossCap = 1.20
+        let config = ResearchTargetStrategyConfig(
+            symbol: "risk_contribution_regime_router",
+            title: AppLocalization.string("双引擎制度路由"),
+            warmupSessions: 21,
+            rebalanceSessions: 1,
+            rebalanceBand: tradeBand,
+            maxGrossExposure: grossCap,
+            allowsFinancedExposure: true,
+            financingAnnualRate: 0.05,
+            buyReason: AppLocalization.string("双引擎制度路由调仓")
+        )
+
+        var alignedStableValues: [Double?] = []
+        var alignedGrowthValues: [Double?] = []
+        var latestStableTarget: [String: Double] = [:]
+        var latestGrowthTarget: [String: Double] = [:]
+        var pendingWeights: [String: Double] = [:]
+        var previousWeights: [String: Double] = [:]
+        var growthActive = false
+        var lastReviewIndex = -10_000
+
+        return runResearchTargetProviderStrategyWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            config: config,
+            dateBounds: dateBounds,
+            rebalanceDecision: { index, signalIndex, data in
+                guard signalIndex >= 20,
+                      data.dates.indices.contains(index),
+                      data.dates.indices.contains(signalIndex) else {
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                }
+
+                if alignedStableValues.isEmpty {
+                    var lastStableValue: Double?
+                    var lastGrowthValue: Double?
+                    for date in data.dates {
+                        let key = date.recordDateString
+                        if let value = stableValues[key] { lastStableValue = value }
+                        if let value = growthValues[key] { lastGrowthValue = value }
+                        alignedStableValues.append(lastStableValue)
+                        alignedGrowthValues.append(lastGrowthValue)
+                    }
+                }
+
+                let executionKey = data.dates[index].recordDateString
+                if let weights = stableTargets[executionKey], !weights.isEmpty {
+                    latestStableTarget = weights
+                }
+                if let weights = growthTargets[executionKey], !weights.isEmpty {
+                    latestGrowthTarget = weights
+                }
+                guard !latestStableTarget.isEmpty, !latestGrowthTarget.isEmpty else {
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                }
+
+                var stateChanged = false
+                if signalIndex >= lookback,
+                   signalIndex - lastReviewIndex >= reviewSessions,
+                   let stableNow = alignedStableValues[signalIndex],
+                   let stableStart = alignedStableValues[signalIndex - lookback],
+                   let growthNow = alignedGrowthValues[signalIndex],
+                   let growthStart = alignedGrowthValues[signalIndex - lookback],
+                   stableStart > 0,
+                   growthStart > 0 {
+                    let stableReturn = stableNow / stableStart - 1
+                    let growthReturn = growthNow / growthStart - 1
+                    let relativeReturn = growthReturn - stableReturn
+                    let trendStart = max(0, signalIndex - growthTrendLookback + 1)
+                    let growthWindow = alignedGrowthValues[trendStart...signalIndex].compactMap { $0 }
+                    let growthAverage = growthWindow.isEmpty
+                        ? growthNow
+                        : growthWindow.reduce(0, +) / Double(growthWindow.count)
+                    let previousState = growthActive
+
+                    if !growthActive,
+                       relativeReturn >= entryRelativeReturn,
+                       growthNow >= growthAverage {
+                        growthActive = true
+                    } else if growthActive,
+                              (relativeReturn <= exitRelativeReturn
+                                || growthNow < growthAverage * exitTrendRatio) {
+                        growthActive = false
+                    }
+                    stateChanged = growthActive != previousState
+                    lastReviewIndex = signalIndex
+                }
+
+                var target = growthActive ? latestGrowthTarget : latestStableTarget
+                let gross = target.values.reduce(0, +)
+                if gross > grossCap, gross > 0 {
+                    target = target.mapValues { $0 * grossCap / gross }
+                }
+                let symbols = Set(previousWeights.keys).union(target.keys)
+                let difference = symbols.reduce(0.0) {
+                    $0 + abs((previousWeights[$1] ?? 0) - (target[$1] ?? 0))
+                }
+                pendingWeights = target
+                let shouldRebalance = previousWeights.isEmpty
+                    ? !target.isEmpty
+                    : stateChanged || difference > tradeBand
                 if shouldRebalance { previousWeights = target }
                 return BacktestRebalanceDecision(
                     shouldRebalance: shouldRebalance,
@@ -1921,6 +2115,14 @@ nonisolated enum BacktestEngine {
         mode: AdvancedBacktestStrategyMode,
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedBacktestReport? {
+        if mode == .riskContributionRegimeRouter {
+            return runRiskContributionRegimeRouterWithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                dateBounds: dateBounds
+            )?.report
+        }
         if mode == .riskContributionReallocation {
             return runRiskContributionReallocationWithTrace(
                 assetInputs: assetInputs,
@@ -1970,6 +2172,15 @@ nonisolated enum BacktestEngine {
         mode: AdvancedBacktestStrategyMode,
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedRotationStrategyRun? {
+        if mode == .riskContributionRegimeRouter {
+            guard let run = runRiskContributionRegimeRouterWithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                dateBounds: dateBounds
+            ) else { return nil }
+            return AdvancedRotationStrategyRun(report: run.report, dailyStates: run.dailyStates)
+        }
         if mode == .riskContributionReallocation {
             guard let run = runRiskContributionReallocationWithTrace(
                 assetInputs: assetInputs,
@@ -3339,7 +3550,8 @@ nonisolated enum BacktestEngine {
         case .goldNasdaqDualTrendBarbell,
              .convexCrashHedgeComposite,
              .onlineStrategyAllocator,
-             .riskContributionReallocation:
+             .riskContributionReallocation,
+             .riskContributionRegimeRouter:
             return nil
         case .ultraDefensiveRotation:
             return .init(
