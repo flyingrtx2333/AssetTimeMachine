@@ -378,16 +378,18 @@ Current App defaults are initial cash 100,000 CNY, fee 1.00%, and slippage 0.05%
 
 The product Sharpe ratio must remain calculated and visible. The current implementation uses daily returns with a zero risk-free-rate assumption.
 
-Current product results from the pinned fixture, run on 2026-07-10 with data through 2026-07-03:
+Current product results from the pinned fixture, run on 2026-07-13 with data through 2026-07-03:
 
-| Product strategy | Full annualized | Full max drawdown | Last 10Y annualized | Last 10Y max drawdown | Full Sharpe |
-|---|---:|---:|---:|---:|---:|
-| 进取风险预算 | 10.50% | 14.09% | 6.62% | 12.63% | 1.02 |
-| 均衡权益状态 | 9.60% | 13.02% | 5.67% | 13.02% | 1.01 |
-| 稳健锁盈防守 | 8.55% | 11.67% | 5.56% | 11.67% | 0.99 |
-| 双趋势金纳杠铃 | 10.15% | 16.98% | 13.56% | 16.98% | 0.89 |
+| Product strategy | Type | Full annualized | Full max drawdown | Last 10Y annualized | Last 10Y max drawdown | Full Sharpe |
+|---|---|---:|---:|---:|---:|---:|
+| 进取风险预算 | selected | 10.50% | 14.09% | 6.62% | 12.63% | 1.02 |
+| 均衡权益状态 | selected / default | 9.60% | 13.02% | 5.67% | 13.02% | 1.01 |
+| 稳健锁盈防守 | selected | 8.55% | 11.67% | 5.56% | 11.67% | 0.99 |
+| 凸性极速空头组合 | experimental | 11.73% | 13.47% | 11.23% | 13.47% | 1.04 |
+| 风险贡献再分配 | experimental | 10.57% | 9.79% | 9.15% | 9.49% | 1.15 |
+| 双趋势金纳杠铃 | independent | 10.15% | 16.98% | 13.56% | 16.98% | 0.89 |
 
-The first three visible strategies share the gold/equity meta-strategy trunk and represent aggressive, balanced, and defensive risk tiers. `双趋势金纳杠铃` is an independent signal family: a strategic 55% gold / 45% Nasdaq budget, separate MA200 plus 126/252-session trend states for each sleeve, a 63-session review cadence, and cash for unallocated budget. It must not call `recentLossVolatilityMetaConfig` or silently inherit the meta-strategy router. It is a logic-diversification option rather than the default because its full-history drawdown is higher even though its recent-decade return is materially stronger. All metrics use the required 1% fee and 0.05% slippage assumptions.
+The first three visible strategies share the gold/equity meta-strategy trunk and represent aggressive, balanced, and defensive risk tiers. `双趋势金纳杠铃` remains an independent signal family. The two experimental entries serve different goals. `凸性极速空头组合` blends the high-Sharpe, risk-budget, and dual-trend target weights, adds a 3% strict T−1 modeled equity-short crisis sleeve, caps gross exposure at 110%, and charges 5% annual financing on negative cash. The short sleeve is a synthetic inverse-payoff model, not a directly investable product. `风险贡献再分配` replaces the weaker consensus-scaling version. It first blends 40% High-Sharpe State Engine, 25% Aggressive Risk Budget, and 35% Dual-Trend Gold–Nasdaq targets and applies the same 1.00×/1.20×/1.40× exposure-consensus scaling. Every 42 sessions it estimates up to 126 sessions of covariance; when one asset exceeds 65% of portfolio risk contribution, 60% of target weights are reallocated toward lower-volatility and less positively correlated assets. It also applies a strict T−1 US-equity jump brake: when existing US-equity exposure is at least 10%, a proposed one-step increase is greater than 10% and no more than 20%, and both Nasdaq and S&P 500 five-session momentum are non-positive, only 60% of the incremental exposure is executed. Normal reductions, smaller increases, and large regime resets are unchanged. On the current pinned fixture this affects only two rebalances, in 2010 and 2012, while the last-10-year, 2020+, and 2022+ metrics remain unchanged. Gross exposure is capped at 110%, negative cash is financed at 5% annually, and trades require more than 8% target-weight change. Neither strategy satisfies the requested 8% drawdown threshold, and neither may replace the default `均衡权益状态` without an explicit product decision. All metrics use the required 1% fee and 0.05% slippage assumptions; Sharpe remains calculated and visible.
 
 The backend fixture supplies price-change series; the engine does not inject equity dividend reinvestment. A future total-return-index migration requires a new baseline and must not be compared directly with these values.
 

@@ -292,6 +292,9 @@ enum AdvancedBacktestStrategyMode: String, Codable {
     case goldNasdaqSteadyRotation
     case goldNasdaqPortfolioScheduler
     case goldNasdaqDualTrendBarbell
+    case convexCrashHedgeComposite
+    case onlineStrategyAllocator
+    case riskContributionReallocation
     case strongVolControlledRotation
     case momentumRotation
 
@@ -387,6 +390,12 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("金纳组合调度")
         case .goldNasdaqDualTrendBarbell:
             return AppLocalization.string("双趋势金纳杠铃")
+        case .convexCrashHedgeComposite:
+            return AppLocalization.string("凸性极速空头组合")
+        case .onlineStrategyAllocator:
+            return AppLocalization.string("在线策略分配器")
+        case .riskContributionReallocation:
+            return AppLocalization.string("风险贡献再分配")
         case .strongVolControlledRotation:
             return AppLocalization.string("强势控波轮动")
         case .momentumRotation:
@@ -486,6 +495,12 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("资产只在纳指、黄金、现金之间调度；参考多年美股压力信号控制风险。纳指/黄金按趋势和强弱给目标仓位，压力升温时自动降低纳指、提高黄金或现金。")
         case .goldNasdaqDualTrendBarbell:
             return AppLocalization.string("独立双资产逻辑：黄金基准55%、纳指基准45%，两边分别用MA200和126/252日动量判断强势、震荡或弱势；约每63个交易日复核，震荡时保留大部分仓位，明确弱势时降到小仓位并让剩余资金留现金。全程无融资，按1%交易费验证。")
+        case .convexCrashHedgeComposite:
+            return AppLocalization.string("研究型收益优先组合：35%高夏普状态机、26%进取风险预算、39%双趋势金纳在目标权重层融合并放大1.5倍；另配置3%严格T−1的美股/A股极速空头危机袖套。总风险封顶110%，超出现金按5%年化融资，按1%交易费与0.05%滑点统一成交。空头袖套为指数反向收益模型，不代表可直接购买的单一产品。")
+        case .onlineStrategyAllocator:
+            return AppLocalization.string("研究型低回撤组合：在进取风险预算、高夏普状态机、稳健锁盈防守和双趋势金纳之间，每63个交易日根据过去504日的收益、波动和最大回撤重新分配；采用75%惯性并限制单条逻辑最高约70%，全程无融资，按1%交易费统一成交。")
+        case .riskContributionReallocation:
+            return AppLocalization.string("研究型综合增强组合：先按40%高夏普状态机、25%进取风险预算、35%双趋势金纳生成目标仓位，并按底层仓位共识使用1.00/1.20/1.40倍风险档。每42个交易日估计最多126日协方差；当单一资产风险贡献超过65%时，将60%目标权重按低波动与低正相关方向重新分配。当美股既有仓位至少10%、目标拟一次增加10%至20%，且纳指与标普近5日动量同时转负时，仅执行新增仓位的60%，避免弱势阶段突然加速暴露。总风险封顶110%，负现金按5%年化融资，目标权重变化超过8%才成交，统一计入1%交易费与0.05%滑点。")
         case .strongVolControlledRotation:
             return AppLocalization.string("20日强弱排序，每20个交易日持有最强资产；目标波动12%，最高投入90%")
         case .momentumRotation:
@@ -538,6 +553,11 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return ["sp500"]
         case .goldNasdaqDualTrendBarbell:
             return ["gold_cny", "nasdaq"]
+        case .convexCrashHedgeComposite:
+            return ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "shenzhen_component"]
+        case .onlineStrategyAllocator,
+             .riskContributionReallocation:
+            return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
         default:
             return []
         }
@@ -545,7 +565,11 @@ enum AdvancedBacktestStrategyMode: String, Codable {
 
     nonisolated var dateBoundaryAssetSymbols: Set<String>? {
         switch self {
-        case .coreGoldSatelliteConfirmedAccelerationMomentum,
+        case .riskContributionReallocation:
+            return ["gold_cny", "nasdaq"]
+        case .convexCrashHedgeComposite,
+             .onlineStrategyAllocator,
+             .coreGoldSatelliteConfirmedAccelerationMomentum,
              .coreGoldSatelliteDynamicSleeveMomentum,
              .coreGoldSatelliteContagionRepairMomentum,
              .coreGoldSatelliteCurrencyCashMomentum,
@@ -592,6 +616,45 @@ struct AdvancedBacktestAssetReport: Identifiable {
     let finalCash: Double
     let finalUnits: Double
     let exposureRatio: Double
+    let buyCount: Int
+    let sellCount: Int
+
+    nonisolated init(
+        symbol: String,
+        title: String,
+        points: [BacktestSeriesPoint],
+        benchmarkPoints: [BacktestSeriesPoint],
+        pricePoints: [AdvancedBacktestPricePoint],
+        trades: [AdvancedBacktestTrade],
+        finalPortfolioValue: Double,
+        finalCash: Double,
+        finalUnits: Double,
+        exposureRatio: Double
+    ) {
+        self.symbol = symbol
+        self.title = title
+        self.points = points
+        self.benchmarkPoints = benchmarkPoints
+        self.pricePoints = pricePoints
+        self.trades = trades
+        self.finalPortfolioValue = finalPortfolioValue
+        self.finalCash = finalCash
+        self.finalUnits = finalUnits
+        self.exposureRatio = exposureRatio
+
+        var buyCount = 0
+        var sellCount = 0
+        for trade in trades {
+            switch trade.action {
+            case .buy:
+                buyCount += 1
+            case .sell:
+                sellCount += 1
+            }
+        }
+        self.buyCount = buyCount
+        self.sellCount = sellCount
+    }
 
     var id: String { symbol }
 }
@@ -1613,6 +1676,40 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             takeProfitRatio: 0
         ),
         .init(
+            id: "convex-crash-hedge-composite",
+            mode: .convexCrashHedgeComposite,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "shenzhen_component"],
+            category: AppLocalization.string("实验策略"),
+            title: AppLocalization.string("凸性极速空头组合"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 110,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "risk-contribution-reallocation",
+            mode: .riskContributionReallocation,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            category: AppLocalization.string("实验策略"),
+            title: AppLocalization.string("风险贡献再分配"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 110,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
             id: "gold-nasdaq-dual-trend-barbell",
             mode: .goldNasdaqDualTrendBarbell,
             selectedAssetSymbols: ["gold_cny", "nasdaq"],
@@ -1752,6 +1849,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             "core-gold-satellite-equity-curve-state-gate-momentum",
             "core-gold-satellite-risk-budget-state-gate-momentum",
             "core-gold-satellite-profit-lock-momentum",
+            "convex-crash-hedge-composite",
+            "risk-contribution-reallocation",
             "gold-nasdaq-dual-trend-barbell",
             "basic-ma60-trend",
             "basic-ma-golden-cross",
@@ -2144,6 +2243,30 @@ struct AdvancedBacktestRestoreRequest {
 }
 
 enum BacktestRecordCodec {
+    static func recordSignature(
+        kindRawValue: String,
+        subtitle: String,
+        configSummary: String,
+        startDate: Date?,
+        endDate: Date?,
+        totalReturn: Double,
+        maxDrawdown: Double,
+        finalValue: Double?,
+        tradeCount: Int
+    ) -> String {
+        [
+            kindRawValue,
+            subtitle,
+            configSummary,
+            startDate?.recordDateString ?? "nil",
+            endDate?.recordDateString ?? "nil",
+            String(format: "%.8f", totalReturn),
+            String(format: "%.8f", maxDrawdown),
+            String(format: "%.4f", finalValue ?? 0),
+            String(tradeCount)
+        ].joined(separator: "|")
+    }
+
     private static func encodeOrFallback<T: Encodable>(
         _ payload: T,
         fallbackJSON: String,
@@ -2550,14 +2673,27 @@ enum BacktestDefaults {
 
 enum StrategyNotificationDefaults {
     static let defaultTemplateID = "core-gold-satellite-equity-curve-state-gate-momentum"
+    static let riskContributionTemplateID = "risk-contribution-reallocation"
     static let defaultHour = 9
 
     static var eligibleTemplates: [AdvancedBacktestStrategyTemplate] {
         AdvancedBacktestStrategyTemplate.productCatalog.filter { $0.mode.isRotation }
     }
 
+    static func migratedTemplateID(_ id: String) -> String {
+        switch id {
+        case "online-strategy-allocator", "consensus-scale-defense":
+            return riskContributionTemplateID
+        default:
+            return id
+        }
+    }
+
     static func template(for id: String) -> AdvancedBacktestStrategyTemplate? {
-        eligibleTemplates.first { $0.id == id } ?? eligibleTemplates.first { $0.id == defaultTemplateID } ?? eligibleTemplates.first
+        let migratedID = migratedTemplateID(id)
+        return eligibleTemplates.first { $0.id == migratedID }
+            ?? eligibleTemplates.first { $0.id == defaultTemplateID }
+            ?? eligibleTemplates.first
     }
 
     static func assetOptions(for template: AdvancedBacktestStrategyTemplate) -> [BacktestAssetOption] {

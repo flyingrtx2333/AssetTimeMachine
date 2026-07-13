@@ -3,7 +3,7 @@ import SwiftData
 import Charts
 import UIKit
 
-enum BacktestChartValueStyle {
+enum BacktestChartValueStyle: Equatable {
     case multiple
     case currency(code: String)
 
@@ -100,7 +100,7 @@ enum BacktestChartPalette {
     static var strategyAreaBottom: Color { strategyLine.opacity(0.025) }
 }
 
-struct InteractiveBacktestChart: View {
+struct InteractiveBacktestChart: View, Equatable {
     let points: [BacktestSeriesPoint]
     var comparisonPoints: [BacktestSeriesPoint] = []
     var comparisonSeries: [BacktestChartComparisonSeries] = []
@@ -110,6 +110,40 @@ struct InteractiveBacktestChart: View {
     @State private var selectedDate: Date?
     @State private var viewportStartRatio: Double = 0
     @State private var visibleSpanRatio: Double = 1
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.valueStyle == rhs.valueStyle
+            && lhs.visibleSeriesIDs == rhs.visibleSeriesIDs
+            && lhs.placesViewportControlsAboveChart == rhs.placesViewportControlsAboveChart
+            && seriesIdentityMatches(lhs.points, rhs.points)
+            && seriesIdentityMatches(lhs.comparisonPoints, rhs.comparisonPoints)
+            && comparisonIdentityMatches(lhs.comparisonSeries, rhs.comparisonSeries)
+    }
+
+    private static func seriesIdentityMatches(
+        _ lhs: [BacktestSeriesPoint],
+        _ rhs: [BacktestSeriesPoint]
+    ) -> Bool {
+        guard lhs.count == rhs.count else { return false }
+        for (lhsPoint, rhsPoint) in zip(lhs, rhs) {
+            guard lhsPoint.date == rhsPoint.date,
+                  lhsPoint.portfolioValue == rhsPoint.portfolioValue else { return false }
+        }
+        return true
+    }
+
+    private static func comparisonIdentityMatches(
+        _ lhs: [BacktestChartComparisonSeries],
+        _ rhs: [BacktestChartComparisonSeries]
+    ) -> Bool {
+        guard lhs.count == rhs.count else { return false }
+        for (lhsSeries, rhsSeries) in zip(lhs, rhs) {
+            guard lhsSeries.id == rhsSeries.id,
+                  lhsSeries.title == rhsSeries.title,
+                  seriesIdentityMatches(lhsSeries.points, rhsSeries.points) else { return false }
+        }
+        return true
+    }
 
     private let minVisibleSpanRatio = 0.12
     private let zoomStep = 0.64
@@ -687,6 +721,7 @@ struct BacktestValueChartSection: View {
                 visibleSeriesIDs: effectiveVisibleSeriesIDs,
                 placesViewportControlsAboveChart: true
             )
+            .equatable()
 
             if legendItems.count > 1 {
                 ATMFlowLayout(horizontalSpacing: 8, verticalSpacing: 8, rowAlignment: .center) {

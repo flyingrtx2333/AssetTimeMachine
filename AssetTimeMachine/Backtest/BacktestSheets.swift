@@ -544,34 +544,117 @@ struct BacktestLoadingView: View {
 }
 
 struct AdvancedStrategyLibrarySheet: View {
+    private enum LibraryGroup: String, CaseIterable, Identifiable {
+        case all
+        case selected
+        case experimental
+        case independent
+        case basic
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .all: return AppLocalization.string("全部")
+            case .selected: return AppLocalization.string("精选")
+            case .experimental: return AppLocalization.string("实验")
+            case .independent: return AppLocalization.string("独立")
+            case .basic: return AppLocalization.string("基础")
+            }
+        }
+
+        var sectionTitle: String {
+            switch self {
+            case .all: return AppLocalization.string("全部策略")
+            case .selected: return AppLocalization.string("精选策略")
+            case .experimental: return AppLocalization.string("实验策略")
+            case .independent: return AppLocalization.string("独立策略")
+            case .basic: return AppLocalization.string("基础策略")
+            }
+        }
+
+        var sectionSubtitle: String {
+            switch self {
+            case .all: return ""
+            case .selected: return AppLocalization.string("适合直接比较的主产品策略")
+            case .experimental: return AppLocalization.string("仍在验证，不代表已经达到目标")
+            case .independent: return AppLocalization.string("与主策略不同的收益逻辑")
+            case .basic: return AppLocalization.string("用于理解指标与验证回测行为")
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .all: return "square.grid.2x2"
+            case .selected: return "sparkles"
+            case .experimental: return "testtube.2"
+            case .independent: return "point.3.connected.trianglepath.dotted"
+            case .basic: return "books.vertical"
+            }
+        }
+
+        var accent: Color {
+            switch self {
+            case .all, .selected: return AssetTheme.gold
+            case .experimental: return AssetTheme.accentOrange
+            case .independent: return AssetTheme.positive
+            case .basic: return AssetTheme.accentBlue
+            }
+        }
+    }
+
+    private struct StrategySection: Identifiable {
+        let group: LibraryGroup
+        let templates: [AdvancedBacktestStrategyTemplate]
+        var id: LibraryGroup { group }
+    }
+
     @Environment(\.dismiss) private var dismiss
     let templates: [AdvancedBacktestStrategyTemplate]
     let activeTemplateID: String?
     let onSelect: (AdvancedBacktestStrategyTemplate) -> Void
     @State private var searchText = ""
+    @State private var selectedGroup: LibraryGroup = .all
 
-    private var visibleTemplates: [AdvancedBacktestStrategyTemplate] {
+    private var currentTemplate: AdvancedBacktestStrategyTemplate? {
+        guard let activeTemplateID else { return nil }
+        return templates.first { $0.id == activeTemplateID }
+    }
+
+    private var matchingTemplates: [AdvancedBacktestStrategyTemplate] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return templates.filter { template in
+            let matchesGroup = selectedGroup == .all || group(for: template) == selectedGroup
+            guard matchesGroup else { return false }
             guard !query.isEmpty else { return true }
             return template.title.localizedCaseInsensitiveContains(query)
                 || template.subtitle.localizedCaseInsensitiveContains(query)
                 || template.category.localizedCaseInsensitiveContains(query)
                 || template.mode.title.localizedCaseInsensitiveContains(query)
+                || template.mode.detail.localizedCaseInsensitiveContains(query)
         }
     }
 
-    private var visibleTemplateColumns: [[AdvancedBacktestStrategyTemplate]] {
-        var columns = Array(repeating: [AdvancedBacktestStrategyTemplate](), count: 2)
-        var estimatedHeights = Array(repeating: CGFloat.zero, count: 2)
-
-        for template in visibleTemplates {
-            let columnIndex = estimatedHeights[0] <= estimatedHeights[1] ? 0 : 1
-            columns[columnIndex].append(template)
-            estimatedHeights[columnIndex] += estimatedCardHeight(for: template)
+    private var visibleSections: [StrategySection] {
+        let groups = selectedGroup == .all
+            ? LibraryGroup.allCases.filter { $0 != .all }
+            : [selectedGroup]
+        return groups.compactMap { group in
+            let sectionTemplates = matchingTemplates.filter {
+                self.group(for: $0) == group && $0.id != activeTemplateID
+            }
+            return sectionTemplates.isEmpty ? nil : StrategySection(group: group, templates: sectionTemplates)
         }
+    }
 
-        return columns
+    private var shouldShowCurrentTemplate: Bool {
+        guard let currentTemplate else { return false }
+        let matchesGroup = selectedGroup == .all || group(for: currentTemplate) == selectedGroup
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let matchesSearch = query.isEmpty
+            || currentTemplate.title.localizedCaseInsensitiveContains(query)
+            || currentTemplate.mode.detail.localizedCaseInsensitiveContains(query)
+        return matchesGroup && matchesSearch
     }
 
     var body: some View {
@@ -580,23 +663,40 @@ struct AdvancedStrategyLibrarySheet: View {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text(AppLocalization.string("策略大全"))
-                            .font(.title2.weight(.bold))
-                            .foregroundStyle(AssetTheme.textPrimary)
-                            .padding(.bottom, 2)
+                    LazyVStack(alignment: .leading, spacing: 14) {
+                        strategyLibraryHeader
+                        strategySearchArea
+                        strategyGroupPicker
 
-                        strategySearchAndFilterArea
+                        if shouldShowCurrentTemplate, let currentTemplate {
+                            VStack(alignment: .leading, spacing: 8) {
+                                strategySectionLabel(
+                                    icon: "checkmark.seal.fill",
+                                    title: AppLocalization.string("当前使用"),
+                                    accent: AssetTheme.positive
+                                )
+                                AdvancedStrategyTemplateRow(
+                                    template: currentTemplate,
+                                    isActive: true,
+                                    isFeatured: true
+                                ) {
+                                    onSelect(currentTemplate)
+                                    dismiss()
+                                }
+                            }
+                        }
 
-                        if visibleTemplates.isEmpty {
+                        if matchingTemplates.isEmpty {
                             strategyEmptyState
                         } else {
-                            strategyMasonryGrid
+                            ForEach(visibleSections) { section in
+                                strategySection(section)
+                            }
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 28)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 24)
                 }
             }
             .toolbar {
@@ -611,40 +711,33 @@ struct AdvancedStrategyLibrarySheet: View {
         }
     }
 
-    private var strategyMasonryGrid: some View {
-        let columns = visibleTemplateColumns
+    private var strategyLibraryHeader: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "chart.line.uptrend.xyaxis")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(AssetTheme.gold)
+                .frame(width: 38, height: 38)
+                .background(AssetTheme.gold.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(AssetTheme.gold.opacity(0.2), lineWidth: 1)
+                )
 
-        return HStack(alignment: .top, spacing: 12) {
-            ForEach(columns.indices, id: \.self) { columnIndex in
-                LazyVStack(spacing: 12) {
-                    ForEach(columns[columnIndex]) { template in
-                        AdvancedStrategyTemplateRow(
-                            template: template,
-                            isActive: template.id == activeTemplateID
-                        ) {
-                            onSelect(template)
-                            dismiss()
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .top)
-            }
+            Text(AppLocalization.string("策略大全"))
+                .font(.title2.weight(.bold))
+                .foregroundStyle(AssetTheme.textPrimary)
+
+            Spacer()
         }
+        .padding(.horizontal, 2)
     }
 
-    private func estimatedCardHeight(for template: AdvancedBacktestStrategyTemplate) -> CGFloat {
-        let textLength = template.title.count + template.subtitle.count + template.category.count
-        let linePenalty = CGFloat(min(max(textLength - 36, 0), 72)) * 0.45
-        let rotationPenalty: CGFloat = template.mode.isRotation ? 18 : 0
-        return 190 + linePenalty + rotationPenalty
-    }
-
-    private var strategySearchAndFilterArea: some View {
-        HStack(spacing: 8) {
+    private var strategySearchArea: some View {
+        HStack(spacing: 9) {
             Image(systemName: "magnifyingglass")
                 .font(AppTypography.metaStrong)
                 .foregroundStyle(AssetTheme.textSecondary)
-            TextField(AppLocalization.string("搜索策略、指标或资产"), text: $searchText)
+            TextField(AppLocalization.string("搜索策略、机制或资产"), text: $searchText)
                 .font(AppTypography.meta)
                 .foregroundStyle(AssetTheme.textPrimary)
                 .textInputAutocapitalization(.never)
@@ -661,14 +754,137 @@ struct AdvancedStrategyLibrarySheet: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.horizontal, 13)
+        .padding(.vertical, 11)
+        .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
                 .stroke(AssetTheme.border.opacity(0.55), lineWidth: 1)
         )
-        .padding(.bottom, 2)
+    }
+
+    private var strategyGroupPicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(LibraryGroup.allCases) { group in
+                    let isSelected = selectedGroup == group
+                    let accent = group.accent
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            selectedGroup = group
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: group.icon)
+                                .font(.caption2.weight(.bold))
+                            Text(group.title)
+                                .font(AppTypography.captionStrong)
+                            Text(String(group == .all ? templates.count : templates.filter { self.group(for: $0) == group }.count))
+                                .font(.caption2.weight(.bold))
+                                .foregroundStyle(isSelected ? Color.black.opacity(0.64) : AssetTheme.textSecondary)
+                        }
+                        .foregroundStyle(isSelected ? Color.black.opacity(0.86) : AssetTheme.textPrimary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        .background(
+                            isSelected
+                                ? AnyShapeStyle(
+                                    LinearGradient(
+                                        colors: [accent, accent.opacity(0.72)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                : AnyShapeStyle(AssetTheme.overlaySoft.opacity(0.86)),
+                            in: Capsule()
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(isSelected ? Color.white.opacity(0.18) : accent.opacity(0.18), lineWidth: 1)
+                        )
+                        .shadow(color: isSelected ? accent.opacity(0.18) : .clear, radius: 8, y: 4)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.vertical, 1)
+        }
+    }
+
+    private func strategySection(_ section: StrategySection) -> some View {
+        let accent = section.group.accent
+        return VStack(alignment: .leading, spacing: 9) {
+            strategySectionLabel(
+                icon: section.group.icon,
+                title: section.group.sectionTitle,
+                accent: accent,
+                count: section.templates.count
+            )
+
+            LazyVStack(spacing: 8) {
+                ForEach(section.templates) { template in
+                    AdvancedStrategyTemplateRow(
+                        template: template,
+                        isActive: false
+                    ) {
+                        onSelect(template)
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .padding(10)
+        .background(
+            accent.opacity(0.045),
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(accent.opacity(0.13), lineWidth: 1)
+        )
+    }
+
+    private func strategySectionLabel(
+        icon: String,
+        title: String,
+        accent: Color = AssetTheme.gold,
+        count: Int? = nil
+    ) -> some View {
+        HStack(spacing: 9) {
+            Image(systemName: icon)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(accent)
+                .frame(width: 28, height: 28)
+                .background(accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+
+            Text(title)
+                .font(AppTypography.rowTitle)
+                .foregroundStyle(AssetTheme.textPrimary)
+
+            if let count {
+                Text(String(count))
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(accent)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(accent.opacity(0.09), in: Capsule())
+            }
+
+            Spacer()
+        }
+    }
+
+    private func group(for template: AdvancedBacktestStrategyTemplate) -> LibraryGroup {
+        switch template.id {
+        case "convex-crash-hedge-composite", "risk-contribution-reallocation":
+            return .experimental
+        case "gold-nasdaq-dual-trend-barbell":
+            return .independent
+        case "basic-ma60-trend", "basic-ma-golden-cross", "basic-ma20-trend", "basic-boll-mean-reversion":
+            return .basic
+        default:
+            return .selected
+        }
     }
 
     private var strategyEmptyState: some View {
@@ -693,75 +909,124 @@ struct AdvancedStrategyLibrarySheet: View {
 struct AdvancedStrategyTemplateRow: View {
     let template: AdvancedBacktestStrategyTemplate
     let isActive: Bool
+    var isFeatured = false
     let onTap: () -> Void
 
     private var strategyHighlights: [String] {
         let rotationTitles = rotationChipTitles(for: template.mode)
         if !rotationTitles.isEmpty {
-            return Array(rotationTitles.prefix(4))
+            return rotationTitles
         }
 
         return [
-            template.category,
             ruleLabel(template.buyRule),
-            ruleLabel(template.sellRule)
+            ruleLabel(template.sellRule),
+            AppLocalization.string("自定义规则")
         ]
+    }
+
+    private var strategyIcon: String {
+        switch template.id {
+        case "convex-crash-hedge-composite":
+            return "bolt.shield.fill"
+        case "risk-contribution-reallocation":
+            return "dial.medium.fill"
+        case "gold-nasdaq-dual-trend-barbell":
+            return "circle.grid.cross.fill"
+        case "basic-ma60-trend", "basic-ma-golden-cross", "basic-ma20-trend", "basic-boll-mean-reversion":
+            return "function"
+        default:
+            return "sparkles"
+        }
+    }
+
+    private var strategyAccent: Color {
+        switch template.id {
+        case "convex-crash-hedge-composite", "risk-contribution-reallocation":
+            return AssetTheme.accentOrange
+        case "gold-nasdaq-dual-trend-barbell":
+            return AssetTheme.positive
+        case "basic-ma60-trend", "basic-ma-golden-cross", "basic-ma20-trend", "basic-boll-mean-reversion":
+            return AssetTheme.accentBlue
+        default:
+            return AssetTheme.gold
+        }
+    }
+
+    private var isDefaultStrategy: Bool {
+        template.id == StrategyNotificationDefaults.defaultTemplateID
     }
 
     var body: some View {
         Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top, spacing: 8) {
-                    Text(template.category)
-                        .font(AppTypography.chartAxisStrip)
-                        .foregroundStyle(isActive ? AssetTheme.gold : AssetTheme.textSecondary)
-                        .lineLimit(1)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background((isActive ? AssetTheme.gold.opacity(0.14) : AssetTheme.overlayFaint), in: Capsule())
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(alignment: .center, spacing: 10) {
+                    Image(systemName: strategyIcon)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(strategyAccent)
+                        .frame(width: 36, height: 36)
+                        .background(strategyAccent.opacity(0.1), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
 
-                    Spacer(minLength: 4)
-
-                    Image(systemName: isActive ? "checkmark.circle.fill" : "chevron.right")
-                        .font(isActive ? .title3.weight(.semibold) : .caption.weight(.bold))
-                        .foregroundStyle(isActive ? AssetTheme.gold : AssetTheme.textSecondary.opacity(0.72))
-                }
-
-                VStack(alignment: .leading, spacing: 5) {
                     Text(template.title)
-                        .font(AppTypography.rowTitle)
+                        .font(isFeatured ? .headline.weight(.bold) : AppTypography.rowTitle)
                         .foregroundStyle(AssetTheme.textPrimary)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    if !template.subtitle.isEmpty {
-                        Text(template.subtitle)
-                            .font(AppTypography.captionStrong)
-                            .foregroundStyle(AssetTheme.gold)
-                            .lineLimit(3)
-                            .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 6)
+
+                    if isDefaultStrategy {
+                        strategyBadge(AppLocalization.string("默认"), accent: AssetTheme.gold)
                     }
+                    if isActive {
+                        strategyBadge(AppLocalization.string("使用中"), accent: AssetTheme.positive)
+                    }
+
+                    Image(systemName: isActive ? "checkmark.circle.fill" : "chevron.right")
+                        .font(isActive ? .headline.weight(.semibold) : .caption.weight(.bold))
+                        .foregroundStyle(isActive ? AssetTheme.positive : AssetTheme.textSecondary.opacity(0.62))
                 }
 
-                ATMFlowLayout(horizontalSpacing: 6, verticalSpacing: 6, rowAlignment: .leading) {
-                    ForEach(Array(strategyHighlights.enumerated()), id: \.offset) { _, title in
+                ATMFlowLayout(horizontalSpacing: 6, verticalSpacing: 5, rowAlignment: .leading) {
+                    ForEach(Array(strategyHighlights.prefix(isFeatured ? 3 : 2).enumerated()), id: \.offset) { _, title in
                         strategyChip(title)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-
-                StrategyCapabilityRadarChart(profile: template.capabilityProfile)
-                    .frame(maxWidth: .infinity, alignment: .center)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(13)
-            .background(isActive ? AssetTheme.gold.opacity(0.13) : AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(isActive ? AssetTheme.gold.opacity(0.72) : AssetTheme.border.opacity(0.6), lineWidth: 1)
+            .padding(.horizontal, 13)
+            .padding(.vertical, isFeatured ? 13 : 11)
+            .background(
+                isFeatured ? strategyAccent.opacity(0.09) : AssetTheme.overlaySoft,
+                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(
+                        isActive ? strategyAccent.opacity(0.62) : AssetTheme.border.opacity(0.46),
+                        lineWidth: isActive ? 1.2 : 1
+                    )
+            )
+            .overlay(alignment: .leading) {
+                Capsule()
+                    .fill(strategyAccent.opacity(isFeatured ? 0.78 : 0.45))
+                    .frame(width: 3)
+                    .padding(.vertical, 10)
+                    .padding(.leading, 1)
+            }
         }
         .buttonStyle(.plain)
+    }
+
+    private func strategyBadge(_ title: String, accent: Color) -> some View {
+        Text(title)
+            .font(AppTypography.chartAxisStrip)
+            .foregroundStyle(accent)
+            .lineLimit(1)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 4)
+            .background(accent.opacity(0.11), in: Capsule())
     }
 
     private func ruleLabel(_ rule: AdvancedBacktestRule) -> String {
@@ -1081,6 +1346,27 @@ struct AdvancedStrategyTemplateRow: View {
                 AppLocalization.string("双独立趋势"),
                 AppLocalization.string("每63交易日")
             ]
+        case .convexCrashHedgeComposite:
+            return [
+                AppLocalization.string("三逻辑融合"),
+                AppLocalization.string("T−1极速空头"),
+                AppLocalization.string("危机袖套3%"),
+                AppLocalization.string("总风险110%")
+            ]
+        case .onlineStrategyAllocator:
+            return [
+                AppLocalization.string("四策略分配"),
+                AppLocalization.string("504日质量"),
+                AppLocalization.string("每63交易日"),
+                AppLocalization.string("无融资")
+            ]
+        case .riskContributionReallocation:
+            return [
+                AppLocalization.string("风险贡献"),
+                AppLocalization.string("协方差126日"),
+                AppLocalization.string("60%再分配"),
+                AppLocalization.string("8%调仓带")
+            ]
         case .strongVolControlledRotation:
             return [
                 AppLocalization.string("20日强弱"),
@@ -1315,6 +1601,12 @@ extension AdvancedBacktestStrategyTemplate {
             growth = 0.74; stability = 0.86; defense = 0.90; flexibility = 0.88
         case .goldNasdaqDualTrendBarbell:
             growth = 0.88; stability = 0.78; defense = 0.80; flexibility = 0.82
+        case .convexCrashHedgeComposite:
+            growth = 0.98; stability = 0.74; defense = 0.78; flexibility = 0.96
+        case .onlineStrategyAllocator:
+            growth = 0.76; stability = 0.94; defense = 0.94; flexibility = 0.98
+        case .riskContributionReallocation:
+            growth = 0.92; stability = 0.98; defense = 0.98; flexibility = 1.00
         case .strongVolControlledRotation:
             growth = 0.78; stability = 0.66; defense = 0.66; flexibility = 0.78
         case .momentumRotation:

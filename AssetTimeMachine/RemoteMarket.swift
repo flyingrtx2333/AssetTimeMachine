@@ -309,25 +309,25 @@ private struct HistoryBatchFetchResult {
     let errorMessage: String?
 }
 
-private struct MarketHistoryCacheEntry: Codable, Sendable {
+nonisolated private struct MarketHistoryCacheEntry: Codable, Sendable {
     let savedAt: Date
     let seriesBySymbol: [String: PublicHistorySeries]
 }
 
 private enum MarketHistoryDiskCache {
-    private static var fileURL: URL? {
+    nonisolated private static var fileURL: URL? {
         FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
             .appendingPathComponent("AssetTimeMachine", isDirectory: true)
             .appendingPathComponent("market-history-v1.json", isDirectory: false)
     }
 
-    static func load() -> MarketHistoryCacheEntry? {
+    nonisolated static func load() -> MarketHistoryCacheEntry? {
         guard let fileURL,
               let data = try? Data(contentsOf: fileURL) else { return nil }
         return try? JSONDecoder().decode(MarketHistoryCacheEntry.self, from: data)
     }
 
-    static func save(seriesBySymbol: [String: PublicHistorySeries], at date: Date) {
+    nonisolated static func save(seriesBySymbol: [String: PublicHistorySeries], at date: Date) {
         guard let fileURL else { return }
         do {
             try FileManager.default.createDirectory(
@@ -368,6 +368,7 @@ final class RemoteMarketStore: ObservableObject {
     private var lastHistoryAttemptAt: Date?
     private var didLoadHistoryDiskCache = false
     private var historyDiskCacheLoadTask: Task<MarketHistoryCacheEntry?, Never>?
+    private var historyRefreshTask: Task<Void, Never>?
     private var liveDataErrorMessage: String?
     private var historyErrorMessage: String?
     private var lastLiveDataRefreshSucceeded = false
@@ -456,13 +457,22 @@ final class RemoteMarketStore: ObservableObject {
     func refreshHistoryIfNeeded(force: Bool = false) async {
         await loadHistoryDiskCacheIfNeeded()
 
-        if isRefreshingHistory {
-            await waitForHistoryRefreshToFinish()
+        if let historyRefreshTask {
+            await historyRefreshTask.value
             return
         }
 
         guard force || shouldRefreshHistory else { return }
-        await refreshHistory()
+
+        let refreshTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.refreshHistory()
+        }
+        historyRefreshTask = refreshTask
+        await refreshTask.value
+        if historyRefreshTask != nil {
+            historyRefreshTask = nil
+        }
     }
 
     private func loadHistoryDiskCacheIfNeeded() async {
@@ -554,6 +564,7 @@ final class RemoteMarketStore: ObservableObject {
 
         if !mergedSeries.isEmpty {
             var normalizedSeries = self.historySeries
+            var didChangeHistory = false
             for series in mergedSeries {
                 let normalizedSymbol = Self.normalizedHistorySymbol(series.symbol)
                 if let existing = normalizedSeries[normalizedSymbol] {
@@ -567,9 +578,10 @@ final class RemoteMarketStore: ObservableObject {
                     }
                 }
                 normalizedSeries[normalizedSymbol] = series
+                didChangeHistory = true
             }
 
-            if self.historySeries != normalizedSeries {
+            if didChangeHistory {
                 self.historySeries = normalizedSeries
             }
 
@@ -583,9 +595,9 @@ final class RemoteMarketStore: ObservableObject {
 
             let cachedSeries = self.historySeries
             let cacheDate = lastHistoryRefreshAt ?? Date()
-            await Task.detached(priority: .utility) {
+            _ = Task.detached(priority: .utility) {
                 MarketHistoryDiskCache.save(seriesBySymbol: cachedSeries, at: cacheDate)
-            }.value
+            }
         } else {
             lastHistoryRefreshAt = nil
             historyErrorMessage = batchErrorMessages.first ?? AppLocalization.string("历史数据加载失败")

@@ -40,6 +40,7 @@ struct BacktestView: View {
     @State private var selectedBacktestRecord: BacktestRecord?
     @State private var recentBacktestRecords: [BacktestRecord] = []
     @State private var totalBacktestRecordCount = 0
+    @State private var didLoadBacktestRecordCache = false
     @State private var pendingAdvancedRestoreRequest: AdvancedBacktestRestoreRequest?
     @State private var showsAdvancedStrategyLibrary = false
     @State private var showsAllBacktestRecords = false
@@ -101,6 +102,7 @@ struct BacktestView: View {
 
     private var animatedPoints: [BacktestSeriesPoint] {
         guard !displayPoints.isEmpty else { return [] }
+        if animationProgress >= 0.999 { return displayPoints }
         let count = max(Int(Double(displayPoints.count) * animationProgress), min(displayPoints.count, 2))
         return Array(displayPoints.prefix(count))
     }
@@ -283,7 +285,7 @@ struct BacktestView: View {
                                         isActive: isActive,
                                         restoreRequest: pendingAdvancedRestoreRequest,
                                         showsStrategyLibrary: $showsAdvancedStrategyLibrary,
-                                        onRecordsChanged: refreshBacktestRecordCache
+                                        onRecordsChanged: { refreshBacktestRecordCache(force: true) }
                                     )
                                 } else {
                                     VStack(spacing: 18) {
@@ -475,7 +477,7 @@ struct BacktestView: View {
         }
         .task(id: isActive) {
             if isActive {
-                refreshBacktestRecordCache()
+                refreshBacktestRecordCache(force: false)
                 lastObservedRelevantHistoryToken = relevantHistoryToken
                 await marketStore.refreshHistoryIfNeeded()
                 guard !Task.isCancelled else { return }
@@ -524,7 +526,9 @@ struct BacktestView: View {
     }
 
     @MainActor
-    private func refreshBacktestRecordCache() {
+    private func refreshBacktestRecordCache(force: Bool) {
+        guard force || !didLoadBacktestRecordCache else { return }
+
         var recentDescriptor = FetchDescriptor<BacktestRecord>(
             sortBy: [SortDescriptor(\BacktestRecord.createdAt, order: .reverse)]
         )
@@ -533,9 +537,11 @@ struct BacktestView: View {
         do {
             recentBacktestRecords = try modelContext.fetch(recentDescriptor)
             totalBacktestRecordCount = try modelContext.fetchCount(FetchDescriptor<BacktestRecord>())
+            didLoadBacktestRecordCache = true
         } catch {
             recentBacktestRecords = []
             totalBacktestRecordCount = 0
+            didLoadBacktestRecordCache = false
             print("[AssetTimeMachine] refresh backtest record cache failed: \(error)")
         }
     }
@@ -780,6 +786,20 @@ struct BacktestView: View {
         case .allocation:
             guard let report = allocationReport, !report.points.isEmpty else { return }
             let configSummary = allocationConfigSummary()
+            let subtitle = AppLocalization.format("%@ · %@", selectedDateRangeLabel, activeAllocationSummary)
+            let recordKey = BacktestRecordCodec.recordSignature(
+                kindRawValue: BacktestRecordKind.allocation.rawValue,
+                subtitle: subtitle,
+                configSummary: configSummary,
+                startDate: report.points.first?.date,
+                endDate: report.points.last?.date,
+                totalReturn: report.totalReturn,
+                maxDrawdown: report.maxDrawdown,
+                finalValue: report.points.last?.portfolioValue,
+                tradeCount: 0
+            )
+            guard recordKey != lastSavedBacktestSignature else { return }
+
             let config = BacktestRecordConfigPayload(
                 kind: .allocation,
                 cashWeight: cashWeight,
@@ -789,7 +809,7 @@ struct BacktestView: View {
             let record = BacktestRecord(
                 kindRawValue: BacktestRecordKind.allocation.rawValue,
                 title: BacktestRecordKind.allocation.title,
-                subtitle: AppLocalization.format("%@ · %@", selectedDateRangeLabel, activeAllocationSummary),
+                subtitle: subtitle,
                 configSummary: configSummary,
                 startDate: report.points.first?.date,
                 endDate: report.points.last?.date,
@@ -803,10 +823,25 @@ struct BacktestView: View {
                 pointsJSON: BacktestRecordCodec.pointsData(from: report.points),
                 configJSON: BacktestRecordCodec.configData(from: config)
             )
-            insertBacktestRecord(record)
+            insertBacktestRecord(record, recordKey: recordKey)
         case .dca:
             guard let report = dcaReport, !report.points.isEmpty else { return }
             let assetTitle = AppLocalization.string(selectedDCAAssetOption?.title ?? "单资产")
+            let subtitle = AppLocalization.format("%@ · %@", selectedDateRangeLabel, assetTitle)
+            let configSummary = AppLocalization.format("%@ · 每%d天投入%@", assetTitle, dcaIntervalDays, dcaContributionAmount.currencyString())
+            let recordKey = BacktestRecordCodec.recordSignature(
+                kindRawValue: BacktestRecordKind.dca.rawValue,
+                subtitle: subtitle,
+                configSummary: configSummary,
+                startDate: report.points.first?.date,
+                endDate: report.points.last?.date,
+                totalReturn: report.totalReturn,
+                maxDrawdown: report.maxDrawdown,
+                finalValue: report.finalPortfolioValue,
+                tradeCount: report.contributionCount
+            )
+            guard recordKey != lastSavedBacktestSignature else { return }
+
             let config = BacktestRecordConfigPayload(
                 kind: .dca,
                 dcaAssetSymbol: dcaAssetSymbol,
@@ -816,8 +851,8 @@ struct BacktestView: View {
             let record = BacktestRecord(
                 kindRawValue: BacktestRecordKind.dca.rawValue,
                 title: BacktestRecordKind.dca.title,
-                subtitle: AppLocalization.format("%@ · %@", selectedDateRangeLabel, assetTitle),
-                configSummary: AppLocalization.format("%@ · 每%d天投入%@", assetTitle, dcaIntervalDays, dcaContributionAmount.currencyString()),
+                subtitle: subtitle,
+                configSummary: configSummary,
                 startDate: report.points.first?.date,
                 endDate: report.points.last?.date,
                 totalReturn: report.totalReturn,
@@ -832,31 +867,19 @@ struct BacktestView: View {
                 pointsJSON: BacktestRecordCodec.pointsData(from: report.points),
                 configJSON: BacktestRecordCodec.configData(from: config)
             )
-            insertBacktestRecord(record)
+            insertBacktestRecord(record, recordKey: recordKey)
         }
     }
 
     @MainActor
-    private func insertBacktestRecord(_ record: BacktestRecord) {
-        let signature = [
-            record.kindRawValue,
-            record.subtitle,
-            record.configSummary,
-            record.startDate?.recordDateString ?? "nil",
-            record.endDate?.recordDateString ?? "nil",
-            String(format: "%.8f", record.totalReturn),
-            String(format: "%.8f", record.maxDrawdown),
-            String(format: "%.4f", record.finalValue ?? 0),
-            String(record.tradeCount)
-        ].joined(separator: "|")
-
-        guard signature != lastSavedBacktestSignature else { return }
-        lastSavedBacktestSignature = signature
+    private func insertBacktestRecord(_ record: BacktestRecord, recordKey: String) {
+        guard recordKey != lastSavedBacktestSignature else { return }
 
         modelContext.insert(record)
         do {
             try modelContext.save()
-            refreshBacktestRecordCache()
+            lastSavedBacktestSignature = recordKey
+            refreshBacktestRecordCache(force: true)
         } catch {
             print("[AssetTimeMachine] save backtest record failed: \(error)")
         }
@@ -882,7 +905,7 @@ struct BacktestView: View {
         }
         do {
             try modelContext.save()
-            refreshBacktestRecordCache()
+            refreshBacktestRecordCache(force: true)
         } catch {
             print("[AssetTimeMachine] delete backtest records failed: \(error)")
         }
@@ -1015,6 +1038,7 @@ struct BacktestView: View {
             }
 
             InteractiveBacktestChart(points: animatedPoints)
+                .equatable()
         }
         .padding(.top, 8)
 
@@ -1047,6 +1071,7 @@ struct BacktestView: View {
             }
 
             InteractiveBacktestChart(points: animatedPoints, valueStyle: .currency(code: "CNY"))
+                .equatable()
         }
         .padding(.top, 8)
 

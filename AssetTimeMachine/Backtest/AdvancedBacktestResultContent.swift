@@ -400,21 +400,13 @@ struct AdvancedBacktestResultContent<MiddleContent: View>: View {
     private func assetReportRow(_ assetReport: AdvancedBacktestAssetReport) -> some View {
         let initialValue = assetReport.points.first?.portfolioValue ?? 0
         let assetReturn = initialValue > 0 ? (assetReport.finalPortfolioValue - initialValue) / initialValue : 0
-        let tradeCounts = assetReport.trades.reduce(into: (buy: 0, sell: 0)) { counts, trade in
-            switch trade.action {
-            case .buy:
-                counts.buy += 1
-            case .sell:
-                counts.sell += 1
-            }
-        }
 
         return HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(assetReport.title)
                     .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
-                Text(AppLocalization.format("买%d · 卖%d", tradeCounts.buy, tradeCounts.sell))
+                Text(AppLocalization.format("买%d · 卖%d", assetReport.buyCount, assetReport.sellCount))
                     .font(AppTypography.caption)
                     .foregroundStyle(AssetTheme.textSecondary)
             }
@@ -451,43 +443,45 @@ struct AdvancedBacktestResultContent<MiddleContent: View>: View {
                         .foregroundStyle(AssetTheme.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    ForEach(Array(displayedTrades.enumerated()), id: \.element.id) { index, trade in
-                        HStack(alignment: .top, spacing: 12) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(trade.action.title)
-                                    .font(AppTypography.rowTitle)
-                                    .foregroundStyle(trade.action.accent)
-                                Text("\(trade.assetTitle) · \(trade.date.shortDateString) · \(trade.price.currencyString())")
-                                    .font(AppTypography.meta)
-                                    .foregroundStyle(AssetTheme.textSecondary)
-                                if !trade.reason.isEmpty {
-                                    Text(AppLocalization.format("触发：%@", trade.reason))
-                                        .font(AppTypography.chartCaption)
-                                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.78))
+                    LazyVStack(spacing: 0) {
+                        ForEach(Array(displayedTrades.enumerated()), id: \.element.id) { index, trade in
+                            HStack(alignment: .top, spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(trade.action.title)
+                                        .font(AppTypography.rowTitle)
+                                        .foregroundStyle(trade.action.accent)
+                                    Text("\(trade.assetTitle) · \(trade.date.shortDateString) · \(trade.price.currencyString())")
+                                        .font(AppTypography.meta)
+                                        .foregroundStyle(AssetTheme.textSecondary)
+                                    if !trade.reason.isEmpty {
+                                        Text(AppLocalization.format("触发：%@", trade.reason))
+                                            .font(AppTypography.chartCaption)
+                                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.78))
+                                    }
+                                }
+
+                                Spacer()
+
+                                VStack(alignment: .trailing, spacing: 4) {
+                                    Text((trade.action == .buy ? "-" : "+") + trade.cashAmount.currencyString())
+                                        .font(AppTypography.rowTitle)
+                                        .foregroundStyle(AssetTheme.textPrimary)
+                                    Text(AppLocalization.format("%@份", trade.units.plainNumberString()))
+                                        .font(AppTypography.meta)
+                                        .foregroundStyle(AssetTheme.textSecondary)
+                                    if let realizedProfit = trade.realizedProfit {
+                                        Text("\(realizedProfit >= 0 ? "+" : "")\(realizedProfit.currencyString())")
+                                            .font(AppTypography.chartAxisStrip)
+                                            .foregroundStyle(realizedProfit >= 0 ? AssetTheme.positive : AssetTheme.negative)
+                                    }
                                 }
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
-                            Spacer()
-
-                            VStack(alignment: .trailing, spacing: 4) {
-                                Text((trade.action == .buy ? "-" : "+") + trade.cashAmount.currencyString())
-                                    .font(AppTypography.rowTitle)
-                                    .foregroundStyle(AssetTheme.textPrimary)
-                                Text(AppLocalization.format("%@份", trade.units.plainNumberString()))
-                                    .font(AppTypography.meta)
-                                    .foregroundStyle(AssetTheme.textSecondary)
-                                if let realizedProfit = trade.realizedProfit {
-                                    Text("\(realizedProfit >= 0 ? "+" : "")\(realizedProfit.currencyString())")
-                                        .font(AppTypography.chartAxisStrip)
-                                        .foregroundStyle(realizedProfit >= 0 ? AssetTheme.positive : AssetTheme.negative)
-                                }
+                            if index < displayedTrades.count - 1 {
+                                Divider()
+                                    .overlay(AssetTheme.border.opacity(0.6))
                             }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                        if index < displayedTrades.count - 1 {
-                            Divider()
-                                .overlay(AssetTheme.border.opacity(0.6))
                         }
                     }
 

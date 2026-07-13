@@ -45,6 +45,7 @@ struct AdvancedBacktestView: View {
     @State private var pendingReportComputationTask: Task<AdvancedBacktestComputationResult, Never>?
     @State private var pendingOptimizationComputationTask: Task<[AdvancedBacktestCandidate], Never>?
     @State private var lastSavedAdvancedBacktestSignature: String?
+    @State private var pendingAdvancedRecordKey: String?
     @State private var cachedSelectedAssetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)] = []
     @State private var cachedAvailableDateBounds: ClosedRange<Date>?
     @State private var lastAdvancedDataCacheToken: Int?
@@ -1062,6 +1063,15 @@ struct AdvancedBacktestView: View {
         let capturedSellDirection = sellDirection
         let capturedSellDays = sellDays
         let capturedConfigSummary = advancedConfigSummary()
+        let recordKey = AdvancedBacktestDataSupport.recordSignature(
+            report: report,
+            strategyMode: capturedStrategyMode,
+            configSummary: capturedConfigSummary
+        )
+
+        guard recordKey != lastSavedAdvancedBacktestSignature,
+              recordKey != pendingAdvancedRecordKey else { return }
+        pendingAdvancedRecordKey = recordKey
 
         Task {
             let draft = await Task.detached(priority: .utility) {
@@ -1084,19 +1094,28 @@ struct AdvancedBacktestView: View {
                     configSummary: capturedConfigSummary
                 )
             }.value
-            guard !Task.isCancelled else { return }
+
+            guard !Task.isCancelled, draft.signature == recordKey else {
+                if pendingAdvancedRecordKey == recordKey {
+                    pendingAdvancedRecordKey = nil
+                }
+                return
+            }
             insertAdvancedBacktestRecord(draft)
         }
     }
 
     @MainActor
     private func insertAdvancedBacktestRecord(_ draft: AdvancedBacktestRecordDraft) {
+        if pendingAdvancedRecordKey == draft.signature {
+            pendingAdvancedRecordKey = nil
+        }
         guard draft.signature != lastSavedAdvancedBacktestSignature else { return }
-        lastSavedAdvancedBacktestSignature = draft.signature
 
         modelContext.insert(draft.record)
         do {
             try modelContext.save()
+            lastSavedAdvancedBacktestSignature = draft.signature
             onRecordsChanged()
         } catch {
             print("[AssetTimeMachine] save advanced backtest record failed: \(error)")

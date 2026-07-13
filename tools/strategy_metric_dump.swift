@@ -16319,6 +16319,2417 @@ struct StrategyMetricDump {
             return
         }
 
+        if ProcessInfo.processInfo.environment["ATM_CONSENSUS_PRIOR_GRID"] == "1" {
+            struct ConsensusPriorCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+            }
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(assetInputs: modeInputs, initialCash: 100_000, settings: settings, mode: mode) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            }
+            guard traces.count == modes.count else {
+                print("APP_CONSENSUS_PRIOR_GRID\ntrace_missing")
+                return
+            }
+
+            let sharpeShares = [0.35, 0.375, 0.40, 0.425, 0.45]
+            let riskShares = [0.20, 0.225, 0.25, 0.275, 0.30]
+            let tradeBands = [0.06, 0.08]
+            var candidates: [ConsensusPriorCandidate] = []
+
+            for sharpeShare in sharpeShares {
+                for riskShare in riskShares {
+                    let dualShare = 1 - sharpeShare - riskShare
+                    guard dualShare >= 0.25 else { continue }
+                    let shares: [AdvancedBacktestStrategyMode: Double] = [sharpeMode: sharpeShare, riskMode: riskShare, dualMode: dualShare]
+                    for tradeBand in tradeBands {
+                        let title = String(format: "共识先验-S%.1f-R%.1f-D%.1f-B%.0f", sharpeShare * 100, riskShare * 100, dualShare * 100, tradeBand * 100)
+                        let config = ResearchTargetStrategyConfig(
+                            symbol: "consensus_prior_grid",
+                            title: title,
+                            warmupSessions: 1,
+                            rebalanceSessions: 1,
+                            rebalanceBand: tradeBand,
+                            maxGrossExposure: 1.10,
+                            allowsFinancedExposure: true,
+                            financingAnnualRate: 0.05,
+                            buyReason: "共识先验调仓"
+                        )
+                        var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                        var pending: [String: Double] = [:]
+                        var previous: [String: Double] = [:]
+                        guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                            assetInputs: inputs,
+                            initialCash: 100_000,
+                            settings: settings,
+                            config: config,
+                            rebalanceDecision: { index, _, data in
+                                guard data.dates.indices.contains(index) else {
+                                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                }
+                                let key = data.dates[index].recordDateString
+                                var underlyingChanged = false
+                                for mode in modes {
+                                    if let weights = traces[mode]?[key] {
+                                        let old = latest[mode] ?? [:]
+                                        let symbols = Set(old.keys).union(weights.keys)
+                                        if symbols.reduce(0.0, { $0 + abs((old[$1] ?? 0) - (weights[$1] ?? 0)) }) > 0.0000001 {
+                                            underlyingChanged = true
+                                        }
+                                        latest[mode] = weights
+                                    }
+                                }
+                                guard latest.count == modes.count, underlyingChanged || previous.isEmpty else {
+                                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                }
+                                var baseTarget: [String: Double] = [:]
+                                var modeGrosses: [Double] = []
+                                for mode in modes {
+                                    let weights = latest[mode] ?? [:]
+                                    modeGrosses.append(weights.values.reduce(0, +))
+                                    let share = shares[mode] ?? 0
+                                    for (symbol, weight) in weights { baseTarget[symbol, default: 0] += share * weight }
+                                }
+                                let baseGross = baseTarget.values.reduce(0, +)
+                                let minimumModeGross = modeGrosses.min() ?? 0
+                                let scale: Double
+                                if baseGross >= 0.75, minimumModeGross >= 0.20 {
+                                    scale = 1.40
+                                } else if baseGross >= 0.30 {
+                                    scale = 1.20
+                                } else {
+                                    scale = 1.00
+                                }
+                                var target = baseTarget.mapValues { $0 * scale }
+                                let gross = target.values.reduce(0, +)
+                                if gross > 1.10, gross > 0 { target = target.mapValues { $0 * 1.10 / gross } }
+                                let symbols = Set(previous.keys).union(target.keys)
+                                let difference = symbols.reduce(0.0) { $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0)) }
+                                pending = target
+                                let shouldRebalance = previous.isEmpty ? !target.isEmpty : difference > tradeBand
+                                if shouldRebalance { previous = target }
+                                return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                            },
+                            targetWeights: { _, _ in pending }
+                        ) else { continue }
+                        let fullRow = MetricRow(
+                            title: title,
+                            id: "consensus_prior_grid",
+                            annualized: report.annualizedReturn,
+                            maxDrawdown: report.maxDrawdown,
+                            volatility: report.annualizedVolatility,
+                            sharpe: report.sharpeRatio,
+                            start: report.points.first?.date.recordDateString ?? "n/a",
+                            end: report.points.last?.date.recordDateString ?? "n/a",
+                            pointCount: report.points.count
+                        )
+                        candidates.append(ConsensusPriorCandidate(
+                            title: title,
+                            annualized: report.annualizedReturn ?? -1,
+                            maxDrawdown: report.maxDrawdown,
+                            sharpe: report.sharpeRatio ?? -1,
+                            sliceRows: metricRowsForSlices(title: title, id: "consensus_prior_grid", points: report.points, fullRow: fullRow),
+                            trades: report.trades.count,
+                            averageCashRatio: report.averageCashRatio
+                        ))
+                    }
+                }
+            }
+            var selected: [ConsensusPriorCandidate] = []
+            func appendUnique(_ values: [ConsensusPriorCandidate]) {
+                for value in values where !selected.contains(where: { $0.title == value.title }) { selected.append(value) }
+            }
+            appendUnique(Array(candidates.sorted { $0.sharpe > $1.sharpe }.prefix(12)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.105 }.sorted { $0.annualized > $1.annualized }.prefix(12)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.11 }.sorted { $0.annualized > $1.annualized }.prefix(12)))
+            printSliceRows(selected.flatMap(\.sliceRows), header: "APP_CONSENSUS_PRIOR_GRID")
+            print("APP_CONSENSUS_PRIOR_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_RISK_CONTRIBUTION_TILT_FRONTIER"] == "1" {
+            struct RiskContributionTiltCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let points: [BacktestSeriesPoint]
+            }
+
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let shares: [AdvancedBacktestStrategyMode: Double] = [
+                sharpeMode: 0.40,
+                riskMode: 0.25,
+                dualMode: 0.35,
+            ]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            let rawInputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let boundarySymbols: Set<String> = ["gold_cny", "nasdaq"]
+            let boundarySeries = rawInputs.filter { boundarySymbols.contains($0.assetOption.symbol) }
+                .flatMap { [$0.assetSeries, $0.fxSeries].compactMap { $0 } }
+            let inputs = BacktestEngine.filteredAdvancedAssetInputs(
+                rawInputs,
+                within: BacktestEngine.availableDateBounds(for: boundarySeries)
+            )
+
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+            }
+            guard traces.count == modes.count else {
+                print("APP_RISK_CONTRIBUTION_TILT_FRONTIER\ntrace_missing")
+                return
+            }
+
+            let lookbacks = [126]
+            let tiltWeights = [0.55, 0.60, 0.65]
+            let volatilityExponents = [1.00, 1.20, 1.40]
+            let correlationPenalties = [1.00, 1.25, 1.50, 1.75]
+            let triggerRiskContributions = [0.55, 0.60, 0.65]
+            let reviewSessions = [42]
+            let tradeBands = [0.08]
+            var candidates: [RiskContributionTiltCandidate] = []
+
+            for lookback in lookbacks {
+                for tiltWeight in tiltWeights {
+                    for volatilityExponent in volatilityExponents {
+                        for correlationPenalty in correlationPenalties {
+                            for triggerRiskContribution in triggerRiskContributions {
+                                for reviewSession in reviewSessions {
+                                    for tradeBand in tradeBands {
+                                        let title = String(
+                                            format: "风险贡献再分配-L%d-T%.0f-V%.1f-C%.1f-R%.0f-Q%d-B%.0f",
+                                            lookback,
+                                            tiltWeight * 100,
+                                            volatilityExponent,
+                                            correlationPenalty,
+                                            triggerRiskContribution * 100,
+                                            reviewSession,
+                                            tradeBand * 100
+                                        )
+                                        let config = ResearchTargetStrategyConfig(
+                                            symbol: "risk_contribution_tilt",
+                                            title: title,
+                                            warmupSessions: 21,
+                                            rebalanceSessions: 1,
+                                            rebalanceBand: tradeBand,
+                                            maxGrossExposure: 1.10,
+                                            allowsFinancedExposure: true,
+                                            financingAnnualRate: 0.05,
+                                            buyReason: "风险贡献再分配调仓"
+                                        )
+                                        var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                                        var pending: [String: Double] = [:]
+                                        var previous: [String: Double] = [:]
+                                        var lastReviewIndex = -10_000
+
+                                        guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                            assetInputs: inputs,
+                                            initialCash: 100_000,
+                                            settings: settings,
+                                            config: config,
+                                            rebalanceDecision: { index, signalIndex, data in
+                                                guard data.dates.indices.contains(index),
+                                                      data.dates.indices.contains(signalIndex),
+                                                      signalIndex >= 20 else {
+                                                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                                }
+                                                let key = data.dates[index].recordDateString
+                                                var underlyingChanged = false
+                                                for mode in modes {
+                                                    if let weights = traces[mode]?[key] {
+                                                        let old = latest[mode] ?? [:]
+                                                        let symbols = Set(old.keys).union(weights.keys)
+                                                        let difference = symbols.reduce(0.0) {
+                                                            $0 + abs((old[$1] ?? 0) - (weights[$1] ?? 0))
+                                                        }
+                                                        if difference > 0.0000001 { underlyingChanged = true }
+                                                        latest[mode] = weights
+                                                    }
+                                                }
+                                                let scheduledReview = signalIndex - lastReviewIndex >= reviewSession
+                                                guard latest.count == modes.count,
+                                                      underlyingChanged || scheduledReview || previous.isEmpty else {
+                                                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                                }
+                                                lastReviewIndex = signalIndex
+
+                                                var baseTarget: [String: Double] = [:]
+                                                var modeGrosses: [Double] = []
+                                                for mode in modes {
+                                                    let weights = latest[mode] ?? [:]
+                                                    modeGrosses.append(weights.values.reduce(0, +))
+                                                    let share = shares[mode] ?? 0
+                                                    for (symbol, weight) in weights {
+                                                        baseTarget[symbol, default: 0] += share * weight
+                                                    }
+                                                }
+                                                let baseGross = baseTarget.values.reduce(0, +)
+                                                let minimumModeGross = modeGrosses.min() ?? 0
+                                                let scale: Double
+                                                if baseGross >= 0.75, minimumModeGross >= 0.20 {
+                                                    scale = 1.40
+                                                } else if baseGross >= 0.30 {
+                                                    scale = 1.20
+                                                } else {
+                                                    scale = 1.00
+                                                }
+                                                var target = baseTarget.mapValues { $0 * scale }
+
+                                                let activeSymbols = target.keys.filter {
+                                                    (target[$0] ?? 0) > 0.000001 && data.pricesBySymbol[$0] != nil
+                                                }
+                                                let effectiveLookback = min(lookback, signalIndex)
+                                                var returnsBySymbol: [String: [Double]] = [:]
+                                                var valid = activeSymbols.count >= 2
+                                                if valid {
+                                                    for symbol in activeSymbols {
+                                                        guard let prices = data.pricesBySymbol[symbol],
+                                                              prices.indices.contains(signalIndex - effectiveLookback),
+                                                              prices.indices.contains(signalIndex) else {
+                                                            valid = false
+                                                            break
+                                                        }
+                                                        var returns: [Double] = []
+                                                        returns.reserveCapacity(effectiveLookback)
+                                                        for cursor in (signalIndex - effectiveLookback + 1)...signalIndex {
+                                                            guard prices[cursor - 1] > 0, prices[cursor] > 0 else {
+                                                                valid = false
+                                                                break
+                                                            }
+                                                            returns.append(prices[cursor] / prices[cursor - 1] - 1)
+                                                        }
+                                                        if !valid { break }
+                                                        returnsBySymbol[symbol] = returns
+                                                    }
+                                                }
+
+                                                if valid {
+                                                    var means: [String: Double] = [:]
+                                                    var volatilities: [String: Double] = [:]
+                                                    for symbol in activeSymbols {
+                                                        let values = returnsBySymbol[symbol] ?? []
+                                                        let mean = values.reduce(0, +) / Double(max(values.count, 1))
+                                                        means[symbol] = mean
+                                                        let variance = values.count > 1
+                                                            ? values.reduce(0.0) { $0 + pow($1 - mean, 2) } / Double(values.count - 1)
+                                                            : 0
+                                                        volatilities[symbol] = sqrt(max(variance, 0)) * sqrt(252)
+                                                    }
+                                                    var covariance: [String: [String: Double]] = [:]
+                                                    for lhs in activeSymbols {
+                                                        var row: [String: Double] = [:]
+                                                        for rhs in activeSymbols {
+                                                            let lhsReturns = returnsBySymbol[lhs] ?? []
+                                                            let rhsReturns = returnsBySymbol[rhs] ?? []
+                                                            let count = min(lhsReturns.count, rhsReturns.count)
+                                                            var sum = 0.0
+                                                            if count > 1 {
+                                                                for cursor in 0..<count {
+                                                                    sum += (lhsReturns[cursor] - (means[lhs] ?? 0))
+                                                                        * (rhsReturns[cursor] - (means[rhs] ?? 0))
+                                                                }
+                                                                row[rhs] = sum / Double(count - 1)
+                                                            } else {
+                                                                row[rhs] = 0
+                                                            }
+                                                        }
+                                                        covariance[lhs] = row
+                                                    }
+
+                                                    var dailyVariance = 0.0
+                                                    var marginalBySymbol: [String: Double] = [:]
+                                                    for lhs in activeSymbols {
+                                                        var marginal = 0.0
+                                                        for rhs in activeSymbols {
+                                                            marginal += (covariance[lhs]?[rhs] ?? 0) * (target[rhs] ?? 0)
+                                                        }
+                                                        marginalBySymbol[lhs] = marginal
+                                                        dailyVariance += (target[lhs] ?? 0) * marginal
+                                                    }
+                                                    var maxRiskContribution = 0.0
+                                                    if dailyVariance > 0 {
+                                                        for symbol in activeSymbols {
+                                                            let contribution = (target[symbol] ?? 0)
+                                                                * (marginalBySymbol[symbol] ?? 0)
+                                                                / dailyVariance
+                                                            maxRiskContribution = max(maxRiskContribution, contribution)
+                                                        }
+                                                    }
+
+                                                    if maxRiskContribution > triggerRiskContribution {
+                                                        var adjustedRaw: [String: Double] = [:]
+                                                        for symbol in activeSymbols {
+                                                            let ownVolatility = max(volatilities[symbol] ?? 0, 0.03)
+                                                            var positiveCorrelationSum = 0.0
+                                                            var positiveCorrelationCount = 0
+                                                            for other in activeSymbols where other != symbol {
+                                                                let otherVolatility = max(volatilities[other] ?? 0, 0.03)
+                                                                let dailyCovariance = covariance[symbol]?[other] ?? 0
+                                                                let dailyVolatilityProduct = (ownVolatility / sqrt(252))
+                                                                    * (otherVolatility / sqrt(252))
+                                                                if dailyVolatilityProduct > 0 {
+                                                                    let correlation = dailyCovariance / dailyVolatilityProduct
+                                                                    if correlation > 0 {
+                                                                        positiveCorrelationSum += min(correlation, 1)
+                                                                        positiveCorrelationCount += 1
+                                                                    }
+                                                                }
+                                                            }
+                                                            let averagePositiveCorrelation = positiveCorrelationCount > 0
+                                                                ? positiveCorrelationSum / Double(positiveCorrelationCount)
+                                                                : 0
+                                                            let diversificationPenalty = 1 + correlationPenalty * averagePositiveCorrelation
+                                                            let adjustment = pow(ownVolatility, volatilityExponent)
+                                                                * diversificationPenalty
+                                                            adjustedRaw[symbol] = (target[symbol] ?? 0) / max(adjustment, 0.0001)
+                                                        }
+                                                        let targetGross = target.values.reduce(0, +)
+                                                        let rawGross = adjustedRaw.values.reduce(0, +)
+                                                        if rawGross > 0 {
+                                                            var riskBalanced: [String: Double] = [:]
+                                                            for symbol in activeSymbols {
+                                                                riskBalanced[symbol] = (adjustedRaw[symbol] ?? 0) * targetGross / rawGross
+                                                            }
+                                                            for symbol in activeSymbols {
+                                                                target[symbol] = (1 - tiltWeight) * (target[symbol] ?? 0)
+                                                                    + tiltWeight * (riskBalanced[symbol] ?? 0)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                let gross = target.values.reduce(0, +)
+                                                if gross > 1.10, gross > 0 {
+                                                    target = target.mapValues { $0 * 1.10 / gross }
+                                                }
+                                                let symbols = Set(previous.keys).union(target.keys)
+                                                let difference = symbols.reduce(0.0) {
+                                                    $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0))
+                                                }
+                                                pending = target
+                                                let shouldRebalance = previous.isEmpty
+                                                    ? !target.isEmpty
+                                                    : difference > tradeBand
+                                                if shouldRebalance { previous = target }
+                                                return BacktestRebalanceDecision(
+                                                    shouldRebalance: shouldRebalance,
+                                                    refreshOverlay: false
+                                                )
+                                            },
+                                            targetWeights: { _, _ in pending }
+                                        ) else { continue }
+
+                                        let fullRow = MetricRow(
+                                            title: title,
+                                            id: "risk_contribution_tilt",
+                                            annualized: report.annualizedReturn,
+                                            maxDrawdown: report.maxDrawdown,
+                                            volatility: report.annualizedVolatility,
+                                            sharpe: report.sharpeRatio,
+                                            start: report.points.first?.date.recordDateString ?? "n/a",
+                                            end: report.points.last?.date.recordDateString ?? "n/a",
+                                            pointCount: report.points.count
+                                        )
+                                        candidates.append(RiskContributionTiltCandidate(
+                                            title: title,
+                                            annualized: report.annualizedReturn ?? -1,
+                                            maxDrawdown: report.maxDrawdown,
+                                            sharpe: report.sharpeRatio ?? -1,
+                                            sliceRows: metricRowsForSlices(
+                                                title: title,
+                                                id: "risk_contribution_tilt",
+                                                points: report.points,
+                                                fullRow: fullRow
+                                            ),
+                                            trades: report.trades.count,
+                                            averageCashRatio: report.averageCashRatio,
+                                            points: report.points
+                                        ))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            var selected: [RiskContributionTiltCandidate] = []
+            func appendUnique(_ values: [RiskContributionTiltCandidate]) {
+                for value in values where !selected.contains(where: { $0.title == value.title }) {
+                    selected.append(value)
+                }
+            }
+            appendUnique(Array(candidates.sorted { $0.sharpe > $1.sharpe }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.105 }
+                .sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.11 }
+                .sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.12 }
+                .sorted { $0.annualized > $1.annualized }.prefix(10)))
+            printSliceRows(
+                selected.flatMap(\.sliceRows),
+                header: "APP_RISK_CONTRIBUTION_TILT_FRONTIER"
+            )
+            print("APP_RISK_CONTRIBUTION_TILT_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + ","
+                    + String(format: "%.6f", candidate.averageCashRatio))
+            }
+
+            if let winner = candidates.first(where: { $0.title == "风险贡献再分配-L126-T60-V1.4-C1.8-R65-Q42-B8" }) {
+                let calendar = Calendar(identifier: .gregorian)
+                let stressRanges: [(String, Date, Date)] = [
+                    ("gfc2008", calendar.date(from: DateComponents(year: 2008, month: 1, day: 1))!, calendar.date(from: DateComponents(year: 2009, month: 12, day: 31))!),
+                    ("china2015", calendar.date(from: DateComponents(year: 2015, month: 1, day: 1))!, calendar.date(from: DateComponents(year: 2016, month: 12, day: 31))!),
+                    ("covid2020", calendar.date(from: DateComponents(year: 2020, month: 2, day: 1))!, calendar.date(from: DateComponents(year: 2020, month: 6, day: 30))!),
+                    ("rates2022", calendar.date(from: DateComponents(year: 2022, month: 1, day: 1))!, calendar.date(from: DateComponents(year: 2022, month: 12, day: 31))!),
+                ]
+                var auditRows: [SliceMetricRow] = []
+                for (name, stressStart, stressEnd) in stressRanges {
+                    let stressPoints = winner.points.filter { $0.date >= stressStart && $0.date <= stressEnd }
+                    auditRows.append(SliceMetricRow(
+                        slice: name,
+                        row: metricRow(title: winner.title, id: "risk_contribution_winner", points: stressPoints)
+                    ))
+                }
+                printSliceRows(auditRows, header: "APP_RISK_CONTRIBUTION_WINNER_STRESS")
+
+                var peakValue = winner.points.first?.portfolioValue ?? 0
+                var peakDate = winner.points.first?.date
+                var maximumDrawdown = 0.0
+                var drawdownPeakDate = peakDate
+                var troughDate = peakDate
+                for point in winner.points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    guard peakValue > 0 else { continue }
+                    let drawdown = 1 - point.portfolioValue / peakValue
+                    if drawdown > maximumDrawdown {
+                        maximumDrawdown = drawdown
+                        drawdownPeakDate = peakDate
+                        troughDate = point.date
+                    }
+                }
+                print("APP_RISK_CONTRIBUTION_WINNER_DRAWDOWN")
+                print("peak_date,trough_date,max_drawdown")
+                print((drawdownPeakDate?.recordDateString ?? "n/a") + ","
+                    + (troughDate?.recordDateString ?? "n/a") + ","
+                    + String(format: "%.6f", maximumDrawdown))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_COMMON_START_COMPARE"] == "1" {
+            guard let template = AdvancedBacktestStrategyTemplate.all.first(where: { $0.id == "consensus-scale-defense" }) else {
+                print("APP_COMMON_START_COMPARE\ntemplate_missing")
+                return
+            }
+            let inputs = appFilteredInputs(for: template, seriesBySymbol: seriesBySymbol)
+            guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: template.mode
+            ) else {
+                print("APP_COMMON_START_COMPARE\nrun_failed")
+                return
+            }
+            let calendar = Calendar(identifier: .gregorian)
+            let commonStart = calendar.date(from: DateComponents(year: 2002, month: 2, day: 4))!
+            let points = report.points.filter { $0.date >= commonStart }
+            let row = metricRow(
+                title: "现有共识变速同起点",
+                id: "consensus-scale-defense-common-start",
+                points: points
+            )
+            printRows([row], header: "APP_COMMON_START_COMPARE")
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_COVARIANCE_SCALE_FRONTIER"] == "1" {
+            struct CovarianceScaleCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let points: [BacktestSeriesPoint]
+            }
+
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let shares: [AdvancedBacktestStrategyMode: Double] = [
+                sharpeMode: 0.40,
+                riskMode: 0.25,
+                dualMode: 0.35,
+            ]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            let rawInputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let boundarySymbols: Set<String> = ["gold_cny", "nasdaq"]
+            let boundarySeries = rawInputs.filter { boundarySymbols.contains($0.assetOption.symbol) }
+                .flatMap { [$0.assetSeries, $0.fxSeries].compactMap { $0 } }
+            let inputs = BacktestEngine.filteredAdvancedAssetInputs(
+                rawInputs,
+                within: BacktestEngine.availableDateBounds(for: boundarySeries)
+            )
+
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+            }
+            guard traces.count == modes.count else {
+                print("APP_COVARIANCE_SCALE_FRONTIER\ntrace_missing")
+                return
+            }
+
+            let lookbacks = [126]
+            let targetVolatilities = [0.14, 0.145, 0.15, 0.155, 0.16]
+            let covarianceBlendWeights = [0.15, 0.175, 0.20, 0.225]
+            let riskContributionLimits = [0.775, 0.80]
+            let reviewSessions = [42]
+            let tradeBands = [0.08, 0.10]
+            var candidates: [CovarianceScaleCandidate] = []
+
+            for lookback in lookbacks {
+                for targetVolatility in targetVolatilities {
+                    for covarianceBlendWeight in covarianceBlendWeights {
+                        for riskContributionLimit in riskContributionLimits {
+                            for reviewSession in reviewSessions {
+                                for tradeBand in tradeBands {
+                                    let title = String(
+                                        format: "协方差共识-L%d-V%.0f-B%.0f-R%.0f-Q%d-T%.0f",
+                                        lookback,
+                                        targetVolatility * 100,
+                                        covarianceBlendWeight * 100,
+                                        riskContributionLimit * 100,
+                                        reviewSession,
+                                        tradeBand * 100
+                                    )
+                                    let config = ResearchTargetStrategyConfig(
+                                        symbol: "covariance_scale_frontier",
+                                        title: title,
+                                        warmupSessions: 21,
+                                        rebalanceSessions: 1,
+                                        rebalanceBand: tradeBand,
+                                        maxGrossExposure: 1.10,
+                                        allowsFinancedExposure: true,
+                                        financingAnnualRate: 0.05,
+                                        buyReason: "协方差共识调仓"
+                                    )
+                                    var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                                    var pending: [String: Double] = [:]
+                                    var previous: [String: Double] = [:]
+                                    var lastReviewIndex = -10_000
+
+                                    guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                        assetInputs: inputs,
+                                        initialCash: 100_000,
+                                        settings: settings,
+                                        config: config,
+                                        rebalanceDecision: { index, signalIndex, data in
+                                            guard data.dates.indices.contains(index),
+                                                  data.dates.indices.contains(signalIndex),
+                                                  signalIndex >= 20 else {
+                                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                            }
+
+                                            let key = data.dates[index].recordDateString
+                                            var underlyingChanged = false
+                                            for mode in modes {
+                                                if let weights = traces[mode]?[key] {
+                                                    let old = latest[mode] ?? [:]
+                                                    let symbols = Set(old.keys).union(weights.keys)
+                                                    let difference = symbols.reduce(0.0) {
+                                                        $0 + abs((old[$1] ?? 0) - (weights[$1] ?? 0))
+                                                    }
+                                                    if difference > 0.0000001 { underlyingChanged = true }
+                                                    latest[mode] = weights
+                                                }
+                                            }
+                                            let scheduledReview = signalIndex - lastReviewIndex >= reviewSession
+                                            guard latest.count == modes.count,
+                                                  underlyingChanged || scheduledReview || previous.isEmpty else {
+                                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                            }
+                                            lastReviewIndex = signalIndex
+
+                                            var baseTarget: [String: Double] = [:]
+                                            var modeGrosses: [Double] = []
+                                            for mode in modes {
+                                                let weights = latest[mode] ?? [:]
+                                                modeGrosses.append(weights.values.reduce(0, +))
+                                                let share = shares[mode] ?? 0
+                                                for (symbol, weight) in weights {
+                                                    baseTarget[symbol, default: 0] += share * weight
+                                                }
+                                            }
+
+                                            let baseGross = baseTarget.values.reduce(0, +)
+                                            let minimumModeGross = modeGrosses.min() ?? 0
+                                            let consensusScale: Double
+                                            if baseGross >= 0.75, minimumModeGross >= 0.20 {
+                                                consensusScale = 1.40
+                                            } else if baseGross >= 0.30 {
+                                                consensusScale = 1.20
+                                            } else {
+                                                consensusScale = 1.00
+                                            }
+
+                                            let effectiveLookback = min(lookback, signalIndex)
+                                            let activeSymbols = baseTarget.keys.filter {
+                                                (baseTarget[$0] ?? 0) > 0.000001 && data.pricesBySymbol[$0] != nil
+                                            }
+                                            var covarianceScale = consensusScale
+                                            var maxRiskContribution = 0.0
+                                            if !activeSymbols.isEmpty {
+                                                var returnsBySymbol: [String: [Double]] = [:]
+                                                var valid = true
+                                                for symbol in activeSymbols {
+                                                    guard let prices = data.pricesBySymbol[symbol],
+                                                          prices.indices.contains(signalIndex),
+                                                          prices.indices.contains(signalIndex - effectiveLookback) else {
+                                                        valid = false
+                                                        break
+                                                    }
+                                                    var returns: [Double] = []
+                                                    returns.reserveCapacity(effectiveLookback)
+                                                    for cursor in (signalIndex - effectiveLookback + 1)...signalIndex {
+                                                        guard prices.indices.contains(cursor - 1),
+                                                              prices[cursor - 1] > 0,
+                                                              prices[cursor] > 0 else {
+                                                            valid = false
+                                                            break
+                                                        }
+                                                        returns.append(prices[cursor] / prices[cursor - 1] - 1)
+                                                    }
+                                                    if !valid { break }
+                                                    returnsBySymbol[symbol] = returns
+                                                }
+
+                                                if valid {
+                                                    var means: [String: Double] = [:]
+                                                    for symbol in activeSymbols {
+                                                        let values = returnsBySymbol[symbol] ?? []
+                                                        means[symbol] = values.isEmpty ? 0 : values.reduce(0, +) / Double(values.count)
+                                                    }
+                                                    var covariance: [String: [String: Double]] = [:]
+                                                    for lhs in activeSymbols {
+                                                        var row: [String: Double] = [:]
+                                                        for rhs in activeSymbols {
+                                                            let lhsReturns = returnsBySymbol[lhs] ?? []
+                                                            let rhsReturns = returnsBySymbol[rhs] ?? []
+                                                            let count = min(lhsReturns.count, rhsReturns.count)
+                                                            if count > 1 {
+                                                                var sum = 0.0
+                                                                for cursor in 0..<count {
+                                                                    sum += (lhsReturns[cursor] - (means[lhs] ?? 0))
+                                                                        * (rhsReturns[cursor] - (means[rhs] ?? 0))
+                                                                }
+                                                                row[rhs] = sum / Double(count - 1)
+                                                            } else {
+                                                                row[rhs] = 0
+                                                            }
+                                                        }
+                                                        covariance[lhs] = row
+                                                    }
+
+                                                    var dailyVariance = 0.0
+                                                    var marginalBySymbol: [String: Double] = [:]
+                                                    for lhs in activeSymbols {
+                                                        let lhsWeight = baseTarget[lhs] ?? 0
+                                                        var marginal = 0.0
+                                                        for rhs in activeSymbols {
+                                                            marginal += (covariance[lhs]?[rhs] ?? 0) * (baseTarget[rhs] ?? 0)
+                                                        }
+                                                        marginalBySymbol[lhs] = marginal
+                                                        dailyVariance += lhsWeight * marginal
+                                                    }
+                                                    if dailyVariance > 0 {
+                                                        let annualVolatility = sqrt(dailyVariance) * sqrt(252)
+                                                        let rawScale = targetVolatility / max(annualVolatility, 0.0001)
+                                                        covarianceScale = min(max(rawScale, 0.80), 1.50)
+                                                        for symbol in activeSymbols {
+                                                            let contribution = (baseTarget[symbol] ?? 0)
+                                                                * (marginalBySymbol[symbol] ?? 0)
+                                                                / dailyVariance
+                                                            maxRiskContribution = max(maxRiskContribution, contribution)
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            var scale = (1 - covarianceBlendWeight) * consensusScale
+                                                + covarianceBlendWeight * covarianceScale
+                                            if maxRiskContribution > riskContributionLimit,
+                                               maxRiskContribution > 0 {
+                                                scale *= max(0.75, riskContributionLimit / maxRiskContribution)
+                                            }
+                                            scale = min(max(scale, 0.80), 1.50)
+
+                                            var target = baseTarget.mapValues { $0 * scale }
+                                            let gross = target.values.reduce(0, +)
+                                            if gross > 1.10, gross > 0 {
+                                                target = target.mapValues { $0 * 1.10 / gross }
+                                            }
+                                            let symbols = Set(previous.keys).union(target.keys)
+                                            let difference = symbols.reduce(0.0) {
+                                                $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0))
+                                            }
+                                            pending = target
+                                            let shouldRebalance = previous.isEmpty
+                                                ? !target.isEmpty
+                                                : difference > tradeBand
+                                            if shouldRebalance { previous = target }
+                                            return BacktestRebalanceDecision(
+                                                shouldRebalance: shouldRebalance,
+                                                refreshOverlay: false
+                                            )
+                                        },
+                                        targetWeights: { _, _ in pending }
+                                    ) else { continue }
+
+                                    let fullRow = MetricRow(
+                                        title: title,
+                                        id: "covariance_scale_frontier",
+                                        annualized: report.annualizedReturn,
+                                        maxDrawdown: report.maxDrawdown,
+                                        volatility: report.annualizedVolatility,
+                                        sharpe: report.sharpeRatio,
+                                        start: report.points.first?.date.recordDateString ?? "n/a",
+                                        end: report.points.last?.date.recordDateString ?? "n/a",
+                                        pointCount: report.points.count
+                                    )
+                                    candidates.append(CovarianceScaleCandidate(
+                                        title: title,
+                                        annualized: report.annualizedReturn ?? -1,
+                                        maxDrawdown: report.maxDrawdown,
+                                        sharpe: report.sharpeRatio ?? -1,
+                                        sliceRows: metricRowsForSlices(
+                                            title: title,
+                                            id: "covariance_scale_frontier",
+                                            points: report.points,
+                                            fullRow: fullRow
+                                        ),
+                                        trades: report.trades.count,
+                                        averageCashRatio: report.averageCashRatio,
+                                        points: report.points
+                                    ))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            var selected: [CovarianceScaleCandidate] = []
+            func appendUnique(_ values: [CovarianceScaleCandidate]) {
+                for value in values where !selected.contains(where: { $0.title == value.title }) {
+                    selected.append(value)
+                }
+            }
+            appendUnique(Array(candidates.sorted { $0.sharpe > $1.sharpe }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.105 }
+                .sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.11 }
+                .sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.12 }
+                .sorted { $0.annualized > $1.annualized }.prefix(10)))
+            printSliceRows(
+                selected.flatMap(\.sliceRows),
+                header: "APP_COVARIANCE_SCALE_FRONTIER"
+            )
+            print("APP_COVARIANCE_SCALE_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + ","
+                    + String(format: "%.6f", candidate.averageCashRatio))
+            }
+
+            if let winner = candidates.first(where: { $0.title == "协方差共识-L126-V15-B20-R78-Q42-T8" }) {
+                let calendar = Calendar(identifier: .gregorian)
+                let stressRanges: [(String, Date, Date)] = [
+                    ("gfc2008", calendar.date(from: DateComponents(year: 2008, month: 1, day: 1))!, calendar.date(from: DateComponents(year: 2009, month: 12, day: 31))!),
+                    ("china2015", calendar.date(from: DateComponents(year: 2015, month: 1, day: 1))!, calendar.date(from: DateComponents(year: 2016, month: 12, day: 31))!),
+                    ("covid2020", calendar.date(from: DateComponents(year: 2020, month: 2, day: 1))!, calendar.date(from: DateComponents(year: 2020, month: 6, day: 30))!),
+                    ("rates2022", calendar.date(from: DateComponents(year: 2022, month: 1, day: 1))!, calendar.date(from: DateComponents(year: 2022, month: 12, day: 31))!),
+                ]
+                var auditRows: [SliceMetricRow] = []
+                for (name, stressStart, stressEnd) in stressRanges {
+                    let stressPoints = winner.points.filter { $0.date >= stressStart && $0.date <= stressEnd }
+                    auditRows.append(SliceMetricRow(
+                        slice: name,
+                        row: metricRow(title: winner.title, id: "covariance_winner", points: stressPoints)
+                    ))
+                }
+                printSliceRows(auditRows, header: "APP_COVARIANCE_WINNER_STRESS")
+
+                var peakValue = winner.points.first?.portfolioValue ?? 0
+                var peakDate = winner.points.first?.date
+                var maximumDrawdown = 0.0
+                var drawdownPeakDate = peakDate
+                var troughDate = peakDate
+                for point in winner.points {
+                    if point.portfolioValue > peakValue {
+                        peakValue = point.portfolioValue
+                        peakDate = point.date
+                    }
+                    guard peakValue > 0 else { continue }
+                    let drawdown = 1 - point.portfolioValue / peakValue
+                    if drawdown > maximumDrawdown {
+                        maximumDrawdown = drawdown
+                        drawdownPeakDate = peakDate
+                        troughDate = point.date
+                    }
+                }
+                print("APP_COVARIANCE_WINNER_DRAWDOWN")
+                print("peak_date,trough_date,max_drawdown")
+                print((drawdownPeakDate?.recordDateString ?? "n/a") + ","
+                    + (troughDate?.recordDateString ?? "n/a") + ","
+                    + String(format: "%.6f", maximumDrawdown))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_SMOOTH_CONSENSUS_SCALE_FRONTIER"] == "1" {
+            struct SmoothScaleCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+            }
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let shares: [AdvancedBacktestStrategyMode: Double] = [sharpeMode: 0.40, riskMode: 0.25, dualMode: 0.35]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(assetInputs: modeInputs, initialCash: 100_000, settings: settings, mode: mode) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            }
+            guard traces.count == modes.count else {
+                print("APP_SMOOTH_CONSENSUS_SCALE_FRONTIER\ntrace_missing")
+                return
+            }
+
+            let thresholdPairs: [(Double, Double)] = [(0.25, 0.65), (0.30, 0.75), (0.35, 0.75)]
+            let highScales = [1.35, 1.40, 1.45]
+            let curves = [0.75, 1.00, 1.50]
+            let minimumModeGates = [0.0, 0.20]
+            let tradeBands = [0.06]
+            var candidates: [SmoothScaleCandidate] = []
+
+            for thresholds in thresholdPairs {
+                for highScale in highScales {
+                    for curve in curves {
+                        for minimumModeGate in minimumModeGates {
+                            for tradeBand in tradeBands {
+                                let title = String(format: "平滑共识变速-T%.0f/%.0f-H%.2f-P%.2f-M%.0f-B%.0f", thresholds.0 * 100, thresholds.1 * 100, highScale, curve, minimumModeGate * 100, tradeBand * 100)
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "smooth_consensus_scale",
+                                    title: title,
+                                    warmupSessions: 1,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: tradeBand,
+                                    maxGrossExposure: 1.10,
+                                    allowsFinancedExposure: true,
+                                    financingAnnualRate: 0.05,
+                                    buyReason: "平滑共识变速调仓"
+                                )
+                                var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                                var pending: [String: Double] = [:]
+                                var previous: [String: Double] = [:]
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    rebalanceDecision: { index, _, data in
+                                        guard data.dates.indices.contains(index) else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        let key = data.dates[index].recordDateString
+                                        var underlyingChanged = false
+                                        for mode in modes {
+                                            if let weights = traces[mode]?[key] {
+                                                let old = latest[mode] ?? [:]
+                                                let symbols = Set(old.keys).union(weights.keys)
+                                                if symbols.reduce(0.0, { $0 + abs((old[$1] ?? 0) - (weights[$1] ?? 0)) }) > 0.0000001 {
+                                                    underlyingChanged = true
+                                                }
+                                                latest[mode] = weights
+                                            }
+                                        }
+                                        guard latest.count == modes.count, underlyingChanged || previous.isEmpty else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+
+                                        var baseTarget: [String: Double] = [:]
+                                        var modeGrosses: [Double] = []
+                                        for mode in modes {
+                                            let weights = latest[mode] ?? [:]
+                                            modeGrosses.append(weights.values.reduce(0, +))
+                                            let share = shares[mode] ?? 0
+                                            for (symbol, weight) in weights { baseTarget[symbol, default: 0] += share * weight }
+                                        }
+                                        let baseGross = baseTarget.values.reduce(0, +)
+                                        let range = max(thresholds.1 - thresholds.0, 0.0001)
+                                        let normalized = min(max((baseGross - thresholds.0) / range, 0), 1)
+                                        var scale = 1.0 + (highScale - 1.0) * pow(normalized, curve)
+                                        if minimumModeGate > 0, (modeGrosses.min() ?? 0) < minimumModeGate {
+                                            scale = min(scale, 1.20)
+                                        }
+                                        var target = baseTarget.mapValues { $0 * scale }
+                                        let gross = target.values.reduce(0, +)
+                                        if gross > 1.10, gross > 0 { target = target.mapValues { $0 * 1.10 / gross } }
+                                        let symbols = Set(previous.keys).union(target.keys)
+                                        let difference = symbols.reduce(0.0) { $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0)) }
+                                        pending = target
+                                        let shouldRebalance = previous.isEmpty ? !target.isEmpty : difference > tradeBand
+                                        if shouldRebalance { previous = target }
+                                        return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                    },
+                                    targetWeights: { _, _ in pending }
+                                ) else { continue }
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "smooth_consensus_scale",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                candidates.append(SmoothScaleCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(title: title, id: "smooth_consensus_scale", points: report.points, fullRow: fullRow),
+                                    trades: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+            var selected: [SmoothScaleCandidate] = []
+            func appendUnique(_ values: [SmoothScaleCandidate]) {
+                for value in values where !selected.contains(where: { $0.title == value.title }) { selected.append(value) }
+            }
+            appendUnique(Array(candidates.sorted { $0.sharpe > $1.sharpe }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.105 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.11 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.12 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            printSliceRows(selected.flatMap(\.sliceRows), header: "APP_SMOOTH_CONSENSUS_SCALE_FRONTIER")
+            print("APP_SMOOTH_CONSENSUS_SCALE_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_CONFIDENCE_WEIGHTED_BLEND_FRONTIER"] == "1" {
+            struct ConfidenceBlendCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+            }
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let priors: [AdvancedBacktestStrategyMode: Double] = [sharpeMode: 0.40, riskMode: 0.25, dualMode: 0.35]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(assetInputs: modeInputs, initialCash: 100_000, settings: settings, mode: mode) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            }
+            guard traces.count == modes.count else {
+                print("APP_CONFIDENCE_WEIGHTED_BLEND_FRONTIER\ntrace_missing")
+                return
+            }
+
+            let exponents = [0.50, 1.00, 1.50]
+            let floors = [0.20, 0.40]
+            let inertias = [0.75, 0.90]
+            let tradeBands = [0.06, 0.08]
+            let highThresholds = [0.65, 0.75]
+            var candidates: [ConfidenceBlendCandidate] = []
+
+            for exponent in exponents {
+                for confidenceFloor in floors {
+                    for inertia in inertias {
+                        for tradeBand in tradeBands {
+                            for highThreshold in highThresholds {
+                                let title = String(format: "置信加权融合-P%.2f-F%.2f-I%.2f-H%.0f-B%.0f", exponent, confidenceFloor, inertia, highThreshold * 100, tradeBand * 100)
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "confidence_weighted_blend",
+                                    title: title,
+                                    warmupSessions: 1,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: tradeBand,
+                                    maxGrossExposure: 1.10,
+                                    allowsFinancedExposure: true,
+                                    financingAnnualRate: 0.05,
+                                    buyReason: "置信加权融合调仓"
+                                )
+                                var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                                var allocationShares = priors
+                                var pending: [String: Double] = [:]
+                                var previous: [String: Double] = [:]
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    rebalanceDecision: { index, _, data in
+                                        guard data.dates.indices.contains(index) else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        let key = data.dates[index].recordDateString
+                                        var underlyingChanged = false
+                                        for mode in modes {
+                                            if let weights = traces[mode]?[key] {
+                                                let old = latest[mode] ?? [:]
+                                                let symbols = Set(old.keys).union(weights.keys)
+                                                if symbols.reduce(0.0, { $0 + abs((old[$1] ?? 0) - (weights[$1] ?? 0)) }) > 0.0000001 {
+                                                    underlyingChanged = true
+                                                }
+                                                latest[mode] = weights
+                                            }
+                                        }
+                                        guard latest.count == modes.count, underlyingChanged || previous.isEmpty else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+
+                                        var rawShares: [AdvancedBacktestStrategyMode: Double] = [:]
+                                        for mode in modes {
+                                            let gross = (latest[mode] ?? [:]).values.reduce(0, +)
+                                            let confidence = pow(max(confidenceFloor + gross, 0.0001), exponent)
+                                            rawShares[mode] = (priors[mode] ?? 0) * confidence
+                                        }
+                                        let rawTotal = rawShares.values.reduce(0, +)
+                                        if rawTotal > 0 {
+                                            var updated: [AdvancedBacktestStrategyMode: Double] = [:]
+                                            for mode in modes {
+                                                let adaptive = (rawShares[mode] ?? 0) / rawTotal
+                                                updated[mode] = inertia * (allocationShares[mode] ?? 0) + (1 - inertia) * adaptive
+                                            }
+                                            let updatedTotal = updated.values.reduce(0, +)
+                                            if updatedTotal > 0 { allocationShares = updated.mapValues { $0 / updatedTotal } }
+                                        }
+
+                                        var baseTarget: [String: Double] = [:]
+                                        var modeGrosses: [Double] = []
+                                        for mode in modes {
+                                            let weights = latest[mode] ?? [:]
+                                            modeGrosses.append(weights.values.reduce(0, +))
+                                            let share = allocationShares[mode] ?? 0
+                                            for (symbol, weight) in weights { baseTarget[symbol, default: 0] += share * weight }
+                                        }
+                                        let baseGross = baseTarget.values.reduce(0, +)
+                                        let minimumModeGross = modeGrosses.min() ?? 0
+                                        let scale: Double
+                                        if baseGross >= highThreshold, minimumModeGross >= 0.20 {
+                                            scale = 1.40
+                                        } else if baseGross >= 0.30 {
+                                            scale = 1.20
+                                        } else {
+                                            scale = 1.00
+                                        }
+                                        var target = baseTarget.mapValues { $0 * scale }
+                                        let gross = target.values.reduce(0, +)
+                                        if gross > 1.10, gross > 0 { target = target.mapValues { $0 * 1.10 / gross } }
+                                        let symbols = Set(previous.keys).union(target.keys)
+                                        let difference = symbols.reduce(0.0) { $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0)) }
+                                        pending = target
+                                        let shouldRebalance = previous.isEmpty ? !target.isEmpty : difference > tradeBand
+                                        if shouldRebalance { previous = target }
+                                        return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                    },
+                                    targetWeights: { _, _ in pending }
+                                ) else { continue }
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "confidence_weighted_blend",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                candidates.append(ConfidenceBlendCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(title: title, id: "confidence_weighted_blend", points: report.points, fullRow: fullRow),
+                                    trades: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+            var selected: [ConfidenceBlendCandidate] = []
+            func appendUnique(_ values: [ConfidenceBlendCandidate]) {
+                for value in values where !selected.contains(where: { $0.title == value.title }) { selected.append(value) }
+            }
+            appendUnique(Array(candidates.sorted { $0.sharpe > $1.sharpe }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.105 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.11 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.12 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            printSliceRows(selected.flatMap(\.sliceRows), header: "APP_CONFIDENCE_WEIGHTED_BLEND_FRONTIER")
+            print("APP_CONFIDENCE_WEIGHTED_BLEND_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_EXTRA_RISK_GATE_FRONTIER"] == "1" {
+            struct ExtraRiskGateCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let transitions: Int
+            }
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let shares: [AdvancedBacktestStrategyMode: Double] = [sharpeMode: 0.40, riskMode: 0.25, dualMode: 0.35]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(assetInputs: modeInputs, initialCash: 100_000, settings: settings, mode: mode) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            }
+            guard traces.count == modes.count else {
+                print("APP_EXTRA_RISK_GATE_FRONTIER\ntrace_missing")
+                return
+            }
+
+            let warningVolRatios = [1.10, 1.20]
+            let crisisVolRatios = [1.25, 1.40]
+            let warningCaps = [1.00, 1.10]
+            let crisisCaps = [0.80, 1.00]
+            let recoveryConfirms = [3, 5]
+            let exitConfirms = [1, 2]
+            var candidates: [ExtraRiskGateCandidate] = []
+
+            for warningRatio in warningVolRatios {
+                for crisisRatio in crisisVolRatios where crisisRatio > warningRatio {
+                    for warningCap in warningCaps {
+                        for crisisCap in crisisCaps where crisisCap <= warningCap {
+                            for recoveryConfirm in recoveryConfirms {
+                                for exitConfirm in exitConfirms {
+                                    let title = String(format: "额外风险闸门-W%.2f-C%.2f-L%.2f/%.2f-R%d-E%d", warningRatio, crisisRatio, warningCap, crisisCap, recoveryConfirm, exitConfirm)
+                                    let config = ResearchTargetStrategyConfig(
+                                        symbol: "extra_risk_gate",
+                                        title: title,
+                                        warmupSessions: 63,
+                                        rebalanceSessions: 1,
+                                        rebalanceBand: 0.06,
+                                        maxGrossExposure: 1.10,
+                                        allowsFinancedExposure: true,
+                                        financingAnnualRate: 0.05,
+                                        buyReason: "额外风险闸门调仓"
+                                    )
+                                    var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                                    var pending: [String: Double] = [:]
+                                    var previous: [String: Double] = [:]
+                                    var state = 0
+                                    var warningStreak = 0
+                                    var crisisStreak = 0
+                                    var recoveryStreak = 0
+                                    var transitions = 0
+                                    guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                        assetInputs: inputs,
+                                        initialCash: 100_000,
+                                        settings: settings,
+                                        config: config,
+                                        contextualRebalanceDecision: { context, data in
+                                            let index = context.index
+                                            let signalIndex = context.signalIndex
+                                            guard data.dates.indices.contains(index),
+                                                  data.dates.indices.contains(signalIndex),
+                                                  let sp500 = data.pricesBySymbol["sp500"],
+                                                  sp500.indices.contains(signalIndex),
+                                                  let m5 = priceMomentum(sp500, at: signalIndex, lookback: 5),
+                                                  let m20 = priceMomentum(sp500, at: signalIndex, lookback: 20),
+                                                  let ma20 = movingAverage(sp500, at: signalIndex, period: 20),
+                                                  let vol20 = annualizedVolatility(sp500, at: signalIndex, lookback: 20),
+                                                  let vol63 = annualizedVolatility(sp500, at: signalIndex, lookback: 63),
+                                                  vol63 > 0 else {
+                                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                            }
+                                            let key = data.dates[index].recordDateString
+                                            for mode in modes {
+                                                if let weights = traces[mode]?[key] { latest[mode] = weights }
+                                            }
+                                            guard latest.count == modes.count else {
+                                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                            }
+
+                                            let volRatio = vol20 / vol63
+                                            let warning = (sp500[signalIndex] < ma20 && m20 < 0) || volRatio >= warningRatio
+                                            let crisis = m5 <= -0.04 || (sp500[signalIndex] < ma20 && m20 <= -0.02 && volRatio >= crisisRatio)
+                                            let recovered = sp500[signalIndex] > ma20 && m5 > 0 && m20 > 0 && volRatio < 1.05
+                                            warningStreak = warning ? warningStreak + 1 : 0
+                                            crisisStreak = crisis ? crisisStreak + 1 : 0
+                                            recoveryStreak = recovered ? recoveryStreak + 1 : 0
+                                            let oldState = state
+                                            if crisisStreak >= exitConfirm {
+                                                state = 2
+                                                recoveryStreak = 0
+                                            } else if state == 0, warningStreak >= 2 {
+                                                state = 1
+                                                recoveryStreak = 0
+                                            } else if state > 0, recoveryStreak >= recoveryConfirm {
+                                                state -= 1
+                                                recoveryStreak = 0
+                                            }
+                                            if state != oldState { transitions += 1 }
+
+                                            var baseTarget: [String: Double] = [:]
+                                            var modeGrosses: [Double] = []
+                                            for mode in modes {
+                                                let weights = latest[mode] ?? [:]
+                                                modeGrosses.append(weights.values.reduce(0, +))
+                                                let share = shares[mode] ?? 0
+                                                for (symbol, weight) in weights { baseTarget[symbol, default: 0] += share * weight }
+                                            }
+                                            let baseGross = baseTarget.values.reduce(0, +)
+                                            let minimumModeGross = modeGrosses.min() ?? 0
+                                            let consensusScale: Double
+                                            if baseGross >= 0.75, minimumModeGross >= 0.20 {
+                                                consensusScale = 1.40
+                                            } else if baseGross >= 0.30 {
+                                                consensusScale = 1.20
+                                            } else {
+                                                consensusScale = 1.00
+                                            }
+                                            let scale = state == 2 ? min(consensusScale, crisisCap) : (state == 1 ? min(consensusScale, warningCap) : consensusScale)
+                                            var target = baseTarget.mapValues { $0 * scale }
+                                            let gross = target.values.reduce(0, +)
+                                            if gross > 1.10, gross > 0 { target = target.mapValues { $0 * 1.10 / gross } }
+                                            let symbols = Set(previous.keys).union(target.keys)
+                                            let difference = symbols.reduce(0.0) { $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0)) }
+                                            pending = target
+                                            let shouldRebalance = previous.isEmpty ? !target.isEmpty : difference > 0.06
+                                            if shouldRebalance { previous = target }
+                                            return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                        },
+                                        targetWeights: { _, _ in pending }
+                                    ) else { continue }
+                                    let fullRow = MetricRow(
+                                        title: title,
+                                        id: "extra_risk_gate",
+                                        annualized: report.annualizedReturn,
+                                        maxDrawdown: report.maxDrawdown,
+                                        volatility: report.annualizedVolatility,
+                                        sharpe: report.sharpeRatio,
+                                        start: report.points.first?.date.recordDateString ?? "n/a",
+                                        end: report.points.last?.date.recordDateString ?? "n/a",
+                                        pointCount: report.points.count
+                                    )
+                                    candidates.append(ExtraRiskGateCandidate(
+                                        title: title,
+                                        annualized: report.annualizedReturn ?? -1,
+                                        maxDrawdown: report.maxDrawdown,
+                                        sharpe: report.sharpeRatio ?? -1,
+                                        sliceRows: metricRowsForSlices(title: title, id: "extra_risk_gate", points: report.points, fullRow: fullRow),
+                                        trades: report.trades.count,
+                                        averageCashRatio: report.averageCashRatio,
+                                        transitions: transitions
+                                    ))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            var selected: [ExtraRiskGateCandidate] = []
+            func appendUnique(_ values: [ExtraRiskGateCandidate]) {
+                for value in values where !selected.contains(where: { $0.title == value.title }) { selected.append(value) }
+            }
+            appendUnique(Array(candidates.sorted { $0.sharpe > $1.sharpe }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.10 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.105 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.11 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            printSliceRows(selected.flatMap(\.sliceRows), header: "APP_EXTRA_RISK_GATE_FRONTIER")
+            print("APP_EXTRA_RISK_GATE_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,transitions")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + String(candidate.transitions))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_REGIME_MIX_BLEND_FRONTIER"] == "1" {
+            struct RegimeMixCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+            }
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(assetInputs: modeInputs, initialCash: 100_000, settings: settings, mode: mode) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            }
+            guard traces.count == modes.count else {
+                print("APP_REGIME_MIX_BLEND_FRONTIER\ntrace_missing")
+                return
+            }
+
+            let defensiveMixes: [(Double, Double, Double)] = [
+                (0.55, 0.15, 0.30),
+                (0.50, 0.20, 0.30),
+            ]
+            let neutralMixes: [(Double, Double, Double)] = [
+                (0.40, 0.25, 0.35),
+            ]
+            let growthMixes: [(Double, Double, Double)] = [
+                (0.25, 0.30, 0.45),
+                (0.30, 0.25, 0.45),
+            ]
+            let thresholdSets: [(Double, Double)] = [(0.30, 0.65), (0.30, 0.75)]
+            let scaleSets: [(Double, Double, Double)] = [(1.00, 1.20, 1.40), (1.00, 1.25, 1.45)]
+            let grossCaps = [1.05, 1.10]
+            let tradeBands = [0.06]
+            var candidates: [RegimeMixCandidate] = []
+
+            for defensive in defensiveMixes {
+                for neutral in neutralMixes {
+                    for growth in growthMixes {
+                        for thresholds in thresholdSets {
+                            for scales in scaleSets {
+                                for grossCap in grossCaps {
+                                    for tradeBand in tradeBands {
+                                        let title = String(format: "分段共识融合-D%.0f/%.0f/%.0f-N%.0f/%.0f/%.0f-G%.0f/%.0f/%.0f-T%.0f/%.0f-X%.2f/%.2f/%.2f-C%.0f-B%.0f", defensive.0 * 100, defensive.1 * 100, defensive.2 * 100, neutral.0 * 100, neutral.1 * 100, neutral.2 * 100, growth.0 * 100, growth.1 * 100, growth.2 * 100, thresholds.0 * 100, thresholds.1 * 100, scales.0, scales.1, scales.2, grossCap * 100, tradeBand * 100)
+                                        let config = ResearchTargetStrategyConfig(
+                                            symbol: "regime_mix_blend",
+                                            title: title,
+                                            warmupSessions: 1,
+                                            rebalanceSessions: 1,
+                                            rebalanceBand: tradeBand,
+                                            maxGrossExposure: grossCap,
+                                            allowsFinancedExposure: grossCap > 1,
+                                            financingAnnualRate: grossCap > 1 ? 0.05 : 0,
+                                            buyReason: "分段共识融合调仓"
+                                        )
+                                        var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                                        var pending: [String: Double] = [:]
+                                        var previous: [String: Double] = [:]
+                                        guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                            assetInputs: inputs,
+                                            initialCash: 100_000,
+                                            settings: settings,
+                                            config: config,
+                                            rebalanceDecision: { index, _, data in
+                                                guard data.dates.indices.contains(index) else {
+                                                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                                }
+                                                let key = data.dates[index].recordDateString
+                                                for mode in modes {
+                                                    if let weights = traces[mode]?[key] { latest[mode] = weights }
+                                                }
+                                                guard latest.count == modes.count else {
+                                                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                                }
+                                                let modeGrosses = modes.map { (latest[$0] ?? [:]).values.reduce(0, +) }
+                                                let weightedReferenceGross = 0.40 * modeGrosses[0] + 0.25 * modeGrosses[1] + 0.35 * modeGrosses[2]
+                                                let minimumModeGross = modeGrosses.min() ?? 0
+                                                let mix: (Double, Double, Double)
+                                                let scale: Double
+                                                if weightedReferenceGross >= thresholds.1, minimumModeGross >= 0.20 {
+                                                    mix = growth
+                                                    scale = scales.2
+                                                } else if weightedReferenceGross >= thresholds.0 {
+                                                    mix = neutral
+                                                    scale = scales.1
+                                                } else {
+                                                    mix = defensive
+                                                    scale = scales.0
+                                                }
+                                                let shares: [AdvancedBacktestStrategyMode: Double] = [sharpeMode: mix.0, riskMode: mix.1, dualMode: mix.2]
+                                                var target: [String: Double] = [:]
+                                                for mode in modes {
+                                                    let share = shares[mode] ?? 0
+                                                    for (symbol, weight) in latest[mode] ?? [:] {
+                                                        target[symbol, default: 0] += share * weight * scale
+                                                    }
+                                                }
+                                                let gross = target.values.reduce(0, +)
+                                                if gross > grossCap, gross > 0 { target = target.mapValues { $0 * grossCap / gross } }
+                                                let symbols = Set(previous.keys).union(target.keys)
+                                                let difference = symbols.reduce(0.0) { $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0)) }
+                                                pending = target
+                                                let shouldRebalance = previous.isEmpty ? !target.isEmpty : difference > tradeBand
+                                                if shouldRebalance { previous = target }
+                                                return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                            },
+                                            targetWeights: { _, _ in pending }
+                                        ) else { continue }
+                                        let fullRow = MetricRow(
+                                            title: title,
+                                            id: "regime_mix_blend",
+                                            annualized: report.annualizedReturn,
+                                            maxDrawdown: report.maxDrawdown,
+                                            volatility: report.annualizedVolatility,
+                                            sharpe: report.sharpeRatio,
+                                            start: report.points.first?.date.recordDateString ?? "n/a",
+                                            end: report.points.last?.date.recordDateString ?? "n/a",
+                                            pointCount: report.points.count
+                                        )
+                                        candidates.append(RegimeMixCandidate(
+                                            title: title,
+                                            annualized: report.annualizedReturn ?? -1,
+                                            maxDrawdown: report.maxDrawdown,
+                                            sharpe: report.sharpeRatio ?? -1,
+                                            sliceRows: metricRowsForSlices(title: title, id: "regime_mix_blend", points: report.points, fullRow: fullRow),
+                                            trades: report.trades.count,
+                                            averageCashRatio: report.averageCashRatio
+                                        ))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            var selected: [RegimeMixCandidate] = []
+            func appendUnique(_ values: [RegimeMixCandidate]) {
+                for value in values where !selected.contains(where: { $0.title == value.title }) { selected.append(value) }
+            }
+            appendUnique(Array(candidates.sorted { $0.sharpe > $1.sharpe }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.105 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.11 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.12 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            printSliceRows(selected.flatMap(\.sliceRows), header: "APP_REGIME_MIX_BLEND_FRONTIER")
+            print("APP_REGIME_MIX_BLEND_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_CONSENSUS_SCALE_AUDIT"] == "1" {
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let shares: [AdvancedBacktestStrategyMode: Double] = [sharpeMode: 0.40, riskMode: 0.25, dualMode: 0.35]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(assetInputs: modeInputs, initialCash: 100_000, settings: settings, mode: mode) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            }
+            guard traces.count == modes.count else {
+                print("APP_CONSENSUS_SCALE_AUDIT\ntrace_missing")
+                return
+            }
+            let title = "共识变速防守增强"
+            let config = ResearchTargetStrategyConfig(
+                symbol: "consensus_scale_audit",
+                title: title,
+                warmupSessions: 1,
+                rebalanceSessions: 1,
+                rebalanceBand: 0.06,
+                maxGrossExposure: 1.10,
+                allowsFinancedExposure: true,
+                financingAnnualRate: 0.05,
+                buyReason: "共识变速防守增强调仓"
+            )
+            var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+            var pending: [String: Double] = [:]
+            var previous: [String: Double] = [:]
+            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                config: config,
+                rebalanceDecision: { index, _, data in
+                    guard data.dates.indices.contains(index) else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    let key = data.dates[index].recordDateString
+                    for mode in modes {
+                        if let weights = traces[mode]?[key] { latest[mode] = weights }
+                    }
+                    guard latest.count == modes.count else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    var baseTarget: [String: Double] = [:]
+                    var modeGrosses: [Double] = []
+                    for (mode, share) in shares {
+                        let weights = latest[mode] ?? [:]
+                        modeGrosses.append(weights.values.reduce(0, +))
+                        for (symbol, weight) in weights { baseTarget[symbol, default: 0] += weight * share }
+                    }
+                    let baseGross = baseTarget.values.reduce(0, +)
+                    let minimumModeGross = modeGrosses.min() ?? 0
+                    let scale: Double
+                    if baseGross >= 0.75, minimumModeGross >= 0.20 {
+                        scale = 1.40
+                    } else if baseGross >= 0.30 {
+                        scale = 1.20
+                    } else {
+                        scale = 1.00
+                    }
+                    var target = baseTarget.mapValues { $0 * scale }
+                    let gross = target.values.reduce(0, +)
+                    if gross > 1.10, gross > 0 { target = target.mapValues { $0 * 1.10 / gross } }
+                    let symbols = Set(previous.keys).union(target.keys)
+                    let difference = symbols.reduce(0.0) { $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0)) }
+                    pending = target
+                    let shouldRebalance = previous.isEmpty ? !target.isEmpty : difference > 0.06
+                    if shouldRebalance { previous = target }
+                    return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                },
+                targetWeights: { _, _ in pending }
+            ) else {
+                print("APP_CONSENSUS_SCALE_AUDIT\nrun_failed")
+                return
+            }
+            let fullRow = MetricRow(
+                title: title,
+                id: "consensus_scale_audit",
+                annualized: report.annualizedReturn,
+                maxDrawdown: report.maxDrawdown,
+                volatility: report.annualizedVolatility,
+                sharpe: report.sharpeRatio,
+                start: report.points.first?.date.recordDateString ?? "n/a",
+                end: report.points.last?.date.recordDateString ?? "n/a",
+                pointCount: report.points.count
+            )
+            var rows = metricRowsForSlices(title: title, id: "consensus_scale_audit", points: report.points, fullRow: fullRow)
+            let calendar = Calendar(identifier: .gregorian)
+            let stressRanges: [(String, Date, Date)] = [
+                ("gfc2008", calendar.date(from: DateComponents(year: 2008, month: 1, day: 1))!, calendar.date(from: DateComponents(year: 2009, month: 12, day: 31))!),
+                ("china2015", calendar.date(from: DateComponents(year: 2015, month: 1, day: 1))!, calendar.date(from: DateComponents(year: 2016, month: 12, day: 31))!),
+                ("covid2020", calendar.date(from: DateComponents(year: 2020, month: 2, day: 1))!, calendar.date(from: DateComponents(year: 2020, month: 6, day: 30))!),
+                ("rates2022", calendar.date(from: DateComponents(year: 2022, month: 1, day: 1))!, calendar.date(from: DateComponents(year: 2022, month: 12, day: 31))!),
+            ]
+            for (name, start, end) in stressRanges {
+                let points = report.points.filter { $0.date >= start && $0.date <= end }
+                rows.append(SliceMetricRow(slice: name, row: metricRow(title: title, id: "consensus_scale_audit", points: points)))
+            }
+            printSliceRows(rows, header: "APP_CONSENSUS_SCALE_AUDIT")
+
+            var peakValue = report.points.first?.portfolioValue ?? 0
+            var peakDate = report.points.first?.date
+            var maxDrawdown = 0.0
+            var drawdownPeakDate = peakDate
+            var troughDate = peakDate
+            for point in report.points {
+                if point.portfolioValue > peakValue {
+                    peakValue = point.portfolioValue
+                    peakDate = point.date
+                }
+                guard peakValue > 0 else { continue }
+                let drawdown = 1 - point.portfolioValue / peakValue
+                if drawdown > maxDrawdown {
+                    maxDrawdown = drawdown
+                    drawdownPeakDate = peakDate
+                    troughDate = point.date
+                }
+            }
+            print("APP_CONSENSUS_SCALE_AUDIT_DIAGNOSTICS")
+            print("trades,average_cash_ratio,max_drawdown,peak_date,trough_date")
+            print(String(report.trades.count) + "," + String(format: "%.6f", report.averageCashRatio) + "," + String(format: "%.6f", maxDrawdown) + "," + (drawdownPeakDate?.recordDateString ?? "n/a") + "," + (troughDate?.recordDateString ?? "n/a"))
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_CONSENSUS_SCALE_BLEND_FRONTIER"] == "1" {
+            struct ConsensusScaleCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+            }
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let shares: [AdvancedBacktestStrategyMode: Double] = [sharpeMode: 0.40, riskMode: 0.25, dualMode: 0.35]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(assetInputs: modeInputs, initialCash: 100_000, settings: settings, mode: mode) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            }
+            guard traces.count == modes.count else {
+                print("APP_CONSENSUS_SCALE_BLEND_FRONTIER\ntrace_missing")
+                return
+            }
+            let scaleSets: [(Double, Double, Double)] = [
+                (1.00, 1.20, 1.40),
+                (1.10, 1.25, 1.40),
+                (1.10, 1.30, 1.50),
+            ]
+            let midThresholds = [0.30, 0.40, 0.50]
+            let highThresholds = [0.55, 0.65, 0.75]
+            let grossCaps = [1.0, 1.05, 1.10]
+            let tradeBands = [0.06, 0.08]
+            var candidates: [ConsensusScaleCandidate] = []
+            for scales in scaleSets {
+                for midThreshold in midThresholds {
+                    for highThreshold in highThresholds where highThreshold > midThreshold {
+                        for grossCap in grossCaps {
+                            for tradeBand in tradeBands {
+                                let title = String(format: "共识变速融合-L%.2f-M%.2f-H%.2f-T%.0f/%.0f-G%.0f-B%.0f", scales.0, scales.1, scales.2, midThreshold * 100, highThreshold * 100, grossCap * 100, tradeBand * 100)
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "consensus_scale_blend",
+                                    title: title,
+                                    warmupSessions: 1,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: tradeBand,
+                                    maxGrossExposure: grossCap,
+                                    allowsFinancedExposure: grossCap > 1,
+                                    financingAnnualRate: grossCap > 1 ? 0.05 : 0,
+                                    buyReason: "共识变速融合调仓"
+                                )
+                                var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                                var pending: [String: Double] = [:]
+                                var previous: [String: Double] = [:]
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    rebalanceDecision: { index, _, data in
+                                        guard data.dates.indices.contains(index) else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        let key = data.dates[index].recordDateString
+                                        for mode in modes {
+                                            if let weights = traces[mode]?[key] { latest[mode] = weights }
+                                        }
+                                        guard latest.count == modes.count else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        var baseTarget: [String: Double] = [:]
+                                        var modeGrosses: [Double] = []
+                                        for (mode, share) in shares {
+                                            let weights = latest[mode] ?? [:]
+                                            modeGrosses.append(weights.values.reduce(0, +))
+                                            for (symbol, weight) in weights {
+                                                baseTarget[symbol, default: 0] += weight * share
+                                            }
+                                        }
+                                        let baseGross = baseTarget.values.reduce(0, +)
+                                        let minimumModeGross = modeGrosses.min() ?? 0
+                                        let scale: Double
+                                        if baseGross >= highThreshold, minimumModeGross >= 0.20 {
+                                            scale = scales.2
+                                        } else if baseGross >= midThreshold {
+                                            scale = scales.1
+                                        } else {
+                                            scale = scales.0
+                                        }
+                                        var target = baseTarget.mapValues { $0 * scale }
+                                        let gross = target.values.reduce(0, +)
+                                        if gross > grossCap, gross > 0 { target = target.mapValues { $0 * grossCap / gross } }
+                                        let symbols = Set(previous.keys).union(target.keys)
+                                        let difference = symbols.reduce(0.0) { $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0)) }
+                                        pending = target
+                                        let shouldRebalance = previous.isEmpty ? !target.isEmpty : difference > tradeBand
+                                        if shouldRebalance { previous = target }
+                                        return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                    },
+                                    targetWeights: { _, _ in pending }
+                                ) else { continue }
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "consensus_scale_blend",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                candidates.append(ConsensusScaleCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(title: title, id: "consensus_scale_blend", points: report.points, fullRow: fullRow),
+                                    trades: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+            var selected: [ConsensusScaleCandidate] = []
+            func appendUnique(_ values: [ConsensusScaleCandidate]) {
+                for value in values where !selected.contains(where: { $0.title == value.title }) { selected.append(value) }
+            }
+            appendUnique(Array(candidates.sorted { $0.sharpe > $1.sharpe }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.10 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.11 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.12 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            printSliceRows(selected.flatMap(\.sliceRows), header: "APP_CONSENSUS_SCALE_BLEND_FRONTIER")
+            print("APP_CONSENSUS_SCALE_BLEND_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_REFINED_BLEND_BAND_SCAN"] == "1" {
+            struct BlendBandCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+            }
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let shares: [AdvancedBacktestStrategyMode: Double] = [sharpeMode: 0.40, riskMode: 0.25, dualMode: 0.35]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(assetInputs: modeInputs, initialCash: 100_000, settings: settings, mode: mode) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            }
+            guard traces.count == modes.count else {
+                print("APP_REFINED_BLEND_BAND_SCAN\ntrace_missing")
+                return
+            }
+            let scales = [1.15, 1.20, 1.25, 1.30, 1.35]
+            let grossCaps = [1.0, 1.05, 1.10]
+            let tradeBands = [0.04, 0.06, 0.08, 0.10, 0.12]
+            var candidates: [BlendBandCandidate] = []
+            for scale in scales {
+                for grossCap in grossCaps {
+                    for tradeBand in tradeBands {
+                        let title = String(format: "防守融合带宽-X%.2f-G%.0f-B%.0f", scale, grossCap * 100, tradeBand * 100)
+                        let config = ResearchTargetStrategyConfig(
+                            symbol: "refined_blend_band",
+                            title: title,
+                            warmupSessions: 1,
+                            rebalanceSessions: 1,
+                            rebalanceBand: tradeBand,
+                            maxGrossExposure: grossCap,
+                            allowsFinancedExposure: grossCap > 1,
+                            financingAnnualRate: grossCap > 1 ? 0.05 : 0,
+                            buyReason: "防守融合带宽调仓"
+                        )
+                        var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                        var pending: [String: Double] = [:]
+                        var previous: [String: Double] = [:]
+                        guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                            assetInputs: inputs,
+                            initialCash: 100_000,
+                            settings: settings,
+                            config: config,
+                            rebalanceDecision: { index, _, data in
+                                guard data.dates.indices.contains(index) else {
+                                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                }
+                                let key = data.dates[index].recordDateString
+                                for mode in modes {
+                                    if let weights = traces[mode]?[key] { latest[mode] = weights }
+                                }
+                                guard latest.count == modes.count else {
+                                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                }
+                                var target: [String: Double] = [:]
+                                for (mode, share) in shares {
+                                    for (symbol, weight) in latest[mode] ?? [:] {
+                                        target[symbol, default: 0] += weight * share * scale
+                                    }
+                                }
+                                let gross = target.values.reduce(0, +)
+                                if gross > grossCap, gross > 0 { target = target.mapValues { $0 * grossCap / gross } }
+                                let symbols = Set(previous.keys).union(target.keys)
+                                let difference = symbols.reduce(0.0) { $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0)) }
+                                pending = target
+                                let shouldRebalance = previous.isEmpty ? !target.isEmpty : difference > tradeBand
+                                if shouldRebalance { previous = target }
+                                return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                            },
+                            targetWeights: { _, _ in pending }
+                        ) else { continue }
+                        let fullRow = MetricRow(
+                            title: title,
+                            id: "refined_blend_band",
+                            annualized: report.annualizedReturn,
+                            maxDrawdown: report.maxDrawdown,
+                            volatility: report.annualizedVolatility,
+                            sharpe: report.sharpeRatio,
+                            start: report.points.first?.date.recordDateString ?? "n/a",
+                            end: report.points.last?.date.recordDateString ?? "n/a",
+                            pointCount: report.points.count
+                        )
+                        candidates.append(BlendBandCandidate(
+                            title: title,
+                            annualized: report.annualizedReturn ?? -1,
+                            maxDrawdown: report.maxDrawdown,
+                            sharpe: report.sharpeRatio ?? -1,
+                            sliceRows: metricRowsForSlices(title: title, id: "refined_blend_band", points: report.points, fullRow: fullRow),
+                            trades: report.trades.count,
+                            averageCashRatio: report.averageCashRatio
+                        ))
+                    }
+                }
+            }
+            var selected: [BlendBandCandidate] = []
+            func appendUnique(_ values: [BlendBandCandidate]) {
+                for value in values where !selected.contains(where: { $0.title == value.title }) { selected.append(value) }
+            }
+            appendUnique(Array(candidates.sorted { $0.sharpe > $1.sharpe }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.10 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.11 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.12 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            printSliceRows(selected.flatMap(\.sliceRows), header: "APP_REFINED_BLEND_BAND_SCAN")
+            print("APP_REFINED_BLEND_BAND_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_REFINED_DEFENSIVE_BLEND_FRONTIER"] == "1" {
+            struct RefinedBlendCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let calmar: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+            }
+
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            let inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            }
+            guard traces.count == modes.count else {
+                print("APP_REFINED_DEFENSIVE_BLEND_FRONTIER\ntrace_missing")
+                return
+            }
+
+            let sharpeShares = [0.375, 0.40, 0.425, 0.45]
+            let riskShares = [0.225, 0.25, 0.275]
+            let scales = [1.10, 1.15, 1.20, 1.25, 1.30, 1.35, 1.40]
+            let grossCaps = [1.0, 1.05, 1.10]
+            var candidates: [RefinedBlendCandidate] = []
+
+            for sharpeShare in sharpeShares {
+                for riskShare in riskShares {
+                    let dualShare = 1 - sharpeShare - riskShare
+                    guard dualShare >= 0.15 else { continue }
+                    let shares: [AdvancedBacktestStrategyMode: Double] = [
+                        sharpeMode: sharpeShare,
+                        riskMode: riskShare,
+                        dualMode: dualShare,
+                    ]
+                    for scale in scales {
+                        for grossCap in grossCaps {
+                            let title = String(format: "精炼防守融合-S%.0f-R%.0f-D%.0f-X%.2f-G%.0f", sharpeShare * 100, riskShare * 100, dualShare * 100, scale, grossCap * 100)
+                            let config = ResearchTargetStrategyConfig(
+                                symbol: "refined_defensive_blend",
+                                title: title,
+                                warmupSessions: 1,
+                                rebalanceSessions: 1,
+                                rebalanceBand: 0.08,
+                                maxGrossExposure: grossCap,
+                                allowsFinancedExposure: grossCap > 1,
+                                financingAnnualRate: grossCap > 1 ? 0.05 : 0,
+                                buyReason: "精炼防守融合调仓"
+                            )
+                            var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                            var pending: [String: Double] = [:]
+                            var previous: [String: Double] = [:]
+                            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                assetInputs: inputs,
+                                initialCash: 100_000,
+                                settings: settings,
+                                config: config,
+                                rebalanceDecision: { index, _, data in
+                                    guard data.dates.indices.contains(index) else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    let key = data.dates[index].recordDateString
+                                    for mode in modes {
+                                        if let weights = traces[mode]?[key] { latest[mode] = weights }
+                                    }
+                                    guard latest.count == modes.count else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    var target: [String: Double] = [:]
+                                    for (mode, share) in shares {
+                                        for (symbol, weight) in latest[mode] ?? [:] {
+                                            target[symbol, default: 0] += weight * share * scale
+                                        }
+                                    }
+                                    let gross = target.values.reduce(0, +)
+                                    if gross > grossCap, gross > 0 { target = target.mapValues { $0 * grossCap / gross } }
+                                    let symbols = Set(previous.keys).union(target.keys)
+                                    let difference = symbols.reduce(0.0) { $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0)) }
+                                    pending = target
+                                    let shouldRebalance = previous.isEmpty ? !target.isEmpty : difference > 0.06
+                                    if shouldRebalance { previous = target }
+                                    return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                },
+                                targetWeights: { _, _ in pending }
+                            ) else { continue }
+                            let fullRow = MetricRow(
+                                title: title,
+                                id: "refined_defensive_blend",
+                                annualized: report.annualizedReturn,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility,
+                                sharpe: report.sharpeRatio,
+                                start: report.points.first?.date.recordDateString ?? "n/a",
+                                end: report.points.last?.date.recordDateString ?? "n/a",
+                                pointCount: report.points.count
+                            )
+                            let annualized = report.annualizedReturn ?? -1
+                            let drawdown = report.maxDrawdown
+                            candidates.append(RefinedBlendCandidate(
+                                title: title,
+                                annualized: annualized,
+                                maxDrawdown: drawdown,
+                                sharpe: report.sharpeRatio ?? -1,
+                                calmar: drawdown > 0 ? annualized / drawdown : -1,
+                                sliceRows: metricRowsForSlices(title: title, id: "refined_defensive_blend", points: report.points, fullRow: fullRow),
+                                trades: report.trades.count,
+                                averageCashRatio: report.averageCashRatio
+                            ))
+                        }
+                    }
+                }
+            }
+
+            var selected: [RefinedBlendCandidate] = []
+            func appendUnique(_ values: [RefinedBlendCandidate]) {
+                for value in values where !selected.contains(where: { $0.title == value.title }) { selected.append(value) }
+            }
+            appendUnique(Array(candidates.sorted { $0.sharpe > $1.sharpe }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.10 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.filter { $0.maxDrawdown <= 0.12 }.sorted { $0.annualized > $1.annualized }.prefix(10)))
+            appendUnique(Array(candidates.sorted { $0.calmar > $1.calmar }.prefix(10)))
+            appendUnique(Array(candidates.sorted {
+                let lhsPenalty = max($0.maxDrawdown - 0.08, 0) * 8 + max(0.12 - $0.annualized, 0) * 3
+                let rhsPenalty = max($1.maxDrawdown - 0.08, 0) * 8 + max(0.12 - $1.annualized, 0) * 3
+                return lhsPenalty == rhsPenalty ? $0.sharpe > $1.sharpe : lhsPenalty < rhsPenalty
+            }.prefix(10)))
+            printSliceRows(selected.flatMap(\.sliceRows), header: "APP_REFINED_DEFENSIVE_BLEND_FRONTIER")
+            print("APP_REFINED_DEFENSIVE_BLEND_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,calmar")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio) + "," + String(format: "%.6f", candidate.calmar))
+            }
+            return
+        }
+
+        if ProcessInfo.processInfo.environment["ATM_OPTION_INDEX_BLEND_FRONTIER"] == "1" {
+            struct OptionBlendCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+            }
+
+            func loadCboeIndex(symbol: String, path: String, fx: PublicHistorySeries) -> PublicHistorySeries? {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return nil }
+                let fxPairs = Array(zip(fx.dates, fx.prices)).sorted { $0.0 < $1.0 }
+                guard !fxPairs.isEmpty else { return nil }
+                var raw: [(String, Double)] = []
+                for line in text.split(whereSeparator: \.isNewline).dropFirst() {
+                    let columns = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard columns.count >= 2 else { continue }
+                    let dateParts = columns[0].split(separator: "/")
+                    guard dateParts.count == 3,
+                          let month = Int(dateParts[0]),
+                          let day = Int(dateParts[1]),
+                          let year = Int(dateParts[2]),
+                          let value = Double(columns[1]), value.isFinite, value > 0 else { continue }
+                    raw.append((String(format: "%04d-%02d-%02d", year, month, day), value))
+                }
+                raw.sort { $0.0 < $1.0 }
+                var dates: [String] = []
+                var prices: [Double] = []
+                var fxIndex = 0
+                var latestFX: Double?
+                let maxFixtureDate = seriesBySymbol.values.compactMap { $0.dates.last }.max() ?? "9999-12-31"
+                for (date, usdValue) in raw where date <= maxFixtureDate {
+                    while fxIndex < fxPairs.count, fxPairs[fxIndex].0 <= date {
+                        let value = fxPairs[fxIndex].1
+                        if value.isFinite, value > 0 { latestFX = value }
+                        fxIndex += 1
+                    }
+                    guard let latestFX else { continue }
+                    dates.append(date)
+                    prices.append(usdValue / latestFX)
+                }
+                guard dates.count > 500 else { return nil }
+                return PublicHistorySeries(
+                    symbol: symbol,
+                    category: "cboe_option_index",
+                    label: symbol,
+                    currency: "CNY",
+                    unit: "index",
+                    source: "Cboe official daily index history",
+                    dates: dates,
+                    prices: prices,
+                    hasOHLC: false,
+                    ohlcSource: nil,
+                    ohlcCoverageRatio: nil,
+                    openPrices: nil,
+                    highPrices: nil,
+                    lowPrices: nil,
+                    closePrices: nil,
+                    volumes: nil
+                )
+            }
+
+            let optionDirectory = ProcessInfo.processInfo.environment["ATM_OPTION_INDEX_DIR"] ?? "/tmp"
+            guard let fx = seriesBySymbol["usd_per_cny"],
+                  let pputSeries = loadCboeIndex(symbol: "cboe_pput_cny", path: optionDirectory + "/PPUT_History.csv", fx: fx),
+                  let bxmSeries = loadCboeIndex(symbol: "cboe_bxm_cny", path: optionDirectory + "/BXM_History.csv", fx: fx) else {
+                print("APP_OPTION_INDEX_BLEND_FRONTIER\noption_series_missing")
+                return
+            }
+
+            let sharpeMode = AdvancedBacktestStrategyMode.coreGoldSatelliteSharpeStateGateMomentum
+            let riskMode = AdvancedBacktestStrategyMode.coreGoldSatelliteRiskBudgetStateGateMomentum
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let modes = [sharpeMode, riskMode, dualMode]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            var traces: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in modes {
+                let modeInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+                }
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: modeInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                traces[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            }
+            guard traces.count == modes.count else {
+                print("APP_OPTION_INDEX_BLEND_FRONTIER\ntrace_missing")
+                return
+            }
+
+            let pputOption = BacktestAssetOption(symbol: pputSeries.symbol, title: "Cboe PPUT", color: AssetTheme.positive, requiresHistoricalFX: false, historicalFXSymbol: nil)
+            let bxmOption = BacktestAssetOption(symbol: bxmSeries.symbol, title: "Cboe BXM", color: AssetTheme.accentOrange, requiresHistoricalFX: false, historicalFXSymbol: nil)
+            let allSymbols = Array(Set(modes.flatMap(\.requiredSignalAssetSymbols))).sorted()
+            var inputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            inputs.append((assetSeries: pputSeries, assetOption: pputOption, fxSeries: nil))
+            inputs.append((assetSeries: bxmSeries, assetOption: bxmOption, fxSeries: nil))
+
+            let mixes: [(String, Double, Double, Double)] = [
+                ("defensive", 0.50, 0.20, 0.30),
+                ("balanced", 0.35, 0.26, 0.39),
+                ("growth", 0.20, 0.32, 0.48),
+            ]
+            let optionWeights = [0.0, 0.10]
+            let riskScales = [1.25, 1.50]
+            let grossCaps = [1.0, 1.10]
+            var candidates: [OptionBlendCandidate] = []
+
+            for mix in mixes {
+                for riskScale in riskScales {
+                    for pputWeight in optionWeights {
+                        for bxmWeight in optionWeights where pputWeight + bxmWeight <= 0.30 + 0.000001 {
+                            for grossCap in grossCaps {
+                                let title = String(format: "期权指数融合-%@-X%.2f-P%.0f-B%.0f-G%.0f", mix.0, riskScale, pputWeight * 100, bxmWeight * 100, grossCap * 100)
+                                let config = ResearchTargetStrategyConfig(
+                                    symbol: "option_index_blend",
+                                    title: title,
+                                    warmupSessions: 1,
+                                    rebalanceSessions: 1,
+                                    rebalanceBand: 0.08,
+                                    maxGrossExposure: grossCap,
+                                    allowsFinancedExposure: grossCap > 1,
+                                    financingAnnualRate: grossCap > 1 ? 0.05 : 0,
+                                    buyReason: "期权指数融合调仓"
+                                )
+                                var latest: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                                var pending: [String: Double] = [:]
+                                var previous: [String: Double] = [:]
+                                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                    assetInputs: inputs,
+                                    initialCash: 100_000,
+                                    settings: settings,
+                                    config: config,
+                                    rebalanceDecision: { index, _, data in
+                                        guard data.dates.indices.contains(index) else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        let key = data.dates[index].recordDateString
+                                        for mode in modes {
+                                            if let weights = traces[mode]?[key] { latest[mode] = weights }
+                                        }
+                                        guard latest.count == modes.count else {
+                                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                        }
+                                        let shares: [AdvancedBacktestStrategyMode: Double] = [sharpeMode: mix.1, riskMode: mix.2, dualMode: mix.3]
+                                        var target: [String: Double] = [:]
+                                        for (mode, share) in shares {
+                                            for (symbol, weight) in latest[mode] ?? [:] {
+                                                target[symbol, default: 0] += weight * share * riskScale
+                                            }
+                                        }
+                                        let optionGross = pputWeight + bxmWeight
+                                        let baseCap = max(grossCap - optionGross, 0)
+                                        let baseGross = target.values.reduce(0, +)
+                                        if baseGross > baseCap, baseGross > 0 { target = target.mapValues { $0 * baseCap / baseGross } }
+                                        if pputWeight > 0 { target[pputOption.symbol] = pputWeight }
+                                        if bxmWeight > 0 { target[bxmOption.symbol] = bxmWeight }
+                                        let symbols = Set(previous.keys).union(target.keys)
+                                        let difference = symbols.reduce(0.0) { $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0)) }
+                                        pending = target
+                                        let shouldRebalance = previous.isEmpty ? !target.isEmpty : difference > 0.06
+                                        if shouldRebalance { previous = target }
+                                        return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                    },
+                                    targetWeights: { _, _ in pending }
+                                ) else { continue }
+                                let fullRow = MetricRow(
+                                    title: title,
+                                    id: "option_index_blend",
+                                    annualized: report.annualizedReturn,
+                                    maxDrawdown: report.maxDrawdown,
+                                    volatility: report.annualizedVolatility,
+                                    sharpe: report.sharpeRatio,
+                                    start: report.points.first?.date.recordDateString ?? "n/a",
+                                    end: report.points.last?.date.recordDateString ?? "n/a",
+                                    pointCount: report.points.count
+                                )
+                                candidates.append(OptionBlendCandidate(
+                                    title: title,
+                                    annualized: report.annualizedReturn ?? -1,
+                                    maxDrawdown: report.maxDrawdown,
+                                    sharpe: report.sharpeRatio ?? -1,
+                                    sliceRows: metricRowsForSlices(title: title, id: "option_index_blend", points: report.points, fullRow: fullRow),
+                                    trades: report.trades.count,
+                                    averageCashRatio: report.averageCashRatio
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter { $0.annualized >= 0.12 && $0.maxDrawdown <= 0.08 }
+                .sorted { $0.annualized == $1.annualized ? $0.sharpe > $1.sharpe : $0.annualized > $1.annualized }
+            let frontier = candidates.sorted {
+                let lhsPenalty = max($0.maxDrawdown - 0.08, 0) * 8 + max(0.12 - $0.annualized, 0) * 3
+                let rhsPenalty = max($1.maxDrawdown - 0.08, 0) * 8 + max(0.12 - $1.annualized, 0) * 3
+                return lhsPenalty == rhsPenalty ? $0.sharpe > $1.sharpe : lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(30))
+            printSliceRows(selected.flatMap(\.sliceRows), header: valid.isEmpty ? "APP_OPTION_INDEX_BLEND_NEAR_FRONTIER" : "APP_OPTION_INDEX_BLEND_VALID")
+            print("APP_OPTION_INDEX_BLEND_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio")
+            for candidate in selected {
+                print(candidate.title + "," + String(candidate.trades) + "," + String(format: "%.6f", candidate.averageCashRatio))
+            }
+            return
+        }
+
         let collectedRows = collectAppStrategyRows(seriesBySymbol: seriesBySymbol, settings: settings)
 
         if ProcessInfo.processInfo.environment["ATM_DUMP_SLICES"] == "1" {

@@ -12,9 +12,14 @@ extension ContentView {
     @MainActor
     func scheduleWorkActivation(for tab: AppTab) {
         workActivationTask?.cancel()
-        workActiveTab = nil
+        guard workActiveTab != tab else { return }
+
+        // Keep the previous tab's work state stable during the native tab-bar
+        // transition. Deactivation can trigger report persistence and task
+        // cancellation, which should happen after the visual switch, not in the
+        // same frame as the user's tap.
         workActivationTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(280))
+            try? await Task.sleep(for: .milliseconds(320))
             guard !Task.isCancelled, selectedTab == tab else { return }
             workActiveTab = tab
             workActivationTask = nil

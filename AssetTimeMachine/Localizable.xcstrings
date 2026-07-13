@@ -1,6 +1,259 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%d个策略": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d strategies"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d个策略"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d個策略"
+          }
+        }
+      }
+    },
+    "按目标与成熟度分类，先选策略，再查看详细回测。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Browse by objective and maturity, then review the full backtest."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按目标与成熟度分类，先选策略，再查看详细回测。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "依目標與成熟度分類，先選策略，再查看完整回測。"
+          }
+        }
+      }
+    },
+    "搜索策略、机制或资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search strategies, mechanisms, or assets"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索策略、机制或资产"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜尋策略、機制或資產"
+          }
+        }
+      }
+    },
+    "适合直接比较的主产品策略": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primary product strategies for direct comparison"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "适合直接比较的主产品策略"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "適合直接比較的主產品策略"
+          }
+        }
+      }
+    },
+    "仍在验证，不代表已经达到目标": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Still under validation; targets are not yet met"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仍在验证，不代表已经达到目标"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仍在驗證，不代表已達成目標"
+          }
+        }
+      }
+    },
+    "与主策略不同的收益逻辑": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return logic distinct from the core strategies"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "与主策略不同的收益逻辑"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "與主策略不同的收益邏輯"
+          }
+        }
+      }
+    },
+    "用于理解指标与验证回测行为": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For learning metrics and validating backtest behavior"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于理解指标与验证回测行为"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用於理解指標與驗證回測行為"
+          }
+        }
+      }
+    },
+    "正在用于回测的策略": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The strategy currently used for backtesting"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在用于回测的策略"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前用於回測的策略"
+          }
+        }
+      }
+    },
+    "实验策略用于继续研究和对比；选择后仍应查看完整回测区间、费用、最大回撤和夏普。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimental strategies are for research and comparison. Review the full period, fees, maximum drawdown, and Sharpe ratio before using one."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "实验策略用于继续研究和对比；选择后仍应查看完整回测区间、费用、最大回撤和夏普。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "實驗策略用於持續研究與比較；選擇後仍應查看完整回測區間、費用、最大回撤與夏普。"
+          }
+        }
+      }
+    },
+    "默认推荐": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "默认推荐"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "預設推薦"
+          }
+        }
+      }
+    },
+    "自定义规则": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom rules"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自定义规则"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自訂規則"
+          }
+        }
+      }
+    },
     "": {},
     "保存失败": {
       "localizations": {
@@ -8771,6 +9024,627 @@
           "stringUnit": {
             "state": "translated",
             "value": "獨立雙資產邏輯：黃金基準55%、納指基準45%，兩邊分別用MA200和126/252日動量判斷強勢、震盪或弱勢；約每63個交易日複核，震盪時保留大部分倉位，明確弱勢時降到小倉位並讓剩餘資金留現金。全程無融資，按1%交易費驗證。"
+          }
+        }
+      }
+    },
+    "实验策略": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimental Strategies"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "实验策略"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "實驗策略"
+          }
+        }
+      }
+    },
+    "凸性极速空头组合": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convex Crash-Short Composite"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "凸性极速空头组合"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "凸性極速空頭組合"
+          }
+        }
+      }
+    },
+    "在线策略分配器": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Online Strategy Allocator"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在线策略分配器"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "線上策略分配器"
+          }
+        }
+      }
+    },
+    "在线策略分配调仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Online strategy allocation rebalance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在线策略分配调仓"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "線上策略分配調倉"
+          }
+        }
+      }
+    },
+    "极速空头危机袖套": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast Crash-Short Hedge Sleeve"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "极速空头危机袖套"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "極速空頭危機袖套"
+          }
+        }
+      }
+    },
+    "凸性极速空头组合调仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convex crash-short composite rebalance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "凸性极速空头组合调仓"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "凸性極速空頭組合調倉"
+          }
+        }
+      }
+    },
+    "三逻辑融合": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Three-Engine Blend"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三逻辑融合"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三邏輯融合"
+          }
+        }
+      }
+    },
+    "T−1极速空头": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T−1 Rapid Short Hedge"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T−1极速空头"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T−1極速空頭"
+          }
+        }
+      }
+    },
+    "危机袖套3%": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3% Crisis Sleeve"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "危机袖套3%"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "危機袖套3%"
+          }
+        }
+      }
+    },
+    "总风险110%": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "110% Gross Exposure"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "总风险110%"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "總風險110%"
+          }
+        }
+      }
+    },
+    "四策略分配": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Four-Strategy Allocation"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "四策略分配"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "四策略分配"
+          }
+        }
+      }
+    },
+    "504日质量": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "504-Day Quality Score"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "504日质量"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "504日品質"
+          }
+        }
+      }
+    },
+    "研究型收益优先组合：35%高夏普状态机、26%进取风险预算、39%双趋势金纳在目标权重层融合并放大1.5倍；另配置3%严格T−1的美股/A股极速空头危机袖套。总风险封顶110%，超出现金按5%年化融资，按1%交易费与0.05%滑点统一成交。空头袖套为指数反向收益模型，不代表可直接购买的单一产品。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimental return-focused composite: blends the High-Sharpe State Engine (35%), Aggressive Risk Budget (26%), and Dual-Trend Gold–Nasdaq Barbell (39%) at the target-weight level and scales the blend by 1.5×. It also allocates 3% to a strict T−1 rapid US/China equity short hedge. Gross exposure is capped at 110%; negative cash is financed at 5% annually. All trades use the unified 1% fee and 0.05% slippage assumptions. The short sleeve is a modeled inverse-index payoff, not a directly investable single product."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "研究型收益优先组合：35%高夏普状态机、26%进取风险预算、39%双趋势金纳在目标权重层融合并放大1.5倍；另配置3%严格T−1的美股/A股极速空头危机袖套。总风险封顶110%，超出现金按5%年化融资，按1%交易费与0.05%滑点统一成交。空头袖套为指数反向收益模型，不代表可直接购买的单一产品。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "研究型收益優先組合：將35%高夏普狀態機、26%進取風險預算與39%雙趨勢金納槓鈴在目標權重層融合並放大1.5倍；另配置3%嚴格T−1的美股／A股極速空頭危機袖套。總風險封頂110%，負現金按5%年化融資，所有交易統一計入1%交易費與0.05%滑點。空頭袖套為指數反向收益模型，不代表可直接購買的單一產品。"
+          }
+        }
+      }
+    },
+    "研究型低回撤组合：在进取风险预算、高夏普状态机、稳健锁盈防守和双趋势金纳之间，每63个交易日根据过去504日的收益、波动和最大回撤重新分配；采用75%惯性并限制单条逻辑最高约70%，全程无融资，按1%交易费统一成交。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimental drawdown-focused composite: every 63 trading sessions, reallocates among Aggressive Risk Budget, High-Sharpe State Engine, Defensive Profit Lock, and the Dual-Trend Gold–Nasdaq Barbell using the previous 504 sessions of return, volatility, and maximum drawdown. It applies 75% allocation inertia, limits any single engine to about 70%, uses no financing, and executes through the unified 1% fee model."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "研究型低回撤组合：在进取风险预算、高夏普状态机、稳健锁盈防守和双趋势金纳之间，每63个交易日根据过去504日的收益、波动和最大回撤重新分配；采用75%惯性并限制单条逻辑最高约70%，全程无融资，按1%交易费统一成交。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "研究型低回撤組合：在進取風險預算、高夏普狀態機、穩健鎖盈防守與雙趨勢金納槓鈴之間，每63個交易日依據過去504日的收益、波動與最大回撤重新分配；採用75%配置慣性，單一邏輯最高約70%，全程不融資，並統一計入1%交易費。"
+          }
+        }
+      }
+    },
+    "默认": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "默认"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "預設"
+          }
+        }
+      }
+    },
+    "共识变速防守增强": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consensus-Adaptive Defensive Blend"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共识变速防守增强"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共識變速防守增強"
+          }
+        }
+      }
+    },
+    "共识变速": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consensus Scaling"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共识变速"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共識變速"
+          }
+        }
+      }
+    },
+    "6%调仓带": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6% Rebalance Band"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6%调仓带"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6%調倉帶"
+          }
+        }
+      }
+    },
+    "共识变速防守增强调仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consensus-adaptive defensive rebalance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共识变速防守增强调仓"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共識變速防守增強調倉"
+          }
+        }
+      }
+    },
+    "研究型综合增强组合：40%高夏普状态机、25%进取风险预算、35%双趋势金纳在目标权重层统一融合；当三条底层逻辑的风险仓位共识增强时，将整体风险从1.00倍提升到1.20倍或1.40倍，总风险封顶110%，负现金按5%年化融资。只有目标权重变化超过6%才成交，统一计入1%交易费与0.05%滑点。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimental all-round enhancement: blends the High-Sharpe State Engine (40%), Aggressive Risk Budget (25%), and Dual-Trend Gold–Nasdaq Barbell (35%) at the target-weight level. As the three engines agree on stronger risk exposure, the portfolio scales from 1.00× to 1.20× or 1.40×, with gross exposure capped at 110% and negative cash financed at 5% annually. Trades occur only when target weights change by more than 6%, using the unified 1% fee and 0.05% slippage assumptions."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "研究型综合增强组合：40%高夏普状态机、25%进取风险预算、35%双趋势金纳在目标权重层统一融合；当三条底层逻辑的风险仓位共识增强时，将整体风险从1.00倍提升到1.20倍或1.40倍，总风险封顶110%，负现金按5%年化融资。只有目标权重变化超过6%才成交，统一计入1%交易费与0.05%滑点。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "研究型綜合增強組合：將40%高夏普狀態機、25%進取風險預算與35%雙趨勢金納槓鈴在目標權重層統一融合；當三條底層邏輯的風險倉位共識增強時，整體風險由1.00倍提升至1.20倍或1.40倍，總風險封頂110%，負現金按5%年化融資。只有目標權重變化超過6%才成交，並統一計入1%交易費與0.05%滑點。"
+          }
+        }
+      }
+    },
+    "风险贡献再分配": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Risk-Contribution Reallocation"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "风险贡献再分配"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "風險貢獻再分配"
+          }
+        }
+      }
+    },
+    "风险贡献": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Risk Contribution"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "风险贡献"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "風險貢獻"
+          }
+        }
+      }
+    },
+    "协方差126日": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "126-Day Covariance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "协方差126日"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "126日共變異數"
+          }
+        }
+      }
+    },
+    "60%再分配": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "60% Reallocation"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "60%再分配"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "60%再分配"
+          }
+        }
+      }
+    },
+    "8%调仓带": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "8% Rebalance Band"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "8%调仓带"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "8%調倉帶"
+          }
+        }
+      }
+    },
+    "风险贡献再分配调仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Risk-contribution reallocation rebalance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "风险贡献再分配调仓"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "風險貢獻再分配調倉"
+          }
+        }
+      }
+    },
+    "研究型综合增强组合：先按40%高夏普状态机、25%进取风险预算、35%双趋势金纳生成目标仓位，并按底层仓位共识使用1.00/1.20/1.40倍风险档。每42个交易日估计最多126日协方差；当单一资产风险贡献超过65%时，将60%目标权重按低波动与低正相关方向重新分配。当美股既有仓位至少10%、目标拟一次增加10%至20%，且纳指与标普近5日动量同时转负时，仅执行新增仓位的60%，避免弱势阶段突然加速暴露。总风险封顶110%，负现金按5%年化融资，目标权重变化超过8%才成交，统一计入1%交易费与0.05%滑点。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimental all-round enhancement: first builds target weights from the High-Sharpe State Engine (40%), Aggressive Risk Budget (25%), and Dual-Trend Gold–Nasdaq Barbell (35%), then applies 1.00×, 1.20×, or 1.40× risk scaling according to the underlying engines’ exposure consensus. Every 42 trading sessions it estimates up to 126 sessions of covariance. When one asset contributes more than 65% of portfolio risk, 60% of target weights are reallocated toward lower-volatility and less positively correlated assets. When existing US-equity exposure is at least 10%, the target proposes a single 10%–20% increase, and both Nasdaq and S&P 500 five-session momentum are negative, only 60% of the incremental exposure is executed to avoid abruptly accelerating risk in a weakening market. Gross exposure is capped at 110%, negative cash is financed at 5% annually, and trades require more than 8% target-weight change. All trades use the unified 1% fee and 0.05% slippage assumptions."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "研究型综合增强组合：先按40%高夏普状态机、25%进取风险预算、35%双趋势金纳生成目标仓位，并按底层仓位共识使用1.00/1.20/1.40倍风险档。每42个交易日估计最多126日协方差；当单一资产风险贡献超过65%时，将60%目标权重按低波动与低正相关方向重新分配。当美股既有仓位至少10%、目标拟一次增加10%至20%，且纳指与标普近5日动量同时转负时，仅执行新增仓位的60%，避免弱势阶段突然加速暴露。总风险封顶110%，负现金按5%年化融资，目标权重变化超过8%才成交，统一计入1%交易费与0.05%滑点。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "研究型綜合增強組合：先按40%高夏普狀態機、25%進取風險預算、35%雙趨勢金納槓鈴產生目標倉位，並依底層倉位共識使用1.00／1.20／1.40倍風險檔。每42個交易日估計最多126日共變異數；當單一資產風險貢獻超過65%時，將60%目標權重往低波動與低正相關資產重新分配。當美股既有倉位至少10%、目標擬一次增加10%至20%，且納指與標普近5日動量同時轉負時，僅執行新增倉位的60%，避免弱勢階段突然加速曝險。總風險封頂110%，負現金按5%年化融資，目標權重變化超過8%才成交，並統一計入1%交易費與0.05%滑點。"
           }
         }
       }

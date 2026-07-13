@@ -142,18 +142,30 @@ enum AdvancedBacktestDataSupport {
             configJSON: BacktestRecordCodec.configData(from: config)
         )
 
-        let signature = [
-            record.kindRawValue,
-            record.subtitle,
-            record.configSummary,
-            record.startDate?.recordDateString ?? "nil",
-            record.endDate?.recordDateString ?? "nil",
-            String(format: "%.8f", record.totalReturn),
-            String(format: "%.8f", record.maxDrawdown),
-            String(format: "%.4f", record.finalValue ?? 0),
-            String(record.tradeCount)
-        ].joined(separator: "|")
+        let signature = recordSignature(
+            report: report,
+            strategyMode: strategyMode,
+            configSummary: configSummary
+        )
 
         return AdvancedBacktestRecordDraft(record: record, signature: signature)
+    }
+
+    static func recordSignature(
+        report: AdvancedBacktestReport,
+        strategyMode: AdvancedBacktestStrategyMode,
+        configSummary: String
+    ) -> String {
+        BacktestRecordCodec.recordSignature(
+            kindRawValue: BacktestRecordKind.advanced.rawValue,
+            subtitle: strategyMode.title,
+            configSummary: configSummary,
+            startDate: report.points.first?.date,
+            endDate: report.points.last?.date,
+            totalReturn: report.totalReturn,
+            maxDrawdown: report.maxDrawdown,
+            finalValue: report.finalPortfolioValue,
+            tradeCount: report.buyCount + report.sellCount
+        )
     }
 }

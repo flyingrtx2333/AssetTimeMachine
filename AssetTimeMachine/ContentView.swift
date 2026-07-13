@@ -137,6 +137,10 @@ struct ContentView: View {
         }
         .tint(AssetTheme.gold)
         .task {
+            let migratedStrategyID = StrategyNotificationDefaults.migratedTemplateID(strategyNotificationTemplateID)
+            if migratedStrategyID != strategyNotificationTemplateID {
+                strategyNotificationTemplateID = migratedStrategyID
+            }
             await runStartupIfNeeded()
             #if DEBUG
             scheduleDebugTabSwitchLoopIfNeeded()
