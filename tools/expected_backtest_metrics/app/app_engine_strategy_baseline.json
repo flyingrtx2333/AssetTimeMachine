@@ -1575,6 +1575,80 @@
           "point_count": 1179
         }
       }
+    },
+    {
+      "title": "无融资置信度恢复",
+      "id": "risk-contribution-cash-confidence-router",
+      "metrics_by_slice": {
+        "full": {
+          "metrics_percent": {
+            "annualized": 11.042845,
+            "max_drawdown": 7.407098,
+            "volatility": 7.905026,
+            "sharpe": 1.322073
+          },
+          "metrics": {
+            "annualized_return": 0.11042845,
+            "max_drawdown": -0.07407098,
+            "annualized_volatility": 0.07905026,
+            "sharpe": 1.322073
+          },
+          "start": "2002-02-04",
+          "end": "2026-07-03",
+          "point_count": 6357
+        },
+        "since2020": {
+          "metrics_percent": {
+            "annualized": 12.851008,
+            "max_drawdown": 7.407098,
+            "volatility": 9.134125,
+            "sharpe": 1.321992
+          },
+          "metrics": {
+            "annualized_return": 0.12851008,
+            "max_drawdown": -0.07407098,
+            "annualized_volatility": 0.09134125,
+            "sharpe": 1.321992
+          },
+          "start": "2020-01-02",
+          "end": "2026-07-03",
+          "point_count": 1700
+        },
+        "last10y": {
+          "metrics_percent": {
+            "annualized": 9.366355,
+            "max_drawdown": 7.407098,
+            "volatility": 7.748648,
+            "sharpe": 1.153699
+          },
+          "metrics": {
+            "annualized_return": 0.09366355,
+            "max_drawdown": -0.07407098,
+            "annualized_volatility": 0.07748648,
+            "sharpe": 1.153699
+          },
+          "start": "2016-07-04",
+          "end": "2026-07-03",
+          "point_count": 2612
+        },
+        "since2022": {
+          "metrics_percent": {
+            "annualized": 13.755888,
+            "max_drawdown": 7.407098,
+            "volatility": 9.481747,
+            "sharpe": 1.354993
+          },
+          "metrics": {
+            "annualized_return": 0.13755888,
+            "max_drawdown": -0.07407098,
+            "annualized_volatility": 0.09481747,
+            "sharpe": 1.354993
+          },
+          "start": "2022-01-03",
+          "end": "2026-07-03",
+          "point_count": 1179
+        }
+      }
     }
   ],
   "history_fixture": "tools/fixtures/backtest-history/public_history.json",

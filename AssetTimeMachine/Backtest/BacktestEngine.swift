@@ -1560,7 +1560,9 @@ nonisolated enum BacktestEngine {
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
         initialCash: Double,
         settings: AdvancedBacktestRiskSettings,
-        dateBounds: ClosedRange<Date>? = nil
+        dateBounds: ClosedRange<Date>? = nil,
+        growthStateScale: Double = 1.082,
+        fastBridgeRatio: Double = 0.185
     ) -> ResearchTargetStrategyRun? {
         guard let stableRun = runRiskContributionReallocationWithTrace(
             assetInputs: assetInputs,
@@ -1597,12 +1599,10 @@ nonisolated enum BacktestEngine {
         let exitRelativeReturn = -0.03
         let growthTrendLookback = 63
         let exitTrendRatio = 0.97
-        let growthStateScale = 1.082
         let growthBoostLookback = 28
         let growthBoostMaximumDrawdown = 0.015
         let growthBoostMarketMA = 120
         let growthBoostMarketMomentum = 60
-        let fastBridgeRatio = 0.185
         let fastBridgeHoldSessions = 12
         let fastBridgeCooldownSessions = 30
         let fastBridgeGrowthLookback = 10
@@ -1849,13 +1849,18 @@ nonisolated enum BacktestEngine {
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
         initialCash: Double,
         settings: AdvancedBacktestRiskSettings,
-        dateBounds: ClosedRange<Date>? = nil
+        dateBounds: ClosedRange<Date>? = nil,
+        growthStateScale: Double = 1.082,
+        fastBridgeRatio: Double = 0.185,
+        sleeveCap: Double = 0.15
     ) -> ResearchTargetStrategyRun? {
         guard let baseRun = runRiskContributionRecoveryBaseWithTrace(
             assetInputs: assetInputs,
             initialCash: initialCash,
             settings: settings,
-            dateBounds: dateBounds
+            dateBounds: dateBounds,
+            growthStateScale: growthStateScale,
+            fastBridgeRatio: fastBridgeRatio
         ) else { return nil }
 
         let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
@@ -1876,7 +1881,6 @@ nonisolated enum BacktestEngine {
         let minimumDrawdown = 0.05
         let trendMA = 100
         let momentumLookback = 60
-        let sleeveCap = 0.15
         let reviewSessions = 60
         let cooldownSessions = 180
         let minimumHoldSessions = 10
@@ -2084,6 +2088,188 @@ nonisolated enum BacktestEngine {
                     ? !target.isEmpty
                     : baseTargetChanged || recoveryChanged || difference > tradeBand
                 if shouldRebalance { previousWeights = target }
+                return BacktestRebalanceDecision(
+                    shouldRebalance: shouldRebalance,
+                    refreshOverlay: false
+                )
+            },
+            targetWeights: { _, _ in pendingWeights }
+        )
+    }
+
+    private static func runRiskContributionCashConfidenceRouterWithTrace(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings,
+        dateBounds: ClosedRange<Date>? = nil
+    ) -> ResearchTargetStrategyRun? {
+        guard let baseRun = runRiskContributionRecoveryRouterWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            dateBounds: dateBounds,
+            growthStateScale: 1.082,
+            fastBridgeRatio: 0.165,
+            sleeveCap: 0.22
+        ) else { return nil }
+
+        let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+            ($0.date.recordDateString, $0.targetWeights)
+        })
+        let baseValues = Dictionary(uniqueKeysWithValues: baseRun.report.points.map {
+            ($0.date.recordDateString, $0.portfolioValue)
+        })
+        let equitySymbols = ["nasdaq", "sp500", "csi300", "shanghai_composite"]
+        let tradeBand = 0.20
+        let grossCap = 1.0
+        let config = ResearchTargetStrategyConfig(
+            symbol: "risk_contribution_cash_confidence_router",
+            title: AppLocalization.string("无融资置信度恢复"),
+            warmupSessions: 21,
+            rebalanceSessions: 1,
+            rebalanceBand: tradeBand,
+            maxGrossExposure: grossCap,
+            allowsFinancedExposure: false,
+            financingAnnualRate: 0,
+            buyReason: AppLocalization.string("无融资置信度恢复调仓")
+        )
+
+        var alignedBaseValues: [Double?] = []
+        var latestBaseTarget: [String: Double] = [:]
+        var pendingWeights: [String: Double] = [:]
+        var previousWeights: [String: Double] = [:]
+        var currentAdjustment = 1.0
+
+        return runResearchTargetProviderStrategyWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            config: config,
+            dateBounds: dateBounds,
+            rebalanceDecision: { index, signalIndex, data in
+                guard data.dates.indices.contains(index),
+                      data.dates.indices.contains(signalIndex),
+                      signalIndex >= 20 else {
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                }
+
+                if alignedBaseValues.isEmpty {
+                    var lastValue: Double?
+                    for date in data.dates {
+                        if let value = baseValues[date.recordDateString] {
+                            lastValue = value
+                        }
+                        alignedBaseValues.append(lastValue)
+                    }
+                }
+
+                let executionKey = data.dates[index].recordDateString
+                var baseTargetChanged = false
+                if let weights = baseTargets[executionKey], !weights.isEmpty {
+                    let symbols = Set(latestBaseTarget.keys).union(weights.keys)
+                    baseTargetChanged = symbols.reduce(0.0) {
+                        $0 + abs((latestBaseTarget[$1] ?? 0) - (weights[$1] ?? 0))
+                    } > 0.0000001
+                    latestBaseTarget = weights
+                }
+                guard !latestBaseTarget.isEmpty else {
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                }
+
+                if baseTargetChanged || previousWeights.isEmpty {
+                    let baseGross = latestBaseTarget.values.reduce(0, +)
+                    let grossScale: Double
+                    if baseGross < 0.20 {
+                        grossScale = 0
+                    } else if baseGross < 0.60 {
+                        grossScale = 1
+                    } else if baseGross < 0.80 {
+                        grossScale = 0.65
+                    } else {
+                        grossScale = 1
+                    }
+
+                    var positiveBreadth10 = 0
+                    var positiveBreadth20 = 0
+                    var breadthValid = true
+                    for symbol in equitySymbols {
+                        guard let prices = data.pricesBySymbol[symbol],
+                              prices.indices.contains(signalIndex),
+                              prices[signalIndex - 10] > 0,
+                              prices[signalIndex - 20] > 0 else {
+                            breadthValid = false
+                            break
+                        }
+                        if prices[signalIndex] / prices[signalIndex - 10] - 1 > 0 {
+                            positiveBreadth10 += 1
+                        }
+                        if prices[signalIndex] / prices[signalIndex - 20] - 1 > 0 {
+                            positiveBreadth20 += 1
+                        }
+                    }
+
+                    var baseVolatility60 = Double.infinity
+                    if signalIndex >= 60 {
+                        var returns: [Double] = []
+                        for cursor in (signalIndex - 59)...signalIndex {
+                            guard cursor > 0,
+                                  let previous = alignedBaseValues[cursor - 1],
+                                  let current = alignedBaseValues[cursor],
+                                  previous > 0 else { continue }
+                            returns.append(current / previous - 1)
+                        }
+                        if returns.count > 1 {
+                            let mean = returns.reduce(0, +) / Double(returns.count)
+                            let variance = returns.reduce(0.0) {
+                                $0 + pow($1 - mean, 2)
+                            } / Double(returns.count - 1)
+                            baseVolatility60 = sqrt(max(variance, 0)) * sqrt(252)
+                        }
+                    }
+
+                    let lowVolatilityBreadthThrust = breadthValid
+                        && positiveBreadth10 == 3
+                        && baseGross >= 0.80
+                        && baseVolatility60 < 0.08
+                    let breadthScale: Double
+                    if breadthValid, positiveBreadth20 == 1 {
+                        breadthScale = 0.70
+                    } else if lowVolatilityBreadthThrust {
+                        breadthScale = 1.30
+                    } else {
+                        breadthScale = 1
+                    }
+
+                    let currentBaseValue = alignedBaseValues[signalIndex] ?? 0
+                    let peakStart = max(0, signalIndex - 251)
+                    let peakValue = alignedBaseValues[peakStart...signalIndex]
+                        .compactMap { $0 }
+                        .max() ?? currentBaseValue
+                    let drawdown = peakValue > 0
+                        ? max(1 - currentBaseValue / peakValue, 0)
+                        : 0
+                    let inValley = baseGross < 1
+                        && drawdown >= 0.025
+                        && drawdown < 0.051
+                    let valleyScale = inValley ? 0.60 : 1
+                    currentAdjustment = grossScale * breadthScale * valleyScale
+                }
+
+                pendingWeights = latestBaseTarget.mapValues { $0 * currentAdjustment }
+                let gross = pendingWeights.values.reduce(0, +)
+                if gross > grossCap, gross > 0 {
+                    pendingWeights = pendingWeights.mapValues { $0 * grossCap / gross }
+                }
+                let symbols = Set(previousWeights.keys).union(pendingWeights.keys)
+                let difference = symbols.reduce(0.0) {
+                    $0 + abs((previousWeights[$1] ?? 0) - (pendingWeights[$1] ?? 0))
+                }
+                let shouldRebalance = previousWeights.isEmpty
+                    ? !pendingWeights.isEmpty
+                    : baseTargetChanged || difference > tradeBand
+                if shouldRebalance {
+                    previousWeights = pendingWeights
+                }
                 return BacktestRebalanceDecision(
                     shouldRebalance: shouldRebalance,
                     refreshOverlay: false
@@ -2681,6 +2867,14 @@ nonisolated enum BacktestEngine {
         mode: AdvancedBacktestStrategyMode,
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedBacktestReport? {
+        if mode == .riskContributionCashConfidenceRouter {
+            return runRiskContributionCashConfidenceRouterWithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                dateBounds: dateBounds
+            )?.report
+        }
         if mode == .riskContributionRecoveryRouter {
             return runRiskContributionRecoveryRouterWithTrace(
                 assetInputs: assetInputs,
@@ -2746,6 +2940,15 @@ nonisolated enum BacktestEngine {
         mode: AdvancedBacktestStrategyMode,
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedRotationStrategyRun? {
+        if mode == .riskContributionCashConfidenceRouter {
+            guard let run = runRiskContributionCashConfidenceRouterWithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                dateBounds: dateBounds
+            ) else { return nil }
+            return AdvancedRotationStrategyRun(report: run.report, dailyStates: run.dailyStates)
+        }
         if mode == .riskContributionRecoveryRouter {
             guard let run = runRiskContributionRecoveryRouterWithTrace(
                 assetInputs: assetInputs,
@@ -4135,7 +4338,8 @@ nonisolated enum BacktestEngine {
              .onlineStrategyAllocator,
              .riskContributionReallocation,
              .riskContributionRegimeRouter,
-             .riskContributionRecoveryRouter:
+             .riskContributionRecoveryRouter,
+             .riskContributionCashConfidenceRouter:
             return nil
         case .ultraDefensiveRotation:
             return .init(

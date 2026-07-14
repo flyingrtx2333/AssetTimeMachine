@@ -9488,6 +9488,167 @@
         }
       }
     },
+    "无融资置信度恢复": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlevered Confidence Recovery"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无融资置信度恢复"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無融資置信度恢復"
+          }
+        }
+      }
+    },
+    "无融资置信度恢复调仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlevered confidence-recovery rebalance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无融资置信度恢复调仓"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無融資置信度恢復調倉"
+          }
+        }
+      }
+    },
+    "无融资": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Leverage"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无融资"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無融資"
+          }
+        }
+      }
+    },
+    "置信度执行": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confidence Execution"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "置信度执行"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "置信度執行"
+          }
+        }
+      }
+    },
+    "22%恢复袖套": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "22% Recovery Sleeve"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "22%恢复袖套"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "22%恢復袖套"
+          }
+        }
+      }
+    },
+    "总仓位100%": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "100% Gross Exposure"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "总仓位100%"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "總倉位100%"
+          }
+        }
+      }
+    },
+    "当前无融资冠军：以16.5%快速桥接和22%水下恢复袖套的双引擎路由为底层，再根据基础目标仓位、四市场宽度、2.5%至5.1%回撤谷区和低波动三市场扩散调整实际执行比例。目标总仓位封顶100%，现金不得为负；目标差异超过20%或底层发生关键切换时才调仓。全部信号严格使用T−1数据，并统一计入1%交易费与0.05%滑点。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current unlevered champion: uses a dual-engine router with a 16.5% fast bridge and a 22% underwater-recovery sleeve, then adjusts actual exposure using base-target confidence, four-market breadth, a 2.5%-5.1% drawdown valley, and a low-volatility three-market breadth thrust. Gross exposure is capped at 100% and cash cannot be negative; it rebalances only when target differences exceed 20% or the base engine makes a key transition. All signals use strict T-1 data and include a 1% fee plus 0.05% slippage."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前无融资冠军：以16.5%快速桥接和22%水下恢复袖套的双引擎路由为底层，再根据基础目标仓位、四市场宽度、2.5%至5.1%回撤谷区和低波动三市场扩散调整实际执行比例。目标总仓位封顶100%，现金不得为负；目标差异超过20%或底层发生关键切换时才调仓。全部信号严格使用T−1数据，并统一计入1%交易费与0.05%滑点。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前無融資冠軍：以16.5%快速橋接和22%水下恢復袖套的雙引擎路由為底層，再根據基礎目標倉位、四市場寬度、2.5%至5.1%回撤谷區和低波動三市場擴散調整實際執行比例。目標總倉位封頂100%，現金不得為負；目標差異超過20%或底層發生關鍵切換時才調倉。全部訊號嚴格使用T−1資料，並統一計入1%交易費與0.05%滑點。"
+          }
+        }
+      }
+    },
     "双引擎水下恢复": {
       "extractionState": "manual",
       "localizations": {

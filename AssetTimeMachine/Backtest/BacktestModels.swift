@@ -297,6 +297,7 @@ enum AdvancedBacktestStrategyMode: String, Codable {
     case riskContributionReallocation
     case riskContributionRegimeRouter
     case riskContributionRecoveryRouter
+    case riskContributionCashConfidenceRouter
     case strongVolControlledRotation
     case momentumRotation
 
@@ -402,6 +403,8 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("双引擎制度路由")
         case .riskContributionRecoveryRouter:
             return AppLocalization.string("双引擎水下恢复")
+        case .riskContributionCashConfidenceRouter:
+            return AppLocalization.string("无融资置信度恢复")
         case .strongVolControlledRotation:
             return AppLocalization.string("强势控波轮动")
         case .momentumRotation:
@@ -511,6 +514,8 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("质变型实验策略：同时运行稳健风险贡献引擎与进攻风险贡献引擎。每63个交易日只用T−1数据比较两者过去252日净值；进攻引擎领先至少2.5%且站上自身63日均值时切换进攻，落后3%或跌破均值3%时切回稳健。历史固定数据中仅发生3次制度切换，总风险封顶120%，负现金按5%年化融资，目标变化超过8%才成交，统一计入1%交易费与0.05%滑点。")
         case .riskContributionRecoveryRouter:
             return AppLocalization.string("在双引擎制度路由上加入快速上涨桥接与长水下恢复袖套：进攻状态在自身28日净值向上、回撤不超过1.5%，且纳指或标普站上MA120并保持60日正动量时放大至1.082倍；稳健状态遇到跨市场广度回升时，短暂向进攻引擎桥接18.5%。当基础净值水下至少60个交易日且回撤达到5%，纳指或标普站上MA100并保持60日正动量时，使用最多15%的闲置现金建立恢复袖套；每60个交易日复核，每个水下周期最多进入2次，退出后冷却180个交易日，双指数3日同时下跌3%时快速退出。总风险封顶120%，全部信号严格使用T−1数据，并统一计入1%交易费、0.05%滑点与5%年化融资成本。")
+        case .riskContributionCashConfidenceRouter:
+            return AppLocalization.string("当前无融资冠军：以16.5%快速桥接和22%水下恢复袖套的双引擎路由为底层，再根据基础目标仓位、四市场宽度、2.5%至5.1%回撤谷区和低波动三市场扩散调整实际执行比例。目标总仓位封顶100%，现金不得为负；目标差异超过20%或底层发生关键切换时才调仓。全部信号严格使用T−1数据，并统一计入1%交易费与0.05%滑点。")
         case .strongVolControlledRotation:
             return AppLocalization.string("20日强弱排序，每20个交易日持有最强资产；目标波动12%，最高投入90%")
         case .momentumRotation:
@@ -568,7 +573,8 @@ enum AdvancedBacktestStrategyMode: String, Codable {
         case .onlineStrategyAllocator,
              .riskContributionReallocation,
              .riskContributionRegimeRouter,
-             .riskContributionRecoveryRouter:
+             .riskContributionRecoveryRouter,
+             .riskContributionCashConfidenceRouter:
             return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
         default:
             return []
@@ -579,7 +585,8 @@ enum AdvancedBacktestStrategyMode: String, Codable {
         switch self {
         case .riskContributionReallocation,
              .riskContributionRegimeRouter,
-             .riskContributionRecoveryRouter:
+             .riskContributionRecoveryRouter,
+             .riskContributionCashConfidenceRouter:
             return ["gold_cny", "nasdaq"]
         case .convexCrashHedgeComposite,
              .onlineStrategyAllocator,
@@ -1753,6 +1760,23 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             sellRule: .init(direction: .priceBelowMA60, days: 1),
             tradeAmountRatio: 1,
             maxPositionRatio: 120,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "risk-contribution-cash-confidence-router",
+            mode: .riskContributionCashConfidenceRouter,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            category: AppLocalization.string("高级策略"),
+            title: AppLocalization.string("无融资置信度恢复"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 100,
             cooldownDays: 0,
             stopLossRatio: 0,
             takeProfitRatio: 0
