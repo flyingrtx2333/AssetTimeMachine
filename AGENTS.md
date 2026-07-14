@@ -206,7 +206,7 @@ The script automatically:
 - increments `CURRENT_PROJECT_VERSION` unless `--no-bump` is passed;
 - runs `git diff --check`;
 - runs the simulator Debug build unless `--skip-debug-build` is passed;
-- optionally commits current changes plus the build bump when `--commit-message` is passed;
+- optionally commits tracked changes plus the build bump when `--commit-message` is passed; untracked research files are intentionally left out;
 - archives, exports, uploads the IPA, and polls App Store Connect until `BUILD-STATUS: VALID`.
 
 To bump the user-visible version, pass `--version`:
@@ -484,8 +484,8 @@ Pull requests should describe the user-facing change, list verification commands
 
 ## Current Known Operational Notes
 
-- Latest TestFlight release: version `1.10` build `150`, Delivery UUID `307e5b9e-3be7-4938-b62c-130b02a10d1b`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.10-150`.
-- Build 150 adds the `双引擎水下恢复` experimental strategy, today-target allocation support for trace-backed strategies, and the existing `双引擎制度路由` product-catalog exposure. On the pinned App-engine history fixture, `双引擎水下恢复` records 12.10% annualized return, 9.44% maximum drawdown, and 1.19 Sharpe after the unified 1% fee and 0.05% slippage assumptions.
+- Latest TestFlight release: version `1.10` build `151`, Delivery UUID `db018b60-c958-4c13-a848-bd9482d54d3b`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.10-151`.
+- Build 151 adds the `无融资置信度恢复` strategy while retaining `双引擎水下恢复` for comparison. On the pinned App-engine fixture, the new strategy records 11.04% annualized return, 7.41% maximum drawdown, and 1.322 Sharpe after 1% fee and 0.05% slippage, with executed gross exposure capped at 100% and no negative cash days.
 - The app base API should return from `https://api.flyingrtx.com`.
 - If market-data freshness looks wrong, separate these layers before fixing:
   - app cache / `RemoteMarketStore.historySeries`

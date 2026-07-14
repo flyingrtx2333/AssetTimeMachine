@@ -21,7 +21,7 @@ Usage:
 
 Options:
   --version "1.0.6"       Set MARKETING_VERSION before building.
-  --commit-message "msg"  Commit current changes plus build bump before archiving.
+  --commit-message "msg"  Commit tracked changes plus build bump before archiving.
   --skip-debug-build      Skip simulator Debug build preflight.
   --no-bump               Do not increment CURRENT_PROJECT_VERSION.
   -h, --help              Show this help.
@@ -205,7 +205,7 @@ fi
 
 if [[ -n "$COMMIT_MESSAGE" ]]; then
     log "Committing release changes"
-    git add -A
+    git add -u
     git commit -m "$COMMIT_MESSAGE"
 fi
 
