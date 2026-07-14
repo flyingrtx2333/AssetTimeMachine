@@ -484,8 +484,8 @@ Pull requests should describe the user-facing change, list verification commands
 
 ## Current Known Operational Notes
 
-- Latest TestFlight release: version `1.10` build `147`, Delivery UUID `b8036775-8002-457d-a468-13e2ea4879b1`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.10-147`.
-- Build 147 contains the cross-market China-to-US handoff brake and the new `双引擎制度路由` experimental strategy. On the pinned App-engine history fixture, the router records 11.60% annualized return, 9.49% maximum drawdown, and 1.18 Sharpe after the unified 1% fee and 0.05% slippage assumptions.
+- Latest TestFlight release: version `1.10` build `150`, Delivery UUID `307e5b9e-3be7-4938-b62c-130b02a10d1b`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.10-150`.
+- Build 150 adds the `双引擎水下恢复` experimental strategy, today-target allocation support for trace-backed strategies, and the existing `双引擎制度路由` product-catalog exposure. On the pinned App-engine history fixture, `双引擎水下恢复` records 12.10% annualized return, 9.44% maximum drawdown, and 1.19 Sharpe after the unified 1% fee and 0.05% slippage assumptions.
 - The app base API should return from `https://api.flyingrtx.com`.
 - If market-data freshness looks wrong, separate these layers before fixing:
   - app cache / `RemoteMarketStore.historySeries`
