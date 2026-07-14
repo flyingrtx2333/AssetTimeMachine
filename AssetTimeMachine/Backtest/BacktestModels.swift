@@ -296,6 +296,7 @@ enum AdvancedBacktestStrategyMode: String, Codable {
     case onlineStrategyAllocator
     case riskContributionReallocation
     case riskContributionRegimeRouter
+    case riskContributionRecoveryRouter
     case strongVolControlledRotation
     case momentumRotation
 
@@ -399,6 +400,8 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("风险贡献再分配")
         case .riskContributionRegimeRouter:
             return AppLocalization.string("双引擎制度路由")
+        case .riskContributionRecoveryRouter:
+            return AppLocalization.string("双引擎水下恢复")
         case .strongVolControlledRotation:
             return AppLocalization.string("强势控波轮动")
         case .momentumRotation:
@@ -506,6 +509,8 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return AppLocalization.string("研究型综合增强组合：先按40%高夏普状态机、25%进取风险预算、35%双趋势金纳生成目标仓位，并按底层仓位共识使用1.00/1.20/1.40倍风险档。每42个交易日估计最多126日协方差；当单一资产风险贡献超过65%时，将60%目标权重按低波动与低正相关方向重新分配。当美股既有仓位至少10%、目标拟一次增加10%至20%，且纳指与标普近5日动量同时转负时，仅执行新增仓位的60%。当A股目标一次减少至少15%、美股目标拟增加5%至10%，且纳指或标普近5日动量至少一个未转正时，仅执行美股新增仓位的50%，避免区域风险退出后立即把风险转移到美股。总风险封顶110%，负现金按5%年化融资，目标权重变化超过8%才成交，统一计入1%交易费与0.05%滑点。")
         case .riskContributionRegimeRouter:
             return AppLocalization.string("质变型实验策略：同时运行稳健风险贡献引擎与进攻风险贡献引擎。每63个交易日只用T−1数据比较两者过去252日净值；进攻引擎领先至少2.5%且站上自身63日均值时切换进攻，落后3%或跌破均值3%时切回稳健。历史固定数据中仅发生3次制度切换，总风险封顶120%，负现金按5%年化融资，目标变化超过8%才成交，统一计入1%交易费与0.05%滑点。")
+        case .riskContributionRecoveryRouter:
+            return AppLocalization.string("在双引擎制度路由上加入快速上涨桥接与长水下恢复袖套：进攻状态在自身28日净值向上、回撤不超过1.5%，且纳指或标普站上MA120并保持60日正动量时放大至1.082倍；稳健状态遇到跨市场广度回升时，短暂向进攻引擎桥接18.5%。当基础净值水下至少60个交易日且回撤达到5%，纳指或标普站上MA100并保持60日正动量时，使用最多15%的闲置现金建立恢复袖套；每60个交易日复核，每个水下周期最多进入2次，退出后冷却180个交易日，双指数3日同时下跌3%时快速退出。总风险封顶120%，全部信号严格使用T−1数据，并统一计入1%交易费、0.05%滑点与5%年化融资成本。")
         case .strongVolControlledRotation:
             return AppLocalization.string("20日强弱排序，每20个交易日持有最强资产；目标波动12%，最高投入90%")
         case .momentumRotation:
@@ -562,7 +567,8 @@ enum AdvancedBacktestStrategyMode: String, Codable {
             return ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "shenzhen_component"]
         case .onlineStrategyAllocator,
              .riskContributionReallocation,
-             .riskContributionRegimeRouter:
+             .riskContributionRegimeRouter,
+             .riskContributionRecoveryRouter:
             return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
         default:
             return []
@@ -572,7 +578,8 @@ enum AdvancedBacktestStrategyMode: String, Codable {
     nonisolated var dateBoundaryAssetSymbols: Set<String>? {
         switch self {
         case .riskContributionReallocation,
-             .riskContributionRegimeRouter:
+             .riskContributionRegimeRouter,
+             .riskContributionRecoveryRouter:
             return ["gold_cny", "nasdaq"]
         case .convexCrashHedgeComposite,
              .onlineStrategyAllocator,
@@ -1129,7 +1136,7 @@ struct StrategyRebalanceAllocation: Identifiable, Sendable {
     let symbol: String
     let title: String
     let targetWeight: Double
-    let momentum: Double
+    let momentum: Double?
     let annualizedVolatility: Double?
 
     var id: String { symbol }
@@ -1734,6 +1741,23 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             takeProfitRatio: 0
         ),
         .init(
+            id: "risk-contribution-recovery-router",
+            mode: .riskContributionRecoveryRouter,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            category: AppLocalization.string("实验策略"),
+            title: AppLocalization.string("双引擎水下恢复"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 120,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
             id: "gold-nasdaq-dual-trend-barbell",
             mode: .goldNasdaqDualTrendBarbell,
             selectedAssetSymbols: ["gold_cny", "nasdaq"],
@@ -1875,6 +1899,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             "core-gold-satellite-profit-lock-momentum",
             "convex-crash-hedge-composite",
             "risk-contribution-reallocation",
+            "risk-contribution-regime-router",
+            "risk-contribution-recovery-router",
             "gold-nasdaq-dual-trend-barbell",
             "basic-ma60-trend",
             "basic-ma-golden-cross",

@@ -275,7 +275,7 @@ struct AdvancedBacktestResultContent<MiddleContent: View>: View {
                     }
 
                 } else {
-                    Text(AppLocalization.string("当前资产数据不足，暂时无法计算今日目标仓位。"))
+                    Text(AppLocalization.string("当前行情或策略计算尚未完成，暂时无法生成目标仓位。"))
                         .font(AppTypography.meta)
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
@@ -302,6 +302,10 @@ struct AdvancedBacktestResultContent<MiddleContent: View>: View {
             basePrefix = AppLocalization.string("暂无资产记录；")
         } else {
             basePrefix = AppLocalization.string("当前记录缺少可投资资产；")
+        }
+
+        if advice.lookbackSessions <= 0 {
+            return basePrefix + AppLocalization.string("按最新策略状态生成目标仓位。")
         }
 
         if advice.isCashDefense && actions.isEmpty {

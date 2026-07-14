@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-13T18:12:33+08:00",
+  "generated_at": "2026-07-14T15:00:00+08:00",
   "source": "tools/strategy_metric_dump.swift ATM_DUMP_SLICES=1 with pinned tools/fixtures/backtest-history/public_history.json",
   "baseline_type": "app_backtest_engine_baseline_not_full_app_equivalent_replay",
   "command": "tools/strategy_metric_dump.swift --verify-app-baseline",
@@ -1495,6 +1495,80 @@
             "max_drawdown": -0.09059958,
             "annualized_volatility": 0.10542918,
             "sharpe": 1.25999
+          },
+          "start": "2022-01-03",
+          "end": "2026-07-03",
+          "point_count": 1179
+        }
+      }
+    },
+    {
+      "title": "双引擎水下恢复",
+      "id": "risk-contribution-recovery-router",
+      "metrics_by_slice": {
+        "full": {
+          "metrics_percent": {
+            "annualized": 12.104999,
+            "max_drawdown": 9.439719,
+            "volatility": 9.653657,
+            "sharpe": 1.193996
+          },
+          "metrics": {
+            "annualized_return": 0.12104999,
+            "max_drawdown": -0.09439719,
+            "annualized_volatility": 0.09653657,
+            "sharpe": 1.193996
+          },
+          "start": "2002-02-04",
+          "end": "2026-07-03",
+          "point_count": 6357
+        },
+        "since2020": {
+          "metrics_percent": {
+            "annualized": 14.371125,
+            "max_drawdown": 9.439719,
+            "volatility": 11.023568,
+            "sharpe": 1.229749
+          },
+          "metrics": {
+            "annualized_return": 0.14371125,
+            "max_drawdown": -0.09439719,
+            "annualized_volatility": 0.11023568,
+            "sharpe": 1.229749
+          },
+          "start": "2020-01-02",
+          "end": "2026-07-03",
+          "point_count": 1700
+        },
+        "last10y": {
+          "metrics_percent": {
+            "annualized": 10.907604,
+            "max_drawdown": 9.439719,
+            "volatility": 9.549696,
+            "sharpe": 1.093861
+          },
+          "metrics": {
+            "annualized_return": 0.10907604,
+            "max_drawdown": -0.09439719,
+            "annualized_volatility": 0.09549696,
+            "sharpe": 1.093861
+          },
+          "start": "2016-07-04",
+          "end": "2026-07-03",
+          "point_count": 2612
+        },
+        "since2022": {
+          "metrics_percent": {
+            "annualized": 14.662121,
+            "max_drawdown": 9.145992,
+            "volatility": 11.068437,
+            "sharpe": 1.244475
+          },
+          "metrics": {
+            "annualized_return": 0.14662121,
+            "max_drawdown": -0.09145992,
+            "annualized_volatility": 0.11068437,
+            "sharpe": 1.244475
           },
           "start": "2022-01-03",
           "end": "2026-07-03",

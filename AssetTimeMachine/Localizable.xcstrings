@@ -9488,6 +9488,190 @@
         }
       }
     },
+    "双引擎水下恢复": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dual-Engine Underwater Recovery"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "双引擎水下恢复"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雙引擎水下恢復"
+          }
+        }
+      }
+    },
+    "双引擎水下恢复调仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dual-engine underwater-recovery rebalance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "双引擎水下恢复调仓"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雙引擎水下恢復調倉"
+          }
+        }
+      }
+    },
+    "60日水下触发": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "60-Day Underwater Trigger"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "60日水下触发"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "60日水下觸發"
+          }
+        }
+      }
+    },
+    "15%恢复袖套": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15% Recovery Sleeve"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15%恢复袖套"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15%恢復袖套"
+          }
+        }
+      }
+    },
+    "水下恢复稳健引擎": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Underwater-Recovery Stable Engine"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "水下恢复稳健引擎"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "水下恢復穩健引擎"
+          }
+        }
+      }
+    },
+    "水下恢复进攻引擎": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Underwater-Recovery Growth Engine"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "水下恢复进攻引擎"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "水下恢復進攻引擎"
+          }
+        }
+      }
+    },
+    "水下恢复基础路由": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Underwater-Recovery Base Router"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "水下恢复基础路由"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "水下恢復基礎路由"
+          }
+        }
+      }
+    },
+    "在双引擎制度路由上加入快速上涨桥接与长水下恢复袖套：进攻状态在自身28日净值向上、回撤不超过1.5%，且纳指或标普站上MA120并保持60日正动量时放大至1.082倍；稳健状态遇到跨市场广度回升时，短暂向进攻引擎桥接18.5%。当基础净值水下至少60个交易日且回撤达到5%，纳指或标普站上MA100并保持60日正动量时，使用最多15%的闲置现金建立恢复袖套；每60个交易日复核，每个水下周期最多进入2次，退出后冷却180个交易日，双指数3日同时下跌3%时快速退出。总风险封顶120%，全部信号严格使用T−1数据，并统一计入1%交易费、0.05%滑点与5%年化融资成本。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adds a fast-upside bridge and a long-underwater recovery sleeve to the Dual-Engine Regime Router. The growth state scales to 1.082× only when its 28-day equity curve is rising, its drawdown is no more than 1.5%, and either the Nasdaq or S&P 500 is above MA120 with positive 60-day momentum. During the stable state, broad cross-market recovery can temporarily bridge 18.5% toward the growth engine. Once the base strategy has remained underwater for at least 60 trading sessions with a drawdown of 5% or more, up to 15% of idle cash is allocated to a recovery sleeve when either the Nasdaq or S&P 500 is above MA100 with positive 60-day momentum. The sleeve is reviewed every 60 trading sessions, may enter at most twice per underwater episode, observes a 180-session cooldown after exit, and exits quickly when both indices fall 3% over three sessions. Gross exposure is capped at 120%; every signal uses T−1 data and the simulation includes a 1% fee, 0.05% slippage, and 5% annual financing cost."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在双引擎制度路由上加入快速上涨桥接与长水下恢复袖套：进攻状态在自身28日净值向上、回撤不超过1.5%，且纳指或标普站上MA120并保持60日正动量时放大至1.082倍；稳健状态遇到跨市场广度回升时，短暂向进攻引擎桥接18.5%。当基础净值水下至少60个交易日且回撤达到5%，纳指或标普站上MA100并保持60日正动量时，使用最多15%的闲置现金建立恢复袖套；每60个交易日复核，每个水下周期最多进入2次，退出后冷却180个交易日，双指数3日同时下跌3%时快速退出。总风险封顶120%，全部信号严格使用T−1数据，并统一计入1%交易费、0.05%滑点与5%年化融资成本。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在雙引擎制度路由上加入快速上漲橋接與長期水下恢復袖套：進攻狀態在自身28日淨值向上、回撤不超過1.5%，且納指或標普站上MA120並保持60日正動量時放大至1.082倍；穩健狀態遇到跨市場廣度回升時，短暫向進攻引擎橋接18.5%。當基礎淨值水下至少60個交易日且回撤達到5%，納指或標普站上MA100並保持60日正動量時，使用最多15%的閒置現金建立恢復袖套；每60個交易日複核，每個水下週期最多進入2次，退出後冷卻180個交易日，雙指數3日同時下跌3%時快速退出。總風險封頂120%，全部訊號嚴格使用T−1資料，並統一計入1%交易費、0.05%滑點與5%年化融資成本。"
+          }
+        }
+      }
+    },
     "双引擎制度路由": {
       "extractionState": "manual",
       "localizations": {

@@ -1155,6 +1155,7 @@ nonisolated enum BacktestEngine {
         let reallocationRatio: Double
         let volatilityExponent: Double
         let correlationPenalty: Double
+        let crossMarketHandoffIncreasePassThrough: Double
 
         static let stable = RiskContributionReallocationParameters(
             sharpeShare: 0.40,
@@ -1165,7 +1166,8 @@ nonisolated enum BacktestEngine {
             grossCap: 1.10,
             reallocationRatio: 0.60,
             volatilityExponent: 1.40,
-            correlationPenalty: 1.75
+            correlationPenalty: 1.75,
+            crossMarketHandoffIncreasePassThrough: 0.50
         )
 
         static let growth = RiskContributionReallocationParameters(
@@ -1177,7 +1179,34 @@ nonisolated enum BacktestEngine {
             grossCap: 1.20,
             reallocationRatio: 1.00,
             volatilityExponent: 2.00,
-            correlationPenalty: 3.00
+            correlationPenalty: 3.00,
+            crossMarketHandoffIncreasePassThrough: 0.50
+        )
+
+        static let recoveryStable = RiskContributionReallocationParameters(
+            sharpeShare: 0.40,
+            riskShare: 0.25,
+            dualShare: 0.35,
+            highScale: 1.40,
+            mediumScale: 1.20,
+            grossCap: 1.10,
+            reallocationRatio: 0.60,
+            volatilityExponent: 1.40,
+            correlationPenalty: 1.75,
+            crossMarketHandoffIncreasePassThrough: 0.26
+        )
+
+        static let recoveryGrowth = RiskContributionReallocationParameters(
+            sharpeShare: 0.35,
+            riskShare: 0.30,
+            dualShare: 0.35,
+            highScale: 1.60,
+            mediumScale: 1.30,
+            grossCap: 1.20,
+            reallocationRatio: 1.00,
+            volatilityExponent: 2.00,
+            correlationPenalty: 3.00,
+            crossMarketHandoffIncreasePassThrough: 0.26
         )
     }
 
@@ -1231,7 +1260,7 @@ nonisolated enum BacktestEngine {
         let crossMarketHandoffMinimumUSIncrease = 0.05
         let crossMarketHandoffMaximumUSIncrease = 0.10
         let crossMarketHandoffMinimumChinaReduction = 0.15
-        let crossMarketHandoffIncreasePassThrough = 0.50
+        let crossMarketHandoffIncreasePassThrough = parameters.crossMarketHandoffIncreasePassThrough
         let config = ResearchTargetStrategyConfig(
             symbol: strategySymbol,
             title: strategyTitle ?? AppLocalization.string("风险贡献再分配"),
@@ -1517,6 +1546,543 @@ nonisolated enum BacktestEngine {
                 let shouldRebalance = previousWeights.isEmpty
                     ? !target.isEmpty
                     : difference > tradeBand
+                if shouldRebalance { previousWeights = target }
+                return BacktestRebalanceDecision(
+                    shouldRebalance: shouldRebalance,
+                    refreshOverlay: false
+                )
+            },
+            targetWeights: { _, _ in pendingWeights }
+        )
+    }
+
+    private static func runRiskContributionRecoveryBaseWithTrace(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings,
+        dateBounds: ClosedRange<Date>? = nil
+    ) -> ResearchTargetStrategyRun? {
+        guard let stableRun = runRiskContributionReallocationWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            parameters: .recoveryStable,
+            strategySymbol: "risk_contribution_recovery_stable",
+            strategyTitle: AppLocalization.string("水下恢复稳健引擎")
+        ), let growthRun = runRiskContributionReallocationWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            parameters: .recoveryGrowth,
+            strategySymbol: "risk_contribution_recovery_growth",
+            strategyTitle: AppLocalization.string("水下恢复进攻引擎")
+        ) else { return nil }
+
+        let stableTargets = Dictionary(uniqueKeysWithValues: stableRun.dailyStates.map {
+            ($0.date.recordDateString, $0.targetWeights)
+        })
+        let growthTargets = Dictionary(uniqueKeysWithValues: growthRun.dailyStates.map {
+            ($0.date.recordDateString, $0.targetWeights)
+        })
+        let stableValues = Dictionary(uniqueKeysWithValues: stableRun.report.points.map {
+            ($0.date.recordDateString, $0.portfolioValue)
+        })
+        let growthValues = Dictionary(uniqueKeysWithValues: growthRun.report.points.map {
+            ($0.date.recordDateString, $0.portfolioValue)
+        })
+
+        let lookback = 252
+        let reviewSessions = 63
+        let entryRelativeReturn = 0.025
+        let exitRelativeReturn = -0.03
+        let growthTrendLookback = 63
+        let exitTrendRatio = 0.97
+        let growthStateScale = 1.082
+        let growthBoostLookback = 28
+        let growthBoostMaximumDrawdown = 0.015
+        let growthBoostMarketMA = 120
+        let growthBoostMarketMomentum = 60
+        let fastBridgeRatio = 0.185
+        let fastBridgeHoldSessions = 12
+        let fastBridgeCooldownSessions = 30
+        let fastBridgeGrowthLookback = 10
+        let fastBridgeGrowthMinimumReturn = 0.020
+        let fastBridgeUSMomentum = 0.025
+        let fastBridgeExitUSMomentum = -0.015
+        let fastBridgeTradeBand = 0.015
+        let tradeBand = 0.08
+        let grossCap = 1.20
+        let config = ResearchTargetStrategyConfig(
+            symbol: "risk_contribution_recovery_base",
+            title: AppLocalization.string("水下恢复基础路由"),
+            warmupSessions: 21,
+            rebalanceSessions: 1,
+            rebalanceBand: tradeBand,
+            maxGrossExposure: grossCap,
+            allowsFinancedExposure: true,
+            financingAnnualRate: 0.05,
+            buyReason: AppLocalization.string("双引擎水下恢复调仓")
+        )
+
+        var alignedStableValues: [Double?] = []
+        var alignedGrowthValues: [Double?] = []
+        var latestStableTarget: [String: Double] = [:]
+        var latestGrowthTarget: [String: Double] = [:]
+        var pendingWeights: [String: Double] = [:]
+        var previousWeights: [String: Double] = [:]
+        var growthActive = false
+        var lastReviewIndex = -10_000
+        var fastBridgeUntilIndex = -10_000
+        var fastBridgeLastEventIndex = -10_000
+        var fastBridgeActive = false
+
+        return runResearchTargetProviderStrategyWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            config: config,
+            dateBounds: dateBounds,
+            rebalanceDecision: { index, signalIndex, data in
+                guard signalIndex >= 20,
+                      data.dates.indices.contains(index),
+                      data.dates.indices.contains(signalIndex) else {
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                }
+
+                if alignedStableValues.isEmpty {
+                    var lastStableValue: Double?
+                    var lastGrowthValue: Double?
+                    for date in data.dates {
+                        let key = date.recordDateString
+                        if let value = stableValues[key] { lastStableValue = value }
+                        if let value = growthValues[key] { lastGrowthValue = value }
+                        alignedStableValues.append(lastStableValue)
+                        alignedGrowthValues.append(lastGrowthValue)
+                    }
+                }
+
+                let executionKey = data.dates[index].recordDateString
+                if let weights = stableTargets[executionKey], !weights.isEmpty {
+                    latestStableTarget = weights
+                }
+                if let weights = growthTargets[executionKey], !weights.isEmpty {
+                    latestGrowthTarget = weights
+                }
+                guard !latestStableTarget.isEmpty, !latestGrowthTarget.isEmpty else {
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                }
+
+                var stateChanged = false
+                if signalIndex >= lookback,
+                   signalIndex - lastReviewIndex >= reviewSessions,
+                   let stableNow = alignedStableValues[signalIndex],
+                   let stableStart = alignedStableValues[signalIndex - lookback],
+                   let growthNow = alignedGrowthValues[signalIndex],
+                   let growthStart = alignedGrowthValues[signalIndex - lookback],
+                   stableStart > 0,
+                   growthStart > 0 {
+                    let stableReturn = stableNow / stableStart - 1
+                    let growthReturn = growthNow / growthStart - 1
+                    let relativeReturn = growthReturn - stableReturn
+                    let trendStart = max(0, signalIndex - growthTrendLookback + 1)
+                    let growthWindow = alignedGrowthValues[trendStart...signalIndex].compactMap { $0 }
+                    let growthAverage = growthWindow.isEmpty
+                        ? growthNow
+                        : growthWindow.reduce(0, +) / Double(growthWindow.count)
+                    let previousState = growthActive
+
+                    if !growthActive,
+                       relativeReturn >= entryRelativeReturn,
+                       growthNow >= growthAverage {
+                        growthActive = true
+                    } else if growthActive,
+                              (relativeReturn <= exitRelativeReturn
+                                || growthNow < growthAverage * exitTrendRatio) {
+                        growthActive = false
+                    }
+                    stateChanged = growthActive != previousState
+                    lastReviewIndex = signalIndex
+                }
+
+                let boostStartIndex = max(0, signalIndex - growthBoostLookback)
+                let growthBoostWindow = alignedGrowthValues[boostStartIndex...signalIndex].compactMap { $0 }
+                let growthCurrentValue = alignedGrowthValues[signalIndex] ?? 0
+                let growthStartValue = alignedGrowthValues[boostStartIndex] ?? 0
+                let growthBoostMomentum = growthStartValue > 0
+                    ? growthCurrentValue / growthStartValue - 1
+                    : -1
+                let growthBoostPeak = growthBoostWindow.max() ?? growthCurrentValue
+                let growthBoostDrawdown = growthBoostPeak > 0
+                    ? 1 - growthCurrentValue / growthBoostPeak
+                    : 1
+
+                func marketTrendConfirmed(_ symbol: String) -> Bool {
+                    guard let prices = data.pricesBySymbol[symbol],
+                          prices.indices.contains(signalIndex),
+                          signalIndex + 1 >= growthBoostMarketMA,
+                          let momentum = priceMomentum(
+                            values: prices,
+                            at: signalIndex,
+                            lookback: growthBoostMarketMomentum
+                          ) else { return false }
+                    let averageStart = signalIndex - growthBoostMarketMA + 1
+                    let average = prices[averageStart...signalIndex].reduce(0, +)
+                        / Double(growthBoostMarketMA)
+                    return prices[signalIndex] >= average && momentum > 0
+                }
+
+                let marketBoostConfirmed = marketTrendConfirmed("nasdaq")
+                    || marketTrendConfirmed("sp500")
+                let growthBoostConfirmed = growthBoostMomentum > 0
+                    && growthBoostDrawdown <= growthBoostMaximumDrawdown
+                    && marketBoostConfirmed
+                let effectiveGrowthScale = growthActive && growthBoostConfirmed
+                    ? growthStateScale
+                    : 1.0
+                var target = growthActive
+                    ? latestGrowthTarget.mapValues { $0 * effectiveGrowthScale }
+                    : latestStableTarget
+
+                var fastBridgeChanged = false
+                if !growthActive {
+                    let bridgeStartIndex = max(0, signalIndex - fastBridgeGrowthLookback)
+                    let growthNow = alignedGrowthValues[signalIndex] ?? 0
+                    let growthStart = alignedGrowthValues[bridgeStartIndex] ?? 0
+                    let growthReturn = growthStart > 0 ? growthNow / growthStart - 1 : -1
+                    let growthWindow = alignedGrowthValues[bridgeStartIndex...signalIndex].compactMap { $0 }
+                    let growthPeak = growthWindow.max() ?? growthNow
+                    let growthDrawdown = growthPeak > 0 ? 1 - growthNow / growthPeak : 1
+                    let bridgeSymbols = ["nasdaq", "sp500", "csi300", "shanghai_composite"]
+                    var validCount = 0
+                    var positive10Count = 0
+                    var aboveMA20Count = 0
+                    var nasdaqM3 = 0.0
+                    var nasdaqM10 = 0.0
+                    var sp500M3 = 0.0
+                    var sp500M10 = 0.0
+
+                    for symbol in bridgeSymbols {
+                        guard let prices = data.pricesBySymbol[symbol],
+                              prices.indices.contains(signalIndex),
+                              let m3 = priceMomentum(values: prices, at: signalIndex, lookback: 3),
+                              let m10 = priceMomentum(values: prices, at: signalIndex, lookback: 10),
+                              let ma20 = movingAverageAt(values: prices, at: signalIndex, period: 20) else {
+                            continue
+                        }
+                        validCount += 1
+                        if m10 > 0 { positive10Count += 1 }
+                        if prices[signalIndex] >= ma20 { aboveMA20Count += 1 }
+                        if symbol == "nasdaq" {
+                            nasdaqM3 = m3
+                            nasdaqM10 = m10
+                        } else if symbol == "sp500" {
+                            sp500M3 = m3
+                            sp500M10 = m10
+                        }
+                    }
+
+                    let broadThrust = validCount >= 4
+                        && positive10Count >= 3
+                        && aboveMA20Count >= 3
+                        && (nasdaqM10 >= fastBridgeUSMomentum
+                            || sp500M10 >= fastBridgeUSMomentum)
+                        && growthReturn >= fastBridgeGrowthMinimumReturn
+                        && growthDrawdown <= 0.02
+                    let fastBreak = nasdaqM3 <= fastBridgeExitUSMomentum
+                        && sp500M3 <= fastBridgeExitUSMomentum
+                    let cooldownElapsed = signalIndex - fastBridgeLastEventIndex
+                        >= fastBridgeCooldownSessions
+                    let previousBridgeState = fastBridgeActive
+
+                    if !fastBridgeActive, broadThrust, cooldownElapsed {
+                        fastBridgeActive = true
+                        fastBridgeUntilIndex = signalIndex + fastBridgeHoldSessions
+                        fastBridgeLastEventIndex = signalIndex
+                    } else if fastBridgeActive,
+                              (fastBreak || signalIndex >= fastBridgeUntilIndex) {
+                        fastBridgeActive = false
+                        fastBridgeLastEventIndex = signalIndex
+                    }
+                    fastBridgeChanged = fastBridgeActive != previousBridgeState
+                } else if fastBridgeActive {
+                    fastBridgeActive = false
+                    fastBridgeChanged = true
+                }
+
+                if fastBridgeActive, !growthActive {
+                    let symbols = Set(latestStableTarget.keys).union(latestGrowthTarget.keys)
+                    target = Dictionary(uniqueKeysWithValues: symbols.map { symbol in
+                        let stableWeight = latestStableTarget[symbol] ?? 0
+                        let growthWeight = latestGrowthTarget[symbol] ?? 0
+                        return (
+                            symbol,
+                            stableWeight * (1 - fastBridgeRatio) + growthWeight * fastBridgeRatio
+                        )
+                    })
+                }
+
+                let gross = target.values.reduce(0, +)
+                if gross > grossCap, gross > 0 {
+                    target = target.mapValues { $0 * grossCap / gross }
+                }
+                let symbols = Set(previousWeights.keys).union(target.keys)
+                let difference = symbols.reduce(0.0) {
+                    $0 + abs((previousWeights[$1] ?? 0) - (target[$1] ?? 0))
+                }
+                pendingWeights = target
+                let shouldRebalance = previousWeights.isEmpty
+                    ? !target.isEmpty
+                    : stateChanged
+                        || difference > tradeBand
+                        || (fastBridgeChanged && difference > fastBridgeTradeBand)
+                if shouldRebalance { previousWeights = target }
+                return BacktestRebalanceDecision(
+                    shouldRebalance: shouldRebalance,
+                    refreshOverlay: false
+                )
+            },
+            targetWeights: { _, _ in pendingWeights }
+        )
+    }
+
+    private static func runRiskContributionRecoveryRouterWithTrace(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings,
+        dateBounds: ClosedRange<Date>? = nil
+    ) -> ResearchTargetStrategyRun? {
+        guard let baseRun = runRiskContributionRecoveryBaseWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            dateBounds: dateBounds
+        ) else { return nil }
+
+        let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+            ($0.date.recordDateString, $0.targetWeights)
+        })
+        let baseValues = Dictionary(uniqueKeysWithValues: baseRun.report.points.map {
+            ($0.date.recordDateString, $0.portfolioValue)
+        })
+        let baseCashRatios = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { state in
+            let ratio = state.portfolioValue > 0 ? max(state.cash / state.portfolioValue, 0) : 0
+            return (state.date.recordDateString, ratio)
+        })
+        let baseGrosses = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+            ($0.date.recordDateString, $0.targetWeights.values.reduce(0, +))
+        })
+
+        let minimumWaterDuration = 60
+        let minimumDrawdown = 0.05
+        let trendMA = 100
+        let momentumLookback = 60
+        let sleeveCap = 0.15
+        let reviewSessions = 60
+        let cooldownSessions = 180
+        let minimumHoldSessions = 10
+        let maximumEntriesPerEpisode = 2
+        let fastBreakThreshold = -0.03
+        let cashReserve = 0.05
+        let grossCap = 1.20
+        let tradeBand = 0.08
+        let config = ResearchTargetStrategyConfig(
+            symbol: "risk_contribution_recovery_router",
+            title: AppLocalization.string("双引擎水下恢复"),
+            warmupSessions: 21,
+            rebalanceSessions: 1,
+            rebalanceBand: tradeBand,
+            maxGrossExposure: grossCap,
+            allowsFinancedExposure: true,
+            financingAnnualRate: 0.05,
+            buyReason: AppLocalization.string("双引擎水下恢复调仓")
+        )
+
+        var alignedBaseValues: [Double?] = []
+        var alignedCashRatios: [Double] = []
+        var alignedBaseGrosses: [Double] = []
+        var latestBaseTarget: [String: Double] = [:]
+        var pendingWeights: [String: Double] = [:]
+        var previousWeights: [String: Double] = [:]
+        var recoveryWeights: [String: Double] = [:]
+        var basePeakValue = 0.0
+        var basePeakIndex = 0
+        var recoveryActive = false
+        var recoveryEnteredIndex = -10_000
+        var lastRecoveryReviewIndex = -10_000
+        var lastRecoveryExitIndex = -10_000
+        var entriesThisEpisode = 0
+
+        return runResearchTargetProviderStrategyWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            config: config,
+            dateBounds: dateBounds,
+            rebalanceDecision: { index, signalIndex, data in
+                guard signalIndex >= max(trendMA, momentumLookback),
+                      data.dates.indices.contains(index),
+                      data.dates.indices.contains(signalIndex) else {
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                }
+
+                if alignedBaseValues.isEmpty {
+                    var lastValue: Double?
+                    var lastCashRatio = 0.0
+                    var lastGross = 0.0
+                    for date in data.dates {
+                        let key = date.recordDateString
+                        if let value = baseValues[key] { lastValue = value }
+                        if let value = baseCashRatios[key] { lastCashRatio = value }
+                        if let value = baseGrosses[key] { lastGross = value }
+                        alignedBaseValues.append(lastValue)
+                        alignedCashRatios.append(lastCashRatio)
+                        alignedBaseGrosses.append(lastGross)
+                    }
+                    basePeakValue = alignedBaseValues.compactMap { $0 }.first ?? initialCash
+                }
+
+                let executionKey = data.dates[index].recordDateString
+                var baseTargetChanged = false
+                if let weights = baseTargets[executionKey], !weights.isEmpty {
+                    let symbols = Set(latestBaseTarget.keys).union(weights.keys)
+                    baseTargetChanged = symbols.reduce(0.0) {
+                        $0 + abs((latestBaseTarget[$1] ?? 0) - (weights[$1] ?? 0))
+                    } > 0.0000001
+                    latestBaseTarget = weights
+                }
+                guard !latestBaseTarget.isEmpty,
+                      let baseValue = alignedBaseValues[signalIndex] else {
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                }
+
+                var recoveryChanged = false
+                if baseValue >= basePeakValue {
+                    basePeakValue = baseValue
+                    basePeakIndex = signalIndex
+                    entriesThisEpisode = 0
+                    if recoveryActive || !recoveryWeights.isEmpty {
+                        recoveryActive = false
+                        recoveryWeights = [:]
+                        recoveryChanged = true
+                    }
+                }
+                let baseDrawdown = basePeakValue > 0 ? 1 - baseValue / basePeakValue : 0
+                let waterDuration = signalIndex - basePeakIndex
+
+                guard let nasdaqPrices = data.pricesBySymbol["nasdaq"],
+                      let sp500Prices = data.pricesBySymbol["sp500"],
+                      nasdaqPrices.indices.contains(signalIndex),
+                      sp500Prices.indices.contains(signalIndex),
+                      let nasdaqMA = movingAverageAt(
+                        values: nasdaqPrices,
+                        at: signalIndex,
+                        period: trendMA
+                      ),
+                      let sp500MA = movingAverageAt(
+                        values: sp500Prices,
+                        at: signalIndex,
+                        period: trendMA
+                      ) else {
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                }
+
+                let nasdaqMomentum = priceMomentum(
+                    values: nasdaqPrices,
+                    at: signalIndex,
+                    lookback: momentumLookback
+                ) ?? 0
+                let sp500Momentum = priceMomentum(
+                    values: sp500Prices,
+                    at: signalIndex,
+                    lookback: momentumLookback
+                ) ?? 0
+                let nasdaqPositive = nasdaqPrices[signalIndex] >= nasdaqMA
+                    && nasdaqMomentum > 0
+                let sp500Positive = sp500Prices[signalIndex] >= sp500MA
+                    && sp500Momentum > 0
+                let trendConfirmed = nasdaqPositive || sp500Positive
+
+                if !recoveryActive,
+                   entriesThisEpisode < maximumEntriesPerEpisode,
+                   signalIndex - lastRecoveryExitIndex >= cooldownSessions,
+                   waterDuration >= minimumWaterDuration,
+                   baseDrawdown >= minimumDrawdown,
+                   trendConfirmed {
+                    recoveryActive = true
+                    recoveryEnteredIndex = signalIndex
+                    lastRecoveryReviewIndex = -10_000
+                    entriesThisEpisode += 1
+                    recoveryChanged = true
+                }
+
+                if recoveryActive,
+                   signalIndex - lastRecoveryReviewIndex >= reviewSessions {
+                    let availableCash = max(alignedCashRatios[index] - cashReserve, 0)
+                    let availableGross = max(grossCap - alignedBaseGrosses[index], 0)
+                    let totalWeight = min(sleeveCap, availableCash, availableGross)
+                    var eligible: [(String, Double)] = []
+                    if nasdaqPositive,
+                       let volatility = annualizedVolatilityAt(
+                        values: nasdaqPrices,
+                        at: signalIndex,
+                        lookback: 40
+                       ) {
+                        eligible.append(("nasdaq", 1 / max(volatility, 0.05)))
+                    }
+                    if sp500Positive,
+                       let volatility = annualizedVolatilityAt(
+                        values: sp500Prices,
+                        at: signalIndex,
+                        lookback: 40
+                       ) {
+                        eligible.append(("sp500", 1 / max(volatility, 0.05)))
+                    }
+                    var nextRecoveryWeights: [String: Double] = [:]
+                    if totalWeight > 0, !eligible.isEmpty {
+                        let denominator = eligible.reduce(0.0) { $0 + $1.1 }
+                        for item in eligible {
+                            nextRecoveryWeights[item.0] = denominator > 0
+                                ? totalWeight * item.1 / denominator
+                                : totalWeight / Double(eligible.count)
+                        }
+                    }
+                    if nextRecoveryWeights != recoveryWeights {
+                        recoveryChanged = true
+                    }
+                    recoveryWeights = nextRecoveryWeights
+                    lastRecoveryReviewIndex = signalIndex
+                }
+
+                let nasdaqM3 = priceMomentum(values: nasdaqPrices, at: signalIndex, lookback: 3) ?? 0
+                let sp500M3 = priceMomentum(values: sp500Prices, at: signalIndex, lookback: 3) ?? 0
+                let fastBreak = nasdaqM3 <= fastBreakThreshold
+                    && sp500M3 <= fastBreakThreshold
+                let minimumHoldElapsed = signalIndex - recoveryEnteredIndex >= minimumHoldSessions
+                if recoveryActive,
+                   minimumHoldElapsed,
+                   (!trendConfirmed || fastBreak) {
+                    recoveryActive = false
+                    recoveryWeights = [:]
+                    lastRecoveryExitIndex = signalIndex
+                    recoveryChanged = true
+                }
+
+                var target = latestBaseTarget
+                for (symbol, weight) in recoveryWeights {
+                    target[symbol, default: 0] += weight
+                }
+                let gross = target.values.reduce(0, +)
+                if gross > grossCap, gross > 0 {
+                    target = target.mapValues { $0 * grossCap / gross }
+                }
+                let symbols = Set(previousWeights.keys).union(target.keys)
+                let difference = symbols.reduce(0.0) {
+                    $0 + abs((previousWeights[$1] ?? 0) - (target[$1] ?? 0))
+                }
+                pendingWeights = target
+                let shouldRebalance = previousWeights.isEmpty
+                    ? !target.isEmpty
+                    : baseTargetChanged || recoveryChanged || difference > tradeBand
                 if shouldRebalance { previousWeights = target }
                 return BacktestRebalanceDecision(
                     shouldRebalance: shouldRebalance,
@@ -2115,6 +2681,14 @@ nonisolated enum BacktestEngine {
         mode: AdvancedBacktestStrategyMode,
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedBacktestReport? {
+        if mode == .riskContributionRecoveryRouter {
+            return runRiskContributionRecoveryRouterWithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                dateBounds: dateBounds
+            )?.report
+        }
         if mode == .riskContributionRegimeRouter {
             return runRiskContributionRegimeRouterWithTrace(
                 assetInputs: assetInputs,
@@ -2172,6 +2746,15 @@ nonisolated enum BacktestEngine {
         mode: AdvancedBacktestStrategyMode,
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedRotationStrategyRun? {
+        if mode == .riskContributionRecoveryRouter {
+            guard let run = runRiskContributionRecoveryRouterWithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                dateBounds: dateBounds
+            ) else { return nil }
+            return AdvancedRotationStrategyRun(report: run.report, dailyStates: run.dailyStates)
+        }
         if mode == .riskContributionRegimeRouter {
             guard let run = runRiskContributionRegimeRouterWithTrace(
                 assetInputs: assetInputs,
@@ -3551,7 +4134,8 @@ nonisolated enum BacktestEngine {
              .convexCrashHedgeComposite,
              .onlineStrategyAllocator,
              .riskContributionReallocation,
-             .riskContributionRegimeRouter:
+             .riskContributionRegimeRouter,
+             .riskContributionRecoveryRouter:
             return nil
         case .ultraDefensiveRotation:
             return .init(
@@ -5310,13 +5894,74 @@ nonisolated enum BacktestEngine {
         return max(repairWarmup, currencyWarmup, goldPanicWarmup, governorWarmup, equityCurveStateWarmup, assetRiskWarmup, ohlcRiskWarmup)
     }
 
+    private static func traceBackedRebalanceAdvice(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        mode: AdvancedBacktestStrategyMode,
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings?
+    ) -> StrategyRebalanceAdvice? {
+        let normalizedInitialCash = max(initialCash, 0)
+        let resolvedSettings = settings ?? AdvancedBacktestRiskSettings(
+            feeRate: BacktestDefaults.advancedFeeRatePercent,
+            slippageRate: BacktestDefaults.advancedSlippageRatePercent,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        )
+        guard normalizedInitialCash > 0,
+              let run = runAdvancedRotationStrategyWithTrace(
+                assetInputs: assetInputs,
+                initialCash: normalizedInitialCash,
+                settings: resolvedSettings,
+                mode: mode
+              ),
+              let latestState = run.dailyStates.last else {
+            return nil
+        }
+
+        let optionsBySymbol = Dictionary(uniqueKeysWithValues: assetInputs.map { ($0.assetOption.symbol, $0.assetOption) })
+        let allocations = latestState.targetWeights
+            .filter { $0.value > 0.0001 }
+            .compactMap { symbol, weight -> StrategyRebalanceAllocation? in
+                guard let option = optionsBySymbol[symbol] else { return nil }
+                return StrategyRebalanceAllocation(
+                    symbol: symbol,
+                    title: option.title,
+                    targetWeight: weight,
+                    momentum: nil,
+                    annualizedVolatility: nil
+                )
+            }
+            .sorted { lhs, rhs in
+                if lhs.targetWeight == rhs.targetWeight { return lhs.title < rhs.title }
+                return lhs.targetWeight > rhs.targetWeight
+            }
+
+        return StrategyRebalanceAdvice(
+            strategyTitle: mode.title,
+            asOfDate: latestState.date,
+            lookbackSessions: 0,
+            rebalanceSessions: 0,
+            targetAnnualVolatility: nil,
+            allocations: allocations
+        )
+    }
+
     static func advancedRotationRebalanceAdvice(
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
         mode: AdvancedBacktestStrategyMode,
         initialCash: Double = 100_000,
         settings: AdvancedBacktestRiskSettings? = nil
     ) -> StrategyRebalanceAdvice? {
-        guard let config = advancedRotationConfig(for: mode) else { return nil }
+        guard let config = advancedRotationConfig(for: mode) else {
+            return traceBackedRebalanceAdvice(
+                assetInputs: assetInputs,
+                mode: mode,
+                initialCash: initialCash,
+                settings: settings
+            )
+        }
         let normalizedInitialCash = max(initialCash, 0)
         let normalizedFeeRate = max(settings?.feeRate ?? BacktestDefaults.advancedFeeRatePercent, 0) / 100
         let normalizedSlippageRate = max(settings?.slippageRate ?? BacktestDefaults.advancedSlippageRatePercent, 0) / 100
