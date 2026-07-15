@@ -484,7 +484,8 @@ Pull requests should describe the user-facing change, list verification commands
 
 ## Current Known Operational Notes
 
-- Latest TestFlight release: version `1.10` build `153`, Delivery UUID `274e7b76-28f4-4d3b-9d62-514b8cba1a17`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.10-153`.
+- Latest TestFlight release: version `1.10` build `154`, Delivery UUID `df5abd40-08e3-4bac-979e-deb65c397cbb`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.10-154`.
+- Build 154 fixes the strategy-library catalog so `无融资置信度恢复` is visible in `策略大全`; strategy logic and pinned metrics are unchanged from build 153.
 - Build 153 refines `无融资置信度恢复` with low-confidence A-share pruning, a mature Nasdaq light brake, and low-gross Nasdaq residual cleanup. On the pinned App-engine fixture it records 11.01% annualized return, 7.41% maximum drawdown, and 1.341 Sharpe after 1% fee and 0.05% slippage; since-2020, recent-10Y, and since-2022 Sharpe are 1.347, 1.200, and 1.375 respectively, with executed gross exposure capped at 100% and no negative cash days.
 - Build 152 unifies the app palette around neutral graphite / warm ivory surfaces with restrained champagne-gold accents, reduces card shadow weight, and replaces the rounded display type system with a calmer SF Pro hierarchy across shared typography, dashboard charts, snapshot metrics, and time-machine charts.
 - The app base API should return from `https://api.flyingrtx.com`.
