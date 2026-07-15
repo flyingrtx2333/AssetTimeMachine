@@ -2122,6 +2122,14 @@ nonisolated enum BacktestEngine {
         let equitySymbols = ["nasdaq", "sp500", "csi300", "shanghai_composite"]
         let tradeBand = 0.20
         let grossCap = 1.0
+        let lowConfidenceChinaGrossMaximum = 0.50
+        let matureNasdaqGrossMinimum = 0.70
+        let matureNasdaqMinimumWeight = 0.20
+        let matureNasdaqMAPeriod = 40
+        let matureNasdaqScale = 0.82
+        let matureOtherAssetScale = 0.78
+        let residualNasdaqGrossMaximum = 0.20
+        let residualNasdaqMinimumWeight = 0.01
         let config = ResearchTargetStrategyConfig(
             symbol: "risk_contribution_cash_confidence_router",
             title: AppLocalization.string("无融资置信度恢复"),
@@ -2256,6 +2264,67 @@ nonisolated enum BacktestEngine {
                 }
 
                 pendingWeights = latestBaseTarget.mapValues { $0 * currentAdjustment }
+
+                let adjustedGross = pendingWeights.values.reduce(0, +)
+                let adjustedChinaWeight = (pendingWeights["csi300"] ?? 0)
+                    + (pendingWeights["shanghai_composite"] ?? 0)
+                let adjustedChinaDominant = adjustedChinaWeight >= max(
+                    pendingWeights["gold_cny"] ?? 0,
+                    pendingWeights["nasdaq"] ?? 0,
+                    pendingWeights["sp500"] ?? 0
+                )
+                if adjustedGross >= 0.20,
+                   adjustedGross <= lowConfidenceChinaGrossMaximum,
+                   adjustedChinaWeight >= 0.05,
+                   adjustedChinaDominant {
+                    pendingWeights["csi300"] = 0
+                    pendingWeights["shanghai_composite"] = 0
+                }
+
+                if let nasdaqPrices = data.pricesBySymbol["nasdaq"],
+                   nasdaqPrices.indices.contains(signalIndex),
+                   signalIndex >= matureNasdaqMAPeriod,
+                   let nasdaqMA = movingAverageAt(
+                    values: nasdaqPrices,
+                    at: signalIndex,
+                    period: matureNasdaqMAPeriod
+                   ) {
+                    let matureGross = pendingWeights.values.reduce(0, +)
+                    let nasdaqWeight = pendingWeights["nasdaq"] ?? 0
+                    let chinaWeight = (pendingWeights["csi300"] ?? 0)
+                        + (pendingWeights["shanghai_composite"] ?? 0)
+                    let nasdaqDominant = nasdaqWeight >= max(
+                        pendingWeights["gold_cny"] ?? 0,
+                        pendingWeights["sp500"] ?? 0,
+                        chinaWeight
+                    )
+                    if matureGross >= matureNasdaqGrossMinimum,
+                       nasdaqWeight >= matureNasdaqMinimumWeight,
+                       nasdaqDominant,
+                       nasdaqPrices[signalIndex] >= nasdaqMA {
+                        pendingWeights = pendingWeights.mapValues {
+                            $0 * matureOtherAssetScale
+                        }
+                        pendingWeights["nasdaq"] = nasdaqWeight * matureNasdaqScale
+                    }
+                }
+
+                let residualGross = pendingWeights.values.reduce(0, +)
+                let residualNasdaqWeight = pendingWeights["nasdaq"] ?? 0
+                let residualChinaWeight = (pendingWeights["csi300"] ?? 0)
+                    + (pendingWeights["shanghai_composite"] ?? 0)
+                let residualNasdaqDominant = residualNasdaqWeight >= max(
+                    pendingWeights["gold_cny"] ?? 0,
+                    pendingWeights["sp500"] ?? 0,
+                    residualChinaWeight
+                )
+                if residualGross > 0,
+                   residualGross <= residualNasdaqGrossMaximum,
+                   residualNasdaqWeight >= residualNasdaqMinimumWeight,
+                   residualNasdaqDominant {
+                    pendingWeights["nasdaq"] = 0
+                }
+
                 let gross = pendingWeights.values.reduce(0, +)
                 if gross > grossCap, gross > 0 {
                     pendingWeights = pendingWeights.mapValues { $0 * grossCap / gross }

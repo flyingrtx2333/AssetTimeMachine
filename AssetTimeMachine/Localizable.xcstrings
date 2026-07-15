@@ -9488,6 +9488,75 @@
         }
       }
     },
+    "低置信度剪枝": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low-Confidence Pruning"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "低置信度剪枝"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "低置信度剪枝"
+          }
+        }
+      }
+    },
+    "成熟期轻刹车": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mature-Phase Light Brake"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "成熟期轻刹车"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "成熟期輕煞車"
+          }
+        }
+      }
+    },
+    "当前无融资夏普冠军：以16.5%快速桥接和22%水下恢复袖套的双引擎路由为底层，继续使用基础仓位置信度、四市场宽度、2.5%至5.1%回撤谷区和低波动三市场扩散。执行层新增三项现金约束剪枝：总仓位20%至50%且A股主导时清除低置信度A股残余；总仓位至少70%、纳指主导且站上MA40时，纳指按82%、其他风险资产按78%执行；总仓位不超过20%且纳指主导时清除纳指残余。总仓位封顶100%，现金不得为负；目标差异超过20%或底层关键切换时调仓。全部信号严格使用T−1数据，并统一计入1%交易费与0.05%滑点。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current unlevered Sharpe champion: uses the dual-engine router with a 16.5% fast bridge and a 22% underwater-recovery sleeve, plus base-exposure confidence, four-market breadth, a 2.5%-5.1% drawdown valley, and a low-volatility three-market thrust. The execution layer adds three cash-constrained pruning rules: when gross exposure is 20%-50% and China equities dominate, remove residual low-confidence China equity exposure; when gross is at least 70%, Nasdaq dominates and stands above MA40, execute Nasdaq at 82% and other risk assets at 78%; when gross is at most 20% and Nasdaq dominates, remove residual Nasdaq exposure. Gross exposure is capped at 100%, cash cannot be negative; rebalance when target differences exceed 20% or the base engine makes a key transition. All signals use strict T-1 data and include 1% fees plus 0.05% slippage."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前无融资夏普冠军：以16.5%快速桥接和22%水下恢复袖套的双引擎路由为底层，继续使用基础仓位置信度、四市场宽度、2.5%至5.1%回撤谷区和低波动三市场扩散。执行层新增三项现金约束剪枝：总仓位20%至50%且A股主导时清除低置信度A股残余；总仓位至少70%、纳指主导且站上MA40时，纳指按82%、其他风险资产按78%执行；总仓位不超过20%且纳指主导时清除纳指残余。总仓位封顶100%，现金不得为负；目标差异超过20%或底层关键切换时调仓。全部信号严格使用T−1数据，并统一计入1%交易费与0.05%滑点。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前無融資夏普冠軍：以16.5%快速橋接和22%水下恢復袖套的雙引擎路由為底層，繼續使用基礎倉位置信度、四市場寬度、2.5%至5.1%回撤谷區和低波動三市場擴散。執行層新增三項現金約束剪枝：總倉位20%至50%且A股主導時清除低置信度A股殘餘；總倉位至少70%、納指主導且站上MA40時，納指按82%、其他風險資產按78%執行；總倉位不超過20%且納指主導時清除納指殘餘。總倉位封頂100%，現金不得為負；目標差異超過20%或底層關鍵切換時調倉。全部訊號嚴格使用T−1資料，並統一計入1%交易費與0.05%滑點。"
+          }
+        }
+      }
+    },
     "无融资置信度恢复": {
       "extractionState": "manual",
       "localizations": {

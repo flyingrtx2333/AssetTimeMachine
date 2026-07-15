@@ -1384,8 +1384,8 @@ struct AdvancedStrategyTemplateRow: View {
         case .riskContributionCashConfidenceRouter:
             return [
                 AppLocalization.string("无融资"),
-                AppLocalization.string("置信度执行"),
-                AppLocalization.string("22%恢复袖套"),
+                AppLocalization.string("低置信度剪枝"),
+                AppLocalization.string("成熟期轻刹车"),
                 AppLocalization.string("总仓位100%")
             ]
         case .strongVolControlledRotation:
