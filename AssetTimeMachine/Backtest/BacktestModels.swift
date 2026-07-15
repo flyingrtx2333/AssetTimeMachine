@@ -1925,6 +1925,7 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             "risk-contribution-reallocation",
             "risk-contribution-regime-router",
             "risk-contribution-recovery-router",
+            "risk-contribution-cash-confidence-router",
             "gold-nasdaq-dual-trend-barbell",
             "basic-ma60-trend",
             "basic-ma-golden-cross",
