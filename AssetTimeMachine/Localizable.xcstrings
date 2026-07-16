@@ -9534,25 +9534,25 @@
         }
       }
     },
-    "当前无融资夏普冠军：以16.5%快速桥接和22%水下恢复袖套的双引擎路由为底层，继续使用基础仓位置信度、四市场宽度、2.5%至5.1%回撤谷区和低波动三市场扩散。执行层新增三项现金约束剪枝：总仓位20%至50%且A股主导时清除低置信度A股残余；总仓位至少70%、纳指主导且站上MA40时，纳指按82%、其他风险资产按78%执行；总仓位不超过20%且纳指主导时清除纳指残余。总仓位封顶100%，现金不得为负；目标差异超过20%或底层关键切换时调仓。全部信号严格使用T−1数据，并统一计入1%交易费与0.05%滑点。": {
+    "当前无融资夏普冠军：以15%快速桥接和20.75%水下恢复袖套的双引擎路由为底层，继续使用基础仓位置信度、2.5%至5.1%回撤谷区和低波动扩散。执行层在A股低置信度、纳指中仓位、黄金低仓位和成熟期高仓位进行现金约束：总仓位50%至60%且纳指主导时归现金；总仓位30%至40%且黄金主导时执行45%；高仓纳指站上MA40时，纳指按88%、其他风险资产按80%执行。当5、6、7、9或10日权益宽度仅一个市场上涨，或目标落入特定低置信度仓位簇时保持上一目标，减少无效切换；10日同步过热、20日弱扩散和40日窄宽度仅做轻度降仓。总仓位封顶100%，现金不得为负；目标差异超过20%或底层关键切换时调仓。全部信号严格使用T−1数据，并统一计入1%交易费与0.05%滑点。": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Current unlevered Sharpe champion: uses the dual-engine router with a 16.5% fast bridge and a 22% underwater-recovery sleeve, plus base-exposure confidence, four-market breadth, a 2.5%-5.1% drawdown valley, and a low-volatility three-market thrust. The execution layer adds three cash-constrained pruning rules: when gross exposure is 20%-50% and China equities dominate, remove residual low-confidence China equity exposure; when gross is at least 70%, Nasdaq dominates and stands above MA40, execute Nasdaq at 82% and other risk assets at 78%; when gross is at most 20% and Nasdaq dominates, remove residual Nasdaq exposure. Gross exposure is capped at 100%, cash cannot be negative; rebalance when target differences exceed 20% or the base engine makes a key transition. All signals use strict T-1 data and include 1% fees plus 0.05% slippage."
+            "value": "Current unlevered Sharpe champion: built on the dual-engine router with a 15% fast bridge and a 20.75% underwater-recovery sleeve, while retaining base-exposure confidence, the 2.5%-5.1% drawdown valley, and low-volatility breadth thrusts. The execution layer applies cash-constrained controls to low-confidence China equity exposure, mid-gross Nasdaq states, low-gross gold states, and mature high-gross states: move to cash when gross is 50%-60% and Nasdaq dominates; execute 45% when gross is 30%-40% and gold dominates; when high-gross Nasdaq is above MA40, execute Nasdaq at 88% and other risk assets at 80%. When equity breadth has only one positive market over 5, 6, 7, 9, or 10 sessions, or the target falls into specified low-confidence exposure clusters, retain the previous target to avoid ineffective switching; use only light exposure cuts for 10-session synchronized overheating, 20-session weak breadth, and 40-session narrow breadth. Gross exposure is capped at 100%, cash cannot be negative; rebalance when target differences exceed 20% or the base engine makes a key transition. All signals use strict T-1 data and include 1% fees plus 0.05% slippage."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "当前无融资夏普冠军：以16.5%快速桥接和22%水下恢复袖套的双引擎路由为底层，继续使用基础仓位置信度、四市场宽度、2.5%至5.1%回撤谷区和低波动三市场扩散。执行层新增三项现金约束剪枝：总仓位20%至50%且A股主导时清除低置信度A股残余；总仓位至少70%、纳指主导且站上MA40时，纳指按82%、其他风险资产按78%执行；总仓位不超过20%且纳指主导时清除纳指残余。总仓位封顶100%，现金不得为负；目标差异超过20%或底层关键切换时调仓。全部信号严格使用T−1数据，并统一计入1%交易费与0.05%滑点。"
+            "value": "当前无融资夏普冠军：以15%快速桥接和20.75%水下恢复袖套的双引擎路由为底层，继续使用基础仓位置信度、2.5%至5.1%回撤谷区和低波动扩散。执行层在A股低置信度、纳指中仓位、黄金低仓位和成熟期高仓位进行现金约束：总仓位50%至60%且纳指主导时归现金；总仓位30%至40%且黄金主导时执行45%；高仓纳指站上MA40时，纳指按88%、其他风险资产按80%执行。当5、6、7、9或10日权益宽度仅一个市场上涨，或目标落入特定低置信度仓位簇时保持上一目标，减少无效切换；10日同步过热、20日弱扩散和40日窄宽度仅做轻度降仓。总仓位封顶100%，现金不得为负；目标差异超过20%或底层关键切换时调仓。全部信号严格使用T−1数据，并统一计入1%交易费与0.05%滑点。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "目前無融資夏普冠軍：以16.5%快速橋接和22%水下恢復袖套的雙引擎路由為底層，繼續使用基礎倉位置信度、四市場寬度、2.5%至5.1%回撤谷區和低波動三市場擴散。執行層新增三項現金約束剪枝：總倉位20%至50%且A股主導時清除低置信度A股殘餘；總倉位至少70%、納指主導且站上MA40時，納指按82%、其他風險資產按78%執行；總倉位不超過20%且納指主導時清除納指殘餘。總倉位封頂100%，現金不得為負；目標差異超過20%或底層關鍵切換時調倉。全部訊號嚴格使用T−1資料，並統一計入1%交易費與0.05%滑點。"
+            "value": "目前無融資夏普冠軍：以15%快速橋接和20.75%水下恢復袖套的雙引擎路由為底層，繼續使用基礎倉位置信度、2.5%至5.1%回撤谷區和低波動擴散。執行層針對A股低置信度、納指中倉位、黃金低倉位和成熟期高倉位進行現金約束：總倉位50%至60%且納指主導時轉為現金；總倉位30%至40%且黃金主導時執行45%；高倉納指站上MA40時，納指按88%、其他風險資產按80%執行。當5、6、7、9或10日權益寬度僅一個市場上漲，或目標落入特定低置信度倉位簇時維持上一目標，減少無效切換；10日同步過熱、20日弱擴散和40日窄寬度僅做輕度降倉。總倉位封頂100%，現金不得為負；目標差異超過20%或底層關鍵切換時調倉。全部訊號嚴格使用T−1資料，並統一計入1%交易費與0.05%滑點。"
           }
         }
       }

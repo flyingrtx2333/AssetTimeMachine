@@ -2108,9 +2108,9 @@ nonisolated enum BacktestEngine {
             initialCash: initialCash,
             settings: settings,
             dateBounds: dateBounds,
-            growthStateScale: 1.082,
-            fastBridgeRatio: 0.165,
-            sleeveCap: 0.22
+            growthStateScale: 1.05,
+            fastBridgeRatio: 0.15,
+            sleeveCap: 0.2075
         ) else { return nil }
 
         let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
@@ -2126,8 +2126,8 @@ nonisolated enum BacktestEngine {
         let matureNasdaqGrossMinimum = 0.70
         let matureNasdaqMinimumWeight = 0.20
         let matureNasdaqMAPeriod = 40
-        let matureNasdaqScale = 0.82
-        let matureOtherAssetScale = 0.78
+        let matureNasdaqScale = 0.88
+        let matureOtherAssetScale = 0.80
         let residualNasdaqGrossMaximum = 0.20
         let residualNasdaqMinimumWeight = 0.01
         let config = ResearchTargetStrategyConfig(
@@ -2323,6 +2323,120 @@ nonisolated enum BacktestEngine {
                    residualNasdaqWeight >= residualNasdaqMinimumWeight,
                    residualNasdaqDominant {
                     pendingWeights["nasdaq"] = 0
+                }
+
+                let positiveBreadthCount: (Int) -> Int? = { lookback in
+                    guard lookback > 0, signalIndex >= lookback else { return nil }
+                    var count = 0
+                    for symbol in equitySymbols {
+                        guard let prices = data.pricesBySymbol[symbol],
+                              prices.indices.contains(signalIndex),
+                              prices[signalIndex - lookback] > 0 else {
+                            return nil
+                        }
+                        if prices[signalIndex] / prices[signalIndex - lookback] - 1 > 0 {
+                            count += 1
+                        }
+                    }
+                    return count
+                }
+
+                let stateGross = pendingWeights.values.reduce(0, +)
+                let stateChinaWeight = (pendingWeights["csi300"] ?? 0)
+                    + (pendingWeights["shanghai_composite"] ?? 0)
+                let stateGoldWeight = pendingWeights["gold_cny"] ?? 0
+                let stateNasdaqWeight = pendingWeights["nasdaq"] ?? 0
+                let goldDominant = stateGoldWeight >= max(
+                    stateNasdaqWeight,
+                    pendingWeights["sp500"] ?? 0,
+                    stateChinaWeight
+                )
+                if stateGross >= 0.30,
+                   stateGross < 0.40,
+                   goldDominant {
+                    pendingWeights = pendingWeights.mapValues { $0 * 0.45 }
+                }
+
+                let postGoldGross = pendingWeights.values.reduce(0, +)
+                let postGoldChinaWeight = (pendingWeights["csi300"] ?? 0)
+                    + (pendingWeights["shanghai_composite"] ?? 0)
+                let postGoldNasdaqWeight = pendingWeights["nasdaq"] ?? 0
+                let nasdaqDominant = postGoldNasdaqWeight >= max(
+                    pendingWeights["gold_cny"] ?? 0,
+                    pendingWeights["sp500"] ?? 0,
+                    postGoldChinaWeight
+                )
+                if postGoldGross >= 0.50,
+                   postGoldGross < 0.60,
+                   nasdaqDominant {
+                    pendingWeights = pendingWeights.mapValues { $0 * 0.0 }
+                }
+
+                if positiveBreadthCount(40) == 1 {
+                    pendingWeights = pendingWeights.mapValues { $0 * 0.91 }
+                }
+                if positiveBreadthCount(10) == 4 {
+                    pendingWeights = pendingWeights.mapValues { $0 * 0.90 }
+                }
+                if positiveBreadthCount(20) == 1 {
+                    pendingWeights = pendingWeights.mapValues { $0 * 0.94 }
+                }
+
+                if !previousWeights.isEmpty {
+                    let holdGross = pendingWeights.values.reduce(0, +)
+                    let holdGold = pendingWeights["gold_cny"] ?? 0
+                    let holdNasdaq = pendingWeights["nasdaq"] ?? 0
+                    let holdSP500 = pendingWeights["sp500"] ?? 0
+                    let holdChina = (pendingWeights["csi300"] ?? 0)
+                        + (pendingWeights["shanghai_composite"] ?? 0)
+                    let holdGoldDominant = holdGold >= max(
+                        holdNasdaq,
+                        holdSP500,
+                        holdChina
+                    )
+                    if holdGross >= 0.10,
+                       holdGross < 0.18,
+                       holdGoldDominant {
+                        pendingWeights = previousWeights
+                    }
+                }
+
+                if !previousWeights.isEmpty {
+                    let holdGross = pendingWeights.values.reduce(0, +)
+                    let holdGold = pendingWeights["gold_cny"] ?? 0
+                    let holdNasdaq = pendingWeights["nasdaq"] ?? 0
+                    let holdSP500 = pendingWeights["sp500"] ?? 0
+                    let holdChina = (pendingWeights["csi300"] ?? 0)
+                        + (pendingWeights["shanghai_composite"] ?? 0)
+                    let holdNasdaqDominant = holdNasdaq >= max(
+                        holdGold,
+                        holdSP500,
+                        holdChina
+                    )
+                    if holdGross >= 0.18,
+                       holdGross < 0.23,
+                       holdNasdaqDominant {
+                        pendingWeights = previousWeights
+                    }
+                }
+
+                if !previousWeights.isEmpty,
+                   [5, 6, 7, 9, 10].contains(where: {
+                       positiveBreadthCount($0) == 1
+                   }) {
+                    pendingWeights = previousWeights
+                }
+
+                let preHoldGross = pendingWeights.values.reduce(0, +)
+                if preHoldGross >= 0.05,
+                   preHoldGross < 0.06,
+                   !previousWeights.isEmpty {
+                    pendingWeights = previousWeights
+                }
+
+                let preFloorGross = pendingWeights.values.reduce(0, +)
+                if preFloorGross > 0, preFloorGross < 0.03 {
+                    pendingWeights = [:]
                 }
 
                 let gross = pendingWeights.values.reduce(0, +)
