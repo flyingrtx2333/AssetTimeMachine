@@ -710,6 +710,7 @@ struct BacktestRecordBulkDeleteSheet: View {
                     .padding(.top, 18)
                     .padding(.bottom, 28)
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
             .navigationTitle(AppLocalization.string("条件删除"))
             .navigationBarTitleDisplayMode(.inline)
@@ -718,6 +719,16 @@ struct BacktestRecordBulkDeleteSheet: View {
                     Button(AppLocalization.string("完成")) {
                         dismiss()
                     }
+                }
+
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button(AppLocalization.string("完成")) {
+                        applyThresholdText()
+                        dismissActiveKeyboard()
+                    }
+                    .font(AppTypography.rowTitle)
+                    .foregroundStyle(AssetTheme.gold)
                 }
             }
             .alert(AppLocalization.string("删除匹配记录？"), isPresented: $showsConfirm) {

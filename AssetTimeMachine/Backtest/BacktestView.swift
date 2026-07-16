@@ -368,6 +368,7 @@ struct BacktestView: View {
                         .padding(.top, 14)
                         .padding(.bottom, TabScrollLayout.sheetBottomPadding)
                     }
+                    .scrollDismissesKeyboard(.interactively)
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .clipped()
                 }

@@ -1583,7 +1583,7 @@ struct ATMInputField: View {
         if fontSize == 15.5, fontWeight == .semibold {
             return AppTypography.bodyStrong
         }
-        return .system(size: fontSize, weight: fontWeight, design: .rounded)
+        return .system(size: fontSize, weight: fontWeight, design: .default)
     }
 
     var body: some View {
@@ -2574,6 +2574,15 @@ struct EditAssetItemSheet: View {
                     }
                     .disabled(!canSave)
                     .foregroundStyle(canSave ? AssetTheme.gold : AssetTheme.textSecondary)
+                }
+
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button(AppLocalization.string("完成")) {
+                        dismissActiveKeyboard()
+                    }
+                    .font(AppTypography.rowTitle)
+                    .foregroundStyle(AssetTheme.gold)
                 }
             }
             .task {

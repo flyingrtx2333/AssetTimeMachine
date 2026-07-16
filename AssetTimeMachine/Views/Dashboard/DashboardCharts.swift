@@ -80,7 +80,7 @@ struct DashboardAllocationChart: View {
                         .foregroundStyle(AssetTheme.textSecondary)
 
                     Text(totalAmount.currencyString())
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .font(.system(size: 22, weight: .bold, design: .default))
                         .monospacedDigit()
                         .foregroundStyle(AssetTheme.textPrimary)
                         .multilineTextAlignment(.center)
@@ -560,7 +560,7 @@ struct DashboardFreedomSection: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .center, spacing: 12) {
                 Text(statusText)
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(.system(size: 24, weight: .bold, design: .default))
                     .foregroundStyle(statusColor)
                     .lineLimit(2)
                     .minimumScaleFactor(0.82)
@@ -587,7 +587,7 @@ struct DashboardFreedomSection: View {
 
             if let reasonText {
                 Text(reasonText)
-                    .font(.system(size: 13, weight: .regular, design: .rounded))
+                    .font(.system(size: 13, weight: .regular, design: .default))
                     .foregroundStyle(AssetTheme.textSecondary)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
@@ -685,7 +685,7 @@ struct DashboardFreedomSection: View {
     ) -> some View {
         HStack(spacing: 8) {
             Text(title)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.system(size: 12, weight: .medium, design: .default))
                 .foregroundStyle(AssetTheme.textSecondary)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
@@ -695,7 +695,7 @@ struct DashboardFreedomSection: View {
                 }
 
             TextField(AppLocalization.string("输入"), text: text)
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .font(.system(size: 15, weight: .semibold, design: .default))
                 .monospacedDigit()
                 .foregroundStyle(AssetTheme.textPrimary)
                 .multilineTextAlignment(.trailing)
@@ -710,7 +710,7 @@ struct DashboardFreedomSection: View {
 
             if let suffix {
                 Text(suffix)
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .font(.system(size: 13, weight: .medium, design: .default))
                     .foregroundStyle(AssetTheme.textSecondary)
                     .fixedSize(horizontal: true, vertical: false)
                     .contentShape(Rectangle())
@@ -831,13 +831,13 @@ struct DashboardFreedomSection: View {
         return VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(title)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .font(.system(size: 13, weight: .semibold, design: .default))
                     .foregroundStyle(AssetTheme.textPrimary)
 
                 Spacer(minLength: 8)
 
                 Text(AppLocalization.format("%@ / %@", actualText, requiredText))
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .font(.system(size: 12, weight: .medium, design: .default))
                     .foregroundStyle(AssetTheme.textSecondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
@@ -1167,7 +1167,7 @@ struct DashboardFreedomProjectionChart: View {
         }
         .overlay(alignment: .topLeading) {
             Text(AppLocalization.string("收入覆盖趋势"))
-                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .font(.system(size: 11, weight: .medium, design: .default))
                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 7)
@@ -1210,7 +1210,7 @@ struct DashboardFreedomProjectionChart: View {
     @ViewBuilder
     private func freedomProjectionAxisLabel(for date: Date, position: TimeMachineAxisDateLabel.Position) -> some View {
         Text(date.dashboardAxisDateString)
-            .font(.system(size: 9, weight: .medium, design: .rounded))
+            .font(.system(size: 9, weight: .medium, design: .default))
             .foregroundStyle(AssetTheme.textSecondary)
             .lineLimit(1)
             .fixedSize()
@@ -1334,7 +1334,7 @@ struct DashboardFreedomProjectionChart: View {
 
     private func crossingBadge(for monthOffset: Double) -> some View {
         Text(AppLocalization.format(AppLocalization.string("约 %@ 追平"), crossingLabel(for: monthOffset)))
-            .font(.system(size: 10.5, weight: .semibold, design: .rounded))
+            .font(.system(size: 10.5, weight: .semibold, design: .default))
             .foregroundStyle(AssetTheme.textPrimary)
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
@@ -1378,7 +1378,7 @@ struct DashboardFreedomProjectionChart: View {
             }
 
             Text(title)
-                .font(.system(size: 10.5, weight: .semibold, design: .rounded))
+                .font(.system(size: 10.5, weight: .semibold, design: .default))
                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.88))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -1389,12 +1389,12 @@ struct DashboardFreedomProjectionChart: View {
     private func projectionMetric(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(title)
-                .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                .font(.system(size: 10.5, weight: .medium, design: .default))
                 .foregroundStyle(AssetTheme.textSecondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.78)
             Text(value)
-                .font(.system(size: 13.5, weight: .semibold, design: .rounded))
+                .font(.system(size: 13.5, weight: .semibold, design: .default))
                 .foregroundStyle(AssetTheme.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
@@ -1486,7 +1486,7 @@ struct DashboardTrendCard: View {
                     AxisValueLabel(anchor: ChartLayoutSupport.axisLabelAnchor(for: value.as(Date.self), in: axisDates), verticalSpacing: 6) {
                         if let date = value.as(Date.self) {
                             Text(date.dashboardAxisDateString)
-                                .font(.system(size: 8.5, weight: .medium, design: .rounded))
+                                .font(.system(size: 8.5, weight: .medium, design: .default))
                                 .foregroundStyle(AssetTheme.textSecondary)
                         }
                     }

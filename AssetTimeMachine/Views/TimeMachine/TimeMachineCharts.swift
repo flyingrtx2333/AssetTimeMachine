@@ -401,10 +401,10 @@ struct TimeMachineRangeSelector: View {
         } label: {
             HStack(spacing: 8) {
                 Text(selectedRange.summaryLabel)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .font(.system(size: 13, weight: .semibold, design: .default))
                     .lineLimit(1)
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .default))
             }
             .foregroundStyle(AssetTheme.textPrimary)
             .padding(.horizontal, 11)
@@ -429,12 +429,12 @@ struct TimeMachineInlineMetric: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(AppLocalization.string(title))
-                    .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                    .font(.system(size: 10.5, weight: .medium, design: .default))
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.82))
                     .lineLimit(1)
 
                 Text(value)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .font(.system(size: 13, weight: .semibold, design: .default))
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
@@ -601,7 +601,7 @@ struct TimeMachineHeroTrendCard: View {
                     AxisValueLabel {
                         if let y = value.as(Double.self) {
                             Text(y.chartAxisCurrencyLabel(code: "CNY"))
-                                .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                                .font(.system(size: 9.5, weight: .medium, design: .default))
                                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
                         }
                     }
@@ -640,7 +640,7 @@ struct TimeMachineHeroTrendCard: View {
         VStack(alignment: .leading, spacing: 11) {
             HStack(alignment: .center, spacing: 10) {
                 Text(AppLocalization.string("总资产"))
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .font(.system(size: 16, weight: .bold, design: .default))
                     .foregroundStyle(AssetTheme.textPrimary)
 
                 Spacer(minLength: 10)
@@ -651,7 +651,7 @@ struct TimeMachineHeroTrendCard: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(selectedPoint.mainAssets.currencyString())
-                    .font(.system(size: 31, weight: .bold, design: .rounded))
+                    .font(.system(size: 31, weight: .bold, design: .default))
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.goldSoft)
                     .lineLimit(1)
@@ -660,7 +660,7 @@ struct TimeMachineHeroTrendCard: View {
                 Spacer(minLength: 8)
 
                 Text(selectedDate == nil ? dateRangeLabel : selectedPoint.date.chartAxisDateString)
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .font(.system(size: 11, weight: .semibold, design: .default))
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
                     .lineLimit(1)
@@ -727,7 +727,7 @@ struct TimeMachineHeroLegendItem: View {
             legendMark
 
             Text(series.title)
-                .font(.system(size: 10.5, weight: .semibold, design: .rounded))
+                .font(.system(size: 10.5, weight: .semibold, design: .default))
                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.88))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -828,7 +828,7 @@ struct TimeMachineAxisDateLabel: View {
 
     var body: some View {
         Text(date.chartAxisCompactTickString)
-            .font(.system(size: 9.5, weight: .medium, design: .rounded))
+            .font(.system(size: 9.5, weight: .medium, design: .default))
             .foregroundStyle(AssetTheme.textSecondary)
             .lineLimit(1)
             .fixedSize()
@@ -934,7 +934,7 @@ struct TimeMachineMonthlySurplusCard: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 10) {
                 Text(AppLocalization.string("结余"))
-                    .font(.system(size: 16.5, weight: .semibold, design: .rounded))
+                    .font(.system(size: 16.5, weight: .semibold, design: .default))
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
@@ -954,7 +954,7 @@ struct TimeMachineMonthlySurplusCard: View {
             if activeGranularity == .monthly {
                 HStack(alignment: .center, spacing: 8) {
                     Text(currentDateLabel)
-                        .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                        .font(.system(size: 10.5, weight: .medium, design: .default))
                         .monospacedDigit()
                         .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
                         .lineLimit(1)
@@ -1065,7 +1065,7 @@ struct TimeMachineMonthlySurplusCard: View {
             AxisValueLabel(anchor: .top, verticalSpacing: 8) {
                 if let date = value.as(Date.self) {
                     Text(date.dashboardAxisDateString)
-                        .font(.system(size: 9, weight: .medium, design: .rounded))
+                        .font(.system(size: 9, weight: .medium, design: .default))
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
             }
@@ -1129,7 +1129,7 @@ struct TimeMachineAnnualSurplusCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center, spacing: 8) {
                 Text(AppLocalization.string("按每年最后一条快照，和上一年年末净资产对比"))
-                    .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                    .font(.system(size: 10.5, weight: .medium, design: .default))
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
@@ -1159,12 +1159,12 @@ struct TimeMachineAnnualSurplusCard: View {
         HStack(alignment: .center, spacing: 8) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(AppLocalization.string("年结余"))
-                    .font(.system(size: 15.5, weight: .semibold, design: .rounded))
+                    .font(.system(size: 15.5, weight: .semibold, design: .default))
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
 
                 Text(AppLocalization.string("按每年最后一条快照，和上一年年末净资产对比"))
-                    .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                    .font(.system(size: 10.5, weight: .medium, design: .default))
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
@@ -1230,7 +1230,7 @@ struct TimeMachineAnnualSurplusCard: View {
                         AxisValueLabel(anchor: .top, verticalSpacing: 8) {
                             if let date = value.as(Date.self) {
                                 Text(date.yearAxisDateString)
-                                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                                    .font(.system(size: 9, weight: .medium, design: .default))
                                     .foregroundStyle(AssetTheme.textSecondary)
                             }
                         }
@@ -1339,7 +1339,7 @@ struct TimeMachineComparisonRevealButtons: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(AppLocalization.string("更多对照"))
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .font(.system(size: 13, weight: .semibold, design: .default))
                 .foregroundStyle(AssetTheme.textSecondary)
 
             LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
@@ -1352,7 +1352,7 @@ struct TimeMachineComparisonRevealButtons: View {
                                 .fill(option.color)
                                 .frame(width: 7, height: 7)
                             Text(AppLocalization.format("显示%@", option.title))
-                                .font(.system(size: 12.5, weight: .semibold, design: .rounded))
+                                .font(.system(size: 12.5, weight: .semibold, design: .default))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.76)
                         }
@@ -1447,14 +1447,14 @@ struct TimeMachineDualAxisTrendCard: View {
                 leftOnlyChart
             } else {
                 Text(AppLocalization.string("记录不足"))
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .font(.system(size: 12, weight: .semibold, design: .default))
                     .foregroundStyle(AssetTheme.textSecondary)
                     .frame(maxWidth: .infinity, minHeight: 112, alignment: .center)
                     .background(chartBackground)
             }
 
             Text(selectedDate == nil ? dateRangeLabel : selectedAxisDateLabel)
-                .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                .font(.system(size: 10.5, weight: .medium, design: .default))
                 .monospacedDigit()
                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -1466,7 +1466,7 @@ struct TimeMachineDualAxisTrendCard: View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(alignment: .center, spacing: 7) {
                 Text(AppLocalization.string(descriptor.title))
-                    .font(.system(size: 15.5, weight: .semibold, design: .rounded))
+                    .font(.system(size: 15.5, weight: .semibold, design: .default))
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
@@ -1494,7 +1494,7 @@ struct TimeMachineDualAxisTrendCard: View {
 
             if let subtitle = descriptor.subtitle {
                 Text(AppLocalization.string(subtitle))
-                    .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                    .font(.system(size: 10.5, weight: .medium, design: .default))
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
                     .lineLimit(1)
                     .minimumScaleFactor(0.78)
@@ -1515,7 +1515,7 @@ struct TimeMachineDualAxisTrendCard: View {
                     .font(.system(size: 9.5, weight: .bold))
                     .foregroundStyle(isEnabled ? AssetTheme.goldSoft : AssetTheme.textSecondary.opacity(0.5))
                 Text(AppLocalization.string("历史"))
-                    .font(.system(size: 10.5, weight: .semibold, design: .rounded))
+                    .font(.system(size: 10.5, weight: .semibold, design: .default))
                     .foregroundStyle(isEnabled ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.68))
             }
             .frame(width: 58, height: 26)
@@ -2196,12 +2196,12 @@ struct TimeMachineCompactLegendMetric: View {
             legendMark
 
             Text(AppLocalization.string(title))
-                .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+                .font(.system(size: 9.5, weight: .semibold, design: .default))
                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
                 .lineLimit(1)
 
             Text(value)
-                .font(.system(size: 11.5, weight: .bold, design: .rounded))
+                .font(.system(size: 11.5, weight: .bold, design: .default))
                 .monospacedDigit()
                 .foregroundStyle(color)
                 .lineLimit(1)
@@ -2242,12 +2242,12 @@ struct TimeMachineLegendMetric: View {
                 legendMark
 
                 Text(AppLocalization.string(title))
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .font(.system(size: 10, weight: .medium, design: .default))
                     .foregroundStyle(AssetTheme.textSecondary)
             }
 
             Text(value)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(.system(size: 14, weight: .semibold, design: .default))
                 .monospacedDigit()
                 .foregroundStyle(color)
                 .lineLimit(1)
@@ -2286,19 +2286,19 @@ struct TimeMachineAxisStrip: View {
     var body: some View {
         VStack(alignment: alignment, spacing: 0) {
             Text(topLabel)
-                .font(.system(size: 8.8, weight: .semibold, design: .rounded))
+                .font(.system(size: 8.8, weight: .semibold, design: .default))
                 .foregroundStyle(color.opacity(0.9))
                 .lineLimit(1)
                 .minimumScaleFactor(0.78)
             Spacer(minLength: 10)
             Text(middleLabel)
-                .font(.system(size: 8.8, weight: .medium, design: .rounded))
+                .font(.system(size: 8.8, weight: .medium, design: .default))
                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
                 .lineLimit(1)
                 .minimumScaleFactor(0.78)
             Spacer(minLength: 10)
             Text(bottomLabel)
-                .font(.system(size: 8.8, weight: .semibold, design: .rounded))
+                .font(.system(size: 8.8, weight: .semibold, design: .default))
                 .foregroundStyle(color.opacity(0.9))
                 .lineLimit(1)
                 .minimumScaleFactor(0.78)

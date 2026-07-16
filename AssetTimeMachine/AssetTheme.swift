@@ -21,92 +21,101 @@ enum AssetTheme {
         }
     }
 
+    // MARK: - Neutral surfaces
+
     static var backgroundUIColor: UIColor {
-        dynamicUIColor(light: rgba(248, 244, 238), dark: rgba(12, 12, 15))
+        dynamicUIColor(light: rgba(246, 244, 240), dark: rgba(12, 13, 16))
     }
 
     static var backgroundSecondaryUIColor: UIColor {
-        dynamicUIColor(light: rgba(237, 230, 220), dark: rgba(24, 20, 17))
+        dynamicUIColor(light: rgba(241, 238, 233), dark: rgba(16, 17, 21))
     }
 
     static var surfaceUIColor: UIColor {
-        dynamicUIColor(light: rgba(255, 252, 247), dark: rgba(22, 22, 26))
+        dynamicUIColor(light: rgba(255, 255, 255), dark: rgba(20, 21, 25))
     }
 
     static var surfaceRaisedUIColor: UIColor {
-        dynamicUIColor(light: rgba(246, 239, 229), dark: rgba(30, 28, 24))
+        dynamicUIColor(light: rgba(249, 247, 243), dark: rgba(27, 28, 33))
     }
 
     static var borderUIColor: UIColor {
-        dynamicUIColor(light: rgba(122, 94, 58, alpha: 0.18), dark: rgba(92, 73, 44, alpha: 0.45))
+        dynamicUIColor(
+            light: rgba(38, 35, 31, alpha: 0.10),
+            dark: rgba(255, 255, 255, alpha: 0.09)
+        )
     }
 
+    // MARK: - Brand and semantic colors
+
     static var goldUIColor: UIColor {
-        dynamicUIColor(light: rgba(176, 128, 69), dark: rgba(212, 175, 127))
+        dynamicUIColor(light: rgba(171, 132, 79), dark: rgba(201, 164, 106))
     }
 
     static var goldSoftUIColor: UIColor {
-        dynamicUIColor(light: rgba(128, 93, 52), dark: rgba(244, 210, 161))
+        dynamicUIColor(light: rgba(125, 100, 67), dark: rgba(226, 194, 143))
     }
 
     static var textPrimaryUIColor: UIColor {
-        dynamicUIColor(light: rgba(39, 33, 28), dark: rgba(244, 236, 224))
+        dynamicUIColor(light: rgba(32, 31, 29), dark: rgba(241, 239, 234))
     }
 
     static var textSecondaryUIColor: UIColor {
-        dynamicUIColor(light: rgba(110, 100, 86), dark: rgba(167, 159, 145))
+        dynamicUIColor(light: rgba(105, 102, 96), dark: rgba(162, 160, 154))
     }
 
     static var positiveUIColor: UIColor {
-        dynamicUIColor(light: rgba(42, 139, 88), dark: rgba(99, 201, 140))
+        dynamicUIColor(light: rgba(43, 133, 84), dark: rgba(93, 183, 128))
     }
 
     static var negativeUIColor: UIColor {
-        dynamicUIColor(light: rgba(190, 78, 68), dark: rgba(222, 99, 90))
+        dynamicUIColor(light: rgba(183, 75, 68), dark: rgba(218, 102, 92))
     }
 
     static var accentBlueUIColor: UIColor {
-        dynamicUIColor(light: rgba(55, 117, 205), dark: rgba(74, 144, 226))
+        dynamicUIColor(light: rgba(75, 111, 156), dark: rgba(103, 146, 199))
     }
 
     static var accentOrangeUIColor: UIColor {
-        dynamicUIColor(light: rgba(212, 137, 36), dark: rgba(245, 166, 35))
+        dynamicUIColor(light: rgba(174, 119, 57), dark: rgba(211, 152, 80))
     }
 
     static var accentRedUIColor: UIColor {
-        dynamicUIColor(light: rgba(207, 102, 44), dark: rgba(231, 124, 60))
+        dynamicUIColor(light: rgba(172, 82, 62), dark: rgba(211, 112, 88))
     }
 
+    // MARK: - Overlays and chart chrome
+
     static var overlayFaintUIColor: UIColor {
-        dynamicUIColor(light: rgba(32, 26, 20, alpha: 0.025), dark: rgba(255, 255, 255, alpha: 0.035))
+        dynamicUIColor(light: rgba(32, 31, 29, alpha: 0.018), dark: rgba(255, 255, 255, alpha: 0.025))
     }
 
     static var overlaySoftUIColor: UIColor {
-        dynamicUIColor(light: rgba(32, 26, 20, alpha: 0.03), dark: rgba(255, 255, 255, alpha: 0.03))
+        dynamicUIColor(light: rgba(32, 31, 29, alpha: 0.028), dark: rgba(255, 255, 255, alpha: 0.035))
     }
 
     static var overlaySubtleUIColor: UIColor {
-        dynamicUIColor(light: rgba(32, 26, 20, alpha: 0.04), dark: rgba(255, 255, 255, alpha: 0.04))
+        dynamicUIColor(light: rgba(32, 31, 29, alpha: 0.040), dark: rgba(255, 255, 255, alpha: 0.045))
     }
 
     static var overlayMediumUIColor: UIColor {
-        dynamicUIColor(light: rgba(32, 26, 20, alpha: 0.05), dark: rgba(255, 255, 255, alpha: 0.05))
+        dynamicUIColor(light: rgba(32, 31, 29, alpha: 0.055), dark: rgba(255, 255, 255, alpha: 0.060))
     }
 
     static var overlayStrongUIColor: UIColor {
-        dynamicUIColor(light: rgba(32, 26, 20, alpha: 0.08), dark: rgba(255, 255, 255, alpha: 0.08))
+        dynamicUIColor(light: rgba(32, 31, 29, alpha: 0.085), dark: rgba(255, 255, 255, alpha: 0.090))
     }
 
     static var chartGridUIColor: UIColor {
-        dynamicUIColor(light: rgba(39, 33, 28, alpha: 0.08), dark: rgba(255, 255, 255, alpha: 0.08))
+        dynamicUIColor(light: rgba(32, 31, 29, alpha: 0.055), dark: rgba(255, 255, 255, alpha: 0.060))
     }
 
     static var chartTickUIColor: UIColor {
-        dynamicUIColor(light: rgba(39, 33, 28, alpha: 0.15), dark: rgba(255, 255, 255, alpha: 0.15))
+        dynamicUIColor(light: rgba(32, 31, 29, alpha: 0.12), dark: rgba(255, 255, 255, alpha: 0.13))
     }
 
     static var cardShadowUIColor: UIColor {
-        dynamicUIColor(light: rgba(26, 22, 17, alpha: 0.10), dark: rgba(0, 0, 0, alpha: 0.22))
+        dynamicUIColor(light: rgba(26, 24, 21, alpha: 0.07), dark: rgba(0, 0, 0, alpha: 0.20))
     }
     #endif
 
@@ -136,24 +145,24 @@ enum AssetTheme {
     static var pageGradient: LinearGradient {
         LinearGradient(
             colors: [background, backgroundSecondary],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
+            startPoint: .top,
+            endPoint: .bottom
         )
     }
 
     static var cardGradient: LinearGradient {
         LinearGradient(
             colors: [surfaceRaised, surface],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
+            startPoint: .top,
+            endPoint: .bottom
         )
     }
 
     static var heroGradient: LinearGradient {
         LinearGradient(
             colors: [
-                Color(uiColor: dynamicUIColor(light: rgba(250, 243, 232), dark: rgba(39, 31, 22))),
-                Color(uiColor: dynamicUIColor(light: rgba(239, 230, 218), dark: rgba(24, 22, 20)))
+                Color(uiColor: dynamicUIColor(light: rgba(250, 247, 241), dark: rgba(31, 28, 24))),
+                Color(uiColor: dynamicUIColor(light: rgba(242, 237, 229), dark: rgba(20, 21, 25)))
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -172,17 +181,23 @@ enum AssetTheme {
 
         tabBarAppearance.selectionIndicatorTintColor = UIColor { traits in
             traits.userInterfaceStyle == .dark
-                ? rgba(212, 175, 127, alpha: 0.18)
-                : rgba(176, 128, 69, alpha: 0.12)
+                ? rgba(201, 164, 106, alpha: 0.13)
+                : rgba(171, 132, 79, alpha: 0.09)
         }
 
         [tabBarAppearance.stackedLayoutAppearance,
          tabBarAppearance.inlineLayoutAppearance,
          tabBarAppearance.compactInlineLayoutAppearance].forEach { appearance in
             appearance.normal.iconColor = normalColor
-            appearance.normal.titleTextAttributes = [.foregroundColor: normalColor]
+            appearance.normal.titleTextAttributes = [
+                .foregroundColor: normalColor,
+                .font: UIFont.systemFont(ofSize: 10, weight: .regular)
+            ]
             appearance.selected.iconColor = selectedColor
-            appearance.selected.titleTextAttributes = [.foregroundColor: selectedColor]
+            appearance.selected.titleTextAttributes = [
+                .foregroundColor: selectedColor,
+                .font: UIFont.systemFont(ofSize: 10, weight: .medium)
+            ]
         }
 
         UITabBar.appearance().standardAppearance = tabBarAppearance
@@ -192,8 +207,14 @@ enum AssetTheme {
         navigationAppearance.configureWithOpaqueBackground()
         navigationAppearance.backgroundColor = backgroundUIColor
         navigationAppearance.shadowColor = .clear
-        navigationAppearance.largeTitleTextAttributes = [.foregroundColor: textPrimaryUIColor]
-        navigationAppearance.titleTextAttributes = [.foregroundColor: textPrimaryUIColor]
+        navigationAppearance.largeTitleTextAttributes = [
+            .foregroundColor: textPrimaryUIColor,
+            .font: UIFont.systemFont(ofSize: 32, weight: .semibold)
+        ]
+        navigationAppearance.titleTextAttributes = [
+            .foregroundColor: textPrimaryUIColor,
+            .font: UIFont.systemFont(ofSize: 17, weight: .semibold)
+        ]
 
         UINavigationBar.appearance().standardAppearance = navigationAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navigationAppearance
@@ -210,7 +231,11 @@ struct ATMCardModifier: ViewModifier {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(AssetTheme.cardGradient)
             )
-            .shadow(color: AssetTheme.cardShadow, radius: 24, x: 0, y: 12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(AssetTheme.border.opacity(0.72), lineWidth: 0.5)
+            )
+            .shadow(color: AssetTheme.cardShadow, radius: 16, x: 0, y: 8)
     }
 }
 

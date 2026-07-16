@@ -275,6 +275,16 @@ struct AdvancedBacktestView: View {
                 advancedStartedContent
             }
         }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button(AppLocalization.string("完成")) {
+                    dismissActiveKeyboard()
+                }
+                .font(AppTypography.rowTitle)
+                .foregroundStyle(AssetTheme.gold)
+            }
+        }
         .sheet(isPresented: $showsAssetSheet) {
             AdvancedBacktestAssetPickerSheet(
                 selectedSymbols: selectedAssetSymbols,
