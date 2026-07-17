@@ -2097,6 +2097,13 @@ nonisolated enum BacktestEngine {
         )
     }
 
+    private struct OnlineLeadershipTrial {
+        let resolveIndex: Int
+        let targetLeader: String
+        let priorLeader: String
+        let startPrices: [String: Double]
+    }
+
     private static func runRiskContributionCashConfidenceRouterWithTrace(
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
         initialCash: Double,
@@ -2130,6 +2137,9 @@ nonisolated enum BacktestEngine {
         let matureOtherAssetScale = 0.80
         let residualNasdaqGrossMaximum = 0.20
         let residualNasdaqMinimumWeight = 0.01
+        let leadershipEvaluationSessions = 10
+        let leadershipPriorEvidence = 2.0
+        let minimumLeadershipMigration = 0.50
         let config = ResearchTargetStrategyConfig(
             symbol: "risk_contribution_cash_confidence_router",
             title: AppLocalization.string("无融资置信度恢复"),
@@ -2147,6 +2157,61 @@ nonisolated enum BacktestEngine {
         var pendingWeights: [String: Double] = [:]
         var previousWeights: [String: Double] = [:]
         var currentAdjustment = 1.0
+        var leadershipTrials: [OnlineLeadershipTrial] = []
+        var leadershipSuccesses: [String: Double] = [:]
+        var leadershipFailures: [String: Double] = [:]
+
+        func leaderName(_ weights: [String: Double]) -> String {
+            let gold = weights["gold_cny"] ?? 0
+            let nasdaq = weights["nasdaq"] ?? 0
+            let sp500 = weights["sp500"] ?? 0
+            let china = (weights["csi300"] ?? 0)
+                + (weights["shanghai_composite"] ?? 0)
+            let gross = gold + nasdaq + sp500 + china
+            guard gross >= 0.05 else { return "cash" }
+            if gold >= nasdaq, gold >= sp500, gold >= china { return "gold" }
+            if nasdaq >= sp500, nasdaq >= china { return "nasdaq" }
+            if sp500 >= china { return "sp500" }
+            return "china"
+        }
+
+        func capturedPrices(
+            pricesBySymbol: [String: [Double]],
+            at index: Int
+        ) -> [String: Double] {
+            var result: [String: Double] = [:]
+            for symbol in ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"] {
+                if let prices = pricesBySymbol[symbol], prices.indices.contains(index) {
+                    result[symbol] = prices[index]
+                }
+            }
+            return result
+        }
+
+        func leaderReturn(
+            _ leader: String,
+            startPrices: [String: Double],
+            pricesBySymbol: [String: [Double]],
+            at index: Int
+        ) -> Double? {
+            func assetReturn(_ symbol: String) -> Double? {
+                guard let start = startPrices[symbol], start > 0,
+                      let prices = pricesBySymbol[symbol], prices.indices.contains(index) else {
+                    return nil
+                }
+                return prices[index] / start - 1
+            }
+            switch leader {
+            case "gold": return assetReturn("gold_cny")
+            case "nasdaq": return assetReturn("nasdaq")
+            case "sp500": return assetReturn("sp500")
+            case "china":
+                guard let csi = assetReturn("csi300"),
+                      let shanghai = assetReturn("shanghai_composite") else { return nil }
+                return 0.5 * (csi + shanghai)
+            default: return 0
+            }
+        }
 
         return runResearchTargetProviderStrategyWithTrace(
             assetInputs: assetInputs,
@@ -2437,6 +2502,72 @@ nonisolated enum BacktestEngine {
                 let preFloorGross = pendingWeights.values.reduce(0, +)
                 if preFloorGross > 0, preFloorGross < 0.03 {
                     pendingWeights = [:]
+                }
+
+                var unresolvedLeadershipTrials: [OnlineLeadershipTrial] = []
+                for trial in leadershipTrials {
+                    if trial.resolveIndex <= signalIndex,
+                       let targetReturn = leaderReturn(
+                        trial.targetLeader,
+                        startPrices: trial.startPrices,
+                        pricesBySymbol: data.pricesBySymbol,
+                        at: signalIndex
+                       ),
+                       let priorReturn = leaderReturn(
+                        trial.priorLeader,
+                        startPrices: trial.startPrices,
+                        pricesBySymbol: data.pricesBySymbol,
+                        at: signalIndex
+                       ) {
+                        if targetReturn > priorReturn {
+                            leadershipSuccesses[trial.targetLeader, default: 0] += 1
+                        } else {
+                            leadershipFailures[trial.targetLeader, default: 0] += 1
+                        }
+                    } else {
+                        unresolvedLeadershipTrials.append(trial)
+                    }
+                }
+                leadershipTrials = unresolvedLeadershipTrials
+
+                if !previousWeights.isEmpty {
+                    let priorLeader = leaderName(previousWeights)
+                    let targetLeader = leaderName(pendingWeights)
+                    let priorGross = previousWeights.values.reduce(0, +)
+                    let targetGross = pendingWeights.values.reduce(0, +)
+                    if baseTargetChanged,
+                       targetLeader != priorLeader,
+                       targetLeader != "cash",
+                       priorLeader != "cash",
+                       targetGross >= priorGross - 0.000001 {
+                        let successes = leadershipSuccesses[targetLeader, default: 0]
+                        let failures = leadershipFailures[targetLeader, default: 0]
+                        let posteriorMean = (leadershipPriorEvidence + successes)
+                            / (2 * leadershipPriorEvidence + successes + failures)
+                        let leadershipEdge = min(max(2 * posteriorMean - 1, 0), 1)
+                        let migration = minimumLeadershipMigration
+                            + (1 - minimumLeadershipMigration) * leadershipEdge
+                        let originalTarget = pendingWeights
+                        let symbols = Set(previousWeights.keys)
+                            .union(originalTarget.keys)
+                            .sorted()
+                        pendingWeights = Dictionary(uniqueKeysWithValues: symbols.map { symbol in
+                            let prior = previousWeights[symbol] ?? 0
+                            let target = originalTarget[symbol] ?? 0
+                            return (symbol, prior + migration * (target - prior))
+                        })
+                        leadershipTrials.append(
+                            OnlineLeadershipTrial(
+                                resolveIndex: signalIndex + leadershipEvaluationSessions,
+                                targetLeader: targetLeader,
+                                priorLeader: priorLeader,
+                                startPrices: capturedPrices(
+                                    pricesBySymbol: data.pricesBySymbol,
+                                    at: signalIndex
+                                )
+                            )
+                        )
+                    }
                 }
 
                 let gross = pendingWeights.values.reduce(0, +)

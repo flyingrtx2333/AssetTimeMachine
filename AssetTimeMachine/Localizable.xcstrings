@@ -9534,25 +9534,25 @@
         }
       }
     },
-    "当前无融资夏普冠军：以15%快速桥接和20.75%水下恢复袖套的双引擎路由为底层，继续使用基础仓位置信度、2.5%至5.1%回撤谷区和低波动扩散。执行层在A股低置信度、纳指中仓位、黄金低仓位和成熟期高仓位进行现金约束：总仓位50%至60%且纳指主导时归现金；总仓位30%至40%且黄金主导时执行45%；高仓纳指站上MA40时，纳指按88%、其他风险资产按80%执行。当5、6、7、9或10日权益宽度仅一个市场上涨，或目标落入特定低置信度仓位簇时保持上一目标，减少无效切换；10日同步过热、20日弱扩散和40日窄宽度仅做轻度降仓。总仓位封顶100%，现金不得为负；目标差异超过20%或底层关键切换时调仓。全部信号严格使用T−1数据，并统一计入1%交易费与0.05%滑点。": {
+    "当前无融资夏普冠军：保留15%快速桥接、20.75%水下恢复袖套和原有现金约束，并新增在线领导权兑现率校准。每次黄金、纳指、标普或A股之间发生主导权交接后，使用严格T−1数据观察后续10个交易日，记录新领导者是否跑赢旧领导者；以Beta(2,2)先验持续更新各类新领导者的历史兑现率。未来再次切换到该领导者时，最低执行50%，历史兑现越稳定越接近完整迁移；降风险和转现金不受延迟。总仓位封顶100%，现金不得为负，沿用20%目标偏差和底层关键切换调仓，统一计入1%交易费与0.05%滑点。": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Current unlevered Sharpe champion: built on the dual-engine router with a 15% fast bridge and a 20.75% underwater-recovery sleeve, while retaining base-exposure confidence, the 2.5%-5.1% drawdown valley, and low-volatility breadth thrusts. The execution layer applies cash-constrained controls to low-confidence China equity exposure, mid-gross Nasdaq states, low-gross gold states, and mature high-gross states: move to cash when gross is 50%-60% and Nasdaq dominates; execute 45% when gross is 30%-40% and gold dominates; when high-gross Nasdaq is above MA40, execute Nasdaq at 88% and other risk assets at 80%. When equity breadth has only one positive market over 5, 6, 7, 9, or 10 sessions, or the target falls into specified low-confidence exposure clusters, retain the previous target to avoid ineffective switching; use only light exposure cuts for 10-session synchronized overheating, 20-session weak breadth, and 40-session narrow breadth. Gross exposure is capped at 100%, cash cannot be negative; rebalance when target differences exceed 20% or the base engine makes a key transition. All signals use strict T-1 data and include 1% fees plus 0.05% slippage."
+            "value": "Current unlevered Sharpe champion: retains the 15% fast bridge, 20.75% underwater-recovery sleeve, and existing cash constraints, while adding online calibration of leadership-transition reliability. After leadership rotates among gold, Nasdaq, the S&P 500, or China equities, strict T-1 data evaluates the next 10 trading sessions and records whether the new leader outperforms the former leader. A Beta(2,2) prior continuously updates each prospective leader’s historical realization rate. On a future transition to that leader, at least 50% of the target is executed, with stronger historical reliability moving execution closer to a full migration; risk reduction and moves to cash are never delayed. Gross exposure is capped at 100%, cash cannot be negative, and the existing 20% target-deviation/key-transition rebalance policy remains. Results include 1% fees and 0.05% slippage."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "当前无融资夏普冠军：以15%快速桥接和20.75%水下恢复袖套的双引擎路由为底层，继续使用基础仓位置信度、2.5%至5.1%回撤谷区和低波动扩散。执行层在A股低置信度、纳指中仓位、黄金低仓位和成熟期高仓位进行现金约束：总仓位50%至60%且纳指主导时归现金；总仓位30%至40%且黄金主导时执行45%；高仓纳指站上MA40时，纳指按88%、其他风险资产按80%执行。当5、6、7、9或10日权益宽度仅一个市场上涨，或目标落入特定低置信度仓位簇时保持上一目标，减少无效切换；10日同步过热、20日弱扩散和40日窄宽度仅做轻度降仓。总仓位封顶100%，现金不得为负；目标差异超过20%或底层关键切换时调仓。全部信号严格使用T−1数据，并统一计入1%交易费与0.05%滑点。"
+            "value": "当前无融资夏普冠军：保留15%快速桥接、20.75%水下恢复袖套和原有现金约束，并新增在线领导权兑现率校准。每次黄金、纳指、标普或A股之间发生主导权交接后，使用严格T−1数据观察后续10个交易日，记录新领导者是否跑赢旧领导者；以Beta(2,2)先验持续更新各类新领导者的历史兑现率。未来再次切换到该领导者时，最低执行50%，历史兑现越稳定越接近完整迁移；降风险和转现金不受延迟。总仓位封顶100%，现金不得为负，沿用20%目标偏差和底层关键切换调仓，统一计入1%交易费与0.05%滑点。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "目前無融資夏普冠軍：以15%快速橋接和20.75%水下恢復袖套的雙引擎路由為底層，繼續使用基礎倉位置信度、2.5%至5.1%回撤谷區和低波動擴散。執行層針對A股低置信度、納指中倉位、黃金低倉位和成熟期高倉位進行現金約束：總倉位50%至60%且納指主導時轉為現金；總倉位30%至40%且黃金主導時執行45%；高倉納指站上MA40時，納指按88%、其他風險資產按80%執行。當5、6、7、9或10日權益寬度僅一個市場上漲，或目標落入特定低置信度倉位簇時維持上一目標，減少無效切換；10日同步過熱、20日弱擴散和40日窄寬度僅做輕度降倉。總倉位封頂100%，現金不得為負；目標差異超過20%或底層關鍵切換時調倉。全部訊號嚴格使用T−1資料，並統一計入1%交易費與0.05%滑點。"
+            "value": "目前無融資夏普冠軍：保留15%快速橋接、20.75%水下恢復袖套和原有現金約束，並新增在線領導權兌現率校準。每次黃金、納指、標普或A股之間發生主導權交接後，使用嚴格T−1資料觀察後續10個交易日，記錄新領導者是否跑贏舊領導者；以Beta(2,2)先驗持續更新各類新領導者的歷史兌現率。未來再次切換至該領導者時，最低執行50%，歷史兌現越穩定越接近完整遷移；降風險和轉現金不受延遲。總倉位封頂100%，現金不得為負，沿用20%目標偏差和底層關鍵切換調倉，統一計入1%交易費與0.05%滑點。"
           }
         }
       }
