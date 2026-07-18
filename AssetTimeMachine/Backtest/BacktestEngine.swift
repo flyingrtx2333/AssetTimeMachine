@@ -1845,6 +1845,32 @@ nonisolated enum BacktestEngine {
         )
     }
 
+    private struct RecoverySleeveQualityConfig {
+        let dynamicVolatilityThreshold: Double
+        let dynamicSleeveCap: Double
+        let momentumLookback: Int
+        let momentumScale: Double
+        let volatilityExponent: Double
+        let downsideVolatilityBlend: Double
+        let baseQualityExponent: Double
+        let highQualityExponent: Double
+        let qualityGapThreshold: Double
+        let trendEfficiencyScale: Double
+
+        static let cashConfidenceAdaptive = RecoverySleeveQualityConfig(
+            dynamicVolatilityThreshold: 0.06,
+            dynamicSleeveCap: 0.19,
+            momentumLookback: 95,
+            momentumScale: 50,
+            volatilityExponent: 0.60,
+            downsideVolatilityBlend: 0.75,
+            baseQualityExponent: 4,
+            highQualityExponent: 12,
+            qualityGapThreshold: 0.035,
+            trendEfficiencyScale: 1.75
+        )
+    }
+
     private static func runRiskContributionRecoveryRouterWithTrace(
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
         initialCash: Double,
@@ -1852,7 +1878,8 @@ nonisolated enum BacktestEngine {
         dateBounds: ClosedRange<Date>? = nil,
         growthStateScale: Double = 1.082,
         fastBridgeRatio: Double = 0.185,
-        sleeveCap: Double = 0.15
+        sleeveCap: Double = 0.15,
+        recoveryQualityConfig: RecoverySleeveQualityConfig? = nil
     ) -> ResearchTargetStrategyRun? {
         guard let baseRun = runRiskContributionRecoveryBaseWithTrace(
             assetInputs: assetInputs,
@@ -2023,7 +2050,101 @@ nonisolated enum BacktestEngine {
                    signalIndex - lastRecoveryReviewIndex >= reviewSessions {
                     let availableCash = max(alignedCashRatios[index] - cashReserve, 0)
                     let availableGross = max(grossCap - alignedBaseGrosses[index], 0)
-                    let totalWeight = min(sleeveCap, availableCash, availableGross)
+                    var effectiveSleeveCap = sleeveCap
+                    if let recoveryQualityConfig, signalIndex >= 60 {
+                        var recentBaseReturns: [Double] = []
+                        recentBaseReturns.reserveCapacity(60)
+                        for cursor in (signalIndex - 59)...signalIndex {
+                            guard cursor > 0,
+                                  let previousValue = alignedBaseValues[cursor - 1],
+                                  let currentValue = alignedBaseValues[cursor],
+                                  previousValue > 0 else { continue }
+                            recentBaseReturns.append(currentValue / previousValue - 1)
+                        }
+                        if recentBaseReturns.count > 1 {
+                            let mean = recentBaseReturns.reduce(0, +) / Double(recentBaseReturns.count)
+                            let variance = recentBaseReturns.reduce(0.0) {
+                                $0 + pow($1 - mean, 2)
+                            } / Double(recentBaseReturns.count - 1)
+                            let annualizedVolatility = sqrt(max(variance, 0)) * sqrt(252)
+                            if annualizedVolatility >= recoveryQualityConfig.dynamicVolatilityThreshold {
+                                effectiveSleeveCap = min(
+                                    sleeveCap,
+                                    recoveryQualityConfig.dynamicSleeveCap
+                                )
+                            }
+                        }
+                    }
+                    let totalWeight = min(effectiveSleeveCap, availableCash, availableGross)
+
+                    func recoveryTrendEfficiency(
+                        prices: [Double],
+                        lookback: Int
+                    ) -> Double {
+                        guard lookback > 0,
+                              signalIndex >= lookback,
+                              prices[signalIndex - lookback] > 0 else { return 0 }
+                        var pathLength = 0.0
+                        for cursor in (signalIndex - lookback + 1)...signalIndex {
+                            guard prices[cursor - 1] > 0 else { continue }
+                            pathLength += abs(prices[cursor] / prices[cursor - 1] - 1)
+                        }
+                        guard pathLength > 0 else { return 0 }
+                        let netReturn = max(
+                            prices[signalIndex] / prices[signalIndex - lookback] - 1,
+                            0
+                        )
+                        return min(max(netReturn / pathLength, 0), 1)
+                    }
+
+                    func recoveryEffectiveVolatility(
+                        prices: [Double],
+                        totalVolatility: Double,
+                        downsideBlend: Double
+                    ) -> Double {
+                        guard downsideBlend > 0, signalIndex >= 40 else {
+                            return totalVolatility
+                        }
+                        var downsideSquares = 0.0
+                        var observations = 0
+                        for cursor in (signalIndex - 39)...signalIndex {
+                            guard cursor > 0, prices[cursor - 1] > 0 else { continue }
+                            let dailyReturn = prices[cursor] / prices[cursor - 1] - 1
+                            downsideSquares += pow(min(dailyReturn, 0), 2)
+                            observations += 1
+                        }
+                        guard observations > 1 else { return totalVolatility }
+                        let downsideVolatility = sqrt(
+                            downsideSquares / Double(observations)
+                        ) * sqrt(252)
+                        let blend = min(max(downsideBlend, 0), 1)
+                        return (1 - blend) * totalVolatility
+                            + blend * max(downsideVolatility, 0.03)
+                    }
+
+                    let nasdaqAllocationMomentum = recoveryQualityConfig.flatMap { config in
+                        priceMomentum(
+                            values: nasdaqPrices,
+                            at: signalIndex,
+                            lookback: config.momentumLookback
+                        )
+                    } ?? nasdaqMomentum
+                    let sp500AllocationMomentum = recoveryQualityConfig.flatMap { config in
+                        priceMomentum(
+                            values: sp500Prices,
+                            at: signalIndex,
+                            lookback: config.momentumLookback
+                        )
+                    } ?? sp500Momentum
+                    let nasdaqQualityMomentum = max(nasdaqAllocationMomentum, 0)
+                    let sp500QualityMomentum = max(sp500AllocationMomentum, 0)
+                    let qualityGap = abs(nasdaqQualityMomentum - sp500QualityMomentum)
+                    let activeQualityExponent = recoveryQualityConfig.map { config in
+                        qualityGap >= config.qualityGapThreshold
+                            ? config.highQualityExponent
+                            : config.baseQualityExponent
+                    } ?? 1
+
                     var eligible: [(String, Double)] = []
                     if nasdaqPositive,
                        let volatility = annualizedVolatilityAt(
@@ -2031,7 +2152,32 @@ nonisolated enum BacktestEngine {
                         at: signalIndex,
                         lookback: 40
                        ) {
-                        eligible.append(("nasdaq", 1 / max(volatility, 0.05)))
+                        if let recoveryQualityConfig {
+                            let effectiveVolatility = recoveryEffectiveVolatility(
+                                prices: nasdaqPrices,
+                                totalVolatility: volatility,
+                                downsideBlend: recoveryQualityConfig.downsideVolatilityBlend
+                            )
+                            let trendEfficiency = recoveryTrendEfficiency(
+                                prices: nasdaqPrices,
+                                lookback: recoveryQualityConfig.momentumLookback
+                            )
+                            let qualityBase = max(
+                                (1 + recoveryQualityConfig.momentumScale * nasdaqQualityMomentum)
+                                    * (1 + recoveryQualityConfig.trendEfficiencyScale * trendEfficiency),
+                                0.0001
+                            )
+                            let score = pow(
+                                qualityBase,
+                                max(activeQualityExponent, 0.05)
+                            ) / pow(
+                                max(effectiveVolatility, 0.05),
+                                recoveryQualityConfig.volatilityExponent
+                            )
+                            eligible.append(("nasdaq", score))
+                        } else {
+                            eligible.append(("nasdaq", 1 / max(volatility, 0.05)))
+                        }
                     }
                     if sp500Positive,
                        let volatility = annualizedVolatilityAt(
@@ -2039,7 +2185,32 @@ nonisolated enum BacktestEngine {
                         at: signalIndex,
                         lookback: 40
                        ) {
-                        eligible.append(("sp500", 1 / max(volatility, 0.05)))
+                        if let recoveryQualityConfig {
+                            let effectiveVolatility = recoveryEffectiveVolatility(
+                                prices: sp500Prices,
+                                totalVolatility: volatility,
+                                downsideBlend: recoveryQualityConfig.downsideVolatilityBlend
+                            )
+                            let trendEfficiency = recoveryTrendEfficiency(
+                                prices: sp500Prices,
+                                lookback: recoveryQualityConfig.momentumLookback
+                            )
+                            let qualityBase = max(
+                                (1 + recoveryQualityConfig.momentumScale * sp500QualityMomentum)
+                                    * (1 + recoveryQualityConfig.trendEfficiencyScale * trendEfficiency),
+                                0.0001
+                            )
+                            let score = pow(
+                                qualityBase,
+                                max(activeQualityExponent, 0.05)
+                            ) / pow(
+                                max(effectiveVolatility, 0.05),
+                                recoveryQualityConfig.volatilityExponent
+                            )
+                            eligible.append(("sp500", score))
+                        } else {
+                            eligible.append(("sp500", 1 / max(volatility, 0.05)))
+                        }
                     }
                     var nextRecoveryWeights: [String: Double] = [:]
                     if totalWeight > 0, !eligible.isEmpty {
@@ -2117,7 +2288,8 @@ nonisolated enum BacktestEngine {
             dateBounds: dateBounds,
             growthStateScale: 1.05,
             fastBridgeRatio: 0.15,
-            sleeveCap: 0.2075
+            sleeveCap: 0.2075,
+            recoveryQualityConfig: .cashConfidenceAdaptive
         ) else { return nil }
 
         let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {

@@ -450,6 +450,7 @@ Use this order when looking for a new strategy candidate:
 - For multi-asset backtests across gold/US equities/A-shares, use recent valid price forward-fill with enough holiday tolerance; do not accidentally delete dates because one market is closed.
 - K-line charts must use real OHLC data. Do not fake OHLC from close-only series.
 - User preference: no BTC in main AssetTimeMachine strategy line unless explicitly requested.
+- User preference: use the product default 1.00% fee and 0.05% slippage for strategy research. Do not run multiple transaction-fee sensitivity tests unless the user explicitly requests them.
 - Hard rule: external fund sleeves/proxies are unavailable and meaningless for this project. Do not use, recommend, rank, compare, or revive strategies that depend on `qmnix`, `qmnrx`, `ostix`, `vmnfx`, `bprrx`, or similar off-App fund/proxy sleeves.
 - User explicitly rejected all external fund-sleeve/proxy-asset based strategy lines as unusable/no-value. Treat them as dead ends, not as candidates, benchmarks, fallbacks, or evidence that a Sharpe-2 product strategy exists.
 - Treat all prior fund-sleeve/proxy-fund metrics as invalid for current product decisions. Old Sharpe-2 research lines such as `internal_budget_ensemble`, `internal_experience_ensemble`, sparse/internal ensembles, and any descendants of the `qmnrx/ostix` fixture path must not be presented as viable AssetTimeMachine candidates.
