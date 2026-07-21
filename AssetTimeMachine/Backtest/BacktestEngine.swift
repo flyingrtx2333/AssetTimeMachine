@@ -1879,7 +1879,9 @@ nonisolated enum BacktestEngine {
         growthStateScale: Double = 1.082,
         fastBridgeRatio: Double = 0.185,
         sleeveCap: Double = 0.15,
-        recoveryQualityConfig: RecoverySleeveQualityConfig? = nil
+        recoveryQualityConfig: RecoverySleeveQualityConfig? = nil,
+        recoveryCooldownSessions: Int = 180,
+        recoveryFastBreakThreshold: Double = -0.03
     ) -> ResearchTargetStrategyRun? {
         guard let baseRun = runRiskContributionRecoveryBaseWithTrace(
             assetInputs: assetInputs,
@@ -1909,10 +1911,10 @@ nonisolated enum BacktestEngine {
         let trendMA = 100
         let momentumLookback = 60
         let reviewSessions = 60
-        let cooldownSessions = 180
+        let cooldownSessions = recoveryCooldownSessions
         let minimumHoldSessions = 10
         let maximumEntriesPerEpisode = 2
-        let fastBreakThreshold = -0.03
+        let fastBreakThreshold = recoveryFastBreakThreshold
         let cashReserve = 0.05
         let grossCap = 1.20
         let tradeBand = 0.08
@@ -2289,7 +2291,9 @@ nonisolated enum BacktestEngine {
             growthStateScale: 1.05,
             fastBridgeRatio: 0.15,
             sleeveCap: 0.2075,
-            recoveryQualityConfig: .cashConfidenceAdaptive
+            recoveryQualityConfig: .cashConfidenceAdaptive,
+            recoveryCooldownSessions: 150,
+            recoveryFastBreakThreshold: -0.05
         ) else { return nil }
 
         let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
@@ -2312,6 +2316,10 @@ nonisolated enum BacktestEngine {
         let leadershipEvaluationSessions = 10
         let leadershipPriorEvidence = 2.0
         let minimumLeadershipMigration = 0.50
+        let nearPeakDeRiskExecutionFraction = 0.875
+        let nearPeakDeRiskDrawdownThreshold = 0.04
+        let nearPeakDeRiskMaximumRetention = 0.25
+        let broadUnwindTurnoverThreshold = 0.60
         let config = ResearchTargetStrategyConfig(
             symbol: "risk_contribution_cash_confidence_router",
             title: AppLocalization.string("无融资置信度恢复"),
@@ -2739,6 +2747,103 @@ nonisolated enum BacktestEngine {
                                 )
                             )
                         )
+                    }
+                }
+
+                if !previousWeights.isEmpty {
+                    let priorGross = previousWeights.values.reduce(0, +)
+                    let targetGross = pendingWeights.values.reduce(0, +)
+                    if targetGross >= 0.05,
+                       targetGross < priorGross - 0.02,
+                       alignedBaseValues.indices.contains(signalIndex),
+                       let currentBaseValue = alignedBaseValues[signalIndex],
+                       currentBaseValue > 0 {
+                        let peakStart = max(0, signalIndex - 251)
+                        let peakValue = alignedBaseValues[peakStart...signalIndex]
+                            .compactMap { $0 }
+                            .max() ?? currentBaseValue
+                        let baseDrawdown = peakValue > 0
+                            ? max(1 - currentBaseValue / peakValue, 0)
+                            : 0
+                        if baseDrawdown < nearPeakDeRiskDrawdownThreshold {
+                            let executionSymbols = Set(previousWeights.keys)
+                                .union(pendingWeights.keys)
+                            let executionTurnover = executionSymbols.reduce(0.0) {
+                                $0 + abs((pendingWeights[$1] ?? 0) - (previousWeights[$1] ?? 0))
+                            }
+                            let grossDrop = max(priorGross - targetGross, 0)
+                            let baseRetention = 1 - nearPeakDeRiskExecutionFraction
+                            let grossSeverity = max(grossDrop / 0.20, 0)
+                            let turnoverSeverity = max(executionTurnover / 0.40, 0)
+                            let retention = min(
+                                nearPeakDeRiskMaximumRetention,
+                                baseRetention * max(grossSeverity, turnoverSeverity)
+                            )
+                            let retainedGross = grossDrop * retention
+                            if retainedGross > 0 {
+                                var bufferWeights: [String: Double] = [:]
+                                if executionTurnover >= broadUnwindTurnoverThreshold {
+                                    let sales = Dictionary(uniqueKeysWithValues: executionSymbols.compactMap { symbol -> (String, Double)? in
+                                        let sale = max(
+                                            (previousWeights[symbol] ?? 0)
+                                                - (pendingWeights[symbol] ?? 0),
+                                            0
+                                        )
+                                        return sale > 0 ? (symbol, sale) : nil
+                                    })
+                                    let totalSales = sales.values.reduce(0, +)
+                                    let effectiveRetainedGross = min(retainedGross, totalSales)
+                                    if effectiveRetainedGross > 0, totalSales > 0 {
+                                        let priorLeader = leaderName(previousWeights)
+                                        let leaderSymbols: Set<String> = priorLeader == "china"
+                                            ? ["csi300", "shanghai_composite"]
+                                            : [priorLeader]
+                                        let leaderSales = sales.filter { leaderSymbols.contains($0.key) }
+                                        let leaderSaleTotal = leaderSales.values.reduce(0, +)
+                                        let leaderAllocation = min(
+                                            effectiveRetainedGross,
+                                            leaderSaleTotal
+                                        )
+                                        if leaderAllocation > 0, leaderSaleTotal > 0 {
+                                            for (symbol, sale) in leaderSales {
+                                                bufferWeights[symbol] = leaderAllocation
+                                                    * sale / leaderSaleTotal
+                                            }
+                                        }
+                                        let remainingAllocation = effectiveRetainedGross
+                                            - leaderAllocation
+                                        let otherSales = sales.filter { !leaderSymbols.contains($0.key) }
+                                        let otherSaleTotal = otherSales.values.reduce(0, +)
+                                        if remainingAllocation > 0, otherSaleTotal > 0 {
+                                            for (symbol, sale) in otherSales {
+                                                bufferWeights[symbol, default: 0] += remainingAllocation
+                                                    * sale / otherSaleTotal
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    let priorLeader = leaderName(previousWeights)
+                                    switch priorLeader {
+                                    case "china":
+                                        let priorCSI = previousWeights["csi300"] ?? 0
+                                        let priorShanghai = previousWeights["shanghai_composite"] ?? 0
+                                        let priorChina = priorCSI + priorShanghai
+                                        if priorChina > 0 {
+                                            bufferWeights["csi300"] = retainedGross * priorCSI / priorChina
+                                            bufferWeights["shanghai_composite"] = retainedGross
+                                                * priorShanghai / priorChina
+                                        }
+                                    case "cash":
+                                        break
+                                    default:
+                                        bufferWeights[priorLeader] = retainedGross
+                                    }
+                                }
+                                for (symbol, weight) in bufferWeights where weight > 0 {
+                                    pendingWeights[symbol, default: 0] += weight
+                                }
+                            }
+                        }
                     }
                 }
 
