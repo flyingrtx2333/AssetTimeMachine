@@ -125,7 +125,13 @@ xcodebuild \
   build
 ```
 
-Backtest golden metrics use the pinned fixture at `tools/fixtures/backtest-history/public_history.json` through `ATM_HISTORY_FIXTURE`, so normal verification is stable and does not drift when the live market-history endpoint backfills data. Refresh this fixture only deliberately, then review the baseline diff.
+Backtest golden metrics use the pinned fixture at `tools/fixtures/backtest-history/public_history.json` through `ATM_HISTORY_FIXTURE`, so verification remains reproducible after a snapshot is taken. Before formal strategy research or reporting App-comparable metrics, refresh the snapshot and all golden rows from the same `period=all`, 12-symbol, `include_ohlc=true` request used by the App metric dump:
+
+```bash
+python3 scripts/refresh_app_backtest_baseline.py
+```
+
+Review the fixture and full baseline diff after every refresh. Do not report stale fixture metrics as the App's current online result.
 
 ## Running on iOS Simulator
 
