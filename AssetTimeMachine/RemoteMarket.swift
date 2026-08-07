@@ -350,7 +350,10 @@ final class RemoteMarketStore: ObservableObject {
     @Published var overview: PublicMarketOverview?
     @Published var exchangeRates: [String: Double] = [:]
     @Published var exchangeRatesFetchedAt: Date?
-    @Published var historySeries: [String: PublicHistorySeries] = [:]
+    @Published var historySeries: [String: PublicHistorySeries] = [:] {
+        didSet { historyRevision &+= 1 }
+    }
+    @Published private(set) var historyRevision = 0
     @Published var isLoading = false
     @Published var errorMessage: String?
 
@@ -573,9 +576,10 @@ final class RemoteMarketStore: ObservableObject {
                     if existingLastDate > nextLastDate {
                         continue
                     }
-                    if existingLastDate == nextLastDate, existing.dates.count >= series.dates.count {
+                    if existingLastDate == nextLastDate, existing.dates.count > series.dates.count {
                         continue
                     }
+                    if existing == series { continue }
                 }
                 normalizedSeries[normalizedSymbol] = series
                 didChangeHistory = true

@@ -23,7 +23,7 @@ struct TimeMachineView: View {
     @State private var cachedFullHistoryPointsBySymbol: [String: [TimeMachineSingleAxisPoint]] = [:]
     @State private var cachedDetailTrendCards: [TimeMachineCombinedTrendDescriptor] = []
     @State private var cachedTrendPointBySnapshotID: [UUID: TimeMachineTrendPointCacheEntry] = [:]
-    @State private var cachedAllRangeSnapshots: [AssetSnapshot]?
+
     @State private var lastFullHistoryPointsCacheToken: Int?
     @State private var lastVisualizationCacheToken: Int?
     @State private var lastLiveMarketVisualizationCacheToken: Int?
@@ -32,6 +32,7 @@ struct TimeMachineView: View {
     @State private var deferredDetailCardsTask: Task<Void, Never>?
     @State private var pendingVisualizationRefreshTask: Task<Void, Never>?
     @State private var activeGeneration = 0
+    @State private var modelSaveRevision = 0
     @State private var lastAnnualSurplusCacheToken: Int?
     @State private var cachedAllSnapshotsForSurplus: [AssetSnapshot]?
     @State private var visibleDetailTrendSymbols: Set<String> = ["gold_cny"]
@@ -179,6 +180,7 @@ struct TimeMachineView: View {
 
     private var historyCacheToken: Int {
         var hasher = Hasher()
+        hasher.combine(marketStore.historyRevision)
         let symbols = marketStore.historySeries.keys.sorted()
         hasher.combine(symbols.count)
 
@@ -220,13 +222,17 @@ struct TimeMachineView: View {
     }
 
     private var annualSurplusCacheToken: Int {
-        snapshotCacheToken
+        var hasher = Hasher()
+        hasher.combine(snapshotCacheToken)
+        hasher.combine(selectedRange.rawValue)
+        return hasher.finalize()
     }
 
     private var snapshotVisualizationCacheToken: Int {
         var hasher = Hasher()
         hasher.combine(selectedRange.rawValue)
         hasher.combine(snapshotCacheToken)
+        hasher.combine(modelSaveRevision)
         hasher.combine(historyCacheToken)
         return hasher.finalize()
     }
@@ -266,6 +272,7 @@ struct TimeMachineView: View {
             return
         }
         await refreshVisualizationCache(includeDetailCards: includeDetailCards, cacheToken: token)
+        guard !Task.isCancelled, isActive, token == snapshotVisualizationCacheToken else { return }
         lastVisualizationCacheToken = token
         lastLiveMarketVisualizationCacheToken = liveMarketVisualizationCacheToken
     }
@@ -323,17 +330,24 @@ struct TimeMachineView: View {
             }
         }
 
+        guard !Task.isCancelled, isActive, cacheToken == snapshotVisualizationCacheToken else { return }
+
         let validSnapshotIDs = Set(snapshots.map(\.id))
         cachedTrendPointBySnapshotID = cachedTrendPointBySnapshotID.filter { validSnapshotIDs.contains($0.key) }
 
-        let filteredTrendPoints = trendPoints
+        let filteredTrendPoints = selectedRange.filter(trendPoints)
 
         cachedTrendPoints = trendPoints
         cachedFilteredTrendPoints = filteredTrendPoints
-
         cachedMonthlySurplusPoints = buildMonthlySurplusPoints(from: trendPoints)
+
+        // 先发布主图，年结余和详情卡继续渐进加载，避免全历史补查阻塞首屏。
+        lastVisualizationCacheToken = cacheToken
+        await Task.yield()
+
         let preferredAnnualSource = selectedRange == .all ? trendPoints : nil
         await refreshAnnualSurplusPointsIfNeeded(preferredFullTrendPoints: preferredAnnualSource)
+        guard !Task.isCancelled, isActive, cacheToken == snapshotVisualizationCacheToken else { return }
 
         guard !filteredTrendPoints.isEmpty else {
             cachedHistoryPointsBySymbol = [:]
@@ -369,49 +383,48 @@ struct TimeMachineView: View {
         }
     }
 
-    private func snapshotsForSelectedRange(calendar: Calendar = .current) -> [AssetSnapshot] {
-        if selectedRange == .all {
-            if let cachedAllRangeSnapshots, !cachedAllRangeSnapshots.isEmpty {
-                return cachedAllRangeSnapshots
-            }
-            return chronologicalSnapshots
-        }
-
-        let orderedSnapshots = chronologicalSnapshots
-        guard let latestDate = orderedSnapshots.last?.date,
-              let startDate = selectedRangeStartDate(from: latestDate, calendar: calendar) else {
-            return orderedSnapshots
-        }
-
-        return orderedSnapshots.filter { $0.date >= startDate }
-    }
-
     @MainActor
-    private func resolvedSnapshotsForVisualization() async -> [AssetSnapshot] {
-        guard selectedRange == .all else {
-            cachedAllRangeSnapshots = nil
-            return snapshotsForSelectedRange()
+    private func resolvedSnapshotsForVisualization(calendar: Calendar = .current) async -> [AssetSnapshot] {
+        let loadedSnapshots = chronologicalSnapshots
+
+        if selectedRange == .all {
+            let descriptor = FetchDescriptor<AssetSnapshot>(
+                sortBy: [SortDescriptor(\AssetSnapshot.date, order: .forward)]
+            )
+            return (try? modelContext.fetch(descriptor)) ?? loadedSnapshots
         }
 
-        if let cachedAllRangeSnapshots, !cachedAllRangeSnapshots.isEmpty {
-            return cachedAllRangeSnapshots
+        guard let latestDate = loadedSnapshots.last?.date,
+              let startDate = selectedRangeStartDate(from: latestDate, calendar: calendar) else {
+            return loadedSnapshots
         }
 
-        let descriptor = FetchDescriptor<AssetSnapshot>(
-            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .forward)]
+        var rangeSnapshots: [AssetSnapshot]
+        if let oldestLoadedDate = loadedSnapshots.first?.date, oldestLoadedDate <= startDate {
+            rangeSnapshots = loadedSnapshots.filter { $0.date >= startDate }
+        } else {
+            let predicate = #Predicate<AssetSnapshot> { snapshot in
+                snapshot.date >= startDate && snapshot.date <= latestDate
+            }
+            let descriptor = FetchDescriptor<AssetSnapshot>(
+                predicate: predicate,
+                sortBy: [SortDescriptor(\AssetSnapshot.date, order: .forward)]
+            )
+            rangeSnapshots = (try? modelContext.fetch(descriptor)) ?? loadedSnapshots.filter { $0.date >= startDate }
+        }
+
+        let baselineCutoff = calendar.dateInterval(of: .month, for: startDate)?.start ?? startDate
+        var predecessorDescriptor = FetchDescriptor<AssetSnapshot>(
+            predicate: #Predicate<AssetSnapshot> { snapshot in
+                snapshot.date < baselineCutoff
+            },
+            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
         )
-        let fetched: [AssetSnapshot]
-        do {
-            fetched = try modelContext.fetch(descriptor)
-        } catch {
-            print("[AssetTimeMachine] fetch all snapshots for visualization failed: \(error)")
-            fetched = []
+        predecessorDescriptor.fetchLimit = 1
+        if let predecessor = try? modelContext.fetch(predecessorDescriptor).first {
+            rangeSnapshots.insert(predecessor, at: 0)
         }
-        if fetched.count > chronologicalSnapshots.count {
-            cachedAllRangeSnapshots = fetched
-            return fetched
-        }
-        return chronologicalSnapshots
+        return rangeSnapshots
     }
 
     private func selectedRangeStartDate(from latestDate: Date, calendar: Calendar = .current) -> Date? {
@@ -493,6 +506,7 @@ struct TimeMachineView: View {
             sourcePoints = fullTrendPoints
         }
 
+        guard !Task.isCancelled, isActive, token == annualSurplusCacheToken else { return }
         cachedAnnualSurplusPoints = buildAnnualSurplusPoints(from: sourcePoints)
         lastAnnualSurplusCacheToken = token
     }
@@ -503,6 +517,7 @@ struct TimeMachineView: View {
         guard force || token != lastDetailTrendCardsCacheToken else { return }
         if token != lastVisualizationCacheToken {
             await refreshVisualizationCache(includeDetailCards: true, cacheToken: token)
+            guard !Task.isCancelled, isActive, token == snapshotVisualizationCacheToken else { return }
             lastVisualizationCacheToken = token
             lastLiveMarketVisualizationCacheToken = liveMarketVisualizationCacheToken
         } else {
@@ -578,12 +593,14 @@ struct TimeMachineView: View {
 
         for monthStart in sortedMonthStarts {
             guard let monthPoints = grouped[monthStart]?.sorted(by: { $0.date < $1.date }),
-                  let firstPoint = monthPoints.first,
                   let lastPoint = monthPoints.last else {
                 continue
             }
 
-            let baseline = previousMonthEndNetAssets ?? firstPoint.netAssets
+            guard let baseline = previousMonthEndNetAssets else {
+                previousMonthEndNetAssets = lastPoint.netAssets
+                continue
+            }
             let surplus = lastPoint.netAssets - baseline
             points.append(
                 TimeMachineMonthlySurplusPoint(
@@ -622,9 +639,7 @@ struct TimeMachineView: View {
         }
 
         guard let startDate else { return points }
-        let filteredPoints = points.filter { $0.date >= startDate }
-        guard let monthlyBucketLimit = selectedRange.monthlyBucketLimit else { return filteredPoints }
-        return Array(filteredPoints.suffix(monthlyBucketLimit))
+        return points.filter { $0.date >= startDate }
     }
 
     private func buildAnnualSurplusPoints(
@@ -644,12 +659,14 @@ struct TimeMachineView: View {
 
         for yearStart in sortedYearStarts {
             guard let yearPoints = grouped[yearStart]?.sorted(by: { $0.date < $1.date }),
-                  let firstPoint = yearPoints.first,
                   let lastPoint = yearPoints.last else {
                 continue
             }
 
-            let baseline = previousYearEndNetAssets ?? firstPoint.netAssets
+            guard let baseline = previousYearEndNetAssets else {
+                previousYearEndNetAssets = lastPoint.netAssets
+                continue
+            }
             let surplus = lastPoint.netAssets - baseline
             points.append(
                 TimeMachineAnnualSurplusPoint(
@@ -663,7 +680,11 @@ struct TimeMachineView: View {
             previousYearEndNetAssets = lastPoint.netAssets
         }
 
-        return points
+        guard let latestDate = source.last?.date,
+              let startDate = selectedRangeStartDate(from: latestDate, calendar: calendar) else {
+            return points
+        }
+        return points.filter { $0.date >= startDate }
     }
 
     private func buildDetailTrendCards(
@@ -950,7 +971,7 @@ struct TimeMachineView: View {
 
             trendVideoPreviewRequest = TrendVideoPreviewRequest(
                 points: exportPoints,
-                rangeLabel: TimeMachineRange.all.summaryLabel
+                rangeLabel: selectedRange.summaryLabel
             )
         }
     }
@@ -1070,15 +1091,23 @@ struct TimeMachineView: View {
                 guard !Task.isCancelled else { return }
                 await SnapshotAnchorService.backfillIfNeeded(in: modelContext)
                 guard !Task.isCancelled else { return }
-                scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 0)
+                cachedAllSnapshotsForSurplus = nil
+                lastAnnualSurplusCacheToken = nil
+                scheduleVisualizationRefresh(force: true, includeDetailCards: false, delayNanoseconds: 0)
             } else {
                 pendingVisualizationRefreshTask?.cancel()
                 pendingLiveMarketTrendRefreshTask?.cancel()
                 deferredDetailCardsTask?.cancel()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
+            guard isActive else { return }
+            modelSaveRevision &+= 1
+        }
         .onChange(of: isActive ? snapshotVisualizationCacheToken : (lastVisualizationCacheToken ?? 0)) { _, _ in
             guard isActive else { return }
+            cachedAllSnapshotsForSurplus = nil
+            lastAnnualSurplusCacheToken = nil
             scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 120_000_000)
         }
         .onChange(of: isActive ? liveMarketVisualizationCacheToken : (lastLiveMarketVisualizationCacheToken ?? 0)) { _, _ in

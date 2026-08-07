@@ -39,20 +39,6 @@ enum TimeMachineRange: String, CaseIterable, Identifiable {
         .day
     }
 
-    var monthlyBucketLimit: Int? {
-        switch self {
-        case .halfMonth, .oneMonth:
-            return 1
-        case .sixMonths:
-            return 6
-        case .oneYear:
-            return 12
-        case .threeYears:
-            return 36
-        case .all:
-            return nil
-        }
-    }
 
     private func startDate(from latestDate: Date, calendar: Calendar = .current) -> Date? {
         switch self {
@@ -78,15 +64,23 @@ enum TimeMachineRange: String, CaseIterable, Identifiable {
         return points.filter { $0.date >= startDate }
     }
 
-    func filter(_ points: [TimeMachineSingleAxisPoint], calendar: Calendar = .current) -> [TimeMachineSingleAxisPoint] {
-        guard let latestDate = points.last?.date else { return [] }
+    func filter(
+        _ points: [TimeMachineSingleAxisPoint],
+        anchoredAt anchorDate: Date? = nil,
+        calendar: Calendar = .current
+    ) -> [TimeMachineSingleAxisPoint] {
+        guard let latestDate = anchorDate ?? points.last?.date else { return [] }
         let startDate = startDate(from: latestDate, calendar: calendar)
         guard let startDate else { return points }
         return points.filter { $0.date >= startDate }
     }
 
-    func filter(_ points: [TimeMachineCandlestickPoint], calendar: Calendar = .current) -> [TimeMachineCandlestickPoint] {
-        guard let latestDate = points.last?.date else { return [] }
+    func filter(
+        _ points: [TimeMachineCandlestickPoint],
+        anchoredAt anchorDate: Date? = nil,
+        calendar: Calendar = .current
+    ) -> [TimeMachineCandlestickPoint] {
+        guard let latestDate = anchorDate ?? points.last?.date else { return [] }
         let startDate = startDate(from: latestDate, calendar: calendar)
         guard let startDate else { return points }
         return points.filter { $0.date >= startDate }
@@ -503,16 +497,13 @@ struct TimeMachineHeroTrendCard: View {
         self.hasRecord = hasRecord
         self.onOpenRecord = onOpenRecord
 
-        let sampledPoints = evenlySampledItems(
-            points,
-            maxCount: selectedRange.wrappedValue == .all ? 120 : 60
-        )
-        self.displayPoints = sampledPoints
-        self.valueDomain = ChartLayoutSupport.paddedValueDomain(values: sampledPoints.flatMap { point in
+        let displayPoints = points.sorted { $0.date < $1.date }
+        self.displayPoints = displayPoints
+        self.valueDomain = ChartLayoutSupport.paddedValueDomain(values: displayPoints.flatMap { point in
             TimeMachineAssetSeries.allCases.map { $0.value(from: point) }
         })
-        self.dateDomain = Self.makeDateDomain(from: sampledPoints)
-        self.axisDates = chartAxisDates(sampledPoints.map(\.date))
+        self.dateDomain = Self.makeDateDomain(from: displayPoints)
+        self.axisDates = chartAxisDates(displayPoints.map(\.date))
     }
 
     private var selectedPoint: TimeMachineTrendPoint {
@@ -1415,8 +1406,9 @@ struct TimeMachineDualAxisTrendCard: View {
     }
 
     private var selectedDualPoint: TimeMachineDualAxisPoint? {
-        guard let selectedDate else { return latestPoint }
-        return nearestChartPoint(displayPoints, to: selectedDate, date: \.date) ?? latestPoint
+        let targetDate = canShowCandlestickChart ? selectedCandlestick?.date : selectedDate
+        guard let targetDate else { return latestPoint }
+        return nearestChartPoint(descriptor.points, to: targetDate, date: \.date) ?? latestPoint
     }
 
     private var latestLeftOnlyPoint: TimeMachineSingleAxisPoint? {
@@ -1424,8 +1416,9 @@ struct TimeMachineDualAxisTrendCard: View {
     }
 
     private var selectedLeftOnlyPoint: TimeMachineSingleAxisPoint? {
-        guard let selectedDate else { return latestLeftOnlyPoint }
-        return nearestChartPoint(displayLeftOnlyPoints, to: selectedDate, date: \.date) ?? latestLeftOnlyPoint
+        let targetDate = canShowCandlestickChart ? selectedCandlestick?.date : selectedDate
+        guard let targetDate else { return latestLeftOnlyPoint }
+        return nearestChartPoint(descriptor.leftOnlyPoints, to: targetDate, date: \.date) ?? latestLeftOnlyPoint
     }
 
     private var latestCandlestick: TimeMachineCandlestickPoint? {
@@ -1434,7 +1427,7 @@ struct TimeMachineDualAxisTrendCard: View {
 
     private var selectedCandlestick: TimeMachineCandlestickPoint? {
         guard let selectedDate else { return latestCandlestick }
-        return nearestChartPoint(displayCandlesticks, to: selectedDate, date: \.date) ?? latestCandlestick
+        return nearestChartPoint(rangeFilteredCandlesticks, to: selectedDate, date: \.date) ?? latestCandlestick
     }
 
     var body: some View {
@@ -1836,8 +1829,14 @@ struct TimeMachineHistoryDrilldownSheet: View {
     @State private var selectedRange: TimeMachineRange = .all
     @State private var selectedDate: Date?
 
+    private var rangeAnchorDate: Date? {
+        [descriptor.points.last?.date, descriptor.candlesticks.last?.date]
+            .compactMap { $0 }
+            .max()
+    }
+
     private var filteredPoints: [TimeMachineSingleAxisPoint] {
-        selectedRange.filter(descriptor.points)
+        selectedRange.filter(descriptor.points, anchoredAt: rangeAnchorDate)
     }
 
     private var displayPoints: [TimeMachineSingleAxisPoint] {
@@ -1845,7 +1844,7 @@ struct TimeMachineHistoryDrilldownSheet: View {
     }
 
     private var filteredCandlesticks: [TimeMachineCandlestickPoint] {
-        selectedRange.filter(descriptor.candlesticks)
+        selectedRange.filter(descriptor.candlesticks, anchoredAt: rangeAnchorDate)
     }
 
     private var displayCandlesticks: [TimeMachineCandlestickPoint] {
@@ -1862,7 +1861,7 @@ struct TimeMachineHistoryDrilldownSheet: View {
 
     private var selectedCandlestick: TimeMachineCandlestickPoint? {
         guard let selectedDate else { return latestCandlestick }
-        return nearestChartPoint(displayCandlesticks, to: selectedDate, date: \.date) ?? latestCandlestick
+        return nearestChartPoint(filteredCandlesticks, to: selectedDate, date: \.date) ?? latestCandlestick
     }
 
     private var latestPoint: TimeMachineSingleAxisPoint? {
@@ -1872,7 +1871,7 @@ struct TimeMachineHistoryDrilldownSheet: View {
     private var selectedPoint: TimeMachineSingleAxisPoint? {
         guard let latestPoint else { return nil }
         guard let selectedDate else { return latestPoint }
-        return nearestChartPoint(displayPoints, to: selectedDate, date: \.date) ?? latestPoint
+        return nearestChartPoint(filteredPoints, to: selectedDate, date: \.date) ?? latestPoint
     }
 
     private var valueDomain: ClosedRange<Double> {

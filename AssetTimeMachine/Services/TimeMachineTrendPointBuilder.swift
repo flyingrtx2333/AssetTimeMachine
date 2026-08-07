@@ -75,11 +75,7 @@ enum TimeMachineTrendPointBuilder {
         liveAnchors: TimeMachineLiveMarketAnchors? = nil
     ) -> Int {
         var hasher = Hasher()
-        hasher.combine(snapshot.id)
-        hasher.combine(snapshot.date.timeIntervalSinceReferenceDate)
-        hasher.combine(snapshot.updatedAt.timeIntervalSinceReferenceDate)
-        hasher.combine(snapshot.marketAnchorsUpdatedAt?.timeIntervalSinceReferenceDate)
-        hasher.combine(snapshot.entries.count)
+        hasher.combine(SnapshotRevisionToken.contentRevision(for: snapshot))
 
         if Calendar.current.isDateInToday(snapshot.date), let liveAnchors {
             hasher.combine(liveAnchors.goldPriceCNY)
