@@ -3,6 +3,129 @@ import SwiftData
 import Charts
 import UIKit
 
+nonisolated private struct DeferredBacktestRecordConfig: Encodable, Sendable {
+    let kind: String
+    let cashWeight: Double?
+    let goldWeight: Double?
+    let indexWeights: [String: Double]?
+    let dcaAssetSymbol: String?
+    let dcaContributionAmount: Double?
+    let dcaIntervalDays: Int?
+
+    static func allocation(
+        cashWeight: Double,
+        goldWeight: Double,
+        indexWeights: [String: Double]
+    ) -> Self {
+        Self(
+            kind: "allocation",
+            cashWeight: cashWeight,
+            goldWeight: goldWeight,
+            indexWeights: indexWeights,
+            dcaAssetSymbol: nil,
+            dcaContributionAmount: nil,
+            dcaIntervalDays: nil
+        )
+    }
+
+    static func dca(assetSymbol: String, contributionAmount: Double, intervalDays: Int) -> Self {
+        Self(
+            kind: "dca",
+            cashWeight: nil,
+            goldWeight: nil,
+            indexWeights: nil,
+            dcaAssetSymbol: assetSymbol,
+            dcaContributionAmount: contributionAmount,
+            dcaIntervalDays: intervalDays
+        )
+    }
+}
+
+nonisolated private struct DeferredBacktestRecordDraft: Sendable {
+    let recordKey: String
+    let kindRawValue: String
+    let title: String
+    let subtitle: String
+    let configSummary: String
+    let createdAt: Date
+    let startDate: Date?
+    let endDate: Date?
+    let totalReturn: Double
+    let annualizedReturn: Double?
+    let maxDrawdown: Double
+    let annualizedVolatility: Double?
+    let sharpeRatio: Double?
+    let finalValue: Double?
+    let totalInvested: Double?
+    let profitLoss: Double?
+    let tradeCount: Int
+    let points: [BacktestSeriesPoint]
+    let config: DeferredBacktestRecordConfig
+}
+
+nonisolated private struct DeferredBacktestRecordPoint: Encodable, Sendable {
+    let date: Date
+    let value: Double
+    let sequence: Int
+}
+
+nonisolated private struct EncodedDeferredBacktestRecord: Sendable {
+    let pointsJSON: Data
+    let configJSON: Data
+}
+
+nonisolated private enum DeferredBacktestRecordEncoder {
+    static func encode(_ draft: DeferredBacktestRecordDraft) -> EncodedDeferredBacktestRecord {
+        let sampledPoints = sampled(draft.points, maxCount: 240)
+        let pointPayload = sampledPoints.enumerated().map { index, point in
+            DeferredBacktestRecordPoint(
+                date: point.date,
+                value: point.portfolioValue,
+                sequence: index
+            )
+        }
+
+        return EncodedDeferredBacktestRecord(
+            pointsJSON: encodeOrFallback(pointPayload, fallbackJSON: "[]", context: "points"),
+            configJSON: encodeOrFallback(draft.config, fallbackJSON: "{}", context: "config")
+        )
+    }
+
+    private static func encodeOrFallback<T: Encodable>(
+        _ payload: T,
+        fallbackJSON: String,
+        context: String
+    ) -> Data {
+        do {
+            return try JSONEncoder().encode(payload)
+        } catch {
+            print("[AssetTimeMachine] encode deferred backtest record \(context) failed: \(error)")
+            return Data(fallbackJSON.utf8)
+        }
+    }
+
+    private static func sampled(_ points: [BacktestSeriesPoint], maxCount: Int) -> [BacktestSeriesPoint] {
+        guard points.count > maxCount, maxCount > 1 else { return points }
+        let step = Double(points.count - 1) / Double(maxCount - 1)
+        var sampledPoints: [BacktestSeriesPoint] = []
+        sampledPoints.reserveCapacity(maxCount)
+
+        for index in 0 ..< maxCount {
+            let rawIndex = Int((Double(index) * step).rounded())
+            let safeIndex = min(max(rawIndex, 0), points.count - 1)
+            let point = points[safeIndex]
+            if sampledPoints.last?.date != point.date {
+                sampledPoints.append(point)
+            }
+        }
+
+        if sampledPoints.last?.date != points.last?.date, let last = points.last {
+            sampledPoints.append(last)
+        }
+        return sampledPoints
+    }
+}
+
 struct BacktestView: View {
     @Environment(\.modelContext) private var modelContext
     let marketStore: RemoteMarketStore
@@ -37,6 +160,7 @@ struct BacktestView: View {
     @State private var lastBacktestDataCacheToken: Int?
     @State private var pendingBacktestDataRefreshTask: Task<Void, Never>?
     @State private var pendingBacktestComputationTask: Task<Void, Never>?
+    @State private var pendingBacktestRecordSaveTask: Task<Void, Never>?
     @State private var selectedBacktestRecord: BacktestRecord?
     @State private var recentBacktestRecords: [BacktestRecord] = []
     @State private var totalBacktestRecordCount = 0
@@ -72,32 +196,25 @@ struct BacktestView: View {
         }
     }
 
+    private struct StandardBacktestComputationOutput {
+        let result: StandardBacktestComputationResult
+        let preparedData: StandardBacktestPreparedDataCache
+    }
+
     @State private var activeDCAConfigSheet: DCAConfigSheet?
 
     private let indexOptions = BacktestDefaults.indexOptions
     private let dcaAssetOptions = BacktestDefaults.dcaAssetOptions
-    private var filteredGoldSeries: PublicHistorySeries? {
-        cachedFilteredGoldSeries
-    }
-
-    private var filteredIndexSeriesBySymbol: [String: PublicHistorySeries] {
-        cachedFilteredIndexSeriesBySymbol
-    }
 
     private var positiveIndexOptions: [BacktestIndexOption] {
         indexOptions.filter { indexWeights[$0.symbol, default: 0] > 0 }
     }
 
     private var selectedDCAAssetOption: BacktestAssetOption? {
-        cachedSelectedDCAAssetOption
-    }
-
-    private var filteredDCASeries: PublicHistorySeries? {
-        cachedFilteredDCASeries
-    }
-
-    private var filteredDCAFXSeries: PublicHistorySeries? {
-        cachedFilteredDCAFXSeries
+        if cachedSelectedDCAAssetOption?.symbol == dcaAssetSymbol {
+            return cachedSelectedDCAAssetOption
+        }
+        return dcaAssetOptions.first(where: { $0.symbol == dcaAssetSymbol })
     }
 
     private var animatedPoints: [BacktestSeriesPoint] {
@@ -147,7 +264,7 @@ struct BacktestView: View {
             return symbols
         case .dca:
             var symbols: Set<String> = [dcaAssetSymbol]
-            if let fxSymbol = cachedSelectedDCAAssetOption?.historicalFXSymbol ?? selectedDCAAssetOption?.historicalFXSymbol {
+            if let fxSymbol = dcaAssetOptions.first(where: { $0.symbol == dcaAssetSymbol })?.historicalFXSymbol {
                 symbols.insert(fxSymbol)
             }
             return symbols
@@ -253,8 +370,8 @@ struct BacktestView: View {
 
                 GeometryReader { geometry in
                     ScrollView(.vertical, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 14) {
-                            if selectedPage == .home {
+                        VStack(alignment: .leading, spacing: 0) {
+                            RetainedBacktestPage(isSelected: selectedPage == .home) {
                                 BacktestHomeView(
                                     records: recentBacktestRecords,
                                     totalRecordCount: totalBacktestRecordCount,
@@ -274,93 +391,99 @@ struct BacktestView: View {
                                         deleteBacktestRecord(record)
                                     }
                                 )
-                            } else {
-                                BacktestReturnHeader(title: activeBacktestPageTitle) {
+                            }
+
+                            RetainedBacktestPage(isSelected: selectedPage == .standard) {
+                                BacktestReturnHeader(title: backtestMode.title) {
                                     selectedPage = .home
                                 }
 
-                                if selectedPage == .advanced {
-                                    AdvancedBacktestView(
-                                        marketStore: marketStore,
-                                        isActive: isActive,
-                                        restoreRequest: pendingAdvancedRestoreRequest,
-                                        showsStrategyLibrary: $showsAdvancedStrategyLibrary,
-                                        onRecordsChanged: { refreshBacktestRecordCache(force: true) }
-                                    )
-                                } else {
-                                    VStack(spacing: 18) {
-                                        if backtestMode == .allocation {
-                                            BacktestAllocationCard(
-                                                slices: allocationSlices,
-                                                activeAllocationSummary: activeAllocationSummary,
-                                                selectedDateRangeLabel: selectedDateRangeLabel,
-                                                onTapRange: {
-                                                    showsRangeSheet = true
-                                                },
-                                                onTapAllocation: {
-                                                    showsAllocationSheet = true
-                                                },
-                                                onTapPrimaryAction: hasActiveReport ? nil : {
-                                                    hasStartedBacktest = true
-                                                    scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: true)
-                                                }
-                                            )
-                                            .onboardingAnchor(.backtestConfiguration)
-                                        } else {
-                                            BacktestDCACard(
-                                                assetTitle: AppLocalization.string(selectedDCAAssetOption?.title ?? "未选择资产"),
-                                                amount: dcaContributionAmount,
-                                                intervalDays: dcaIntervalDays,
-                                                selectedDateRangeLabel: selectedDateRangeLabel,
-                                                accent: selectedDCAAssetOption?.color ?? AssetTheme.gold,
-                                                onTapRange: {
-                                                    showsRangeSheet = true
-                                                },
-                                                onTapAsset: {
-                                                    activeDCAConfigSheet = .asset
-                                                },
-                                                onTapAmount: {
-                                                    activeDCAConfigSheet = .amount
-                                                },
-                                                onTapInterval: {
-                                                    activeDCAConfigSheet = .interval
-                                                },
-                                                onTapPrimaryAction: hasActiveReport ? nil : {
-                                                    hasStartedBacktest = true
-                                                    scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: true)
-                                                }
-                                            )
-                                            .onboardingAnchor(.backtestConfiguration)
-                                        }
-
-                                        if !isBacktestLoading, hasActiveReport {
-                                            HStack(spacing: 10) {
-                                                BacktestActionChip(title: AppLocalization.string("重置回测"), systemImage: "arrow.counterclockwise") {
-                                                    resetBacktest()
-                                                }
+                                VStack(spacing: 18) {
+                                    if backtestMode == .allocation {
+                                        BacktestAllocationCard(
+                                            slices: allocationSlices,
+                                            activeAllocationSummary: activeAllocationSummary,
+                                            selectedDateRangeLabel: selectedDateRangeLabel,
+                                            onTapRange: {
+                                                showsRangeSheet = true
+                                            },
+                                            onTapAllocation: {
+                                                showsAllocationSheet = true
+                                            },
+                                            onTapPrimaryAction: hasActiveReport ? nil : {
+                                                hasStartedBacktest = true
+                                                scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: true)
                                             }
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity)
-
-                                    if isBacktestLoading {
-                                        BacktestLoadingView()
-                                            .padding(.top, 8)
+                                        )
+                                        .onboardingAnchor(.backtestConfiguration)
+                                    } else {
+                                        BacktestDCACard(
+                                            assetTitle: AppLocalization.string(selectedDCAAssetOption?.title ?? "未选择资产"),
+                                            amount: dcaContributionAmount,
+                                            intervalDays: dcaIntervalDays,
+                                            selectedDateRangeLabel: selectedDateRangeLabel,
+                                            accent: selectedDCAAssetOption?.color ?? AssetTheme.gold,
+                                            onTapRange: {
+                                                showsRangeSheet = true
+                                            },
+                                            onTapAsset: {
+                                                activeDCAConfigSheet = .asset
+                                            },
+                                            onTapAmount: {
+                                                activeDCAConfigSheet = .amount
+                                            },
+                                            onTapInterval: {
+                                                activeDCAConfigSheet = .interval
+                                            },
+                                            onTapPrimaryAction: hasActiveReport ? nil : {
+                                                hasStartedBacktest = true
+                                                scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: true)
+                                            }
+                                        )
+                                        .onboardingAnchor(.backtestConfiguration)
                                     }
 
-                                    if !isBacktestLoading {
-                                        switch backtestMode {
-                                        case .allocation:
-                                            if let allocationReport {
-                                                allocationReportSection(report: allocationReport)
-                                            }
-                                        case .dca:
-                                            if let dcaReport {
-                                                dcaReportSection(report: dcaReport)
+                                    if !isBacktestLoading, hasActiveReport {
+                                        HStack(spacing: 10) {
+                                            BacktestActionChip(title: AppLocalization.string("重置回测"), systemImage: "arrow.counterclockwise") {
+                                                resetBacktest()
                                             }
                                         }
                                     }
                                 }
+                                .frame(maxWidth: .infinity)
+
+                                if isBacktestLoading {
+                                    BacktestLoadingView()
+                                        .padding(.top, 8)
+                                }
+
+                                if !isBacktestLoading {
+                                    switch backtestMode {
+                                    case .allocation:
+                                        if let allocationReport {
+                                            allocationReportSection(report: allocationReport)
+                                        }
+                                    case .dca:
+                                        if let dcaReport {
+                                            dcaReportSection(report: dcaReport)
+                                        }
+                                    }
+                                }
+                            }
+
+                            RetainedBacktestPage(isSelected: selectedPage == .advanced) {
+                                BacktestReturnHeader(title: BacktestRecordKind.advanced.title) {
+                                    selectedPage = .home
+                                }
+
+                                AdvancedBacktestView(
+                                    marketStore: marketStore,
+                                    isActive: isActive && selectedPage == .advanced,
+                                    restoreRequest: pendingAdvancedRestoreRequest,
+                                    showsStrategyLibrary: $showsAdvancedStrategyLibrary,
+                                    onRecordsChanged: { refreshBacktestRecordCache(force: true) }
+                                )
                             }
                         }
                         .frame(width: max(0, geometry.size.width - 40), alignment: .topLeading)
@@ -479,6 +602,7 @@ struct BacktestView: View {
         .task(id: isActive) {
             if isActive {
                 refreshBacktestRecordCache(force: false)
+                guard selectedPage == .standard else { return }
                 lastObservedRelevantHistoryToken = relevantHistoryToken
                 await marketStore.refreshHistoryIfNeeded()
                 guard !Task.isCancelled else { return }
@@ -487,7 +611,7 @@ struct BacktestView: View {
                     scheduleBacktestRefresh(animated: !hasPlayedInitialBacktestAnimation, saveRecord: false)
                 }
             } else {
-                saveCurrentBacktestRecordIfNeeded()
+                scheduleBacktestRecordSaveAfterTransition()
                 pendingBacktestDataRefreshTask?.cancel()
                 pendingBacktestComputationTask?.cancel()
                 pendingBacktestComputationTask = nil
@@ -495,8 +619,14 @@ struct BacktestView: View {
             }
         }
         .onChange(of: selectedPage) { _, newValue in
+            if newValue != .standard {
+                pendingBacktestDataRefreshTask?.cancel()
+                pendingBacktestComputationTask?.cancel()
+                pendingBacktestComputationTask = nil
+                isBacktestLoading = false
+            }
             guard isActive, !isRestoringBacktestRecord else { return }
-            if newValue == .standard || newValue == .advanced {
+            if newValue == .standard {
                 Task { await marketStore.refreshHistoryIfNeeded() }
             }
             guard newValue == .standard else { return }
@@ -516,8 +646,11 @@ struct BacktestView: View {
             guard hasStartedBacktest else { return }
             scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: false)
         }
-        .onChange(of: isActive ? relevantHistoryToken : "") { _, newToken in
-            guard isActive, !isRestoringBacktestRecord else { return }
+        .onReceive(marketStore.$historyRevision) { _ in
+            guard isActive,
+                  selectedPage == .standard,
+                  !isRestoringBacktestRecord else { return }
+            let newToken = relevantHistoryToken
             guard newToken != lastObservedRelevantHistoryToken else { return }
             lastObservedRelevantHistoryToken = newToken
             scheduleBacktestDataRefresh(delayNanoseconds: 40_000_000, force: true)
@@ -549,7 +682,11 @@ struct BacktestView: View {
 
     @MainActor
     private func scheduleBacktestDataRefresh(delayNanoseconds: UInt64, force: Bool = false) {
+        let token = backtestDataCacheToken
+        guard force || token != lastBacktestDataCacheToken else { return }
+
         pendingBacktestDataRefreshTask?.cancel()
+        let request = captureStandardBacktestPreparationRequest()
         pendingBacktestDataRefreshTask = Task {
             if delayNanoseconds == 0 {
                 await Task.yield()
@@ -557,89 +694,63 @@ struct BacktestView: View {
                 try? await Task.sleep(nanoseconds: delayNanoseconds)
             }
             guard !Task.isCancelled else { return }
-            await MainActor.run {
-                guard isActive else { return }
-                refreshBacktestDataCacheIfNeeded(force: force)
+
+            let preparationTask = Task.detached(priority: .userInitiated) {
+                StandardBacktestDataSupport.prepare(request)
             }
+
+            let preparedData = await withTaskCancellationHandler {
+                await preparationTask.value
+            } onCancel: {
+                preparationTask.cancel()
+            }
+
+            guard !Task.isCancelled,
+                  isActive,
+                  selectedPage == .standard,
+                  token == backtestDataCacheToken else { return }
+            applyStandardBacktestPreparedData(preparedData, token: token)
+            pendingBacktestDataRefreshTask = nil
         }
     }
 
     @MainActor
-    private func refreshBacktestDataCacheIfNeeded(force: Bool = false) {
-        let token = backtestDataCacheToken
-        guard force || token != lastBacktestDataCacheToken else { return }
-        refreshBacktestDataCache()
-        lastBacktestDataCacheToken = token
-    }
-
-    @MainActor
-    private func refreshBacktestDataCache() {
+    private func captureStandardBacktestPreparationRequest() -> StandardBacktestPreparationRequest {
         let selectedOption = dcaAssetOptions.first(where: { $0.symbol == dcaAssetSymbol })
-        cachedSelectedDCAAssetOption = selectedOption
+        let symbols = Set(["gold_cny", dcaAssetSymbol])
+            .union(indexOptions.map(\.symbol))
+            .union(selectedOption?.historicalFXSymbol.map { [$0] } ?? [])
+        let historySnapshots = AdvancedBacktestDataSupport.historySnapshots(
+            symbols: symbols,
+            historyProvider: { marketStore.history(for: $0) }
+        )
 
-        let sourceSeries = resolveActiveBacktestSourceSeries(selectedOption: selectedOption)
-        let bounds = BacktestEngine.availableDateBounds(for: sourceSeries)
-        cachedAvailableBacktestBounds = bounds
-
-        let effectiveBounds: ClosedRange<Date>?
-        if let bounds {
-            let start = max(selectedStartDate ?? bounds.lowerBound, bounds.lowerBound)
-            let end = min(selectedEndDate ?? bounds.upperBound, bounds.upperBound)
-            effectiveBounds = start <= end ? (start...end) : bounds
-        } else {
-            effectiveBounds = nil
-        }
-        cachedEffectiveBacktestBounds = effectiveBounds
-
-        cachedFilteredGoldSeries = filteredHistorySeries(marketStore.history(for: "gold_cny"), within: effectiveBounds)
-        cachedFilteredIndexSeriesBySymbol = Dictionary(uniqueKeysWithValues: indexOptions.compactMap { option in
-            guard let series = filteredHistorySeries(marketStore.history(for: option.symbol), within: effectiveBounds) else { return nil }
-            return (option.symbol, series)
-        })
-        cachedFilteredDCASeries = filteredHistorySeries(marketStore.history(for: dcaAssetSymbol), within: effectiveBounds)
-        if let fxSymbol = selectedOption?.historicalFXSymbol {
-            cachedFilteredDCAFXSeries = filteredHistorySeries(marketStore.history(for: fxSymbol), within: effectiveBounds)
-        } else {
-            cachedFilteredDCAFXSeries = nil
-        }
+        return StandardBacktestPreparationRequest(
+            mode: backtestMode == .allocation ? .allocation : .dca,
+            goldWeight: goldWeight,
+            indexWeights: indexWeights,
+            indexSymbols: indexOptions.map(\.symbol),
+            dcaAssetSymbol: dcaAssetSymbol,
+            dcaAssetOption: selectedOption,
+            selectedStartDate: selectedStartDate,
+            selectedEndDate: selectedEndDate,
+            historySnapshots: historySnapshots
+        )
     }
 
-    private func resolveActiveBacktestSourceSeries(selectedOption: BacktestAssetOption?) -> [PublicHistorySeries] {
-        if backtestMode == .dca {
-            guard let assetSeries = marketStore.history(for: dcaAssetSymbol) else { return [] }
-            guard let selectedOption else { return [assetSeries] }
-
-            if let fxSymbol = selectedOption.historicalFXSymbol {
-                guard let fxSeries = marketStore.history(for: fxSymbol) else { return [] }
-                return [assetSeries, fxSeries]
-            }
-
-            return [assetSeries]
-        }
-
-        var series: [PublicHistorySeries] = []
-
-        if goldWeight > 0, let goldSeries = marketStore.history(for: "gold_cny") {
-            series.append(goldSeries)
-        }
-
-        series.append(contentsOf: positiveIndexOptions.compactMap { option in
-            marketStore.history(for: option.symbol)
-        })
-
-        if !series.isEmpty {
-            return series
-        }
-
-        if let goldSeries = marketStore.history(for: "gold_cny") {
-            series.append(goldSeries)
-        }
-
-        series.append(contentsOf: indexOptions.compactMap { option in
-            marketStore.history(for: option.symbol)
-        })
-
-        return series
+    @MainActor
+    private func applyStandardBacktestPreparedData(
+        _ preparedData: StandardBacktestPreparedDataCache,
+        token: Int
+    ) {
+        cachedSelectedDCAAssetOption = preparedData.selectedDCAAssetOption
+        cachedFilteredGoldSeries = preparedData.filteredGoldSeries
+        cachedFilteredIndexSeriesBySymbol = preparedData.filteredIndexSeriesBySymbol
+        cachedFilteredDCASeries = preparedData.filteredDCASeries
+        cachedFilteredDCAFXSeries = preparedData.filteredDCAFXSeries
+        cachedAvailableBacktestBounds = preparedData.availableDateBounds
+        cachedEffectiveBacktestBounds = preparedData.effectiveDateBounds
+        lastBacktestDataCacheToken = token
     }
 
     @MainActor
@@ -691,55 +802,80 @@ struct BacktestView: View {
         let currentToken = backtestRefreshToken
         pendingBacktestComputationTask?.cancel()
         pendingBacktestComputationTask = nil
+        pendingBacktestDataRefreshTask?.cancel()
 
         if showLoading {
             isBacktestLoading = true
         }
 
+        let preparationToken = backtestDataCacheToken
+        let preparationRequest = captureStandardBacktestPreparationRequest()
+        let cachedPreparation: StandardBacktestPreparedDataCache? = if lastBacktestDataCacheToken == preparationToken {
+            StandardBacktestPreparedDataCache(
+                selectedDCAAssetOption: cachedSelectedDCAAssetOption,
+                filteredGoldSeries: cachedFilteredGoldSeries,
+                filteredIndexSeriesBySymbol: cachedFilteredIndexSeriesBySymbol,
+                filteredDCASeries: cachedFilteredDCASeries,
+                filteredDCAFXSeries: cachedFilteredDCAFXSeries,
+                availableDateBounds: cachedAvailableBacktestBounds,
+                effectiveDateBounds: cachedEffectiveBacktestBounds
+            )
+        } else {
+            nil
+        }
+        let capturedCashWeight = cashWeight
+        let capturedGoldWeight = goldWeight
+        let capturedIndexWeights = indexWeights
+        let capturedDCAAssetOption = preparationRequest.dcaAssetOption ?? BacktestDefaults.dcaAssetOptions[0]
+        let capturedDCAContributionAmount = dcaContributionAmount
+        let capturedDCAIntervalDays = dcaIntervalDays
         let delayNanoseconds: UInt64 = showLoading ? 120_000_000 : 0
+        let computationWriteID = saveRecord ? ModelContextMutationBarrier.shared.beginDeferredWrite() : nil
         pendingBacktestComputationTask = Task {
+            defer {
+                if let computationWriteID {
+                    ModelContextMutationBarrier.shared.finishDeferredWrite(computationWriteID)
+                }
+            }
             if delayNanoseconds == 0 {
                 await Task.yield()
             } else {
                 try? await Task.sleep(nanoseconds: delayNanoseconds)
             }
             guard !Task.isCancelled else { return }
+            if let computationWriteID {
+                do {
+                    try await ModelContextMutationBarrier.shared.waitUntilWriteIsAllowed(computationWriteID)
+                } catch {
+                    return
+                }
+            }
 
-            refreshBacktestDataCacheIfNeeded()
-            let mode = backtestMode
-            let capturedCashWeight = cashWeight
-            let capturedGoldWeight = goldWeight
-            let capturedGoldSeries = filteredGoldSeries
-            let capturedIndexWeights = indexWeights
-            let capturedIndexSeriesBySymbol = filteredIndexSeriesBySymbol
-            let capturedDCASeries = filteredDCASeries
-            let capturedDCAAssetOption = selectedDCAAssetOption ?? BacktestDefaults.dcaAssetOptions[0]
-            let capturedDCAFXSeries = filteredDCAFXSeries
-            let capturedDCAContributionAmount = dcaContributionAmount
-            let capturedDCAIntervalDays = dcaIntervalDays
-
-            let computationTask = Task.detached(priority: .userInitiated) { () -> StandardBacktestComputationResult in
-                switch mode {
+            let computationTask = Task.detached(priority: .userInitiated) { () -> StandardBacktestComputationOutput in
+                let preparedData = cachedPreparation ?? StandardBacktestDataSupport.prepare(preparationRequest)
+                let result: StandardBacktestComputationResult
+                switch preparationRequest.mode {
                 case .allocation:
-                    return .allocation(BacktestEngine.run(
+                    result = .allocation(BacktestEngine.run(
                         cashWeight: capturedCashWeight,
                         goldWeight: capturedGoldWeight,
-                        goldSeries: capturedGoldSeries,
+                        goldSeries: preparedData.filteredGoldSeries,
                         indexWeights: capturedIndexWeights,
-                        indexSeriesBySymbol: capturedIndexSeriesBySymbol
+                        indexSeriesBySymbol: preparedData.filteredIndexSeriesBySymbol
                     ))
                 case .dca:
-                    return .dca(BacktestEngine.runDCA(
-                        assetSeries: capturedDCASeries,
+                    result = .dca(BacktestEngine.runDCA(
+                        assetSeries: preparedData.filteredDCASeries,
                         assetOption: capturedDCAAssetOption,
-                        fxSeries: capturedDCAFXSeries,
+                        fxSeries: preparedData.filteredDCAFXSeries,
                         contributionAmount: capturedDCAContributionAmount,
                         intervalDays: capturedDCAIntervalDays
                     ))
                 }
+                return StandardBacktestComputationOutput(result: result, preparedData: preparedData)
             }
 
-            let result = await withTaskCancellationHandler {
+            let output = await withTaskCancellationHandler {
                 await computationTask.value
             } onCancel: {
                 computationTask.cancel()
@@ -748,7 +884,8 @@ struct BacktestView: View {
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 guard currentToken == backtestRefreshToken else { return }
-                applyBacktestResult(result, animated: animated, forceAnimation: forceAnimation, saveRecord: saveRecord)
+                applyStandardBacktestPreparedData(output.preparedData, token: preparationToken)
+                applyBacktestResult(output.result, animated: animated, forceAnimation: forceAnimation, saveRecord: saveRecord)
                 isBacktestLoading = false
                 pendingBacktestComputationTask = nil
             }
@@ -783,9 +920,59 @@ struct BacktestView: View {
 
     @MainActor
     private func saveCurrentBacktestRecordIfNeeded() {
+        guard let draft = currentBacktestRecordDraft(),
+              draft.recordKey != lastSavedBacktestSignature else { return }
+        let encodedRecord = DeferredBacktestRecordEncoder.encode(draft)
+        insertBacktestRecord(
+            makeBacktestRecord(from: draft, encodedRecord: encodedRecord),
+            recordKey: draft.recordKey
+        )
+    }
+
+    @MainActor
+    private func scheduleBacktestRecordSaveAfterTransition() {
+        guard let draft = currentBacktestRecordDraft(),
+              draft.recordKey != lastSavedBacktestSignature else { return }
+
+        pendingBacktestRecordSaveTask?.cancel()
+        let writeID = ModelContextMutationBarrier.shared.beginDeferredWrite()
+        pendingBacktestRecordSaveTask = Task {
+            defer { ModelContextMutationBarrier.shared.finishDeferredWrite(writeID) }
+            do {
+                try await ModelContextMutationBarrier.shared.waitUntilWriteIsAllowed(writeID)
+            } catch {
+                return
+            }
+            try? await Task.sleep(nanoseconds: 360_000_000)
+            guard !Task.isCancelled else { return }
+
+            let encodingTask = Task.detached(priority: .utility) {
+                DeferredBacktestRecordEncoder.encode(draft)
+            }
+            let encodedRecord = await withTaskCancellationHandler {
+                await encodingTask.value
+            } onCancel: {
+                encodingTask.cancel()
+            }
+
+            guard !Task.isCancelled else { return }
+            guard draft.recordKey != lastSavedBacktestSignature else {
+                pendingBacktestRecordSaveTask = nil
+                return
+            }
+            insertBacktestRecord(
+                makeBacktestRecord(from: draft, encodedRecord: encodedRecord),
+                recordKey: draft.recordKey
+            )
+            pendingBacktestRecordSaveTask = nil
+        }
+    }
+
+    @MainActor
+    private func currentBacktestRecordDraft() -> DeferredBacktestRecordDraft? {
         switch backtestMode {
         case .allocation:
-            guard let report = allocationReport, !report.points.isEmpty else { return }
+            guard let report = allocationReport, !report.points.isEmpty else { return nil }
             let configSummary = allocationConfigSummary()
             let subtitle = AppLocalization.format("%@ · %@", selectedDateRangeLabel, activeAllocationSummary)
             let recordKey = BacktestRecordCodec.recordSignature(
@@ -799,19 +986,13 @@ struct BacktestView: View {
                 finalValue: report.points.last?.portfolioValue,
                 tradeCount: 0
             )
-            guard recordKey != lastSavedBacktestSignature else { return }
-
-            let config = BacktestRecordConfigPayload(
-                kind: .allocation,
-                cashWeight: cashWeight,
-                goldWeight: goldWeight,
-                indexWeights: indexWeights
-            )
-            let record = BacktestRecord(
+            return DeferredBacktestRecordDraft(
+                recordKey: recordKey,
                 kindRawValue: BacktestRecordKind.allocation.rawValue,
                 title: BacktestRecordKind.allocation.title,
                 subtitle: subtitle,
                 configSummary: configSummary,
+                createdAt: .now,
                 startDate: report.points.first?.date,
                 endDate: report.points.last?.date,
                 totalReturn: report.totalReturn,
@@ -820,13 +1001,18 @@ struct BacktestView: View {
                 annualizedVolatility: report.annualizedVolatility,
                 sharpeRatio: report.sharpeRatio,
                 finalValue: report.points.last?.portfolioValue,
+                totalInvested: nil,
+                profitLoss: nil,
                 tradeCount: 0,
-                pointsJSON: BacktestRecordCodec.pointsData(from: report.points),
-                configJSON: BacktestRecordCodec.configData(from: config)
+                points: report.points,
+                config: .allocation(
+                    cashWeight: cashWeight,
+                    goldWeight: goldWeight,
+                    indexWeights: indexWeights
+                )
             )
-            insertBacktestRecord(record, recordKey: recordKey)
         case .dca:
-            guard let report = dcaReport, !report.points.isEmpty else { return }
+            guard let report = dcaReport, !report.points.isEmpty else { return nil }
             let assetTitle = AppLocalization.string(selectedDCAAssetOption?.title ?? "单资产")
             let subtitle = AppLocalization.format("%@ · %@", selectedDateRangeLabel, assetTitle)
             let configSummary = AppLocalization.format("%@ · 每%d天投入%@", assetTitle, dcaIntervalDays, dcaContributionAmount.currencyString())
@@ -841,19 +1027,13 @@ struct BacktestView: View {
                 finalValue: report.finalPortfolioValue,
                 tradeCount: report.contributionCount
             )
-            guard recordKey != lastSavedBacktestSignature else { return }
-
-            let config = BacktestRecordConfigPayload(
-                kind: .dca,
-                dcaAssetSymbol: dcaAssetSymbol,
-                dcaContributionAmount: dcaContributionAmount,
-                dcaIntervalDays: dcaIntervalDays
-            )
-            let record = BacktestRecord(
+            return DeferredBacktestRecordDraft(
+                recordKey: recordKey,
                 kindRawValue: BacktestRecordKind.dca.rawValue,
                 title: BacktestRecordKind.dca.title,
                 subtitle: subtitle,
                 configSummary: configSummary,
+                createdAt: .now,
                 startDate: report.points.first?.date,
                 endDate: report.points.last?.date,
                 totalReturn: report.totalReturn,
@@ -865,11 +1045,41 @@ struct BacktestView: View {
                 totalInvested: report.totalInvested,
                 profitLoss: report.profitLoss,
                 tradeCount: report.contributionCount,
-                pointsJSON: BacktestRecordCodec.pointsData(from: report.points),
-                configJSON: BacktestRecordCodec.configData(from: config)
+                points: report.points,
+                config: .dca(
+                    assetSymbol: dcaAssetSymbol,
+                    contributionAmount: dcaContributionAmount,
+                    intervalDays: dcaIntervalDays
+                )
             )
-            insertBacktestRecord(record, recordKey: recordKey)
         }
+    }
+
+    @MainActor
+    private func makeBacktestRecord(
+        from draft: DeferredBacktestRecordDraft,
+        encodedRecord: EncodedDeferredBacktestRecord
+    ) -> BacktestRecord {
+        BacktestRecord(
+            kindRawValue: draft.kindRawValue,
+            title: draft.title,
+            subtitle: draft.subtitle,
+            configSummary: draft.configSummary,
+            createdAt: draft.createdAt,
+            startDate: draft.startDate,
+            endDate: draft.endDate,
+            totalReturn: draft.totalReturn,
+            annualizedReturn: draft.annualizedReturn,
+            maxDrawdown: draft.maxDrawdown,
+            annualizedVolatility: draft.annualizedVolatility,
+            sharpeRatio: draft.sharpeRatio,
+            finalValue: draft.finalValue,
+            totalInvested: draft.totalInvested,
+            profitLoss: draft.profitLoss,
+            tradeCount: draft.tradeCount,
+            pointsJSON: encodedRecord.pointsJSON,
+            configJSON: encodedRecord.configJSON
+        )
     }
 
     @MainActor
@@ -987,10 +1197,6 @@ struct BacktestView: View {
     private func intervalLabel(for report: BacktestReport) -> String {
         guard let first = report.points.first?.date, let last = report.points.last?.date else { return "--" }
         return "\(first.shortDateString) - \(last.shortDateString)"
-    }
-
-    private func filteredHistorySeries(_ series: PublicHistorySeries?, within bounds: ClosedRange<Date>? = nil) -> PublicHistorySeries? {
-        BacktestEngine.filteredHistorySeries(series, within: bounds ?? effectiveBacktestBounds)
     }
 
     private func sampledChartPoints(from points: [BacktestSeriesPoint], maxCount: Int = 180) -> [BacktestSeriesPoint] {
@@ -1112,6 +1318,42 @@ struct BacktestView: View {
         return "\(first.shortDateString) - \(last.shortDateString)"
     }
 
+}
+
+/// Retains an already visited backtest page while removing it from layout and
+/// hit testing. Returning from the records page therefore reuses reports,
+/// chart state, and prepared history instead of reconstructing the subtree.
+private struct RetainedBacktestPage<Content: View>: View {
+    let isSelected: Bool
+    @ViewBuilder var content: () -> Content
+
+    @State private var keepsContentMounted = false
+
+    var body: some View {
+        Group {
+            if isSelected || keepsContentMounted {
+                VStack(alignment: .leading, spacing: 14) {
+                    content()
+                }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .frame(height: isSelected ? nil : 0, alignment: .top)
+                .clipped()
+                .opacity(isSelected ? 1 : 0)
+                .allowsHitTesting(isSelected)
+                .accessibilityHidden(!isSelected)
+            }
+        }
+        .onAppear {
+            if isSelected {
+                keepsContentMounted = true
+            }
+        }
+        .onChange(of: isSelected) { _, selected in
+            if selected {
+                keepsContentMounted = true
+            }
+        }
+    }
 }
 
 struct BacktestAllocationCard: View {

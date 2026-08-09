@@ -9,7 +9,7 @@ import SwiftUI
 import UIKit
 #endif
 
-struct AssetTimeMachineCloudUser: Codable {
+nonisolated struct AssetTimeMachineCloudUser: Codable, Sendable {
     let id: Int
     let userName: String?
     let userEmail: String?
@@ -20,6 +20,7 @@ struct AssetTimeMachineCloudUser: Codable {
         case userEmail = "user_email"
     }
 
+    @MainActor
     var displayName: String {
         if let userName, !userName.isEmpty {
             return userName
@@ -31,7 +32,7 @@ struct AssetTimeMachineCloudUser: Codable {
     }
 }
 
-struct AssetTimeMachineCloudBackup: Codable, Identifiable {
+nonisolated struct AssetTimeMachineCloudBackup: Codable, Identifiable, Sendable {
     let id: Int
     let fileName: String?
     let fileSize: Int?
@@ -51,7 +52,7 @@ struct AssetTimeMachineCloudBackup: Codable, Identifiable {
     }
 }
 
-struct AssetTimeMachineCloudLatestBackup: Codable {
+nonisolated struct AssetTimeMachineCloudLatestBackup: Codable, Sendable {
     let id: Int
     let uploadedAt: Date
     let payload: ExportPayload
@@ -65,7 +66,7 @@ struct AssetTimeMachineCloudLatestBackup: Codable {
     }
 }
 
-private struct AssetTimeMachineCloudToken: Codable {
+nonisolated private struct AssetTimeMachineCloudToken: Codable, Sendable {
     let accessToken: String
     let refreshToken: String?
     let tokenType: String
@@ -77,12 +78,12 @@ private struct AssetTimeMachineCloudToken: Codable {
     }
 }
 
-private struct AssetTimeMachineCloudLoginRequest: Encodable {
+nonisolated private struct AssetTimeMachineCloudLoginRequest: Encodable, Sendable {
     let username: String
     let password: String
 }
 
-private struct AssetTimeMachineCloudRefreshRequest: Encodable {
+nonisolated private struct AssetTimeMachineCloudRefreshRequest: Encodable, Sendable {
     let refreshToken: String
 
     enum CodingKeys: String, CodingKey {
@@ -90,7 +91,7 @@ private struct AssetTimeMachineCloudRefreshRequest: Encodable {
     }
 }
 
-private struct AssetTimeMachineAppleLoginRequest: Encodable {
+nonisolated private struct AssetTimeMachineAppleLoginRequest: Encodable, Sendable {
     let identityToken: String
     let authorizationCode: String?
     let userName: String?
@@ -104,7 +105,7 @@ private struct AssetTimeMachineAppleLoginRequest: Encodable {
     }
 }
 
-private struct AssetTimeMachineCloudUploadRequest: Encodable {
+nonisolated private struct AssetTimeMachineCloudUploadRequest: Encodable, Sendable {
     let payload: ExportPayload
     let fileName: String
     let dataKind: String
@@ -124,7 +125,7 @@ private struct AssetTimeMachineCloudUploadRequest: Encodable {
     }
 }
 
-private struct AssetTimeMachineCloudErrorResponse: Codable {
+nonisolated private struct AssetTimeMachineCloudErrorResponse: Codable, Sendable {
     let detail: String?
 }
 
@@ -221,16 +222,18 @@ enum AssetTimeMachineCloudAPI {
         #endif
     }
 
-    private static func request<T: Decodable>(path: String, method: String = "GET", token: String? = nil) async throws -> T {
+    private static func request<T: Decodable & Sendable>(path: String, method: String = "GET", token: String? = nil) async throws -> T {
         try await request(path: path, method: method, token: token, bodyData: nil)
     }
 
-    private static func request<T: Decodable, Body: Encodable>(path: String, method: String, token: String? = nil, body: Body) async throws -> T {
-        let bodyData = try encoder().encode(body)
+    private static func request<T: Decodable & Sendable, Body: Encodable & Sendable>(path: String, method: String, token: String? = nil, body: Body) async throws -> T {
+        let bodyData = try await SyncPayloadWork.detached {
+            try encoder().encode(body)
+        }
         return try await request(path: path, method: method, token: token, bodyData: bodyData)
     }
 
-    private static func request<T: Decodable>(path: String, method: String, token: String?, bodyData: Data?) async throws -> T {
+    private static func request<T: Decodable & Sendable>(path: String, method: String, token: String?, bodyData: Data?) async throws -> T {
         var request = URLRequest(url: url(for: path))
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -244,7 +247,9 @@ enum AssetTimeMachineCloudAPI {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try validate(response: response, data: data)
-        return try decoder().decode(T.self, from: data)
+        return try await SyncPayloadWork.detached {
+            try decoder().decode(T.self, from: data)
+        }
     }
 
     private static func validate(response: URLResponse, data: Data) throws {
@@ -266,45 +271,25 @@ enum AssetTimeMachineCloudAPI {
         URL(string: path, relativeTo: baseURL)!.absoluteURL
     }
 
-    private static func encoder() -> JSONEncoder {
+    nonisolated private static func encoder() -> JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         return encoder
     }
 
-    private static func decoder() -> JSONDecoder {
+    nonisolated private static func decoder() -> JSONDecoder {
         let decoder = JSONDecoder()
+        let dateParser = FlexibleAPIDateParser()
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let value = try container.decode(String.self)
-            if let date = fractionalISO8601DateFormatter.date(from: value) ?? iso8601DateFormatter.date(from: value) ?? localDateFormatter.date(from: value) {
+            if let date = dateParser.date(from: value) {
                 return date
             }
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unsupported date format: \(value)")
         }
         return decoder
     }
-
-    private static let fractionalISO8601DateFormatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-
-    private static let iso8601DateFormatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
-
-    private static let localDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-        return formatter
-    }()
 }
 
 enum AssetTimeMachineCloudIndicatorState {
@@ -345,6 +330,21 @@ private enum CloudOperationResult {
     case failed
 }
 
+nonisolated private struct CloudPayloadFingerprint: Sendable {
+    let signature: String
+    let canonicalData: Data?
+}
+
+nonisolated private enum CloudPayloadReconciliation: Sendable {
+    case restoreRemote(payload: ExportPayload, signature: String)
+    case merge(
+        payload: ExportPayload,
+        needsLocalImport: Bool,
+        matchesRemote: Bool,
+        signature: String
+    )
+}
+
 @MainActor
 final class AssetTimeMachineCloudStore: ObservableObject {
     @Published var currentUser: AssetTimeMachineCloudUser?
@@ -353,6 +353,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     @Published var errorMessage: String?
     @Published var statusMessage: String?
     @Published var lastSyncAt: Date?
+    @Published private(set) var isApplyingLocalData = false
+    @Published private(set) var localDataRevision = 0
 
     private let tokenKey = "assettimemachine.cloud.accessToken"
     private let refreshTokenKey = "assettimemachine.cloud.refreshToken"
@@ -360,13 +362,21 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     private let lastSyncAtKey = "assettimemachine.cloud.lastSyncAt"
     private let defaults = UserDefaults.standard
     private let tokenStore: CloudTokenStore
+    private var cachedAccessToken: String?
+    private var cachedRefreshToken: String?
     private var hasLoadedInitialState = false
     private var lastAutoSyncAttemptSignature: String?
+    private var pendingAutoSyncCoordinatorTask: Task<Void, Never>?
+    private var autoSyncCoordinatorTaskID: UUID?
+    private var autoSyncGeneration = 0
+    private var autoSyncRequestedDelayNanoseconds: UInt64 = 0
 
-    init(tokenStore: CloudTokenStore = KeychainTokenStore()) {
-        self.tokenStore = tokenStore
+    init(tokenStore: CloudTokenStore? = nil) {
+        self.tokenStore = tokenStore ?? KeychainTokenStore()
         lastSyncAt = defaults.object(forKey: lastSyncAtKey) as? Date
         migrateLegacyTokensIfNeeded()
+        cachedAccessToken = self.tokenStore.loadAccessToken()
+        cachedRefreshToken = self.tokenStore.loadRefreshToken()
     }
 
     var hasToken: Bool {
@@ -411,18 +421,18 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 
     private var accessToken: String? {
-        tokenStore.loadAccessToken()
+        cachedAccessToken
     }
 
     private var refreshToken: String? {
-        tokenStore.loadRefreshToken()
+        cachedRefreshToken
     }
 
-    func refreshIfNeeded(from context: ModelContext? = nil) async {
+    func refreshIfNeeded(from context: ModelContext) async {
         let shouldAttemptRefresh = !hasLoadedInitialState || (hasToken && currentUser == nil && !isWorking)
         guard shouldAttemptRefresh else {
-            if let context, currentUser != nil {
-                await autoSyncIfNeeded(from: context, quietly: true)
+            if currentUser != nil {
+                scheduleAutoSync(from: context, quietly: true, delayNanoseconds: 0)
             }
             return
         }
@@ -430,8 +440,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         hasLoadedInitialState = true
         guard hasToken else { return }
         await refreshSession()
-        if let context, currentUser != nil {
-            await autoSyncIfNeeded(from: context, quietly: true)
+        if currentUser != nil {
+            scheduleAutoSync(from: context, quietly: true, delayNanoseconds: 0)
         }
     }
 
@@ -484,7 +494,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             }
 
             if currentUser != nil {
-                await autoSyncIfNeeded(from: context, quietly: false)
+                scheduleAutoSync(from: context, quietly: false, delayNanoseconds: 0)
             }
         }
     }
@@ -495,76 +505,238 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         }
     }
 
-    func autoSyncIfNeeded(from context: ModelContext, quietly: Bool) async {
-        guard hasToken else { return }
+    /// Owns both the debounce and the in-flight operation above feature-view lifetime.
+    /// A cloud apply temporarily unmounts the TabView, so Dashboard must only submit
+    /// intents and must never own or cancel the operation that performs that apply.
+    func scheduleAutoSync(
+        from context: ModelContext,
+        quietly: Bool = true,
+        delayNanoseconds: UInt64 = 6_000_000_000
+    ) {
+        guard currentUser != nil, hasToken else { return }
+        autoSyncGeneration &+= 1
+        autoSyncRequestedDelayNanoseconds = delayNanoseconds
+        guard pendingAutoSyncCoordinatorTask == nil else { return }
 
-        let localPayload: ExportPayload
-        do {
-            localPayload = try ImportExportService.exportPayload(from: context)
-        } catch {
-            if !quietly {
-                errorMessage = AppLocalization.string("本机数据导出失败，无法自动同步")
+        let taskID = UUID()
+        autoSyncCoordinatorTaskID = taskID
+        pendingAutoSyncCoordinatorTask = Task { [weak self] in
+            guard let self else { return }
+            var waitingGeneration = self.autoSyncGeneration
+            var nextDelayNanoseconds = delayNanoseconds
+
+            while !Task.isCancelled {
+                if nextDelayNanoseconds > 0 {
+                    try? await Task.sleep(nanoseconds: nextDelayNanoseconds)
+                } else {
+                    await Task.yield()
+                }
+                guard !Task.isCancelled else { break }
+                if waitingGeneration != self.autoSyncGeneration {
+                    waitingGeneration = self.autoSyncGeneration
+                    nextDelayNanoseconds = self.autoSyncRequestedDelayNanoseconds
+                    continue
+                }
+
+                // A manual cloud operation or an unsaved editor owns the store for now.
+                // Keep the intent queued instead of treating a busy/dirty store as a
+                // completed sync and silently dropping the local save.
+                while self.isWorking
+                    || context.hasChanges
+                    || ModelContextMutationBarrier.shared.hasPendingWrites
+                    || ModelContextMutationBarrier.shared.hasBlockingEditorDraft {
+                    try? await Task.sleep(for: .milliseconds(400))
+                    guard !Task.isCancelled,
+                          self.currentUser != nil,
+                          self.hasToken else { break }
+                }
+                guard !Task.isCancelled,
+                      self.currentUser != nil,
+                      self.hasToken else { break }
+                if waitingGeneration != self.autoSyncGeneration {
+                    waitingGeneration = self.autoSyncGeneration
+                    nextDelayNanoseconds = self.autoSyncRequestedDelayNanoseconds
+                    continue
+                }
+
+                let processingGeneration = self.autoSyncGeneration
+                let didFinish = await self.autoSyncIfNeeded(from: context, quietly: quietly)
+                guard !Task.isCancelled else { break }
+
+                if !didFinish {
+                    nextDelayNanoseconds = 400_000_000
+                    continue
+                }
+
+                if processingGeneration == self.autoSyncGeneration {
+                    if self.autoSyncCoordinatorTaskID == taskID {
+                        self.pendingAutoSyncCoordinatorTask = nil
+                        self.autoSyncCoordinatorTaskID = nil
+                    }
+                    return
+                }
+                waitingGeneration = self.autoSyncGeneration
+                nextDelayNanoseconds = 0
             }
-            return
+
+            if self.autoSyncCoordinatorTaskID == taskID {
+                self.pendingAutoSyncCoordinatorTask = nil
+                self.autoSyncCoordinatorTaskID = nil
+            }
         }
+    }
 
-        let localSignature = Self.syncSignature(for: localPayload)
-        if hasCompletedInitialSync && lastAutoSyncAttemptSignature == localSignature {
-            return
-        }
+    @discardableResult
+    private func autoSyncIfNeeded(from context: ModelContext, quietly: Bool) async -> Bool {
+        guard hasToken else { return true }
+        guard !context.hasChanges,
+              !ModelContextMutationBarrier.shared.hasPendingWrites,
+              !ModelContextMutationBarrier.shared.hasBlockingEditorDraft else { return false }
 
-        let syncResult = await perform { [self] in
-            let latestBackup = try await self.fetchLatestBackupIfAvailable()
-            let baseBackupID = latestBackup?.id
-            var payloadToUpload = localPayload
-            var shouldUpload = true
+        for attempt in 0..<3 {
+            guard !context.hasChanges,
+                  !ModelContextMutationBarrier.shared.hasPendingWrites,
+                  !ModelContextMutationBarrier.shared.hasBlockingEditorDraft else { return false }
+            var completedLocalSignature: String?
+            var wasSupersededByLocalSave = false
+            let syncResult = await perform { [self] in
+                let localExport: VersionedExportPayload
+                do {
+                    localExport = try await ImportExportService.exportPayloadCooperatively(from: context)
+                } catch {
+                    guard !Self.isCancellation(error) else { throw error }
+                    guard !quietly else { return }
+                    throw NSError(
+                        domain: "AssetTimeMachineCloudStore",
+                        code: -30,
+                        userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("本机数据导出失败，无法自动同步")]
+                    )
+                }
 
-            if let latestBackup {
-                let remotePayload = latestBackup.payload
-
-                if SyncMergeService.looksLikeSeedOnly(localPayload), !SyncMergeService.isEmptyUserData(remotePayload) {
-                    try ImportExportService.importPayload(remotePayload, into: context, replaceExisting: true)
-                    self.rememberSync(signature: Self.syncSignature(for: remotePayload), at: latestBackup.uploadedAt)
-                    try await self.loadHistory()
-                    self.statusMessage = quietly ? AppLocalization.string("已恢复云端最新数据") : AppLocalization.string("已从云端恢复最新资产数据")
+                let localPayload = localExport.payload
+                var expectedStoreRevision = localExport.storeRevision
+                let localFingerprint = try await Self.payloadFingerprint(for: localPayload)
+                let localSignature = localFingerprint.signature
+                guard !context.hasChanges,
+                      !ModelContextMutationBarrier.shared.hasPendingWrites,
+                      !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
+                      ModelStoreRevisionClock.shared.currentRevision() == expectedStoreRevision else {
+                    wasSupersededByLocalSave = true
+                    throw CancellationError()
+                }
+                if hasCompletedInitialSync && lastAutoSyncAttemptSignature == localSignature {
+                    completedLocalSignature = localSignature
                     return
                 }
 
-                let mergedPayload = SyncMergeService.mergedPayload(local: localPayload, remote: remotePayload)
-                if !SyncMergeService.isSameContent(mergedPayload, localPayload) {
-                    try ImportExportService.importPayload(mergedPayload, into: context, replaceExisting: true)
+                let latestBackup = try await self.fetchLatestBackupIfAvailable()
+                let baseBackupID = latestBackup?.id
+                var payloadToUpload = localPayload
+                var uploadSignature = localSignature
+                var shouldUpload = true
+
+                if let latestBackup {
+                    let reconciliation = try await Self.reconcile(
+                        local: localPayload,
+                        localCanonicalData: localFingerprint.canonicalData,
+                        remote: latestBackup.payload
+                    )
+
+                    switch reconciliation {
+                    case let .restoreRemote(remotePayload, signature):
+                        do {
+                            _ = try await self.applyCloudPayload(
+                                remotePayload,
+                                into: context,
+                                expectedStoreRevision: expectedStoreRevision
+                            )
+                        } catch is ImportExportConsistencyError {
+                            wasSupersededByLocalSave = true
+                            throw CancellationError()
+                        }
+                        completedLocalSignature = signature
+                        self.rememberSync(signature: signature, at: latestBackup.uploadedAt)
+                        try await self.loadHistory()
+                        self.statusMessage = quietly ? AppLocalization.string("已恢复云端最新数据") : AppLocalization.string("已从云端恢复最新资产数据")
+                        return
+
+                    case let .merge(mergedPayload, needsLocalImport, matchesRemote, signature):
+                        if needsLocalImport {
+                            do {
+                                expectedStoreRevision = try await self.applyCloudPayload(
+                                    mergedPayload,
+                                    into: context,
+                                    expectedStoreRevision: expectedStoreRevision
+                                )
+                            } catch is ImportExportConsistencyError {
+                                wasSupersededByLocalSave = true
+                                throw CancellationError()
+                            }
+                        } else if context.hasChanges
+                                    || ModelContextMutationBarrier.shared.hasPendingWrites
+                                    || ModelContextMutationBarrier.shared.hasBlockingEditorDraft
+                                    || ModelStoreRevisionClock.shared.currentRevision() != expectedStoreRevision {
+                            wasSupersededByLocalSave = true
+                            throw CancellationError()
+                        }
+                        payloadToUpload = mergedPayload
+                        uploadSignature = signature
+                        if matchesRemote {
+                            completedLocalSignature = signature
+                            self.rememberSync(signature: signature, at: latestBackup.uploadedAt)
+                            shouldUpload = false
+                        }
+                    }
                 }
 
-                payloadToUpload = mergedPayload
-                if SyncMergeService.isSameContent(mergedPayload, remotePayload) {
-                    self.rememberSync(signature: Self.syncSignature(for: mergedPayload), at: latestBackup.uploadedAt)
-                    shouldUpload = false
+                guard !context.hasChanges,
+                      !ModelContextMutationBarrier.shared.hasPendingWrites,
+                      !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
+                      ModelStoreRevisionClock.shared.currentRevision() == expectedStoreRevision else {
+                    wasSupersededByLocalSave = true
+                    throw CancellationError()
                 }
+                if hasCompletedInitialSync,
+                   defaults.string(forKey: lastUploadedSignatureKey) == uploadSignature {
+                    completedLocalSignature = uploadSignature
+                    return
+                }
+                guard shouldUpload else { return }
+
+                let backup = try await self.withTokenRefresh { token in
+                    try await AssetTimeMachineCloudAPI.upload(
+                        token: token,
+                        payload: payloadToUpload,
+                        note: AppLocalization.string("iOS 双向云同步"),
+                        baseBackupID: baseBackupID
+                    )
+                }
+                guard !context.hasChanges,
+                      !ModelContextMutationBarrier.shared.hasPendingWrites,
+                      !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
+                      ModelStoreRevisionClock.shared.currentRevision() == expectedStoreRevision else {
+                    wasSupersededByLocalSave = true
+                    throw CancellationError()
+                }
+                try await self.loadHistory()
+                self.rememberSync(signature: uploadSignature, at: backup.uploadedAt)
+                completedLocalSignature = uploadSignature
+                self.statusMessage = quietly ? AppLocalization.string("双向同步完成") : AppLocalization.format("云端同步完成，时间：%@", backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))
             }
 
-            let signature = Self.syncSignature(for: payloadToUpload)
-            if hasCompletedInitialSync,
-               defaults.string(forKey: lastUploadedSignatureKey) == signature {
-                return
+            if syncResult == .completed, let completedLocalSignature {
+                lastAutoSyncAttemptSignature = completedLocalSignature
             }
-            guard shouldUpload else { return }
-
-            let backup = try await self.withTokenRefresh { token in
-                try await AssetTimeMachineCloudAPI.upload(
-                    token: token,
-                    payload: payloadToUpload,
-                    note: AppLocalization.string("iOS 双向云同步"),
-                    baseBackupID: baseBackupID
-                )
+            if syncResult == .skippedBusy {
+                return false
             }
-            try await self.loadHistory()
-            self.rememberSync(signature: signature, at: backup.uploadedAt)
-            self.statusMessage = quietly ? AppLocalization.string("双向同步完成") : AppLocalization.format("云端同步完成，时间：%@", backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))
+            guard wasSupersededByLocalSave, !Task.isCancelled else {
+                return true
+            }
+            guard attempt < 2 else { return false }
+            try? await Task.sleep(for: .milliseconds(120))
         }
-
-        if syncResult == .completed {
-            lastAutoSyncAttemptSignature = localSignature
-        }
+        return false
     }
 
     func restoreLatestBackup(into context: ModelContext) async {
@@ -573,18 +745,50 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             return
         }
 
+        guard !ModelContextMutationBarrier.shared.hasBlockingEditorDraft else {
+            errorMessage = AppLocalization.string("请先完成当前编辑，再恢复云端备份")
+            return
+        }
+        do {
+            try await ModelContextMutationBarrier.shared.waitForPendingWrites()
+        } catch {
+            return
+        }
+        guard !context.hasChanges else {
+            errorMessage = AppLocalization.string("请先完成当前编辑，再恢复云端备份")
+            return
+        }
+        let requestedStoreRevision = ModelStoreRevisionClock.shared.currentRevision()
         await perform { [self] in
             let latest = try await self.withTokenRefresh { token in
                 try await AssetTimeMachineCloudAPI.downloadLatest(token: token)
             }
-            try ImportExportService.importPayload(latest.payload, into: context, replaceExisting: true)
+            let fingerprint = try await Self.payloadFingerprint(for: latest.payload)
+            do {
+                _ = try await self.applyCloudPayload(
+                    latest.payload,
+                    into: context,
+                    expectedStoreRevision: requestedStoreRevision
+                )
+            } catch is ImportExportConsistencyError {
+                throw NSError(
+                    domain: "AssetTimeMachineCloudStore",
+                    code: 409,
+                    userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("请稍后再试")]
+                )
+            }
             try await self.loadHistory()
-            self.rememberSync(signature: Self.syncSignature(for: latest.payload), at: latest.uploadedAt)
+            self.rememberSync(signature: fingerprint.signature, at: latest.uploadedAt)
             self.statusMessage = AppLocalization.string("最近一次云端备份已恢复")
         }
     }
 
     func logout() {
+        guard !isWorking else { return }
+        autoSyncGeneration &+= 1
+        pendingAutoSyncCoordinatorTask?.cancel()
+        pendingAutoSyncCoordinatorTask = nil
+        autoSyncCoordinatorTaskID = nil
         clearTokens()
         defaults.removeObject(forKey: lastUploadedSignatureKey)
         currentUser = nil
@@ -604,18 +808,23 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             refreshTokenToSave = nil
         }
         try tokenStore.save(accessToken: token.accessToken, refreshToken: refreshTokenToSave)
-        guard tokenStore.loadAccessToken() == token.accessToken else {
+        let verifiedAccessToken = tokenStore.loadAccessToken()
+        guard verifiedAccessToken == token.accessToken else {
             throw NSError(
                 domain: "AssetTimeMachineCloudStore",
                 code: -20,
                 userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("登录凭证保存后校验失败")]
             )
         }
+        cachedAccessToken = verifiedAccessToken
+        cachedRefreshToken = tokenStore.loadRefreshToken()
         clearLegacyUserDefaultsTokens()
     }
 
     private func clearTokens() {
         try? tokenStore.clear()
+        cachedAccessToken = nil
+        cachedRefreshToken = nil
         clearLegacyUserDefaultsTokens()
     }
 
@@ -709,19 +918,101 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         lastSyncAt = date
     }
 
-    private static func syncSignature(for payload: ExportPayload) -> String {
-        if let data = try? SyncMergeService.canonicalData(for: payload) {
-            let digest = SHA256.hash(data: data)
+    private func applyCloudPayload(
+        _ payload: ExportPayload,
+        into context: ModelContext,
+        expectedStoreRevision: UInt64
+    ) async throws -> UInt64 {
+        let exclusiveID = try ModelContextMutationBarrier.shared.beginExclusiveDrain()
+        isApplyingLocalData = true
+        defer {
+            ModelContextMutationBarrier.shared.finishExclusive(exclusiveID)
+            isApplyingLocalData = false
+        }
+
+        // Publish the loading barrier first so data-backed feature trees can unmount
+        // and register their final draft saves. The mutation begins only after every
+        // registered writer has completed; unlike a fixed delay, this stays correct
+        // even under a slow scheduler or unusually large record encoding.
+        await Task.yield()
+        try await Task.sleep(for: .milliseconds(20))
+        try await ModelContextMutationBarrier.shared.enterExclusive(exclusiveID)
+
+        let committedStoreRevision = try await ImportExportService.importPayloadCooperatively(
+            payload,
+            into: context,
+            replaceExisting: true,
+            expectedStoreRevision: expectedStoreRevision
+        )
+
+        // Force every feature subtree to release any object that the import deleted.
+        // Increment only after the single committed save; cancellation after this point
+        // must not report a committed import as failed.
+        localDataRevision &+= 1
+        await Task.yield()
+        return committedStoreRevision
+    }
+
+    nonisolated private static func payloadFingerprint(for payload: ExportPayload) async throws -> CloudPayloadFingerprint {
+        try await SyncPayloadWork.detached {
+            let canonicalData = try? SyncMergeService.canonicalData(for: payload)
+            return CloudPayloadFingerprint(
+                signature: signatureValue(for: payload, canonicalData: canonicalData),
+                canonicalData: canonicalData
+            )
+        }
+    }
+
+    nonisolated private static func reconcile(
+        local: ExportPayload,
+        localCanonicalData: Data?,
+        remote: ExportPayload
+    ) async throws -> CloudPayloadReconciliation {
+        try await SyncPayloadWork.detached {
+            if SyncMergeService.looksLikeSeedOnly(local), !SyncMergeService.isEmptyUserData(remote) {
+                let remoteCanonicalData = try? SyncMergeService.canonicalData(for: remote)
+                return .restoreRemote(
+                    payload: remote,
+                    signature: signatureValue(for: remote, canonicalData: remoteCanonicalData)
+                )
+            }
+
+            let merged = SyncMergeService.mergedPayload(local: local, remote: remote)
+            try Task.checkCancellation()
+            let mergedCanonicalData = try? SyncMergeService.canonicalData(for: merged)
+            try Task.checkCancellation()
+            let remoteCanonicalData = try? SyncMergeService.canonicalData(for: remote)
+            try Task.checkCancellation()
+
+            return .merge(
+                payload: merged,
+                needsLocalImport: mergedCanonicalData != localCanonicalData,
+                matchesRemote: mergedCanonicalData == remoteCanonicalData,
+                signature: signatureValue(for: merged, canonicalData: mergedCanonicalData)
+            )
+        }
+    }
+
+    nonisolated private static func signatureValue(for payload: ExportPayload, canonicalData: Data?) -> String {
+        if let canonicalData {
+            let digest = SHA256.hash(data: canonicalData)
             return digest.map { String(format: "%02x", $0) }.joined()
         }
 
-        let latestItemUpdate = payload.items.map(\.updatedAt).max()?.timeIntervalSince1970 ?? 0
-        let latestSnapshotUpdate = payload.snapshots.map(\.updatedAt).max()?.timeIntervalSince1970 ?? 0
-        let latestEntryUpdate = payload.snapshots
-            .flatMap(\.entries)
-            .map(\.updatedAt)
-            .max()?
-            .timeIntervalSince1970 ?? 0
+        var latestItemUpdate = 0.0
+        for item in payload.items {
+            latestItemUpdate = max(latestItemUpdate, item.updatedAt.timeIntervalSince1970)
+        }
+
+        var latestSnapshotUpdate = 0.0
+        var latestEntryUpdate = 0.0
+        for snapshot in payload.snapshots {
+            latestSnapshotUpdate = max(latestSnapshotUpdate, snapshot.updatedAt.timeIntervalSince1970)
+            for entry in snapshot.entries {
+                latestEntryUpdate = max(latestEntryUpdate, entry.updatedAt.timeIntervalSince1970)
+            }
+        }
+
         return [
             String(payload.categories.count),
             String(payload.items.count),
@@ -775,20 +1066,22 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             return error.localizedDescription
         }
 
-        switch code {
-        case .canceled:
+        if code == .canceled {
             return AppLocalization.string("已取消 Apple 登录")
-        case .failed:
-            return AppLocalization.string("Apple 登录失败，请稍后再试")
-        case .invalidResponse:
-            return AppLocalization.string("Apple 登录返回的数据无效")
-        case .notHandled:
-            return AppLocalization.string("系统未处理此次 Apple 登录请求")
-        case .unknown:
-            return AppLocalization.string("Apple 一键登录当前不可用")
-        @unknown default:
-            return error.localizedDescription
         }
+        if code == .failed {
+            return AppLocalization.string("Apple 登录失败，请稍后再试")
+        }
+        if code == .invalidResponse {
+            return AppLocalization.string("Apple 登录返回的数据无效")
+        }
+        if code == .notHandled {
+            return AppLocalization.string("系统未处理此次 Apple 登录请求")
+        }
+        if code == .unknown {
+            return AppLocalization.string("Apple 一键登录当前不可用")
+        }
+        return error.localizedDescription
     }
 }
 

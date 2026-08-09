@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Combine
 
 enum AppTab: Hashable {
     case dashboard
@@ -9,22 +10,26 @@ enum AppTab: Hashable {
     case settings
 }
 
+@MainActor
+final class AppFeatureStoreOwner: ObservableObject {
+    let marketStore = RemoteMarketStore()
+    let cloudStore = AssetTimeMachineCloudStore()
+}
+
 struct ContentView: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.scenePhase) var scenePhase
-    @Query var snapshots: [AssetSnapshot]
     @AppStorage("app.onboarding.completed") var hasCompletedOnboarding = false
     @AppStorage("app.notifications.enabled") var notificationEnabled = false
     @AppStorage("app.notifications.intervalHours") var notificationIntervalHours: Double = 1
     @AppStorage("app.strategyNotifications.enabled") var strategyNotificationEnabled = false
     @AppStorage("app.strategyNotifications.templateID") var strategyNotificationTemplateID = StrategyNotificationDefaults.defaultTemplateID
     @AppStorage("app.strategyNotifications.hour") var strategyNotificationHour: Int = StrategyNotificationDefaults.defaultHour
-    @StateObject var marketStore = RemoteMarketStore()
-    @StateObject var cloudStore = AssetTimeMachineCloudStore()
+    @StateObject var featureStores = AppFeatureStoreOwner()
     @State var mountedTabs: Set<AppTab> = [.dashboard]
     @State var lastSelectedTab: AppTab = .dashboard
     @State var selectedTab: AppTab = .dashboard
-    @State var workActiveTab: AppTab? = .dashboard
+    @State var workActiveTab: AppTab?
     @State var workActivationTask: Task<Void, Never>?
     @State var didRunStartup = false
     @State var lastMarketRefreshAt: Date?
@@ -32,22 +37,37 @@ struct ContentView: View {
     @State var onboardingReturnTab: AppTab = .dashboard
     @State var activeOnboardingAnchorID: OnboardingAnchorID?
     @State var pendingSnapshotNotificationRefreshTask: Task<Void, Never>?
+    @State var notificationRefreshTaskID: UUID?
+    @State var notificationRefreshGeneration = 0
+    @State var notificationRefreshRequestedDelayNanoseconds: UInt64 = 0
+    @State var startupMaintenanceTask: Task<Void, Never>?
+    @State var cachedStrategyAdvice: StrategyRebalanceAdvice?
+    @State var cachedStrategyAdviceToken: String?
+    @State var isApplyingCloudData = false
+    @State var cloudDataRevision = 0
     #if DEBUG
     @State var debugTabSwitchTask: Task<Void, Never>?
     #endif
 
     static let foregroundMarketRefreshInterval: TimeInterval = 3600
 
-    init() {
-        var descriptor = FetchDescriptor<AssetSnapshot>(
-            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
-        )
-        descriptor.fetchLimit = 1
-        _snapshots = Query(descriptor)
-    }
+    var marketStore: RemoteMarketStore { featureStores.marketStore }
+    var cloudStore: AssetTimeMachineCloudStore { featureStores.cloudStore }
 
     var body: some View {
-        TabView(selection: tabSelection) {
+        Group {
+            if isApplyingCloudData {
+                ZStack {
+                    AssetTheme.pageGradient.ignoresSafeArea()
+
+                    ProgressView()
+                        .controlSize(.large)
+                        .tint(AssetTheme.gold)
+                        .padding(24)
+                        .background(AssetTheme.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+            } else {
+                TabView(selection: tabSelection) {
             deferredTabContent(for: .dashboard) {
                 TabSurface(isSelected: selectedTab == .dashboard) {
                     DashboardView(
@@ -106,6 +126,7 @@ struct ContentView: View {
                 TabSurface(isSelected: selectedTab == .settings) {
                     SettingsView(
                         cloudStore: cloudStore,
+                        isActive: workActiveTab == .settings,
                         onSendStrategyTestNotification: {
                             await sendStrategyTestNotification()
                         }
@@ -118,21 +139,24 @@ struct ContentView: View {
                     Label(AppLocalization.string("设置"), systemImage: "gearshape")
                 }
                 .tag(AppTab.settings)
-        }
-        .animation(nil, value: selectedTab)
-        .overlayPreferenceValue(OnboardingAnchorPreferenceKey.self) { anchors in
-            if showsOnboarding {
-                OnboardingTutorialView(
-                    selectedTab: tabSelection,
-                    activeAnchorID: $activeOnboardingAnchorID,
-                    anchors: anchors
-                ) {
-                    finishOnboarding()
-                } onSkip: {
-                    finishOnboarding()
                 }
-                .transition(.opacity)
-                .zIndex(1)
+                .id(cloudDataRevision)
+                .animation(nil, value: selectedTab)
+                .overlayPreferenceValue(OnboardingAnchorPreferenceKey.self) { anchors in
+                    if showsOnboarding {
+                        OnboardingTutorialView(
+                            selectedTab: tabSelection,
+                            activeAnchorID: $activeOnboardingAnchorID,
+                            anchors: anchors
+                        ) {
+                            finishOnboarding()
+                        } onSkip: {
+                            finishOnboarding()
+                        }
+                        .transition(.opacity)
+                        .zIndex(1)
+                    }
+                }
             }
         }
         .tint(AssetTheme.gold)
@@ -142,17 +166,24 @@ struct ContentView: View {
                 strategyNotificationTemplateID = migratedStrategyID
             }
             await runStartupIfNeeded()
+            if workActiveTab == nil {
+                scheduleWorkActivation(for: selectedTab)
+            }
             #if DEBUG
             scheduleDebugTabSwitchLoopIfNeeded()
             #endif
-            Task {
-                try? await Task.sleep(for: .milliseconds(600))
+            scheduleSnapshotNotificationRefresh(delayNanoseconds: 0)
+
+            startupMaintenanceTask?.cancel()
+            startupMaintenanceTask = Task(priority: .utility) {
+                try? await Task.sleep(for: .milliseconds(1_500))
+                guard !Task.isCancelled else { return }
                 await cloudStore.refreshIfNeeded(from: modelContext)
-            }
-            await refreshAssetNotifications()
-            Task {
-                try? await Task.sleep(for: .seconds(2))
-                await refreshStrategyNotifications()
+                guard !Task.isCancelled else { return }
+                try? await Task.sleep(for: .milliseconds(500))
+                guard !Task.isCancelled else { return }
+                scheduleSnapshotNotificationRefresh(delayNanoseconds: 0)
+                startupMaintenanceTask = nil
             }
         }
         .task(id: scenePhase) {
@@ -175,22 +206,45 @@ struct ContentView: View {
             }
         }
         .onChange(of: notificationEnabled) { _, _ in
-            Task { await refreshAssetNotifications() }
+            scheduleSnapshotNotificationRefresh(delayNanoseconds: 0)
         }
         .onChange(of: notificationIntervalHours) { _, _ in
-            Task { await refreshAssetNotifications() }
+            scheduleSnapshotNotificationRefresh(delayNanoseconds: 0)
         }
-        .onChange(of: notificationRefreshToken) { _, _ in
+        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { notification in
+            guard PortfolioSaveNotificationFilter.affectsPortfolio(notification) else { return }
+            if !cloudStore.isApplyingLocalData {
+                cloudStore.scheduleAutoSync(from: modelContext, quietly: true)
+            }
+            guard notificationEnabled || strategyNotificationEnabled else { return }
             scheduleSnapshotNotificationRefresh()
         }
+        .onReceive(cloudStore.$isApplyingLocalData.removeDuplicates()) { isApplying in
+            isApplyingCloudData = isApplying
+            if isApplying {
+                workActivationTask?.cancel()
+                workActiveTab = nil
+                // Keep a single notification coordinator alive. System notification
+                // calls are not reliably cancellable; changing the generation makes
+                // the existing serial loop reapply the newest state after import.
+                notificationRefreshGeneration &+= 1
+            } else {
+                scheduleWorkActivation(for: selectedTab)
+                scheduleSnapshotNotificationRefresh()
+            }
+        }
+        .onReceive(cloudStore.$localDataRevision.removeDuplicates()) { revision in
+            guard revision != cloudDataRevision else { return }
+            cloudDataRevision = revision
+        }
         .onChange(of: strategyNotificationEnabled) { _, _ in
-            Task { await refreshStrategyNotifications() }
+            scheduleSnapshotNotificationRefresh(delayNanoseconds: 0)
         }
         .onChange(of: strategyNotificationTemplateID) { _, _ in
-            Task { await refreshStrategyNotifications() }
+            scheduleSnapshotNotificationRefresh(delayNanoseconds: 0)
         }
         .onChange(of: strategyNotificationHour) { _, _ in
-            Task { await refreshStrategyNotifications() }
+            scheduleSnapshotNotificationRefresh(delayNanoseconds: 0)
         }
     }
 }

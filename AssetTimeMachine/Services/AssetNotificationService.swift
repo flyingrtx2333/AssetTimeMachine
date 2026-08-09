@@ -1,6 +1,15 @@
 import Foundation
 import UserNotifications
 
+nonisolated struct AssetNotificationSnapshot: Sendable {
+    let totalAssets: Double
+    let totalLiabilities: Double
+    let financialAssets: Double
+    let physicalAssets: Double
+
+    var netAssets: Double { totalAssets - totalLiabilities }
+}
+
 enum AssetNotificationService {
     static let notificationIdentifier = "assettimemachine.asset-report"
     static let strategyNotificationIdentifier = "assettimemachine.strategy-rebalance"
@@ -8,7 +17,7 @@ enum AssetNotificationService {
     static let intervalOptions: [Double] = [1, 2, 4, 6, 8, 12, 24]
     static let strategyHourOptions: [Int] = [8, 9, 12, 18, 21]
 
-    static func refreshSchedule(isEnabled: Bool, intervalHours: Double, snapshot: AssetSnapshot?) async throws -> Bool {
+    static func refreshSchedule(isEnabled: Bool, intervalHours: Double, snapshot: AssetNotificationSnapshot?) async throws -> Bool {
         let center = UNUserNotificationCenter.current()
 
         if !isEnabled {
@@ -122,22 +131,20 @@ enum AssetNotificationService {
         }
     }
 
-    private static func subtitle(for snapshot: AssetSnapshot) -> String {
-        let totalAssets = PortfolioCalculator.totalAssets(for: snapshot)
-        let netAssets = PortfolioCalculator.netAssets(for: snapshot)
-        return AppLocalization.format("总资产 %@ · 净资产 %@", totalAssets.currencyString(), netAssets.currencyString())
+    private static func subtitle(for snapshot: AssetNotificationSnapshot) -> String {
+        AppLocalization.format(
+            "总资产 %@ · 净资产 %@",
+            snapshot.totalAssets.currencyString(),
+            snapshot.netAssets.currencyString()
+        )
     }
 
-    private static func body(for snapshot: AssetSnapshot) -> String {
-        let liabilities = PortfolioCalculator.totalLiabilities(for: snapshot)
-        let breakdown = PortfolioCalculator.breakdown(for: snapshot)
-        let financial = breakdown[.financial] ?? 0
-        let physical = breakdown[.physical] ?? 0
+    private static func body(for snapshot: AssetNotificationSnapshot) -> String {
         return AppLocalization.format(
             "负债 %@。金融 %@ · 实物 %@",
-            liabilities.currencyString(),
-            financial.currencyString(),
-            physical.currencyString()
+            snapshot.totalLiabilities.currencyString(),
+            snapshot.financialAssets.currencyString(),
+            snapshot.physicalAssets.currencyString()
         )
     }
 }

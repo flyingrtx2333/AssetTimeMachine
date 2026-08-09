@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import Charts
 import UIKit
+import Combine
 
 struct DashboardSnapshotSummary {
     let totalAssets: Double
@@ -20,20 +21,19 @@ struct DashboardView: View {
     let marketStore: RemoteMarketStore
     let cloudStore: AssetTimeMachineCloudStore
     let isActive: Bool
-    @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
-    @Query private var recentlyUpdatedItems: [AssetItem]
-    @Query private var recentDeletionTombstones: [SyncDeletionTombstone]
     @State private var cachedAllocationSlices: [DashboardAllocationSlice] = []
     @State private var cachedTrendPoints: [TimeMachineTrendPoint] = []
+    @State private var cachedTrendPointValues: [DashboardTrendPointValue] = []
     @State private var cachedFreedomProjection: FinancialFreedomProjection?
     @State private var cachedSnapshotSummary: DashboardSnapshotSummary?
-    @State private var lastDashboardCacheToken: Int?
-    @State private var lastDashboardProjectionCacheToken: Int?
-    @State private var pendingDashboardRefreshTask: Task<Void, Never>?
+    @State private var hasLoadedDashboardData = false
+    @State private var pendingDashboardDataRefreshTask: Task<Void, Never>?
     @State private var pendingDashboardProjectionRefreshTask: Task<Void, Never>?
-    @State private var pendingAutoSyncTask: Task<Void, Never>?
-    @State private var dashboardRefreshGeneration = 0
+    @State private var dashboardDataGeneration = 0
+    @State private var dashboardProjectionGeneration = 0
+    @State private var lastLiveMarketCacheToken: Int?
     @State private var showsTodayStrategyModal = false
+    @State private var strategySnapshot: AssetSnapshot?
     @State private var showsCloudSyncModal = false
     @State private var freedomKeyboardDismissSignal = 0
 
@@ -42,26 +42,7 @@ struct DashboardView: View {
         self.cloudStore = cloudStore
         self.isActive = isActive
 
-        var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
-            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
-        )
-        snapshotDescriptor.fetchLimit = 400
-        _snapshots = Query(snapshotDescriptor)
-
-        var itemDescriptor = FetchDescriptor<AssetItem>(
-            sortBy: [SortDescriptor(\AssetItem.updatedAt, order: .reverse)]
-        )
-        itemDescriptor.fetchLimit = 1
-        _recentlyUpdatedItems = Query(itemDescriptor)
-
-        var tombstoneDescriptor = FetchDescriptor<SyncDeletionTombstone>(
-            sortBy: [SortDescriptor(\SyncDeletionTombstone.deletedAt, order: .reverse)]
-        )
-        tombstoneDescriptor.fetchLimit = 1
-        _recentDeletionTombstones = Query(tombstoneDescriptor)
     }
-
-    private var latestSnapshot: AssetSnapshot? { snapshots.first }
 
     private var totalAssets: Double {
         cachedSnapshotSummary?.totalAssets ?? 0
@@ -79,22 +60,13 @@ struct DashboardView: View {
         cachedFreedomProjection
     }
 
-    private var dashboardCacheToken: Int {
-        var hasher = Hasher()
-        hasher.combine(SnapshotRevisionToken.revision(for: snapshots))
-        hasher.combine(monthlyExpense)
-        hasher.combine(inflationRate)
-        hasher.combine(monthlySalary)
-        hasher.combine(annualReturnRate)
-        return hasher.finalize()
-    }
-
-    private var autoSyncTrigger: String {
-        return [
-            String(SnapshotRevisionToken.revision(for: snapshots, includeOldest: true, includeMarketAnchorsUpdatedAt: true)),
-            recentlyUpdatedItems.first.map { "\($0.id.uuidString):\($0.updatedAt.timeIntervalSinceReferenceDate)" } ?? "no-item",
-            recentDeletionTombstones.first.map { "\($0.entityKindRawValue):\($0.entityID.uuidString):\($0.deletedAt.timeIntervalSinceReferenceDate)" } ?? "no-deletion"
-        ].joined(separator: ":")
+    private var freedomProjectionInput: DashboardFreedomProjectionInput {
+        DashboardFreedomProjectionInput(
+            monthlySalary: monthlySalary,
+            annualReturnRate: annualReturnRate,
+            monthlyExpense: monthlyExpense,
+            annualInflationRate: inflationRate
+        )
     }
 
     var body: some View {
@@ -105,7 +77,7 @@ struct DashboardView: View {
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
                         Group {
-                            if lastDashboardCacheToken == nil {
+                            if !hasLoadedDashboardData {
                                 LoadingStateCard(title: AppLocalization.string("首页加载中"))
                             } else {
                                 VStack(alignment: .leading, spacing: 22) {
@@ -129,44 +101,48 @@ struct DashboardView: View {
                     .scrollDismissesKeyboard(.interactively)
                     .task {
                         migrateDashboardDefaultsIfNeeded()
-                        await cloudStore.refreshIfNeeded()
+                        await cloudStore.refreshIfNeeded(from: modelContext)
                         await focusFreedomSectionIfNeeded(using: proxy)
                     }
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
-            .onChange(of: isActive ? autoSyncTrigger : "inactive") { _, _ in
-                guard isActive else { return }
-                scheduleCloudAutoSync()
-            }
         }
         .task(id: isActive) {
-            dashboardRefreshGeneration += 1
-            let generation = dashboardRefreshGeneration
             if isActive {
-                scheduleDashboardRefresh(
-                    delayNanoseconds: 0,
-                    projectionDelayNanoseconds: 160_000_000,
-                    generation: generation
+                requestDashboardDataRefresh(
+                    delayNanoseconds: hasLoadedDashboardData ? 120_000_000 : 0
                 )
+                scheduleCloudAutoSync()
             } else {
-                pendingDashboardRefreshTask?.cancel()
-                pendingDashboardProjectionRefreshTask?.cancel()
-                pendingAutoSyncTask?.cancel()
+                cancelDashboardWork()
             }
         }
-        .onChange(of: isActive ? dashboardCacheToken : (lastDashboardCacheToken ?? 0)) { _, _ in
+        .onChange(of: freedomProjectionInput) { _, newInput in
             guard isActive else { return }
-            scheduleDashboardRefresh(
-                delayNanoseconds: 40_000_000,
-                projectionDelayNanoseconds: 120_000_000,
-                generation: dashboardRefreshGeneration
+            requestDashboardProjectionRefresh(
+                input: newInput,
+                trendPoints: cachedTrendPointValues,
+                delayNanoseconds: 120_000_000
             )
+        }
+        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { notification in
+            guard PortfolioSaveNotificationFilter.affectsPortfolio(notification) else { return }
+            guard isActive else { return }
+            requestDashboardDataRefresh(delayNanoseconds: 80_000_000)
+        }
+        .onReceive(marketStore.$overview.combineLatest(marketStore.$exchangeRates)) { _ in
+            guard isActive else { return }
+            let token = marketStore.liveMarketCacheToken()
+            guard token != lastLiveMarketCacheToken else { return }
+            lastLiveMarketCacheToken = token
+            guard hasLoadedDashboardData else { return }
+            requestDashboardDataRefresh(delayNanoseconds: 80_000_000)
         }
         .sheet(isPresented: $showsTodayStrategyModal) {
             TodayStrategySheet(
                 marketStore: marketStore,
-                snapshot: latestSnapshot
+                snapshot: strategySnapshot
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
@@ -183,190 +159,174 @@ struct DashboardView: View {
     @MainActor
     private func scheduleCloudAutoSync(delayNanoseconds: UInt64 = 6_000_000_000) {
         guard cloudStore.currentUser != nil else { return }
-        pendingAutoSyncTask?.cancel()
-        pendingAutoSyncTask = Task {
-            try? await Task.sleep(nanoseconds: delayNanoseconds)
-            guard !Task.isCancelled else { return }
-            await cloudStore.autoSyncIfNeeded(from: modelContext, quietly: true)
-            await MainActor.run {
-                pendingAutoSyncTask = nil
-            }
-        }
+        cloudStore.scheduleAutoSync(
+            from: modelContext,
+            quietly: true,
+            delayNanoseconds: delayNanoseconds
+        )
     }
 
     @MainActor
-    private func scheduleDashboardRefresh(
-        delayNanoseconds: UInt64,
-        projectionDelayNanoseconds: UInt64,
-        force: Bool = false,
-        generation: Int
-    ) {
-        pendingDashboardRefreshTask?.cancel()
-        pendingDashboardRefreshTask = Task {
+    private func requestDashboardDataRefresh(delayNanoseconds: UInt64) {
+        dashboardDataGeneration &+= 1
+        dashboardProjectionGeneration &+= 1
+        let generation = dashboardDataGeneration
+
+        pendingDashboardDataRefreshTask?.cancel()
+        pendingDashboardProjectionRefreshTask?.cancel()
+        pendingDashboardDataRefreshTask = Task {
             if delayNanoseconds == 0 {
                 await Task.yield()
             } else {
                 try? await Task.sleep(nanoseconds: delayNanoseconds)
             }
-            guard !Task.isCancelled else { return }
-            await MainActor.run {
-                guard dashboardRefreshGeneration == generation else { return }
-                refreshDashboardCacheIfNeeded(
-                    force: force,
-                    generation: generation,
-                    projectionDelayNanoseconds: projectionDelayNanoseconds
-                )
-            }
+            guard !Task.isCancelled, dashboardDataGeneration == generation else { return }
+            await refreshDashboardData(generation: generation)
         }
     }
 
     @MainActor
-    private func refreshDashboardCacheIfNeeded(
-        force: Bool = false,
-        generation: Int,
-        projectionDelayNanoseconds: UInt64
-    ) {
-        let token = dashboardCacheToken
-        if force || token != lastDashboardCacheToken {
-            refreshDashboardSnapshotCache()
-            lastDashboardCacheToken = token
+    private func refreshDashboardData(generation: Int) async {
+        guard let input = await captureDashboardDataInput(generation: generation) else { return }
+        guard !Task.isCancelled, dashboardDataGeneration == generation else { return }
+
+        let worker = Task.detached(priority: .utility) {
+            DashboardProjectionPipeline.buildData(from: input)
+        }
+        let output = await withTaskCancellationHandler {
+            await worker.value
+        } onCancel: {
+            worker.cancel()
         }
 
-        if force || token != lastDashboardProjectionCacheToken {
-            scheduleDashboardProjectionRefresh(
-                for: token,
-                generation: generation,
-                delayNanoseconds: projectionDelayNanoseconds
+        guard !Task.isCancelled,
+              dashboardDataGeneration == generation,
+              let output else { return }
+
+        cachedSnapshotSummary = output.summary.map {
+            DashboardSnapshotSummary(
+                totalAssets: $0.totalAssets,
+                totalLiabilities: $0.totalLiabilities
             )
         }
+        cachedAllocationSlices = makeAllocationSlices(from: output.allocationSlices)
+        cachedTrendPointValues = output.trendPoints
+        cachedTrendPoints = output.trendPoints.map(\.trendPoint)
+        hasLoadedDashboardData = true
+        pendingDashboardDataRefreshTask = nil
+
+        requestDashboardProjectionRefresh(
+            input: freedomProjectionInput,
+            trendPoints: output.trendPoints,
+            delayNanoseconds: 0
+        )
     }
 
     @MainActor
-    private func refreshDashboardSnapshotCache() {
-        cachedSnapshotSummary = buildLatestSnapshotSummary()
-        cachedAllocationSlices = buildAllocationSlices()
-    }
-
-    @MainActor
-    private func scheduleDashboardProjectionRefresh(
-        for token: Int,
-        generation: Int,
+    private func requestDashboardProjectionRefresh(
+        input: DashboardFreedomProjectionInput,
+        trendPoints: [DashboardTrendPointValue],
         delayNanoseconds: UInt64
     ) {
+        dashboardProjectionGeneration &+= 1
+        let generation = dashboardProjectionGeneration
         pendingDashboardProjectionRefreshTask?.cancel()
+
+        guard !trendPoints.isEmpty else {
+            cachedFreedomProjection = nil
+            pendingDashboardProjectionRefreshTask = nil
+            return
+        }
+
         pendingDashboardProjectionRefreshTask = Task {
             if delayNanoseconds == 0 {
                 await Task.yield()
             } else {
                 try? await Task.sleep(nanoseconds: delayNanoseconds)
             }
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, dashboardProjectionGeneration == generation else { return }
 
-            await refreshDashboardProjectionCache(token: token, generation: generation)
+            let worker = Task.detached(priority: .utility) {
+                DashboardProjectionPipeline.estimateFreedom(
+                    trendPoints: trendPoints,
+                    input: input
+                )
+            }
+            let projection = await withTaskCancellationHandler {
+                await worker.value
+            } onCancel: {
+                worker.cancel()
+            }
+
+            guard !Task.isCancelled, dashboardProjectionGeneration == generation else { return }
+            cachedFreedomProjection = projection?.projection
+            pendingDashboardProjectionRefreshTask = nil
         }
     }
 
     @MainActor
-    private func refreshDashboardProjectionCache(token: Int, generation: Int) async {
-        guard dashboardRefreshGeneration == generation else { return }
-        guard let nextTrendPoints = await buildTrendPoints(generation: generation) else { return }
-        guard !Task.isCancelled, dashboardRefreshGeneration == generation else { return }
-
-        cachedTrendPoints = nextTrendPoints
-        cachedFreedomProjection = FinancialFreedomEstimator.estimate(
-            points: nextTrendPoints,
-            monthlySalary: monthlySalary,
-            annualReturnRate: annualReturnRate,
-            monthlyExpense: monthlyExpense,
-            annualInflationRate: inflationRate
-        )
-        lastDashboardProjectionCacheToken = token
-        pendingDashboardProjectionRefreshTask = nil
-    }
-
-    private func buildLatestSnapshotSummary() -> DashboardSnapshotSummary? {
-        guard let latestSnapshot else { return nil }
-        let metrics = PortfolioCalculator.metrics(for: latestSnapshot)
-        return DashboardSnapshotSummary(
-            totalAssets: metrics.totalAssets,
-            totalLiabilities: metrics.totalLiabilities
-        )
-    }
-
-    private func buildAllocationSlices() -> [DashboardAllocationSlice] {
-        guard let latestSnapshot else { return [] }
-
-        let grouped = Dictionary(grouping: latestSnapshot.entries.filter {
-            ($0.item?.category?.group ?? .financial) != .liability && $0.resolvedAmount > 0
-        }) { entry in
-            AppLocalization.string(entry.item?.name ?? "未命名")
+    private func captureDashboardDataInput(generation: Int) async -> DashboardDataProjectionInput? {
+        let liveAnchors = TimeMachineLiveMarketAnchors.from(marketStore: marketStore)
+        let liveMarketToken = marketStore.liveMarketCacheToken()
+        if liveMarketToken != lastLiveMarketCacheToken {
+            lastLiveMarketCacheToken = liveMarketToken
         }
+        let container = modelContext.container
+        let liveMarket = DashboardLiveMarketProjectionInput(
+            goldPriceCNY: liveAnchors.goldPriceCNY,
+            btcPriceUSD: liveAnchors.btcPriceUSD,
+            btcPriceCNY: liveAnchors.btcPriceCNY,
+            nasdaqPriceUSD: liveAnchors.nasdaqPriceUSD,
+            nasdaqPriceCNY: liveAnchors.nasdaqPriceCNY
+        )
+        let otherAllocationTitle = AppLocalization.string("其他")
+        let unnamedAllocationTitle = AppLocalization.string("未命名")
 
-        let sortedDetails = grouped
-            .map { name, entries in
-                DashboardAllocationDetail(
-                    title: name,
-                    amount: entries.reduce(0) { $0 + $1.resolvedAmount }
+        do {
+            // Construct the model actor inside the detached closure. Constructing it here on
+            // MainActor would make its private ModelContext execute on the UI executor.
+            let input = try await BackgroundTaskWork.run {
+                let repository = DashboardProjectionRepository(modelContainer: container)
+                return try await repository.captureDataInput(
+                    liveMarket: liveMarket,
+                    otherAllocationTitle: otherAllocationTitle,
+                    unnamedAllocationTitle: unnamedAllocationTitle
                 )
             }
-            .sorted { $0.amount > $1.amount }
+            guard !Task.isCancelled, dashboardDataGeneration == generation else { return nil }
+            return input
+        } catch is CancellationError {
+            return nil
+        } catch {
+            print("[AssetTimeMachine] dashboard projection fetch failed: \(error)")
+            return nil
+        }
+    }
 
-        let topLimit = 5
-        var slices: [DashboardAllocationSlice] = Array(sortedDetails.prefix(topLimit)).enumerated().map { index, detail in
+    @MainActor
+    private func makeAllocationSlices(
+        from values: [DashboardAllocationSliceValue]
+    ) -> [DashboardAllocationSlice] {
+        values.enumerated().map { index, value in
             DashboardAllocationSlice(
-                title: detail.title,
-                amount: detail.amount,
+                title: AppLocalization.string(value.title),
+                amount: value.amount,
                 color: DashboardAllocationPalette.colors[index % DashboardAllocationPalette.colors.count],
-                details: [detail]
+                details: value.details.map {
+                    DashboardAllocationDetail(title: AppLocalization.string($0.title), amount: $0.amount)
+                }
             )
         }
-
-        if sortedDetails.count > topLimit {
-            let otherDetails = Array(sortedDetails.dropFirst(topLimit))
-            let otherAmount = otherDetails.reduce(0) { $0 + $1.amount }
-            if otherAmount > 0 {
-                slices.append(
-                    DashboardAllocationSlice(
-                        title: AppLocalization.string("其他"),
-                        amount: otherAmount,
-                        color: DashboardAllocationPalette.colors[slices.count % DashboardAllocationPalette.colors.count],
-                        details: otherDetails
-                    )
-                )
-            }
-        }
-
-        return slices
     }
 
     @MainActor
-    private func buildTrendPoints(generation: Int) async -> [TimeMachineTrendPoint]? {
-        let orderedSnapshots = Array(snapshots.reversed())
-        let sourceSnapshots: [AssetSnapshot]
-
-        if let latestDate = orderedSnapshots.last?.date,
-           let oneYearAgo = Calendar.current.date(byAdding: .year, value: -1, to: latestDate) {
-            let recentSnapshots = orderedSnapshots.filter { $0.date >= oneYearAgo }
-            sourceSnapshots = recentSnapshots.count >= 2 ? recentSnapshots : orderedSnapshots
-        } else {
-            sourceSnapshots = orderedSnapshots
-        }
-
-        var result: [TimeMachineTrendPoint] = []
-        result.reserveCapacity(sourceSnapshots.count)
-        let liveAnchors = TimeMachineLiveMarketAnchors.from(marketStore: marketStore)
-
-        for (index, snapshot) in sourceSnapshots.enumerated() {
-            guard !Task.isCancelled, dashboardRefreshGeneration == generation else { return nil }
-
-            result.append(TimeMachineTrendPointBuilder.make(from: snapshot, liveAnchors: liveAnchors))
-
-            if index.isMultiple(of: 2) {
-                await Task.yield()
-            }
-        }
-
-        return result
+    private func cancelDashboardWork() {
+        dashboardDataGeneration &+= 1
+        dashboardProjectionGeneration &+= 1
+        pendingDashboardDataRefreshTask?.cancel()
+        pendingDashboardProjectionRefreshTask?.cancel()
+        pendingDashboardDataRefreshTask = nil
+        pendingDashboardProjectionRefreshTask = nil
     }
 
     private func migrateDashboardDefaultsIfNeeded() {
@@ -414,6 +374,7 @@ struct DashboardView: View {
             HStack(spacing: 12) {
                 Button {
                     freedomKeyboardDismissSignal += 1
+                    strategySnapshot = try? SnapshotService.latestSnapshot(in: modelContext)
                     showsTodayStrategyModal = true
                 } label: {
                     DashboardTodayStrategyButton()
@@ -503,6 +464,9 @@ struct TodayStrategySheet: View {
     @State private var isRefreshing = false
     @State private var statusMessage: String?
     @State private var hasAttemptedInitialHistoryRefresh = false
+    @State private var adviceRefreshGeneration = 0
+    @State private var activeAdviceToken: String?
+    @State private var pendingAdviceCalculationTask: Task<StrategyRebalanceAdvice?, Never>?
 
     private var selectedTemplate: AdvancedBacktestStrategyTemplate? {
         StrategyNotificationDefaults.template(for: strategyNotificationTemplateID)
@@ -552,6 +516,9 @@ struct TodayStrategySheet: View {
                 let shouldForceRefresh = !hasAttemptedInitialHistoryRefresh
                 hasAttemptedInitialHistoryRefresh = true
                 await refreshAdvice(force: shouldForceRefresh)
+            }
+            .onDisappear {
+                cancelAdviceRefresh()
             }
         }
     }
@@ -718,31 +685,80 @@ struct TodayStrategySheet: View {
 
     @MainActor
     private func refreshAdvice(force: Bool) async {
+        adviceRefreshGeneration &+= 1
+        let generation = adviceRefreshGeneration
+        pendingAdviceCalculationTask?.cancel()
+        pendingAdviceCalculationTask = nil
+        activeAdviceToken = nil
+
         guard let template = selectedTemplate else {
             advice = nil
             actions = []
             statusMessage = AppLocalization.string("设置里还没有可用的提醒策略。")
+            isRefreshing = false
             return
         }
 
         isRefreshing = true
         statusMessage = nil
-        defer { isRefreshing = false }
+        defer {
+            if adviceRefreshGeneration == generation {
+                isRefreshing = false
+                pendingAdviceCalculationTask = nil
+            }
+        }
 
         let assetOptions = StrategyNotificationDefaults.assetOptions(for: template)
         let shouldForceHistoryRefresh = force || isMissingRequiredHistory(for: assetOptions)
         await marketStore.refreshHistoryIfNeeded(force: shouldForceHistoryRefresh)
+        guard !Task.isCancelled, adviceRefreshGeneration == generation else { return }
         if isMissingRequiredHistory(for: assetOptions) {
             await waitForRequiredHistory(assetOptions)
         }
+        guard !Task.isCancelled, adviceRefreshGeneration == generation else { return }
 
-        let assetInputs = assetOptions.map { option in
-            BacktestEngine.advancedAssetInput(for: option) { symbol in
-                marketStore.history(for: symbol)
+        let historySymbols = Set(assetOptions.flatMap { option -> [String] in
+            var symbols = [option.symbol]
+            if let fxSymbol = option.historicalFXSymbol {
+                symbols.append(fxSymbol)
             }
+            if option.symbol == "usd_cash" {
+                symbols.append("usd_per_cny")
+            }
+            return symbols
+        })
+        let historyBySymbol = Dictionary(uniqueKeysWithValues: historySymbols.compactMap { symbol in
+            marketStore.history(for: symbol).map { (symbol, $0) }
+        })
+        let historyToken = marketStore.historyRelevanceToken(for: historySymbols)
+        let calculationToken = "\(template.id)|\(historyToken)"
+        activeAdviceToken = calculationToken
+        let mode = template.mode
+
+        let worker: Task<StrategyRebalanceAdvice?, Never> = Task.detached(priority: .utility) {
+            guard !Task.isCancelled else { return nil }
+            let assetInputs = assetOptions.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    historyBySymbol[symbol]
+                }
+            }
+            guard !Task.isCancelled else { return nil }
+            return BacktestEngine.advancedRotationRebalanceAdvice(assetInputs: assetInputs, mode: mode)
+        }
+        pendingAdviceCalculationTask = worker
+        let nextAdvice = await withTaskCancellationHandler {
+            await worker.value
+        } onCancel: {
+            worker.cancel()
         }
 
-        guard let nextAdvice = BacktestEngine.advancedRotationRebalanceAdvice(assetInputs: assetInputs, mode: template.mode) else {
+        guard !Task.isCancelled,
+              adviceRefreshGeneration == generation,
+              activeAdviceToken == calculationToken,
+              selectedTemplate?.id == template.id,
+              marketStore.historyRelevanceToken(for: historySymbols) == historyToken else { return }
+
+        guard let nextAdvice else {
             advice = nil
             actions = []
             statusMessage = AppLocalization.string("历史行情暂时不足，今日调仓将在数据补齐后更新。")
@@ -759,10 +775,21 @@ struct TodayStrategySheet: View {
         actions = nextActions
     }
 
+    @MainActor
+    private func cancelAdviceRefresh() {
+        adviceRefreshGeneration &+= 1
+        activeAdviceToken = nil
+        pendingAdviceCalculationTask?.cancel()
+        pendingAdviceCalculationTask = nil
+        isRefreshing = false
+    }
+
     private func waitForRequiredHistory(_ assetOptions: [BacktestAssetOption]) async {
         for _ in 0..<6 {
+            guard !Task.isCancelled else { return }
             guard isMissingRequiredHistory(for: assetOptions) else { return }
             try? await Task.sleep(nanoseconds: 300_000_000)
+            guard !Task.isCancelled else { return }
             guard isMissingRequiredHistory(for: assetOptions) else { return }
             await marketStore.refreshHistoryIfNeeded(force: true)
         }

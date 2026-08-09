@@ -830,7 +830,7 @@ struct BacktestRecordListCard: View {
     var onToggleSelection: ((BacktestRecord) -> Void)? = nil
 
     var body: some View {
-        VStack(spacing: 0) {
+        LazyVStack(spacing: 0) {
             ForEach(Array(records.enumerated()), id: \.element.id) { index, record in
                 BacktestHistoryRow(
                     record: record,

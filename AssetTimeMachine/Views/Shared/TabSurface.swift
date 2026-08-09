@@ -12,33 +12,12 @@ struct TabSurface<Content: View>: View {
         ZStack {
             if keepsContentMounted {
                 content()
-                    .opacity(isSelected ? 1 : 0)
-                    .allowsHitTesting(isSelected)
             }
         }
-        .onChange(of: isSelected) { _, selected in
-            if selected {
-                mountContentIfNeeded(deferFirstMount: !keepsContentMounted)
-            }
-        }
-        .onAppear {
-            if isSelected {
-                mountContentIfNeeded(deferFirstMount: !keepsContentMounted)
-            }
-        }
-    }
-
-    @MainActor
-    private func mountContentIfNeeded(deferFirstMount: Bool) {
-        guard !keepsContentMounted else { return }
-
-        if deferFirstMount {
-            Task { @MainActor in
-                await Task.yield()
-                guard isSelected else { return }
-                keepsContentMounted = true
-            }
-        } else {
+        .task(id: isSelected) {
+            guard isSelected, !keepsContentMounted else { return }
+            await Task.yield()
+            guard !Task.isCancelled, isSelected else { return }
             keepsContentMounted = true
         }
     }

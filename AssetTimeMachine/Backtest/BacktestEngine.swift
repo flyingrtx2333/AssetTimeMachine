@@ -549,7 +549,8 @@ nonisolated enum BacktestEngine {
         var maxDrawdownPeakValue: Double?
         var maxDrawdownPeakDate: Date?
 
-        for row in alignedRows {
+        for (rowIndex, row) in alignedRows.enumerated() {
+            if rowIndex.isMultiple(of: 256), Task.isCancelled { return nil }
             let goldComponent: Double
             if gw > 0 {
                 let goldPrice = row.prices[0]
@@ -672,6 +673,7 @@ nonisolated enum BacktestEngine {
         var cashFlowsByDate: [Date: Double] = [:]
 
         for (index, point) in pricePoints.enumerated() {
+            if index.isMultiple(of: 256), Task.isCancelled { return nil }
             if nextContributionIndex == index {
                 unitsHeld += normalizedAmount / point.cnyPrice
                 totalInvested += normalizedAmount

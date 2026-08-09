@@ -4,7 +4,7 @@ import Charts
 import UIKit
 
 enum AdvancedBacktestPresentation {
-    static func comparisonSeries(from report: AdvancedBacktestReport) -> [BacktestChartComparisonSeries] {
+    nonisolated static func comparisonSeries(from report: AdvancedBacktestReport) -> [BacktestChartComparisonSeries] {
         let sourceSeries: [AdvancedBacktestBenchmarkSeries]
         if !report.benchmarkSeries.isEmpty {
             sourceSeries = report.benchmarkSeries
@@ -16,7 +16,7 @@ enum AdvancedBacktestPresentation {
 
         return sourceSeries.enumerated().compactMap { index, series in
             let points = BacktestChartData.normalizedComparisonPoints(
-                series.points,
+                BacktestChartData.sampledPoints(from: series.points),
                 targetStartValue: report.points.first?.portfolioValue
             )
             guard !points.isEmpty else { return nil }

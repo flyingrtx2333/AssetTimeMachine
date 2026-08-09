@@ -32,6 +32,10 @@ enum SnapshotService {
         in context: ModelContext
     ) throws -> AssetSnapshot {
         if let existing = try snapshot(on: date, in: context) {
+            if createMissingEntries, try ensureEntriesExist(for: existing, in: context) {
+                existing.updatedAt = .now
+                try context.save()
+            }
             return existing
         }
 
@@ -58,7 +62,7 @@ enum SnapshotService {
         }
 
         if createMissingEntries {
-            try ensureEntriesExist(for: snapshot, in: context)
+            _ = try ensureEntriesExist(for: snapshot, in: context)
         }
 
         snapshot.updatedAt = .now
@@ -80,14 +84,18 @@ enum SnapshotService {
     }
 
     @MainActor
-    static func ensureEntriesExist(for snapshot: AssetSnapshot, in context: ModelContext) throws {
+    @discardableResult
+    static func ensureEntriesExist(for snapshot: AssetSnapshot, in context: ModelContext) throws -> Bool {
         let allItems = try context.fetch(FetchDescriptor<AssetItem>())
         let existingItemIDs = Set(snapshot.entries.compactMap { $0.item?.id })
+        var didInsert = false
 
         for item in allItems where item.isActive && !existingItemIDs.contains(item.id) {
             let entry = AssetEntry(snapshot: snapshot, item: item)
             context.insert(entry)
+            didInsert = true
         }
+        return didInsert
     }
 
     @MainActor

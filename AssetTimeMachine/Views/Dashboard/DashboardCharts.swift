@@ -195,7 +195,7 @@ struct DashboardAllocationChart: View {
     }
 }
 
-struct FinancialFreedomProjection {
+nonisolated struct FinancialFreedomProjection {
     enum Status {
         case alreadyFree
         case projected(months: Int)
@@ -217,7 +217,7 @@ struct FinancialFreedomProjection {
     let projectionPoints: [FinancialFreedomProjectionPoint]
 }
 
-struct FinancialFreedomProjectionPoint: Identifiable {
+nonisolated struct FinancialFreedomProjectionPoint: Identifiable {
     let monthOffset: Int
     let date: Date
     let projectedPassiveIncome: Double
@@ -260,11 +260,19 @@ enum FreedomChartHorizon: Int, CaseIterable, Identifiable {
     }
 }
 
-enum FinancialFreedomEstimator {
+nonisolated struct FinancialFreedomHistoryPoint: Sendable {
+    let date: Date
+    let mainAssets: Double
+    let netAssets: Double
+    let liabilities: Double
+}
+
+nonisolated enum FinancialFreedomEstimator {
     private static let maxProjectionMonths = 100 * 12
+    private static let chartProjectionMonths = 20 * 12
 
     static func estimate(
-        points: [TimeMachineTrendPoint],
+        points: [FinancialFreedomHistoryPoint],
         monthlySalary: Double,
         annualReturnRate: Double,
         monthlyExpense: Double,
@@ -382,7 +390,7 @@ enum FinancialFreedomEstimator {
         _ = status
         _ = monthlySalary
         _ = monthlyReturnRate
-        return FreedomChartHorizon.maxMonths
+        return chartProjectionMonths
     }
 
     private static func maximumReachableMonthlyExpense(
@@ -495,7 +503,7 @@ enum FinancialFreedomEstimator {
     }
 
     private static func yearToDateSurplusMetrics(
-        from points: [TimeMachineTrendPoint],
+        from points: [FinancialFreedomHistoryPoint],
         calendar: Calendar = .current
     ) -> (annual: Double, monthlyAverage: Double)? {
         guard !points.isEmpty else { return nil }
@@ -1408,9 +1416,16 @@ struct DashboardTrendCard: View {
     let points: [TimeMachineTrendPoint]
     let latestPoint: TimeMachineTrendPoint
     @State private var selectedDate: Date?
+    private let displayPoints: [TimeMachineTrendPoint]
+    private let axisDates: [Date]
 
-    private var displayPoints: [TimeMachineTrendPoint] {
-        evenlySampledItems(points, maxCount: 120)
+    init(points: [TimeMachineTrendPoint], latestPoint: TimeMachineTrendPoint) {
+        self.points = points
+        self.latestPoint = latestPoint
+
+        let displayPoints = evenlySampledItems(points, maxCount: 120)
+        self.displayPoints = displayPoints
+        self.axisDates = chartAxisDates(displayPoints.map(\.date))
     }
 
     private var selectedPoint: TimeMachineTrendPoint {
@@ -1478,7 +1493,6 @@ struct DashboardTrendCard: View {
             ])
             .frame(height: 236)
             .chartXAxis {
-                let axisDates = chartAxisDates(displayPoints.map(\.date))
                 AxisMarks(values: axisDates) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
                         .foregroundStyle(AssetTheme.chartGrid)
@@ -1506,7 +1520,11 @@ struct DashboardTrendCard: View {
             }
             .chartLegend(.hidden)
             .chartOverlay { proxy in
-                TimeMachineDragOverlay(proxy: proxy) { date in
+                TimeMachineDragOverlay(
+                    proxy: proxy,
+                    selectableValues: displayPoints,
+                    selectionDate: \.date
+                ) { date in
                     selectedDate = date
                 } onEnded: {
                     selectedDate = nil

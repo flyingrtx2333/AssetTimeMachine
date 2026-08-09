@@ -246,7 +246,7 @@ struct AdvancedBacktestRule {
     var days: Int
 }
 
-enum AdvancedBacktestStrategyMode: String, Codable {
+enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
     case ruleBased
     case ultraDefensiveRotation
     case defensiveRotation
@@ -2459,6 +2459,20 @@ enum BacktestRecordCodec {
     static func advancedStrategyDisplayTitle(for record: BacktestRecord) -> String {
         guard kind(for: record) == .advanced else { return record.title }
 
+        // Newer records persist the strategy title at the front of the summary.
+        // Prefer that lightweight field so scrolling history does not fault and
+        // decode every externally stored configuration payload.
+        let summaryLead = record.configSummary
+            .split(separator: "·", maxSplits: 1, omittingEmptySubsequences: true)
+            .first
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        if let summaryLead, !summaryLead.isEmpty {
+            return summaryLead
+        }
+
+        // Keep decoding as a compatibility fallback for old records that were
+        // saved before configSummary included a strategy title.
         if let config = decodeConfig(from: record),
            let modeRaw = config.strategyModeRawValue,
            let mode = AdvancedBacktestStrategyMode(rawValue: modeRaw) {
@@ -2468,15 +2482,6 @@ enum BacktestRecordCodec {
             if let template = AdvancedBacktestStrategyTemplate.all.first(where: { matchesStrategyTemplate($0, config: config) }) {
                 return template.title
             }
-        }
-
-        let summaryLead = record.configSummary
-            .split(separator: "·", maxSplits: 1, omittingEmptySubsequences: true)
-            .first
-            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
-
-        if let summaryLead, !summaryLead.isEmpty {
-            return summaryLead
         }
 
         if !record.subtitle.isEmpty,
@@ -2682,7 +2687,7 @@ struct BacktestIndexOption: Identifiable {
     var id: String { symbol }
 }
 
-struct BacktestAssetOption: Identifiable {
+struct BacktestAssetOption: Identifiable, Sendable {
     let symbol: String
     let title: String
     let color: Color

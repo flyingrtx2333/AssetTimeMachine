@@ -19,18 +19,27 @@ extension ContentView {
 
     @MainActor
     func refreshLiveMarketDataIfNeeded(force: Bool) async {
+        guard !isApplyingCloudData, !cloudStore.isApplyingLocalData else { return }
         guard force || shouldRefreshLiveMarketData else { return }
-        let didRefreshLiveData = await marketStore.refreshLiveData()
+        let expectedCloudDataRevision = cloudStore.localDataRevision
+        let didRefreshLiveData = await marketStore.refreshLiveData(commitIf: {
+            canCommitMarketRefresh(expectedCloudDataRevision: expectedCloudDataRevision)
+        })
+        guard canCommitMarketRefresh(expectedCloudDataRevision: expectedCloudDataRevision) else { return }
+
         if didRefreshLiveData {
             lastMarketRefreshAt = .now
-            await syncTodaySnapshotWithLatestMarketData()
+            await syncTodaySnapshotWithLatestMarketData(
+                expectedCloudDataRevision: expectedCloudDataRevision
+            )
+            guard canCommitMarketRefresh(expectedCloudDataRevision: expectedCloudDataRevision) else { return }
         }
-        await refreshAssetNotifications()
-        Task { await refreshStrategyNotifications() }
+        scheduleSnapshotNotificationRefresh(delayNanoseconds: 0)
     }
 
     @MainActor
-    func syncTodaySnapshotWithLatestMarketData() async {
+    func syncTodaySnapshotWithLatestMarketData(expectedCloudDataRevision: Int) async {
+        guard canCommitMarketRefresh(expectedCloudDataRevision: expectedCloudDataRevision) else { return }
         do {
             let snapshot = try SnapshotService.createSnapshot(
                 on: .now,
@@ -38,11 +47,27 @@ extension ContentView {
                 createMissingEntries: true,
                 in: modelContext
             )
+            guard canCommitMarketRefresh(expectedCloudDataRevision: expectedCloudDataRevision) else { return }
             try syncAutoPricedEntries(in: snapshot)
-            await SnapshotAnchorService.captureLiveAnchorsIfPossible(for: snapshot, marketStore: marketStore, in: modelContext)
+            guard canCommitMarketRefresh(expectedCloudDataRevision: expectedCloudDataRevision) else { return }
+            await SnapshotAnchorService.captureLiveAnchorsIfPossible(
+                for: snapshot,
+                marketStore: marketStore,
+                in: modelContext,
+                commitIf: {
+                    canCommitMarketRefresh(expectedCloudDataRevision: expectedCloudDataRevision)
+                }
+            )
         } catch {
             print("[AssetTimeMachine] sync today snapshot failed: \(error)")
         }
+    }
+
+    @MainActor
+    private func canCommitMarketRefresh(expectedCloudDataRevision: Int) -> Bool {
+        !isApplyingCloudData
+            && !cloudStore.isApplyingLocalData
+            && cloudStore.localDataRevision == expectedCloudDataRevision
     }
 
     @MainActor

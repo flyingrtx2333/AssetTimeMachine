@@ -10,10 +10,22 @@ enum SnapshotRevisionToken {
         var hasher = Hasher()
         hasher.combine(snapshots.count)
         for snapshot in snapshots {
-            hasher.combine(contentRevision(
-                for: snapshot,
-                includeMarketAnchorsUpdatedAt: includeMarketAnchorsUpdatedAt
-            ))
+            // This token is evaluated by SwiftUI while resolving `body` and
+            // `onChange`. Keep it relationship-free: walking every entry here
+            // can synchronously fault thousands of SwiftData objects on the
+            // main actor during a tab switch. Entry writes update the parent
+            // snapshot's `updatedAt`; views also observe ModelContext saves for
+            // item/category-only changes.
+            hasher.combine(snapshot.id)
+            hasher.combine(snapshot.date.timeIntervalSinceReferenceDate)
+            hasher.combine(snapshot.updatedAt.timeIntervalSinceReferenceDate)
+            if includeMarketAnchorsUpdatedAt {
+                hasher.combine(snapshot.marketAnchorsUpdatedAt?.timeIntervalSinceReferenceDate)
+                hasher.combine(snapshot.goldAnchorPriceCNY)
+                hasher.combine(snapshot.btcAnchorPriceUSD)
+                hasher.combine(snapshot.nasdaqAnchorPriceUSD)
+                hasher.combine(snapshot.usdPerCNY)
+            }
         }
         if includeOldest {
             hasher.combine(snapshots.last?.id)
@@ -37,18 +49,50 @@ enum SnapshotRevisionToken {
             hasher.combine(snapshot.usdPerCNY)
         }
 
-        let entries = snapshot.entries.sorted { $0.id.uuidString < $1.id.uuidString }
-        hasher.combine(entries.count)
-        for entry in entries {
-            hasher.combine(entry.id)
-            hasher.combine(entry.updatedAt.timeIntervalSinceReferenceDate)
-            hasher.combine(entry.amount)
-            hasher.combine(entry.quantity)
-            hasher.combine(entry.unitPrice)
-            hasher.combine(entry.item?.id)
-            hasher.combine(entry.item?.category?.group.rawValue)
-        }
+        // Relationship-only edits are invalidated through ModelContext.didSave
+        // by the consumer. Keeping this per-snapshot token scalar avoids doing
+        // the same entry walk once for validation and again for metric building.
         return hasher.finalize()
+    }
+}
+
+enum PortfolioSaveNotificationFilter {
+    private static let portfolioEntityNames: Set<String> = [
+        Schema.entityName(for: AssetCategory.self),
+        Schema.entityName(for: AssetItem.self),
+        Schema.entityName(for: AssetSnapshot.self),
+        Schema.entityName(for: AssetEntry.self)
+    ]
+
+    static func affectsPortfolio(_ notification: Notification) -> Bool {
+        guard let userInfo = notification.userInfo else { return true }
+        let identifierKeys: [ModelContext.NotificationKey] = [
+            .invalidatedAllIdentifiers,
+            .insertedIdentifiers,
+            .updatedIdentifiers,
+            .deletedIdentifiers
+        ]
+        var foundIdentifiers = false
+        for key in identifierKeys {
+            let rawValue = userInfo[key.rawValue] ?? userInfo[key]
+            let identifiers: [PersistentIdentifier]
+            if let values = rawValue as? [PersistentIdentifier] {
+                identifiers = values
+            } else if let values = rawValue as? Set<PersistentIdentifier> {
+                identifiers = Array(values)
+            } else {
+                continue
+            }
+
+            foundIdentifiers = true
+            if identifiers.contains(where: { Self.portfolioEntityNames.contains($0.entityName) }) {
+                return true
+            }
+        }
+
+        // Unknown notification payloads stay conservative; known non-portfolio saves
+        // (for example BacktestRecord inserts) no longer invalidate every chart cache.
+        return !foundIdentifiers
     }
 }
 

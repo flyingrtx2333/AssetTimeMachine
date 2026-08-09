@@ -2,6 +2,11 @@ import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 
+private enum StartupMigrationVersion {
+    static let legacyAutoPricedItemsKey = "app.migration.legacyAutoPricedItemsVersion"
+    static let legacyAutoPricedItems = 1
+}
+
 extension ContentView {
     @MainActor
     func runStartupIfNeeded() async {
@@ -20,7 +25,7 @@ extension ContentView {
         if let importPath = launchArgumentValue(after: "-importJSONPath") {
             do {
                 let data = try Data(contentsOf: URL(fileURLWithPath: importPath))
-                try ImportExportService.importJSON(
+                try await ImportExportService.importJSON(
                     data,
                     into: modelContext,
                     replaceExisting: ProcessInfo.processInfo.arguments.contains("-replaceExistingImport")
@@ -71,8 +76,15 @@ extension ContentView {
 
     @MainActor
     private func migrateLegacyAutoPricedItemsForStartup() {
+        let defaults = UserDefaults.standard
+        guard defaults.integer(forKey: StartupMigrationVersion.legacyAutoPricedItemsKey)
+                < StartupMigrationVersion.legacyAutoPricedItems else { return }
         do {
             try AssetItemService.migrateLegacyAutoPricedItemsIfNeeded(in: modelContext)
+            defaults.set(
+                StartupMigrationVersion.legacyAutoPricedItems,
+                forKey: StartupMigrationVersion.legacyAutoPricedItemsKey
+            )
         } catch {
             print("[AssetTimeMachine] migrate legacy auto-priced items failed: \(error)")
         }

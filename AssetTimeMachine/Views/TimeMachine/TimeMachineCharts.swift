@@ -3,7 +3,7 @@ import SwiftData
 import Charts
 import UIKit
 
-enum TimeMachineRange: String, CaseIterable, Identifiable {
+enum TimeMachineRange: String, CaseIterable, Identifiable, Sendable {
     case halfMonth
     case oneMonth
     case sixMonths
@@ -116,7 +116,7 @@ enum TimeMachineRange: String, CaseIterable, Identifiable {
     }
 }
 
-struct TimeMachineTrendPoint: Identifiable {
+struct TimeMachineTrendPoint: Identifiable, Sendable {
     let date: Date
     let mainAssets: Double
     let netAssets: Double
@@ -136,12 +136,7 @@ struct TimeMachineTrendPoint: Identifiable {
     var id: Date { date }
 }
 
-struct TimeMachineTrendPointCacheEntry {
-    let token: Int
-    let point: TimeMachineTrendPoint
-}
-
-struct TimeMachineMonthlySurplusPoint: Identifiable {
+struct TimeMachineMonthlySurplusPoint: Identifiable, Sendable {
     let monthStart: Date
     let date: Date
     let surplus: Double
@@ -150,7 +145,7 @@ struct TimeMachineMonthlySurplusPoint: Identifiable {
     var id: Date { monthStart }
 }
 
-struct TimeMachineAnnualSurplusPoint: Identifiable {
+struct TimeMachineAnnualSurplusPoint: Identifiable, Sendable {
     let yearStart: Date
     let date: Date
     let surplus: Double
@@ -305,7 +300,7 @@ enum TimeMachineAxisValueStyle {
     }
 }
 
-struct TimeMachineDualAxisPoint: Identifiable {
+struct TimeMachineDualAxisPoint: Identifiable, Sendable {
     let date: Date
     let leftValue: Double
     let rightValue: Double
@@ -313,14 +308,14 @@ struct TimeMachineDualAxisPoint: Identifiable {
     var id: Date { date }
 }
 
-struct TimeMachineSingleAxisPoint: Identifiable {
+struct TimeMachineSingleAxisPoint: Identifiable, Sendable {
     let date: Date
     let value: Double
 
     var id: Date { date }
 }
 
-struct TimeMachineCandlestickPoint: Identifiable {
+struct TimeMachineCandlestickPoint: Identifiable, Sendable {
     let date: Date
     let open: Double
     let high: Double
@@ -497,7 +492,10 @@ struct TimeMachineHeroTrendCard: View {
         self.hasRecord = hasRecord
         self.onOpenRecord = onOpenRecord
 
-        let displayPoints = points.sorted { $0.date < $1.date }
+        let displayPoints = evenlySampledItems(
+            points.sorted { $0.date < $1.date },
+            maxCount: 180
+        )
         self.displayPoints = displayPoints
         self.valueDomain = ChartLayoutSupport.paddedValueDomain(values: displayPoints.flatMap { point in
             TimeMachineAssetSeries.allCases.map { $0.value(from: point) }
@@ -600,7 +598,11 @@ struct TimeMachineHeroTrendCard: View {
             }
             .chartLegend(.hidden)
             .chartOverlay { proxy in
-                TimeMachineDragOverlay(proxy: proxy) { date in
+                TimeMachineDragOverlay(
+                    proxy: proxy,
+                    selectableValues: displayPoints,
+                    selectionDate: \.date
+                ) { date in
                     selectedDate = date
                 }
             }
@@ -746,7 +748,28 @@ struct TimeMachineHeroLegendItem: View {
 }
 
 func nearestChartPoint<T>(_ points: [T], to date: Date, date keyPath: KeyPath<T, Date>) -> T? {
-    points.min { abs($0[keyPath: keyPath].timeIntervalSince(date)) < abs($1[keyPath: keyPath].timeIntervalSince(date)) }
+    guard !points.isEmpty else { return nil }
+
+    var lowerBound = 0
+    var upperBound = points.count
+
+    while lowerBound < upperBound {
+        let middle = lowerBound + (upperBound - lowerBound) / 2
+        if points[middle][keyPath: keyPath] < date {
+            lowerBound = middle + 1
+        } else {
+            upperBound = middle
+        }
+    }
+
+    guard lowerBound > 0 else { return points[0] }
+    guard lowerBound < points.count else { return points[points.count - 1] }
+
+    let previous = points[lowerBound - 1]
+    let next = points[lowerBound]
+    let previousDistance = abs(previous[keyPath: keyPath].timeIntervalSince(date))
+    let nextDistance = abs(next[keyPath: keyPath].timeIntervalSince(date))
+    return previousDistance <= nextDistance ? previous : next
 }
 
 func chartAxisDates(_ dates: [Date]) -> [Date] {
@@ -833,6 +856,36 @@ struct TimeMachineMonthlySurplusCard: View {
     @State private var selectedDate: Date?
     @State private var selectedGranularity: SurplusGranularity = .monthly
     private let chartCornerRadius: CGFloat = 18
+    private let displayPoints: [TimeMachineMonthlySurplusPoint]
+    private let latestPoint: TimeMachineMonthlySurplusPoint?
+    private let latestAnnualPoint: TimeMachineAnnualSurplusPoint?
+    private let leftDomain: ClosedRange<Double>
+    private let averageSurplus: Double
+    private let positiveMonthCount: Int
+    private let bestMonthPoint: TimeMachineMonthlySurplusPoint?
+    private let axisDates: [Date]
+
+    init(
+        points: [TimeMachineMonthlySurplusPoint],
+        annualPoints: [TimeMachineAnnualSurplusPoint]
+    ) {
+        self.points = points
+        self.annualPoints = annualPoints
+
+        let displayPoints = evenlySampledItems(points, maxCount: 48)
+        self.displayPoints = displayPoints
+        self.latestPoint = displayPoints.last ?? points.last
+        self.latestAnnualPoint = annualPoints.last
+        self.leftDomain = TimeMachineSurplusFormatting.paddedDomain(
+            values: displayPoints.map(\.surplus)
+        )
+        self.averageSurplus = points.isEmpty
+            ? 0
+            : points.reduce(0) { $0 + $1.surplus } / Double(points.count)
+        self.positiveMonthCount = points.lazy.filter { $0.surplus >= 0 }.count
+        self.bestMonthPoint = points.max { $0.surplus < $1.surplus }
+        self.axisDates = chartAxisDates(displayPoints.map(\.monthStart))
+    }
 
     private enum SurplusGranularity: String, CaseIterable, Identifiable {
         case monthly
@@ -857,39 +910,10 @@ struct TimeMachineMonthlySurplusCard: View {
         }
     }
 
-    private var displayPoints: [TimeMachineMonthlySurplusPoint] {
-        evenlySampledItems(points, maxCount: 48)
-    }
-
-    private var latestPoint: TimeMachineMonthlySurplusPoint? {
-        displayPoints.last ?? points.last
-    }
-
     private var selectedPoint: TimeMachineMonthlySurplusPoint? {
         guard let latestPoint else { return nil }
         guard let selectedDate else { return latestPoint }
         return nearestChartPoint(displayPoints, to: selectedDate, date: \.monthStart) ?? latestPoint
-    }
-
-    private var latestAnnualPoint: TimeMachineAnnualSurplusPoint? {
-        annualPoints.last
-    }
-
-    private var leftDomain: ClosedRange<Double> {
-        TimeMachineSurplusFormatting.paddedDomain(values: displayPoints.map(\.surplus))
-    }
-
-    private var averageSurplus: Double {
-        guard !points.isEmpty else { return 0 }
-        return points.reduce(0) { $0 + $1.surplus } / Double(points.count)
-    }
-
-    private var positiveMonthCount: Int {
-        points.filter { $0.surplus >= 0 }.count
-    }
-
-    private var bestMonthPoint: TimeMachineMonthlySurplusPoint? {
-        points.max { $0.surplus < $1.surplus }
     }
 
     private var currentDateLabel: String {
@@ -1007,7 +1031,11 @@ struct TimeMachineMonthlySurplusCard: View {
                 .chartXAxis { bottomAxisMarks }
                 .chartLegend(.hidden)
                 .chartOverlay { proxy in
-                    TimeMachineDragOverlay(proxy: proxy) { date in
+                    TimeMachineDragOverlay(
+                        proxy: proxy,
+                        selectableValues: displayPoints,
+                        selectionDate: \.monthStart
+                    ) { date in
                         selectedDate = date
                     } onEnded: {
                         selectedDate = nil
@@ -1047,8 +1075,7 @@ struct TimeMachineMonthlySurplusCard: View {
     }
 
     private var bottomAxisMarks: some AxisContent {
-        let axisDates = chartAxisDates(displayPoints.map(\.monthStart))
-        return AxisMarks(values: axisDates) { value in
+        AxisMarks(values: axisDates) { value in
             AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
                 .foregroundStyle(AssetTheme.border.opacity(0.28))
             AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
@@ -1085,10 +1112,6 @@ struct TimeMachineAnnualSurplusCard: View {
     @State private var selectedDate: Date?
     private let chartCornerRadius: CGFloat = 18
 
-    private var displayPoints: [TimeMachineAnnualSurplusPoint] {
-        points
-    }
-
     private var latestPoint: TimeMachineAnnualSurplusPoint? {
         points.last
     }
@@ -1096,7 +1119,7 @@ struct TimeMachineAnnualSurplusCard: View {
     private var selectedPoint: TimeMachineAnnualSurplusPoint? {
         guard let latestPoint else { return nil }
         guard let selectedDate else { return latestPoint }
-        return nearestChartPoint(displayPoints, to: selectedDate, date: \.yearStart) ?? latestPoint
+        return nearestChartPoint(points, to: selectedDate, date: \.yearStart) ?? latestPoint
     }
 
     private var averageSurplus: Double {
@@ -1113,7 +1136,7 @@ struct TimeMachineAnnualSurplusCard: View {
     }
 
     private var domain: ClosedRange<Double> {
-        TimeMachineSurplusFormatting.paddedDomain(values: displayPoints.map(\.surplus))
+        TimeMachineSurplusFormatting.paddedDomain(values: points.map(\.surplus))
     }
 
     var body: some View {
@@ -1137,7 +1160,7 @@ struct TimeMachineAnnualSurplusCard: View {
                 }
             }
 
-            if !displayPoints.isEmpty {
+            if !points.isEmpty {
                 chartSection
             }
 
@@ -1194,7 +1217,7 @@ struct TimeMachineAnnualSurplusCard: View {
                         .foregroundStyle(AssetTheme.border.opacity(0.42))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 4]))
 
-                    ForEach(displayPoints) { point in
+                    ForEach(points) { point in
                         BarMark(
                             x: .value(AppLocalization.string("年份"), point.yearStart),
                             yStart: .value(AppLocalization.string("零线"), normalized(0, in: domain)),
@@ -1213,7 +1236,7 @@ struct TimeMachineAnnualSurplusCard: View {
                 .chartYScale(domain: 0...1)
                 .chartYAxis(.hidden)
                 .chartXAxis {
-                    AxisMarks(values: displayPoints.map(\.yearStart)) { value in
+                    AxisMarks(values: points.map(\.yearStart)) { value in
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
                             .foregroundStyle(AssetTheme.border.opacity(0.24))
                         AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
@@ -1229,7 +1252,11 @@ struct TimeMachineAnnualSurplusCard: View {
                 }
                 .chartLegend(.hidden)
                 .chartOverlay { proxy in
-                    TimeMachineDragOverlay(proxy: proxy) { date in
+                    TimeMachineDragOverlay(
+                        proxy: proxy,
+                        selectableValues: points,
+                        selectionDate: \.yearStart
+                    ) { date in
                         selectedDate = date
                     } onEnded: {
                         selectedDate = nil
@@ -1378,6 +1405,7 @@ struct TimeMachineDualAxisTrendCard: View {
     private let canShowCandlestickChart: Bool
     private let canShowDualAxisChart: Bool
     private let canShowLeftOnlyChart: Bool
+    private let selectionDates: [Date]
     private let bottomAxisDates: [Date]
     private let dateRangeLabel: String
 
@@ -1395,6 +1423,13 @@ struct TimeMachineDualAxisTrendCard: View {
         self.canShowCandlestickChart = descriptor.canShowCandlestickChart
         self.canShowDualAxisChart = descriptor.canShowDualAxisChart
         self.canShowLeftOnlyChart = descriptor.canShowLeftOnlyChart
+        if descriptor.canShowCandlestickChart {
+            self.selectionDates = descriptor.displayCandlesticks.map(\.date)
+        } else if descriptor.canShowDualAxisChart {
+            self.selectionDates = descriptor.displayPoints.map(\.date)
+        } else {
+            self.selectionDates = descriptor.displayLeftOnlyPoints.map(\.date)
+        }
         self.leftDomain = descriptor.leftDomain
         self.rightDomain = descriptor.rightDomain
         self.bottomAxisDates = descriptor.bottomAxisDates
@@ -1567,7 +1602,11 @@ struct TimeMachineDualAxisTrendCard: View {
                 .chartXAxis { bottomAxisMarks }
                 .chartLegend(.hidden)
                 .chartOverlay { proxy in
-                    TimeMachineDragOverlay(proxy: proxy) { date in
+                    TimeMachineDragOverlay(
+                        proxy: proxy,
+                        selectableValues: selectionDates,
+                        selectionDate: \.self
+                    ) { date in
                         selectedDate = date
                     } onEnded: {
                         selectedDate = nil
@@ -1622,7 +1661,11 @@ struct TimeMachineDualAxisTrendCard: View {
                 .chartXAxis { bottomAxisMarks }
                 .chartLegend(.hidden)
                 .chartOverlay { proxy in
-                    TimeMachineDragOverlay(proxy: proxy) { date in
+                    TimeMachineDragOverlay(
+                        proxy: proxy,
+                        selectableValues: selectionDates,
+                        selectionDate: \.self
+                    ) { date in
                         selectedDate = date
                     } onEnded: {
                         selectedDate = nil
@@ -1823,32 +1866,70 @@ struct TimeMachineDualAxisTrendCard: View {
     }
 }
 
+private struct TimeMachineHistoryDrilldownRenderData {
+    let filteredPoints: [TimeMachineSingleAxisPoint]
+    let displayPoints: [TimeMachineSingleAxisPoint]
+    let filteredCandlesticks: [TimeMachineCandlestickPoint]
+    let displayCandlesticks: [TimeMachineCandlestickPoint]
+    let valueDomain: ClosedRange<Double>
+
+    init(
+        points: [TimeMachineSingleAxisPoint],
+        candlesticks: [TimeMachineCandlestickPoint],
+        range: TimeMachineRange
+    ) {
+        let anchorDate = [points.last?.date, candlesticks.last?.date]
+            .compactMap { $0 }
+            .max()
+        let filteredPoints = range.filter(points, anchoredAt: anchorDate)
+        let filteredCandlesticks = range.filter(candlesticks, anchoredAt: anchorDate)
+        let displayPoints = evenlySampledItems(filteredPoints, maxCount: 220)
+        let displayCandlesticks = evenlySampledItems(filteredCandlesticks, maxCount: 180)
+
+        self.filteredPoints = filteredPoints
+        self.displayPoints = displayPoints
+        self.filteredCandlesticks = filteredCandlesticks
+        self.displayCandlesticks = displayCandlesticks
+        if displayCandlesticks.count >= 2 {
+            self.valueDomain = ChartLayoutSupport.paddedValueDomain(
+                values: displayCandlesticks.flatMap { [$0.low, $0.high] }
+            )
+        } else {
+            self.valueDomain = ChartLayoutSupport.paddedValueDomain(values: displayPoints.map(\.value))
+        }
+    }
+}
+
 struct TimeMachineHistoryDrilldownSheet: View {
     let descriptor: TimeMachineHistoryDrilldown
     @Environment(\.dismiss) private var dismiss
     @State private var selectedRange: TimeMachineRange = .all
     @State private var selectedDate: Date?
+    @State private var renderData: TimeMachineHistoryDrilldownRenderData
 
-    private var rangeAnchorDate: Date? {
-        [descriptor.points.last?.date, descriptor.candlesticks.last?.date]
-            .compactMap { $0 }
-            .max()
+    init(descriptor: TimeMachineHistoryDrilldown) {
+        self.descriptor = descriptor
+        _renderData = State(initialValue: TimeMachineHistoryDrilldownRenderData(
+            points: descriptor.points,
+            candlesticks: descriptor.candlesticks,
+            range: .all
+        ))
     }
 
     private var filteredPoints: [TimeMachineSingleAxisPoint] {
-        selectedRange.filter(descriptor.points, anchoredAt: rangeAnchorDate)
+        renderData.filteredPoints
     }
 
     private var displayPoints: [TimeMachineSingleAxisPoint] {
-        evenlySampledItems(filteredPoints, maxCount: 220)
+        renderData.displayPoints
     }
 
     private var filteredCandlesticks: [TimeMachineCandlestickPoint] {
-        selectedRange.filter(descriptor.candlesticks, anchoredAt: rangeAnchorDate)
+        renderData.filteredCandlesticks
     }
 
     private var displayCandlesticks: [TimeMachineCandlestickPoint] {
-        evenlySampledItems(filteredCandlesticks, maxCount: 180)
+        renderData.displayCandlesticks
     }
 
     private var canShowCandlestickChart: Bool {
@@ -1875,10 +1956,7 @@ struct TimeMachineHistoryDrilldownSheet: View {
     }
 
     private var valueDomain: ClosedRange<Double> {
-        if canShowCandlestickChart {
-            return ChartLayoutSupport.paddedValueDomain(values: displayCandlesticks.flatMap { [$0.low, $0.high] })
-        }
-        return ChartLayoutSupport.paddedValueDomain(values: displayPoints.map(\.value))
+        renderData.valueDomain
     }
 
     private var selectedDisplayValue: Double? {
@@ -1984,6 +2062,14 @@ struct TimeMachineHistoryDrilldownSheet: View {
                 }
             }
         }
+        .onChange(of: selectedRange) { _, range in
+            selectedDate = nil
+            renderData = TimeMachineHistoryDrilldownRenderData(
+                points: descriptor.points,
+                candlesticks: descriptor.candlesticks,
+                range: range
+            )
+        }
     }
 
     @ViewBuilder
@@ -2036,7 +2122,11 @@ struct TimeMachineHistoryDrilldownSheet: View {
         .chartYAxis { historyYAxisMarks }
         .chartLegend(.hidden)
         .chartOverlay { proxy in
-            TimeMachineDragOverlay(proxy: proxy) { date in
+            TimeMachineDragOverlay(
+                proxy: proxy,
+                selectableValues: displayCandlesticks,
+                selectionDate: \.date
+            ) { date in
                 selectedDate = date
             } onEnded: {
                 selectedDate = nil
@@ -2083,7 +2173,11 @@ struct TimeMachineHistoryDrilldownSheet: View {
         .chartYAxis { historyYAxisMarks }
         .chartLegend(.hidden)
         .chartOverlay { proxy in
-            TimeMachineDragOverlay(proxy: proxy) { date in
+            TimeMachineDragOverlay(
+                proxy: proxy,
+                selectableValues: displayPoints,
+                selectionDate: \.date
+            ) { date in
                 selectedDate = date
             } onEnded: {
                 selectedDate = nil
@@ -2156,31 +2250,165 @@ struct TimeMachineHistoryDrilldownSheet: View {
     }
 }
 
-struct TimeMachineDragOverlay: View {
+private final class TimeMachineDragInteractionState {
+    var lastReportedDate: Date?
+    var pendingDate: Date?
+    var lastReportUptime: TimeInterval = 0
+
+    func reset() {
+        lastReportedDate = nil
+        pendingDate = nil
+        lastReportUptime = 0
+    }
+}
+
+private struct TimeMachineHorizontalPanGestureView: UIViewRepresentable {
+    let onChanged: (CGPoint) -> Void
+    let onEnded: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onChanged: onChanged, onEnded: onEnded)
+    }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView(frame: .zero)
+        view.backgroundColor = .clear
+        view.isAccessibilityElement = false
+
+        let recognizer = UIPanGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handlePan(_:))
+        )
+        recognizer.cancelsTouchesInView = false
+        recognizer.delegate = context.coordinator
+        view.addGestureRecognizer(recognizer)
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.onChanged = onChanged
+        context.coordinator.onEnded = onEnded
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var onChanged: (CGPoint) -> Void
+        var onEnded: () -> Void
+
+        init(onChanged: @escaping (CGPoint) -> Void, onEnded: @escaping () -> Void) {
+            self.onChanged = onChanged
+            self.onEnded = onEnded
+        }
+
+        @objc func handlePan(_ recognizer: UIPanGestureRecognizer) {
+            switch recognizer.state {
+            case .began, .changed:
+                guard let view = recognizer.view else { return }
+                onChanged(recognizer.location(in: view))
+            case .ended, .cancelled, .failed:
+                onEnded()
+            default:
+                break
+            }
+        }
+
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            guard let pan = gestureRecognizer as? UIPanGestureRecognizer,
+                  let view = pan.view else { return false }
+
+            let velocity = pan.velocity(in: view)
+            let translation = pan.translation(in: view)
+            let direction = abs(velocity.x) + abs(velocity.y) > 1
+                ? velocity
+                : translation
+            let horizontalDistance = abs(direction.x)
+            let verticalDistance = abs(direction.y)
+            return horizontalDistance > verticalDistance * 1.15
+        }
+
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            true
+        }
+    }
+}
+
+struct TimeMachineDragOverlay<SelectableValue>: View {
     let proxy: ChartProxy
+    let selectableValues: [SelectableValue]
+    let selectionDate: KeyPath<SelectableValue, Date>
     let onChanged: (Date) -> Void
     var onEnded: (() -> Void)? = nil
 
+    @State private var interactionState = TimeMachineDragInteractionState()
+
+    private let minimumReportInterval: TimeInterval = 1.0 / 30.0
+
     var body: some View {
         GeometryReader { geometry in
-            Rectangle()
-                .fill(.clear)
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            guard let plotFrame = proxy.plotFrame else { return }
-                            let frame = geometry[plotFrame]
-                            let locationX = min(max(value.location.x - frame.origin.x, 0), frame.size.width)
-                            if let date: Date = proxy.value(atX: locationX) {
-                                onChanged(date)
-                            }
-                        }
-                        .onEnded { _ in
-                            onEnded?()
-                        }
-                )
+            TimeMachineHorizontalPanGestureView {
+                reportSelection(at: $0, in: geometry)
+            } onEnded: {
+                finishInteraction()
+            }
         }
+    }
+
+    private func reportSelection(at location: CGPoint, in geometry: GeometryProxy) {
+        guard let plotFrame = proxy.plotFrame else { return }
+        let frame = geometry[plotFrame]
+        let locationX = min(max(location.x - frame.origin.x, 0), frame.size.width)
+        guard let rawDate: Date = proxy.value(atX: locationX) else { return }
+
+        let reportedDate = nearestChartPoint(
+            selectableValues,
+            to: rawDate,
+            date: selectionDate
+        )?[keyPath: selectionDate] ?? rawDate
+
+        interactionState.pendingDate = reportedDate
+        guard reportedDate != interactionState.lastReportedDate else { return }
+
+        let now = ProcessInfo.processInfo.systemUptime
+        if interactionState.lastReportUptime > 0,
+           now - interactionState.lastReportUptime < minimumReportInterval {
+            return
+        }
+
+        emit(reportedDate, at: now)
+    }
+
+    private func finishInteraction() {
+        let didReportSelection = interactionState.lastReportedDate != nil
+
+        if onEnded == nil,
+           let pendingDate = interactionState.pendingDate,
+           pendingDate != interactionState.lastReportedDate {
+            emit(pendingDate, at: ProcessInfo.processInfo.systemUptime)
+        }
+
+        interactionState.reset()
+        guard didReportSelection else { return }
+
+        withoutAnimations {
+            onEnded?()
+        }
+    }
+
+    private func emit(_ date: Date, at uptime: TimeInterval) {
+        interactionState.lastReportedDate = date
+        interactionState.lastReportUptime = uptime
+
+        withoutAnimations {
+            onChanged(date)
+        }
+    }
+
+    private func withoutAnimations(_ action: () -> Void) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction, action)
     }
 }
 

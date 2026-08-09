@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import Charts
 import UIKit
+import Combine
 
 private struct TrendVideoPreviewRequest: Identifiable {
     let id = UUID()
@@ -13,7 +14,6 @@ struct TimeMachineView: View {
     @Environment(\.modelContext) private var modelContext
     let marketStore: RemoteMarketStore
     let isActive: Bool
-    @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
     @State private var selectedRange: TimeMachineRange = .sixMonths
     @State private var cachedTrendPoints: [TimeMachineTrendPoint] = []
     @State private var cachedFilteredTrendPoints: [TimeMachineTrendPoint] = []
@@ -21,8 +21,11 @@ struct TimeMachineView: View {
     @State private var cachedAnnualSurplusPoints: [TimeMachineAnnualSurplusPoint] = []
     @State private var cachedHistoryPointsBySymbol: [String: [TimeMachineSingleAxisPoint]] = [:]
     @State private var cachedFullHistoryPointsBySymbol: [String: [TimeMachineSingleAxisPoint]] = [:]
+    @State private var cachedFullHistoryCandlesticksBySymbol: [String: [TimeMachineCandlestickPoint]] = [:]
     @State private var cachedDetailTrendCards: [TimeMachineCombinedTrendDescriptor] = []
-    @State private var cachedTrendPointBySnapshotID: [UUID: TimeMachineTrendPointCacheEntry] = [:]
+    @State private var cachedSnapshotProjections: [TimeMachineSnapshotProjection] = []
+    @State private var cachedSnapshotIDByDay: [Date: UUID] = [:]
+    @State private var lastSnapshotProjectionCacheToken: Int?
 
     @State private var lastFullHistoryPointsCacheToken: Int?
     @State private var lastVisualizationCacheToken: Int?
@@ -31,10 +34,9 @@ struct TimeMachineView: View {
     @State private var lastDetailTrendCardsCacheToken: Int?
     @State private var deferredDetailCardsTask: Task<Void, Never>?
     @State private var pendingVisualizationRefreshTask: Task<Void, Never>?
-    @State private var activeGeneration = 0
+    @State private var isScrollInProgress = false
     @State private var modelSaveRevision = 0
-    @State private var lastAnnualSurplusCacheToken: Int?
-    @State private var cachedAllSnapshotsForSurplus: [AssetSnapshot]?
+    @State private var lastObservedStoreRevision: UInt64 = 0
     @State private var visibleDetailTrendSymbols: Set<String> = ["gold_cny"]
     @State private var selectedRecordSnapshot: AssetSnapshot?
     @State private var selectedHistoryDrilldown: TimeMachineHistoryDrilldown?
@@ -48,15 +50,6 @@ struct TimeMachineView: View {
         self.marketStore = marketStore
         self.isActive = isActive
 
-        var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
-            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
-        )
-        snapshotDescriptor.fetchLimit = 400
-        _snapshots = Query(snapshotDescriptor)
-    }
-
-    private var chronologicalSnapshots: [AssetSnapshot] {
-        snapshots.reversed()
     }
 
     private var trendPoints: [TimeMachineTrendPoint] {
@@ -107,77 +100,6 @@ struct TimeMachineView: View {
         Self.detailComparisonOptions.filter { !visibleDetailTrendSymbols.contains($0.symbol) }
     }
 
-    private func historySeriesPoints(_ series: PublicHistorySeries, range: TimeMachineRange? = nil) -> [TimeMachineSingleAxisPoint] {
-        let points: [TimeMachineSingleAxisPoint] = Array(zip(series.dates, series.prices)).compactMap { (dateText: String, price: Double) -> TimeMachineSingleAxisPoint? in
-            guard let date = historicalSeriesDate(from: dateText), price.isFinite, price > 0 else { return nil }
-            return TimeMachineSingleAxisPoint(date: date, value: price)
-        }
-        let sortedPoints = points.sorted { $0.date < $1.date }
-        guard let range else { return sortedPoints }
-        return range.filter(sortedPoints)
-    }
-
-    private func historySeriesCandlesticks(_ series: PublicHistorySeries, range: TimeMachineRange? = nil) -> [TimeMachineCandlestickPoint] {
-        let candlesticks = series.dailyBars.compactMap { bar -> TimeMachineCandlestickPoint? in
-            guard
-                bar.open.isFinite,
-                bar.high.isFinite,
-                bar.low.isFinite,
-                bar.close.isFinite,
-                bar.open > 0,
-                bar.high >= max(bar.open, bar.close, bar.low),
-                bar.low <= min(bar.open, bar.close, bar.high)
-            else { return nil }
-
-            return TimeMachineCandlestickPoint(
-                date: bar.date,
-                open: bar.open,
-                high: bar.high,
-                low: bar.low,
-                close: bar.close,
-                volume: bar.volume
-            )
-        }
-        .sorted { $0.date < $1.date }
-
-        guard let range else { return candlesticks }
-        return range.filter(candlesticks)
-    }
-
-    private func historicalSeriesDate(from text: String) -> Date? {
-        Self.historicalSeriesDateFormatter.date(from: text)
-    }
-
-    private static let historicalSeriesDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter
-    }()
-
-    @MainActor
-    private func trendPoint(for snapshot: AssetSnapshot) -> TimeMachineTrendPoint {
-        let liveAnchors = liveMarketAnchors
-        let token = TimeMachineTrendPointBuilder.cacheToken(for: snapshot, liveAnchors: liveAnchors)
-        if let cached = cachedTrendPointBySnapshotID[snapshot.id], cached.token == token {
-            return cached.point
-        }
-
-        let point = TimeMachineTrendPointBuilder.make(from: snapshot, liveAnchors: liveAnchors)
-        cachedTrendPointBySnapshotID[snapshot.id] = TimeMachineTrendPointCacheEntry(token: token, point: point)
-        return point
-    }
-
-    private var snapshotCacheToken: Int {
-        SnapshotRevisionToken.revision(
-            for: snapshots,
-            includeOldest: true,
-            includeMarketAnchorsUpdatedAt: true
-        )
-    }
-
     private var historyCacheToken: Int {
         var hasher = Hasher()
         hasher.combine(marketStore.historyRevision)
@@ -221,17 +143,13 @@ struct TimeMachineView: View {
         marketStore.exchangeRateCacheToken()
     }
 
-    private var annualSurplusCacheToken: Int {
-        var hasher = Hasher()
-        hasher.combine(snapshotCacheToken)
-        hasher.combine(selectedRange.rawValue)
-        return hasher.finalize()
+    private var snapshotProjectionCacheToken: Int {
+        modelSaveRevision
     }
 
     private var snapshotVisualizationCacheToken: Int {
         var hasher = Hasher()
         hasher.combine(selectedRange.rawValue)
-        hasher.combine(snapshotCacheToken)
         hasher.combine(modelSaveRevision)
         hasher.combine(historyCacheToken)
         return hasher.finalize()
@@ -284,9 +202,18 @@ struct TimeMachineView: View {
             if delayNanoseconds > 0 {
                 try? await Task.sleep(nanoseconds: delayNanoseconds)
             }
-            guard !Task.isCancelled, isActive else { return }
+            guard await waitForScrollIdle() else { return }
             refreshCachedLiveMarketTrendPoint()
         }
+    }
+
+    @MainActor
+    private func waitForScrollIdle() async -> Bool {
+        while isScrollInProgress {
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            guard !Task.isCancelled, isActive else { return false }
+        }
+        return !Task.isCancelled && isActive
     }
 
     @MainActor
@@ -295,12 +222,14 @@ struct TimeMachineView: View {
         guard token != lastLiveMarketVisualizationCacheToken else { return }
         defer { lastLiveMarketVisualizationCacheToken = token }
 
-        guard let todaySnapshot = chronologicalSnapshots.last(where: { Calendar.current.isDateInToday($0.date) }) else {
+        guard let todaySnapshot = cachedSnapshotProjections.last(where: { Calendar.current.isDateInToday($0.date) }) else {
             return
         }
 
-        cachedTrendPointBySnapshotID.removeValue(forKey: todaySnapshot.id)
-        let updatedPoint = trendPoint(for: todaySnapshot)
+        let updatedPoint = TimeMachineSnapshotProjectionProcessor.makeTrendPoint(
+            from: todaySnapshot,
+            liveAnchors: liveMarketAnchors
+        )
 
         func replaceTodayPoint(in points: inout [TimeMachineTrendPoint]) {
             guard let index = points.lastIndex(where: { Calendar.current.isDateInToday($0.date) }) else { return }
@@ -318,38 +247,33 @@ struct TimeMachineView: View {
     private func refreshVisualizationCache(includeDetailCards: Bool = true, cacheToken: Int? = nil) async {
         guard !Task.isCancelled, isActive else { return }
         let cacheToken = cacheToken ?? snapshotVisualizationCacheToken
-
-        let visibleSnapshots = await resolvedSnapshotsForVisualization()
-        var trendPoints: [TimeMachineTrendPoint] = []
-        trendPoints.reserveCapacity(visibleSnapshots.count)
-        for (index, snapshot) in visibleSnapshots.enumerated() {
-            guard !Task.isCancelled, isActive else { return }
-            trendPoints.append(trendPoint(for: snapshot))
-            if index.isMultiple(of: 6) {
-                await Task.yield()
-            }
+        guard let projections = await snapshotProjectionsIfNeeded() else { return }
+        let range = selectedRange
+        let anchors = liveMarketAnchors
+        let processingTask = Task.detached(priority: .userInitiated) {
+            TimeMachineSnapshotProjectionProcessor.prepare(
+                projections: projections,
+                range: range,
+                liveAnchors: anchors
+            )
+        }
+        let prepared = await withTaskCancellationHandler {
+            await processingTask.value
+        } onCancel: {
+            processingTask.cancel()
         }
 
         guard !Task.isCancelled, isActive, cacheToken == snapshotVisualizationCacheToken else { return }
 
-        let validSnapshotIDs = Set(snapshots.map(\.id))
-        cachedTrendPointBySnapshotID = cachedTrendPointBySnapshotID.filter { validSnapshotIDs.contains($0.key) }
-
-        let filteredTrendPoints = selectedRange.filter(trendPoints)
-
-        cachedTrendPoints = trendPoints
-        cachedFilteredTrendPoints = filteredTrendPoints
-        cachedMonthlySurplusPoints = buildMonthlySurplusPoints(from: trendPoints)
-
-        // 先发布主图，年结余和详情卡继续渐进加载，避免全历史补查阻塞首屏。
+        cachedTrendPoints = prepared.trendPoints
+        cachedFilteredTrendPoints = prepared.filteredTrendPoints
+        cachedMonthlySurplusPoints = prepared.monthlySurplusPoints
+        cachedAnnualSurplusPoints = prepared.annualSurplusPoints
+        cachedSnapshotIDByDay = prepared.snapshotIDByDay
         lastVisualizationCacheToken = cacheToken
         await Task.yield()
 
-        let preferredAnnualSource = selectedRange == .all ? trendPoints : nil
-        await refreshAnnualSurplusPointsIfNeeded(preferredFullTrendPoints: preferredAnnualSource)
-        guard !Task.isCancelled, isActive, cacheToken == snapshotVisualizationCacheToken else { return }
-
-        guard !filteredTrendPoints.isEmpty else {
+        guard !prepared.filteredTrendPoints.isEmpty else {
             cachedHistoryPointsBySymbol = [:]
             cachedDetailTrendCards = []
             lastDetailTrendCardsCacheToken = nil
@@ -363,13 +287,16 @@ struct TimeMachineView: View {
             fullHistoryPointsBySymbol = cachedFullHistoryPointsBySymbol
         } else {
             await Task.yield()
-            fullHistoryPointsBySymbol = buildFullHistoryPointsBySymbol()
+            let preparedHistory = await prepareFullHistorySeries()
+            guard !Task.isCancelled, isActive, cacheToken == snapshotVisualizationCacheToken else { return }
+            fullHistoryPointsBySymbol = preparedHistory.pointsBySymbol
             cachedFullHistoryPointsBySymbol = fullHistoryPointsBySymbol
+            cachedFullHistoryCandlesticksBySymbol = preparedHistory.candlesticksBySymbol
             lastFullHistoryPointsCacheToken = fullHistoryToken
         }
         let historyPointsBySymbol = buildHistoryPointsBySymbol(
             fullHistoryPointsBySymbol: fullHistoryPointsBySymbol,
-            trendPoints: filteredTrendPoints
+            trendPoints: prepared.filteredTrendPoints
         )
 
         cachedHistoryPointsBySymbol = historyPointsBySymbol
@@ -384,131 +311,28 @@ struct TimeMachineView: View {
     }
 
     @MainActor
-    private func resolvedSnapshotsForVisualization(calendar: Calendar = .current) async -> [AssetSnapshot] {
-        let loadedSnapshots = chronologicalSnapshots
-
-        if selectedRange == .all {
-            let descriptor = FetchDescriptor<AssetSnapshot>(
-                sortBy: [SortDescriptor(\AssetSnapshot.date, order: .forward)]
-            )
-            return (try? modelContext.fetch(descriptor)) ?? loadedSnapshots
+    private func snapshotProjectionsIfNeeded() async -> [TimeMachineSnapshotProjection]? {
+        let token = snapshotProjectionCacheToken
+        if token == lastSnapshotProjectionCacheToken {
+            return cachedSnapshotProjections
         }
 
-        guard let latestDate = loadedSnapshots.last?.date,
-              let startDate = selectedRangeStartDate(from: latestDate, calendar: calendar) else {
-            return loadedSnapshots
-        }
-
-        var rangeSnapshots: [AssetSnapshot]
-        if let oldestLoadedDate = loadedSnapshots.first?.date, oldestLoadedDate <= startDate {
-            rangeSnapshots = loadedSnapshots.filter { $0.date >= startDate }
-        } else {
-            let predicate = #Predicate<AssetSnapshot> { snapshot in
-                snapshot.date >= startDate && snapshot.date <= latestDate
-            }
-            let descriptor = FetchDescriptor<AssetSnapshot>(
-                predicate: predicate,
-                sortBy: [SortDescriptor(\AssetSnapshot.date, order: .forward)]
-            )
-            rangeSnapshots = (try? modelContext.fetch(descriptor)) ?? loadedSnapshots.filter { $0.date >= startDate }
-        }
-
-        let baselineCutoff = calendar.dateInterval(of: .month, for: startDate)?.start ?? startDate
-        var predecessorDescriptor = FetchDescriptor<AssetSnapshot>(
-            predicate: #Predicate<AssetSnapshot> { snapshot in
-                snapshot.date < baselineCutoff
-            },
-            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
-        )
-        predecessorDescriptor.fetchLimit = 1
-        if let predecessor = try? modelContext.fetch(predecessorDescriptor).first {
-            rangeSnapshots.insert(predecessor, at: 0)
-        }
-        return rangeSnapshots
-    }
-
-    private func selectedRangeStartDate(from latestDate: Date, calendar: Calendar = .current) -> Date? {
-        switch selectedRange {
-        case .halfMonth:
-            return calendar.date(byAdding: .day, value: -15, to: latestDate)
-        case .oneMonth:
-            return calendar.date(byAdding: .month, value: -1, to: latestDate)
-        case .sixMonths:
-            return calendar.date(byAdding: .month, value: -6, to: latestDate)
-        case .oneYear:
-            return calendar.date(byAdding: .year, value: -1, to: latestDate)
-        case .threeYears:
-            return calendar.date(byAdding: .year, value: -3, to: latestDate)
-        case .all:
-            return nil
-        }
-    }
-
-    @MainActor
-    private func resolvedAllSnapshotsForSurplus() async -> [AssetSnapshot] {
-        if let cachedAllSnapshotsForSurplus, !cachedAllSnapshotsForSurplus.isEmpty {
-            return cachedAllSnapshotsForSurplus
-        }
-
-        let descriptor = FetchDescriptor<AssetSnapshot>(
-            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .forward)]
-        )
-        let fetched: [AssetSnapshot]
+        let container = modelContext.container
         do {
-            fetched = try modelContext.fetch(descriptor)
+            let projections = try await BackgroundTaskWork.run {
+                let store = TimeMachineSnapshotProjectionStore(modelContainer: container)
+                return try await store.fetchAll()
+            }
+            guard !Task.isCancelled, isActive, token == snapshotProjectionCacheToken else { return nil }
+            cachedSnapshotProjections = projections
+            lastSnapshotProjectionCacheToken = token
+            return projections
+        } catch is CancellationError {
+            return nil
         } catch {
-            print("[AssetTimeMachine] fetch all snapshots for surplus failed: \(error)")
-            fetched = []
+            print("[AssetTimeMachine] fetch snapshot projections failed: \(error)")
+            return cachedSnapshotProjections.isEmpty ? nil : cachedSnapshotProjections
         }
-        if fetched.count > chronologicalSnapshots.count {
-            cachedAllSnapshotsForSurplus = fetched
-            return fetched
-        }
-
-        let fallback = chronologicalSnapshots
-        if !fallback.isEmpty {
-            cachedAllSnapshotsForSurplus = fallback
-        }
-        return fallback
-    }
-
-    @MainActor
-    private func refreshAnnualSurplusPointsIfNeeded(
-        preferredFullTrendPoints: [TimeMachineTrendPoint]? = nil
-    ) async {
-        let token = annualSurplusCacheToken
-        guard token != lastAnnualSurplusCacheToken || cachedAnnualSurplusPoints.isEmpty else { return }
-
-        if token != lastAnnualSurplusCacheToken {
-            cachedAllSnapshotsForSurplus = nil
-        }
-
-        let sourcePoints: [TimeMachineTrendPoint]
-        if let preferredFullTrendPoints, !preferredFullTrendPoints.isEmpty {
-            sourcePoints = preferredFullTrendPoints
-        } else {
-            let allSnapshots = await resolvedAllSnapshotsForSurplus()
-            guard !allSnapshots.isEmpty else {
-                cachedAnnualSurplusPoints = []
-                lastAnnualSurplusCacheToken = token
-                return
-            }
-
-            var fullTrendPoints: [TimeMachineTrendPoint] = []
-            fullTrendPoints.reserveCapacity(allSnapshots.count)
-            for (index, snapshot) in allSnapshots.enumerated() {
-                guard !Task.isCancelled, isActive else { return }
-                fullTrendPoints.append(trendPoint(for: snapshot))
-                if index.isMultiple(of: 6) {
-                    await Task.yield()
-                }
-            }
-            sourcePoints = fullTrendPoints
-        }
-
-        guard !Task.isCancelled, isActive, token == annualSurplusCacheToken else { return }
-        cachedAnnualSurplusPoints = buildAnnualSurplusPoints(from: sourcePoints)
-        lastAnnualSurplusCacheToken = token
     }
 
     @MainActor
@@ -542,22 +366,28 @@ struct TimeMachineView: View {
         deferredDetailCardsTask = Task {
             await Task.yield()
             try? await Task.sleep(nanoseconds: 120_000_000)
-            guard !Task.isCancelled else { return }
+            guard await waitForScrollIdle() else { return }
             guard isActive, token == snapshotVisualizationCacheToken else { return }
             await refreshDetailTrendCardsIfNeeded()
         }
     }
 
-    private func buildFullHistoryPointsBySymbol() -> [String: [TimeMachineSingleAxisPoint]] {
+    @MainActor
+    private func prepareFullHistorySeries() async -> TimeMachinePreparedHistory {
         let symbols = Self.detailComparisonOptions
             .map(\.symbol)
             .filter { visibleDetailTrendSymbols.contains($0) }
-        return Dictionary(uniqueKeysWithValues: symbols.compactMap { symbol in
-            guard let series = marketStore.history(for: symbol) else { return nil }
-            let points = historySeriesPoints(series)
-            guard !points.isEmpty else { return nil }
-            return (symbol, points)
+        let seriesBySymbol = Dictionary(uniqueKeysWithValues: symbols.compactMap { symbol in
+            marketStore.history(for: symbol).map { (symbol, $0) }
         })
+        let processingTask = Task.detached(priority: .utility) {
+            TimeMachineHistoryProjectionProcessor.prepare(seriesBySymbol: seriesBySymbol)
+        }
+        return await withTaskCancellationHandler {
+            await processingTask.value
+        } onCancel: {
+            processingTask.cancel()
+        }
     }
 
     private func buildHistoryPointsBySymbol(
@@ -574,117 +404,6 @@ struct TimeMachineView: View {
             guard !clippedPoints.isEmpty else { return nil }
             return (symbol, clippedPoints)
         })
-    }
-
-    private func buildMonthlySurplusPoints(
-        from source: [TimeMachineTrendPoint],
-        calendar: Calendar = .current
-    ) -> [TimeMachineMonthlySurplusPoint] {
-        guard !source.isEmpty else { return [] }
-
-        let grouped = Dictionary(grouping: source) { point in
-            calendar.dateInterval(of: .month, for: point.date)?.start ?? calendar.startOfDay(for: point.date)
-        }
-
-        let sortedMonthStarts = grouped.keys.sorted()
-        var points: [TimeMachineMonthlySurplusPoint] = []
-        points.reserveCapacity(sortedMonthStarts.count)
-        var previousMonthEndNetAssets: Double?
-
-        for monthStart in sortedMonthStarts {
-            guard let monthPoints = grouped[monthStart]?.sorted(by: { $0.date < $1.date }),
-                  let lastPoint = monthPoints.last else {
-                continue
-            }
-
-            guard let baseline = previousMonthEndNetAssets else {
-                previousMonthEndNetAssets = lastPoint.netAssets
-                continue
-            }
-            let surplus = lastPoint.netAssets - baseline
-            points.append(
-                TimeMachineMonthlySurplusPoint(
-                    monthStart: monthStart,
-                    date: lastPoint.date,
-                    surplus: surplus,
-                    monthEndNetAssets: lastPoint.netAssets
-                )
-            )
-            previousMonthEndNetAssets = lastPoint.netAssets
-        }
-
-        return filterMonthlySurplusPoints(points, calendar: calendar)
-    }
-
-    private func filterMonthlySurplusPoints(
-        _ points: [TimeMachineMonthlySurplusPoint],
-        calendar: Calendar = .current
-    ) -> [TimeMachineMonthlySurplusPoint] {
-        guard let latestDate = points.last?.date else { return [] }
-
-        let startDate: Date?
-        switch selectedRange {
-        case .halfMonth:
-            startDate = calendar.date(byAdding: .day, value: -15, to: latestDate)
-        case .oneMonth:
-            startDate = calendar.date(byAdding: .month, value: -1, to: latestDate)
-        case .sixMonths:
-            startDate = calendar.date(byAdding: .month, value: -6, to: latestDate)
-        case .oneYear:
-            startDate = calendar.date(byAdding: .year, value: -1, to: latestDate)
-        case .threeYears:
-            startDate = calendar.date(byAdding: .year, value: -3, to: latestDate)
-        case .all:
-            startDate = nil
-        }
-
-        guard let startDate else { return points }
-        return points.filter { $0.date >= startDate }
-    }
-
-    private func buildAnnualSurplusPoints(
-        from source: [TimeMachineTrendPoint],
-        calendar: Calendar = .current
-    ) -> [TimeMachineAnnualSurplusPoint] {
-        guard !source.isEmpty else { return [] }
-
-        let grouped = Dictionary(grouping: source) { point in
-            calendar.dateInterval(of: .year, for: point.date)?.start ?? calendar.startOfDay(for: point.date)
-        }
-
-        let sortedYearStarts = grouped.keys.sorted()
-        var points: [TimeMachineAnnualSurplusPoint] = []
-        points.reserveCapacity(sortedYearStarts.count)
-        var previousYearEndNetAssets: Double?
-
-        for yearStart in sortedYearStarts {
-            guard let yearPoints = grouped[yearStart]?.sorted(by: { $0.date < $1.date }),
-                  let lastPoint = yearPoints.last else {
-                continue
-            }
-
-            guard let baseline = previousYearEndNetAssets else {
-                previousYearEndNetAssets = lastPoint.netAssets
-                continue
-            }
-            let surplus = lastPoint.netAssets - baseline
-            points.append(
-                TimeMachineAnnualSurplusPoint(
-                    yearStart: yearStart,
-                    date: lastPoint.date,
-                    surplus: surplus,
-                    yearEndNetAssets: lastPoint.netAssets,
-                    isCurrentYear: calendar.isDate(lastPoint.date, equalTo: .now, toGranularity: .year)
-                )
-            )
-            previousYearEndNetAssets = lastPoint.netAssets
-        }
-
-        guard let latestDate = source.last?.date,
-              let startDate = selectedRangeStartDate(from: latestDate, calendar: calendar) else {
-            return points
-        }
-        return points.filter { $0.date >= startDate }
     }
 
     private func buildDetailTrendCards(
@@ -801,7 +520,7 @@ struct TimeMachineView: View {
         fullHistoryPointsBySymbol: [String: [TimeMachineSingleAxisPoint]]
     ) -> TimeMachineHistoryDrilldown? {
         guard let points = fullHistoryPointsBySymbol[symbol], points.count >= 2 else { return nil }
-        let candlesticks = marketStore.history(for: symbol).map { historySeriesCandlesticks($0) } ?? []
+        let candlesticks = cachedFullHistoryCandlesticksBySymbol[symbol] ?? []
         return TimeMachineHistoryDrilldown(
             symbol: symbol,
             title: title,
@@ -904,13 +623,19 @@ struct TimeMachineView: View {
     }
 
     private func hasSnapshotRecord(on date: Date) -> Bool {
-        (try? SnapshotService.snapshot(on: date, in: modelContext)) != nil
+        cachedSnapshotIDByDay[Calendar.current.startOfDay(for: date)] != nil
     }
 
     @MainActor
     private func openRecord(for date: Date) {
-        guard let snapshot = try? SnapshotService.snapshot(on: date, in: modelContext) else { return }
-        selectedRecordSnapshot = snapshot
+        guard let snapshotID = cachedSnapshotIDByDay[Calendar.current.startOfDay(for: date)] else { return }
+        var descriptor = FetchDescriptor<AssetSnapshot>(
+            predicate: #Predicate<AssetSnapshot> { snapshot in
+                snapshot.id == snapshotID
+            }
+        )
+        descriptor.fetchLimit = 1
+        selectedRecordSnapshot = try? modelContext.fetch(descriptor).first
     }
 
     @MainActor
@@ -920,9 +645,11 @@ struct TimeMachineView: View {
             _ = visibleDetailTrendSymbols.insert(option.symbol)
         }
         lastFullHistoryPointsCacheToken = nil
-        Task {
-            await refreshVisualizationCacheIfNeeded(force: true, includeDetailCards: true)
-        }
+        scheduleVisualizationRefresh(
+            force: true,
+            includeDetailCards: true,
+            delayNanoseconds: 0
+        )
     }
 
     private var trendVideoExportBar: some View {
@@ -946,34 +673,22 @@ struct TimeMachineView: View {
             .padding(.vertical, 10)
         }
         .buttonStyle(.plain)
-        .disabled(trendVideoPreviewRequest != nil || snapshots.count < 2)
-        .opacity(trendVideoPreviewRequest != nil || snapshots.count < 2 ? 0.48 : 1)
+        .disabled(trendVideoPreviewRequest != nil || filteredTrendPoints.count < 2)
+        .opacity(trendVideoPreviewRequest != nil || filteredTrendPoints.count < 2 ? 0.48 : 1)
     }
 
     @MainActor
     private func openTrendVideoPreview() {
-        Task {
-            let sourceSnapshots = await resolvedSnapshotsForVisualization()
-            var exportPoints: [TimeMachineTrendPoint] = []
-            exportPoints.reserveCapacity(sourceSnapshots.count)
-            for (index, snapshot) in sourceSnapshots.enumerated() {
-                guard !Task.isCancelled else { return }
-                exportPoints.append(trendPoint(for: snapshot))
-                if index.isMultiple(of: 8) {
-                    await Task.yield()
-                }
-            }
-
-            guard exportPoints.count >= 2 else {
-                trendVideoExportErrorMessage = AppLocalization.string("趋势数据不足，至少需要两条记录")
-                return
-            }
-
-            trendVideoPreviewRequest = TrendVideoPreviewRequest(
-                points: exportPoints,
-                rangeLabel: selectedRange.summaryLabel
-            )
+        let exportPoints = cachedFilteredTrendPoints
+        guard exportPoints.count >= 2 else {
+            trendVideoExportErrorMessage = AppLocalization.string("趋势数据不足，至少需要两条记录")
+            return
         }
+
+        trendVideoPreviewRequest = TrendVideoPreviewRequest(
+            points: exportPoints,
+            rangeLabel: selectedRange.summaryLabel
+        )
     }
 
     private var heroTrendSection: some View {
@@ -1020,31 +735,29 @@ struct TimeMachineView: View {
                                 if !detailTrendCards.isEmpty || !hiddenDetailComparisonOptions.isEmpty {
                                     TimeMachineSectionDivider()
                                         .padding(.vertical, 14)
+                                        .onboardingAnchor(.timeMachineAnchors)
 
-                                    VStack(spacing: 0) {
-                                        ForEach(Array(detailTrendCards.enumerated()), id: \.element.id) { index, card in
-                                            if index > 0 {
-                                                TimeMachineSectionDivider()
-                                                    .padding(.vertical, 16)
-                                            }
-
-                                            TimeMachineDualAxisTrendCard(descriptor: card) { history in
-                                                selectedHistoryDrilldown = history
-                                            }
+                                    ForEach(detailTrendCards) { card in
+                                        if card.id != detailTrendCards.first?.id {
+                                            TimeMachineSectionDivider()
+                                                .padding(.vertical, 16)
                                         }
 
-                                        if !hiddenDetailComparisonOptions.isEmpty {
-                                            if !detailTrendCards.isEmpty {
-                                                TimeMachineSectionDivider()
-                                                    .padding(.vertical, 12)
-                                            }
-
-                                            TimeMachineComparisonRevealButtons(options: hiddenDetailComparisonOptions) { option in
-                                                revealDetailComparison(option)
-                                            }
+                                        TimeMachineDualAxisTrendCard(descriptor: card) { history in
+                                            selectedHistoryDrilldown = history
                                         }
                                     }
-                                    .onboardingAnchor(.timeMachineAnchors)
+
+                                    if !hiddenDetailComparisonOptions.isEmpty {
+                                        if !detailTrendCards.isEmpty {
+                                            TimeMachineSectionDivider()
+                                                .padding(.vertical, 12)
+                                        }
+
+                                        TimeMachineComparisonRevealButtons(options: hiddenDetailComparisonOptions) { option in
+                                            revealDetailComparison(option)
+                                        }
+                                    }
                                 }
                             } else {
                                 EmptyStateCard(
@@ -1057,6 +770,9 @@ struct TimeMachineView: View {
                         .padding(.horizontal, 16)
                         .padding(.top, 8)
                         .padding(.bottom, TabScrollLayout.bottomPadding)
+                    }
+                    .onScrollPhaseChange { _, newPhase in
+                        isScrollInProgress = newPhase.isScrolling
                     }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -1085,32 +801,50 @@ struct TimeMachineView: View {
             Text(trendVideoExportErrorMessage ?? AppLocalization.string("请稍后再试"))
         }
         .task(id: isActive) {
-            activeGeneration += 1
             if isActive {
+                let storeRevision = ModelStoreRevisionClock.shared.currentRevision()
+                if storeRevision != lastObservedStoreRevision {
+                    lastObservedStoreRevision = storeRevision
+                    modelSaveRevision &+= 1
+                }
+                scheduleVisualizationRefresh(
+                    force: lastVisualizationCacheToken == nil,
+                    includeDetailCards: false,
+                    delayNanoseconds: 0
+                )
+
                 await marketStore.refreshHistoryIfNeeded()
                 guard !Task.isCancelled else { return }
                 await SnapshotAnchorService.backfillIfNeeded(in: modelContext)
                 guard !Task.isCancelled else { return }
-                cachedAllSnapshotsForSurplus = nil
-                lastAnnualSurplusCacheToken = nil
-                scheduleVisualizationRefresh(force: true, includeDetailCards: false, delayNanoseconds: 0)
+                scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 0)
             } else {
                 pendingVisualizationRefreshTask?.cancel()
                 pendingLiveMarketTrendRefreshTask?.cancel()
                 deferredDetailCardsTask?.cancel()
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { notification in
             guard isActive else { return }
+            guard PortfolioSaveNotificationFilter.affectsPortfolio(notification) else { return }
+            // Keep the last value projection mounted while the background actor builds
+            // its replacement; the revision token still guarantees a fresh fetch.
+            lastObservedStoreRevision = ModelStoreRevisionClock.shared.currentRevision()
             modelSaveRevision &+= 1
         }
         .onChange(of: isActive ? snapshotVisualizationCacheToken : (lastVisualizationCacheToken ?? 0)) { _, _ in
             guard isActive else { return }
-            cachedAllSnapshotsForSurplus = nil
-            lastAnnualSurplusCacheToken = nil
             scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 120_000_000)
         }
         .onChange(of: isActive ? liveMarketVisualizationCacheToken : (lastLiveMarketVisualizationCacheToken ?? 0)) { _, _ in
+            guard isActive else { return }
+            scheduleLiveMarketTrendRefresh()
+        }
+        .onReceive(marketStore.$historySeries.dropFirst()) { _ in
+            guard isActive else { return }
+            scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 80_000_000)
+        }
+        .onReceive(marketStore.$overview.combineLatest(marketStore.$exchangeRates).dropFirst()) { _ in
             guard isActive else { return }
             scheduleLiveMarketTrendRefresh()
         }
@@ -1127,7 +861,7 @@ struct TimeMachineView: View {
     }
 }
 
-nonisolated struct BacktestSeriesPoint: Identifiable {
+nonisolated struct BacktestSeriesPoint: Identifiable, Sendable {
     let id: Int
     let date: Date
     let portfolioValue: Double

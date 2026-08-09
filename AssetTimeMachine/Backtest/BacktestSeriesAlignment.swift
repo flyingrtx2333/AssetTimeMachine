@@ -120,6 +120,7 @@ nonisolated enum BacktestSeriesAlignment {
 
         var filteredRows: [(date: Date, index: Int, dateText: String, price: Double)] = []
         for index in series.dates.indices {
+            if index.isMultiple(of: 256), Task.isCancelled { return nil }
             guard index < series.prices.count else { continue }
             let dateText = series.dates[index]
             let price = series.prices[index]

@@ -53,7 +53,7 @@ struct BacktestChartLegendItem: Identifiable {
 }
 
 enum BacktestChartPalette {
-    static var strategyLine: Color {
+    nonisolated static var strategyLine: Color {
         Color(uiColor: UIColor { traits in
             traits.userInterfaceStyle == .dark
                 ? UIColor(red: 1.00, green: 0.74, blue: 0.14, alpha: 1)
@@ -61,7 +61,7 @@ enum BacktestChartPalette {
         })
     }
 
-    static var benchmarkLine: Color {
+    nonisolated static var benchmarkLine: Color {
         Color(uiColor: UIColor { traits in
             traits.userInterfaceStyle == .dark
                 ? UIColor(red: 0.00, green: 0.86, blue: 1.00, alpha: 1)
@@ -69,7 +69,7 @@ enum BacktestChartPalette {
         })
     }
 
-    static func comparisonLine(at index: Int) -> Color {
+    nonisolated static func comparisonLine(at index: Int) -> Color {
         let palette: [Color] = [
             benchmarkLine,
             Color(uiColor: UIColor { traits in
@@ -582,7 +582,11 @@ struct InteractiveBacktestChart: View, Equatable {
         }
         .chartLegend(.hidden)
         .chartOverlay { proxy in
-            TimeMachineDragOverlay(proxy: proxy) { date in
+            TimeMachineDragOverlay(
+                proxy: proxy,
+                selectableValues: interactionPoints,
+                selectionDate: \.date
+            ) { date in
                 selectedDate = date
             } onEnded: {
                 selectedDate = nil
@@ -605,7 +609,7 @@ struct InteractiveBacktestChart: View, Equatable {
 }
 
 enum BacktestChartData {
-    static func sampledPoints(from points: [BacktestSeriesPoint], maxCount: Int = 240) -> [BacktestSeriesPoint] {
+    nonisolated static func sampledPoints(from points: [BacktestSeriesPoint], maxCount: Int = 240) -> [BacktestSeriesPoint] {
         guard points.count > maxCount, maxCount > 1 else { return points }
 
         let step = Double(points.count - 1) / Double(maxCount - 1)
@@ -630,7 +634,7 @@ enum BacktestChartData {
         }
     }
 
-    static func normalizedComparisonPoints(
+    nonisolated static func normalizedComparisonPoints(
         _ points: [BacktestSeriesPoint],
         targetStartValue: Double?
     ) -> [BacktestSeriesPoint] {

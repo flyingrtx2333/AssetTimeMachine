@@ -1,6 +1,6 @@
 import Foundation
 
-struct TimeMachineLiveMarketAnchors: Equatable {
+struct TimeMachineLiveMarketAnchors: Equatable, Sendable {
     let goldPriceCNY: Double?
     let btcPriceUSD: Double?
     let btcPriceCNY: Double?
@@ -42,52 +42,24 @@ enum TimeMachineTrendPointBuilder {
         liveAnchors: TimeMachineLiveMarketAnchors? = nil
     ) -> TimeMachineTrendPoint {
         let metrics = PortfolioCalculator.metrics(for: snapshot)
-        let mainAssets = metrics.totalAssets
-        let isToday = Calendar.current.isDateInToday(snapshot.date)
-
-        let goldAnchorPriceCNY = snapshot.goldAnchorPriceCNY ?? (isToday ? liveAnchors?.goldPriceCNY : nil)
-        let btcAnchorPriceCNY = snapshot.btcAnchorPriceCNY ?? (isToday ? liveAnchors?.btcPriceCNY : nil)
-        let nasdaqAnchorPriceCNY = snapshot.nasdaqAnchorPriceCNY ?? (isToday ? liveAnchors?.nasdaqPriceCNY : nil)
-        let btcAnchorPriceUSD = snapshot.btcAnchorPriceUSD ?? (isToday ? liveAnchors?.btcPriceUSD : nil)
-        let nasdaqAnchorPriceUSD = snapshot.nasdaqAnchorPriceUSD ?? (isToday ? liveAnchors?.nasdaqPriceUSD : nil)
-
-        return TimeMachineTrendPoint(
+        let projection = TimeMachineSnapshotProjection(
+            id: snapshot.id,
             date: snapshot.date,
-            mainAssets: mainAssets,
-            netAssets: metrics.netAssets,
-            liabilities: metrics.totalLiabilities,
-            goldEquivalent: goldAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-            btcEquivalent: btcAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-            nasdaqEquivalent: nasdaqAnchorPriceCNY.map { $0 > 0 ? mainAssets / $0 : nil } ?? nil,
-            goldAnchorPriceCNY: goldAnchorPriceCNY,
-            goldAnchorDate: snapshot.goldAnchorPriceDate ?? anchorDateIfToday(isToday, hasValue: goldAnchorPriceCNY != nil, snapshotDate: snapshot.date),
-            btcAnchorPriceUSD: btcAnchorPriceUSD,
-            btcAnchorPriceCNY: btcAnchorPriceCNY,
-            btcAnchorDate: snapshot.btcAnchorPriceDate ?? anchorDateIfToday(isToday, hasValue: btcAnchorPriceUSD != nil, snapshotDate: snapshot.date),
-            nasdaqAnchorPriceUSD: nasdaqAnchorPriceUSD,
-            nasdaqAnchorPriceCNY: nasdaqAnchorPriceCNY,
-            nasdaqAnchorDate: snapshot.nasdaqAnchorPriceDate ?? anchorDateIfToday(isToday, hasValue: nasdaqAnchorPriceUSD != nil, snapshotDate: snapshot.date)
+            updatedAt: snapshot.updatedAt,
+            totalAssets: metrics.totalAssets,
+            totalLiabilities: metrics.totalLiabilities,
+            goldAnchorPriceCNY: snapshot.goldAnchorPriceCNY,
+            goldAnchorDate: snapshot.goldAnchorPriceDate,
+            btcAnchorPriceUSD: snapshot.btcAnchorPriceUSD,
+            btcAnchorPriceCNY: snapshot.btcAnchorPriceCNY,
+            btcAnchorDate: snapshot.btcAnchorPriceDate,
+            nasdaqAnchorPriceUSD: snapshot.nasdaqAnchorPriceUSD,
+            nasdaqAnchorPriceCNY: snapshot.nasdaqAnchorPriceCNY,
+            nasdaqAnchorDate: snapshot.nasdaqAnchorPriceDate
         )
-    }
-
-    static func cacheToken(
-        for snapshot: AssetSnapshot,
-        liveAnchors: TimeMachineLiveMarketAnchors? = nil
-    ) -> Int {
-        var hasher = Hasher()
-        hasher.combine(SnapshotRevisionToken.contentRevision(for: snapshot))
-
-        if Calendar.current.isDateInToday(snapshot.date), let liveAnchors {
-            hasher.combine(liveAnchors.goldPriceCNY)
-            hasher.combine(liveAnchors.btcPriceUSD)
-            hasher.combine(liveAnchors.btcPriceCNY)
-            hasher.combine(liveAnchors.nasdaqPriceUSD)
-            hasher.combine(liveAnchors.nasdaqPriceCNY)
-        }
-        return hasher.finalize()
-    }
-
-    private static func anchorDateIfToday(_ isToday: Bool, hasValue: Bool, snapshotDate: Date) -> Date? {
-        hasValue && isToday ? snapshotDate : nil
+        return TimeMachineSnapshotProjectionProcessor.makeTrendPoint(
+            from: projection,
+            liveAnchors: liveAnchors
+        )
     }
 }

@@ -6,8 +6,10 @@ enum TabMountController {
         mountedTabs: inout Set<AppTab>,
         lastSelectedTab: inout AppTab
     ) {
-        mountedTabs.insert(tab)
-        mountedTabs.insert(lastSelectedTab)
+        // Keep only the destination and the immediately previous page. Retaining all
+        // five trees lets off-screen @Query/@ObservedObject updates compete with the
+        // selected tab and recreates the multi-second switch stalls on larger stores.
+        mountedTabs = [tab, lastSelectedTab]
         lastSelectedTab = tab
     }
 

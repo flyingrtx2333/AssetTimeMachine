@@ -14,10 +14,13 @@ extension ContentView {
         workActivationTask?.cancel()
         guard workActiveTab != tab else { return }
 
-        // Keep the previous tab's work state stable during the native tab-bar
-        // transition. Deactivation can trigger report persistence and task
-        // cancellation, which should happen after the visual switch, not in the
-        // same frame as the user's tap.
+        // Stop the old tab's observers in the same state transaction as the
+        // visual selection. Keeping the old page active makes it recompute its
+        // SwiftData/chart tokens while the tab bar is trying to render.
+        workActiveTab = nil
+
+        // Start the destination's refresh work after the native tab transition.
+        // Previously visited tabs can display their retained cache immediately.
         workActivationTask = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(320))
             guard !Task.isCancelled, selectedTab == tab else { return }

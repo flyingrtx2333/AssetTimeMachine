@@ -3,7 +3,7 @@ import Foundation
 import SwiftData
 import SwiftUI
 
-struct PublicMarketPrice: Codable, Identifiable, Equatable {
+nonisolated struct PublicMarketPrice: Codable, Identifiable, Equatable, Sendable {
     let success: Bool
     let symbol: String
     let price: Double
@@ -27,7 +27,7 @@ struct PublicMarketPrice: Codable, Identifiable, Equatable {
     }
 }
 
-struct PublicMarketOverview: Codable, Equatable {
+nonisolated struct PublicMarketOverview: Codable, Equatable, Sendable {
     let success: Bool
     let markets: [PublicMarketPrice]
     let updateIntervalHours: Int?
@@ -39,14 +39,14 @@ struct PublicMarketOverview: Codable, Equatable {
     }
 }
 
-struct PublicExchangeRateItem: Codable, Identifiable, Equatable {
+nonisolated struct PublicExchangeRateItem: Codable, Identifiable, Equatable, Sendable {
     let currency: String
     let rate: Double
 
     var id: String { currency }
 }
 
-struct PublicExchangeRates: Codable, Equatable {
+nonisolated struct PublicExchangeRates: Codable, Equatable, Sendable {
     let success: Bool
     let baseCurrency: String
     let source: String
@@ -64,7 +64,7 @@ struct PublicExchangeRates: Codable, Equatable {
     }
 }
 
-struct PublicHistoryDailyBar: Codable, Identifiable, Equatable {
+nonisolated struct PublicHistoryDailyBar: Codable, Identifiable, Equatable, Sendable {
     let dateText: String
     let date: Date
     let open: Double
@@ -76,7 +76,7 @@ struct PublicHistoryDailyBar: Codable, Identifiable, Equatable {
     var id: String { dateText }
 }
 
-struct PublicHistorySeries: Codable, Identifiable, Equatable, Sendable {
+nonisolated struct PublicHistorySeries: Codable, Identifiable, Equatable, Sendable {
     let symbol: String
     let category: String
     let label: String
@@ -97,6 +97,12 @@ struct PublicHistorySeries: Codable, Identifiable, Equatable, Sendable {
     var id: String { symbol }
 
     var dailyBars: [PublicHistoryDailyBar] {
+        let dayFormatter = DateFormatter()
+        dayFormatter.calendar = Calendar(identifier: .gregorian)
+        dayFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dayFormatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
+        dayFormatter.dateFormat = "yyyy-MM-dd"
+
         guard
             let openPrices,
             let highPrices,
@@ -111,7 +117,7 @@ struct PublicHistorySeries: Codable, Identifiable, Equatable, Sendable {
 
         return dates.indices.compactMap { index in
             guard
-                let date = MarketDay.parse(dates[index]),
+                let date = dayFormatter.date(from: dates[index]),
                 let open = openPrices[index],
                 let high = highPrices[index],
                 let low = lowPrices[index],
@@ -164,12 +170,12 @@ struct PublicHistorySeries: Codable, Identifiable, Equatable, Sendable {
     }
 }
 
-struct PublicHistoryResponse: Codable, Equatable {
+nonisolated struct PublicHistoryResponse: Codable, Equatable, Sendable {
     let success: Bool
     let series: [PublicHistorySeries]
 }
 
-struct MarketEndpointDoc: Identifiable {
+nonisolated struct MarketEndpointDoc: Identifiable, Sendable {
     let title: String
     let path: String
     let description: String
@@ -212,14 +218,14 @@ enum RemoteMarketClient {
         let url = url(for: "/api/v1/money/public/market-overview")
         let (data, response) = try await URLSession.shared.data(from: url)
         try validate(response: response, data: data)
-        return try decoder().decode(PublicMarketOverview.self, from: data)
+        return try await decode(PublicMarketOverview.self, from: data)
     }
 
     static func fetchExchangeRates() async throws -> PublicExchangeRates {
         let url = url(for: "/api/v1/money/public/rmb-exchange-rates")
         let (data, response) = try await URLSession.shared.data(from: url)
         try validate(response: response, data: data)
-        return try decoder().decode(PublicExchangeRates.self, from: data)
+        return try await decode(PublicExchangeRates.self, from: data)
     }
 
     static func fetchHistory(symbols: [String], period: String? = nil, startDate: String? = nil, endDate: String? = nil, includeOHLC: Bool = false) async throws -> PublicHistoryResponse {
@@ -245,20 +251,36 @@ enum RemoteMarketClient {
 
         let (data, response) = try await URLSession.shared.data(from: components.url!)
         try validate(response: response, data: data)
-        return try decoder().decode(PublicHistoryResponse.self, from: data)
+        return try await decode(PublicHistoryResponse.self, from: data)
     }
 
     static func url(for path: String) -> URL {
         URL(string: path, relativeTo: baseURL)!.absoluteURL
     }
 
-    static func decoder() -> JSONDecoder {
+    nonisolated private static func decode<Value: Decodable & Sendable>(
+        _ type: Value.Type,
+        from data: Data
+    ) async throws -> Value {
+        let worker = Task.detached(priority: .utility) {
+            try Task.checkCancellation()
+            return try decoder().decode(type, from: data)
+        }
+        return try await withTaskCancellationHandler {
+            try await worker.value
+        } onCancel: {
+            worker.cancel()
+        }
+    }
+
+    nonisolated static func decoder() -> JSONDecoder {
         let decoder = JSONDecoder()
+        let dateParser = FlexibleAPIDateParser()
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let value = try container.decode(String.self)
 
-            if let date = fractionalISO8601DateFormatter.date(from: value) ?? iso8601DateFormatter.date(from: value) ?? localDateFormatter.date(from: value) {
+            if let date = dateParser.date(from: value) {
                 return date
             }
 
@@ -266,27 +288,6 @@ enum RemoteMarketClient {
         }
         return decoder
     }
-
-    private static let fractionalISO8601DateFormatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-
-    private static let iso8601DateFormatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
-
-    private static let localDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-        return formatter
-    }()
 
     fileprivate static func validate(response: URLResponse, data: Data) throws {
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -304,9 +305,47 @@ enum RemoteMarketClient {
     }
 }
 
-private struct HistoryBatchFetchResult {
+nonisolated private struct HistoryBatchFetchResult: Sendable {
     let series: [PublicHistorySeries]
     let errorMessage: String?
+}
+
+nonisolated private struct MarketHistoryMergeResult: Sendable {
+    let seriesBySymbol: [String: PublicHistorySeries]
+    let didChange: Bool
+}
+
+nonisolated private enum MarketHistoryMergeProcessor {
+    static func merge(
+        existing: [String: PublicHistorySeries],
+        incoming: [PublicHistorySeries]
+    ) throws -> MarketHistoryMergeResult {
+        var normalizedSeries = existing
+        var didChange = false
+
+        for (index, series) in incoming.enumerated() {
+            if index.isMultiple(of: 8) { try Task.checkCancellation() }
+            let normalizedSymbol = RemoteMarketStore.normalizedHistorySymbol(series.symbol)
+            if let current = normalizedSeries[normalizedSymbol] {
+                let currentLastDate = current.dates.last ?? ""
+                let nextLastDate = series.dates.last ?? ""
+                if currentLastDate > nextLastDate {
+                    continue
+                }
+                if currentLastDate == nextLastDate, current.dates.count > series.dates.count {
+                    continue
+                }
+                if current == series { continue }
+            }
+            normalizedSeries[normalizedSymbol] = series
+            didChange = true
+        }
+
+        return MarketHistoryMergeResult(
+            seriesBySymbol: normalizedSeries,
+            didChange: didChange
+        )
+    }
 }
 
 nonisolated private struct MarketHistoryCacheEntry: Codable, Sendable {
@@ -404,10 +443,13 @@ final class RemoteMarketStore: ObservableObject {
     }
 
     @discardableResult
-    func refreshLiveData() async -> Bool {
+    func refreshLiveData(
+        commitIf shouldCommit: @MainActor () -> Bool = { true }
+    ) async -> Bool {
+        guard shouldCommit() else { return false }
         if isRefreshingLiveData {
             await waitForLiveDataRefreshToFinish()
-            return lastLiveDataRefreshSucceeded
+            return shouldCommit() && lastLiveDataRefreshSucceeded
         }
 
         isRefreshingLiveData = true
@@ -420,34 +462,47 @@ final class RemoteMarketStore: ObservableObject {
         var didRefreshExchangeRates = false
         var didRefreshOverview = false
         var firstErrorMessage: String?
+        var refreshedExchangeRates: [String: Double]?
+        var refreshedExchangeRatesFetchedAt: Date?
+        var refreshedOverview: PublicMarketOverview?
 
         async let exchangeRatesRequest = RemoteMarketClient.fetchExchangeRates()
         async let overviewRequest = RemoteMarketClient.fetchOverview()
 
         do {
             let exchangeRates = try await exchangeRatesRequest
-            let mappedRates = exchangeRates.rates.reduce(into: [String: Double]()) { result, item in
+            refreshedExchangeRates = exchangeRates.rates.reduce(into: [String: Double]()) { result, item in
                 result[item.currency.uppercased()] = item.rate
             }
-            if self.exchangeRates != mappedRates {
-                self.exchangeRates = mappedRates
-            }
-            if self.exchangeRatesFetchedAt != exchangeRates.fetchedAt {
-                self.exchangeRatesFetchedAt = exchangeRates.fetchedAt
-            }
+            refreshedExchangeRatesFetchedAt = exchangeRates.fetchedAt
             didRefreshExchangeRates = true
         } catch {
             firstErrorMessage = error.localizedDescription
         }
 
         do {
-            let overview = try await overviewRequest
-            if self.overview != overview {
-                self.overview = overview
-            }
+            refreshedOverview = try await overviewRequest
             didRefreshOverview = true
         } catch {
             firstErrorMessage = firstErrorMessage ?? error.localizedDescription
+        }
+
+        // Network work may have started before a cloud import. Publish the batch only
+        // if its owner still accepts it, so an import cannot be interleaved with stale
+        // market-driven UI or model updates.
+        guard shouldCommit() else { return false }
+
+        if let refreshedExchangeRates,
+           self.exchangeRates != refreshedExchangeRates {
+            self.exchangeRates = refreshedExchangeRates
+        }
+        if let refreshedExchangeRatesFetchedAt,
+           self.exchangeRatesFetchedAt != refreshedExchangeRatesFetchedAt {
+            self.exchangeRatesFetchedAt = refreshedExchangeRatesFetchedAt
+        }
+        if let refreshedOverview,
+           self.overview != refreshedOverview {
+            self.overview = refreshedOverview
         }
 
         let didRefreshAllLiveData = didRefreshExchangeRates && didRefreshOverview
@@ -566,27 +621,26 @@ final class RemoteMarketStore: ObservableObject {
         }
 
         if !mergedSeries.isEmpty {
-            var normalizedSeries = self.historySeries
-            var didChangeHistory = false
-            for series in mergedSeries {
-                let normalizedSymbol = Self.normalizedHistorySymbol(series.symbol)
-                if let existing = normalizedSeries[normalizedSymbol] {
-                    let existingLastDate = existing.dates.last ?? ""
-                    let nextLastDate = series.dates.last ?? ""
-                    if existingLastDate > nextLastDate {
-                        continue
-                    }
-                    if existingLastDate == nextLastDate, existing.dates.count > series.dates.count {
-                        continue
-                    }
-                    if existing == series { continue }
+            let existingSeries = historySeries
+            let incomingSeries = mergedSeries
+            let mergeResult: MarketHistoryMergeResult
+            do {
+                mergeResult = try await BackgroundTaskWork.run {
+                    try MarketHistoryMergeProcessor.merge(
+                        existing: existingSeries,
+                        incoming: incomingSeries
+                    )
                 }
-                normalizedSeries[normalizedSymbol] = series
-                didChangeHistory = true
+            } catch is CancellationError {
+                return
+            } catch {
+                historyErrorMessage = error.localizedDescription
+                updateErrorMessage()
+                return
             }
 
-            if didChangeHistory {
-                self.historySeries = normalizedSeries
+            if mergeResult.didChange {
+                historySeries = mergeResult.seriesBySymbol
             }
 
             if batchErrorMessages.isEmpty {
@@ -623,7 +677,7 @@ final class RemoteMarketStore: ObservableObject {
         }
     }
 
-    private static func normalizedHistorySymbol(_ symbol: String) -> String {
+    nonisolated fileprivate static func normalizedHistorySymbol(_ symbol: String) -> String {
         switch symbol {
         case "nasdaq_composite", "nasdaq":
             return "nasdaq"
@@ -648,7 +702,7 @@ final class RemoteMarketStore: ObservableObject {
         }
     }
 
-    private static func historyLookupSymbols(for symbol: String) -> [String] {
+    nonisolated private static func historyLookupSymbols(for symbol: String) -> [String] {
         let normalizedSymbol = normalizedHistorySymbol(symbol)
         switch normalizedSymbol {
         case "nasdaq":
@@ -699,19 +753,26 @@ final class RemoteMarketStore: ObservableObject {
     }
 }
 
-private struct HistoricalAnchorPoint {
+nonisolated private struct HistoricalAnchorPoint: Sendable {
     let day: Date
     let price: Double
 }
 
-private struct HistoricalSeries {
+nonisolated private struct HistoricalSeries: Sendable {
     let pointsByDay: [Date: HistoricalAnchorPoint]
     let sortedDays: [Date]
 
     init(points: [HistoricalAnchorPoint]) {
-        let normalized = points.sorted { $0.day < $1.day }
-        self.pointsByDay = Dictionary(uniqueKeysWithValues: normalized.map { ($0.day, $0) })
-        self.sortedDays = normalized.map(\.day)
+        var normalizedByDay: [Date: HistoricalAnchorPoint] = [:]
+        normalizedByDay.reserveCapacity(points.count)
+        for point in points {
+            // Upstream history can contain the same trading day more than once.
+            // Preserve the latest occurrence instead of trapping in
+            // Dictionary(uniqueKeysWithValues:).
+            normalizedByDay[point.day] = point
+        }
+        self.pointsByDay = normalizedByDay
+        self.sortedDays = normalizedByDay.keys.sorted()
     }
 
     func point(onOrBefore targetDay: Date) -> HistoricalAnchorPoint? {
@@ -736,7 +797,7 @@ private struct HistoricalSeries {
     }
 }
 
-private struct HistoricalAnchorBundle {
+nonisolated private struct HistoricalAnchorBundle: Sendable {
     let goldCNY: HistoricalSeries
     let btcUSD: HistoricalSeries
     let nasdaqUSD: HistoricalSeries
@@ -800,7 +861,50 @@ private enum HistoricalAnchorClient {
             startDate: MarketDay.string(from: startDate),
             endDate: MarketDay.string(from: endDate)
         )
-        let seriesBySymbol = Dictionary(uniqueKeysWithValues: response.series.map { ($0.symbol, $0) })
+        let worker = Task.detached(priority: .utility) {
+            try Task.checkCancellation()
+            return HistoricalAnchorProjectionProcessor.makeBundle(from: response.series)
+        }
+        return try await withTaskCancellationHandler {
+            try await worker.value
+        } onCancel: {
+            worker.cancel()
+        }
+    }
+}
+
+nonisolated private enum HistoricalAnchorProjectionProcessor {
+    static func makeBundle(from series: [PublicHistorySeries]) -> HistoricalAnchorBundle {
+        let seriesBySymbol = series.reduce(into: [String: PublicHistorySeries]()) { result, item in
+            result[item.symbol] = item
+        }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Shanghai") ?? .current
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = calendar.timeZone
+        formatter.dateFormat = "yyyy-MM-dd"
+
+        func makeSeries(from series: PublicHistorySeries?) -> HistoricalSeries {
+            let dates = series?.dates ?? []
+            let prices = series?.prices ?? []
+            let count = min(dates.count, prices.count)
+            var points: [HistoricalAnchorPoint] = []
+            points.reserveCapacity(count)
+
+            for index in 0..<count {
+                if index.isMultiple(of: 256), Task.isCancelled { break }
+                guard let parsedDay = formatter.date(from: dates[index]) else { continue }
+                points.append(
+                    HistoricalAnchorPoint(
+                        day: calendar.startOfDay(for: parsedDay),
+                        price: prices[index]
+                    )
+                )
+            }
+            return HistoricalSeries(points: points)
+        }
 
         return HistoricalAnchorBundle(
             goldCNY: makeSeries(from: seriesBySymbol["gold_cny"]),
@@ -809,13 +913,70 @@ private enum HistoricalAnchorClient {
             usdPerCNY: makeSeries(from: seriesBySymbol["usd_per_cny"])
         )
     }
+}
 
-    private static func makeSeries(from series: PublicHistorySeries?) -> HistoricalSeries {
-        let points = zip(series?.dates ?? [], series?.prices ?? []).compactMap { dayText, price -> HistoricalAnchorPoint? in
-            guard let day = MarketDay.parse(dayText) else { return nil }
-            return HistoricalAnchorPoint(day: MarketDay.start(of: day), price: price)
+nonisolated private struct SnapshotAnchorBackfillBounds: Sendable {
+    let firstDate: Date
+    let lastDate: Date
+}
+
+@ModelActor
+private actor SnapshotAnchorBackfillStore {
+    func pendingBounds() throws -> SnapshotAnchorBackfillBounds? {
+        let descriptor = FetchDescriptor<AssetSnapshot>(
+            predicate: #Predicate { $0.marketAnchorsUpdatedAt == nil },
+            sortBy: [SortDescriptor(\.date)]
+        )
+        let snapshots = try modelContext.fetch(descriptor)
+        guard let first = snapshots.first, let last = snapshots.last else { return nil }
+        return SnapshotAnchorBackfillBounds(firstDate: first.date, lastDate: last.date)
+    }
+
+    func apply(_ bundle: HistoricalAnchorBundle) async throws {
+        let descriptor = FetchDescriptor<AssetSnapshot>(
+            predicate: #Predicate { $0.marketAnchorsUpdatedAt == nil },
+            sortBy: [SortDescriptor(\.date)]
+        )
+        let snapshots = try modelContext.fetch(descriptor)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Shanghai") ?? .current
+
+        for (index, snapshot) in snapshots.enumerated() {
+            try Task.checkCancellation()
+            let day = calendar.startOfDay(for: snapshot.date)
+
+            if let point = bundle.goldCNY.point(onOrBefore: day), point.price > 0 {
+                snapshot.goldAnchorPriceCNY = point.price
+                snapshot.goldAnchorPriceDate = point.day
+            }
+            if let point = bundle.btcUSD.point(onOrBefore: day), point.price > 0 {
+                snapshot.btcAnchorPriceUSD = point.price
+                snapshot.btcAnchorPriceDate = point.day
+            }
+            if let point = bundle.nasdaqUSD.point(onOrBefore: day), point.price > 0 {
+                snapshot.nasdaqAnchorPriceUSD = point.price
+                snapshot.nasdaqAnchorPriceDate = point.day
+            }
+            if let point = bundle.usdPerCNY.point(onOrBefore: day), point.price > 0 {
+                snapshot.usdPerCNY = point.price
+                snapshot.usdPerCNYDate = point.day
+            }
+
+            let hasCompleteAnchors = (snapshot.goldAnchorPriceCNY ?? 0) > 0
+                && (snapshot.btcAnchorPriceUSD ?? 0) > 0
+                && (snapshot.nasdaqAnchorPriceUSD ?? 0) > 0
+                && (snapshot.usdPerCNY ?? 0) > 0
+            snapshot.marketAnchorsUpdatedAt = hasCompleteAnchors ? .now : nil
+
+            if index > 0, index.isMultiple(of: 400) {
+                try modelContext.save()
+                await Task.yield()
+            }
         }
-        return HistoricalSeries(points: points)
+
+        if modelContext.hasChanges {
+            try modelContext.save()
+        }
     }
 }
 
@@ -823,29 +984,20 @@ private enum HistoricalAnchorClient {
 enum SnapshotAnchorService {
     static func backfillIfNeeded(in context: ModelContext) async {
         do {
-            let descriptor = FetchDescriptor<AssetSnapshot>(
-                predicate: #Predicate { $0.marketAnchorsUpdatedAt == nil },
-                sortBy: [SortDescriptor(\.date)]
-            )
-            let snapshotsNeedingBackfill = try context.fetch(descriptor)
-            guard let first = snapshotsNeedingBackfill.first, let last = snapshotsNeedingBackfill.last else { return }
+            let container = context.container
+            try await BackgroundTaskWork.run {
+                let store = SnapshotAnchorBackfillStore(modelContainer: container)
+                guard let bounds = try await store.pendingBounds() else { return }
 
-            let bundle = try await HistoricalAnchorClient.fetchBundle(
-                startDate: first.date,
-                endDate: last.date
-            )
-
-            for (index, snapshot) in snapshotsNeedingBackfill.enumerated() {
-                guard !Task.isCancelled else { return }
-                applyHistoricalAnchors(to: snapshot, bundle: bundle)
-
-                if index > 0, index.isMultiple(of: 40) {
-                    try context.save()
-                    await Task.yield()
-                }
+                let bundle = try await HistoricalAnchorClient.fetchBundle(
+                    startDate: bounds.firstDate,
+                    endDate: bounds.lastDate
+                )
+                try Task.checkCancellation()
+                try await store.apply(bundle)
             }
-
-            try context.save()
+        } catch is CancellationError {
+            return
         } catch {
             print("[AssetTimeMachine] backfill snapshot anchors failed: \(error)")
         }
@@ -854,8 +1006,10 @@ enum SnapshotAnchorService {
     static func captureLiveAnchorsIfPossible(
         for snapshot: AssetSnapshot,
         marketStore: RemoteMarketStore,
-        in context: ModelContext
+        in context: ModelContext,
+        commitIf shouldCommit: @MainActor () -> Bool = { true }
     ) async {
+        guard shouldCommit() else { return }
         let day = MarketDay.start(of: snapshot.date)
         var didChange = false
 
@@ -897,29 +1051,4 @@ enum SnapshotAnchorService {
         }
     }
 
-    private static func applyHistoricalAnchors(to snapshot: AssetSnapshot, bundle: HistoricalAnchorBundle) {
-        let day = MarketDay.start(of: snapshot.date)
-
-        if let goldPoint = bundle.goldCNY.point(onOrBefore: day) {
-            snapshot.goldAnchorPriceCNY = goldPoint.price
-            snapshot.goldAnchorPriceDate = goldPoint.day
-        }
-
-        if let btcPoint = bundle.btcUSD.point(onOrBefore: day) {
-            snapshot.btcAnchorPriceUSD = btcPoint.price
-            snapshot.btcAnchorPriceDate = btcPoint.day
-        }
-
-        if let nasdaqPoint = bundle.nasdaqUSD.point(onOrBefore: day) {
-            snapshot.nasdaqAnchorPriceUSD = nasdaqPoint.price
-            snapshot.nasdaqAnchorPriceDate = nasdaqPoint.day
-        }
-
-        if let usdPoint = bundle.usdPerCNY.point(onOrBefore: day) {
-            snapshot.usdPerCNY = usdPoint.price
-            snapshot.usdPerCNYDate = usdPoint.day
-        }
-
-        snapshot.marketAnchorsUpdatedAt = .now
-    }
 }

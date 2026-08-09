@@ -10,7 +10,6 @@ struct AdvancedBacktestView: View {
     let restoreRequest: AdvancedBacktestRestoreRequest?
     @Binding var showsStrategyLibrary: Bool
     var onRecordsChanged: () -> Void = {}
-    @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
     @State private var selectedAssetSymbols: Set<String> = [BacktestDefaults.dcaAssetSymbol]
     @State private var initialCash: Double = 100_000
     @State private var tradeAmount: Double = 10_000
@@ -46,10 +45,14 @@ struct AdvancedBacktestView: View {
     @State private var pendingOptimizationComputationTask: Task<[AdvancedBacktestCandidate], Never>?
     @State private var lastSavedAdvancedBacktestSignature: String?
     @State private var pendingAdvancedRecordKey: String?
+    @State private var pendingAdvancedRecordSaveTask: Task<Void, Never>?
     @State private var cachedSelectedAssetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)] = []
+    @State private var cachedFilteredAssetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)] = []
     @State private var cachedAvailableDateBounds: ClosedRange<Date>?
     @State private var lastAdvancedDataCacheToken: Int?
     @State private var lastObservedRelevantHistoryToken: String = ""
+    @State private var observedMarketIsLoading = false
+    @State private var latestSnapshot: AssetSnapshot?
 
     init(
         marketStore: RemoteMarketStore,
@@ -64,19 +67,10 @@ struct AdvancedBacktestView: View {
         _showsStrategyLibrary = showsStrategyLibrary
         self.onRecordsChanged = onRecordsChanged
 
-        var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
-            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
-        )
-        snapshotDescriptor.fetchLimit = 1
-        _snapshots = Query(snapshotDescriptor)
     }
 
     private var assetOptions: [BacktestAssetOption] {
         BacktestDefaults.dcaAssetOptions
-    }
-
-    private var latestSnapshot: AssetSnapshot? {
-        snapshots.first
     }
 
     private var strategyTemplates: [AdvancedBacktestStrategyTemplate] {
@@ -130,6 +124,8 @@ struct AdvancedBacktestView: View {
         var hasher = Hasher()
         hasher.combine(strategyMode.rawValue)
         hasher.combine(selectedAssetSymbols)
+        hasher.combine(selectedStartDate?.timeIntervalSinceReferenceDate)
+        hasher.combine(selectedEndDate?.timeIntervalSinceReferenceDate)
         for symbol in relevantHistorySymbols.sorted() {
             guard let series = marketStore.history(for: symbol) else {
                 hasher.combine(symbol)
@@ -160,8 +156,16 @@ struct AdvancedBacktestView: View {
     }
 
     private var isMissingSelectedHistoryData: Bool {
-        selectedAssetInputs.contains { input in
-            input.assetSeries == nil || (input.assetOption.requiresHistoricalFX && input.fxSeries == nil)
+        guard !calculationAssetOptions.isEmpty else { return true }
+        return calculationAssetOptions.contains { option in
+            if option.symbol == "usd_cash" {
+                return marketStore.history(for: "usd_per_cny") == nil
+            }
+            guard marketStore.history(for: option.symbol) != nil else { return true }
+            if let fxSymbol = option.historicalFXSymbol {
+                return marketStore.history(for: fxSymbol) == nil
+            }
+            return false
         }
     }
 
@@ -236,26 +240,20 @@ struct AdvancedBacktestView: View {
         }
 
         if selectedAssetInputs.contains(where: { $0.assetSeries == nil }) {
-            if marketStore.isLoading || isLoadingRequiredHistory {
+            if observedMarketIsLoading || isLoadingRequiredHistory {
                 return (AppLocalization.string("正在加载历史数据…"), true)
             }
             return (AppLocalization.string("部分资产历史数据暂时不可用，请稍后再试"), false)
         }
 
         if selectedAssetInputs.contains(where: { $0.assetOption.requiresHistoricalFX && $0.fxSeries == nil }) {
-            if marketStore.isLoading || isLoadingRequiredHistory {
+            if observedMarketIsLoading || isLoadingRequiredHistory {
                 return (AppLocalization.string("正在加载汇率数据…"), true)
             }
             return (AppLocalization.string("部分资产汇率数据暂时不可用，请稍后再试"), false)
         }
 
-        let filteredInputs = selectedAssetInputs.map { input in
-            (
-                assetSeries: filteredHistorySeries(input.assetSeries, within: effectiveDateBounds),
-                assetOption: input.assetOption,
-                fxSeries: filteredHistorySeries(input.fxSeries, within: effectiveDateBounds)
-            )
-        }
+        let filteredInputs = cachedFilteredAssetInputs
         if filteredInputs.contains(where: { $0.assetSeries == nil }) {
             return (AppLocalization.string("当前回测区间内部分资产历史数据不足"), false)
         }
@@ -339,15 +337,22 @@ struct AdvancedBacktestView: View {
             guard isActive else { return }
             scheduleAdvancedDataCacheRefresh()
         }
-        .onChange(of: isActive ? relevantHistoryToken : "") { _, newToken in
+        .onReceive(marketStore.$historyRevision) { _ in
             guard isActive, hasStartedBacktest else { return }
+            let newToken = relevantHistoryToken
             guard newToken != lastObservedRelevantHistoryToken else { return }
             lastObservedRelevantHistoryToken = newToken
             scheduleAdvancedDataCacheRefresh(force: true)
             scheduleRefresh(delayNanoseconds: 80_000_000, saveRecord: false)
         }
+        .onReceive(marketStore.$isLoading) { isLoading in
+            guard isActive else { return }
+            observedMarketIsLoading = isLoading
+        }
         .task(id: isActive) {
             if isActive {
+                latestSnapshot = try? SnapshotService.latestSnapshot(in: modelContext)
+                observedMarketIsLoading = marketStore.isLoading
                 scheduleAdvancedDataCacheRefresh(force: true)
                 lastObservedRelevantHistoryToken = relevantHistoryToken
                 let shouldForceHistoryRefresh = isMissingSelectedHistoryData
@@ -615,7 +620,10 @@ struct AdvancedBacktestView: View {
     }
 
     private func applyStrategyTemplate(_ template: AdvancedBacktestStrategyTemplate) {
-        withAnimation(.spring(response: 0.24, dampingFraction: 0.88)) {
+        cancelPendingAdvancedBacktestTasks()
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
             strategyMode = template.mode
             if let selectedSymbols = template.selectedAssetSymbols {
                 selectedAssetSymbols = Set(selectedSymbols)
@@ -668,22 +676,34 @@ struct AdvancedBacktestView: View {
         pendingDataCacheTask?.cancel()
         let options = calculationAssetOptions
         let mode = strategyMode
+        let startDate = selectedStartDate
+        let endDate = selectedEndDate
         let snapshots = AdvancedBacktestDataSupport.historySnapshots(
             symbols: relevantHistorySymbols,
             historyProvider: { marketStore.history(for: $0) }
         )
 
         pendingDataCacheTask = Task {
-            let cache = await Task.detached(priority: .userInitiated) {
+            let preparationTask = Task.detached(priority: .userInitiated) {
                 AdvancedBacktestDataSupport.buildDataCache(
                     calculationAssetOptions: options,
                     strategyMode: mode,
-                    historySnapshots: snapshots
+                    historySnapshots: snapshots,
+                    selectedStartDate: startDate,
+                    selectedEndDate: endDate
                 )
-            }.value
+            }
+            let cache = await withTaskCancellationHandler {
+                await preparationTask.value
+            } onCancel: {
+                preparationTask.cancel()
+            }
 
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled,
+                  isActive,
+                  token == advancedDataCacheToken else { return }
             cachedSelectedAssetInputs = cache.selectedAssetInputs
+            cachedFilteredAssetInputs = cache.filteredAssetInputs
             cachedAvailableDateBounds = cache.availableDateBounds
             lastAdvancedDataCacheToken = token
             pendingDataCacheTask = nil
@@ -719,7 +739,9 @@ struct AdvancedBacktestView: View {
             return
         }
 
-        let capturedDateBounds = effectiveDateBounds
+        let capturedStartDate = selectedStartDate
+        let capturedEndDate = selectedEndDate
+        let capturedDataCacheToken = advancedDataCacheToken
         let capturedInitialCash = self.initialCash
         let capturedTradeAmount = self.tradeAmount
         let capturedStrategyMode = self.strategyMode
@@ -743,24 +765,39 @@ struct AdvancedBacktestView: View {
         bestCandidates = []
         hasOptimizedStrategies = false
         isOptimizingStrategies = false
+        let refreshWriteID = saveRecord ? ModelContextMutationBarrier.shared.beginDeferredWrite() : nil
         pendingRefreshTask = Task {
+            defer {
+                if let refreshWriteID {
+                    ModelContextMutationBarrier.shared.finishDeferredWrite(refreshWriteID)
+                }
+            }
             if delayNanoseconds == 0 {
                 await Task.yield()
             } else {
                 try? await Task.sleep(nanoseconds: delayNanoseconds)
             }
             guard !Task.isCancelled else { return }
+            if let refreshWriteID {
+                do {
+                    try await ModelContextMutationBarrier.shared.waitUntilWriteIsAllowed(refreshWriteID)
+                } catch {
+                    return
+                }
+            }
 
+            let preparedAssetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)]? =
+                lastAdvancedDataCacheToken == capturedDataCacheToken && !cachedFilteredAssetInputs.isEmpty
+                    ? cachedFilteredAssetInputs
+                    : nil
             let computationTask = Task.detached(priority: .userInitiated) { () -> AdvancedBacktestComputationResult in
-                let dataCache = AdvancedBacktestDataSupport.buildDataCache(
+                let filteredAssetInputs = preparedAssetInputs ?? AdvancedBacktestDataSupport.buildDataCache(
                     calculationAssetOptions: capturedOptions,
                     strategyMode: capturedStrategyMode,
-                    historySnapshots: capturedHistorySnapshots
-                )
-                let filteredAssetInputs = BacktestEngine.filteredAdvancedAssetInputs(
-                    dataCache.selectedAssetInputs,
-                    within: capturedDateBounds
-                )
+                    historySnapshots: capturedHistorySnapshots,
+                    selectedStartDate: capturedStartDate,
+                    selectedEndDate: capturedEndDate
+                ).filteredAssetInputs
                 guard !Task.isCancelled,
                       !filteredAssetInputs.isEmpty,
                       filteredAssetInputs.allSatisfy({ $0.assetSeries != nil && (!$0.assetOption.requiresHistoricalFX || $0.fxSeries != nil) }) else {
@@ -998,7 +1035,9 @@ struct AdvancedBacktestView: View {
             return
         }
 
-        let capturedDateBounds = effectiveDateBounds
+        let capturedStartDate = selectedStartDate
+        let capturedEndDate = selectedEndDate
+        let capturedDataCacheToken = advancedDataCacheToken
         let capturedInitialCash = self.initialCash
         let capturedRiskSettings = self.riskSettings
         let capturedStrategyMode = strategyMode
@@ -1010,16 +1049,18 @@ struct AdvancedBacktestView: View {
             await Task.yield()
             guard !Task.isCancelled else { return }
 
+            let preparedAssetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)]? =
+                lastAdvancedDataCacheToken == capturedDataCacheToken && !cachedFilteredAssetInputs.isEmpty
+                    ? cachedFilteredAssetInputs
+                    : nil
             let computationTask = Task.detached(priority: .utility) { () -> [AdvancedBacktestCandidate] in
-                let dataCache = AdvancedBacktestDataSupport.buildDataCache(
+                let filteredAssetInputs = preparedAssetInputs ?? AdvancedBacktestDataSupport.buildDataCache(
                     calculationAssetOptions: capturedOptions,
                     strategyMode: capturedStrategyMode,
-                    historySnapshots: capturedHistorySnapshots
-                )
-                let filteredAssetInputs = BacktestEngine.filteredAdvancedAssetInputs(
-                    dataCache.selectedAssetInputs,
-                    within: capturedDateBounds
-                )
+                    historySnapshots: capturedHistorySnapshots,
+                    selectedStartDate: capturedStartDate,
+                    selectedEndDate: capturedEndDate
+                ).filteredAssetInputs
                 guard !Task.isCancelled,
                       !filteredAssetInputs.isEmpty,
                       filteredAssetInputs.allSatisfy({ $0.assetSeries != nil && (!$0.assetOption.requiresHistoricalFX || $0.fxSeries != nil) }) else {
@@ -1082,8 +1123,21 @@ struct AdvancedBacktestView: View {
         guard recordKey != lastSavedAdvancedBacktestSignature,
               recordKey != pendingAdvancedRecordKey else { return }
         pendingAdvancedRecordKey = recordKey
+        let writeID = ModelContextMutationBarrier.shared.beginDeferredWrite()
 
-        Task {
+        pendingAdvancedRecordSaveTask = Task {
+            defer {
+                ModelContextMutationBarrier.shared.finishDeferredWrite(writeID)
+                pendingAdvancedRecordSaveTask = nil
+            }
+            do {
+                try await ModelContextMutationBarrier.shared.waitUntilWriteIsAllowed(writeID)
+            } catch {
+                if pendingAdvancedRecordKey == recordKey {
+                    pendingAdvancedRecordKey = nil
+                }
+                return
+            }
             let draft = await Task.detached(priority: .utility) {
                 AdvancedBacktestDataSupport.buildRecordDraft(
                     report: report,
@@ -1178,10 +1232,6 @@ struct AdvancedBacktestView: View {
         hasOptimizedStrategies = false
         isOptimizingStrategies = false
         scheduleRefresh(delayNanoseconds: 0, saveRecord: false)
-    }
-
-    private func filteredHistorySeries(_ series: PublicHistorySeries?, within bounds: ClosedRange<Date>?) -> PublicHistorySeries? {
-        BacktestEngine.filteredHistorySeries(series, within: bounds)
     }
 
     private func sectionHeader(_ title: String, trailing: String? = nil, trailingColor: Color = AssetTheme.textSecondary) -> some View {

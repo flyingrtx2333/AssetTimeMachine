@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import Charts
 import UIKit
+import Combine
 
 import UniformTypeIdentifiers
 
@@ -72,7 +73,6 @@ enum SnapshotRecordLayoutBuilder {
     static func make(
         snapshot: AssetSnapshot,
         categories: [AssetCategory],
-        includeLatestEntryFallback: Bool = true,
         includeInactiveSnapshotItems: Bool = false
     ) -> SnapshotListLayout {
         let snapshotEntriesByItemID: [UUID: AssetEntry] = snapshot.entries.reduce(into: [:]) { result, entry in
@@ -90,20 +90,23 @@ enum SnapshotRecordLayoutBuilder {
         let liabilityCategoryItems = categoryGroups.liability
         let nonLiabilityItemGroups = nonLiabilityCategoryItems.map(\.items)
         let liabilityItemGroups = liabilityCategoryItems.map(\.items)
-        let displayEntriesByItemID = displayEntriesByItemID(
-            for: nonLiabilityItemGroups + liabilityItemGroups,
-            currentEntriesByItemID: snapshotEntriesByItemID,
-            includeLatestEntryFallback: includeLatestEntryFallback
+        let displayEntriesByItemID = snapshotEntriesByItemID
+        let displayedTotalAssets = displayedTotalAmount(
+            for: nonLiabilityItemGroups,
+            entriesByItemID: displayEntriesByItemID
+        )
+        let displayedTotalLiabilities = displayedTotalAmount(
+            for: liabilityItemGroups,
+            entriesByItemID: displayEntriesByItemID
         )
 
         return SnapshotListLayout(
             nonLiabilityCategoryItems: nonLiabilityCategoryItems,
             liabilityCategoryItems: liabilityCategoryItems,
             displayEntriesByItemID: displayEntriesByItemID,
-            displayedTotalAssets: displayedTotalAmount(for: nonLiabilityItemGroups, entriesByItemID: displayEntriesByItemID),
-            displayedTotalLiabilities: displayedTotalAmount(for: liabilityItemGroups, entriesByItemID: displayEntriesByItemID),
-            displayedNetAssets: displayedTotalAmount(for: nonLiabilityItemGroups, entriesByItemID: displayEntriesByItemID)
-                - displayedTotalAmount(for: liabilityItemGroups, entriesByItemID: displayEntriesByItemID),
+            displayedTotalAssets: displayedTotalAssets,
+            displayedTotalLiabilities: displayedTotalLiabilities,
+            displayedNetAssets: displayedTotalAssets - displayedTotalLiabilities,
             onboardingInputTargetCategoryID: nonLiabilityCategoryItems.first?.id
         )
     }
@@ -116,37 +119,19 @@ enum SnapshotRecordLayoutBuilder {
             }
     }
 
-    private static func displayEntriesByItemID(
-        for itemGroups: [[AssetItem]],
-        currentEntriesByItemID: [UUID: AssetEntry],
-        includeLatestEntryFallback: Bool
-    ) -> [UUID: AssetEntry] {
-        var result = currentEntriesByItemID
-
-        guard includeLatestEntryFallback else { return result }
-
-        for item in itemGroups.flatMap({ $0 }) {
-            if hasRecordValue(result[item.id]) {
-                continue
-            }
-
-            if let latestEntry = item.latestEntry {
-                result[item.id] = latestEntry
-            }
-        }
-
-        return result
-    }
-
-    private static func hasRecordValue(_ entry: AssetEntry?) -> Bool {
-        guard let entry else { return false }
-        return entry.amount != nil || entry.quantity != nil || entry.unitPrice != nil
-    }
 }
 
 struct SnapshotListView: View {
+    private struct PendingPersistDraft {
+        let snapshotID: UUID
+        let itemID: UUID
+        let amountInput: String?
+        let quantityInput: String?
+        let unitPriceInput: String?
+    }
+
     @Environment(\.modelContext) private var modelContext
-    @ObservedObject var marketStore: RemoteMarketStore
+    let marketStore: RemoteMarketStore
     let isActive: Bool
     let onboardingActiveAnchorID: OnboardingAnchorID?
 
@@ -177,11 +162,17 @@ struct SnapshotListView: View {
     @State private var isPreparingInitialSnapshot = false
     @State private var showsAddAssetItemSheet = false
     @State private var editingAssetItem: AssetItem?
+    @State private var assetEditorDraftID: UUID?
     @State private var quickEditingAssetItem: AssetItem?
+    @State private var quickEditDraftID: UUID?
     @FocusState private var focusedField: RecordInputField?
     @State private var inlineEditingField: RecordInputField?
+    @State private var inlineEditorDraftID: UUID?
     @State private var pendingAutoRateSyncTask: Task<Void, Never>?
-    @State private var pendingPersistTask: Task<Void, Never>?
+    @State private var pendingPersistTasks: [UUID: Task<Void, Never>] = [:]
+    @State private var pendingPersistDrafts: [UUID: PendingPersistDraft] = [:]
+    @State private var persistGenerationByItemID: [UUID: Int] = [:]
+    @State private var didDeferPersistsForCurrentTransition = false
     @State private var cachedListLayout: SnapshotListLayout?
     @State private var cachedItemsByID: [UUID: AssetItem] = [:]
     @State private var itemsByIDCacheToken: String = ""
@@ -212,23 +203,12 @@ struct SnapshotListView: View {
     }
     #endif
 
-    private var currentSnapshotEntriesByItemID: [UUID: AssetEntry] {
-        guard let currentSnapshot else { return [:] }
-        return currentSnapshot.entries.reduce(into: [:]) { result, entry in
-            guard let itemID = entry.item?.id else { return }
-            if let existing = result[itemID], existing.updatedAt > entry.updatedAt {
-                return
-            }
-            result[itemID] = entry
-        }
-    }
-
     private var listLayoutCacheToken: String {
         let snapshotID = currentSnapshotID?.uuidString ?? "none"
         let snapshotUpdate = currentSnapshot?.updatedAt.timeIntervalSince1970 ?? 0
         return [
             snapshotID,
-            String(Int(snapshotUpdate)),
+            String(snapshotUpdate.bitPattern),
             String(categories.count),
             String(cachedItemsByID.count),
             String(snapshots.count)
@@ -274,7 +254,7 @@ struct SnapshotListView: View {
                                 totalLiabilities: layout.displayedTotalLiabilities,
                                 onAddAsset: {
                                     dismissKeyboard()
-                                    showsAddAssetItemSheet = true
+                                    presentAddAssetItemEditor()
                                 }
                             )
                             .padding(.bottom, 2)
@@ -290,7 +270,7 @@ struct SnapshotListView: View {
                                 onBeginInlineEdit: beginInlineEditing,
                                 onEdit: { item in
                                     dismissKeyboard()
-                                    editingAssetItem = item
+                                    presentAssetItemEditor(item)
                                 },
                                 onEditValue: { item in
                                     presentQuickEdit(for: item)
@@ -332,10 +312,10 @@ struct SnapshotListView: View {
                 }
             }
         }
-        .sheet(isPresented: $showsAddAssetItemSheet) {
+        .sheet(isPresented: $showsAddAssetItemSheet, onDismiss: finishAssetEditorDraft) {
             AddAssetItemSheet()
         }
-        .sheet(item: $editingAssetItem) { item in
+        .sheet(item: $editingAssetItem, onDismiss: finishAssetEditorDraft) { item in
             EditAssetItemSheet(item: item, snapshot: currentSnapshot)
         }
         .overlay {
@@ -353,6 +333,7 @@ struct SnapshotListView: View {
                         .contentShape(Rectangle())
                         .onTapGesture {
                             dismissKeyboard()
+                            finishQuickEditDraft()
                             quickEditingAssetItem = nil
                         }
 
@@ -362,6 +343,7 @@ struct SnapshotListView: View {
                         marketStore: marketStore,
                         onCancel: {
                             dismissKeyboard()
+                            finishQuickEditDraft()
                             quickEditingAssetItem = nil
                         },
                         onSaved: {
@@ -369,6 +351,7 @@ struct SnapshotListView: View {
                                 hydrateInputs(for: item, from: snapshot)
                             }
                             dismissKeyboard()
+                            finishQuickEditDraft()
                             quickEditingAssetItem = nil
                         }
                     )
@@ -382,8 +365,29 @@ struct SnapshotListView: View {
         .onChange(of: listLayoutCacheToken) { _, _ in
             refreshCachedListLayout()
         }
-        .task {
+        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { notification in
+            guard isActive, PortfolioSaveNotificationFilter.affectsPortfolio(notification) else { return }
+            Task { @MainActor in
+                await Task.yield()
+                guard isActive else { return }
+                refreshCachedListLayout()
+            }
+        }
+        .task(id: isActive) {
+            guard isActive else {
+                pendingAutoRateSyncTask?.cancel()
+                pendingAutoRateSyncTask = nil
+                deferPendingPersistsForTransition()
+                return
+            }
+
+            didDeferPersistsForCurrentTransition = false
+            // ContentView activates feature work after the tab transition completes.
+            // Keep SwiftData normalization and layout hydration outside that transition.
+            await Task.yield()
+            guard !Task.isCancelled, isActive else { return }
             await prepareSnapshotIfNeeded()
+            guard !Task.isCancelled, isActive else { return }
             refreshCachedListLayout()
             #if DEBUG
             await ensureDebugAutoPricedItemIfNeeded()
@@ -391,41 +395,54 @@ struct SnapshotListView: View {
                let debugAutoPricedItem,
                quickEditingAssetItem == nil {
                 try? await Task.sleep(for: .milliseconds(250))
-                quickEditingAssetItem = debugAutoPricedItem
+                guard !Task.isCancelled, isActive else { return }
+                presentQuickEdit(for: debugAutoPricedItem)
             }
             #endif
+            scheduleAutoRateSync(delayNanoseconds: 180_000_000)
         }
-        .task(id: isActive) {
-            if isActive {
-                scheduleAutoRateSync(delayNanoseconds: 180_000_000)
-            } else {
-                pendingAutoRateSyncTask?.cancel()
-            }
+        .onDisappear {
+            pendingAutoRateSyncTask?.cancel()
+            pendingAutoRateSyncTask = nil
+            deferPendingPersistsForTransition()
+            finishInlineEditorDraft()
+            finishAssetEditorDraft()
+            finishQuickEditDraft()
         }
         #if DEBUG
         .task(id: debugAutoPricedItem?.id) {
+            guard isActive else { return }
             await ensureDebugAutoPricedItemIfNeeded()
             guard ProcessInfo.processInfo.arguments.contains("-openFirstAutoPricedQuickEdit"),
                   quickEditingAssetItem == nil,
                   let debugAutoPricedItem else { return }
             try? await Task.sleep(for: .milliseconds(250))
-            quickEditingAssetItem = debugAutoPricedItem
+            presentQuickEdit(for: debugAutoPricedItem)
         }
         #endif
         .onChange(of: isActive ? marketRefreshToken : 0) { _, _ in
             guard canAutoSyncMarketRates else { return }
             scheduleAutoRateSync(delayNanoseconds: 300_000_000)
         }
+        .onReceive(marketStore.$overview.combineLatest(marketStore.$exchangeRates).dropFirst()) { _ in
+            guard canAutoSyncMarketRates else { return }
+            scheduleAutoRateSync(delayNanoseconds: 300_000_000)
+        }
         .onChange(of: focusedField) { previousField, newField in
             if let newField {
+                _ = beginInlineEditorDraft()
                 inlineEditingField = newField
             }
             if newField != nil {
                 pendingAutoRateSyncTask?.cancel()
             }
-            guard let previousField, previousField != newField,
-                  let item = item(for: previousField) else { return }
-            schedulePersist(item: item)
+            if let previousField, previousField != newField,
+               let item = item(for: previousField) {
+                schedulePersist(item: item)
+            }
+            if newField == nil {
+                finishInlineEditorDraft()
+            }
         }
         .alert(AppLocalization.string("保存失败"), isPresented: Binding(
             get: { persistenceErrorMessage != nil },
@@ -439,27 +456,127 @@ struct SnapshotListView: View {
 
     @MainActor
     private func schedulePersist(item: AssetItem, delayNanoseconds: UInt64 = 80_000_000) {
-        pendingPersistTask?.cancel()
-        pendingPersistTask = Task {
+        guard let draft = pendingPersistDraft(for: item) else { return }
+        let effectiveDelay = isActive
+            ? delayNanoseconds
+            : max(delayNanoseconds, 360_000_000)
+        schedulePersist(draft: draft, delayNanoseconds: effectiveDelay)
+    }
+
+    @MainActor
+    private func schedulePersist(draft: PendingPersistDraft, delayNanoseconds: UInt64) {
+        let itemID = draft.itemID
+        pendingPersistTasks[itemID]?.cancel()
+        let generation = (persistGenerationByItemID[itemID] ?? 0) &+ 1
+        persistGenerationByItemID[itemID] = generation
+        pendingPersistDrafts[itemID] = draft
+        let writeID = ModelContextMutationBarrier.shared.beginDeferredWrite()
+
+        pendingPersistTasks[itemID] = Task {
+            defer { ModelContextMutationBarrier.shared.finishDeferredWrite(writeID) }
+            do {
+                try await ModelContextMutationBarrier.shared.waitUntilWriteIsAllowed(writeID)
+            } catch {
+                return
+            }
             if delayNanoseconds > 0 {
                 try? await Task.sleep(nanoseconds: delayNanoseconds)
             }
             guard !Task.isCancelled else { return }
-            persist(item: item)
-            await MainActor.run {
-                pendingPersistTask = nil
+            persist(draft: draft)
+            if persistGenerationByItemID[itemID] == generation {
+                pendingPersistTasks[itemID] = nil
+                pendingPersistDrafts[itemID] = nil
+                persistGenerationByItemID[itemID] = nil
             }
         }
     }
 
     @MainActor
+    private func deferPendingPersistsForTransition() {
+        guard !didDeferPersistsForCurrentTransition else { return }
+        didDeferPersistsForCurrentTransition = true
+
+        var drafts = pendingPersistDrafts
+        if let editingField = focusedField ?? inlineEditingField,
+           let item = item(for: editingField),
+           let draft = pendingPersistDraft(for: item) {
+            drafts[item.id] = draft
+        }
+
+        pendingPersistTasks.values.forEach { $0.cancel() }
+        pendingPersistTasks.removeAll()
+        pendingPersistDrafts.removeAll()
+
+        for draft in drafts.values {
+            schedulePersist(draft: draft, delayNanoseconds: 360_000_000)
+        }
+    }
+
+    @MainActor
+    private func pendingPersistDraft(for item: AssetItem) -> PendingPersistDraft? {
+        guard let snapshot = currentSnapshot else { return nil }
+        return PendingPersistDraft(
+            snapshotID: snapshot.id,
+            itemID: item.id,
+            amountInput: amountInputs[item.id],
+            quantityInput: quantityInputs[item.id],
+            unitPriceInput: unitPriceInputs[item.id]
+        )
+    }
+
+    @MainActor
+    private func presentAddAssetItemEditor() {
+        guard beginAssetEditorDraft() else { return }
+        showsAddAssetItemSheet = true
+    }
+
+    @MainActor
+    private func presentAssetItemEditor(_ item: AssetItem) {
+        guard beginAssetEditorDraft() else { return }
+        editingAssetItem = item
+    }
+
+    @MainActor
+    private func beginAssetEditorDraft() -> Bool {
+        guard assetEditorDraftID == nil else { return true }
+        guard let draftID = ModelContextMutationBarrier.shared.beginEditorDraft() else { return false }
+        assetEditorDraftID = draftID
+        return true
+    }
+
+    @MainActor
+    private func finishAssetEditorDraft() {
+        guard let assetEditorDraftID else { return }
+        ModelContextMutationBarrier.shared.finishEditorDraft(assetEditorDraftID)
+        self.assetEditorDraftID = nil
+    }
+
+    @MainActor
     private func presentQuickEdit(for item: AssetItem) {
+        guard quickEditDraftID != nil || beginQuickEditDraft() else { return }
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) {
             dismissKeyboard()
             quickEditingAssetItem = item
         }
+    }
+
+    @MainActor
+    @discardableResult
+    private func beginQuickEditDraft() -> Bool {
+        guard quickEditDraftID == nil else { return true }
+        guard let draftID = ModelContextMutationBarrier.shared.beginEditorDraft() else { return false }
+        quickEditDraftID = draftID
+        return true
+    }
+
+    @MainActor
+    private func finishQuickEditDraft() {
+        guard let quickEditDraftID else { return }
+        ModelContextMutationBarrier.shared.finishEditorDraft(quickEditDraftID)
+        self.quickEditDraftID = nil
     }
 
     @MainActor
@@ -492,16 +609,37 @@ struct SnapshotListView: View {
 
     private func buildListLayout(for snapshot: AssetSnapshot?) -> SnapshotListLayout? {
         guard let snapshot else { return nil }
-        return SnapshotRecordLayoutBuilder.make(snapshot: snapshot, categories: categories)
+        // Today's snapshot is created with all missing entries populated. Avoid walking
+        // every item's full inverse-entry history while rendering the editable record page.
+        return SnapshotRecordLayoutBuilder.make(
+            snapshot: snapshot,
+            categories: categories
+        )
     }
 
     @MainActor
     private func beginInlineEditing(_ field: RecordInputField) {
+        guard beginInlineEditorDraft() else { return }
         inlineEditingField = field
         Task { @MainActor in
             guard inlineEditingField == field else { return }
             focusedField = field
         }
+    }
+
+    @MainActor
+    private func beginInlineEditorDraft() -> Bool {
+        guard inlineEditorDraftID == nil else { return true }
+        guard let draftID = ModelContextMutationBarrier.shared.beginEditorDraft() else { return false }
+        inlineEditorDraftID = draftID
+        return true
+    }
+
+    @MainActor
+    private func finishInlineEditorDraft() {
+        guard let inlineEditorDraftID else { return }
+        ModelContextMutationBarrier.shared.finishEditorDraft(inlineEditorDraftID)
+        self.inlineEditorDraftID = nil
     }
 
     @MainActor
@@ -561,7 +699,7 @@ struct SnapshotListView: View {
                 hydrateInputs(for: debugAutoPricedItem, from: snapshot)
             }
             if shouldOpenQuickEdit {
-                quickEditingAssetItem = debugAutoPricedItem
+                presentQuickEdit(for: debugAutoPricedItem)
             }
             return
         }
@@ -587,7 +725,7 @@ struct SnapshotListView: View {
             )
             hydrateInputs(for: item, from: snapshot)
             if shouldOpenQuickEdit {
-                quickEditingAssetItem = item
+                presentQuickEdit(for: item)
             }
         } catch {
             print("[AssetTimeMachine] debug auto-priced asset setup failed: \(error)")
@@ -616,7 +754,14 @@ struct SnapshotListView: View {
     @MainActor
     private func scheduleAutoRateSync(delayNanoseconds: UInt64) {
         pendingAutoRateSyncTask?.cancel()
+        let writeID = ModelContextMutationBarrier.shared.beginDeferredWrite()
         pendingAutoRateSyncTask = Task {
+            defer { ModelContextMutationBarrier.shared.finishDeferredWrite(writeID) }
+            do {
+                try await ModelContextMutationBarrier.shared.waitUntilWriteIsAllowed(writeID)
+            } catch {
+                return
+            }
             if delayNanoseconds == 0 {
                 await Task.yield()
             } else {
@@ -676,24 +821,44 @@ struct SnapshotListView: View {
     }
 
     @MainActor
-    private func persist(item: AssetItem) {
-        guard let snapshot = currentSnapshot else { return }
-
+    private func persist(draft: PendingPersistDraft) {
         do {
+            let snapshotID = draft.snapshotID
+            var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
+                predicate: #Predicate<AssetSnapshot> { snapshot in
+                    snapshot.id == snapshotID
+                }
+            )
+            snapshotDescriptor.fetchLimit = 1
+
+            let itemID = draft.itemID
+            var itemDescriptor = FetchDescriptor<AssetItem>(
+                predicate: #Predicate<AssetItem> { item in
+                    item.id == itemID
+                }
+            )
+            itemDescriptor.fetchLimit = 1
+
+            guard let snapshot = try modelContext.fetch(snapshotDescriptor).first,
+                  let item = try modelContext.fetch(itemDescriptor).first else {
+                print("[AssetTimeMachine] skip deferred entry persist because its snapshot or item no longer exists")
+                return
+            }
+
             switch item.valuationMethod {
             case .directAmount:
-                let amount = normalizedNumber(from: amountInputs[item.id], forcePositive: item.category?.group == .liability)
+                let amount = normalizedNumber(from: draft.amountInput, forcePositive: item.category?.group == .liability)
                 try SnapshotService.upsertEntry(snapshot: snapshot, item: item, amount: amount, in: modelContext)
             case .quantityAndUnitPrice:
-                let quantity = normalizedNumber(from: quantityInputs[item.id])
+                let quantity = normalizedNumber(from: draft.quantityInput)
                 let autoRate = item.resolvedAutoUnitPrice(using: marketStore)
-                let unitPrice = autoRate ?? normalizedNumber(from: unitPriceInputs[item.id])
+                let unitPrice = autoRate ?? normalizedNumber(from: draft.unitPriceInput)
                 if let autoRate {
                     unitPriceInputs[item.id] = autoRate.plainNumberString()
                 }
                 try SnapshotService.upsertEntry(snapshot: snapshot, item: item, quantity: quantity, unitPrice: unitPrice, in: modelContext)
             }
-            Task { @MainActor in
+            if isActive {
                 refreshCachedListLayout()
             }
         } catch {
@@ -1034,10 +1199,7 @@ struct RecordCategoryCard: View {
     }
 
     private func snapshotEntry(for item: AssetItem) -> AssetEntry? {
-        if isReadOnly {
-            return snapshotEntriesByItemID[item.id]
-        }
-        return snapshotEntriesByItemID[item.id] ?? item.latestEntry
+        snapshotEntriesByItemID[item.id]
     }
 
     private var inputBlocks: [InputBlock] {
@@ -1151,10 +1313,7 @@ struct LiabilityCategorySection: View {
     }
 
     private func snapshotEntry(for item: AssetItem) -> AssetEntry? {
-        if isReadOnly {
-            return snapshotEntriesByItemID[item.id]
-        }
-        return snapshotEntriesByItemID[item.id] ?? item.latestEntry
+        snapshotEntriesByItemID[item.id]
     }
 
     private func showsRightDivider(at index: Int, total: Int) -> Bool {
@@ -2050,7 +2209,7 @@ struct AddAssetItemSheet: View {
         guard let selectedCategory else { return }
 
         do {
-            try AssetItemService.createItem(
+            _ = try AssetItemService.createItem(
                 name: resolvedName,
                 category: selectedCategory,
                 valuationMethod: selectedAutoPricedAssetKind == nil ? .directAmount : .quantityAndUnitPrice,
@@ -2101,6 +2260,7 @@ struct QuickRecordValueSheet: View {
     @State private var unitPriceText: String
     @State private var errorMessage: String?
     @State private var isRefreshingAutoPrice = false
+    @State private var manualAutoPriceRefreshTask: Task<Void, Never>?
     @FocusState private var focusedField: QuickRecordValueField?
 
     init(item: AssetItem, snapshot: AssetSnapshot?, marketStore: RemoteMarketStore, onCancel: @escaping () -> Void, onSaved: @escaping () -> Void) {
@@ -2207,7 +2367,19 @@ struct QuickRecordValueSheet: View {
             if item.autoPricedAssetKind != nil {
                 HStack(spacing: 8) {
                     Button {
-                        Task { await refreshAutoPriceManually() }
+                        manualAutoPriceRefreshTask?.cancel()
+                        let writeID = ModelContextMutationBarrier.shared.beginDeferredWrite()
+                        manualAutoPriceRefreshTask = Task {
+                            defer { ModelContextMutationBarrier.shared.finishDeferredWrite(writeID) }
+                            do {
+                                try await ModelContextMutationBarrier.shared.waitUntilWriteIsAllowed(writeID)
+                            } catch {
+                                return
+                            }
+                            await refreshAutoPriceManually()
+                            guard !Task.isCancelled else { return }
+                            manualAutoPriceRefreshTask = nil
+                        }
                     } label: {
                         HStack(spacing: 6) {
                             if isRefreshingAutoPrice {
@@ -2277,6 +2449,11 @@ struct QuickRecordValueSheet: View {
                 .font(AppTypography.rowTitle)
                 .foregroundStyle(AssetTheme.gold)
             }
+        }
+        .onDisappear {
+            manualAutoPriceRefreshTask?.cancel()
+            manualAutoPriceRefreshTask = nil
+            isRefreshingAutoPrice = false
         }
     }
 
@@ -2364,12 +2541,17 @@ struct QuickRecordValueSheet: View {
 
     @MainActor
     private func refreshAutoPriceManually() async {
-        guard item.autoPricedAssetKind != nil else { return }
+        guard item.autoPricedAssetKind != nil, !Task.isCancelled else { return }
         isRefreshingAutoPrice = true
         errorMessage = nil
-        defer { isRefreshingAutoPrice = false }
+        defer {
+            if !Task.isCancelled {
+                isRefreshingAutoPrice = false
+            }
+        }
 
         let didRefreshLiveData = await marketStore.refreshLiveData()
+        guard !Task.isCancelled else { return }
         guard didRefreshLiveData else {
             errorMessage = marketStore.errorMessage ?? AppLocalization.string("暂时没拿到最新价格，稍后再试")
             return
@@ -2383,6 +2565,7 @@ struct QuickRecordValueSheet: View {
         unitPriceText = latestRate.plainNumberString()
 
         guard let snapshot else { return }
+        guard !Task.isCancelled else { return }
         do {
             try saveCurrentValues(into: snapshot)
         } catch let error as QuickRecordValueValidationError {
@@ -2655,15 +2838,20 @@ struct SummaryColumnMetric: View {
 
 struct SnapshotArchiveView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \AssetSnapshot.date, order: .reverse) private var snapshots: [AssetSnapshot]
-    @State private var pendingDeletionSnapshot: AssetSnapshot?
+    @State private var archiveProjections: [SnapshotArchiveProjection] = []
+    @State private var isLoadingArchive = true
+    @State private var pendingDeletionProjection: SnapshotArchiveProjection?
     @State private var deletionErrorMessage: String?
+    @State private var projectionRevision = 0
 
     var body: some View {
         ZStack {
             AssetTheme.pageGradient.ignoresSafeArea()
 
-            if snapshots.isEmpty {
+            if isLoadingArchive && archiveProjections.isEmpty {
+                LoadingStateCard(title: AppLocalization.string("记录加载中"))
+                    .padding(.horizontal, 20)
+            } else if archiveProjections.isEmpty {
                 EmptyStateCard(
                     title: AppLocalization.string("暂无记录"),
                     systemImage: "calendar.badge.plus"
@@ -2671,15 +2859,13 @@ struct SnapshotArchiveView: View {
                 .padding(.horizontal, 20)
             } else {
                 List {
-                    ForEach(snapshots) { snapshot in
-                        NavigationLink {
-                            SnapshotDetailView(snapshot: snapshot)
-                        } label: {
-                            SnapshotArchiveRow(snapshot: snapshot)
+                    ForEach(archiveProjections) { projection in
+                        NavigationLink(value: projection.id) {
+                            SnapshotArchiveRow(projection: projection)
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                             Button(role: .destructive) {
-                                pendingDeletionSnapshot = snapshot
+                                pendingDeletionProjection = projection
                             } label: {
                                 Label(AppLocalization.string("删除"), systemImage: "trash")
                             }
@@ -2695,25 +2881,49 @@ struct SnapshotArchiveView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarRole(.editor)
+        .navigationDestination(for: UUID.self) { snapshotID in
+            SnapshotArchiveDetailDestination(snapshotID: snapshotID)
+        }
+        .task(id: projectionRevision) {
+            let container = modelContext.container
+            do {
+                let projections = try await BackgroundTaskWork.run {
+                    let store = TimeMachineSnapshotProjectionStore(modelContainer: container)
+                    return try await store.fetchArchiveProjections()
+                }
+                guard !Task.isCancelled else { return }
+                archiveProjections = projections
+                isLoadingArchive = false
+            } catch is CancellationError {
+                return
+            } catch {
+                isLoadingArchive = false
+                print("[AssetTimeMachine] fetch archive projections failed: \(error)")
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { notification in
+            guard PortfolioSaveNotificationFilter.affectsPortfolio(notification) else { return }
+            projectionRevision &+= 1
+        }
         .alert(
             AppLocalization.string("确认删除这条记录？"),
             isPresented: Binding(
-                get: { pendingDeletionSnapshot != nil },
-                set: { if !$0 { pendingDeletionSnapshot = nil } }
+                get: { pendingDeletionProjection != nil },
+                set: { if !$0 { pendingDeletionProjection = nil } }
             ),
-            presenting: pendingDeletionSnapshot
-        ) { snapshot in
+            presenting: pendingDeletionProjection
+        ) { projection in
             Button(AppLocalization.string("取消"), role: .cancel) {
-                pendingDeletionSnapshot = nil
+                pendingDeletionProjection = nil
             }
             Button(AppLocalization.string("删除"), role: .destructive) {
-                delete(snapshot: snapshot)
-                pendingDeletionSnapshot = nil
+                delete(projection: projection)
+                pendingDeletionProjection = nil
             }
-        } message: { snapshot in
+        } message: { projection in
             Text(AppLocalization.format(
                 AppLocalization.string("将删除 %@ 的资产记录，删除后无法恢复。"),
-                snapshot.date.longDateString
+                projection.date.longDateString
             ))
         }
         .alert(AppLocalization.string("删除失败"), isPresented: Binding(
@@ -2727,9 +2937,17 @@ struct SnapshotArchiveView: View {
     }
 
     @MainActor
-    private func delete(snapshot: AssetSnapshot) {
+    private func delete(projection: SnapshotArchiveProjection) {
         do {
-            try SyncDeletionService.record(entityID: snapshot.id, kind: .snapshot, in: modelContext)
+            let snapshotID = projection.id
+            var descriptor = FetchDescriptor<AssetSnapshot>(
+                predicate: #Predicate<AssetSnapshot> { snapshot in
+                    snapshot.id == snapshotID
+                }
+            )
+            descriptor.fetchLimit = 1
+            guard let snapshot = try modelContext.fetch(descriptor).first else { return }
+            try SyncDeletionService.record(entityID: snapshotID, kind: .snapshot, in: modelContext)
             modelContext.delete(snapshot)
             try modelContext.save()
         } catch {
@@ -2741,19 +2959,21 @@ struct SnapshotArchiveView: View {
 }
 
 struct SnapshotArchiveRow: View {
-    let snapshot: AssetSnapshot
+    let projection: SnapshotArchiveProjection
 
     var body: some View {
-        let metrics = PortfolioCalculator.metrics(for: snapshot)
-
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(snapshot.date.longDateString)
+                Text(projection.date.longDateString)
                     .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
 
-                Text(AppLocalization.format("%d 项 · 负债 %@", snapshot.entries.count, metrics.totalLiabilities.currencyString()))
+                Text(AppLocalization.format(
+                    "%d 项 · 负债 %@",
+                    projection.entryCount,
+                    projection.totalLiabilities.currencyString()
+                ))
                     .font(AppTypography.caption)
                     .foregroundStyle(AssetTheme.textSecondary)
                     .lineLimit(1)
@@ -2761,7 +2981,7 @@ struct SnapshotArchiveRow: View {
 
             Spacer(minLength: 12)
 
-            Text(metrics.netAssets.currencyString())
+            Text(projection.netAssets.currencyString())
                 .font(AppTypography.rowTitle)
                 .foregroundStyle(AssetTheme.goldSoft)
                 .monospacedDigit()
@@ -2772,11 +2992,48 @@ struct SnapshotArchiveRow: View {
     }
 }
 
+private struct SnapshotArchiveDetailDestination: View {
+    @Environment(\.modelContext) private var modelContext
+    let snapshotID: UUID
+    @State private var snapshot: AssetSnapshot?
+    @State private var didLoad = false
+
+    var body: some View {
+        Group {
+            if let snapshot {
+                SnapshotDetailView(snapshot: snapshot)
+            } else if didLoad {
+                ContentUnavailableView(
+                    AppLocalization.string("记录不存在"),
+                    systemImage: "calendar.badge.exclamationmark"
+                )
+            } else {
+                ZStack {
+                    AssetTheme.pageGradient.ignoresSafeArea()
+                    ProgressView()
+                        .tint(AssetTheme.gold)
+                }
+            }
+        }
+        .task(id: snapshotID) {
+            var descriptor = FetchDescriptor<AssetSnapshot>(
+                predicate: #Predicate<AssetSnapshot> { snapshot in
+                    snapshot.id == snapshotID
+                }
+            )
+            descriptor.fetchLimit = 1
+            snapshot = try? modelContext.fetch(descriptor).first
+            didLoad = true
+        }
+    }
+}
+
 struct SnapshotDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Query private var categories: [AssetCategory]
     let snapshot: AssetSnapshot
     @State private var editingEntry: AssetEntry?
+    @State private var entryEditorDraftID: UUID?
     @State private var amountInputs: [UUID: String] = [:]
     @State private var quantityInputs: [UUID: String] = [:]
     @State private var unitPriceInputs: [UUID: String] = [:]
@@ -2786,12 +3043,13 @@ struct SnapshotDetailView: View {
         SnapshotRecordLayoutBuilder.make(
             snapshot: snapshot,
             categories: categories,
-            includeLatestEntryFallback: false,
             includeInactiveSnapshotItems: true
         )
     }
 
     var body: some View {
+        let layout = layout
+
         ZStack {
             AssetTheme.pageGradient.ignoresSafeArea()
 
@@ -2827,7 +3085,7 @@ struct SnapshotDetailView: View {
                         onEditValue: { _ in },
                         isReadOnly: true,
                         onReadOnlyEdit: { entry in
-                            editingEntry = entry
+                            presentEntryEditor(entry)
                         }
                     )
 
@@ -2843,9 +3101,32 @@ struct SnapshotDetailView: View {
         .onAppear {
             hydrateDisplayInputs(from: snapshot)
         }
-        .sheet(item: $editingEntry) { entry in
+        .sheet(item: $editingEntry, onDismiss: {
+            finishEntryEditorDraft()
+        }) { entry in
             SnapshotEntryEditSheet(entry: entry)
         }
+        .onDisappear {
+            finishEntryEditorDraft()
+        }
+    }
+
+    @MainActor
+    private func presentEntryEditor(_ entry: AssetEntry) {
+        guard entryEditorDraftID == nil else {
+            editingEntry = entry
+            return
+        }
+        guard let draftID = ModelContextMutationBarrier.shared.beginEditorDraft() else { return }
+        entryEditorDraftID = draftID
+        editingEntry = entry
+    }
+
+    @MainActor
+    private func finishEntryEditorDraft() {
+        guard let entryEditorDraftID else { return }
+        ModelContextMutationBarrier.shared.finishEditorDraft(entryEditorDraftID)
+        self.entryEditorDraftID = nil
     }
 
     private func hydrateDisplayInputs(from snapshot: AssetSnapshot) {

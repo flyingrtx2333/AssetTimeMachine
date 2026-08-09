@@ -205,6 +205,8 @@ final class AssetItem {
 
 @Model
 final class AssetSnapshot {
+    #Index<AssetSnapshot>([\.id], [\.date], [\.marketAnchorsUpdatedAt, \.date])
+
     var id: UUID
     var date: Date
     var note: String
@@ -313,6 +315,8 @@ final class AssetEntry {
 
 @Model
 final class BacktestRecord: Identifiable {
+    #Index<BacktestRecord>([\.createdAt])
+
     var id: UUID
     var kindRawValue: String
     var title: String

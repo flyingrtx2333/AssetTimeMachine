@@ -3,9 +3,11 @@ import SwiftData
 import Charts
 import UIKit
 import UserNotifications
+import Combine
 
 struct SettingsView: View {
     @Environment(\.openURL) private var openURL
+    @Environment(\.modelContext) private var modelContext
     @AppStorage("app.appearanceMode") private var appearanceModeRawValue: String = AppAppearanceMode.system.rawValue
     @AppStorage("app.language") private var appLanguageRawValue: String = AppLanguage.system.rawValue
     @AppStorage("app.notifications.enabled") private var notificationEnabled = false
@@ -14,43 +16,29 @@ struct SettingsView: View {
     @AppStorage("app.strategyNotifications.templateID") private var strategyNotificationTemplateID = StrategyNotificationDefaults.defaultTemplateID
     @AppStorage("app.strategyNotifications.hour") private var strategyNotificationHour: Int = StrategyNotificationDefaults.defaultHour
     @ObservedObject var cloudStore: AssetTimeMachineCloudStore
+    let isActive: Bool
     let onSendStrategyTestNotification: () async -> Bool
     let onReplayOnboarding: () -> Void
-    @Query private var snapshots: [AssetSnapshot]
     @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
     @State private var showsLogoutConfirmation = false
     @State private var isSendingStrategyTestNotification = false
     @State private var strategyTestNotificationMessage: String?
+    @State private var cachedNotificationPreview = AppLocalization.string("暂无资产记录")
 
     init(
         cloudStore: AssetTimeMachineCloudStore,
+        isActive: Bool,
         onSendStrategyTestNotification: @escaping () async -> Bool,
         onReplayOnboarding: @escaping () -> Void
     ) {
         self.cloudStore = cloudStore
+        self.isActive = isActive
         self.onSendStrategyTestNotification = onSendStrategyTestNotification
         self.onReplayOnboarding = onReplayOnboarding
-
-        var descriptor = FetchDescriptor<AssetSnapshot>(
-            sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
-        )
-        descriptor.fetchLimit = 1
-        _snapshots = Query(descriptor)
-    }
-
-    private var latestSnapshot: AssetSnapshot? {
-        snapshots.first(where: { Calendar.current.isDateInToday($0.date) }) ?? snapshots.first
     }
 
     private var notificationPreview: String {
-        guard let latestSnapshot else { return AppLocalization.string("暂无资产记录") }
-
-        return AppLocalization.format(
-            AppLocalization.string("总资产 %@ · 净资产 %@ · 负债 %@"),
-            PortfolioCalculator.totalAssets(for: latestSnapshot).currencyString(),
-            PortfolioCalculator.netAssets(for: latestSnapshot).currencyString(),
-            PortfolioCalculator.totalLiabilities(for: latestSnapshot).currencyString()
-        )
+        cachedNotificationPreview
     }
 
     private var selectedStrategyTemplate: AdvancedBacktestStrategyTemplate? {
@@ -387,6 +375,7 @@ struct SettingsView: View {
                             }
                             .foregroundStyle(AssetTheme.negative)
                             .listRowBackground(AssetTheme.surface)
+                            .disabled(cloudStore.isWorking)
                         } header: {
                             Text(AppLocalization.string("账户"))
                         }
@@ -414,9 +403,15 @@ struct SettingsView: View {
             }
             .navigationTitle(AppLocalization.string("设置"))
             .navigationBarTitleDisplayMode(.inline)
-            .task {
+            .task(id: isActive) {
+                guard isActive else { return }
                 normalizeStrategyNotificationTemplateIfNeeded()
+                refreshNotificationPreview()
                 await reloadNotificationStatus()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { notification in
+                guard isActive, PortfolioSaveNotificationFilter.affectsPortfolio(notification) else { return }
+                refreshNotificationPreview()
             }
             .onChange(of: notificationEnabled) { _, _ in
                 Task {
@@ -446,6 +441,22 @@ struct SettingsView: View {
         }
 
         return AppLocalization.format("每 %d 小时", integer)
+    }
+
+    @MainActor
+    private func refreshNotificationPreview() {
+        let latestSnapshot = try? SnapshotService.latestSnapshot(in: modelContext)
+        guard let latestSnapshot else {
+            cachedNotificationPreview = AppLocalization.string("暂无资产记录")
+            return
+        }
+        let metrics = PortfolioCalculator.metrics(for: latestSnapshot)
+        cachedNotificationPreview = AppLocalization.format(
+            AppLocalization.string("总资产 %@ · 净资产 %@ · 负债 %@"),
+            metrics.totalAssets.currencyString(),
+            metrics.netAssets.currencyString(),
+            metrics.totalLiabilities.currencyString()
+        )
     }
 
     private func strategyHourLabel(_ hour: Int) -> String {

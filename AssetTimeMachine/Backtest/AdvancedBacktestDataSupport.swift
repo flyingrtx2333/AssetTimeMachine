@@ -1,7 +1,151 @@
 import Foundation
 
-struct AdvancedBacktestPreparedDataCache: Sendable {
+nonisolated enum StandardBacktestPreparationMode: Sendable {
+    case allocation
+    case dca
+}
+
+nonisolated struct StandardBacktestPreparationRequest: Sendable {
+    let mode: StandardBacktestPreparationMode
+    let goldWeight: Double
+    let indexWeights: [String: Double]
+    let indexSymbols: [String]
+    let dcaAssetSymbol: String
+    let dcaAssetOption: BacktestAssetOption?
+    let selectedStartDate: Date?
+    let selectedEndDate: Date?
+    let historySnapshots: [String: PublicHistorySeries]
+}
+
+nonisolated struct StandardBacktestPreparedDataCache: Sendable {
+    let selectedDCAAssetOption: BacktestAssetOption?
+    let filteredGoldSeries: PublicHistorySeries?
+    let filteredIndexSeriesBySymbol: [String: PublicHistorySeries]
+    let filteredDCASeries: PublicHistorySeries?
+    let filteredDCAFXSeries: PublicHistorySeries?
+    let availableDateBounds: ClosedRange<Date>?
+    let effectiveDateBounds: ClosedRange<Date>?
+}
+
+/// Builds the immutable data slice used by a standard backtest. All date
+/// parsing, sorting, and OHLC slicing happens after the UI has captured a
+/// value-only history snapshot, so none of this work needs the main actor.
+nonisolated enum StandardBacktestDataSupport {
+    static func prepare(_ request: StandardBacktestPreparationRequest) -> StandardBacktestPreparedDataCache {
+        let sourceSeries = activeSourceSeries(for: request)
+        let availableBounds = BacktestEngine.availableDateBounds(for: sourceSeries)
+        let effectiveBounds = effectiveBounds(
+            availableBounds: availableBounds,
+            selectedStartDate: request.selectedStartDate,
+            selectedEndDate: request.selectedEndDate
+        )
+
+        switch request.mode {
+        case .allocation:
+            let activeIndexSymbols = request.indexSymbols.filter {
+                request.indexWeights[$0, default: 0] > 0
+            }
+            let preparedIndexSymbols = activeIndexSymbols.isEmpty && request.goldWeight <= 0
+                ? request.indexSymbols
+                : activeIndexSymbols
+            let filteredIndexPairs: [(String, PublicHistorySeries)] = preparedIndexSymbols.compactMap { symbol -> (String, PublicHistorySeries)? in
+                guard let series = BacktestEngine.filteredHistorySeries(
+                    request.historySnapshots[symbol],
+                    within: effectiveBounds
+                ) else { return nil }
+                return (symbol, series)
+            }
+            let filteredIndices = Dictionary(uniqueKeysWithValues: filteredIndexPairs)
+
+            return StandardBacktestPreparedDataCache(
+                selectedDCAAssetOption: request.dcaAssetOption,
+                filteredGoldSeries: BacktestEngine.filteredHistorySeries(
+                    request.historySnapshots["gold_cny"],
+                    within: effectiveBounds
+                ),
+                filteredIndexSeriesBySymbol: filteredIndices,
+                filteredDCASeries: nil,
+                filteredDCAFXSeries: nil,
+                availableDateBounds: availableBounds,
+                effectiveDateBounds: effectiveBounds
+            )
+
+        case .dca:
+            let fxSeries = request.dcaAssetOption?.historicalFXSymbol.flatMap {
+                request.historySnapshots[$0]
+            }
+            return StandardBacktestPreparedDataCache(
+                selectedDCAAssetOption: request.dcaAssetOption,
+                filteredGoldSeries: nil,
+                filteredIndexSeriesBySymbol: [:],
+                filteredDCASeries: BacktestEngine.filteredHistorySeries(
+                    request.historySnapshots[request.dcaAssetSymbol],
+                    within: effectiveBounds
+                ),
+                filteredDCAFXSeries: BacktestEngine.filteredHistorySeries(
+                    fxSeries,
+                    within: effectiveBounds
+                ),
+                availableDateBounds: availableBounds,
+                effectiveDateBounds: effectiveBounds
+            )
+        }
+    }
+
+    private static func activeSourceSeries(
+        for request: StandardBacktestPreparationRequest
+    ) -> [PublicHistorySeries] {
+        switch request.mode {
+        case .dca:
+            guard let assetSeries = request.historySnapshots[request.dcaAssetSymbol] else { return [] }
+            guard let fxSymbol = request.dcaAssetOption?.historicalFXSymbol else { return [assetSeries] }
+            guard let fxSeries = request.historySnapshots[fxSymbol] else { return [] }
+            return [assetSeries, fxSeries]
+
+        case .allocation:
+            var series: [PublicHistorySeries] = []
+            if request.goldWeight > 0,
+               let goldSeries = request.historySnapshots["gold_cny"] {
+                series.append(goldSeries)
+            }
+            for symbol in request.indexSymbols where request.indexWeights[symbol, default: 0] > 0 {
+                if let indexSeries = request.historySnapshots[symbol] {
+                    series.append(indexSeries)
+                }
+            }
+
+            if !series.isEmpty { return series }
+            if let goldSeries = request.historySnapshots["gold_cny"] {
+                series.append(goldSeries)
+            }
+            for symbol in request.indexSymbols {
+                if let indexSeries = request.historySnapshots[symbol] {
+                    series.append(indexSeries)
+                }
+            }
+            return series
+        }
+    }
+
+    private static func effectiveBounds(
+        availableBounds: ClosedRange<Date>?,
+        selectedStartDate: Date?,
+        selectedEndDate: Date?
+    ) -> ClosedRange<Date>? {
+        guard let availableBounds else { return nil }
+        let start = max(selectedStartDate ?? availableBounds.lowerBound, availableBounds.lowerBound)
+        let end = min(selectedEndDate ?? availableBounds.upperBound, availableBounds.upperBound)
+        return start <= end ? (start...end) : availableBounds
+    }
+}
+
+nonisolated struct AdvancedBacktestPreparedDataCache: Sendable {
     let selectedAssetInputs: [(
+        assetSeries: PublicHistorySeries?,
+        assetOption: BacktestAssetOption,
+        fxSeries: PublicHistorySeries?
+    )]
+    let filteredAssetInputs: [(
         assetSeries: PublicHistorySeries?,
         assetOption: BacktestAssetOption,
         fxSeries: PublicHistorySeries?
@@ -45,10 +189,12 @@ enum AdvancedBacktestDataSupport {
         }
     }
 
-    static func buildDataCache(
+    nonisolated static func buildDataCache(
         calculationAssetOptions: [BacktestAssetOption],
         strategyMode: AdvancedBacktestStrategyMode,
-        historySnapshots: [String: PublicHistorySeries]
+        historySnapshots: [String: PublicHistorySeries],
+        selectedStartDate: Date? = nil,
+        selectedEndDate: Date? = nil
     ) -> AdvancedBacktestPreparedDataCache {
         let historyProvider: (String) -> PublicHistorySeries? = { historySnapshots[$0] }
 
@@ -57,12 +203,9 @@ enum AdvancedBacktestDataSupport {
         }
 
         let boundarySymbols = strategyMode.dateBoundaryAssetSymbols
-        let boundaryOptions = calculationAssetOptions.filter { option in
-            boundarySymbols?.contains(option.symbol) ?? true
-        }
-        let sourceSeries = boundaryOptions.flatMap { option -> [PublicHistorySeries] in
+        let sourceSeries = zip(calculationAssetOptions, selectedAssetInputs).flatMap { option, input -> [PublicHistorySeries] in
+            guard boundarySymbols?.contains(option.symbol) ?? true else { return [] }
             var series: [PublicHistorySeries] = []
-            let input = BacktestEngine.advancedAssetInput(for: option, historyProvider: historyProvider)
             if let assetSeries = input.assetSeries {
                 series.append(assetSeries)
             }
@@ -72,9 +215,23 @@ enum AdvancedBacktestDataSupport {
             return series
         }
 
+        let availableDateBounds = BacktestEngine.availableDateBounds(for: sourceSeries)
+        let effectiveDateBounds: ClosedRange<Date>?
+        if let availableDateBounds {
+            let start = max(selectedStartDate ?? availableDateBounds.lowerBound, availableDateBounds.lowerBound)
+            let end = min(selectedEndDate ?? availableDateBounds.upperBound, availableDateBounds.upperBound)
+            effectiveDateBounds = start <= end ? (start...end) : availableDateBounds
+        } else {
+            effectiveDateBounds = nil
+        }
+
         return AdvancedBacktestPreparedDataCache(
             selectedAssetInputs: selectedAssetInputs,
-            availableDateBounds: BacktestEngine.availableDateBounds(for: sourceSeries)
+            filteredAssetInputs: BacktestEngine.filteredAdvancedAssetInputs(
+                selectedAssetInputs,
+                within: effectiveDateBounds
+            ),
+            availableDateBounds: availableDateBounds
         )
     }
 
