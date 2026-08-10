@@ -298,6 +298,7 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
     case riskContributionRegimeRouter
     case riskContributionRecoveryRouter
     case riskContributionCashConfidenceRouter
+    case riskContributionCashConfidenceLowNoise
     case strongVolControlledRotation
     case momentumRotation
 
@@ -405,6 +406,8 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
             return AppLocalization.string("双引擎水下恢复")
         case .riskContributionCashConfidenceRouter:
             return AppLocalization.string("无融资置信度恢复")
+        case .riskContributionCashConfidenceLowNoise:
+            return AppLocalization.string("无杠杆低噪增强")
         case .strongVolControlledRotation:
             return AppLocalization.string("强势控波轮动")
         case .momentumRotation:
@@ -516,6 +519,8 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
             return AppLocalization.string("在双引擎制度路由上加入快速上涨桥接与长水下恢复袖套：进攻状态在自身28日净值向上、回撤不超过1.5%，且纳指或标普站上MA120并保持60日正动量时放大至1.082倍；稳健状态遇到跨市场广度回升时，短暂向进攻引擎桥接18.5%。当基础净值水下至少60个交易日且回撤达到5%，纳指或标普站上MA100并保持60日正动量时，使用最多15%的闲置现金建立恢复袖套；每60个交易日复核，每个水下周期最多进入2次，退出后冷却180个交易日，双指数3日同时下跌3%时快速退出。总风险封顶120%，全部信号严格使用T−1数据，并统一计入1%交易费、0.05%滑点与5%年化融资成本。")
         case .riskContributionCashConfidenceRouter:
             return AppLocalization.string("当前无融资夏普冠军：保留15%快速桥接和最高20.75%的恢复袖套；高波动时自动收缩至19%，并按95日动量、下行波动与趋势效率在纳指/标普间分配。恢复袖套在双指数3日同时下跌5%时退出，退出后冷却150日。领导资产切换继续使用Beta(2,2)兑现率校准；非清仓减仓且基础净值距252日高点不足4%时，按总仓位下降与总换手冲击保留最多25%的缓冲，广泛减仓时分散到本次卖出资产。全部信号严格使用T−1数据，总仓位封顶100%，现金不得为负，统一计入1%交易费与0.05%滑点。")
+        case .riskContributionCashConfidenceLowNoise:
+            return AppLocalization.string("严格无杠杆增强策略：沿用置信度恢复底层和20.75%恢复袖套，以100%总仓硬上限运行；关闭历史上冗余的宽度微刹车与成熟纳指刹车，在低波且趋势确认时更充分使用闲置现金。领导资产保持不变且总风险变化不超过2%时，按组合波动采用20%/30%/50%的分级换手过滤；黄金领导且60日组合波动达到12%时恢复更快调仓。近峰减仓执行80%，并保留5%的A股退出哨兵。全部信号严格使用T−1数据，禁止融资和负现金，统一计入1%交易费与0.05%滑点。")
         case .strongVolControlledRotation:
             return AppLocalization.string("20日强弱排序，每20个交易日持有最强资产；目标波动12%，最高投入90%")
         case .momentumRotation:
@@ -574,7 +579,8 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
              .riskContributionReallocation,
              .riskContributionRegimeRouter,
              .riskContributionRecoveryRouter,
-             .riskContributionCashConfidenceRouter:
+             .riskContributionCashConfidenceRouter,
+             .riskContributionCashConfidenceLowNoise:
             return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
         default:
             return []
@@ -586,7 +592,8 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
         case .riskContributionReallocation,
              .riskContributionRegimeRouter,
              .riskContributionRecoveryRouter,
-             .riskContributionCashConfidenceRouter:
+             .riskContributionCashConfidenceRouter,
+             .riskContributionCashConfidenceLowNoise:
             return ["gold_cny", "nasdaq"]
         case .convexCrashHedgeComposite,
              .onlineStrategyAllocator,
@@ -1770,6 +1777,23 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
             category: AppLocalization.string("高级策略"),
             title: AppLocalization.string("无融资置信度恢复"),
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "risk-contribution-cash-confidence-low-noise",
+            mode: .riskContributionCashConfidenceLowNoise,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            category: AppLocalization.string("高级策略"),
+            title: AppLocalization.string("无杠杆低噪增强"),
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,

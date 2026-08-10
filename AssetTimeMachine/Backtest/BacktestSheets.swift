@@ -1220,7 +1220,8 @@ extension AdvancedBacktestStrategyTemplate {
             growth = 0.98; stability = 0.96; defense = 0.96; flexibility = 1.00
         case .riskContributionRecoveryRouter:
             growth = 0.99; stability = 0.97; defense = 0.96; flexibility = 1.00
-        case .riskContributionCashConfidenceRouter:
+        case .riskContributionCashConfidenceRouter,
+             .riskContributionCashConfidenceLowNoise:
             growth = 1.00; stability = 1.00; defense = 1.00; flexibility = 1.00
         case .strongVolControlledRotation:
             growth = 0.78; stability = 0.66; defense = 0.66; flexibility = 0.78
