@@ -676,6 +676,14 @@ struct AdvancedStrategyLibrarySheet: View {
         }
     }
 
+    private var availableGroups: [LibraryGroup] {
+        LibraryGroup.allCases.filter { group in
+            templates.contains { template in
+                self.group(for: template) == group
+            }
+        }
+    }
+
     private var visibleSections: [StrategySection] {
         switch selectedGroup {
         case .selected:
@@ -718,7 +726,9 @@ struct AdvancedStrategyLibrarySheet: View {
                     LazyVStack(alignment: .leading, spacing: 14) {
                         strategyLibraryHeader
                         strategySearchArea
-                        strategyGroupPicker
+                        if availableGroups.count > 1 {
+                            strategyGroupPicker
+                        }
 
                         if matchingTemplates.isEmpty {
                             strategyEmptyState
@@ -800,7 +810,7 @@ struct AdvancedStrategyLibrarySheet: View {
     private var strategyGroupPicker: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ForEach(LibraryGroup.allCases) { group in
+                ForEach(availableGroups) { group in
                     let isSelected = selectedGroup == group
                     let accent = group.accent
                     Button {

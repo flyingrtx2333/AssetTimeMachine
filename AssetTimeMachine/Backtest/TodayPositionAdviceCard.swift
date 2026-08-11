@@ -52,6 +52,7 @@ struct TodayPositionAdviceCard: View {
     @StateObject private var adviceStore: StrategyAdviceProjectionStore
     @State private var pendingSnapshotRefreshTask: Task<Void, Never>?
     @State private var showsOperationAmounts = false
+    @State private var showsStrategyLibrary = false
 
     init(
         marketStore: RemoteMarketStore,
@@ -118,6 +119,17 @@ struct TodayPositionAdviceCard: View {
             pendingSnapshotRefreshTask = nil
             adviceStore.cancel()
         }
+        .sheet(isPresented: $showsStrategyLibrary) {
+            AdvancedStrategyLibrarySheet(
+                templates: StrategyNotificationDefaults.eligibleTemplates,
+                activeTemplateID: selectedTemplate?.id
+            ) { template in
+                strategyTemplateID = template.id
+                showsStrategyLibrary = false
+            }
+            .presentationDetents([.fraction(0.72), .large])
+            .presentationDragIndicator(.visible)
+        }
     }
 
     private var header: some View {
@@ -127,16 +139,8 @@ struct TodayPositionAdviceCard: View {
                     .font(AppTypography.eyebrow)
                     .foregroundStyle(AssetTheme.goldSoft)
 
-                Menu {
-                    Picker(
-                        AppLocalization.string("当前策略"),
-                        selection: $strategyTemplateID
-                    ) {
-                        ForEach(StrategyNotificationDefaults.eligibleTemplates) { template in
-                            Text(StrategyNotificationDefaults.pickerTitle(for: template))
-                                .tag(template.id)
-                        }
-                    }
+                Button {
+                    showsStrategyLibrary = true
                 } label: {
                     HStack(spacing: 7) {
                         Text(selectedTemplate?.title ?? AppLocalization.string("未选择策略"))
@@ -149,7 +153,7 @@ struct TodayPositionAdviceCard: View {
                             CuratedStrategyBadge(compact: true)
                         }
 
-                        Image(systemName: "chevron.up.chevron.down")
+                        Image(systemName: "chevron.right")
                             .font(AppTypography.microLabel)
                             .foregroundStyle(AssetTheme.textSecondary)
                     }
@@ -274,25 +278,15 @@ struct TodayPositionAdviceCard: View {
             }
 
             provenanceSection(advice)
-
-            Text(AppLocalization.string("下一交易日执行，仅供参考，不构成投资建议。"))
-                .font(AppTypography.microLabel)
-                .foregroundStyle(AssetTheme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private func provenanceSection(_ advice: StrategyRebalanceAdvice) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 6) {
-                Text(AppLocalization.format("信号截至 %@", advice.asOfDate.recordDateString))
-                Text("·")
-                Text(AppLocalization.string("资产记录"))
-                Text(adviceStore.snapshotDate?.recordDateString ?? AppLocalization.string("暂无记录"))
-            }
-
-            Text("\(AppLocalization.string("行情来源")) · \(historySourceDisplay)")
-                .lineLimit(2)
+        HStack(spacing: 6) {
+            Text(AppLocalization.format("信号截至 %@", advice.asOfDate.recordDateString))
+            Text("·")
+            Text(AppLocalization.string("资产记录"))
+            Text(adviceStore.snapshotDate?.recordDateString ?? AppLocalization.string("暂无记录"))
         }
         .font(AppTypography.caption)
         .foregroundStyle(AssetTheme.textSecondary)
@@ -446,31 +440,6 @@ struct TodayPositionAdviceCard: View {
         let weights = adviceStore.actions.compactMap(\.currentWeight)
         guard !weights.isEmpty else { return nil }
         return weights.reduce(0, +)
-    }
-
-    private var historySourceDisplay: String {
-        var upstreamLabels: [String] = []
-        let knownSources: [(needle: String, label: String)] = [
-            ("eastmoney", "Eastmoney"),
-            ("sina", "Sina"),
-            ("yahoo", "Yahoo Finance"),
-            ("frankfurter", "Frankfurter"),
-            ("akshare", "AKShare")
-        ]
-
-        for source in adviceStore.historySourceNames {
-            guard source.caseInsensitiveCompare("Flyingrtx") != .orderedSame else { continue }
-            let normalized = source.lowercased()
-            let recognized = knownSources.compactMap { normalized.contains($0.needle) ? $0.label : nil }
-            upstreamLabels.append(contentsOf: recognized.isEmpty ? [source] : recognized)
-        }
-
-        var seen = Set<String>()
-        let upstream = upstreamLabels.filter { seen.insert($0).inserted }
-        if upstream.isEmpty {
-            return AppLocalization.string("Flyingrtx 公共历史行情")
-        }
-        return "Flyingrtx · \(upstream.joined(separator: " / "))"
     }
 
     @MainActor
