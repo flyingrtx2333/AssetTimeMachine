@@ -1083,13 +1083,13 @@ nonisolated enum BacktestEngine {
     ) -> ResearchTargetStrategyRun? {
         let config = ResearchTargetStrategyConfig(
             symbol: "gold_nasdaq_dual_trend_barbell",
-            title: AppLocalization.string("双趋势金纳杠铃"),
+            title: AppLocalization.string("金纳双趋势"),
             warmupSessions: 300,
             rebalanceSessions: 63,
             rebalanceBand: 0.10,
             maxGrossExposure: 1.0,
             allowsFinancedExposure: false,
-            buyReason: AppLocalization.string("双趋势金纳杠铃调仓")
+            buyReason: AppLocalization.string("金纳双趋势调仓")
         )
         return runResearchTargetProviderStrategyWithTrace(
             assetInputs: assetInputs,
@@ -2328,14 +2328,14 @@ nonisolated enum BacktestEngine {
         let broadUnwindTurnoverThreshold = isLowNoise ? 0.40 : 0.60
         let config = ResearchTargetStrategyConfig(
             symbol: isLowNoise ? "risk_contribution_cash_confidence_low_noise" : "risk_contribution_cash_confidence_router",
-            title: AppLocalization.string(isLowNoise ? "无杠杆低噪增强" : "无融资置信度恢复"),
+            title: AppLocalization.string(isLowNoise ? "低噪增强" : "无融资置信度恢复"),
             warmupSessions: 21,
             rebalanceSessions: 1,
             rebalanceBand: tradeBand,
             maxGrossExposure: grossCap,
             allowsFinancedExposure: false,
             financingAnnualRate: 0,
-            buyReason: AppLocalization.string(isLowNoise ? "无杠杆低噪增强调仓" : "无融资置信度恢复调仓")
+            buyReason: AppLocalization.string(isLowNoise ? "低噪增强调仓" : "无融资置信度恢复调仓")
         )
 
         var alignedBaseValues: [Double?] = []
@@ -5858,7 +5858,7 @@ nonisolated enum BacktestEngine {
                     lowRiskScale: lowScale
                 ),
                 rebalanceBand: 0.08,
-                buyReason: AppLocalization.string("均衡权益状态建仓")
+                buyReason: AppLocalization.string("均衡配置建仓")
             )
         case .coreGoldSatelliteSharpeStateGateMomentum:
             let lowRiskScale = researchOverrideDouble("ATM_SHARPE_LOW_SCALE", default: 0.35)
@@ -6009,7 +6009,7 @@ nonisolated enum BacktestEngine {
                     ? .init(multiplier: riskBudgetMultiplier, annualFinancingRate: 0.03)
                     : nil,
                 rebalanceBand: riskBudgetRebalanceBand,
-                buyReason: AppLocalization.string("进取风险预算建仓")
+                buyReason: AppLocalization.string("进取配置建仓")
             )
         case .coreGoldSatelliteConfirmedAccelerationMomentum:
             return recentLossVolatilityMetaConfig(
@@ -6065,7 +6065,7 @@ nonisolated enum BacktestEngine {
                     shallowDrawdownThreshold: 0.02,
                     profitScale: 0.90
                 ),
-                buyReason: AppLocalization.string("稳健锁盈防守建仓")
+                buyReason: AppLocalization.string("防守配置建仓")
             )
         case .coreGoldSatelliteDynamicSleeveMomentum:
             return recentLossVolatilityMetaConfig(

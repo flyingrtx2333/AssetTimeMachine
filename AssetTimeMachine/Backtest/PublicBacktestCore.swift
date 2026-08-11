@@ -238,7 +238,7 @@ public enum PublicBacktestCore {
     private static let strategyDescriptors: [StrategyDescriptor] = [
         .init(
             id: "core-gold-satellite-equity-curve-state-gate-momentum",
-            name: "均衡权益状态",
+            name: "均衡配置",
             riskLevel: "中等",
             summary: "以跨市场趋势和组合状态协同控制风险预算，在风险走弱阶段自动收缩。",
             assetScope: ["黄金", "美国权益指数", "中国权益指数", "现金"],
@@ -248,7 +248,7 @@ public enum PublicBacktestCore {
         ),
         .init(
             id: "core-gold-satellite-risk-budget-state-gate-momentum",
-            name: "进取风险预算",
+            name: "进取配置",
             riskLevel: "中高",
             summary: "在防守与进取引擎之间分配风险预算，侧重长期宽度确认与成本约束。",
             assetScope: ["黄金", "美国权益指数", "中国权益指数", "现金"],
@@ -258,7 +258,7 @@ public enum PublicBacktestCore {
         ),
         .init(
             id: "core-gold-satellite-profit-lock-momentum",
-            name: "稳健锁盈防守",
+            name: "防守配置",
             riskLevel: "中低",
             summary: "根据组合回撤与快速上涨后的状态平滑降低风险预算，强调持有体验。",
             assetScope: ["黄金", "美国权益指数", "中国权益指数", "现金"],
@@ -278,7 +278,7 @@ public enum PublicBacktestCore {
         ),
         .init(
             id: "gold-nasdaq-dual-trend-barbell",
-            name: "双趋势金纳杠铃",
+            name: "金纳双趋势",
             riskLevel: "中高",
             summary: "黄金与纳指分别判断长期趋势，弱势时降低对应仓位并保留现金。",
             assetScope: ["黄金", "纳斯达克指数", "现金"],

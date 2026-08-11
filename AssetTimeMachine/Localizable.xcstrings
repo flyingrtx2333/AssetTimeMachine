@@ -1,6 +1,54 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "稳健": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Steady" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "稳健" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "穩健" } }
+      }
+    },
+    "均衡": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Balanced" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "均衡" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "均衡" } }
+      }
+    },
+    "进取": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Growth" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "进取" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "進取" } }
+      }
+    },
+    "趋势": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Trend" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "趋势" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "趨勢" } }
+      }
+    },
+    "反转": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Reversal" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "反转" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "反轉" } }
+      }
+    },
+    "换个关键词，或切换策略分类。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Try another keyword or switch strategy categories." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "换个关键词，或切换策略分类。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "換個關鍵字，或切換策略分類。" } }
+      }
+    },
     "今日持仓建议": {
       "extractionState": "manual",
       "localizations": {
@@ -71,6 +119,134 @@
         "en": { "stringUnit": { "state": "translated", "value": "Position Changes" } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "持仓调整" } },
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "持倉調整" } }
+      }
+    },
+    "显示操作金额": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Show action amounts" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "显示操作金额" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "顯示操作金額" } }
+      }
+    },
+    "隐藏操作金额": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Hide action amounts" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "隐藏操作金额" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "隱藏操作金額" } }
+      }
+    },
+    "低噪增强": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Low-Noise Enhanced" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "低噪增强" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "低噪增強" } }
+      }
+    },
+    "低噪增强调仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Low-noise enhanced rebalance" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "低噪增强调仓" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "低噪增強調倉" } }
+      }
+    },
+    "均衡配置": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Balanced Allocation" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "均衡配置" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "均衡配置" } }
+      }
+    },
+    "均衡配置建仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Balanced allocation entry" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "均衡配置建仓" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "均衡配置建倉" } }
+      }
+    },
+    "进取配置": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Growth Allocation" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "进取配置" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "進取配置" } }
+      }
+    },
+    "进取配置建仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Growth allocation entry" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "进取配置建仓" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "進取配置建倉" } }
+      }
+    },
+    "防守配置": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Defensive Allocation" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "防守配置" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "防守配置" } }
+      }
+    },
+    "防守配置建仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Defensive allocation entry" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "防守配置建仓" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "防守配置建倉" } }
+      }
+    },
+    "金纳双趋势": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Gold–Nasdaq Dual Trend" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "金纳双趋势" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "金納雙趨勢" } }
+      }
+    },
+    "金纳双趋势调仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Gold–Nasdaq dual-trend rebalance" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "金纳双趋势调仓" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "金納雙趨勢調倉" } }
+      }
+    },
+    "20日趋势": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "20-Day Trend" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "20日趋势" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "20日趨勢" } }
+      }
+    },
+    "60日趋势": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "60-Day Trend" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "60日趋势" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "60日趨勢" } }
+      }
+    },
+    "均线交叉": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Moving-Average Crossover" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "均线交叉" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "均線交叉" } }
+      }
+    },
+    "布林反转": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Bollinger Reversal" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "布林反转" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "布林反轉" } }
       }
     },
     "操作": {

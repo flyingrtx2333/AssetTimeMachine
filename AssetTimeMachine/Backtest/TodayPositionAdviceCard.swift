@@ -10,6 +10,39 @@ private struct StrategyHoldingSlice: Identifiable {
     let color: Color
 }
 
+private enum StrategyHoldingPalette {
+    static let cash = Color(red: 0.39, green: 0.44, blue: 0.53)
+
+    static func color(for symbol: String) -> Color {
+        switch symbol {
+        case "gold_cny":
+            return Color(red: 0.91, green: 0.66, blue: 0.24)
+        case "sp500":
+            return Color(red: 0.14, green: 0.68, blue: 0.72)
+        case "nasdaq":
+            return Color(red: 0.29, green: 0.46, blue: 0.91)
+        case "dowjones":
+            return Color(red: 0.91, green: 0.43, blue: 0.24)
+        case "hsi":
+            return Color(red: 0.84, green: 0.28, blue: 0.47)
+        case "csi300":
+            return Color(red: 0.24, green: 0.65, blue: 0.43)
+        case "shanghai_composite":
+            return Color(red: 0.52, green: 0.38, blue: 0.82)
+        case "shenzhen_component":
+            return Color(red: 0.76, green: 0.31, blue: 0.67)
+        case "chinext":
+            return Color(red: 0.25, green: 0.72, blue: 0.62)
+        case "nikkei":
+            return Color(red: 0.79, green: 0.48, blue: 0.18)
+        case "oil_wti_cny":
+            return Color(red: 0.65, green: 0.38, blue: 0.18)
+        default:
+            return Color(red: 0.45, green: 0.58, blue: 0.76)
+        }
+    }
+}
+
 struct TodayPositionAdviceCard: View {
     @Environment(\.modelContext) private var modelContext
     @AppStorage("app.strategyNotifications.templateID") private var strategyTemplateID = StrategyNotificationDefaults.defaultTemplateID
@@ -18,6 +51,7 @@ struct TodayPositionAdviceCard: View {
 
     @StateObject private var adviceStore: StrategyAdviceProjectionStore
     @State private var pendingSnapshotRefreshTask: Task<Void, Never>?
+    @State private var showsOperationAmounts = false
 
     init(
         marketStore: RemoteMarketStore,
@@ -185,10 +219,29 @@ struct TodayPositionAdviceCard: View {
             .allowsHitTesting(false)
 
             VStack(alignment: .leading, spacing: 0) {
-                Text(AppLocalization.string("持仓调整"))
-                    .font(AppTypography.metaStrong)
-                    .foregroundStyle(AssetTheme.textPrimary)
-                .padding(.bottom, 10)
+                HStack(spacing: 12) {
+                    Text(AppLocalization.string("持仓调整"))
+                        .font(AppTypography.metaStrong)
+                        .foregroundStyle(AssetTheme.textPrimary)
+
+                    Spacer(minLength: 8)
+
+                    Button {
+                        showsOperationAmounts.toggle()
+                    } label: {
+                        Image(systemName: showsOperationAmounts ? "eye" : "eye.slash")
+                            .font(AppTypography.captionStrong)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                            .frame(width: 30, height: 30)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(
+                        AppLocalization.string(
+                            showsOperationAmounts ? "隐藏操作金额" : "显示操作金额"
+                        )
+                    )
+                }
+                .padding(.bottom, 6)
 
                 actionTableHeader
 
@@ -260,7 +313,7 @@ struct TodayPositionAdviceCard: View {
         HStack(alignment: .center, spacing: 8) {
             HStack(spacing: 7) {
                 Circle()
-                    .fill(BacktestDefaults.strategyColor(for: action.symbol))
+                    .fill(StrategyHoldingPalette.color(for: action.symbol))
                     .frame(width: 6, height: 6)
 
                 Text(action.title)
@@ -281,11 +334,13 @@ struct TodayPositionAdviceCard: View {
                 Text(action.kind.title)
                     .foregroundStyle(action.kind.accent)
 
-                Text(action.amountText)
-                    .font(AppTypography.microLabel.monospacedDigit())
-                    .foregroundStyle(AssetTheme.textSecondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
+                if showsOperationAmounts {
+                    Text(action.amountText)
+                        .font(AppTypography.microLabel.monospacedDigit())
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                }
             }
             .frame(width: 86, alignment: .trailing)
         }
@@ -298,7 +353,7 @@ struct TodayPositionAdviceCard: View {
         HStack(alignment: .center, spacing: 8) {
             HStack(spacing: 7) {
                 Circle()
-                    .fill(AssetTheme.textSecondary.opacity(0.56))
+                    .fill(StrategyHoldingPalette.cash)
                     .frame(width: 6, height: 6)
 
                 Text(AppLocalization.string("现金/其他"))
@@ -332,7 +387,7 @@ struct TodayPositionAdviceCard: View {
                 id: "current-\(action.symbol)",
                 title: action.title,
                 weight: weight,
-                color: BacktestDefaults.strategyColor(for: action.symbol)
+                color: StrategyHoldingPalette.color(for: action.symbol)
             )
         }
 
@@ -344,7 +399,7 @@ struct TodayPositionAdviceCard: View {
                 id: "current-cash-other",
                 title: AppLocalization.string("现金/其他"),
                 weight: residual,
-                color: AssetTheme.textSecondary.opacity(0.68)
+                color: StrategyHoldingPalette.cash
             )
         ]
     }
@@ -356,7 +411,7 @@ struct TodayPositionAdviceCard: View {
                 id: "target-\(allocation.symbol)",
                 title: allocation.title,
                 weight: allocation.targetWeight,
-                color: BacktestDefaults.strategyColor(for: allocation.symbol)
+                color: StrategyHoldingPalette.color(for: allocation.symbol)
             )
         }
 
@@ -366,7 +421,7 @@ struct TodayPositionAdviceCard: View {
                     id: "target-cash-other",
                     title: AppLocalization.string("现金/其他"),
                     weight: max(advice.cashWeight, slices.isEmpty ? 1 : 0),
-                    color: AssetTheme.textSecondary.opacity(0.68)
+                    color: StrategyHoldingPalette.cash
                 )
             )
         }

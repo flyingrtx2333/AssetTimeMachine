@@ -357,17 +357,17 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
         case .coreGoldSatelliteOneWayVolManagedMomentum:
             return AppLocalization.string("单向控波元策略")
         case .coreGoldSatelliteEquityCurveStateGateMomentum:
-            return AppLocalization.string("均衡权益状态")
+            return AppLocalization.string("均衡配置")
         case .coreGoldSatelliteSharpeStateGateMomentum:
             return AppLocalization.string("高夏普状态机")
         case .coreGoldSatelliteAssetRiskGateMomentum:
             return AppLocalization.string("收益回撤门状态机")
         case .coreGoldSatelliteRiskBudgetStateGateMomentum:
-            return AppLocalization.string("进取风险预算")
+            return AppLocalization.string("进取配置")
         case .coreGoldSatelliteConfirmedAccelerationMomentum:
             return AppLocalization.string("确认加速进攻袖套")
         case .coreGoldSatelliteProfitLockMomentum:
-            return AppLocalization.string("稳健锁盈防守")
+            return AppLocalization.string("防守配置")
         case .coreGoldSatelliteDynamicSleeveMomentum:
             return AppLocalization.string("动态袖套夏普策略")
         case .coreGoldSatelliteContagionRepairMomentum:
@@ -395,7 +395,7 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
         case .goldNasdaqPortfolioScheduler:
             return AppLocalization.string("金纳组合调度")
         case .goldNasdaqDualTrendBarbell:
-            return AppLocalization.string("双趋势金纳杠铃")
+            return AppLocalization.string("金纳双趋势")
         case .convexCrashHedgeComposite:
             return AppLocalization.string("凸性极速空头组合")
         case .onlineStrategyAllocator:
@@ -409,7 +409,7 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
         case .riskContributionCashConfidenceRouter:
             return AppLocalization.string("无融资置信度恢复")
         case .riskContributionCashConfidenceLowNoise:
-            return AppLocalization.string("无杠杆低噪增强")
+            return AppLocalization.string("低噪增强")
         case .strongVolControlledRotation:
             return AppLocalization.string("强势控波轮动")
         case .momentumRotation:
@@ -1557,7 +1557,7 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             mode: .coreGoldSatelliteEquityCurveStateGateMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
             category: AppLocalization.string("精选策略"),
-            title: AppLocalization.string("均衡权益状态"),
+            title: AppLocalization.string("均衡配置"),
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1608,7 +1608,7 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             mode: .coreGoldSatelliteRiskBudgetStateGateMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
             category: AppLocalization.string("精选策略"),
-            title: AppLocalization.string("进取风险预算"),
+            title: AppLocalization.string("进取配置"),
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1642,7 +1642,7 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             mode: .coreGoldSatelliteProfitLockMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
             category: AppLocalization.string("精选策略"),
-            title: AppLocalization.string("稳健锁盈防守"),
+            title: AppLocalization.string("防守配置"),
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1794,8 +1794,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "risk-contribution-cash-confidence-low-noise",
             mode: .riskContributionCashConfidenceLowNoise,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("无杠杆低噪增强"),
+            category: AppLocalization.string("精选策略"),
+            title: AppLocalization.string("低噪增强"),
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1811,8 +1811,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "gold-nasdaq-dual-trend-barbell",
             mode: .goldNasdaqDualTrendBarbell,
             selectedAssetSymbols: ["gold_cny", "nasdaq"],
-            category: AppLocalization.string("独立策略"),
-            title: AppLocalization.string("双趋势金纳杠铃"),
+            category: AppLocalization.string("精选策略"),
+            title: AppLocalization.string("金纳双趋势"),
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1879,7 +1879,7 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "basic-ma20-trend",
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
             category: AppLocalization.string("基础策略"),
-            title: AppLocalization.string("MA20趋势"),
+            title: AppLocalization.string("20日趋势"),
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1895,7 +1895,7 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "basic-ma60-trend",
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
             category: AppLocalization.string("基础策略"),
-            title: AppLocalization.string("MA60趋势"),
+            title: AppLocalization.string("60日趋势"),
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1911,7 +1911,7 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "basic-ma-golden-cross",
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
             category: AppLocalization.string("基础策略"),
-            title: AppLocalization.string("MA金叉死叉"),
+            title: AppLocalization.string("均线交叉"),
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1927,7 +1927,7 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "basic-boll-mean-reversion",
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
             category: AppLocalization.string("基础策略"),
-            title: AppLocalization.string("BOLL下轨反弹"),
+            title: AppLocalization.string("布林反转"),
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1953,11 +1953,6 @@ enum BacktestProductStrategyCatalog {
         "core-gold-satellite-equity-curve-state-gate-momentum",
         "core-gold-satellite-risk-budget-state-gate-momentum",
         "core-gold-satellite-profit-lock-momentum",
-        "convex-crash-hedge-composite",
-        "risk-contribution-reallocation",
-        "risk-contribution-regime-router",
-        "risk-contribution-recovery-router",
-        "risk-contribution-cash-confidence-router",
         "gold-nasdaq-dual-trend-barbell",
         "basic-ma60-trend",
         "basic-ma-golden-cross",
@@ -2826,7 +2821,6 @@ enum BacktestDefaults {
 enum StrategyNotificationDefaults {
     static let defaultTemplateID = "core-gold-satellite-equity-curve-state-gate-momentum"
     static let recommendedTemplateID = "risk-contribution-cash-confidence-low-noise"
-    static let riskContributionTemplateID = "risk-contribution-reallocation"
     static let defaultHour = 9
 
     static var eligibleTemplates: [AdvancedBacktestStrategyTemplate] {
@@ -2835,8 +2829,15 @@ enum StrategyNotificationDefaults {
 
     static func migratedTemplateID(_ id: String) -> String {
         switch id {
-        case "online-strategy-allocator", "consensus-scale-defense":
-            return riskContributionTemplateID
+        case "risk-contribution-cash-confidence-router":
+            return recommendedTemplateID
+        case "online-strategy-allocator",
+             "consensus-scale-defense",
+             "convex-crash-hedge-composite",
+             "risk-contribution-reallocation",
+             "risk-contribution-regime-router",
+             "risk-contribution-recovery-router":
+            return defaultTemplateID
         default:
             return id
         }

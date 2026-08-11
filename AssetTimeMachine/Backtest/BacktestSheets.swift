@@ -545,68 +545,99 @@ struct BacktestLoadingView: View {
 
 struct AdvancedStrategyLibrarySheet: View {
     private enum LibraryGroup: String, CaseIterable, Identifiable {
-        case all
         case selected
-        case experimental
-        case independent
         case basic
 
         var id: String { rawValue }
 
         var title: String {
             switch self {
-            case .all: return AppLocalization.string("全部")
             case .selected: return AppLocalization.string("精选")
-            case .experimental: return AppLocalization.string("实验")
-            case .independent: return AppLocalization.string("独立")
             case .basic: return AppLocalization.string("基础")
-            }
-        }
-
-        var sectionTitle: String {
-            switch self {
-            case .all: return AppLocalization.string("全部策略")
-            case .selected: return AppLocalization.string("精选策略")
-            case .experimental: return AppLocalization.string("实验策略")
-            case .independent: return AppLocalization.string("独立策略")
-            case .basic: return AppLocalization.string("基础策略")
-            }
-        }
-
-        var sectionSubtitle: String {
-            switch self {
-            case .all: return ""
-            case .selected: return AppLocalization.string("适合直接比较的主产品策略")
-            case .experimental: return AppLocalization.string("仍在验证，不代表已经达到目标")
-            case .independent: return AppLocalization.string("与主策略不同的收益逻辑")
-            case .basic: return AppLocalization.string("用于理解指标与验证回测行为")
             }
         }
 
         var icon: String {
             switch self {
-            case .all: return "square.grid.2x2"
             case .selected: return "sparkles"
-            case .experimental: return "testtube.2"
-            case .independent: return "point.3.connected.trianglepath.dotted"
-            case .basic: return "books.vertical"
+            case .basic: return "function"
             }
         }
 
         var accent: Color {
             switch self {
-            case .all, .selected: return AssetTheme.gold
-            case .experimental: return AssetTheme.accentOrange
-            case .independent: return AssetTheme.positive
+            case .selected: return AssetTheme.gold
             case .basic: return AssetTheme.accentBlue
             }
         }
     }
 
+    private enum StrategyTier: String, CaseIterable, Identifiable {
+        case steady
+        case balanced
+        case growth
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .steady: return AppLocalization.string("稳健")
+            case .balanced: return AppLocalization.string("均衡")
+            case .growth: return AppLocalization.string("进取")
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .steady: return "shield.fill"
+            case .balanced: return "scale.3d"
+            case .growth: return "bolt.fill"
+            }
+        }
+
+        var accent: Color {
+            switch self {
+            case .steady: return AssetTheme.accentBlue
+            case .balanced: return AssetTheme.gold
+            case .growth: return AssetTheme.accentOrange
+            }
+        }
+    }
+
+    private enum BasicStrategyFamily: String, CaseIterable, Identifiable {
+        case trend
+        case reversal
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .trend: return AppLocalization.string("趋势")
+            case .reversal: return AppLocalization.string("反转")
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .trend: return "chart.line.uptrend.xyaxis"
+            case .reversal: return "arrow.uturn.down.circle.fill"
+            }
+        }
+
+        var accent: Color {
+            switch self {
+            case .trend: return AssetTheme.accentBlue
+            case .reversal: return AssetTheme.positive
+            }
+        }
+    }
+
     private struct StrategySection: Identifiable {
-        let group: LibraryGroup
+        let id: String
+        let title: String
+        let icon: String
+        let accent: Color
         let templates: [AdvancedBacktestStrategyTemplate]
-        var id: LibraryGroup { group }
     }
 
     @Environment(\.dismiss) private var dismiss
@@ -614,17 +645,25 @@ struct AdvancedStrategyLibrarySheet: View {
     let activeTemplateID: String?
     let onSelect: (AdvancedBacktestStrategyTemplate) -> Void
     @State private var searchText = ""
-    @State private var selectedGroup: LibraryGroup = .all
+    @State private var selectedGroup: LibraryGroup
 
-    private var currentTemplate: AdvancedBacktestStrategyTemplate? {
-        guard let activeTemplateID else { return nil }
-        return templates.first { $0.id == activeTemplateID }
+    init(
+        templates: [AdvancedBacktestStrategyTemplate],
+        activeTemplateID: String?,
+        onSelect: @escaping (AdvancedBacktestStrategyTemplate) -> Void
+    ) {
+        self.templates = templates
+        self.activeTemplateID = activeTemplateID
+        self.onSelect = onSelect
+        _selectedGroup = State(
+            initialValue: activeTemplateID.map(Self.isBasicTemplateID) == true ? .basic : .selected
+        )
     }
 
     private var matchingTemplates: [AdvancedBacktestStrategyTemplate] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return templates.filter { template in
-            let matchesGroup = selectedGroup == .all || group(for: template) == selectedGroup
+            let matchesGroup = group(for: template) == selectedGroup
             guard matchesGroup else { return false }
             guard !query.isEmpty else { return true }
             return template.title.localizedCaseInsensitiveContains(query)
@@ -636,25 +675,36 @@ struct AdvancedStrategyLibrarySheet: View {
     }
 
     private var visibleSections: [StrategySection] {
-        let groups = selectedGroup == .all
-            ? LibraryGroup.allCases.filter { $0 != .all }
-            : [selectedGroup]
-        return groups.compactMap { group in
-            let sectionTemplates = matchingTemplates.filter {
-                self.group(for: $0) == group && $0.id != activeTemplateID
+        switch selectedGroup {
+        case .selected:
+            return StrategyTier.allCases.compactMap { tier in
+                let sectionTemplates = matchingTemplates.filter {
+                    self.tier(for: $0) == tier
+                }
+                guard !sectionTemplates.isEmpty else { return nil }
+                return StrategySection(
+                    id: "selected-\(tier.id)",
+                    title: tier.title,
+                    icon: tier.icon,
+                    accent: tier.accent,
+                    templates: sectionTemplates
+                )
             }
-            return sectionTemplates.isEmpty ? nil : StrategySection(group: group, templates: sectionTemplates)
+        case .basic:
+            return BasicStrategyFamily.allCases.compactMap { family in
+                let sectionTemplates = matchingTemplates.filter {
+                    self.basicFamily(for: $0) == family
+                }
+                guard !sectionTemplates.isEmpty else { return nil }
+                return StrategySection(
+                    id: "basic-\(family.id)",
+                    title: family.title,
+                    icon: family.icon,
+                    accent: family.accent,
+                    templates: sectionTemplates
+                )
+            }
         }
-    }
-
-    private var shouldShowCurrentTemplate: Bool {
-        guard let currentTemplate else { return false }
-        let matchesGroup = selectedGroup == .all || group(for: currentTemplate) == selectedGroup
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let matchesSearch = query.isEmpty
-            || currentTemplate.title.localizedCaseInsensitiveContains(query)
-            || currentTemplate.mode.detail.localizedCaseInsensitiveContains(query)
-        return matchesGroup && matchesSearch
     }
 
     var body: some View {
@@ -667,24 +717,6 @@ struct AdvancedStrategyLibrarySheet: View {
                         strategyLibraryHeader
                         strategySearchArea
                         strategyGroupPicker
-
-                        if shouldShowCurrentTemplate, let currentTemplate {
-                            VStack(alignment: .leading, spacing: 8) {
-                                strategySectionLabel(
-                                    icon: "checkmark.seal.fill",
-                                    title: AppLocalization.string("当前使用"),
-                                    accent: AssetTheme.positive
-                                )
-                                AdvancedStrategyTemplateRow(
-                                    template: currentTemplate,
-                                    isActive: true,
-                                    isFeatured: true
-                                ) {
-                                    onSelect(currentTemplate)
-                                    dismiss()
-                                }
-                            }
-                        }
 
                         if matchingTemplates.isEmpty {
                             strategyEmptyState
@@ -779,7 +811,7 @@ struct AdvancedStrategyLibrarySheet: View {
                                 .font(.caption2.weight(.bold))
                             Text(group.title)
                                 .font(AppTypography.captionStrong)
-                            Text(String(group == .all ? templates.count : templates.filter { self.group(for: $0) == group }.count))
+                            Text(String(templates.filter { self.group(for: $0) == group }.count))
                                 .font(.caption2.weight(.bold))
                                 .foregroundStyle(isSelected ? Color.black.opacity(0.64) : AssetTheme.textSecondary)
                         }
@@ -812,36 +844,34 @@ struct AdvancedStrategyLibrarySheet: View {
     }
 
     private func strategySection(_ section: StrategySection) -> some View {
-        let accent = section.group.accent
         return VStack(alignment: .leading, spacing: 9) {
             strategySectionLabel(
-                icon: section.group.icon,
-                title: section.group.sectionTitle,
-                accent: accent,
+                icon: section.icon,
+                title: section.title,
+                accent: section.accent,
                 count: section.templates.count
             )
 
-            LazyVStack(spacing: 8) {
-                ForEach(section.templates) { template in
+            LazyVStack(spacing: 0) {
+                ForEach(Array(section.templates.enumerated()), id: \.element.id) { index, template in
                     AdvancedStrategyTemplateRow(
                         template: template,
-                        isActive: false
+                        isActive: template.id == activeTemplateID,
+                        isFeatured: template.id == activeTemplateID
                     ) {
                         onSelect(template)
                         dismiss()
                     }
+
+                    if index < section.templates.count - 1 {
+                        Divider()
+                            .overlay(AssetTheme.border.opacity(0.5))
+                            .padding(.leading, 46)
+                    }
                 }
             }
         }
-        .padding(10)
-        .background(
-            accent.opacity(0.045),
-            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(accent.opacity(0.13), lineWidth: 1)
-        )
+        .padding(.top, 2)
     }
 
     private func strategySectionLabel(
@@ -875,16 +905,33 @@ struct AdvancedStrategyLibrarySheet: View {
     }
 
     private func group(for template: AdvancedBacktestStrategyTemplate) -> LibraryGroup {
-        switch template.id {
-        case "convex-crash-hedge-composite", "risk-contribution-reallocation":
-            return .experimental
-        case "gold-nasdaq-dual-trend-barbell":
-            return .independent
+        Self.isBasicTemplateID(template.id) ? .basic : .selected
+    }
+
+    private static func isBasicTemplateID(_ id: String) -> Bool {
+        switch id {
         case "basic-ma60-trend", "basic-ma-golden-cross", "basic-ma20-trend", "basic-boll-mean-reversion":
-            return .basic
+            return true
         default:
-            return .selected
+            return false
         }
+    }
+
+    private func tier(for template: AdvancedBacktestStrategyTemplate) -> StrategyTier {
+        switch template.id {
+        case "risk-contribution-cash-confidence-low-noise",
+             "core-gold-satellite-profit-lock-momentum":
+            return .steady
+        case "core-gold-satellite-risk-budget-state-gate-momentum",
+             "gold-nasdaq-dual-trend-barbell":
+            return .growth
+        default:
+            return .balanced
+        }
+    }
+
+    private func basicFamily(for template: AdvancedBacktestStrategyTemplate) -> BasicStrategyFamily {
+        template.id == "basic-boll-mean-reversion" ? .reversal : .trend
     }
 
     private var strategyEmptyState: some View {
@@ -892,7 +939,7 @@ struct AdvancedStrategyLibrarySheet: View {
             Text(AppLocalization.string("没有匹配策略"))
                 .font(AppTypography.rowTitle)
                 .foregroundStyle(AssetTheme.textPrimary)
-            Text(AppLocalization.string("换个关键词，或切回全部分类。"))
+            Text(AppLocalization.string("换个关键词，或切换策略分类。"))
                 .font(AppTypography.caption)
                 .foregroundStyle(AssetTheme.textSecondary)
         }
@@ -914,14 +961,24 @@ struct AdvancedStrategyTemplateRow: View {
 
     private var strategyIcon: String {
         switch template.id {
-        case "convex-crash-hedge-composite":
-            return "bolt.shield.fill"
-        case "risk-contribution-reallocation":
-            return "dial.medium.fill"
+        case "risk-contribution-cash-confidence-low-noise":
+            return "waveform.path.ecg"
+        case "core-gold-satellite-equity-curve-state-gate-momentum":
+            return "scale.3d"
+        case "core-gold-satellite-risk-budget-state-gate-momentum":
+            return "bolt.fill"
+        case "core-gold-satellite-profit-lock-momentum":
+            return "shield.fill"
         case "gold-nasdaq-dual-trend-barbell":
-            return "circle.grid.cross.fill"
-        case "basic-ma60-trend", "basic-ma-golden-cross", "basic-ma20-trend", "basic-boll-mean-reversion":
-            return "function"
+            return "arrow.triangle.swap"
+        case "basic-ma60-trend":
+            return "chart.line.uptrend.xyaxis"
+        case "basic-ma-golden-cross":
+            return "arrow.triangle.branch"
+        case "basic-ma20-trend":
+            return "clock.arrow.circlepath"
+        case "basic-boll-mean-reversion":
+            return "arrow.uturn.down.circle.fill"
         default:
             return "sparkles"
         }
@@ -929,12 +986,17 @@ struct AdvancedStrategyTemplateRow: View {
 
     private var strategyAccent: Color {
         switch template.id {
-        case "convex-crash-hedge-composite", "risk-contribution-reallocation":
-            return AssetTheme.accentOrange
-        case "gold-nasdaq-dual-trend-barbell":
+        case "risk-contribution-cash-confidence-low-noise",
+             "basic-ma-golden-cross":
             return AssetTheme.positive
-        case "basic-ma60-trend", "basic-ma-golden-cross", "basic-ma20-trend", "basic-boll-mean-reversion":
+        case "core-gold-satellite-risk-budget-state-gate-momentum",
+             "basic-boll-mean-reversion":
+            return AssetTheme.accentOrange
+        case "core-gold-satellite-profit-lock-momentum",
+             "basic-ma60-trend":
             return AssetTheme.accentBlue
+        case "gold-nasdaq-dual-trend-barbell":
+            return AssetTheme.accentRed
         default:
             return AssetTheme.gold
         }
@@ -942,6 +1004,10 @@ struct AdvancedStrategyTemplateRow: View {
 
     private var isDefaultStrategy: Bool {
         template.id == StrategyNotificationDefaults.defaultTemplateID
+    }
+
+    private var isRecommendedStrategy: Bool {
+        template.id == StrategyNotificationDefaults.recommendedTemplateID
     }
 
     var body: some View {
@@ -961,7 +1027,9 @@ struct AdvancedStrategyTemplateRow: View {
 
                 Spacer(minLength: 6)
 
-                if isDefaultStrategy {
+                if isRecommendedStrategy {
+                    strategyBadge(AppLocalization.string("推荐"), accent: AssetTheme.positive)
+                } else if isDefaultStrategy {
                     strategyBadge(AppLocalization.string("默认"), accent: AssetTheme.gold)
                 }
                 if isActive {
@@ -976,22 +1044,17 @@ struct AdvancedStrategyTemplateRow: View {
             .padding(.horizontal, 13)
             .padding(.vertical, isFeatured ? 13 : 11)
             .background(
-                isFeatured ? strategyAccent.opacity(0.09) : AssetTheme.overlaySoft,
+                isFeatured || isActive ? strategyAccent.opacity(0.075) : Color.clear,
                 in: RoundedRectangle(cornerRadius: 16, style: .continuous)
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(
-                        isActive ? strategyAccent.opacity(0.62) : AssetTheme.border.opacity(0.46),
-                        lineWidth: isActive ? 1.2 : 1
-                    )
-            )
             .overlay(alignment: .leading) {
-                Capsule()
-                    .fill(strategyAccent.opacity(isFeatured ? 0.78 : 0.45))
-                    .frame(width: 3)
-                    .padding(.vertical, 10)
-                    .padding(.leading, 1)
+                if isActive {
+                    Capsule()
+                        .fill(strategyAccent.opacity(0.78))
+                        .frame(width: 3)
+                        .padding(.vertical, 10)
+                        .padding(.leading, 1)
+                }
             }
         }
         .buttonStyle(.plain)
