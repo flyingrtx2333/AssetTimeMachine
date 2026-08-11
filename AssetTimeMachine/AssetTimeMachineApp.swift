@@ -1,8 +1,29 @@
 import SwiftUI
 import SwiftData
+import UIKit
+import UserNotifications
+
+final class AssetTimeMachineAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        UNUserNotificationCenter.current().delegate = self
+        return true
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .list, .sound])
+    }
+}
 
 @main
 struct AssetTimeMachineApp: App {
+    @UIApplicationDelegateAdaptor(AssetTimeMachineAppDelegate.self) private var appDelegate
     @AppStorage("app.appearanceMode") private var appearanceModeRawValue: String = AppAppearanceMode.system.rawValue
     @AppStorage("app.language") private var appLanguageRawValue: String = AppLanguage.system.rawValue
     private let modelBootstrap: AppModelContainerBootstrap

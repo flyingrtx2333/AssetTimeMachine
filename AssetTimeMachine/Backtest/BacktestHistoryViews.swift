@@ -208,6 +208,9 @@ struct BacktestHistorySectionHeader: View {
 }
 
 struct BacktestHomeView: View {
+    @ObservedObject var marketStore: RemoteMarketStore
+    let strategyAdviceService: StrategyAdviceService
+    let isActive: Bool
     let records: [BacktestRecord]
     let totalRecordCount: Int
     let onStart: (BacktestRecordKind) -> Void
@@ -219,6 +222,12 @@ struct BacktestHomeView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             BacktestModeEntryPanel(onStart: onStart)
+
+            TodayPositionAdviceCard(
+                marketStore: marketStore,
+                adviceService: strategyAdviceService,
+                isActive: isActive
+            )
 
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {

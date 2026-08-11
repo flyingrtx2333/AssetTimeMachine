@@ -250,7 +250,7 @@ nonisolated enum BacktestDailySimulator {
                     let realizedCostBasis = averageCost * units
                     let realizedProfit = cashAmount - realizedCostBasis
                     let realizedReturn = realizedCostBasis > 0 ? realizedProfit / realizedCostBasis : nil
-                    let holdingDays = entryDateBySymbol[symbol].map { Calendar.current.dateComponents([.day], from: $0, to: date).day ?? 0 }
+                    let holdingDays = entryDateBySymbol[symbol].map { BacktestSeriesAlignment.historicalSeriesCalendar.dateComponents([.day], from: $0, to: date).day ?? 0 }
                     trades.append(.init(
                         assetSymbol: symbol,
                         assetTitle: option.title,
@@ -295,7 +295,7 @@ nonisolated enum BacktestDailySimulator {
                     let realizedCostBasis = averageCost * unitsToSell
                     let realizedProfit = cashAmount - realizedCostBasis
                     let realizedReturn = realizedCostBasis > 0 ? realizedProfit / realizedCostBasis : nil
-                    let holdingDays = entryDateBySymbol[symbol].map { Calendar.current.dateComponents([.day], from: $0, to: date).day ?? 0 }
+                    let holdingDays = entryDateBySymbol[symbol].map { BacktestSeriesAlignment.historicalSeriesCalendar.dateComponents([.day], from: $0, to: date).day ?? 0 }
                     trades.append(.init(
                         assetSymbol: symbol,
                         assetTitle: option.title,
@@ -596,7 +596,7 @@ nonisolated enum BacktestEngine {
 
         guard let first = points.first, let last = points.last, first.portfolioValue > 0 else { return nil }
         let totalReturn = (last.portfolioValue / first.portfolioValue) - 1
-        let daySpan = max(Calendar.current.dateComponents([.day], from: first.date, to: last.date).day ?? 0, 1)
+        let daySpan = max(BacktestSeriesAlignment.historicalSeriesCalendar.dateComponents([.day], from: first.date, to: last.date).day ?? 0, 1)
         let years = Double(daySpan) / 365.25
         let annualizedReturn = years > 0 ? pow(last.portfolioValue / first.portfolioValue, 1 / years) - 1 : nil
 
@@ -618,7 +618,7 @@ nonisolated enum BacktestEngine {
            let maxDrawdownPeakValue,
            let maxDrawdownPeakDate,
            let recoveryPoint = points.first(where: { $0.date > maxDrawdownPeakDate && $0.portfolioValue >= maxDrawdownPeakValue }) {
-            maxDrawdownRecoveryDays = Calendar.current.dateComponents([.day], from: maxDrawdownPeakDate, to: recoveryPoint.date).day
+            maxDrawdownRecoveryDays = BacktestSeriesAlignment.historicalSeriesCalendar.dateComponents([.day], from: maxDrawdownPeakDate, to: recoveryPoint.date).day
         } else {
             maxDrawdownRecoveryDays = nil
         }
@@ -854,7 +854,7 @@ nonisolated enum BacktestEngine {
                     threshold: sellThreshold
                 )
 
-                let daysSinceLastTrade = lastTradeDate.map { Calendar.current.dateComponents([.day], from: $0, to: point.date).day ?? 0 } ?? Int.max
+                let daysSinceLastTrade = lastTradeDate.map { BacktestSeriesAlignment.historicalSeriesCalendar.dateComponents([.day], from: $0, to: point.date).day ?? 0 } ?? Int.max
                 let cooldownAllowsTrade = daysSinceLastTrade >= normalizedCooldownDays
                 let positionMarketValue = unitsHeld * point.cnyPrice
                 let portfolioBeforeTrade = cash + positionMarketValue
@@ -873,7 +873,7 @@ nonisolated enum BacktestEngine {
                     let realizedCostBasis = positionCostBasis > 0 ? positionCostBasis : (averageEntryPrice ?? executionPrice) * unitsHeld
                     let realizedProfit = proceeds - realizedCostBasis
                     let realizedReturn = realizedCostBasis > 0 ? realizedProfit / realizedCostBasis : nil
-                    let holdingDays = firstEntryDate.map { Calendar.current.dateComponents([.day], from: $0, to: point.date).day ?? 0 }
+                    let holdingDays = firstEntryDate.map { BacktestSeriesAlignment.historicalSeriesCalendar.dateComponents([.day], from: $0, to: point.date).day ?? 0 }
                     let sellReason: String
                     if stopLossTriggered {
                         sellReason = AppLocalization.string("止损触发")
@@ -1979,10 +1979,7 @@ nonisolated enum BacktestEngine {
                 let executionKey = data.dates[index].recordDateString
                 var baseTargetChanged = false
                 if let weights = baseTargets[executionKey], !weights.isEmpty {
-                    let symbols = Set(latestBaseTarget.keys).union(weights.keys)
-                    baseTargetChanged = symbols.reduce(0.0) {
-                        $0 + abs((latestBaseTarget[$1] ?? 0) - (weights[$1] ?? 0))
-                    } > 0.0000001
+                    baseTargetChanged = absoluteWeightDifference(latestBaseTarget, weights) > 0.0000001
                     latestBaseTarget = weights
                 }
                 guard !latestBaseTarget.isEmpty,
@@ -2428,10 +2425,7 @@ nonisolated enum BacktestEngine {
                 let executionKey = data.dates[index].recordDateString
                 var baseTargetChanged = false
                 if let weights = baseTargets[executionKey], !weights.isEmpty {
-                    let symbols = Set(latestBaseTarget.keys).union(weights.keys)
-                    baseTargetChanged = symbols.reduce(0.0) {
-                        $0 + abs((latestBaseTarget[$1] ?? 0) - (weights[$1] ?? 0))
-                    } > 0.0000001
+                    baseTargetChanged = absoluteWeightDifference(latestBaseTarget, weights) > 0.0000001
                     latestBaseTarget = weights
                 }
                 guard !latestBaseTarget.isEmpty else {
@@ -2439,7 +2433,7 @@ nonisolated enum BacktestEngine {
                 }
 
                 if baseTargetChanged || previousWeights.isEmpty {
-                    let baseGross = latestBaseTarget.values.reduce(0, +)
+                    let baseGross = positiveWeightSum(latestBaseTarget)
                     let grossScale: Double
                     if baseGross < 0.20 {
                         grossScale = 0
@@ -2519,7 +2513,7 @@ nonisolated enum BacktestEngine {
 
                 pendingWeights = latestBaseTarget.mapValues { $0 * currentAdjustment }
 
-                let adjustedGross = pendingWeights.values.reduce(0, +)
+                let adjustedGross = positiveWeightSum(pendingWeights)
                 let adjustedChinaWeight = (pendingWeights["csi300"] ?? 0)
                     + (pendingWeights["shanghai_composite"] ?? 0)
                 let adjustedChinaDominant = adjustedChinaWeight >= max(
@@ -2543,7 +2537,7 @@ nonisolated enum BacktestEngine {
                     at: signalIndex,
                     period: matureNasdaqMAPeriod
                    ) {
-                    let matureGross = pendingWeights.values.reduce(0, +)
+                    let matureGross = positiveWeightSum(pendingWeights)
                     let nasdaqWeight = pendingWeights["nasdaq"] ?? 0
                     let chinaWeight = (pendingWeights["csi300"] ?? 0)
                         + (pendingWeights["shanghai_composite"] ?? 0)
@@ -2564,7 +2558,7 @@ nonisolated enum BacktestEngine {
                     }
                 }
 
-                let residualGross = pendingWeights.values.reduce(0, +)
+                let residualGross = positiveWeightSum(pendingWeights)
                 let residualNasdaqWeight = pendingWeights["nasdaq"] ?? 0
                 let residualChinaWeight = (pendingWeights["csi300"] ?? 0)
                     + (pendingWeights["shanghai_composite"] ?? 0)
@@ -2597,7 +2591,7 @@ nonisolated enum BacktestEngine {
                     return count
                 }
 
-                let stateGross = pendingWeights.values.reduce(0, +)
+                let stateGross = positiveWeightSum(pendingWeights)
                 let stateChinaWeight = (pendingWeights["csi300"] ?? 0)
                     + (pendingWeights["shanghai_composite"] ?? 0)
                 let stateGoldWeight = pendingWeights["gold_cny"] ?? 0
@@ -2613,7 +2607,7 @@ nonisolated enum BacktestEngine {
                     pendingWeights = pendingWeights.mapValues { $0 * 0.45 }
                 }
 
-                let postGoldGross = pendingWeights.values.reduce(0, +)
+                let postGoldGross = positiveWeightSum(pendingWeights)
                 let postGoldChinaWeight = (pendingWeights["csi300"] ?? 0)
                     + (pendingWeights["shanghai_composite"] ?? 0)
                 let postGoldNasdaqWeight = pendingWeights["nasdaq"] ?? 0
@@ -2639,7 +2633,7 @@ nonisolated enum BacktestEngine {
                 }
 
                 if !previousWeights.isEmpty {
-                    let holdGross = pendingWeights.values.reduce(0, +)
+                    let holdGross = positiveWeightSum(pendingWeights)
                     let holdGold = pendingWeights["gold_cny"] ?? 0
                     let holdNasdaq = pendingWeights["nasdaq"] ?? 0
                     let holdSP500 = pendingWeights["sp500"] ?? 0
@@ -2658,7 +2652,7 @@ nonisolated enum BacktestEngine {
                 }
 
                 if !previousWeights.isEmpty {
-                    let holdGross = pendingWeights.values.reduce(0, +)
+                    let holdGross = positiveWeightSum(pendingWeights)
                     let holdGold = pendingWeights["gold_cny"] ?? 0
                     let holdNasdaq = pendingWeights["nasdaq"] ?? 0
                     let holdSP500 = pendingWeights["sp500"] ?? 0
@@ -2683,14 +2677,14 @@ nonisolated enum BacktestEngine {
                     pendingWeights = previousWeights
                 }
 
-                let preHoldGross = pendingWeights.values.reduce(0, +)
+                let preHoldGross = positiveWeightSum(pendingWeights)
                 if preHoldGross >= 0.05,
                    preHoldGross < 0.06,
                    !previousWeights.isEmpty {
                     pendingWeights = previousWeights
                 }
 
-                let preFloorGross = pendingWeights.values.reduce(0, +)
+                let preFloorGross = positiveWeightSum(pendingWeights)
                 if preFloorGross > 0, preFloorGross < 0.03 {
                     pendingWeights = [:]
                 }
@@ -2724,8 +2718,8 @@ nonisolated enum BacktestEngine {
                 if !previousWeights.isEmpty {
                     let priorLeader = leaderName(previousWeights)
                     let targetLeader = leaderName(pendingWeights)
-                    let priorGross = previousWeights.values.reduce(0, +)
-                    let targetGross = pendingWeights.values.reduce(0, +)
+                    let priorGross = positiveWeightSum(previousWeights)
+                    let targetGross = positiveWeightSum(pendingWeights)
                     if baseTargetChanged,
                        targetLeader != priorLeader,
                        targetLeader != "cash",
@@ -2762,8 +2756,8 @@ nonisolated enum BacktestEngine {
                 }
 
                 if !previousWeights.isEmpty {
-                    let priorGross = previousWeights.values.reduce(0, +)
-                    let targetGross = pendingWeights.values.reduce(0, +)
+                    let priorGross = positiveWeightSum(previousWeights)
+                    let targetGross = positiveWeightSum(pendingWeights)
                     if targetGross >= 0.05,
                        targetGross < priorGross - 0.02,
                        alignedBaseValues.indices.contains(signalIndex),
@@ -2779,9 +2773,10 @@ nonisolated enum BacktestEngine {
                         if baseDrawdown < nearPeakDeRiskDrawdownThreshold {
                             let executionSymbols = Set(previousWeights.keys)
                                 .union(pendingWeights.keys)
-                            let executionTurnover = executionSymbols.reduce(0.0) {
-                                $0 + abs((pendingWeights[$1] ?? 0) - (previousWeights[$1] ?? 0))
-                            }
+                            let executionTurnover = absoluteWeightDifference(
+                                pendingWeights,
+                                previousWeights
+                            )
                             let grossDrop = max(priorGross - targetGross, 0)
                             let baseRetention = 1 - nearPeakDeRiskExecutionFraction
                             let grossSeverity = max(grossDrop / 0.20, 0)
@@ -2794,7 +2789,7 @@ nonisolated enum BacktestEngine {
                             if retainedGross > 0 {
                                 var bufferWeights: [String: Double] = [:]
                                 if executionTurnover >= broadUnwindTurnoverThreshold {
-                                    let sales = Dictionary(uniqueKeysWithValues: executionSymbols.compactMap { symbol -> (String, Double)? in
+                                    let sales = Dictionary(uniqueKeysWithValues: executionSymbols.sorted().compactMap { symbol -> (String, Double)? in
                                         let sale = max(
                                             (previousWeights[symbol] ?? 0)
                                                 - (pendingWeights[symbol] ?? 0),
@@ -2802,7 +2797,7 @@ nonisolated enum BacktestEngine {
                                         )
                                         return sale > 0 ? (symbol, sale) : nil
                                     })
-                                    let totalSales = sales.values.reduce(0, +)
+                                    let totalSales = positiveWeightSum(sales)
                                     let effectiveRetainedGross = min(retainedGross, totalSales)
                                     if effectiveRetainedGross > 0, totalSales > 0 {
                                         let priorLeader = leaderName(previousWeights)
@@ -2810,13 +2805,14 @@ nonisolated enum BacktestEngine {
                                             ? ["csi300", "shanghai_composite"]
                                             : [priorLeader]
                                         let leaderSales = sales.filter { leaderSymbols.contains($0.key) }
-                                        let leaderSaleTotal = leaderSales.values.reduce(0, +)
+                                        let leaderSaleTotal = positiveWeightSum(leaderSales)
                                         let leaderAllocation = min(
                                             effectiveRetainedGross,
                                             leaderSaleTotal
                                         )
                                         if leaderAllocation > 0, leaderSaleTotal > 0 {
-                                            for (symbol, sale) in leaderSales {
+                                            for symbol in leaderSales.keys.sorted() {
+                                                let sale = leaderSales[symbol] ?? 0
                                                 bufferWeights[symbol] = leaderAllocation
                                                     * sale / leaderSaleTotal
                                             }
@@ -2824,9 +2820,10 @@ nonisolated enum BacktestEngine {
                                         let remainingAllocation = effectiveRetainedGross
                                             - leaderAllocation
                                         let otherSales = sales.filter { !leaderSymbols.contains($0.key) }
-                                        let otherSaleTotal = otherSales.values.reduce(0, +)
+                                        let otherSaleTotal = positiveWeightSum(otherSales)
                                         if remainingAllocation > 0, otherSaleTotal > 0 {
-                                            for (symbol, sale) in otherSales {
+                                            for symbol in otherSales.keys.sorted() {
+                                                let sale = otherSales[symbol] ?? 0
                                                 bufferWeights[symbol, default: 0] += remainingAllocation
                                                     * sale / otherSaleTotal
                                             }
@@ -2850,7 +2847,9 @@ nonisolated enum BacktestEngine {
                                         bufferWeights[priorLeader] = retainedGross
                                     }
                                 }
-                                for (symbol, weight) in bufferWeights where weight > 0 {
+                                for symbol in bufferWeights.keys.sorted() {
+                                    let weight = bufferWeights[symbol] ?? 0
+                                    guard weight > 0 else { continue }
                                     pendingWeights[symbol, default: 0] += weight
                                 }
                             }
@@ -2861,8 +2860,8 @@ nonisolated enum BacktestEngine {
                 if isLowNoise,
                    baseTargetChanged,
                    !previousWeights.isEmpty,
-                   pendingWeights.values.reduce(0, +) < 0.05 {
-                    let priorGross = previousWeights.values.reduce(0, +)
+                   positiveWeightSum(pendingWeights) < 0.05 {
+                    let priorGross = positiveWeightSum(previousWeights)
                     let priorLeader = leaderName(previousWeights)
                     if priorGross >= 0.40,
                        priorLeader == "china",
@@ -2908,7 +2907,7 @@ nonisolated enum BacktestEngine {
                 }
 
                 if isLowNoise {
-                    var lowNoiseGross = pendingWeights.values.reduce(0, +)
+                    var lowNoiseGross = positiveWeightSum(pendingWeights)
                     if lowNoiseGross > grossCap, lowNoiseGross > 0 {
                         pendingWeights = pendingWeights.mapValues { $0 * grossCap / lowNoiseGross }
                         lowNoiseGross = grossCap
@@ -2942,7 +2941,9 @@ nonisolated enum BacktestEngine {
                             for cursor in (signalIndex - 62)...signalIndex {
                                 var dailyReturn = 0.0
                                 var valid = true
-                                for (symbol, weight) in pendingWeights where weight > 0 {
+                                for symbol in pendingWeights.keys.sorted() {
+                                    let weight = pendingWeights[symbol] ?? 0
+                                    guard weight > 0 else { continue }
                                     guard let prices = data.pricesBySymbol[symbol],
                                           prices.indices.contains(cursor),
                                           cursor > 0,
@@ -2984,7 +2985,7 @@ nonisolated enum BacktestEngine {
                                     } else {
                                         pendingWeights = pendingWeights.mapValues { $0 * scale }
                                     }
-                                    lowNoiseGross = pendingWeights.values.reduce(0, +)
+                                    lowNoiseGross = positiveWeightSum(pendingWeights)
                                 }
                             }
                         }
@@ -3005,25 +3006,22 @@ nonisolated enum BacktestEngine {
                     }
                     if abs(activeReturnScale - 1) > 0.000001 {
                         pendingWeights = pendingWeights.mapValues { max($0 * activeReturnScale, 0) }
-                        lowNoiseGross = pendingWeights.values.reduce(0, +)
+                        lowNoiseGross = positiveWeightSum(pendingWeights)
                         if lowNoiseGross > grossCap, lowNoiseGross > 0 {
                             pendingWeights = pendingWeights.mapValues { $0 * grossCap / lowNoiseGross }
                         }
                     }
                 }
 
-                let gross = pendingWeights.values.reduce(0, +)
+                let gross = positiveWeightSum(pendingWeights)
                 if gross > grossCap, gross > 0 {
                     pendingWeights = pendingWeights.mapValues { $0 * grossCap / gross }
                 }
-                let symbols = Set(previousWeights.keys).union(pendingWeights.keys)
-                let difference = symbols.reduce(0.0) {
-                    $0 + abs((previousWeights[$1] ?? 0) - (pendingWeights[$1] ?? 0))
-                }
+                let difference = absoluteWeightDifference(previousWeights, pendingWeights)
                 var suppressLowNoiseReweight = false
                 if isLowNoise, !previousWeights.isEmpty {
-                    let priorGross = previousWeights.values.reduce(0, +)
-                    let targetGross = pendingWeights.values.reduce(0, +)
+                    let priorGross = positiveWeightSum(previousWeights)
+                    let targetGross = positiveWeightSum(pendingWeights)
                     let priorLeader = leaderName(previousWeights)
                     let targetLeader = leaderName(pendingWeights)
                     if priorLeader == targetLeader,
@@ -3036,7 +3034,9 @@ nonisolated enum BacktestEngine {
                                 guard cursor > 0 else { continue }
                                 var dailyReturn = 0.0
                                 var valid = true
-                                for (symbol, weight) in previousWeights where weight > 0 {
+                                for symbol in previousWeights.keys.sorted() {
+                                    let weight = previousWeights[symbol] ?? 0
+                                    guard weight > 0 else { continue }
                                     guard let prices = data.pricesBySymbol[symbol],
                                           prices.indices.contains(cursor),
                                           prices[cursor - 1] > 0 else {
@@ -3929,11 +3929,13 @@ nonisolated enum BacktestEngine {
         let provider = StrategyTargetProvider { context in
             let allowedSymbols = Set(tradableSymbols)
             var cleanedWeights: [String: Double] = [:]
-            for (symbol, weight) in targetWeights(context, dataContext) where allowedSymbols.contains(symbol) {
+            let rawWeights = targetWeights(context, dataContext)
+            for symbol in rawWeights.keys.sorted() where allowedSymbols.contains(symbol) {
+                let weight = rawWeights[symbol] ?? 0
                 guard weight.isFinite, weight > 0 else { continue }
                 cleanedWeights[symbol, default: 0] += weight
             }
-            let grossWeight = cleanedWeights.values.reduce(0, +)
+            let grossWeight = positiveWeightSum(cleanedWeights)
             guard grossWeight > 0 else { return [:] }
             let maxGrossExposure = max(config.maxGrossExposure, 0)
             guard maxGrossExposure > 0 else { return [:] }
@@ -4096,7 +4098,9 @@ nonisolated enum BacktestEngine {
             "12-01", "12-03", "12-06", "12-20", "12-22", "12-24", "12-25", "12-27", "12-28", "12-30", "12-31",
         ]
         let monthDayFormatter = DateFormatter()
+        monthDayFormatter.calendar = BacktestSeriesAlignment.historicalSeriesCalendar
         monthDayFormatter.locale = Locale(identifier: "en_US_POSIX")
+        monthDayFormatter.timeZone = BacktestSeriesAlignment.historicalSeriesCalendar.timeZone
         monthDayFormatter.dateFormat = "MM-dd"
 
         func rollingDrawdown(_ values: [Double], lookback: Int) -> Double {
@@ -7605,7 +7609,7 @@ nonisolated enum BacktestEngine {
         }
 
         if let weakMonthEquityBrake = overlay.weakMonthEquityBrake,
-           weakMonthEquityBrake.months.contains(Calendar.current.component(.month, from: signalDate)) {
+           weakMonthEquityBrake.months.contains(BacktestSeriesAlignment.historicalSeriesCalendar.component(.month, from: signalDate)) {
             let equitySymbolsToBrake = weakMonthEquityBrake.equitySymbols.filter { symbol in
                 guard (finalWeights[symbol] ?? 0) > 0,
                       let momentum = priceMomentum(symbol: symbol, lookback: weakMonthEquityBrake.momentumLookbackSessions) else { return false }
@@ -7820,6 +7824,18 @@ nonisolated enum BacktestEngine {
         }
     }
 
+    private static func absoluteWeightDifference(
+        _ lhs: [String: Double],
+        _ rhs: [String: Double]
+    ) -> Double {
+        Set(lhs.keys)
+            .union(rhs.keys)
+            .sorted()
+            .reduce(0.0) { partial, symbol in
+                partial + abs((lhs[symbol] ?? 0) - (rhs[symbol] ?? 0))
+            }
+    }
+
     private static func scaledWeightMap(_ weights: [String: Double], by scale: Double) -> [String: Double] {
         var output: [String: Double] = [:]
         for symbol in weights.keys.sorted() {
@@ -7911,7 +7927,7 @@ nonisolated enum BacktestEngine {
         guard let satellite = config.confirmedAccelerationSatellite else {
             return normalizedWeightMap(rawWeights)
         }
-        guard !satellite.weakMonths.contains(Calendar.current.component(.month, from: signalDate)) else {
+        guard !satellite.weakMonths.contains(BacktestSeriesAlignment.historicalSeriesCalendar.component(.month, from: signalDate)) else {
             return normalizedWeightMap(rawWeights)
         }
 
@@ -10731,7 +10747,7 @@ nonisolated enum BacktestEngine {
 
         if let monthlyExposureBrake = config.monthlyExposureBrake,
            let signalDate,
-           monthlyExposureBrake.months.contains(Calendar.current.component(.month, from: signalDate)) {
+           monthlyExposureBrake.months.contains(BacktestSeriesAlignment.historicalSeriesCalendar.component(.month, from: signalDate)) {
             let normalizedScale = min(max(monthlyExposureBrake.scale, 0), 1)
             var removedWeight = 0.0
             for symbol in monthlyExposureBrake.scaledSymbols {

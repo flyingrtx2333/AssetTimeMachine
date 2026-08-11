@@ -23,6 +23,38 @@ nonisolated enum BackgroundTaskWork {
             worker.cancel()
         }
     }
+
+    /// Runs stack-heavy synchronous work away from MainActor on a dedicated thread.
+    /// Swift cooperative-pool threads have a comparatively small stack; the strategy
+    /// engine's large value-type configuration graph can overflow it before the actual
+    /// simulation starts. A dedicated stack keeps that work off the UI thread without
+    /// coupling correctness to the cooperative executor's implementation limits.
+    static func runSynchronousOnLargeStack<Value: Sendable>(
+        stackSize: Int = 16 * 1_024 * 1_024,
+        qualityOfService: QualityOfService = .utility,
+        operation: @escaping @Sendable () throws -> Value
+    ) async throws -> Value {
+        try Task.checkCancellation()
+
+        let value = try await withCheckedThrowingContinuation { continuation in
+            let workerThread = Thread {
+                autoreleasepool {
+                    do {
+                        continuation.resume(returning: try operation())
+                    } catch {
+                        continuation.resume(throwing: error)
+                    }
+                }
+            }
+            workerThread.name = "AssetTimeMachine.StrategyComputation"
+            workerThread.stackSize = max(stackSize, 1_024 * 1_024)
+            workerThread.qualityOfService = qualityOfService
+            workerThread.start()
+        }
+
+        try Task.checkCancellation()
+        return value
+    }
 }
 
 /// A decoder-local parser whose Foundation formatter instances never escape the

@@ -1,5 +1,7 @@
 import Foundation
+#if !ATM_SERVER
 import SwiftUI
+#endif
 
 enum BacktestMode: String, CaseIterable, Identifiable {
     case allocation
@@ -1939,25 +1941,71 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
         )
     ]
 
-    static let productCatalog: [AdvancedBacktestStrategyTemplate] = {
-        let templatesByID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
-        let productIDs = [
-            "core-gold-satellite-equity-curve-state-gate-momentum",
-            "core-gold-satellite-risk-budget-state-gate-momentum",
-            "core-gold-satellite-profit-lock-momentum",
-            "convex-crash-hedge-composite",
-            "risk-contribution-reallocation",
-            "risk-contribution-regime-router",
-            "risk-contribution-recovery-router",
-            "risk-contribution-cash-confidence-router",
-            "gold-nasdaq-dual-trend-barbell",
-            "basic-ma60-trend",
-            "basic-ma-golden-cross",
-            "basic-ma20-trend",
-            "basic-boll-mean-reversion",
-        ]
-        return productIDs.compactMap { templatesByID[$0] }
-    }()
+    static let productCatalog = BacktestProductStrategyCatalog.templates(from: all)
+}
+
+/// The single source of truth for strategies shipped in the App. Research and diagnostic
+/// templates remain available through `AdvancedBacktestStrategyTemplate.all`, while every
+/// product-facing surface (library, reminders and daily advice) consumes this ordered registry.
+enum BacktestProductStrategyCatalog {
+    static let templateIDs = [
+        "risk-contribution-cash-confidence-low-noise",
+        "core-gold-satellite-equity-curve-state-gate-momentum",
+        "core-gold-satellite-risk-budget-state-gate-momentum",
+        "core-gold-satellite-profit-lock-momentum",
+        "convex-crash-hedge-composite",
+        "risk-contribution-reallocation",
+        "risk-contribution-regime-router",
+        "risk-contribution-recovery-router",
+        "risk-contribution-cash-confidence-router",
+        "gold-nasdaq-dual-trend-barbell",
+        "basic-ma60-trend",
+        "basic-ma-golden-cross",
+        "basic-ma20-trend",
+        "basic-boll-mean-reversion",
+    ]
+
+    static func templates(
+        from inventory: [AdvancedBacktestStrategyTemplate]
+    ) -> [AdvancedBacktestStrategyTemplate] {
+        let issues = validationIssues(in: inventory)
+        assert(issues.isEmpty, issues.joined(separator: "\n"))
+
+        let templatesByID = Dictionary(uniqueKeysWithValues: inventory.map { ($0.id, $0) })
+        return templateIDs.compactMap { templatesByID[$0] }
+    }
+
+    static func validationIssues(
+        in inventory: [AdvancedBacktestStrategyTemplate] = AdvancedBacktestStrategyTemplate.all
+    ) -> [String] {
+        var issues: [String] = []
+        let inventoryIDs = inventory.map(\.id)
+        let duplicatedInventoryIDs = duplicatedValues(inventoryIDs)
+        if !duplicatedInventoryIDs.isEmpty {
+            issues.append("Duplicate strategy template IDs: \(duplicatedInventoryIDs.joined(separator: ", "))")
+        }
+
+        let duplicatedProductIDs = duplicatedValues(templateIDs)
+        if !duplicatedProductIDs.isEmpty {
+            issues.append("Duplicate product strategy IDs: \(duplicatedProductIDs.joined(separator: ", "))")
+        }
+
+        let availableIDs = Set(inventoryIDs)
+        let missingProductIDs = templateIDs.filter { !availableIDs.contains($0) }
+        if !missingProductIDs.isEmpty {
+            issues.append("Missing product strategy templates: \(missingProductIDs.joined(separator: ", "))")
+        }
+        return issues
+    }
+
+    private static func duplicatedValues(_ values: [String]) -> [String] {
+        var seen = Set<String>()
+        var duplicates = Set<String>()
+        for value in values where !seen.insert(value).inserted {
+            duplicates.insert(value)
+        }
+        return duplicates.sorted()
+    }
 }
 
 struct BacktestReport {
@@ -2777,6 +2825,7 @@ enum BacktestDefaults {
 
 enum StrategyNotificationDefaults {
     static let defaultTemplateID = "core-gold-satellite-equity-curve-state-gate-momentum"
+    static let recommendedTemplateID = "risk-contribution-cash-confidence-low-noise"
     static let riskContributionTemplateID = "risk-contribution-reallocation"
     static let defaultHour = 9
 
@@ -2798,6 +2847,11 @@ enum StrategyNotificationDefaults {
         return eligibleTemplates.first { $0.id == migratedID }
             ?? eligibleTemplates.first { $0.id == defaultTemplateID }
             ?? eligibleTemplates.first
+    }
+
+    static func pickerTitle(for template: AdvancedBacktestStrategyTemplate) -> String {
+        guard template.id == recommendedTemplateID else { return template.title }
+        return "\(template.title) · \(AppLocalization.string("推荐"))"
     }
 
     static func assetOptions(for template: AdvancedBacktestStrategyTemplate) -> [BacktestAssetOption] {

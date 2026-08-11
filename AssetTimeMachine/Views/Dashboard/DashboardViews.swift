@@ -20,6 +20,7 @@ struct DashboardView: View {
     @AppStorage("dashboard.annualReturnRate") private var annualReturnRate: Double = 0.03
     let marketStore: RemoteMarketStore
     let cloudStore: AssetTimeMachineCloudStore
+    let strategyAdviceService: StrategyAdviceService
     let isActive: Bool
     @State private var cachedAllocationSlices: [DashboardAllocationSlice] = []
     @State private var cachedTrendPoints: [TimeMachineTrendPoint] = []
@@ -37,9 +38,15 @@ struct DashboardView: View {
     @State private var showsCloudSyncModal = false
     @State private var freedomKeyboardDismissSignal = 0
 
-    init(marketStore: RemoteMarketStore, cloudStore: AssetTimeMachineCloudStore, isActive: Bool) {
+    init(
+        marketStore: RemoteMarketStore,
+        cloudStore: AssetTimeMachineCloudStore,
+        strategyAdviceService: StrategyAdviceService,
+        isActive: Bool
+    ) {
         self.marketStore = marketStore
         self.cloudStore = cloudStore
+        self.strategyAdviceService = strategyAdviceService
         self.isActive = isActive
 
     }
@@ -142,7 +149,8 @@ struct DashboardView: View {
         .sheet(isPresented: $showsTodayStrategyModal) {
             TodayStrategySheet(
                 marketStore: marketStore,
-                snapshot: strategySnapshot
+                snapshot: strategySnapshot,
+                adviceService: strategyAdviceService
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
@@ -459,18 +467,29 @@ struct TodayStrategySheet: View {
     @AppStorage("app.strategyNotifications.templateID") private var strategyNotificationTemplateID = StrategyNotificationDefaults.defaultTemplateID
     @ObservedObject var marketStore: RemoteMarketStore
     let snapshot: AssetSnapshot?
-    @State private var advice: StrategyRebalanceAdvice?
-    @State private var actions: [StrategyRebalanceAction] = []
-    @State private var isRefreshing = false
-    @State private var statusMessage: String?
+    @StateObject private var adviceStore: StrategyAdviceProjectionStore
     @State private var hasAttemptedInitialHistoryRefresh = false
-    @State private var adviceRefreshGeneration = 0
-    @State private var activeAdviceToken: String?
-    @State private var pendingAdviceCalculationTask: Task<StrategyRebalanceAdvice?, Never>?
+
+    init(
+        marketStore: RemoteMarketStore,
+        snapshot: AssetSnapshot?,
+        adviceService: StrategyAdviceService
+    ) {
+        self.marketStore = marketStore
+        self.snapshot = snapshot
+        _adviceStore = StateObject(
+            wrappedValue: StrategyAdviceProjectionStore(adviceService: adviceService)
+        )
+    }
 
     private var selectedTemplate: AdvancedBacktestStrategyTemplate? {
         StrategyNotificationDefaults.template(for: strategyNotificationTemplateID)
     }
+
+    private var advice: StrategyRebalanceAdvice? { adviceStore.advice }
+    private var actions: [StrategyRebalanceAction] { adviceStore.actions }
+    private var isRefreshing: Bool { adviceStore.isRefreshing }
+    private var statusMessage: String? { adviceStore.statusMessage }
 
     var body: some View {
         NavigationStack {
@@ -685,130 +704,17 @@ struct TodayStrategySheet: View {
 
     @MainActor
     private func refreshAdvice(force: Bool) async {
-        adviceRefreshGeneration &+= 1
-        let generation = adviceRefreshGeneration
-        pendingAdviceCalculationTask?.cancel()
-        pendingAdviceCalculationTask = nil
-        activeAdviceToken = nil
-
-        guard let template = selectedTemplate else {
-            advice = nil
-            actions = []
-            statusMessage = AppLocalization.string("设置里还没有可用的提醒策略。")
-            isRefreshing = false
-            return
-        }
-
-        isRefreshing = true
-        statusMessage = nil
-        defer {
-            if adviceRefreshGeneration == generation {
-                isRefreshing = false
-                pendingAdviceCalculationTask = nil
-            }
-        }
-
-        let assetOptions = StrategyNotificationDefaults.assetOptions(for: template)
-        let shouldForceHistoryRefresh = force || isMissingRequiredHistory(for: assetOptions)
-        await marketStore.refreshHistoryIfNeeded(force: shouldForceHistoryRefresh)
-        guard !Task.isCancelled, adviceRefreshGeneration == generation else { return }
-        if isMissingRequiredHistory(for: assetOptions) {
-            await waitForRequiredHistory(assetOptions)
-        }
-        guard !Task.isCancelled, adviceRefreshGeneration == generation else { return }
-
-        let historySymbols = Set(assetOptions.flatMap { option -> [String] in
-            var symbols = [option.symbol]
-            if let fxSymbol = option.historicalFXSymbol {
-                symbols.append(fxSymbol)
-            }
-            if option.symbol == "usd_cash" {
-                symbols.append("usd_per_cny")
-            }
-            return symbols
-        })
-        let historyBySymbol = Dictionary(uniqueKeysWithValues: historySymbols.compactMap { symbol in
-            marketStore.history(for: symbol).map { (symbol, $0) }
-        })
-        let historyToken = marketStore.historyRelevanceToken(for: historySymbols)
-        let calculationToken = "\(template.id)|\(historyToken)"
-        activeAdviceToken = calculationToken
-        let mode = template.mode
-
-        let worker: Task<StrategyRebalanceAdvice?, Never> = Task.detached(priority: .utility) {
-            guard !Task.isCancelled else { return nil }
-            let assetInputs = assetOptions.map { option in
-                BacktestEngine.advancedAssetInput(for: option) { symbol in
-                    historyBySymbol[symbol]
-                }
-            }
-            guard !Task.isCancelled else { return nil }
-            return BacktestEngine.advancedRotationRebalanceAdvice(assetInputs: assetInputs, mode: mode)
-        }
-        pendingAdviceCalculationTask = worker
-        let nextAdvice = await withTaskCancellationHandler {
-            await worker.value
-        } onCancel: {
-            worker.cancel()
-        }
-
-        guard !Task.isCancelled,
-              adviceRefreshGeneration == generation,
-              activeAdviceToken == calculationToken,
-              selectedTemplate?.id == template.id,
-              marketStore.historyRelevanceToken(for: historySymbols) == historyToken else { return }
-
-        guard let nextAdvice else {
-            advice = nil
-            actions = []
-            statusMessage = AppLocalization.string("历史行情暂时不足，今日调仓将在数据补齐后更新。")
-            return
-        }
-
-        let nextActions = StrategyRebalanceActionBuilder.actions(
-            for: nextAdvice,
+        await adviceStore.refresh(
+            templateID: strategyNotificationTemplateID,
+            marketStore: marketStore,
             snapshot: snapshot,
-            selectedAssetOptions: assetOptions,
-            allAssetOptions: BacktestDefaults.dcaAssetOptions
+            force: force
         )
-        advice = nextAdvice
-        actions = nextActions
     }
 
     @MainActor
     private func cancelAdviceRefresh() {
-        adviceRefreshGeneration &+= 1
-        activeAdviceToken = nil
-        pendingAdviceCalculationTask?.cancel()
-        pendingAdviceCalculationTask = nil
-        isRefreshing = false
-    }
-
-    private func waitForRequiredHistory(_ assetOptions: [BacktestAssetOption]) async {
-        for _ in 0..<6 {
-            guard !Task.isCancelled else { return }
-            guard isMissingRequiredHistory(for: assetOptions) else { return }
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            guard !Task.isCancelled else { return }
-            guard isMissingRequiredHistory(for: assetOptions) else { return }
-            await marketStore.refreshHistoryIfNeeded(force: true)
-        }
-    }
-
-    private func isMissingRequiredHistory(for assetOptions: [BacktestAssetOption]) -> Bool {
-        assetOptions.contains { option in
-            guard hasUsableHistory(for: option.symbol) else { return true }
-            if let fxSymbol = option.historicalFXSymbol {
-                return !hasUsableHistory(for: fxSymbol)
-            }
-            return false
-        }
-    }
-
-    private func hasUsableHistory(for symbol: String) -> Bool {
-        let lookupSymbol = symbol == "usd_cash" ? "usd_per_cny" : symbol
-        guard let series = marketStore.history(for: lookupSymbol) else { return false }
-        return series.dates.count >= 2 && series.prices.count >= 2
+        adviceStore.cancel()
     }
 
     private func todayStrategySummary(template: AdvancedBacktestStrategyTemplate, advice: StrategyRebalanceAdvice) -> String {

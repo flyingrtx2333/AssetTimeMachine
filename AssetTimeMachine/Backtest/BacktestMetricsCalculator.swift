@@ -49,7 +49,7 @@ nonisolated enum BacktestMetricsCalculator {
         }
 
         let totalReturn = normalizedValue - 1
-        let daySpan = max(Calendar.current.dateComponents([.day], from: first.date, to: last.date).day ?? 0, 1)
+        let daySpan = max(BacktestSeriesAlignment.historicalSeriesCalendar.dateComponents([.day], from: first.date, to: last.date).day ?? 0, 1)
         let years = Double(daySpan) / 365.25
         let annualizedReturn = years > 0 ? pow(normalizedValue, 1 / years) - 1 : nil
 

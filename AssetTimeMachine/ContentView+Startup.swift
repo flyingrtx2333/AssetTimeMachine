@@ -22,6 +22,10 @@ extension ContentView {
             selectTab(.timeMachine)
         }
 
+        if ProcessInfo.processInfo.arguments.contains("-openBacktestTab") {
+            selectTab(.backtest)
+        }
+
         if let importPath = launchArgumentValue(after: "-importJSONPath") {
             do {
                 let data = try Data(contentsOf: URL(fileURLWithPath: importPath))

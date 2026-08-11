@@ -1,0 +1,478 @@
+import Charts
+import Combine
+import SwiftData
+import SwiftUI
+
+private struct StrategyHoldingSlice: Identifiable {
+    let id: String
+    let title: String
+    let weight: Double
+    let color: Color
+}
+
+struct TodayPositionAdviceCard: View {
+    @Environment(\.modelContext) private var modelContext
+    @AppStorage("app.strategyNotifications.templateID") private var strategyTemplateID = StrategyNotificationDefaults.defaultTemplateID
+    @ObservedObject var marketStore: RemoteMarketStore
+    let isActive: Bool
+
+    @StateObject private var adviceStore: StrategyAdviceProjectionStore
+    @State private var pendingSnapshotRefreshTask: Task<Void, Never>?
+
+    init(
+        marketStore: RemoteMarketStore,
+        adviceService: StrategyAdviceService,
+        isActive: Bool
+    ) {
+        self.marketStore = marketStore
+        self.isActive = isActive
+        _adviceStore = StateObject(
+            wrappedValue: StrategyAdviceProjectionStore(adviceService: adviceService)
+        )
+    }
+
+    private var selectedTemplate: AdvancedBacktestStrategyTemplate? {
+        StrategyNotificationDefaults.template(for: strategyTemplateID)
+    }
+
+    private var relevantHistorySymbols: Set<String> {
+        guard let selectedTemplate else { return [] }
+        return StrategyAdviceProjectionStore.historySymbols(
+            for: StrategyNotificationDefaults.assetOptions(for: selectedTemplate)
+        )
+    }
+
+    private var adviceTaskID: String {
+        "\(isActive)|\(strategyTemplateID)"
+    }
+
+    private var relevantHistoryToken: String {
+        marketStore.historyRelevanceToken(for: relevantHistorySymbols)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            header
+
+            if adviceStore.isRefreshing && adviceStore.advice == nil && adviceStore.statusMessage == nil {
+                loadingState
+            } else if let statusMessage = adviceStore.statusMessage {
+                statusState(statusMessage)
+            } else if let advice = adviceStore.advice {
+                adviceContent(advice)
+            }
+        }
+        .padding(.horizontal, 2)
+        .padding(.vertical, 4)
+        .task(id: adviceTaskID) {
+            guard isActive else {
+                adviceStore.cancel()
+                return
+            }
+            await refreshAdvice(force: false)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { notification in
+            guard isActive, PortfolioSaveNotificationFilter.affectsPortfolio(notification) else { return }
+            scheduleSnapshotRefresh()
+        }
+        .onChange(of: relevantHistoryToken) { _, _ in
+            guard isActive, !adviceStore.isRefreshing, adviceStore.advice != nil else { return }
+            Task { await refreshAdvice(force: false) }
+        }
+        .onDisappear {
+            pendingSnapshotRefreshTask?.cancel()
+            pendingSnapshotRefreshTask = nil
+            adviceStore.cancel()
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 14) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(AppLocalization.string("今日持仓建议"))
+                    .font(AppTypography.eyebrow)
+                    .foregroundStyle(AssetTheme.goldSoft)
+
+                Menu {
+                    Picker(
+                        AppLocalization.string("当前策略"),
+                        selection: $strategyTemplateID
+                    ) {
+                        ForEach(StrategyNotificationDefaults.eligibleTemplates) { template in
+                            Text(StrategyNotificationDefaults.pickerTitle(for: template))
+                                .tag(template.id)
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 7) {
+                        Text(selectedTemplate?.title ?? AppLocalization.string("未选择策略"))
+                            .font(AppTypography.sectionTitle)
+                            .foregroundStyle(AssetTheme.textPrimary)
+                            .lineLimit(2)
+
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(AppTypography.microLabel)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(AppLocalization.string("当前策略"))
+                .accessibilityValue(selectedTemplate?.title ?? AppLocalization.string("未选择策略"))
+            }
+
+            Spacer(minLength: 12)
+
+            Button {
+                Task { await refreshAdvice(force: true) }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .font(AppTypography.captionStrong)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+            .disabled(adviceStore.isRefreshing || !isActive)
+            .accessibilityLabel(AppLocalization.string("刷新今日持仓建议"))
+        }
+    }
+
+    private var loadingState: some View {
+        HStack(spacing: 10) {
+            ProgressView()
+                .tint(AssetTheme.gold)
+
+            Text(AppLocalization.string("正在生成今日持仓建议"))
+                .font(AppTypography.meta)
+                .foregroundStyle(AssetTheme.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 8)
+    }
+
+    private func statusState(_ message: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "exclamationmark.circle")
+                .foregroundStyle(AssetTheme.accentOrange)
+
+            Text(message)
+                .font(AppTypography.meta)
+                .foregroundStyle(AssetTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func adviceContent(_ advice: StrategyRebalanceAdvice) -> some View {
+        let currentSlices = currentHoldingSlices
+        let targetSlices = targetHoldingSlices(for: advice)
+
+        return VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 30) {
+                StrategyHoldingDonut(
+                    title: AppLocalization.string("目前持仓"),
+                    slices: currentSlices,
+                    centerValue: currentInvestedWeight
+                )
+
+                StrategyHoldingDonut(
+                    title: AppLocalization.string("目标持仓"),
+                    slices: targetSlices,
+                    centerValue: advice.totalTargetWeight
+                )
+            }
+            .allowsHitTesting(false)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text(AppLocalization.string("持仓调整"))
+                    .font(AppTypography.metaStrong)
+                    .foregroundStyle(AssetTheme.textPrimary)
+                .padding(.bottom, 10)
+
+                actionTableHeader
+
+                Divider()
+                    .overlay(AssetTheme.border.opacity(0.72))
+
+                if adviceStore.actions.isEmpty {
+                    cashActionRow(advice: advice)
+                } else {
+                    ForEach(adviceStore.actions) { action in
+                        actionRow(action)
+                        if action.id != adviceStore.actions.last?.id || advice.cashWeight > 0.005 {
+                            Divider()
+                                .overlay(AssetTheme.border.opacity(0.46))
+                        }
+                    }
+
+                    if advice.cashWeight > 0.005 {
+                        cashActionRow(advice: advice)
+                    }
+                }
+            }
+
+            provenanceSection(advice)
+
+            Text(AppLocalization.string("下一交易日执行，仅供参考，不构成投资建议。"))
+                .font(AppTypography.microLabel)
+                .foregroundStyle(AssetTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func provenanceSection(_ advice: StrategyRebalanceAdvice) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 6) {
+                Text(AppLocalization.format("信号截至 %@", advice.asOfDate.recordDateString))
+                Text("·")
+                Text(AppLocalization.string("资产记录"))
+                Text(adviceStore.snapshotDate?.recordDateString ?? AppLocalization.string("暂无记录"))
+            }
+
+            Text("\(AppLocalization.string("行情来源")) · \(historySourceDisplay)")
+                .lineLimit(2)
+        }
+        .font(AppTypography.caption)
+        .foregroundStyle(AssetTheme.textSecondary)
+        .padding(.top, 2)
+    }
+
+    private var actionTableHeader: some View {
+        HStack(spacing: 8) {
+            Text(AppLocalization.string("资产"))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(AppLocalization.string("目前持仓"))
+                .frame(width: 44, alignment: .trailing)
+            Text(AppLocalization.string("目标持仓"))
+                .frame(width: 44, alignment: .trailing)
+            Text(AppLocalization.string("操作"))
+                .frame(width: 86, alignment: .trailing)
+        }
+        .font(AppTypography.microLabel)
+        .foregroundStyle(AssetTheme.textSecondary)
+        .lineLimit(1)
+        .minimumScaleFactor(0.65)
+        .padding(.bottom, 8)
+    }
+
+    private func actionRow(_ action: StrategyRebalanceAction) -> some View {
+        HStack(alignment: .center, spacing: 8) {
+            HStack(spacing: 7) {
+                Circle()
+                    .fill(BacktestDefaults.strategyColor(for: action.symbol))
+                    .frame(width: 6, height: 6)
+
+                Text(action.title)
+                    .font(AppTypography.captionStrong)
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text(action.currentWeight?.percentString(maxFractionDigits: 1) ?? "—")
+                .frame(width: 44, alignment: .trailing)
+
+            Text(action.targetWeight.percentString(maxFractionDigits: 1))
+                .frame(width: 44, alignment: .trailing)
+
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(action.kind.title)
+                    .foregroundStyle(action.kind.accent)
+
+                Text(action.amountText)
+                    .font(AppTypography.microLabel.monospacedDigit())
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
+            .frame(width: 86, alignment: .trailing)
+        }
+        .font(AppTypography.caption.monospacedDigit())
+        .foregroundStyle(AssetTheme.textSecondary)
+        .padding(.vertical, 9)
+    }
+
+    private func cashActionRow(advice: StrategyRebalanceAdvice) -> some View {
+        HStack(alignment: .center, spacing: 8) {
+            HStack(spacing: 7) {
+                Circle()
+                    .fill(AssetTheme.textSecondary.opacity(0.56))
+                    .frame(width: 6, height: 6)
+
+                Text(AppLocalization.string("现金/其他"))
+                    .font(AppTypography.captionStrong)
+                    .foregroundStyle(AssetTheme.textPrimary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text(currentResidualWeight?.percentString(maxFractionDigits: 1) ?? "—")
+                .frame(width: 44, alignment: .trailing)
+
+            Text(advice.cashWeight.percentString(maxFractionDigits: 1))
+                .frame(width: 44, alignment: .trailing)
+
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(AppLocalization.string("防守仓位"))
+                    .font(AppTypography.captionStrong)
+            }
+            .frame(width: 86, alignment: .trailing)
+            .foregroundStyle(AssetTheme.textSecondary)
+        }
+        .font(AppTypography.caption.monospacedDigit())
+        .foregroundStyle(AssetTheme.textSecondary)
+        .padding(.vertical, 9)
+    }
+
+    private var currentHoldingSlices: [StrategyHoldingSlice] {
+        let assetSlices = adviceStore.actions.compactMap { action -> StrategyHoldingSlice? in
+            guard let weight = action.currentWeight, weight > 0.0001 else { return nil }
+            return StrategyHoldingSlice(
+                id: "current-\(action.symbol)",
+                title: action.title,
+                weight: weight,
+                color: BacktestDefaults.strategyColor(for: action.symbol)
+            )
+        }
+
+        guard !assetSlices.isEmpty else { return [] }
+        let residual = max(0, 1 - assetSlices.reduce(0) { $0 + $1.weight })
+        guard residual > 0.005 else { return assetSlices }
+        return assetSlices + [
+            StrategyHoldingSlice(
+                id: "current-cash-other",
+                title: AppLocalization.string("现金/其他"),
+                weight: residual,
+                color: AssetTheme.textSecondary.opacity(0.68)
+            )
+        ]
+    }
+
+    private func targetHoldingSlices(for advice: StrategyRebalanceAdvice) -> [StrategyHoldingSlice] {
+        var slices = advice.allocations.compactMap { allocation -> StrategyHoldingSlice? in
+            guard allocation.targetWeight > 0.0001 else { return nil }
+            return StrategyHoldingSlice(
+                id: "target-\(allocation.symbol)",
+                title: allocation.title,
+                weight: allocation.targetWeight,
+                color: BacktestDefaults.strategyColor(for: allocation.symbol)
+            )
+        }
+
+        if advice.cashWeight > 0.005 || slices.isEmpty {
+            slices.append(
+                StrategyHoldingSlice(
+                    id: "target-cash-other",
+                    title: AppLocalization.string("现金/其他"),
+                    weight: max(advice.cashWeight, slices.isEmpty ? 1 : 0),
+                    color: AssetTheme.textSecondary.opacity(0.68)
+                )
+            )
+        }
+        return slices
+    }
+
+    private var currentResidualWeight: Double? {
+        let weights = adviceStore.actions.compactMap(\.currentWeight)
+        guard !weights.isEmpty else { return nil }
+        return max(0, 1 - weights.reduce(0, +))
+    }
+
+    private var currentInvestedWeight: Double? {
+        let weights = adviceStore.actions.compactMap(\.currentWeight)
+        guard !weights.isEmpty else { return nil }
+        return weights.reduce(0, +)
+    }
+
+    private var historySourceDisplay: String {
+        var upstreamLabels: [String] = []
+        let knownSources: [(needle: String, label: String)] = [
+            ("eastmoney", "Eastmoney"),
+            ("sina", "Sina"),
+            ("yahoo", "Yahoo Finance"),
+            ("frankfurter", "Frankfurter"),
+            ("akshare", "AKShare")
+        ]
+
+        for source in adviceStore.historySourceNames {
+            guard source.caseInsensitiveCompare("Flyingrtx") != .orderedSame else { continue }
+            let normalized = source.lowercased()
+            let recognized = knownSources.compactMap { normalized.contains($0.needle) ? $0.label : nil }
+            upstreamLabels.append(contentsOf: recognized.isEmpty ? [source] : recognized)
+        }
+
+        var seen = Set<String>()
+        let upstream = upstreamLabels.filter { seen.insert($0).inserted }
+        if upstream.isEmpty {
+            return AppLocalization.string("Flyingrtx 公共历史行情")
+        }
+        return "Flyingrtx · \(upstream.joined(separator: " / "))"
+    }
+
+    @MainActor
+    private func refreshAdvice(force: Bool) async {
+        let snapshot = try? SnapshotService.latestSnapshot(in: modelContext)
+        await adviceStore.refresh(
+            templateID: strategyTemplateID,
+            marketStore: marketStore,
+            snapshot: snapshot,
+            force: force
+        )
+    }
+
+    @MainActor
+    private func scheduleSnapshotRefresh() {
+        pendingSnapshotRefreshTask?.cancel()
+        pendingSnapshotRefreshTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            guard !Task.isCancelled, isActive else { return }
+            adviceStore.updateSnapshot(try? SnapshotService.latestSnapshot(in: modelContext))
+            pendingSnapshotRefreshTask = nil
+        }
+    }
+}
+
+private struct StrategyHoldingDonut: View {
+    let title: String
+    let slices: [StrategyHoldingSlice]
+    let centerValue: Double?
+
+    var body: some View {
+        VStack(spacing: 7) {
+            Text(title)
+                .font(AppTypography.captionStrong)
+                .foregroundStyle(AssetTheme.textPrimary)
+                .lineLimit(1)
+
+            ZStack {
+                if slices.isEmpty {
+                    Circle()
+                        .stroke(AssetTheme.border.opacity(0.9), style: StrokeStyle(lineWidth: 13, dash: [3, 4]))
+                        .padding(10)
+
+                    Text("--")
+                        .font(AppTypography.rowValue.monospacedDigit())
+                        .foregroundStyle(AssetTheme.textSecondary)
+                } else {
+                    Chart(slices) { slice in
+                        SectorMark(
+                            angle: .value("allocation", slice.weight),
+                            innerRadius: .ratio(0.7),
+                            angularInset: 1.2
+                        )
+                        .cornerRadius(1.5)
+                        .foregroundStyle(slice.color)
+                    }
+                    .chartLegend(.hidden)
+
+                    Text(centerValue?.percentString(maxFractionDigits: 1) ?? "—")
+                        .font(AppTypography.rowValue.monospacedDigit())
+                        .foregroundStyle(AssetTheme.textPrimary)
+                }
+            }
+            .frame(height: 96)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}

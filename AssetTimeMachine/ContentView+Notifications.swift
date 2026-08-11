@@ -157,31 +157,19 @@ extension ContentView {
         await marketStore.refreshHistoryIfNeeded(force: false)
 
         let assetOptions = StrategyNotificationDefaults.assetOptions(for: template)
-        let assetInputs = assetOptions.map { option in
-            (
-                assetSeries: marketStore.history(for: option.symbol),
-                assetOption: option,
-                fxSeries: option.historicalFXSymbol.flatMap { marketStore.history(for: $0) }
-            )
-        }
-        let adviceToken = "\(template.id):\(marketStore.historyRevision)"
-        let advice: StrategyRebalanceAdvice?
-        if cachedStrategyAdviceToken == adviceToken {
-            advice = cachedStrategyAdvice
-        } else {
-            let mode = template.mode
-            let adviceTask = Task.detached(priority: .utility) {
-                BacktestEngine.advancedRotationRebalanceAdvice(assetInputs: assetInputs, mode: mode)
-            }
-            advice = await withTaskCancellationHandler {
-                await adviceTask.value
-            } onCancel: {
-                adviceTask.cancel()
-            }
-            guard !Task.isCancelled else { return (template.title, nil) }
-            cachedStrategyAdvice = advice
-            cachedStrategyAdviceToken = adviceToken
-        }
+        let historySymbols = StrategyAdviceProjectionStore.historySymbols(for: assetOptions)
+        let historyBySymbol = Dictionary(uniqueKeysWithValues: historySymbols.compactMap { symbol in
+            marketStore.history(for: symbol).map { (symbol, $0) }
+        })
+        let historyToken = marketStore.historyRelevanceToken(for: historySymbols)
+        let advice = await strategyAdviceService.advice(
+            calculationToken: "\(template.id)|\(historyToken)",
+            mode: template.mode,
+            assetOptions: assetOptions,
+            historyBySymbol: historyBySymbol,
+            force: false
+        )
+        guard !Task.isCancelled else { return (template.title, nil) }
 
         guard let advice else {
             return (template.title, AppLocalization.string("历史行情暂时不足，今日调仓将在数据补齐后更新。"))
@@ -197,16 +185,24 @@ extension ContentView {
     }
 
     @MainActor
-    func sendStrategyTestNotification() async -> Bool {
-        do {
-            let content = await currentStrategyNotificationContent(includeAdviceWhenDisabled: true)
-            return try await AssetNotificationService.sendStrategyTestNotification(
-                strategyTitle: content.title,
-                body: content.body
-            )
-        } catch {
-            print("[AssetTimeMachine] send strategy test notification failed: \(error)")
-            return false
+    func sendStrategyTestNotification() async -> StrategyTestNotificationResult {
+        switch await AssetNotificationService.preflightTestNotificationAuthorization() {
+        case .granted:
+            break
+        case .denied:
+            return .denied
+        case .failed(let message):
+            return .failed(message)
         }
+
+        let content = await currentStrategyNotificationContent(includeAdviceWhenDisabled: true)
+        let result = await AssetNotificationService.sendStrategyTestNotification(
+            strategyTitle: content.title,
+            body: content.body
+        )
+        if case .failed(let message) = result {
+            print("[AssetTimeMachine] send strategy test notification failed: \(message)")
+        }
+        return result
     }
 }

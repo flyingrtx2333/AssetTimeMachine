@@ -791,53 +791,60 @@ struct AdvancedBacktestView: View {
                     ? cachedFilteredAssetInputs
                     : nil
             let computationTask = Task.detached(priority: .userInitiated) { () -> AdvancedBacktestComputationResult in
-                let filteredAssetInputs = preparedAssetInputs ?? AdvancedBacktestDataSupport.buildDataCache(
-                    calculationAssetOptions: capturedOptions,
-                    strategyMode: capturedStrategyMode,
-                    historySnapshots: capturedHistorySnapshots,
-                    selectedStartDate: capturedStartDate,
-                    selectedEndDate: capturedEndDate
-                ).filteredAssetInputs
-                guard !Task.isCancelled,
-                      !filteredAssetInputs.isEmpty,
-                      filteredAssetInputs.allSatisfy({ $0.assetSeries != nil && (!$0.assetOption.requiresHistoricalFX || $0.fxSeries != nil) }) else {
+                do {
+                    return try await BackgroundTaskWork.runSynchronousOnLargeStack(
+                        qualityOfService: .userInitiated
+                    ) {
+                        let filteredAssetInputs = preparedAssetInputs ?? AdvancedBacktestDataSupport.buildDataCache(
+                            calculationAssetOptions: capturedOptions,
+                            strategyMode: capturedStrategyMode,
+                            historySnapshots: capturedHistorySnapshots,
+                            selectedStartDate: capturedStartDate,
+                            selectedEndDate: capturedEndDate
+                        ).filteredAssetInputs
+                        guard !filteredAssetInputs.isEmpty,
+                              filteredAssetInputs.allSatisfy({ $0.assetSeries != nil && (!$0.assetOption.requiresHistoricalFX || $0.fxSeries != nil) }) else {
+                            return AdvancedBacktestComputationResult(report: nil, rebalanceAdvice: nil, comparisonSeries: [])
+                        }
+
+                        let advice = capturedStrategyMode.isRotation
+                            ? BacktestEngine.advancedRotationRebalanceAdvice(
+                                assetInputs: filteredAssetInputs,
+                                mode: capturedStrategyMode,
+                                initialCash: capturedInitialCash,
+                                settings: capturedRiskSettings
+                            )
+                            : nil
+
+                        let report: AdvancedBacktestReport?
+                        if capturedStrategyMode.isRotation {
+                            report = BacktestEngine.runAdvancedRotationStrategy(
+                                assetInputs: filteredAssetInputs,
+                                initialCash: capturedInitialCash,
+                                settings: capturedRiskSettings,
+                                mode: capturedStrategyMode
+                            )
+                        } else {
+                            report = BacktestEngine.runAdvancedStrategies(
+                                assetInputs: filteredAssetInputs,
+                                initialCash: capturedInitialCash,
+                                tradeAmount: capturedTradeAmount,
+                                buyRule: buyRule,
+                                sellRule: sellRule,
+                                settings: capturedRiskSettings
+                            )
+                        }
+
+                        let comparisonSeries = report.map { AdvancedBacktestPresentation.comparisonSeries(from: $0) } ?? []
+                        return AdvancedBacktestComputationResult(
+                            report: report,
+                            rebalanceAdvice: advice,
+                            comparisonSeries: comparisonSeries
+                        )
+                    }
+                } catch {
                     return AdvancedBacktestComputationResult(report: nil, rebalanceAdvice: nil, comparisonSeries: [])
                 }
-
-                let advice = capturedStrategyMode.isRotation
-                    ? BacktestEngine.advancedRotationRebalanceAdvice(
-                        assetInputs: filteredAssetInputs,
-                        mode: capturedStrategyMode,
-                        initialCash: capturedInitialCash,
-                        settings: capturedRiskSettings
-                    )
-                    : nil
-
-                let report: AdvancedBacktestReport?
-                if capturedStrategyMode.isRotation {
-                    report = BacktestEngine.runAdvancedRotationStrategy(
-                        assetInputs: filteredAssetInputs,
-                        initialCash: capturedInitialCash,
-                        settings: capturedRiskSettings,
-                        mode: capturedStrategyMode
-                    )
-                } else {
-                    report = BacktestEngine.runAdvancedStrategies(
-                        assetInputs: filteredAssetInputs,
-                        initialCash: capturedInitialCash,
-                        tradeAmount: capturedTradeAmount,
-                        buyRule: buyRule,
-                        sellRule: sellRule,
-                        settings: capturedRiskSettings
-                    )
-                }
-
-                let comparisonSeries = report.map { AdvancedBacktestPresentation.comparisonSeries(from: $0) } ?? []
-                return AdvancedBacktestComputationResult(
-                    report: report,
-                    rebalanceAdvice: advice,
-                    comparisonSeries: comparisonSeries
-                )
             }
             await MainActor.run {
                 pendingReportComputationTask = computationTask

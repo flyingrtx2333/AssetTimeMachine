@@ -129,6 +129,7 @@ nonisolated private enum DeferredBacktestRecordEncoder {
 struct BacktestView: View {
     @Environment(\.modelContext) private var modelContext
     let marketStore: RemoteMarketStore
+    let strategyAdviceService: StrategyAdviceService
     let isActive: Bool
     @State private var selectedPage: BacktestPage = .home
     @State private var backtestMode: BacktestMode = .allocation
@@ -373,6 +374,9 @@ struct BacktestView: View {
                         VStack(alignment: .leading, spacing: 0) {
                             RetainedBacktestPage(isSelected: selectedPage == .home) {
                                 BacktestHomeView(
+                                    marketStore: marketStore,
+                                    strategyAdviceService: strategyAdviceService,
+                                    isActive: isActive && selectedPage == .home,
                                     records: recentBacktestRecords,
                                     totalRecordCount: totalBacktestRecordCount,
                                     onStart: { kind in

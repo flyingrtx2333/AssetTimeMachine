@@ -5367,7 +5367,11 @@ struct StrategyMetricDump {
     ) -> (rows: [MetricRow], sliceRows: [SliceMetricRow]) {
         var rows: [MetricRow] = []
         var sliceRows: [SliceMetricRow] = []
-        for template in AdvancedBacktestStrategyTemplate.all {
+        let requestedStrategyID = ProcessInfo.processInfo.environment["ATM_APP_STRATEGY_ID"]
+        let templates = AdvancedBacktestStrategyTemplate.all.filter { template in
+            requestedStrategyID.map { template.id == $0 } ?? true
+        }
+        for template in templates {
             let inputs = appFilteredInputs(for: template, seriesBySymbol: seriesBySymbol)
             let report: AdvancedBacktestReport?
             if template.mode.isRotation {
@@ -5584,6 +5588,16 @@ struct StrategyMetricDump {
     }
 
     static func main() async throws {
+        let catalogIssues = BacktestProductStrategyCatalog.validationIssues()
+        if !catalogIssues.isEmpty {
+            print("APP_PRODUCT_CATALOG_VERIFY_FAILED")
+            for issue in catalogIssues {
+                print(issue)
+            }
+            fflush(stdout)
+            Darwin.exit(2)
+        }
+
         let symbols = [
             "gold_cny",
             "nasdaq_composite",

@@ -11,9 +11,10 @@ enum AppTab: Hashable {
 }
 
 @MainActor
-final class AppFeatureStoreOwner: ObservableObject {
+final class AppRuntimeStore: ObservableObject {
     let marketStore = RemoteMarketStore()
     let cloudStore = AssetTimeMachineCloudStore()
+    let strategyAdviceService = StrategyAdviceService()
 }
 
 struct ContentView: View {
@@ -25,7 +26,7 @@ struct ContentView: View {
     @AppStorage("app.strategyNotifications.enabled") var strategyNotificationEnabled = false
     @AppStorage("app.strategyNotifications.templateID") var strategyNotificationTemplateID = StrategyNotificationDefaults.defaultTemplateID
     @AppStorage("app.strategyNotifications.hour") var strategyNotificationHour: Int = StrategyNotificationDefaults.defaultHour
-    @StateObject var featureStores = AppFeatureStoreOwner()
+    @StateObject var runtimeStore = AppRuntimeStore()
     @State var mountedTabs: Set<AppTab> = [.dashboard]
     @State var lastSelectedTab: AppTab = .dashboard
     @State var selectedTab: AppTab = .dashboard
@@ -41,8 +42,6 @@ struct ContentView: View {
     @State var notificationRefreshGeneration = 0
     @State var notificationRefreshRequestedDelayNanoseconds: UInt64 = 0
     @State var startupMaintenanceTask: Task<Void, Never>?
-    @State var cachedStrategyAdvice: StrategyRebalanceAdvice?
-    @State var cachedStrategyAdviceToken: String?
     @State var isApplyingCloudData = false
     @State var cloudDataRevision = 0
     #if DEBUG
@@ -51,8 +50,9 @@ struct ContentView: View {
 
     static let foregroundMarketRefreshInterval: TimeInterval = 3600
 
-    var marketStore: RemoteMarketStore { featureStores.marketStore }
-    var cloudStore: AssetTimeMachineCloudStore { featureStores.cloudStore }
+    var marketStore: RemoteMarketStore { runtimeStore.marketStore }
+    var cloudStore: AssetTimeMachineCloudStore { runtimeStore.cloudStore }
+    var strategyAdviceService: StrategyAdviceService { runtimeStore.strategyAdviceService }
 
     var body: some View {
         Group {
@@ -73,6 +73,7 @@ struct ContentView: View {
                     DashboardView(
                         marketStore: marketStore,
                         cloudStore: cloudStore,
+                        strategyAdviceService: strategyAdviceService,
                         isActive: workActiveTab == .dashboard
                     )
                 }
@@ -113,6 +114,7 @@ struct ContentView: View {
                 TabSurface(isSelected: selectedTab == .backtest) {
                     BacktestView(
                         marketStore: marketStore,
+                        strategyAdviceService: strategyAdviceService,
                         isActive: workActiveTab == .backtest
                     )
                 }

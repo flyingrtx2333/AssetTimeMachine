@@ -10,6 +10,18 @@ nonisolated struct AssetNotificationSnapshot: Sendable {
     var netAssets: Double { totalAssets - totalLiabilities }
 }
 
+nonisolated enum NotificationAuthorizationResult: Sendable {
+    case granted
+    case denied
+    case failed(String)
+}
+
+nonisolated enum StrategyTestNotificationResult: Sendable {
+    case sent
+    case denied
+    case failed(String)
+}
+
 enum AssetNotificationService {
     static let notificationIdentifier = "assettimemachine.asset-report"
     static let strategyNotificationIdentifier = "assettimemachine.strategy-rebalance"
@@ -54,6 +66,15 @@ enum AssetNotificationService {
         await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
     }
 
+    static func preflightTestNotificationAuthorization() async -> NotificationAuthorizationResult {
+        let center = UNUserNotificationCenter.current()
+        do {
+            return try await ensureAuthorization(for: center) ? .granted : .denied
+        } catch {
+            return .failed(error.localizedDescription)
+        }
+    }
+
     static func refreshStrategySchedule(
         isEnabled: Bool,
         hour: Int,
@@ -96,25 +117,29 @@ enum AssetNotificationService {
         return true
     }
 
-    static func sendStrategyTestNotification(strategyTitle: String, body: String?) async throws -> Bool {
+    static func sendStrategyTestNotification(strategyTitle: String, body: String?) async -> StrategyTestNotificationResult {
         let center = UNUserNotificationCenter.current()
-        let granted = try await ensureAuthorization(for: center)
-        guard granted else { return false }
+        do {
+            let granted = try await ensureAuthorization(for: center)
+            guard granted else { return .denied }
 
-        center.removePendingNotificationRequests(withIdentifiers: [strategyTestNotificationIdentifier])
-        center.removeDeliveredNotifications(withIdentifiers: [strategyTestNotificationIdentifier])
+            center.removePendingNotificationRequests(withIdentifiers: [strategyTestNotificationIdentifier])
+            center.removeDeliveredNotifications(withIdentifiers: [strategyTestNotificationIdentifier])
 
-        let content = UNMutableNotificationContent()
-        content.title = AppLocalization.string("今日调仓提醒")
-        content.subtitle = strategyTitle
-        content.body = body ?? AppLocalization.string("打开资产时光机，查看最新策略信号。")
-        content.sound = .default
-        content.threadIdentifier = strategyNotificationIdentifier
+            let content = UNMutableNotificationContent()
+            content.title = AppLocalization.string("今日调仓提醒")
+            content.subtitle = strategyTitle
+            content.body = body ?? AppLocalization.string("打开资产时光机，查看最新策略信号。")
+            content.sound = .default
+            content.threadIdentifier = strategyNotificationIdentifier
 
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-        let request = UNNotificationRequest(identifier: strategyTestNotificationIdentifier, content: content, trigger: trigger)
-        try await center.add(request)
-        return true
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+            let request = UNNotificationRequest(identifier: strategyTestNotificationIdentifier, content: content, trigger: trigger)
+            try await center.add(request)
+            return .sent
+        } catch {
+            return .failed(error.localizedDescription)
+        }
     }
 
     private static func ensureAuthorization(for center: UNUserNotificationCenter) async throws -> Bool {

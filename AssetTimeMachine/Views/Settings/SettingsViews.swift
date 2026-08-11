@@ -17,7 +17,7 @@ struct SettingsView: View {
     @AppStorage("app.strategyNotifications.hour") private var strategyNotificationHour: Int = StrategyNotificationDefaults.defaultHour
     @ObservedObject var cloudStore: AssetTimeMachineCloudStore
     let isActive: Bool
-    let onSendStrategyTestNotification: () async -> Bool
+    let onSendStrategyTestNotification: () async -> StrategyTestNotificationResult
     let onReplayOnboarding: () -> Void
     @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
     @State private var showsLogoutConfirmation = false
@@ -28,7 +28,7 @@ struct SettingsView: View {
     init(
         cloudStore: AssetTimeMachineCloudStore,
         isActive: Bool,
-        onSendStrategyTestNotification: @escaping () async -> Bool,
+        onSendStrategyTestNotification: @escaping () async -> StrategyTestNotificationResult,
         onReplayOnboarding: @escaping () -> Void
     ) {
         self.cloudStore = cloudStore
@@ -208,7 +208,8 @@ struct SettingsView: View {
                             Menu {
                                 Picker(AppLocalization.string("提醒策略"), selection: $strategyNotificationTemplateID) {
                                     ForEach(StrategyNotificationDefaults.eligibleTemplates) { template in
-                                        Text(template.title).tag(template.id)
+                                        Text(StrategyNotificationDefaults.pickerTitle(for: template))
+                                            .tag(template.id)
                                     }
                                 }
                             } label: {
@@ -312,12 +313,12 @@ struct SettingsView: View {
                                         .foregroundStyle(AssetTheme.textSecondary)
                                 }
 
-                                if let strategyTestNotificationMessage {
-                                    Text(strategyTestNotificationMessage)
-                                        .foregroundStyle(AssetTheme.textSecondary)
-                                }
-
                                 Text(strategyNotificationFooter)
+                                    .foregroundStyle(AssetTheme.textSecondary)
+                            }
+
+                            if let strategyTestNotificationMessage {
+                                Text(strategyTestNotificationMessage)
                                     .foregroundStyle(AssetTheme.textSecondary)
                             }
                         }
@@ -474,12 +475,17 @@ struct SettingsView: View {
         strategyTestNotificationMessage = nil
 
         Task {
-            let sent = await onSendStrategyTestNotification()
+            let result = await onSendStrategyTestNotification()
             await reloadNotificationStatus()
             isSendingStrategyTestNotification = false
-            strategyTestNotificationMessage = sent
-                ? AppLocalization.string("测试提醒已发送")
-                : AppLocalization.string("通知权限未开启")
+            switch result {
+            case .sent:
+                strategyTestNotificationMessage = AppLocalization.string("测试提醒已发送")
+            case .denied:
+                strategyTestNotificationMessage = AppLocalization.string("通知权限未开启")
+            case .failed(let message):
+                strategyTestNotificationMessage = "\(AppLocalization.string("发送测试提醒"))：\(message)"
+            }
         }
     }
 
