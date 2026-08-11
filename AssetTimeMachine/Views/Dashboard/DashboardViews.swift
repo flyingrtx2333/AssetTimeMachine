@@ -552,9 +552,16 @@ struct TodayStrategySheet: View {
                     .background(AssetTheme.gold.opacity(0.12), in: Circle())
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(selectedTemplate?.title ?? AppLocalization.string("未选择策略"))
-                        .font(AppTypography.blockTitleBold)
-                        .foregroundStyle(AssetTheme.textPrimary)
+                    HStack(spacing: 7) {
+                        Text(selectedTemplate?.title ?? AppLocalization.string("未选择策略"))
+                            .font(AppTypography.blockTitleBold)
+                            .foregroundStyle(AssetTheme.textPrimary)
+
+                        if let selectedTemplate,
+                           BacktestProductStrategyCatalog.isCuratedTemplateID(selectedTemplate.id) {
+                            CuratedStrategyBadge(compact: true)
+                        }
+                    }
 
                     Text(AppLocalization.string("使用设置里的提醒策略生成"))
                         .font(AppTypography.caption)

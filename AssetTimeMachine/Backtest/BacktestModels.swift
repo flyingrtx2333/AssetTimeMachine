@@ -1183,7 +1183,6 @@ enum StrategyRebalanceActionKind {
     case buy
     case sell
     case hold
-    case missingRecord
     case targetOnly
 
     var title: String {
@@ -1194,8 +1193,6 @@ enum StrategyRebalanceActionKind {
             return AppLocalization.string("卖出")
         case .hold:
             return AppLocalization.string("保持")
-        case .missingRecord:
-            return AppLocalization.string("未记录")
         case .targetOnly:
             return AppLocalization.string("目标")
         }
@@ -1209,8 +1206,6 @@ enum StrategyRebalanceActionKind {
             return AssetTheme.negative
         case .hold, .targetOnly:
             return AssetTheme.textSecondary
-        case .missingRecord:
-            return AssetTheme.accentOrange
         }
     }
 }
@@ -1257,11 +1252,6 @@ struct StrategyRebalanceAction: Identifiable {
         switch kind {
         case .buy, .sell:
             return (abs(deltaAmount ?? 0)).currencyString()
-        case .missingRecord:
-            if let targetAmount {
-                return AppLocalization.format("需 %@", targetAmount.currencyString())
-            }
-            return targetWeight.percentString(maxFractionDigits: 1)
         case .hold:
             return AppLocalization.string("偏离小")
         case .targetOnly:
@@ -1308,9 +1298,7 @@ enum StrategyRebalanceActionBuilder {
             guard targetWeight > 0.0001 || currentAmount > minimumTradeAmount else { return nil }
 
             let kind: StrategyRebalanceActionKind
-            if !match.isMatched, targetWeight > 0.0001 {
-                kind = .missingRecord
-            } else if deltaAmount > minimumTradeAmount {
+            if deltaAmount > minimumTradeAmount {
                 kind = .buy
             } else if deltaAmount < -minimumTradeAmount {
                 kind = .sell
@@ -1948,17 +1936,30 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
 /// templates remain available through `AdvancedBacktestStrategyTemplate.all`, while every
 /// product-facing surface (library, reminders and daily advice) consumes this ordered registry.
 enum BacktestProductStrategyCatalog {
-    static let templateIDs = [
+    static let curatedTemplateIDs = [
         "risk-contribution-cash-confidence-low-noise",
         "core-gold-satellite-equity-curve-state-gate-momentum",
         "core-gold-satellite-risk-budget-state-gate-momentum",
         "core-gold-satellite-profit-lock-momentum",
         "gold-nasdaq-dual-trend-barbell",
+    ]
+
+    static let basicTemplateIDs = [
         "basic-ma60-trend",
         "basic-ma-golden-cross",
         "basic-ma20-trend",
         "basic-boll-mean-reversion",
     ]
+
+    static let templateIDs = curatedTemplateIDs + basicTemplateIDs
+
+    static func isCuratedTemplateID(_ id: String) -> Bool {
+        curatedTemplateIDs.contains(id)
+    }
+
+    static func isBasicTemplateID(_ id: String) -> Bool {
+        basicTemplateIDs.contains(id)
+    }
 
     static func templates(
         from inventory: [AdvancedBacktestStrategyTemplate]
@@ -2824,7 +2825,9 @@ enum StrategyNotificationDefaults {
     static let defaultHour = 9
 
     static var eligibleTemplates: [AdvancedBacktestStrategyTemplate] {
-        AdvancedBacktestStrategyTemplate.productCatalog.filter { $0.mode.isRotation }
+        AdvancedBacktestStrategyTemplate.productCatalog.filter {
+            BacktestProductStrategyCatalog.isCuratedTemplateID($0.id)
+        }
     }
 
     static func migratedTemplateID(_ id: String) -> String {
@@ -2851,8 +2854,14 @@ enum StrategyNotificationDefaults {
     }
 
     static func pickerTitle(for template: AdvancedBacktestStrategyTemplate) -> String {
-        guard template.id == recommendedTemplateID else { return template.title }
-        return "\(template.title) · \(AppLocalization.string("推荐"))"
+        guard BacktestProductStrategyCatalog.isCuratedTemplateID(template.id) else {
+            return template.title
+        }
+        var badges = [AppLocalization.string("精选")]
+        if template.id == recommendedTemplateID {
+            badges.append(AppLocalization.string("推荐"))
+        }
+        return "\(template.title) · \(badges.joined(separator: " · "))"
     }
 
     static func assetOptions(for template: AdvancedBacktestStrategyTemplate) -> [BacktestAssetOption] {
@@ -2875,7 +2884,7 @@ enum StrategyNotificationContentBuilder {
 
         let actionable = actions.filter { action in
             switch action.kind {
-            case .buy, .sell, .missingRecord:
+            case .buy, .sell:
                 return true
             case .hold, .targetOnly:
                 return false
@@ -2912,11 +2921,6 @@ enum StrategyNotificationContentBuilder {
             return AppLocalization.format("%@买入%@", action.title, abs(action.deltaAmount ?? 0).currencyString())
         case .sell:
             return AppLocalization.format("%@卖出%@", action.title, abs(action.deltaAmount ?? 0).currencyString())
-        case .missingRecord:
-            if let targetAmount = action.targetAmount {
-                return AppLocalization.format("%@未记录，目标%@", action.title, targetAmount.currencyString())
-            }
-            return AppLocalization.format("%@未记录，目标%@", action.title, action.targetWeight.percentString(maxFractionDigits: 1))
         case .hold:
             return AppLocalization.format("%@保持%@", action.title, action.targetWeight.percentString(maxFractionDigits: 1))
         case .targetOnly:

@@ -144,6 +144,11 @@ struct TodayPositionAdviceCard: View {
                             .foregroundStyle(AssetTheme.textPrimary)
                             .lineLimit(2)
 
+                        if let selectedTemplate,
+                           BacktestProductStrategyCatalog.isCuratedTemplateID(selectedTemplate.id) {
+                            CuratedStrategyBadge(compact: true)
+                        }
+
                         Image(systemName: "chevron.up.chevron.down")
                             .font(AppTypography.microLabel)
                             .foregroundStyle(AssetTheme.textSecondary)
@@ -152,7 +157,10 @@ struct TodayPositionAdviceCard: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(AppLocalization.string("当前策略"))
-                .accessibilityValue(selectedTemplate?.title ?? AppLocalization.string("未选择策略"))
+                .accessibilityValue(
+                    selectedTemplate.map(StrategyNotificationDefaults.pickerTitle)
+                        ?? AppLocalization.string("未选择策略")
+                )
             }
 
             Spacer(minLength: 12)

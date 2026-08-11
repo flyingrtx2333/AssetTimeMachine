@@ -214,7 +214,13 @@ struct SettingsView: View {
                                 }
                             } label: {
                                 LabeledContent {
-                                    SettingsValueText(selectedStrategyTemplate?.title ?? AppLocalization.string("未选择"))
+                                    HStack(spacing: 6) {
+                                        SettingsValueText(selectedStrategyTemplate?.title ?? AppLocalization.string("未选择"))
+                                        if let selectedStrategyTemplate,
+                                           BacktestProductStrategyCatalog.isCuratedTemplateID(selectedStrategyTemplate.id) {
+                                            CuratedStrategyBadge(compact: true)
+                                        }
+                                    }
                                 } label: {
                                     Text(AppLocalization.string("提醒策略"))
                                         .foregroundStyle(AssetTheme.textPrimary)

@@ -656,7 +656,9 @@ struct AdvancedStrategyLibrarySheet: View {
         self.activeTemplateID = activeTemplateID
         self.onSelect = onSelect
         _selectedGroup = State(
-            initialValue: activeTemplateID.map(Self.isBasicTemplateID) == true ? .basic : .selected
+            initialValue: activeTemplateID.map(BacktestProductStrategyCatalog.isBasicTemplateID) == true
+                ? .basic
+                : .selected
         )
     }
 
@@ -905,16 +907,7 @@ struct AdvancedStrategyLibrarySheet: View {
     }
 
     private func group(for template: AdvancedBacktestStrategyTemplate) -> LibraryGroup {
-        Self.isBasicTemplateID(template.id) ? .basic : .selected
-    }
-
-    private static func isBasicTemplateID(_ id: String) -> Bool {
-        switch id {
-        case "basic-ma60-trend", "basic-ma-golden-cross", "basic-ma20-trend", "basic-boll-mean-reversion":
-            return true
-        default:
-            return false
-        }
+        BacktestProductStrategyCatalog.isBasicTemplateID(template.id) ? .basic : .selected
     }
 
     private func tier(for template: AdvancedBacktestStrategyTemplate) -> StrategyTier {
@@ -950,6 +943,28 @@ struct AdvancedStrategyLibrarySheet: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(AssetTheme.border.opacity(0.55), lineWidth: 1)
         )
+    }
+}
+
+struct CuratedStrategyBadge: View {
+    var compact = false
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "sparkles")
+            Text(AppLocalization.string("精选"))
+        }
+        .font(compact ? .caption2.weight(.semibold) : AppTypography.chartAxisStrip)
+        .foregroundStyle(AssetTheme.goldSoft)
+        .lineLimit(1)
+        .padding(.horizontal, compact ? 6 : 7)
+        .padding(.vertical, compact ? 3 : 4)
+        .background(AssetTheme.gold.opacity(0.11), in: Capsule())
+        .overlay(
+            Capsule()
+                .stroke(AssetTheme.gold.opacity(0.22), lineWidth: 1)
+        )
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -1010,6 +1025,10 @@ struct AdvancedStrategyTemplateRow: View {
         template.id == StrategyNotificationDefaults.recommendedTemplateID
     }
 
+    private var isCuratedStrategy: Bool {
+        BacktestProductStrategyCatalog.isCuratedTemplateID(template.id)
+    }
+
     var body: some View {
         Button(action: onTap) {
             HStack(alignment: .center, spacing: 10) {
@@ -1027,6 +1046,9 @@ struct AdvancedStrategyTemplateRow: View {
 
                 Spacer(minLength: 6)
 
+                if isCuratedStrategy {
+                    CuratedStrategyBadge(compact: true)
+                }
                 if isRecommendedStrategy {
                     strategyBadge(AppLocalization.string("推荐"), accent: AssetTheme.positive)
                 } else if isDefaultStrategy {
