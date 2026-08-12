@@ -1,6 +1,118 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "今日策略已生成": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Today's strategy is ready" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "今日策略已生成" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "今日策略已生成" } }
+      }
+    },
+    "今日策略生成进度": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Today's strategy progress" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "今日策略生成进度" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "今日策略生成進度" } }
+      }
+    },
+    "正在准备今日策略": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Preparing today's strategy" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在准备今日策略" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在準備今日策略" } }
+      }
+    },
+    "正在准备%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Preparing %@" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在准备%@" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在準備%@" } }
+      }
+    },
+    "正在读取%@所需行情": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Reading market data for %@" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在读取%@所需行情" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在讀取%@所需行情" } }
+      }
+    },
+    "正在更新%@所需行情": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Updating market data for %@" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在更新%@所需行情" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在更新%@所需行情" } }
+      }
+    },
+    "正在补齐%@行情（%d/%d）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Completing %@ market data (%d/%d)" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在补齐%@行情（%d/%d）" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在補齊%@行情（%d/%d）" } }
+      }
+    },
+    "正在整理%@行情": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Preparing %@ market data" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在整理%@行情" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在整理%@行情" } }
+      }
+    },
+    "正在计算%@目标仓位": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Calculating %@ target allocation" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在计算%@目标仓位" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在計算%@目標倉位" } }
+      }
+    },
+    "正在匹配当前持仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Matching current holdings" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在匹配当前持仓" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在匹配目前持倉" } }
+      }
+    },
+    "%@调仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%@ Rebalance" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "%@调仓" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "%@調倉" } }
+      }
+    },
+    "买入": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Buy" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "买入" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "買入" } }
+      }
+    },
+    "减仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Reduce" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "减仓" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "減倉" } }
+      }
+    },
+    "退出持仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Exit" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "退出" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "退出" } }
+      }
+    },
     "稳健": {
       "extractionState": "manual",
       "localizations": {

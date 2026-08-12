@@ -500,9 +500,15 @@ struct TodayStrategySheet: View {
                     VStack(alignment: .leading, spacing: 18) {
                         header
 
-                        if isRefreshing && advice == nil && statusMessage == nil {
-                            LoadingStateCard(title: AppLocalization.string("正在生成今日攻略"))
-                        } else if let statusMessage {
+                        if isRefreshing && statusMessage == nil {
+                            StrategyAdviceLoadingProgressView(
+                                fraction: adviceStore.progressFraction,
+                                message: adviceStore.progressMessage
+                            )
+                            .padding(.vertical, 8)
+                        }
+
+                        if let statusMessage {
                             todayStrategyStatusCard(message: statusMessage)
                         } else if let template = selectedTemplate, let advice {
                             todayStrategyContent(template: template, advice: advice)

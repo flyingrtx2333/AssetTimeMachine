@@ -9,6 +9,8 @@ final class StrategyAdviceProjectionStore: ObservableObject {
     @Published private(set) var snapshotDate: Date?
     @Published private(set) var isRefreshing = false
     @Published private(set) var statusMessage: String?
+    @Published private(set) var progressFraction = 0.0
+    @Published private(set) var progressMessage = AppLocalization.string("正在准备今日策略")
 
     private var calculationGeneration = 0
     private var activeCalculationToken: String?
@@ -37,6 +39,7 @@ final class StrategyAdviceProjectionStore: ObservableObject {
             snapshotDate = snapshot?.date
             statusMessage = AppLocalization.string("设置里还没有可用的提醒策略。")
             isRefreshing = false
+            resetProgress()
             return
         }
 
@@ -47,6 +50,11 @@ final class StrategyAdviceProjectionStore: ObservableObject {
 
         isRefreshing = true
         statusMessage = nil
+        resetProgress()
+        updateProgress(
+            fraction: 0.08,
+            message: AppLocalization.format("正在准备%@", template.title)
+        )
         defer {
             if calculationGeneration == generation {
                 isRefreshing = false
@@ -58,14 +66,30 @@ final class StrategyAdviceProjectionStore: ObservableObject {
             for: assetOptions,
             marketStore: marketStore
         )
+        updateProgress(
+            fraction: 0.20,
+            message: AppLocalization.format(
+                shouldForceHistoryRefresh ? "正在更新%@所需行情" : "正在读取%@所需行情",
+                template.title
+            )
+        )
         await marketStore.refreshHistoryIfNeeded(force: shouldForceHistoryRefresh)
         guard !Task.isCancelled, calculationGeneration == generation else { return }
 
         if isMissingRequiredHistory(for: assetOptions, marketStore: marketStore) {
-            await waitForRequiredHistory(assetOptions, marketStore: marketStore)
+            await waitForRequiredHistory(
+                assetOptions,
+                templateTitle: template.title,
+                generation: generation,
+                marketStore: marketStore
+            )
         }
         guard !Task.isCancelled, calculationGeneration == generation else { return }
 
+        updateProgress(
+            fraction: 0.54,
+            message: AppLocalization.format("正在整理%@行情", template.title)
+        )
         let historySymbols = Self.historySymbols(for: assetOptions)
         let historyBySymbol = Dictionary(uniqueKeysWithValues: historySymbols.compactMap { symbol in
             marketStore.history(for: symbol).map { (symbol, $0) }
@@ -79,10 +103,19 @@ final class StrategyAdviceProjectionStore: ObservableObject {
         if !force,
            lastSuccessfulCalculationToken == calculationToken,
            advice != nil {
+            updateProgress(
+                fraction: 0.90,
+                message: AppLocalization.string("正在匹配当前持仓")
+            )
             updateSnapshot(snapshot)
+            updateProgress(fraction: 1, message: AppLocalization.string("今日策略已生成"))
             return
         }
 
+        updateProgress(
+            fraction: 0.66,
+            message: AppLocalization.format("正在计算%@目标仓位", template.title)
+        )
         let nextAdvice = await adviceService.advice(
             calculationToken: calculationToken,
             mode: template.mode,
@@ -102,12 +135,18 @@ final class StrategyAdviceProjectionStore: ObservableObject {
             actions = []
             snapshotDate = snapshot?.date
             statusMessage = AppLocalization.string("历史行情暂时不足，今日调仓将在数据补齐后更新。")
+            resetProgress()
             return
         }
 
         advice = nextAdvice
         lastSuccessfulCalculationToken = calculationToken
+        updateProgress(
+            fraction: 0.90,
+            message: AppLocalization.string("正在匹配当前持仓")
+        )
         updateSnapshot(snapshot)
+        updateProgress(fraction: 1, message: AppLocalization.string("今日策略已生成"))
     }
 
     func updateSnapshot(_ snapshot: AssetSnapshot?) {
@@ -129,6 +168,7 @@ final class StrategyAdviceProjectionStore: ObservableObject {
         calculationGeneration &+= 1
         activeCalculationToken = nil
         isRefreshing = false
+        resetProgress()
     }
 
     static func historySymbols(for assetOptions: [BacktestAssetOption]) -> Set<String> {
@@ -146,16 +186,39 @@ final class StrategyAdviceProjectionStore: ObservableObject {
 
     private func waitForRequiredHistory(
         _ assetOptions: [BacktestAssetOption],
+        templateTitle: String,
+        generation: Int,
         marketStore: RemoteMarketStore
     ) async {
-        for _ in 0 ..< 6 {
+        let maximumAttempts = 6
+        for attempt in 0 ..< maximumAttempts {
             guard !Task.isCancelled else { return }
             guard isMissingRequiredHistory(for: assetOptions, marketStore: marketStore) else { return }
+            guard calculationGeneration == generation else { return }
+            updateProgress(
+                fraction: 0.30 + (Double(attempt) / Double(maximumAttempts)) * 0.20,
+                message: AppLocalization.format(
+                    "正在补齐%@行情（%d/%d）",
+                    templateTitle,
+                    attempt + 1,
+                    maximumAttempts
+                )
+            )
             try? await Task.sleep(nanoseconds: 300_000_000)
             guard !Task.isCancelled else { return }
             guard isMissingRequiredHistory(for: assetOptions, marketStore: marketStore) else { return }
             await marketStore.refreshHistoryIfNeeded(force: true)
         }
+    }
+
+    private func updateProgress(fraction: Double, message: String) {
+        progressFraction = min(max(fraction, progressFraction), 1)
+        progressMessage = message
+    }
+
+    private func resetProgress() {
+        progressFraction = 0
+        progressMessage = AppLocalization.string("正在准备今日策略")
     }
 
     private func isMissingRequiredHistory(
@@ -184,5 +247,34 @@ final class StrategyAdviceProjectionStore: ObservableObject {
             let source = value.source.trimmingCharacters(in: .whitespacesAndNewlines)
             return source.isEmpty ? nil : source
         })).sorted()
+    }
+}
+
+struct StrategyAdviceLoadingProgressView: View {
+    let fraction: Double
+    let message: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(message)
+                    .font(AppTypography.meta)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .lineLimit(2)
+
+                Spacer(minLength: 8)
+
+                Text("\(Int((min(max(fraction, 0), 1) * 100).rounded()))%")
+                    .font(AppTypography.chartAxisStrip)
+                    .monospacedDigit()
+                    .foregroundStyle(AssetTheme.goldSoft)
+            }
+
+            ProgressView(value: min(max(fraction, 0), 1))
+                .tint(AssetTheme.gold)
+                .accessibilityLabel(AppLocalization.string("今日策略生成进度"))
+                .accessibilityValue("\(Int((min(max(fraction, 0), 1) * 100).rounded()))%")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

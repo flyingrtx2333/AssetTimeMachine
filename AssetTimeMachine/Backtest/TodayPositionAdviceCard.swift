@@ -89,9 +89,11 @@ struct TodayPositionAdviceCard: View {
         VStack(alignment: .leading, spacing: 18) {
             header
 
-            if adviceStore.isRefreshing && adviceStore.advice == nil && adviceStore.statusMessage == nil {
+            if adviceStore.isRefreshing && adviceStore.statusMessage == nil {
                 loadingState
-            } else if let statusMessage = adviceStore.statusMessage {
+            }
+
+            if let statusMessage = adviceStore.statusMessage {
                 statusState(statusMessage)
             } else if let advice = adviceStore.advice {
                 adviceContent(advice)
@@ -184,15 +186,10 @@ struct TodayPositionAdviceCard: View {
     }
 
     private var loadingState: some View {
-        HStack(spacing: 10) {
-            ProgressView()
-                .tint(AssetTheme.gold)
-
-            Text(AppLocalization.string("正在生成今日持仓建议"))
-                .font(AppTypography.meta)
-                .foregroundStyle(AssetTheme.textSecondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        StrategyAdviceLoadingProgressView(
+            fraction: adviceStore.progressFraction,
+            message: adviceStore.progressMessage
+        )
         .padding(.vertical, 8)
     }
 

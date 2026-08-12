@@ -30,6 +30,12 @@ enum AdvancedBacktestPresentation {
     }
 }
 
+private struct AdvancedBacktestTradeEvent: Identifiable {
+    let id: String
+    let date: Date
+    var trades: [AdvancedBacktestTrade]
+}
+
 struct AdvancedBacktestResultContent<MiddleContent: View>: View {
     let report: AdvancedBacktestReport
     let comparisonSeries: [BacktestChartComparisonSeries]
@@ -431,12 +437,6 @@ struct AdvancedBacktestResultContent<MiddleContent: View>: View {
     }
 
     private var tradeSection: some View {
-        let displayLimit = 6
-        let displayedTrades = showsAllRecentTrades
-            ? Array(report.trades.reversed())
-            : Array(report.trades.suffix(displayLimit).reversed())
-        let hasMoreTrades = report.trades.count > displayLimit
-
         return VStack(alignment: .leading, spacing: 8) {
             sectionHeader(AppLocalization.string("最近交易"))
 
@@ -447,49 +447,13 @@ struct AdvancedBacktestResultContent<MiddleContent: View>: View {
                         .foregroundStyle(AssetTheme.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    LazyVStack(spacing: 0) {
-                        ForEach(Array(displayedTrades.enumerated()), id: \.element.id) { index, trade in
-                            HStack(alignment: .top, spacing: 12) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(trade.action.title)
-                                        .font(AppTypography.rowTitle)
-                                        .foregroundStyle(trade.action.accent)
-                                    Text("\(trade.assetTitle) · \(trade.date.shortDateString) · \(trade.price.currencyString())")
-                                        .font(AppTypography.meta)
-                                        .foregroundStyle(AssetTheme.textSecondary)
-                                    if !trade.reason.isEmpty {
-                                        Text(AppLocalization.format("触发：%@", trade.reason))
-                                            .font(AppTypography.chartCaption)
-                                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.78))
-                                    }
-                                }
-
-                                Spacer()
-
-                                VStack(alignment: .trailing, spacing: 4) {
-                                    Text((trade.action == .buy ? "-" : "+") + trade.cashAmount.currencyString())
-                                        .font(AppTypography.rowTitle)
-                                        .foregroundStyle(AssetTheme.textPrimary)
-                                    Text(AppLocalization.format("%@份", trade.units.plainNumberString()))
-                                        .font(AppTypography.meta)
-                                        .foregroundStyle(AssetTheme.textSecondary)
-                                    if let realizedProfit = trade.realizedProfit {
-                                        Text("\(realizedProfit >= 0 ? "+" : "")\(realizedProfit.currencyString())")
-                                            .font(AppTypography.chartAxisStrip)
-                                            .foregroundStyle(realizedProfit >= 0 ? AssetTheme.positive : AssetTheme.negative)
-                                    }
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                            if index < displayedTrades.count - 1 {
-                                Divider()
-                                    .overlay(AssetTheme.border.opacity(0.6))
-                            }
-                        }
+                    if strategyMode.isRotation {
+                        rotationTradeList
+                    } else {
+                        ruleBasedTradeList
                     }
 
-                    if hasMoreTrades {
+                    if hasMoreRecentTrades {
                         Button {
                             withAnimation(.easeInOut(duration: 0.18)) {
                                 showsAllRecentTrades.toggle()
@@ -510,6 +474,156 @@ struct AdvancedBacktestResultContent<MiddleContent: View>: View {
                 }
             }
         }
+    }
+
+    private var rotationTradeEvents: [AdvancedBacktestTradeEvent] {
+        var events: [AdvancedBacktestTradeEvent] = []
+        for trade in report.trades {
+            let eventID = trade.date.recordDateString
+            if events.last?.id == eventID {
+                events[events.count - 1].trades.append(trade)
+            } else {
+                events.append(
+                    AdvancedBacktestTradeEvent(
+                        id: eventID,
+                        date: trade.date,
+                        trades: [trade]
+                    )
+                )
+            }
+        }
+        return Array(events.reversed())
+    }
+
+    private var displayedRotationTradeEvents: [AdvancedBacktestTradeEvent] {
+        showsAllRecentTrades ? rotationTradeEvents : Array(rotationTradeEvents.prefix(3))
+    }
+
+    private var displayedRuleBasedTrades: [AdvancedBacktestTrade] {
+        showsAllRecentTrades
+            ? Array(report.trades.reversed())
+            : Array(report.trades.suffix(6).reversed())
+    }
+
+    private var hasMoreRecentTrades: Bool {
+        strategyMode.isRotation
+            ? rotationTradeEvents.count > 3
+            : report.trades.count > 6
+    }
+
+    private var rotationTradeList: some View {
+        LazyVStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(displayedRotationTradeEvents.enumerated()), id: \.element.id) { eventIndex, event in
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(AppLocalization.format("%@调仓", strategyMode.title))
+                            .font(AppTypography.metaStrong)
+                            .foregroundStyle(AssetTheme.textPrimary)
+
+                        Spacer(minLength: 8)
+
+                        Text(event.date.shortDateString)
+                            .font(AppTypography.chartCaption)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                    .padding(.bottom, 5)
+
+                    ForEach(Array(event.trades.enumerated()), id: \.element.id) { tradeIndex, trade in
+                        tradeRow(
+                            trade,
+                            actionTitle: rotationActionTitle(for: trade),
+                            detailText: "\(trade.assetTitle) · \(trade.price.currencyString())",
+                            noteText: nil
+                        )
+
+                        if tradeIndex < event.trades.count - 1 {
+                            Divider()
+                                .overlay(AssetTheme.border.opacity(0.42))
+                        }
+                    }
+                }
+
+                if eventIndex < displayedRotationTradeEvents.count - 1 {
+                    Divider()
+                        .overlay(AssetTheme.border.opacity(0.72))
+                        .padding(.vertical, 10)
+                }
+            }
+        }
+    }
+
+    private var ruleBasedTradeList: some View {
+        LazyVStack(spacing: 0) {
+            ForEach(Array(displayedRuleBasedTrades.enumerated()), id: \.element.id) { index, trade in
+                tradeRow(
+                    trade,
+                    actionTitle: trade.action.title,
+                    detailText: "\(trade.assetTitle) · \(trade.date.shortDateString) · \(trade.price.currencyString())",
+                    noteText: trade.reason.isEmpty ? nil : AppLocalization.format("触发：%@", trade.reason)
+                )
+
+                if index < displayedRuleBasedTrades.count - 1 {
+                    Divider()
+                        .overlay(AssetTheme.border.opacity(0.6))
+                }
+            }
+        }
+    }
+
+    private func tradeRow(
+        _ trade: AdvancedBacktestTrade,
+        actionTitle: String,
+        detailText: String,
+        noteText: String?
+    ) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(actionTitle)
+                    .font(AppTypography.rowTitle)
+                    .foregroundStyle(trade.action.accent)
+                Text(detailText)
+                    .font(AppTypography.meta)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                if let noteText {
+                    Text(noteText)
+                        .font(AppTypography.chartCaption)
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.78))
+                }
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 4) {
+                Text((trade.action == .buy ? "-" : "+") + trade.cashAmount.currencyString())
+                    .font(AppTypography.rowTitle)
+                    .foregroundStyle(AssetTheme.textPrimary)
+                Text(AppLocalization.format("%@份", trade.units.plainNumberString()))
+                    .font(AppTypography.meta)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                if let realizedProfit = trade.realizedProfit {
+                    Text("\(realizedProfit >= 0 ? "+" : "")\(realizedProfit.currencyString())")
+                        .font(AppTypography.chartAxisStrip)
+                        .foregroundStyle(realizedProfit >= 0 ? AssetTheme.positive : AssetTheme.negative)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func rotationActionTitle(for trade: AdvancedBacktestTrade) -> String {
+        guard trade.action == .sell else {
+            return AppLocalization.string("买入")
+        }
+        return isRotationExit(trade)
+            ? AppLocalization.string("退出持仓")
+            : AppLocalization.string("减仓")
+    }
+
+    private func isRotationExit(_ trade: AdvancedBacktestTrade) -> Bool {
+        let normalizedReason = trade.reason.lowercased()
+        return trade.reason.contains("空仓")
+            || trade.reason.contains("退出")
+            || normalizedReason.contains("exit")
     }
 
     private func sectionHeader(_ title: String, trailing: String? = nil, trailingColor: Color = AssetTheme.textSecondary) -> some View {
