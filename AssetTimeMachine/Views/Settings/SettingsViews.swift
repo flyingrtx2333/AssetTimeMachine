@@ -24,6 +24,8 @@ struct SettingsView: View {
     @State private var isSendingStrategyTestNotification = false
     @State private var strategyTestNotificationMessage: String?
     @State private var cachedNotificationPreview = AppLocalization.string("暂无资产记录")
+    @State private var showsLanguageSelection = false
+    @State private var pendingAppLanguageRawValue: String?
 
     init(
         cloudStore: AssetTimeMachineCloudStore,
@@ -120,15 +122,18 @@ struct SettingsView: View {
                         .listRowBackground(AssetTheme.surface)
                         .onboardingAnchor(.settingsAppearance)
 
-                        Menu {
-                            Picker(AppLocalization.string("语言"), selection: $appLanguageRawValue) {
-                                ForEach(AppLanguage.allCases) { language in
-                                    Text(language.title).tag(language.rawValue)
-                                }
-                            }
+                        Button {
+                            pendingAppLanguageRawValue = nil
+                            showsLanguageSelection = true
                         } label: {
                             LabeledContent {
-                                SettingsValueText(currentAppLanguage.title)
+                                HStack(spacing: 6) {
+                                    SettingsValueText(currentAppLanguage.title)
+
+                                    Image(systemName: "chevron.right")
+                                        .font(AppTypography.microLabel)
+                                        .foregroundStyle(AssetTheme.textSecondary)
+                                }
                             } label: {
                                 SettingsRowLabel(
                                     title: AppLocalization.string("语言"),
@@ -137,6 +142,7 @@ struct SettingsView: View {
                                 )
                             }
                         }
+                        .buttonStyle(.plain)
                         .foregroundStyle(AssetTheme.textPrimary)
                         .listRowBackground(AssetTheme.surface)
 
@@ -432,12 +438,38 @@ struct SettingsView: View {
                     await reloadNotificationStatus()
                 }
             }
+            .sheet(isPresented: $showsLanguageSelection, onDismiss: applyPendingAppLanguage) {
+                AppLanguageSelectionSheet(
+                    currentLanguage: currentAppLanguage
+                ) { language in
+                    pendingAppLanguageRawValue = language.rawValue
+                    showsLanguageSelection = false
+                }
+                .presentationDetents([.height(330)])
+                .presentationDragIndicator(.visible)
+            }
             .alert(AppLocalization.string("退出云同步"), isPresented: $showsLogoutConfirmation) {
                 Button(AppLocalization.string("取消"), role: .cancel) {}
                 Button(AppLocalization.string("退出"), role: .destructive) {
                     cloudStore.logout()
                 }
             }
+        }
+    }
+
+    @MainActor
+    private func applyPendingAppLanguage() {
+        guard let pendingAppLanguageRawValue else { return }
+        self.pendingAppLanguageRawValue = nil
+        guard pendingAppLanguageRawValue != appLanguageRawValue else { return }
+
+        // Commit only after the sheet has fully dismissed. Updating the root
+        // locale while a Menu/Picker presentation is still alive can make
+        // SwiftUI rebuild the presenting hierarchy underneath UIKit.
+        Task { @MainActor in
+            await Task.yield()
+            appLanguageRawValue = pendingAppLanguageRawValue
+            refreshNotificationPreview()
         }
     }
 
@@ -532,6 +564,41 @@ struct SettingsValueText: View {
     var body: some View {
         Text(text)
             .foregroundStyle(AssetTheme.textSecondary)
+    }
+}
+
+private struct AppLanguageSelectionSheet: View {
+    let currentLanguage: AppLanguage
+    let onSelect: (AppLanguage) -> Void
+
+    var body: some View {
+        NavigationStack {
+            List(AppLanguage.allCases) { language in
+                Button {
+                    onSelect(language)
+                } label: {
+                    HStack(spacing: 12) {
+                        Text(language.title)
+                            .foregroundStyle(AssetTheme.textPrimary)
+
+                        Spacer()
+
+                        if language == currentLanguage {
+                            Image(systemName: "checkmark")
+                                .font(AppTypography.captionStrong)
+                                .foregroundStyle(AssetTheme.gold)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .listRowBackground(AssetTheme.surface)
+            }
+            .scrollContentBackground(.hidden)
+            .background(AssetTheme.background)
+            .navigationTitle(AppLocalization.string("语言"))
+            .navigationBarTitleDisplayMode(.inline)
+        }
     }
 }
 

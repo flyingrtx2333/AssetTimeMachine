@@ -80,21 +80,21 @@ struct TimeMachineView: View {
         cachedDetailTrendCards
     }
 
-    private static let publicIndexConfigs: [(symbol: String, title: String, color: Color)] = [
+    private static var publicIndexConfigs: [(symbol: String, title: String, color: Color)] { [
         ("sp500", AppLocalization.string("标普500"), AssetTheme.goldSoft),
         ("dowjones", AppLocalization.string("道指"), AssetTheme.accentOrange),
         ("hsi", AppLocalization.string("恒生"), AssetTheme.accentBlue),
         ("nikkei", AppLocalization.string("日经225"), AssetTheme.positive),
         ("csi300", AppLocalization.string("沪深300"), AssetTheme.textPrimary),
         ("shanghai_composite", AppLocalization.string("上证综指"), AssetTheme.textSecondary)
-    ]
+    ] }
 
-    private static let detailComparisonOptions: [TimeMachineDetailComparisonOption] = [
+    private static var detailComparisonOptions: [TimeMachineDetailComparisonOption] { [
         TimeMachineDetailComparisonOption(symbol: "gold_cny", title: AppLocalization.string("黄金"), color: AssetTheme.gold),
         TimeMachineDetailComparisonOption(symbol: "nasdaq", title: AppLocalization.string("纳指"), color: AssetTheme.accentBlue)
     ] + publicIndexConfigs.map { config in
         TimeMachineDetailComparisonOption(symbol: config.symbol, title: config.title, color: config.color)
-    }
+    } }
 
     private var hiddenDetailComparisonOptions: [TimeMachineDetailComparisonOption] {
         Self.detailComparisonOptions.filter { !visibleDetailTrendSymbols.contains($0.symbol) }

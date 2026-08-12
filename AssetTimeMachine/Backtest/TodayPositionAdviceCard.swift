@@ -45,6 +45,7 @@ private enum StrategyHoldingPalette {
 
 struct TodayPositionAdviceCard: View {
     @Environment(\.modelContext) private var modelContext
+    @AppStorage("app.language") private var appLanguageRawValue = AppLanguage.system.rawValue
     @AppStorage("app.strategyNotifications.templateID") private var strategyTemplateID = StrategyNotificationDefaults.defaultTemplateID
     @ObservedObject var marketStore: RemoteMarketStore
     let isActive: Bool
@@ -115,6 +116,13 @@ struct TodayPositionAdviceCard: View {
         .onChange(of: relevantHistoryToken) { _, _ in
             guard isActive, !adviceStore.isRefreshing, adviceStore.advice != nil else { return }
             Task { await refreshAdvice(force: false) }
+        }
+        .onChange(of: appLanguageRawValue) { _, _ in
+            let latestSnapshot = try? SnapshotService.latestSnapshot(in: modelContext)
+            adviceStore.refreshLocalization(
+                templateID: strategyTemplateID,
+                snapshot: latestSnapshot
+            )
         }
         .onDisappear {
             pendingSnapshotRefreshTask?.cancel()
@@ -279,14 +287,14 @@ struct TodayPositionAdviceCard: View {
     }
 
     private func provenanceSection(_ advice: StrategyRebalanceAdvice) -> some View {
-        HStack(spacing: 6) {
-            Text(AppLocalization.format("信号截至 %@", advice.asOfDate.recordDateString))
-            Text("·")
-            Text(AppLocalization.string("资产记录"))
-            Text(adviceStore.snapshotDate?.recordDateString ?? AppLocalization.string("暂无记录"))
-        }
+        Text(
+            "\(AppLocalization.format("信号截至 %@", advice.asOfDate.recordDateString)) · "
+                + "\(AppLocalization.string("资产记录")) "
+                + (adviceStore.snapshotDate?.recordDateString ?? AppLocalization.string("暂无记录"))
+        )
         .font(AppTypography.caption)
         .foregroundStyle(AssetTheme.textSecondary)
+        .fixedSize(horizontal: false, vertical: true)
         .padding(.top, 2)
     }
 
@@ -294,12 +302,12 @@ struct TodayPositionAdviceCard: View {
         HStack(spacing: 8) {
             Text(AppLocalization.string("资产"))
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text(AppLocalization.string("目前持仓"))
-                .frame(width: 44, alignment: .trailing)
-            Text(AppLocalization.string("目标持仓"))
-                .frame(width: 44, alignment: .trailing)
+            Text(AppLocalization.string("当前值"))
+                .frame(width: 50, alignment: .trailing)
+            Text(AppLocalization.string("目标"))
+                .frame(width: 50, alignment: .trailing)
             Text(AppLocalization.string("操作"))
-                .frame(width: 86, alignment: .trailing)
+                .frame(width: 76, alignment: .trailing)
         }
         .font(AppTypography.microLabel)
         .foregroundStyle(AssetTheme.textSecondary)
@@ -324,10 +332,10 @@ struct TodayPositionAdviceCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(action.currentWeight?.percentString(maxFractionDigits: 1) ?? "—")
-                .frame(width: 44, alignment: .trailing)
+                .frame(width: 50, alignment: .trailing)
 
             Text(action.targetWeight.percentString(maxFractionDigits: 1))
-                .frame(width: 44, alignment: .trailing)
+                .frame(width: 50, alignment: .trailing)
 
             VStack(alignment: .trailing, spacing: 2) {
                 Text(action.kind.title)
@@ -341,7 +349,7 @@ struct TodayPositionAdviceCard: View {
                         .minimumScaleFactor(0.72)
                 }
             }
-            .frame(width: 86, alignment: .trailing)
+            .frame(width: 76, alignment: .trailing)
         }
         .font(AppTypography.caption.monospacedDigit())
         .foregroundStyle(AssetTheme.textSecondary)
@@ -362,16 +370,16 @@ struct TodayPositionAdviceCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(currentResidualWeight?.percentString(maxFractionDigits: 1) ?? "—")
-                .frame(width: 44, alignment: .trailing)
+                .frame(width: 50, alignment: .trailing)
 
             Text(advice.cashWeight.percentString(maxFractionDigits: 1))
-                .frame(width: 44, alignment: .trailing)
+                .frame(width: 50, alignment: .trailing)
 
             VStack(alignment: .trailing, spacing: 2) {
                 Text(AppLocalization.string("防守仓位"))
                     .font(AppTypography.captionStrong)
             }
-            .frame(width: 86, alignment: .trailing)
+            .frame(width: 76, alignment: .trailing)
             .foregroundStyle(AssetTheme.textSecondary)
         }
         .font(AppTypography.caption.monospacedDigit())
@@ -472,7 +480,9 @@ private struct StrategyHoldingDonut: View {
             Text(title)
                 .font(AppTypography.captionStrong)
                 .foregroundStyle(AssetTheme.textPrimary)
-                .lineLimit(1)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
 
             ZStack {
                 if slices.isEmpty {

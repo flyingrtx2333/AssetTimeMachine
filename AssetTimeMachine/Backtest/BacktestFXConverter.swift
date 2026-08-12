@@ -1,6 +1,8 @@
 import Foundation
 
 nonisolated enum BacktestFXConverter {
+    static let maximumForwardFillCalendarDays = 30
+
     static func usdCashHistorySeries(from fxSeries: PublicHistorySeries?, label: String) -> PublicHistorySeries? {
         guard let fxSeries else { return nil }
 
@@ -41,15 +43,47 @@ nonisolated enum BacktestFXConverter {
         fxLookup: BacktestHistoricalLookup?
     ) -> Double? {
         guard assetOption.requiresHistoricalFX else { return point.price }
-        guard let fxRate = fxLookup?.price(onOrBefore: point.date), fxRate.isFinite, fxRate > 0 else { return nil }
+        guard let fxRate = validatedFXRate(on: point.date, fxLookup: fxLookup) else { return nil }
         if fxRate < 1 {
-            // Expected contract: USD per CNY, e.g. 0.14. USD asset price / (USD/CNY) = CNY price.
+            // Preserve the established operation order because threshold-based strategies
+            // can legitimately react to sub-ULP differences around a signal boundary.
             return point.price / fxRate
         }
         if fxRate <= 20 {
-            // Defensive fallback for common CNY per USD feeds, e.g. 7.2. USD asset price * (CNY/USD) = CNY price.
             return point.price * fxRate
         }
         return nil
+    }
+
+    static func cnyMultiplier(
+        on date: Date,
+        assetOption: BacktestAssetOption,
+        fxLookup: BacktestHistoricalLookup?
+    ) -> Double? {
+        guard assetOption.requiresHistoricalFX else { return 1 }
+        guard let fxRate = validatedFXRate(on: date, fxLookup: fxLookup) else { return nil }
+        if fxRate < 1 {
+            return 1 / fxRate
+        }
+        if fxRate <= 20 {
+            return fxRate
+        }
+        return nil
+    }
+
+    private static func validatedFXRate(
+        on date: Date,
+        fxLookup: BacktestHistoricalLookup?
+    ) -> Double? {
+        guard let fxPoint = fxLookup?.point(onOrBefore: date),
+              fxPoint.price.isFinite,
+              fxPoint.price > 0 else { return nil }
+        let staleDays = BacktestSeriesAlignment.historicalSeriesCalendar.dateComponents(
+            [.day],
+            from: fxPoint.date,
+            to: date
+        ).day ?? Int.max
+        guard staleDays >= 0, staleDays <= maximumForwardFillCalendarDays else { return nil }
+        return fxPoint.price
     }
 }

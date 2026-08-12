@@ -1106,6 +1106,7 @@ private struct AssetTimeMachineCloudStatusSymbol: View {
 }
 
 struct AssetTimeMachineCloudEntryButton: View {
+    @AppStorage("app.language") private var appLanguageRawValue = AppLanguage.system.rawValue
     @ObservedObject var store: AssetTimeMachineCloudStore
 
     var body: some View {

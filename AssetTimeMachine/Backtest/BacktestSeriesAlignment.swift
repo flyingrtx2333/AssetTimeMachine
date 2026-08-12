@@ -8,7 +8,7 @@ nonisolated struct BacktestHistoricalPricePoint {
 nonisolated struct BacktestHistoricalLookup {
     let points: [BacktestHistoricalPricePoint]
 
-    nonisolated func price(onOrBefore targetDate: Date) -> Double? {
+    nonisolated func point(onOrBefore targetDate: Date) -> BacktestHistoricalPricePoint? {
         guard !points.isEmpty else { return nil }
 
         var low = 0
@@ -26,7 +26,11 @@ nonisolated struct BacktestHistoricalLookup {
         }
 
         guard let bestIndex else { return nil }
-        return points[bestIndex].price
+        return points[bestIndex]
+    }
+
+    nonisolated func price(onOrBefore targetDate: Date) -> Double? {
+        point(onOrBefore: targetDate)?.price
     }
 }
 
@@ -189,10 +193,9 @@ nonisolated enum BacktestSeriesAlignment {
         var lowerBound: Date?
         var upperBound: Date?
         for series in seriesList {
-            guard let firstText = series.dates.first,
-                  let lastText = series.dates.last,
-                  let firstDate = historicalSeriesDate(from: firstText),
-                  let lastDate = historicalSeriesDate(from: lastText) else {
+            let normalizedPoints = normalizedPricePoints(from: series)
+            guard let firstDate = normalizedPoints.first?.date,
+                  let lastDate = normalizedPoints.last?.date else {
                 continue
             }
             lowerBound = lowerBound.map { max($0, firstDate) } ?? firstDate
@@ -205,6 +208,9 @@ nonisolated enum BacktestSeriesAlignment {
     static func historicalSeriesDate(from text: String) -> Date? {
         let parts = text.split(separator: "-", omittingEmptySubsequences: false)
         guard parts.count == 3,
+              parts[0].count == 4,
+              parts[1].count == 2,
+              parts[2].count == 2,
               let year = Int(parts[0]),
               let month = Int(parts[1]),
               let day = Int(parts[2]),
@@ -218,7 +224,12 @@ nonisolated enum BacktestSeriesAlignment {
         components.year = year
         components.month = month
         components.day = day
-        return components.date
+        guard let date = components.date else { return nil }
+        let resolved = historicalSeriesCalendar.dateComponents([.year, .month, .day], from: date)
+        guard resolved.year == year,
+              resolved.month == month,
+              resolved.day == day else { return nil }
+        return date
     }
 
     static func makeHistoricalLookup(from series: PublicHistorySeries?) -> BacktestHistoricalLookup? {

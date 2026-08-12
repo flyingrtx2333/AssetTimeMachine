@@ -139,7 +139,11 @@ final class StrategyAdviceProjectionStore: ObservableObject {
             return
         }
 
-        advice = nextAdvice
+        advice = Self.localizedAdvice(
+            nextAdvice,
+            template: template,
+            assetOptions: assetOptions
+        )
         lastSuccessfulCalculationToken = calculationToken
         updateProgress(
             fraction: 0.90,
@@ -162,6 +166,25 @@ final class StrategyAdviceProjectionStore: ObservableObject {
             selectedAssetOptions: selectedAssetOptions,
             allAssetOptions: BacktestDefaults.dcaAssetOptions
         )
+    }
+
+    func refreshLocalization(templateID: String, snapshot: AssetSnapshot?) {
+        guard let template = StrategyNotificationDefaults.template(for: templateID) else { return }
+        let assetOptions = StrategyNotificationDefaults.assetOptions(for: template)
+        selectedAssetOptions = assetOptions
+
+        if let currentAdvice = advice {
+            advice = Self.localizedAdvice(
+                currentAdvice,
+                template: template,
+                assetOptions: assetOptions
+            )
+        }
+        updateSnapshot(snapshot)
+
+        if !isRefreshing {
+            progressMessage = AppLocalization.string("今日策略已生成")
+        }
     }
 
     func cancel() {
@@ -247,6 +270,32 @@ final class StrategyAdviceProjectionStore: ObservableObject {
             let source = value.source.trimmingCharacters(in: .whitespacesAndNewlines)
             return source.isEmpty ? nil : source
         })).sorted()
+    }
+
+    private static func localizedAdvice(
+        _ advice: StrategyRebalanceAdvice,
+        template: AdvancedBacktestStrategyTemplate,
+        assetOptions: [BacktestAssetOption]
+    ) -> StrategyRebalanceAdvice {
+        let titlesBySymbol = Dictionary(
+            uniqueKeysWithValues: assetOptions.map { ($0.symbol, $0.title) }
+        )
+        return StrategyRebalanceAdvice(
+            strategyTitle: template.title,
+            asOfDate: advice.asOfDate,
+            lookbackSessions: advice.lookbackSessions,
+            rebalanceSessions: advice.rebalanceSessions,
+            targetAnnualVolatility: advice.targetAnnualVolatility,
+            allocations: advice.allocations.map { allocation in
+                StrategyRebalanceAllocation(
+                    symbol: allocation.symbol,
+                    title: titlesBySymbol[allocation.symbol] ?? AppLocalization.string(allocation.title),
+                    targetWeight: allocation.targetWeight,
+                    momentum: allocation.momentum,
+                    annualizedVolatility: allocation.annualizedVolatility
+                )
+            }
+        )
     }
 }
 

@@ -786,45 +786,80 @@ struct AdvancedBacktestView: View {
                 }
             }
 
-            let preparedAssetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)]? =
-                lastAdvancedDataCacheToken == capturedDataCacheToken && !cachedFilteredAssetInputs.isEmpty
-                    ? cachedFilteredAssetInputs
-                    : nil
+            let hasPreparedData = lastAdvancedDataCacheToken == capturedDataCacheToken
+                && !cachedSelectedAssetInputs.isEmpty
+                && !cachedFilteredAssetInputs.isEmpty
+            let preparedSelectedAssetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)]? =
+                hasPreparedData ? cachedSelectedAssetInputs : nil
+            let preparedFilteredAssetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)]? =
+                hasPreparedData ? cachedFilteredAssetInputs : nil
+            let preparedAvailableDateBounds = hasPreparedData ? cachedAvailableDateBounds : nil
             let computationTask = Task.detached(priority: .userInitiated) { () -> AdvancedBacktestComputationResult in
                 do {
                     return try await BackgroundTaskWork.runSynchronousOnLargeStack(
                         qualityOfService: .userInitiated
                     ) {
-                        let filteredAssetInputs = preparedAssetInputs ?? AdvancedBacktestDataSupport.buildDataCache(
-                            calculationAssetOptions: capturedOptions,
-                            strategyMode: capturedStrategyMode,
-                            historySnapshots: capturedHistorySnapshots,
+                        let fallbackCache: AdvancedBacktestPreparedDataCache? = preparedSelectedAssetInputs == nil
+                            ? AdvancedBacktestDataSupport.buildDataCache(
+                                calculationAssetOptions: capturedOptions,
+                                strategyMode: capturedStrategyMode,
+                                historySnapshots: capturedHistorySnapshots,
+                                selectedStartDate: capturedStartDate,
+                                selectedEndDate: capturedEndDate
+                            )
+                            : nil
+                        let selectedAssetInputs = preparedSelectedAssetInputs
+                            ?? fallbackCache?.selectedAssetInputs
+                            ?? []
+                        let filteredAssetInputs = preparedFilteredAssetInputs
+                            ?? fallbackCache?.filteredAssetInputs
+                            ?? []
+                        let availableBounds = preparedAvailableDateBounds
+                            ?? fallbackCache?.availableDateBounds
+                        let selectedBounds = AdvancedBacktestDataSupport.effectiveDateBounds(
+                            availableBounds: availableBounds,
                             selectedStartDate: capturedStartDate,
                             selectedEndDate: capturedEndDate
-                        ).filteredAssetInputs
-                        guard !filteredAssetInputs.isEmpty,
+                        )
+                        guard !selectedAssetInputs.isEmpty,
+                              !filteredAssetInputs.isEmpty,
+                              selectedAssetInputs.allSatisfy({ $0.assetSeries != nil && (!$0.assetOption.requiresHistoricalFX || $0.fxSeries != nil) }),
                               filteredAssetInputs.allSatisfy({ $0.assetSeries != nil && (!$0.assetOption.requiresHistoricalFX || $0.fxSeries != nil) }) else {
                             return AdvancedBacktestComputationResult(report: nil, rebalanceAdvice: nil, comparisonSeries: [])
                         }
 
-                        let advice = capturedStrategyMode.isRotation
-                            ? BacktestEngine.advancedRotationRebalanceAdvice(
-                                assetInputs: filteredAssetInputs,
-                                mode: capturedStrategyMode,
-                                initialCash: capturedInitialCash,
-                                settings: capturedRiskSettings
+                        let statefulBounds: ClosedRange<Date>? = {
+                            guard let availableBounds, let selectedBounds else { return nil }
+                            return availableBounds.lowerBound...selectedBounds.upperBound
+                        }()
+                        let statefulAssetInputs = capturedStrategyMode.isRotation
+                            ? BacktestEngine.filteredAdvancedAssetInputs(
+                                selectedAssetInputs,
+                                within: statefulBounds
                             )
-                            : nil
-
+                            : filteredAssetInputs
+                        let statefulRun: AdvancedRotationStrategyRun?
                         let report: AdvancedBacktestReport?
                         if capturedStrategyMode.isRotation {
-                            report = BacktestEngine.runAdvancedRotationStrategy(
-                                assetInputs: filteredAssetInputs,
+                            statefulRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                                assetInputs: selectedAssetInputs,
                                 initialCash: capturedInitialCash,
                                 settings: capturedRiskSettings,
-                                mode: capturedStrategyMode
+                                mode: capturedStrategyMode,
+                                dateBounds: statefulBounds
                             )
+                            if let statefulRun, let selectedBounds {
+                                report = BacktestEngine.statefulAdvancedReport(
+                                    from: statefulRun.report,
+                                    dailyStates: statefulRun.dailyStates,
+                                    within: selectedBounds,
+                                    rebasedTo: capturedInitialCash
+                                )
+                            } else {
+                                report = statefulRun?.report
+                            }
                         } else {
+                            statefulRun = nil
                             report = BacktestEngine.runAdvancedStrategies(
                                 assetInputs: filteredAssetInputs,
                                 initialCash: capturedInitialCash,
@@ -834,6 +869,15 @@ struct AdvancedBacktestView: View {
                                 settings: capturedRiskSettings
                             )
                         }
+                        let advice = capturedStrategyMode.isRotation
+                            ? BacktestEngine.advancedRotationRebalanceAdvice(
+                                assetInputs: statefulAssetInputs,
+                                mode: capturedStrategyMode,
+                                initialCash: capturedInitialCash,
+                                settings: capturedRiskSettings,
+                                strategyRun: statefulRun
+                            )
+                            : nil
 
                         let comparisonSeries = report.map { AdvancedBacktestPresentation.comparisonSeries(from: $0) } ?? []
                         return AdvancedBacktestComputationResult(

@@ -772,12 +772,13 @@ struct MarketRiskSignalSummary {
     let averageScore: Double
     let stressSessionRatio: Double
     let signalPoints: [MarketRiskSignalPoint]
+    var statisticsPoints: [MarketRiskSignalPoint]? = nil
 }
 
 enum CashYieldCNY {
-    static let title = AppLocalization.string("人民币活期存款基准利率")
-    static let source = AppLocalization.string("中国人民银行 · 金融机构人民币存款基准利率")
-    static let sourceDetail = AppLocalization.string("回测中未投入资产的现金仓按历史活期存款基准利率日化计息；实际银行、货币基金或现金管理产品收益可能不同。")
+    static var title: String { AppLocalization.string("人民币活期存款基准利率") }
+    static var source: String { AppLocalization.string("中国人民银行 · 金融机构人民币存款基准利率") }
+    static var sourceDetail: String { AppLocalization.string("回测中未投入资产的现金仓按历史活期存款基准利率日化计息；实际银行、货币基金或现金管理产品收益可能不同。") }
     private static let tradingDaysPerYear = 252.0
     private static var calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
@@ -899,9 +900,9 @@ enum CashYieldCNY {
 }
 
 enum MarketRiskSignalHistory {
-    static let title = AppLocalization.string("美股压力信号")
-    static let source = AppLocalization.string("标普500/纳指历史价格 · 仅作风控信号")
-    static let sourceDetail = AppLocalization.string("该信号使用标普500优先、纳指备用的多年历史价格，综合短期跌幅、月度跌幅、阶段回撤和波动升温，给组合调度提供风险温度；它不是可买卖持仓，也不改变可见资产范围。")
+    static var title: String { AppLocalization.string("美股压力信号") }
+    static var source: String { AppLocalization.string("标普500/纳指历史价格 · 仅作风控信号") }
+    static var sourceDetail: String { AppLocalization.string("该信号使用标普500优先、纳指备用的多年历史价格，综合短期跌幅、月度跌幅、阶段回撤和波动升温，给组合调度提供风险温度；它不是可买卖持仓，也不改变可见资产范围。") }
 
     static func summary(
         dates: [Date],
@@ -955,7 +956,8 @@ enum MarketRiskSignalHistory {
             latestPoint: points.last,
             averageScore: averageScore,
             stressSessionRatio: Double(stressCount) / Double(points.count),
-            signalPoints: downsample(points, maxCount: 360)
+            signalPoints: downsample(points, maxCount: 360),
+            statisticsPoints: points
         )
     }
 
@@ -1463,8 +1465,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
     let id: String
     var mode: AdvancedBacktestStrategyMode = .ruleBased
     var selectedAssetSymbols: [String]? = nil
-    let category: String
-    let title: String
+    private let categoryLocalizationKey: String
+    private let titleLocalizationKey: String
     let annualizedReturn: Double
     let maxDrawdown: Double
     let sharpeRatio: Double
@@ -1475,6 +1477,9 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
     let cooldownDays: Int
     let stopLossRatio: Double
     let takeProfitRatio: Double
+
+    var category: String { AppLocalization.string(categoryLocalizationKey) }
+    var title: String { AppLocalization.string(titleLocalizationKey) }
 
     var subtitle: String {
         if annualizedReturn == 0, maxDrawdown == 0, sharpeRatio == 0 {
@@ -1493,8 +1498,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "core-gold-satellite-heat-capped-momentum",
             mode: .coreGoldSatelliteHeatCappedMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("热度上限元策略"),
+            categoryLocalizationKey: "高级策略",
+            titleLocalizationKey: "热度上限元策略",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1510,8 +1515,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "core-gold-satellite-gold-handoff-momentum",
             mode: .coreGoldSatelliteGoldHandoffMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("黄金交接保护"),
+            categoryLocalizationKey: "高级策略",
+            titleLocalizationKey: "黄金交接保护",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1527,8 +1532,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "core-gold-satellite-one-way-vol-managed-momentum",
             mode: .coreGoldSatelliteOneWayVolManagedMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("单向控波元策略"),
+            categoryLocalizationKey: "高级策略",
+            titleLocalizationKey: "单向控波元策略",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1544,8 +1549,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "core-gold-satellite-equity-curve-state-gate-momentum",
             mode: .coreGoldSatelliteEquityCurveStateGateMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("精选策略"),
-            title: AppLocalization.string("均衡配置"),
+            categoryLocalizationKey: "精选策略",
+            titleLocalizationKey: "均衡配置",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1561,8 +1566,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "core-gold-satellite-sharpe-state-gate-momentum",
             mode: .coreGoldSatelliteSharpeStateGateMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("高夏普状态机"),
+            categoryLocalizationKey: "高级策略",
+            titleLocalizationKey: "高夏普状态机",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1578,8 +1583,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "core-gold-satellite-asset-risk-gate-momentum",
             mode: .coreGoldSatelliteAssetRiskGateMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("收益回撤门状态机"),
+            categoryLocalizationKey: "高级策略",
+            titleLocalizationKey: "收益回撤门状态机",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1595,8 +1600,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "core-gold-satellite-risk-budget-state-gate-momentum",
             mode: .coreGoldSatelliteRiskBudgetStateGateMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("精选策略"),
-            title: AppLocalization.string("进取配置"),
+            categoryLocalizationKey: "精选策略",
+            titleLocalizationKey: "进取配置",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1612,8 +1617,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "core-gold-satellite-confirmed-acceleration-momentum",
             mode: .coreGoldSatelliteConfirmedAccelerationMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "shenzhen_component", "chinext"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("确认加速进攻袖套"),
+            categoryLocalizationKey: "高级策略",
+            titleLocalizationKey: "确认加速进攻袖套",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1629,8 +1634,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "core-gold-satellite-profit-lock-momentum",
             mode: .coreGoldSatelliteProfitLockMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("精选策略"),
-            title: AppLocalization.string("防守配置"),
+            categoryLocalizationKey: "精选策略",
+            titleLocalizationKey: "防守配置",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1646,8 +1651,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "core-gold-satellite-dynamic-sleeve-momentum",
             mode: .coreGoldSatelliteDynamicSleeveMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "shenzhen_component", "chinext"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("动态袖套夏普策略"),
+            categoryLocalizationKey: "高级策略",
+            titleLocalizationKey: "动态袖套夏普策略",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1663,8 +1668,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "core-gold-satellite-monthly-heat-capped-momentum",
             mode: .coreGoldSatelliteMonthlyHeatCappedMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("月度热度上限元"),
+            categoryLocalizationKey: "高级策略",
+            titleLocalizationKey: "月度热度上限元",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1680,8 +1685,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "core-gold-satellite-confirmed-excess-momentum",
             mode: .coreGoldSatelliteConfirmedExcessMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("增强热度上限元"),
+            categoryLocalizationKey: "高级策略",
+            titleLocalizationKey: "增强热度上限元",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1697,8 +1702,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "convex-crash-hedge-composite",
             mode: .convexCrashHedgeComposite,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "dowjones", "csi300", "shanghai_composite", "shenzhen_component"],
-            category: AppLocalization.string("实验策略"),
-            title: AppLocalization.string("凸性极速空头组合"),
+            categoryLocalizationKey: "实验策略",
+            titleLocalizationKey: "凸性极速空头组合",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1714,8 +1719,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "risk-contribution-reallocation",
             mode: .riskContributionReallocation,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("实验策略"),
-            title: AppLocalization.string("风险贡献再分配"),
+            categoryLocalizationKey: "实验策略",
+            titleLocalizationKey: "风险贡献再分配",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1731,8 +1736,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "risk-contribution-regime-router",
             mode: .riskContributionRegimeRouter,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("实验策略"),
-            title: AppLocalization.string("双引擎制度路由"),
+            categoryLocalizationKey: "实验策略",
+            titleLocalizationKey: "双引擎制度路由",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1748,8 +1753,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "risk-contribution-recovery-router",
             mode: .riskContributionRecoveryRouter,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("实验策略"),
-            title: AppLocalization.string("双引擎水下恢复"),
+            categoryLocalizationKey: "实验策略",
+            titleLocalizationKey: "双引擎水下恢复",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1765,8 +1770,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "risk-contribution-cash-confidence-router",
             mode: .riskContributionCashConfidenceRouter,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("高级策略"),
-            title: AppLocalization.string("无融资置信度恢复"),
+            categoryLocalizationKey: "高级策略",
+            titleLocalizationKey: "无融资置信度恢复",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1782,8 +1787,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "risk-contribution-cash-confidence-low-noise",
             mode: .riskContributionCashConfidenceLowNoise,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("精选策略"),
-            title: AppLocalization.string("低噪增强"),
+            categoryLocalizationKey: "精选策略",
+            titleLocalizationKey: "低噪增强",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1799,8 +1804,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "gold-nasdaq-dual-trend-barbell",
             mode: .goldNasdaqDualTrendBarbell,
             selectedAssetSymbols: ["gold_cny", "nasdaq"],
-            category: AppLocalization.string("精选策略"),
-            title: AppLocalization.string("金纳双趋势"),
+            categoryLocalizationKey: "精选策略",
+            titleLocalizationKey: "金纳双趋势",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1816,8 +1821,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "long-term-growth-trend",
             mode: .longTermGrowthTrend,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500"],
-            category: AppLocalization.string("独立策略"),
-            title: AppLocalization.string("长期趋势配置"),
+            categoryLocalizationKey: "独立策略",
+            titleLocalizationKey: "长期趋势配置",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1833,8 +1838,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "canary-momentum-defense",
             mode: .canaryMomentumDefense,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite", "shenzhen_component", "chinext"],
-            category: AppLocalization.string("独立策略"),
-            title: AppLocalization.string("双金丝雀动量防守"),
+            categoryLocalizationKey: "独立策略",
+            titleLocalizationKey: "双金丝雀动量防守",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1850,8 +1855,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "momentum-rotation",
             mode: .momentumRotation,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            category: AppLocalization.string("高风险策略"),
-            title: AppLocalization.string("高风险强势轮动"),
+            categoryLocalizationKey: "高风险策略",
+            titleLocalizationKey: "高风险强势轮动",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1866,8 +1871,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
         .init(
             id: "basic-ma20-trend",
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
-            category: AppLocalization.string("基础策略"),
-            title: AppLocalization.string("20日趋势"),
+            categoryLocalizationKey: "基础策略",
+            titleLocalizationKey: "20日趋势",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1882,8 +1887,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
         .init(
             id: "basic-ma60-trend",
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
-            category: AppLocalization.string("基础策略"),
-            title: AppLocalization.string("60日趋势"),
+            categoryLocalizationKey: "基础策略",
+            titleLocalizationKey: "60日趋势",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1898,8 +1903,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
         .init(
             id: "basic-ma-golden-cross",
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
-            category: AppLocalization.string("基础策略"),
-            title: AppLocalization.string("均线交叉"),
+            categoryLocalizationKey: "基础策略",
+            titleLocalizationKey: "均线交叉",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -1914,8 +1919,8 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
         .init(
             id: "basic-boll-mean-reversion",
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300"],
-            category: AppLocalization.string("基础策略"),
-            title: AppLocalization.string("布林反转"),
+            categoryLocalizationKey: "基础策略",
+            titleLocalizationKey: "布林反转",
             annualizedReturn: 0,
             maxDrawdown: 0,
             sharpeRatio: 0,
@@ -2184,6 +2189,7 @@ struct BacktestRecordAdvancedAssetChartPayload: Codable, Identifiable {
     let symbol: String
     let title: String
     let pricePoints: [BacktestRecordAdvancedPricePayload]
+    var portfolioPoints: [BacktestRecordPointPayload]? = nil
     let benchmarkPoints: [BacktestRecordPointPayload]?
     let trades: [BacktestRecordAdvancedTradePayload]
     var finalPortfolioValue: Double? = nil
@@ -2195,6 +2201,12 @@ struct BacktestRecordAdvancedAssetChartPayload: Codable, Identifiable {
 
     var decodedBenchmarkPoints: [BacktestSeriesPoint] {
         (benchmarkPoints ?? [])
+            .sorted { $0.sequence < $1.sequence }
+            .map(\.seriesPoint)
+    }
+
+    var decodedPortfolioPoints: [BacktestSeriesPoint] {
+        (portfolioPoints ?? [])
             .sorted { $0.sequence < $1.sequence }
             .map(\.seriesPoint)
     }
@@ -2372,6 +2384,7 @@ struct BacktestRecordConfigPayload: Codable {
     var advancedTrades: [BacktestRecordAdvancedTradePayload]? = nil
     var advancedAssetCharts: [BacktestRecordAdvancedAssetChartPayload]? = nil
     var advancedBenchmarkSeries: [BacktestRecordAdvancedBenchmarkSeriesPayload]? = nil
+    var advancedCombinedBenchmarkPoints: [BacktestRecordPointPayload]? = nil
     var finalCash: Double? = nil
     var finalUnits: Double? = nil
     var cashYieldSummary: BacktestRecordCashYieldSummaryPayload? = nil
@@ -2424,11 +2437,17 @@ enum BacktestRecordCodec {
     }
 
     static func pointsData(from points: [BacktestSeriesPoint], maxCount: Int = 240) -> Data {
-        let sampledPoints = sampled(points, maxCount: maxCount)
-        let payload = sampledPoints.enumerated().map { index, point in
+        let payload = pointPayloads(from: points, maxCount: maxCount)
+        return encodeOrFallback(payload, fallbackJSON: "[]", context: "points")
+    }
+
+    static func pointPayloads(
+        from points: [BacktestSeriesPoint],
+        maxCount: Int = 240
+    ) -> [BacktestRecordPointPayload] {
+        sampled(points, maxCount: maxCount).enumerated().map { index, point in
             BacktestRecordPointPayload(point: point, sequence: index)
         }
-        return encodeOrFallback(payload, fallbackJSON: "[]", context: "points")
     }
 
     static func configData(from payload: BacktestRecordConfigPayload) -> Data {
@@ -2479,11 +2498,17 @@ enum BacktestRecordCodec {
                 .map { index, point in
                     BacktestRecordPointPayload(point: point, sequence: index)
                 }
+            let sampledPortfolioPoints = sampled(assetReport.points, maxCount: maxPricePointCount)
+                .enumerated()
+                .map { index, point in
+                    BacktestRecordPointPayload(point: point, sequence: index)
+                }
             let trades = advancedTradePayloads(from: assetReport.trades)
             return BacktestRecordAdvancedAssetChartPayload(
                 symbol: assetReport.symbol,
                 title: assetReport.title,
                 pricePoints: sampledPricePoints,
+                portfolioPoints: sampledPortfolioPoints,
                 benchmarkPoints: sampledBenchmarkPoints,
                 trades: trades,
                 finalPortfolioValue: assetReport.finalPortfolioValue,
@@ -2525,7 +2550,7 @@ enum BacktestRecordCodec {
     }
 
     static func advancedStrategyDisplayTitle(for record: BacktestRecord) -> String {
-        guard kind(for: record) == .advanced else { return record.title }
+        guard kind(for: record) == .advanced else { return AppLocalization.string(record.title) }
 
         // Newer records persist the strategy title at the front of the summary.
         // Prefer that lightweight field so scrolling history does not fault and
@@ -2536,7 +2561,7 @@ enum BacktestRecordCodec {
             .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
 
         if let summaryLead, !summaryLead.isEmpty {
-            return summaryLead
+            return AppLocalization.string(summaryLead)
         }
 
         // Keep decoding as a compatibility fallback for old records that were
@@ -2627,7 +2652,15 @@ enum BacktestRecordCodec {
         let benchmarkSeries = (config.advancedBenchmarkSeries ?? []).map {
             AdvancedBacktestBenchmarkSeries(id: $0.id, title: $0.title, points: $0.decodedPoints)
         }
-        let benchmarkPoints = benchmarkSeries.first?.points ?? []
+        let storedCombinedBenchmarkPoints = (config.advancedCombinedBenchmarkPoints ?? [])
+            .sorted { $0.sequence < $1.sequence }
+            .map(\.seriesPoint)
+        let benchmarkPoints = storedCombinedBenchmarkPoints.isEmpty
+            ? combinedBenchmarkPoints(
+                from: benchmarkSeries,
+                initialPortfolioValue: points.first?.portfolioValue ?? 0
+            )
+            : storedCombinedBenchmarkPoints
         let assetReports = advancedAssetReports(from: config)
         let finalPortfolioValue = record.finalValue ?? points.last?.portfolioValue ?? 0
 
@@ -2688,7 +2721,7 @@ enum BacktestRecordCodec {
             let pricePoints = chart.pricePoints
                 .sorted { $0.sequence < $1.sequence }
                 .map(\.pricePoint)
-            let portfolioPoints = chart.decodedBenchmarkPoints
+            let portfolioPoints = chart.decodedPortfolioPoints
             return AdvancedBacktestAssetReport(
                 symbol: chart.symbol,
                 title: chart.title,
@@ -2701,6 +2734,44 @@ enum BacktestRecordCodec {
                 finalUnits: chart.finalUnits ?? trades.last(where: { $0.action == .buy })?.units ?? 0,
                 exposureRatio: chart.exposureRatio ?? 0
             )
+        }
+    }
+
+    private static func combinedBenchmarkPoints(
+        from series: [AdvancedBacktestBenchmarkSeries],
+        initialPortfolioValue: Double
+    ) -> [BacktestSeriesPoint] {
+        let normalizedSeries = series.compactMap { benchmark -> [BacktestSeriesPoint]? in
+            let points = benchmark.points.sorted { $0.date < $1.date }
+            guard let firstValue = points.first?.portfolioValue,
+                  firstValue.isFinite,
+                  firstValue > 0 else { return nil }
+            return points
+        }
+        guard !normalizedSeries.isEmpty,
+              initialPortfolioValue.isFinite,
+              initialPortfolioValue > 0 else { return [] }
+
+        let dates = Set(normalizedSeries.flatMap { $0.map(\.date) }).sorted()
+        let equalWeightValue = initialPortfolioValue / Double(normalizedSeries.count)
+        var cursors = Array(repeating: 0, count: normalizedSeries.count)
+        var latestValues = normalizedSeries.map { $0[0].portfolioValue }
+        let baseValues = latestValues
+
+        return dates.enumerated().map { sequence, date in
+            for index in normalizedSeries.indices {
+                let points = normalizedSeries[index]
+                var cursor = cursors[index]
+                while cursor < points.count, points[cursor].date <= date {
+                    latestValues[index] = points[cursor].portfolioValue
+                    cursor += 1
+                }
+                cursors[index] = cursor
+            }
+            let combinedValue = normalizedSeries.indices.reduce(0.0) { result, index in
+                result + equalWeightValue * latestValues[index] / baseValues[index]
+            }
+            return BacktestSeriesPoint(date: date, portfolioValue: combinedValue, sequence: sequence)
         }
     }
 
@@ -2781,7 +2852,7 @@ enum BacktestDefaults {
     static let dcaAssetSymbol = "gold_cny"
     static let dcaContributionAmount: Double = 1000
     static let dcaIntervalDays = 30
-    static let indexOptions: [BacktestIndexOption] = [
+    static var indexOptions: [BacktestIndexOption] { [
         .init(symbol: "sp500", title: AppLocalization.string("标普500"), color: AssetTheme.goldSoft),
         .init(symbol: "nasdaq", title: AppLocalization.string("纳指"), color: AssetTheme.accentBlue),
         .init(symbol: "dowjones", title: AppLocalization.string("道指"), color: AssetTheme.accentOrange),
@@ -2790,13 +2861,13 @@ enum BacktestDefaults {
         .init(symbol: "shanghai_composite", title: AppLocalization.string("上证综指"), color: AssetTheme.textSecondary),
         .init(symbol: "shenzhen_component", title: AppLocalization.string("深成指"), color: AssetTheme.accentRed),
         .init(symbol: "chinext", title: AppLocalization.string("创业板"), color: AssetTheme.positive),
-    ]
+    ] }
     static let indexWeights: [String: Double] = {
         Dictionary(uniqueKeysWithValues: indexOptions.map { option in
             (option.symbol, option.symbol == "nasdaq" ? 25 : 0)
         })
     }()
-    static let dcaAssetOptions: [BacktestAssetOption] = [
+    static var dcaAssetOptions: [BacktestAssetOption] { [
         .init(symbol: "gold_cny", title: AppLocalization.string("黄金"), color: AssetTheme.gold, requiresHistoricalFX: false, historicalFXSymbol: nil),
         .init(symbol: "sp500", title: AppLocalization.string("标普500"), color: AssetTheme.goldSoft, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny"),
         .init(symbol: "nasdaq", title: AppLocalization.string("纳指"), color: AssetTheme.accentBlue, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny"),
@@ -2807,12 +2878,12 @@ enum BacktestDefaults {
         .init(symbol: "shenzhen_component", title: AppLocalization.string("深成指"), color: AssetTheme.accentRed, requiresHistoricalFX: false, historicalFXSymbol: nil),
         .init(symbol: "chinext", title: AppLocalization.string("创业板"), color: AssetTheme.positive, requiresHistoricalFX: false, historicalFXSymbol: nil),
         .init(symbol: "nikkei", title: AppLocalization.string("日经225"), color: AssetTheme.accentOrange, requiresHistoricalFX: false, historicalFXSymbol: nil),
-    ]
-    static let internalStrategyAssetOptions: [BacktestAssetOption] = [
+    ] }
+    static var internalStrategyAssetOptions: [BacktestAssetOption] { [
         .init(symbol: "usd_cash", title: AppLocalization.string("美元现金"), color: AssetTheme.textSecondary, requiresHistoricalFX: false, historicalFXSymbol: nil),
         .init(symbol: "oil_wti_cny", title: AppLocalization.string("WTI原油"), color: AssetTheme.accentOrange, requiresHistoricalFX: false, historicalFXSymbol: nil),
-    ]
-    static let strategyAssetOptions: [BacktestAssetOption] = dcaAssetOptions + internalStrategyAssetOptions
+    ] }
+    static var strategyAssetOptions: [BacktestAssetOption] { dcaAssetOptions + internalStrategyAssetOptions }
 
     static func strategyColor(for symbol: String) -> Color {
         strategyAssetOptions.first(where: { $0.symbol == symbol })?.color ?? AssetTheme.gold

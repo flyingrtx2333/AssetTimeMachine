@@ -475,9 +475,9 @@ struct TimeMachineHeroTrendCard: View {
     private let valueDomain: ClosedRange<Double>
     private let dateDomain: ClosedRange<Date>
     private let axisDates: [Date]
-    private let dateAxisKey = AppLocalization.string("日期")
-    private let seriesAxisKey = AppLocalization.string("序列")
-    private let selectedDateAxisKey = AppLocalization.string("选中日期")
+    private var dateAxisKey: String { AppLocalization.string("日期") }
+    private var seriesAxisKey: String { AppLocalization.string("序列") }
+    private var selectedDateAxisKey: String { AppLocalization.string("选中日期") }
 
     init(
         points: [TimeMachineTrendPoint],
@@ -962,7 +962,7 @@ struct TimeMachineMonthlySurplusCard: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .frame(width: 132)
+                .frame(width: 150)
                 .disabled(points.isEmpty || annualPoints.isEmpty)
             }
 

@@ -5375,12 +5375,26 @@ struct StrategyMetricDump {
             let inputs = appFilteredInputs(for: template, seriesBySymbol: seriesBySymbol)
             let report: AdvancedBacktestReport?
             if template.mode.isRotation {
-                report = BacktestEngine.runAdvancedRotationStrategy(
+                let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
                     assetInputs: inputs,
                     initialCash: 100_000,
                     settings: settings,
                     mode: template.mode
                 )
+                if let run,
+                   let startText = ProcessInfo.processInfo.environment["ATM_APP_STATEFUL_SLICE_START"],
+                   let startDate = BacktestSeriesAlignment.historicalSeriesDate(from: startText),
+                   let endDate = run.report.points.last?.date,
+                   startDate <= endDate {
+                    report = BacktestEngine.statefulAdvancedReport(
+                        from: run.report,
+                        dailyStates: run.dailyStates,
+                        within: startDate...endDate,
+                        rebasedTo: 100_000
+                    )
+                } else {
+                    report = run?.report
+                }
             } else {
                 report = BacktestEngine.runAdvancedStrategies(
                     assetInputs: inputs,

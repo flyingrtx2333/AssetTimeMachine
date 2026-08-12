@@ -55,8 +55,18 @@ nonisolated enum BacktestAdvancedSeriesPreparer {
                       low.isFinite,
                       close.isFinite,
                       min(open, high, low, close) > 0,
-                      low <= high else { continue }
-                rowsByDate[date] = (open, high, low, close)
+                      low <= high,
+                      let cnyMultiplier = BacktestFXConverter.cnyMultiplier(
+                        on: date,
+                        assetOption: assetOption,
+                        fxLookup: fxLookup
+                      ) else { continue }
+                rowsByDate[date] = (
+                    open * cnyMultiplier,
+                    high * cnyMultiplier,
+                    low * cnyMultiplier,
+                    close * cnyMultiplier
+                )
             }
             ohlcPoints = rowsByDate
                 .map { item in

@@ -135,7 +135,6 @@ struct AdvancedBacktestResultContent<MiddleContent: View>: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, -8)
         }
     }
 

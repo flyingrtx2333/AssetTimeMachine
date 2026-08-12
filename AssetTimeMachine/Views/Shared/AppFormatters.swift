@@ -4,14 +4,19 @@ import SwiftUI
 enum AppFormatterCache {
     private static let keyPrefix = "AssetTimeMachine.Formatter."
 
+    private static var currentLocaleIdentifier: String {
+        AppLocalization.currentLocale.identifier
+    }
+
     static func currencyFormatter(code: String) -> NumberFormatter {
-        numberFormatter(key: "currency.\(code)") {
+        let localeIdentifier = currentLocaleIdentifier
+        return numberFormatter(key: "currency.\(localeIdentifier).\(code)") {
             let formatter = NumberFormatter()
             formatter.numberStyle = .currency
             formatter.currencyCode = code
             formatter.maximumFractionDigits = 2
             formatter.minimumFractionDigits = 2
-            formatter.locale = Locale(identifier: "zh_CN")
+            formatter.locale = Locale(identifier: localeIdentifier)
             return formatter
         }
     }
@@ -40,20 +45,22 @@ enum AppFormatterCache {
     }
 
     static func percentFormatter(maxFractionDigits: Int) -> NumberFormatter {
-        numberFormatter(key: "percent.\(maxFractionDigits)") {
+        let localeIdentifier = currentLocaleIdentifier
+        return numberFormatter(key: "percent.\(localeIdentifier).\(maxFractionDigits)") {
             let formatter = NumberFormatter()
             formatter.numberStyle = .percent
             formatter.maximumFractionDigits = maxFractionDigits
             formatter.minimumFractionDigits = 0
-            formatter.locale = Locale(identifier: "zh_CN")
+            formatter.locale = Locale(identifier: localeIdentifier)
             return formatter
         }
     }
 
-    static func dateFormatter(format: String, localeIdentifier: String = "zh_CN") -> DateFormatter {
-        dateFormatter(key: "date.\(localeIdentifier).\(format)") {
+    static func dateFormatter(format: String, localeIdentifier: String? = nil) -> DateFormatter {
+        let resolvedLocaleIdentifier = localeIdentifier ?? currentLocaleIdentifier
+        return dateFormatter(key: "date.\(resolvedLocaleIdentifier).\(format)") {
             let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: localeIdentifier)
+            formatter.locale = Locale(identifier: resolvedLocaleIdentifier)
             formatter.dateFormat = format
             return formatter
         }
@@ -277,8 +284,10 @@ extension AssetGroup {
 extension AssetCategory {
     func liabilitySortPriority(titleMap: [String: String]) -> Int {
         let normalized = name.replacingOccurrences(of: " ", with: "")
-        if normalized.contains(AppLocalization.string("长期")) { return 0 }
-        if normalized.contains(AppLocalization.string("短期")) { return 1 }
+        let longTermTokens = ["长期", "長期", "Long-term", AppLocalization.string("长期")]
+        let shortTermTokens = ["短期", "Short-term", AppLocalization.string("短期")]
+        if longTermTokens.contains(where: normalized.contains) { return 0 }
+        if shortTermTokens.contains(where: normalized.contains) { return 1 }
         if titleMap[normalized] != nil { return 0 }
         return 2
     }

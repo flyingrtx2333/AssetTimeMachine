@@ -544,7 +544,6 @@ struct InteractiveBacktestChart: View, Equatable {
             selectionMarks()
         }
         .frame(height: 220)
-        .clipped()
         .chartXScale(domain: xDomain)
         .chartYScale(domain: domain)
         .chartForegroundStyleScale(domain: foregroundStyleDomain, range: foregroundStyleRange)

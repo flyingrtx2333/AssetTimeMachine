@@ -106,6 +106,30 @@ public struct PublicBacktestComputeInvocation: Codable, Sendable {
         self.strategyID = strategyID
         self.request = request
     }
+
+    enum CodingKeys: String, CodingKey {
+        case mode
+        case datasetPath = "dataset_path"
+        case datasetHash = "dataset_hash"
+        case dataStale = "data_stale"
+        case strategyID = "strategy_id"
+        case request
+    }
+}
+
+/// The worker and the isolated compute executable exchange an internal file payload.
+/// Every acronym and snake-case key is declared explicitly on the payload models, so this
+/// codec must not apply an additional key-conversion strategy.
+public enum PublicBacktestComputeCodec {
+    public static func makeEncoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        return encoder
+    }
+
+    public static func makeDecoder() -> JSONDecoder {
+        JSONDecoder()
+    }
 }
 
 public struct PublicBacktestResult: Codable, Equatable, Sendable {
@@ -235,58 +259,69 @@ public enum PublicBacktestCore {
         let financingRate: Double?
     }
 
-    private static let strategyDescriptors: [StrategyDescriptor] = [
-        .init(
-            id: "core-gold-satellite-equity-curve-state-gate-momentum",
-            name: "均衡配置",
+    private struct StrategyDescriptorProfile: Sendable {
+        let riskLevel: String
+        let summary: String
+        let assetScope: [String]
+        let maxGrossExposure: Double
+        let financingRate: Double?
+    }
+
+    private static let descriptorProfilesByID: [String: StrategyDescriptorProfile] = [
+        "risk-contribution-cash-confidence-low-noise": .init(
+            riskLevel: "中等",
+            summary: "在严格无杠杆与不允许负现金的约束下，降低无效换手并保留趋势恢复能力。",
+            assetScope: ["黄金", "美国权益指数", "中国权益指数", "现金"],
+            maxGrossExposure: 1.0,
+            financingRate: nil
+        ),
+        "core-gold-satellite-equity-curve-state-gate-momentum": .init(
             riskLevel: "中等",
             summary: "以跨市场趋势和组合状态协同控制风险预算，在风险走弱阶段自动收缩。",
             assetScope: ["黄金", "美国权益指数", "中国权益指数", "现金"],
-            experimental: false,
             maxGrossExposure: 1.0,
             financingRate: nil
         ),
-        .init(
-            id: "core-gold-satellite-risk-budget-state-gate-momentum",
-            name: "进取配置",
+        "core-gold-satellite-risk-budget-state-gate-momentum": .init(
             riskLevel: "中高",
             summary: "在防守与进取引擎之间分配风险预算，侧重长期宽度确认与成本约束。",
             assetScope: ["黄金", "美国权益指数", "中国权益指数", "现金"],
-            experimental: false,
             maxGrossExposure: 1.0,
             financingRate: nil
         ),
-        .init(
-            id: "core-gold-satellite-profit-lock-momentum",
-            name: "防守配置",
+        "core-gold-satellite-profit-lock-momentum": .init(
             riskLevel: "中低",
             summary: "根据组合回撤与快速上涨后的状态平滑降低风险预算，强调持有体验。",
             assetScope: ["黄金", "美国权益指数", "中国权益指数", "现金"],
-            experimental: false,
             maxGrossExposure: 1.0,
             financingRate: nil
         ),
-        .init(
-            id: "risk-contribution-reallocation",
-            name: "风险贡献再分配",
-            riskLevel: "高",
-            summary: "实验性多引擎组合，依据协方差和风险贡献在低相关资产之间再分配。",
-            assetScope: ["黄金", "美国权益指数", "中国权益指数", "现金及融资"],
-            experimental: true,
-            maxGrossExposure: 1.10,
-            financingRate: 0.05
-        ),
-        .init(
-            id: "gold-nasdaq-dual-trend-barbell",
-            name: "金纳双趋势",
+        "gold-nasdaq-dual-trend-barbell": .init(
             riskLevel: "中高",
             summary: "黄金与纳指分别判断长期趋势，弱势时降低对应仓位并保留现金。",
             assetScope: ["黄金", "纳斯达克指数", "现金"],
-            experimental: false,
             maxGrossExposure: 1.0,
             financingRate: nil
         )
     ]
+
+    private static var strategyDescriptors: [StrategyDescriptor] {
+        BacktestProductStrategyCatalog.curatedTemplateIDs.compactMap { id in
+            guard let template = AdvancedBacktestStrategyTemplate.all.first(where: { $0.id == id }),
+                  template.mode.isRotation,
+                  let profile = descriptorProfilesByID[id] else { return nil }
+            return StrategyDescriptor(
+                id: id,
+                name: template.title,
+                riskLevel: profile.riskLevel,
+                summary: profile.summary,
+                assetScope: profile.assetScope,
+                experimental: false,
+                maxGrossExposure: profile.maxGrossExposure,
+                financingRate: profile.financingRate
+            )
+        }
+    }
 
     public static var strategyIDs: [String] {
         strategyDescriptors.map(\.id)
@@ -483,6 +518,7 @@ public enum PublicBacktestCore {
         dateBounds: ClosedRange<Date>?
     ) throws -> PublicBacktestResult {
         let inputs = try preparedInputs(for: template, dataset: dataset)
+        let available = try availableBounds(for: template, dataset: dataset)
         let settings = AdvancedBacktestRiskSettings(
             feeRate: BacktestDefaults.advancedFeeRatePercent,
             slippageRate: BacktestDefaults.advancedSlippageRatePercent,
@@ -491,15 +527,30 @@ public enum PublicBacktestCore {
             stopLossRatio: template.stopLossRatio,
             takeProfitRatio: template.takeProfitRatio
         )
-        guard let report = BacktestEngine.runAdvancedRotationStrategy(
+        let simulationBounds = dateBounds.map { available.lowerBound...$0.upperBound }
+        guard let strategyRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
             assetInputs: inputs,
             initialCash: request.initialCash,
             settings: settings,
             mode: template.mode,
-            dateBounds: dateBounds
+            dateBounds: simulationBounds
         ) else {
             if Task.isCancelled { throw CancellationError() }
             throw PublicBacktestCoreError.computationFailed
+        }
+        let report: AdvancedBacktestReport
+        if let dateBounds {
+            guard let slicedReport = BacktestEngine.statefulAdvancedReport(
+                from: strategyRun.report,
+                dailyStates: strategyRun.dailyStates,
+                within: dateBounds,
+                rebasedTo: request.initialCash
+            ) else {
+                throw PublicBacktestCoreError.computationFailed
+            }
+            report = slicedReport
+        } else {
+            report = strategyRun.report
         }
         guard let first = report.points.first, let last = report.points.last else {
             throw PublicBacktestCoreError.computationFailed

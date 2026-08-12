@@ -216,14 +216,11 @@ enum AdvancedBacktestDataSupport {
         }
 
         let availableDateBounds = BacktestEngine.availableDateBounds(for: sourceSeries)
-        let effectiveDateBounds: ClosedRange<Date>?
-        if let availableDateBounds {
-            let start = max(selectedStartDate ?? availableDateBounds.lowerBound, availableDateBounds.lowerBound)
-            let end = min(selectedEndDate ?? availableDateBounds.upperBound, availableDateBounds.upperBound)
-            effectiveDateBounds = start <= end ? (start...end) : availableDateBounds
-        } else {
-            effectiveDateBounds = nil
-        }
+        let effectiveDateBounds = effectiveDateBounds(
+            availableBounds: availableDateBounds,
+            selectedStartDate: selectedStartDate,
+            selectedEndDate: selectedEndDate
+        )
 
         return AdvancedBacktestPreparedDataCache(
             selectedAssetInputs: selectedAssetInputs,
@@ -233,6 +230,17 @@ enum AdvancedBacktestDataSupport {
             ),
             availableDateBounds: availableDateBounds
         )
+    }
+
+    nonisolated static func effectiveDateBounds(
+        availableBounds: ClosedRange<Date>?,
+        selectedStartDate: Date?,
+        selectedEndDate: Date?
+    ) -> ClosedRange<Date>? {
+        guard let availableBounds else { return nil }
+        let start = max(selectedStartDate ?? availableBounds.lowerBound, availableBounds.lowerBound)
+        let end = min(selectedEndDate ?? availableBounds.upperBound, availableBounds.upperBound)
+        return start <= end ? (start...end) : availableBounds
     }
 
     static func buildRecordDraft(
@@ -273,6 +281,7 @@ enum AdvancedBacktestDataSupport {
             advancedTrades: BacktestRecordCodec.advancedTradePayloads(from: report.trades),
             advancedAssetCharts: BacktestRecordCodec.advancedAssetChartPayloads(from: report.assetReports),
             advancedBenchmarkSeries: BacktestRecordCodec.advancedBenchmarkSeriesPayloads(from: report.benchmarkSeries),
+            advancedCombinedBenchmarkPoints: BacktestRecordCodec.pointPayloads(from: report.benchmarkPoints),
             finalCash: report.finalCash,
             finalUnits: report.finalUnits,
             cashYieldSummary: BacktestRecordCodec.cashYieldSummaryPayload(from: report.cashYieldSummary),

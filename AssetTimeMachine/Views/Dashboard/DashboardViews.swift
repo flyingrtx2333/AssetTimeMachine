@@ -11,6 +11,7 @@ struct DashboardSnapshotSummary {
 
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
+    @AppStorage("app.language") private var appLanguageRawValue = AppLanguage.system.rawValue
     @AppStorage("dashboard.monthlyExpense") private var monthlyExpense: Double = 3000
     @AppStorage("dashboard.monthlyExpenseSeedVersion") private var monthlyExpenseSeedVersion: Int = 0
     @AppStorage("dashboard.inflationRate") private var inflationRate: Double = 0.05
@@ -132,6 +133,10 @@ struct DashboardView: View {
                 trendPoints: cachedTrendPointValues,
                 delayNanoseconds: 120_000_000
             )
+        }
+        .onChange(of: appLanguageRawValue) { _, _ in
+            guard isActive else { return }
+            requestDashboardDataRefresh(delayNanoseconds: 0)
         }
         .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { notification in
             guard PortfolioSaveNotificationFilter.affectsPortfolio(notification) else { return }
@@ -443,6 +448,8 @@ struct DashboardView: View {
 }
 
 struct DashboardTodayStrategyButton: View {
+    @AppStorage("app.language") private var appLanguageRawValue = AppLanguage.system.rawValue
+
     var body: some View {
         HStack(spacing: 7) {
             Image(systemName: "scope")
@@ -464,6 +471,7 @@ struct DashboardTodayStrategyButton: View {
 
 struct TodayStrategySheet: View {
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("app.language") private var appLanguageRawValue = AppLanguage.system.rawValue
     @AppStorage("app.strategyNotifications.templateID") private var strategyNotificationTemplateID = StrategyNotificationDefaults.defaultTemplateID
     @ObservedObject var marketStore: RemoteMarketStore
     let snapshot: AssetSnapshot?

@@ -22,8 +22,10 @@ struct BacktestModeEntryPanel: View {
                             Text(kind.title)
                                 .font(AppTypography.captionStrong)
                                 .foregroundStyle(AssetTheme.textPrimary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.82)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.86)
+                                .frame(height: 30, alignment: .top)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -910,7 +912,7 @@ struct BacktestHistoryRow: View {
         case .advanced:
             return BacktestRecordCodec.advancedStrategyDisplayTitle(for: record)
         default:
-            return record.title
+            return AppLocalization.string(record.title)
         }
     }
 
@@ -967,81 +969,88 @@ struct BacktestHistoryRow: View {
     }
 
     private var rowContent: some View {
-        HStack(alignment: .top, spacing: 12) {
-            if isSelectionMode {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(isSelected ? AssetTheme.gold : AssetTheme.textSecondary.opacity(0.45))
-                    .frame(width: 24, height: 32)
-            }
+        VStack(alignment: .leading, spacing: 13) {
+            HStack(alignment: .top, spacing: 12) {
+                if isSelectionMode {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(isSelected ? AssetTheme.gold : AssetTheme.textSecondary.opacity(0.45))
+                        .frame(width: 24, height: 32)
+                }
 
-            Image(systemName: iconName)
-                .font(AppTypography.blockTitle)
-                .foregroundStyle(AssetTheme.gold)
-                .frame(width: 32, height: 32)
-                .background(AssetTheme.gold.opacity(0.12), in: Circle())
+                Image(systemName: iconName)
+                    .font(AppTypography.blockTitle)
+                    .foregroundStyle(AssetTheme.gold)
+                    .frame(width: 32, height: 32)
+                    .background(AssetTheme.gold.opacity(0.12), in: Circle())
 
-            VStack(alignment: .leading, spacing: 5) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                VStack(alignment: .leading, spacing: 5) {
                     Text(displayTitle)
                         .font(AppTypography.rowTitle)
                         .foregroundStyle(AssetTheme.textPrimary)
-                        .lineLimit(1)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+
                     Text(record.createdAt.recordDateString)
                         .font(AppTypography.caption)
                         .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+
+                    if let displaySubtitle {
+                        Text(displaySubtitle)
+                            .font(AppTypography.chartCaption)
+                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
 
-                if let displaySubtitle {
-                    Text(displaySubtitle)
-                        .font(AppTypography.chartCaption)
+                Spacer(minLength: 6)
+
+                if !isSelectionMode {
+                    Image(systemName: "chevron.right")
+                        .font(AppTypography.captionStrong)
                         .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-                        .lineLimit(1)
+                        .padding(.top, 8)
                 }
             }
 
-            Spacer(minLength: 10)
-
-            HStack(alignment: .center, spacing: 8) {
-                VStack(alignment: .trailing, spacing: 4) {
-                    historyMetricLine(
-                        title: AppLocalization.string("平均年化"),
-                        value: annualizedReturnText,
-                        valueColor: annualizedReturnColor
-                    )
-                    historyMetricLine(
-                        title: AppLocalization.string("最大回撤"),
-                        value: record.maxDrawdown.percentString(),
-                        valueColor: AssetTheme.negative
-                    )
-                    historyMetricLine(
-                        title: AppLocalization.string("夏普"),
-                        value: sharpeRatioText,
-                        valueColor: AssetTheme.textPrimary
-                    )
-                }
-
-                Image(systemName: "chevron.right")
-                    .font(AppTypography.captionStrong)
-                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-                    .opacity(isSelectionMode ? 0 : 1)
+            HStack(alignment: .top, spacing: 8) {
+                historyMetricBlock(
+                    title: AppLocalization.string("平均年化"),
+                    value: annualizedReturnText,
+                    valueColor: annualizedReturnColor
+                )
+                historyMetricBlock(
+                    title: AppLocalization.string("最大回撤"),
+                    value: record.maxDrawdown.percentString(),
+                    valueColor: AssetTheme.negative
+                )
+                historyMetricBlock(
+                    title: AppLocalization.string("夏普"),
+                    value: sharpeRatioText,
+                    valueColor: AssetTheme.textPrimary
+                )
             }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func historyMetricLine(title: String, value: String, valueColor: Color) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
+    private func historyMetricBlock(title: String, value: String, valueColor: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(AppTypography.chartCaption)
                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
             Text(value)
                 .font(AppTypography.chartAxisStrip)
                 .foregroundStyle(valueColor)
                 .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
-        .lineLimit(1)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -1073,7 +1082,7 @@ struct BacktestRecordDetailView: View {
         if kind == .advanced {
             return BacktestRecordCodec.advancedStrategyDisplayTitle(for: record)
         }
-        return record.title
+        return AppLocalization.string(record.title)
     }
 
     var body: some View {

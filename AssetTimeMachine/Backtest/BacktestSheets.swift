@@ -957,6 +957,7 @@ struct AdvancedStrategyLibrarySheet: View {
 }
 
 struct CuratedStrategyBadge: View {
+    @AppStorage("app.language") private var appLanguageRawValue = AppLanguage.system.rawValue
     var compact = false
 
     var body: some View {
@@ -1048,25 +1049,31 @@ struct AdvancedStrategyTemplateRow: View {
                     .frame(width: 36, height: 36)
                     .background(strategyAccent.opacity(0.1), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
 
-                Text(template.title)
-                    .font(isFeatured ? .headline.weight(.bold) : AppTypography.rowTitle)
-                    .foregroundStyle(AssetTheme.textPrimary)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(template.title)
+                        .font(isFeatured ? .headline.weight(.bold) : AppTypography.rowTitle)
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if isCuratedStrategy || isRecommendedStrategy || isDefaultStrategy || isActive {
+                        HStack(spacing: 5) {
+                            if isCuratedStrategy {
+                                CuratedStrategyBadge(compact: true)
+                            }
+                            if isRecommendedStrategy {
+                                strategyBadge(AppLocalization.string("推荐"), accent: AssetTheme.positive)
+                            } else if isDefaultStrategy {
+                                strategyBadge(AppLocalization.string("默认"), accent: AssetTheme.gold)
+                            }
+                            if isActive {
+                                strategyBadge(AppLocalization.string("使用中"), accent: AssetTheme.positive)
+                            }
+                        }
+                    }
+                }
 
                 Spacer(minLength: 6)
-
-                if isCuratedStrategy {
-                    CuratedStrategyBadge(compact: true)
-                }
-                if isRecommendedStrategy {
-                    strategyBadge(AppLocalization.string("推荐"), accent: AssetTheme.positive)
-                } else if isDefaultStrategy {
-                    strategyBadge(AppLocalization.string("默认"), accent: AssetTheme.gold)
-                }
-                if isActive {
-                    strategyBadge(AppLocalization.string("使用中"), accent: AssetTheme.positive)
-                }
 
                 Image(systemName: isActive ? "checkmark.circle.fill" : "chevron.right")
                     .font(isActive ? .headline.weight(.semibold) : .caption.weight(.bold))
@@ -1190,7 +1197,9 @@ struct StrategyCapabilityRadarChart: View {
             Text(profile.summary)
                 .font(AppTypography.chartAxisStrip)
                 .foregroundStyle(AssetTheme.textSecondary)
-                .lineLimit(1)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityLabel(AppLocalization.format("策略能力：%@", profile.summary))
     }

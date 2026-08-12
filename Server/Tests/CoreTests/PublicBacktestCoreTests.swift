@@ -1,0 +1,316 @@
+import XCTest
+@testable import AssetTimeMachineBacktestCore
+
+final class PublicBacktestCoreTests: XCTestCase {
+    func testEngineVersionIsPinned() {
+        XCTAssertFalse(PublicBacktestCore.engineVersion.isEmpty)
+    }
+
+    func testComputeInvocationRoundTripsWithoutLosingAcronymKeys() throws {
+        let request = PublicBacktestRunRequest(
+            strategyID: "risk-contribution-cash-confidence-low-noise",
+            startDate: "2016-08-08",
+            endDate: "2026-08-07",
+            initialCash: 100_000
+        )
+        let invocation = PublicBacktestComputeInvocation(
+            mode: .run,
+            datasetPath: "/tmp/history.json",
+            datasetHash: "fixture-hash",
+            dataStale: false,
+            request: request
+        )
+
+        let data = try PublicBacktestComputeCodec.makeEncoder().encode(invocation)
+        let decoded = try PublicBacktestComputeCodec.makeDecoder().decode(
+            PublicBacktestComputeInvocation.self,
+            from: data
+        )
+
+        XCTAssertEqual(decoded.request, request)
+        XCTAssertEqual(decoded.datasetHash, "fixture-hash")
+        XCTAssertTrue(String(decoding: data, as: UTF8.self).contains("\"strategy_id\""))
+    }
+
+    func testPrewarmInvocationRoundTripsStrategyID() throws {
+        let invocation = PublicBacktestComputeInvocation(
+            mode: .prewarm,
+            datasetPath: "/tmp/history.json",
+            datasetHash: "fixture-hash",
+            dataStale: false,
+            strategyID: "gold-nasdaq-dual-trend-barbell"
+        )
+
+        let data = try PublicBacktestComputeCodec.makeEncoder().encode(invocation)
+        let decoded = try PublicBacktestComputeCodec.makeDecoder().decode(
+            PublicBacktestComputeInvocation.self,
+            from: data
+        )
+
+        XCTAssertEqual(decoded.strategyID, invocation.strategyID)
+    }
+
+    func testPublicCatalogUsesTheCuratedRotationRegistry() {
+        XCTAssertEqual(
+            PublicBacktestCore.strategyIDs,
+            BacktestProductStrategyCatalog.curatedTemplateIDs
+        )
+        XCTAssertTrue(PublicBacktestCore.strategyIDs.contains("risk-contribution-cash-confidence-low-noise"))
+        XCTAssertFalse(PublicBacktestCore.strategyIDs.contains("risk-contribution-reallocation"))
+    }
+
+    func testHistoricalDateParserRejectsImpossibleAndNonCanonicalDates() {
+        XCTAssertNil(BacktestSeriesAlignment.historicalSeriesDate(from: "2024-02-31"))
+        XCTAssertNil(BacktestSeriesAlignment.historicalSeriesDate(from: "2024-2-01"))
+        XCTAssertNotNil(BacktestSeriesAlignment.historicalSeriesDate(from: "2024-02-29"))
+    }
+
+    func testFXConverterRejectsAnIndefinitelyStaleRate() throws {
+        let fxDate = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: "2024-01-02"))
+        let freshDate = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: "2024-01-15"))
+        let staleDate = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: "2024-03-15"))
+        let lookup = BacktestHistoricalLookup(
+            points: [.init(date: fxDate, price: 0.14)]
+        )
+        let option = BacktestAssetOption(
+            symbol: "nasdaq",
+            title: "纳指",
+            color: .blue,
+            requiresHistoricalFX: true,
+            historicalFXSymbol: "usd_per_cny"
+        )
+
+        XCTAssertNotNil(BacktestFXConverter.cnyPrice(
+            for: .init(date: freshDate, price: 100),
+            assetOption: option,
+            fxLookup: lookup
+        ))
+        XCTAssertNil(BacktestFXConverter.cnyPrice(
+            for: .init(date: staleDate, price: 100),
+            assetOption: option,
+            fxLookup: lookup
+        ))
+    }
+
+    func testUSDAssetOHLCUsesTheSameCNYConversionAsClosePrices() throws {
+        let dates = ["2024-01-02", "2024-01-03"]
+        let asset = PublicHistorySeries(
+            symbol: "nasdaq",
+            category: "index",
+            label: "Nasdaq",
+            currency: "USD",
+            unit: "points",
+            source: "fixture",
+            dates: dates,
+            prices: [110, 121],
+            hasOHLC: true,
+            ohlcSource: "fixture",
+            ohlcCoverageRatio: 1,
+            openPrices: [100, 110],
+            highPrices: [120, 132],
+            lowPrices: [90, 99],
+            closePrices: [110, 121],
+            volumes: nil
+        )
+        let fx = PublicHistorySeries(
+            symbol: "usd_per_cny",
+            category: "fx",
+            label: "USD/CNY",
+            currency: "USD",
+            unit: "rate",
+            source: "fixture",
+            dates: dates,
+            prices: [0.2, 0.2],
+            hasOHLC: false,
+            ohlcSource: nil,
+            ohlcCoverageRatio: nil,
+            openPrices: nil,
+            highPrices: nil,
+            lowPrices: nil,
+            closePrices: nil,
+            volumes: nil
+        )
+        let option = BacktestAssetOption(
+            symbol: "nasdaq",
+            title: "纳指",
+            color: .blue,
+            requiresHistoricalFX: true,
+            historicalFXSymbol: "usd_per_cny"
+        )
+
+        let prepared = try XCTUnwrap(BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+            assetSeries: asset,
+            assetOption: option,
+            fxSeries: fx,
+            movingAverage: { values, _ in Array(repeating: nil, count: values.count) },
+            bollingerBands: { values, _, _ in Array(repeating: nil, count: values.count) }
+        ))
+
+        XCTAssertEqual(try XCTUnwrap(prepared.pricePoints.first?.cnyPrice), 550, accuracy: 0.000_001)
+        XCTAssertEqual(try XCTUnwrap(prepared.ohlcPoints.first?.open), 500, accuracy: 0.000_001)
+        XCTAssertEqual(try XCTUnwrap(prepared.ohlcPoints.first?.close), 550, accuracy: 0.000_001)
+    }
+
+    func testAdvancedRecordRoundTripPreservesCombinedAndAssetCurves() throws {
+        let firstDate = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: "2024-01-02"))
+        let secondDate = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: "2024-01-03"))
+        let strategyPoints = [
+            BacktestSeriesPoint(date: firstDate, portfolioValue: 100_000, sequence: 0),
+            BacktestSeriesPoint(date: secondDate, portfolioValue: 111_000, sequence: 1),
+        ]
+        let assetPoints = [
+            BacktestSeriesPoint(date: firstDate, portfolioValue: 50_000, sequence: 0),
+            BacktestSeriesPoint(date: secondDate, portfolioValue: 56_000, sequence: 1),
+        ]
+        let assetBenchmark = [
+            BacktestSeriesPoint(date: firstDate, portfolioValue: 50_000, sequence: 0),
+            BacktestSeriesPoint(date: secondDate, portfolioValue: 52_000, sequence: 1),
+        ]
+        let combinedBenchmark = [
+            BacktestSeriesPoint(date: firstDate, portfolioValue: 100_000, sequence: 0),
+            BacktestSeriesPoint(date: secondDate, portfolioValue: 105_000, sequence: 1),
+        ]
+        let assetReport = AdvancedBacktestAssetReport(
+            symbol: "nasdaq",
+            title: "纳指",
+            points: assetPoints,
+            benchmarkPoints: assetBenchmark,
+            pricePoints: [],
+            trades: [],
+            finalPortfolioValue: 56_000,
+            finalCash: 0,
+            finalUnits: 1,
+            exposureRatio: 0.5
+        )
+        var config = BacktestRecordConfigPayload(kind: .advanced)
+        config.advancedAssetCharts = BacktestRecordCodec.advancedAssetChartPayloads(from: [assetReport])
+        config.advancedBenchmarkSeries = BacktestRecordCodec.advancedBenchmarkSeriesPayloads(from: [
+            AdvancedBacktestBenchmarkSeries(id: "nasdaq", title: "纳指", points: assetBenchmark)
+        ])
+        config.advancedCombinedBenchmarkPoints = BacktestRecordCodec.pointPayloads(from: combinedBenchmark)
+        let record = BacktestRecord(
+            kindRawValue: BacktestRecordKind.advanced.rawValue,
+            title: "回测",
+            totalReturn: 0.11,
+            maxDrawdown: 0.03,
+            finalValue: 111_000,
+            pointsJSON: BacktestRecordCodec.pointsData(from: strategyPoints),
+            configJSON: BacktestRecordCodec.configData(from: config)
+        )
+
+        let restored = try XCTUnwrap(BacktestRecordCodec.advancedReport(from: record))
+        XCTAssertEqual(restored.benchmarkPoints.last?.portfolioValue, 105_000)
+        XCTAssertEqual(restored.assetReports.first?.points.last?.portfolioValue, 56_000)
+        XCTAssertNotEqual(
+            restored.assetReports.first?.points.last?.portfolioValue,
+            restored.assetReports.first?.benchmarkPoints.last?.portfolioValue
+        )
+    }
+
+    func testStatefulSliceDoesNotAttributePreWindowCostBasisToTheSelectedWindow() throws {
+        let day0 = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: "2024-01-02"))
+        let day1 = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: "2024-01-03"))
+        let day2 = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: "2024-01-04"))
+        let points = [
+            BacktestSeriesPoint(date: day0, portfolioValue: 100_000, sequence: 0),
+            BacktestSeriesPoint(date: day1, portfolioValue: 110_000, sequence: 1),
+            BacktestSeriesPoint(date: day2, portfolioValue: 111_000, sequence: 2),
+        ]
+        let buy = AdvancedBacktestTrade(
+            assetSymbol: "nasdaq",
+            assetTitle: "纳指",
+            date: day0,
+            action: .buy,
+            price: 100,
+            cashAmount: 100_000,
+            units: 1_000,
+            reason: "买入",
+            realizedProfit: nil,
+            realizedReturn: nil,
+            holdingDays: nil
+        )
+        let sell = AdvancedBacktestTrade(
+            assetSymbol: "nasdaq",
+            assetTitle: "纳指",
+            date: day1,
+            action: .sell,
+            price: 110,
+            cashAmount: 110_000,
+            units: 1_000,
+            reason: "卖出",
+            realizedProfit: 10_000,
+            realizedReturn: 0.10,
+            holdingDays: 1
+        )
+        let assetReport = AdvancedBacktestAssetReport(
+            symbol: "nasdaq",
+            title: "纳指",
+            points: points,
+            benchmarkPoints: points,
+            pricePoints: [],
+            trades: [buy, sell],
+            finalPortfolioValue: 111_000,
+            finalCash: 111_000,
+            finalUnits: 0,
+            exposureRatio: 0.5
+        )
+        let report = AdvancedBacktestReport(
+            points: points,
+            benchmarkPoints: points,
+            benchmarkSeries: [],
+            trades: [buy, sell],
+            assetReports: [assetReport],
+            finalPortfolioValue: 111_000,
+            finalCash: 111_000,
+            finalUnits: 0,
+            totalReturn: 0.11,
+            annualizedReturn: nil,
+            maxDrawdown: 0,
+            annualizedVolatility: nil,
+            sharpeRatio: nil,
+            cashYieldSummary: CashYieldCNY.summary(
+                startDate: day0,
+                endDate: day2,
+                totalCashInterest: 0,
+                averageCashRatio: 0.5,
+                averageAnnualRate: 0
+            ),
+            riskSignalSummary: nil
+        )
+        let states = [
+            BacktestDailyState(
+                date: day0,
+                targetWeights: ["nasdaq": 1],
+                cash: 0,
+                holdingsBySymbol: ["nasdaq": 100_000],
+                portfolioValue: 100_000
+            ),
+            BacktestDailyState(
+                date: day1,
+                targetWeights: [:],
+                cash: 110_000,
+                holdingsBySymbol: [:],
+                portfolioValue: 110_000
+            ),
+            BacktestDailyState(
+                date: day2,
+                targetWeights: [:],
+                cash: 111_000,
+                holdingsBySymbol: [:],
+                portfolioValue: 111_000
+            ),
+        ]
+
+        let sliced = try XCTUnwrap(BacktestEngine.statefulAdvancedReport(
+            from: report,
+            dailyStates: states,
+            within: day1...day2,
+            rebasedTo: 100_000
+        ))
+
+        let inheritedSale = try XCTUnwrap(sliced.trades.first)
+        XCTAssertNil(inheritedSale.realizedProfit)
+        XCTAssertNil(inheritedSale.realizedReturn)
+        XCTAssertNil(inheritedSale.holdingDays)
+    }
+}

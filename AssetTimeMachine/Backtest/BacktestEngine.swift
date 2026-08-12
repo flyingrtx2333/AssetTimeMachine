@@ -479,6 +479,232 @@ nonisolated enum BacktestEngine {
         )
     }
 
+    /// Presents a continuous strategy run inside a user-selected measurement window.
+    ///
+    /// Stateful rotation strategies must see the history before the selected start
+    /// date so their long lookbacks, holdings, and online calibration do not restart
+    /// from an artificial cold state. The simulator therefore runs from the earliest
+    /// available history, then this method trims and rebases every monetary surface
+    /// to the requested initial value for display and metric calculation.
+    static func statefulAdvancedReport(
+        from report: AdvancedBacktestReport,
+        dailyStates: [BacktestDailyState],
+        within bounds: ClosedRange<Date>,
+        rebasedTo initialPortfolioValue: Double
+    ) -> AdvancedBacktestReport? {
+        let sourcePoints = report.points.filter { bounds.contains($0.date) }
+        guard let sourceFirst = sourcePoints.first,
+              sourceFirst.portfolioValue > 0,
+              sourcePoints.count > 1 else { return nil }
+
+        let normalizedInitialValue = max(initialPortfolioValue, 0)
+        guard normalizedInitialValue > 0 else { return nil }
+        let monetaryScale = normalizedInitialValue / sourceFirst.portfolioValue
+
+        func scaledPoints(
+            _ source: [BacktestSeriesPoint],
+            scale: Double
+        ) -> [BacktestSeriesPoint] {
+            source.filter { bounds.contains($0.date) }
+                .enumerated()
+                .map { sequence, point in
+                    BacktestSeriesPoint(
+                        date: point.date,
+                        portfolioValue: point.portfolioValue * scale,
+                        sequence: sequence
+                    )
+                }
+        }
+
+        func rebasedPoints(
+            _ source: [BacktestSeriesPoint],
+            targetStartValue: Double
+        ) -> [BacktestSeriesPoint] {
+            let filtered = source.filter { bounds.contains($0.date) }
+            guard let first = filtered.first, first.portfolioValue > 0 else { return [] }
+            return filtered.enumerated().map { sequence, point in
+                BacktestSeriesPoint(
+                    date: point.date,
+                    portfolioValue: targetStartValue * point.portfolioValue / first.portfolioValue,
+                    sequence: sequence
+                )
+            }
+        }
+
+        func scaledTrade(
+            _ trade: AdvancedBacktestTrade,
+            includesRealizedStatistics: Bool = true
+        ) -> AdvancedBacktestTrade {
+            AdvancedBacktestTrade(
+                assetSymbol: trade.assetSymbol,
+                assetTitle: trade.assetTitle,
+                date: trade.date,
+                action: trade.action,
+                price: trade.price,
+                cashAmount: trade.cashAmount * monetaryScale,
+                units: trade.units * monetaryScale,
+                reason: trade.reason,
+                realizedProfit: includesRealizedStatistics ? trade.realizedProfit.map { $0 * monetaryScale } : nil,
+                realizedReturn: includesRealizedStatistics ? trade.realizedReturn : nil,
+                holdingDays: includesRealizedStatistics ? trade.holdingDays : nil
+            )
+        }
+
+        let points = scaledPoints(sourcePoints, scale: monetaryScale)
+        guard let lastPoint = points.last,
+              let metrics = performanceMetrics(from: points) else { return nil }
+
+        let benchmarkPoints = rebasedPoints(
+            report.benchmarkPoints,
+            targetStartValue: normalizedInitialValue
+        )
+        let benchmarkSeries = report.benchmarkSeries.map { series in
+            AdvancedBacktestBenchmarkSeries(
+                id: series.id,
+                title: series.title,
+                points: rebasedPoints(series.points, targetStartValue: normalizedInitialValue)
+            )
+        }
+        let statesInRange = dailyStates.filter { bounds.contains($0.date) }
+        var inheritedUnitsBySymbol: [String: Double] = [:]
+        for trade in report.trades where trade.date < bounds.lowerBound {
+            switch trade.action {
+            case .buy:
+                inheritedUnitsBySymbol[trade.assetSymbol, default: 0] += trade.units
+            case .sell:
+                inheritedUnitsBySymbol[trade.assetSymbol] = max(
+                    (inheritedUnitsBySymbol[trade.assetSymbol] ?? 0) - trade.units,
+                    0
+                )
+            }
+        }
+        var trades: [AdvancedBacktestTrade] = []
+        for trade in report.trades where bounds.contains(trade.date) {
+            let inheritedUnits = inheritedUnitsBySymbol[trade.assetSymbol] ?? 0
+            let inheritedPosition = inheritedUnits > Double.leastNonzeroMagnitude
+            trades.append(scaledTrade(
+                trade,
+                includesRealizedStatistics: !inheritedPosition
+            ))
+            if trade.action == .sell, inheritedPosition {
+                inheritedUnitsBySymbol[trade.assetSymbol] = max(inheritedUnits - trade.units, 0)
+            }
+        }
+
+        let averageExposureRatio: Double = {
+            let samples = statesInRange.compactMap { state -> Double? in
+                guard state.portfolioValue > 0 else { return nil }
+                let investedValue = state.holdingsBySymbol.values.reduce(0, +)
+                return max(investedValue / state.portfolioValue, 0)
+            }
+            guard !samples.isEmpty else { return report.averageExposureRatio }
+            return samples.reduce(0, +) / Double(samples.count)
+        }()
+        let averageCashRatio: Double = {
+            let samples = statesInRange.compactMap { state -> Double? in
+                guard state.portfolioValue > 0 else { return nil }
+                return min(max(state.cash / state.portfolioValue, 0), 1)
+            }
+            guard !samples.isEmpty else { return report.cashYieldSummary.averageCashRatio }
+            return samples.reduce(0, +) / Double(samples.count)
+        }()
+
+        let cashAccrualStates = Array(statesInRange.dropLast())
+        let totalCashInterest = cashAccrualStates.reduce(0.0) { partial, state in
+            guard state.cash > 0 else { return partial }
+            return partial + state.cash * CashYieldCNY.dailyReturn(on: state.date) * monetaryScale
+        }
+        let averageAnnualRate = cashAccrualStates.isEmpty
+            ? 0
+            : CashYieldCNY.averageAnnualRate(across: cashAccrualStates.map(\.date))
+        let cashYieldSummary = CashYieldCNY.summary(
+            startDate: points.first?.date,
+            endDate: points.last?.date,
+            totalCashInterest: totalCashInterest,
+            averageCashRatio: averageCashRatio,
+            averageAnnualRate: averageAnnualRate
+        )
+
+        let finalCash = (statesInRange.last?.cash ?? report.finalCash) * monetaryScale
+        let assetReports = report.assetReports.map { assetReport in
+            let assetPoints = scaledPoints(assetReport.points, scale: monetaryScale)
+            let assetTrades = trades.filter { $0.assetSymbol == assetReport.symbol }
+            return AdvancedBacktestAssetReport(
+                symbol: assetReport.symbol,
+                title: assetReport.title,
+                points: assetPoints,
+                benchmarkPoints: rebasedPoints(
+                    assetReport.benchmarkPoints,
+                    targetStartValue: normalizedInitialValue
+                ),
+                pricePoints: assetReport.pricePoints
+                    .filter { bounds.contains($0.date) }
+                    .enumerated()
+                    .map { sequence, point in
+                        AdvancedBacktestPricePoint(
+                            date: point.date,
+                            price: point.price,
+                            sequence: sequence
+                        )
+                    },
+                trades: assetTrades,
+                finalPortfolioValue: assetPoints.last?.portfolioValue ?? lastPoint.portfolioValue,
+                finalCash: report.assetReports.count == 1
+                    ? finalCash
+                    : assetReport.finalCash * monetaryScale,
+                finalUnits: assetReport.finalUnits * monetaryScale,
+                exposureRatio: report.assetReports.count == 1
+                    ? averageExposureRatio
+                    : assetReport.exposureRatio
+            )
+        }
+
+        let riskSignalSummary: MarketRiskSignalSummary? = report.riskSignalSummary.flatMap { summary in
+            if let summaryStart = summary.startDate,
+               let summaryEnd = summary.endDate,
+               bounds.lowerBound <= summaryStart,
+               bounds.upperBound >= summaryEnd {
+                return summary
+            }
+            let statisticsPoints = (summary.statisticsPoints ?? summary.signalPoints)
+                .filter { bounds.contains($0.date) }
+            guard !statisticsPoints.isEmpty else { return nil }
+            let stressCount = statisticsPoints.filter {
+                $0.level == .stress || $0.level == .shock
+            }.count
+            return MarketRiskSignalSummary(
+                title: summary.title,
+                source: summary.source,
+                sourceDetail: summary.sourceDetail,
+                startDate: statisticsPoints.first?.date,
+                endDate: statisticsPoints.last?.date,
+                latestPoint: statisticsPoints.last,
+                averageScore: statisticsPoints.reduce(0) { $0 + $1.score } / Double(statisticsPoints.count),
+                stressSessionRatio: Double(stressCount) / Double(statisticsPoints.count),
+                signalPoints: evenlySampledItems(statisticsPoints, maxCount: 360),
+                statisticsPoints: statisticsPoints
+            )
+        }
+
+        return AdvancedBacktestReport(
+            points: points,
+            benchmarkPoints: benchmarkPoints,
+            benchmarkSeries: benchmarkSeries,
+            trades: trades,
+            assetReports: assetReports,
+            finalPortfolioValue: lastPoint.portfolioValue,
+            finalCash: finalCash,
+            finalUnits: report.finalUnits * monetaryScale,
+            totalReturn: metrics.totalReturn,
+            annualizedReturn: metrics.annualizedReturn,
+            maxDrawdown: metrics.maxDrawdown,
+            annualizedVolatility: metrics.annualizedVolatility,
+            sharpeRatio: metrics.sharpeRatio,
+            cashYieldSummary: cashYieldSummary,
+            riskSignalSummary: riskSignalSummary
+        )
+    }
+
     static func run(
         cashWeight: Double,
         goldWeight: Double,
@@ -6929,7 +7155,8 @@ nonisolated enum BacktestEngine {
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
         mode: AdvancedBacktestStrategyMode,
         initialCash: Double,
-        settings: AdvancedBacktestRiskSettings?
+        settings: AdvancedBacktestRiskSettings?,
+        strategyRun: AdvancedRotationStrategyRun? = nil
     ) -> StrategyRebalanceAdvice? {
         let normalizedInitialCash = max(initialCash, 0)
         let resolvedSettings = settings ?? AdvancedBacktestRiskSettings(
@@ -6940,13 +7167,14 @@ nonisolated enum BacktestEngine {
             stopLossRatio: 0,
             takeProfitRatio: 0
         )
-        guard normalizedInitialCash > 0,
-              let run = runAdvancedRotationStrategyWithTrace(
-                assetInputs: assetInputs,
-                initialCash: normalizedInitialCash,
-                settings: resolvedSettings,
-                mode: mode
-              ),
+        guard normalizedInitialCash > 0 else { return nil }
+        let resolvedRun = strategyRun ?? runAdvancedRotationStrategyWithTrace(
+            assetInputs: assetInputs,
+            initialCash: normalizedInitialCash,
+            settings: resolvedSettings,
+            mode: mode
+        )
+        guard let run = resolvedRun,
               let latestState = run.dailyStates.last else {
             return nil
         }
@@ -6983,14 +7211,16 @@ nonisolated enum BacktestEngine {
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
         mode: AdvancedBacktestStrategyMode,
         initialCash: Double = 100_000,
-        settings: AdvancedBacktestRiskSettings? = nil
+        settings: AdvancedBacktestRiskSettings? = nil,
+        strategyRun: AdvancedRotationStrategyRun? = nil
     ) -> StrategyRebalanceAdvice? {
         guard let config = advancedRotationConfig(for: mode) else {
             return traceBackedRebalanceAdvice(
                 assetInputs: assetInputs,
                 mode: mode,
                 initialCash: initialCash,
-                settings: settings
+                settings: settings,
+                strategyRun: strategyRun
             )
         }
         let normalizedInitialCash = max(initialCash, 0)
@@ -11388,23 +11618,24 @@ nonisolated enum BacktestEngine {
         let excess = report.excessReturn ?? 0
         let tradePenalty = report.trades.count < 2 ? 0.35 : 0
 
-        var validationAdjustment = 0.0
+        // This is an in-sample recency preference, not an out-of-sample validation score.
+        var recentRegimeAdjustment = 0.0
         if report.points.count >= 90 {
-            let validationCount = min(max(report.points.count / 3, 60), report.points.count - 1)
-            let validationPoints = Array(report.points.suffix(validationCount))
-            if let validationMetrics = performanceMetrics(from: validationPoints) {
-                let recentReturn = validationMetrics.totalReturn
-                let recentDrawdown = validationMetrics.maxDrawdown
-                validationAdjustment += max(recentReturn, 0) * 0.18
-                validationAdjustment -= max(-recentReturn, 0) * 0.65
-                validationAdjustment -= max(recentDrawdown - report.maxDrawdown, 0) * 0.35
+            let recentCount = min(max(report.points.count / 3, 60), report.points.count - 1)
+            let recentPoints = Array(report.points.suffix(recentCount))
+            if let recentMetrics = performanceMetrics(from: recentPoints) {
+                let recentReturn = recentMetrics.totalReturn
+                let recentDrawdown = recentMetrics.maxDrawdown
+                recentRegimeAdjustment += max(recentReturn, 0) * 0.18
+                recentRegimeAdjustment -= max(-recentReturn, 0) * 0.65
+                recentRegimeAdjustment -= max(recentDrawdown - report.maxDrawdown, 0) * 0.35
             }
         }
 
         return annualized * 1.25
             + max(excess, 0) * 0.45
             + sharpe * 0.18
-            + validationAdjustment
+            + recentRegimeAdjustment
             - report.maxDrawdown * 1.2
             - tradePenalty
     }

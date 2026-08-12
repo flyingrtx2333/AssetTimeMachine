@@ -17,10 +17,10 @@ struct SnapshotListLayout {
 }
 
 enum SnapshotRecordLayoutBuilder {
-    private static let liabilitySectionTitleMap: [String: String] = [
+    private static var liabilitySectionTitleMap: [String: String] { [
         AppLocalization.string("长期负债"): AppLocalization.string("长期负债"),
         AppLocalization.string("短期负债"): AppLocalization.string("短期负债")
-    ]
+    ] }
 
     static func categoryItemGroups(
         from categories: [AssetCategory],
