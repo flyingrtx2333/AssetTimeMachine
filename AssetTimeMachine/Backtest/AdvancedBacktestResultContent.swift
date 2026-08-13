@@ -58,6 +58,7 @@ struct AdvancedBacktestResultPage: View {
 
     @State private var showsCashYieldSheet = false
     @State private var showsRiskSignalSheet = false
+    @State private var showsSharePoster = false
 
     var body: some View {
         ZStack {
@@ -99,7 +100,16 @@ struct AdvancedBacktestResultPage: View {
                 MarketRiskSignalDetailSheet(summary: summary)
                     .presentationDetents([.fraction(0.62), .large])
                     .presentationDragIndicator(.visible)
-            }
+                }
+        }
+        .sheet(isPresented: $showsSharePoster) {
+            BacktestPosterPreviewSheet(
+                title: presentation.title,
+                report: presentation.report,
+                comparisonSeries: presentation.comparisonSeries
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
         }
     }
 
@@ -124,6 +134,18 @@ struct AdvancedBacktestResultPage: View {
                 .minimumScaleFactor(0.82)
 
             Spacer(minLength: 0)
+
+            Button {
+                showsSharePoster = true
+            } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .font(AppTypography.rowTitle)
+                    .foregroundStyle(AssetTheme.gold)
+                    .frame(width: 36, height: 36)
+                    .background(AssetTheme.gold.opacity(0.1), in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(AppLocalization.string("分享"))
         }
     }
 

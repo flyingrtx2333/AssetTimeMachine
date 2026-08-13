@@ -37,7 +37,7 @@ struct TimeMachineView: View {
     @State private var isScrollInProgress = false
     @State private var modelSaveRevision = 0
     @State private var lastObservedStoreRevision: UInt64 = 0
-    @State private var visibleDetailTrendSymbols: Set<String> = ["gold_cny"]
+    @State private var visibleTrendSeriesIDs: Set<String>
     @State private var selectedRecordSnapshot: AssetSnapshot?
     @State private var selectedHistoryDrilldown: TimeMachineHistoryDrilldown?
     @State private var trendVideoPreviewRequest: TrendVideoPreviewRequest?
@@ -49,7 +49,15 @@ struct TimeMachineView: View {
     init(marketStore: RemoteMarketStore, isActive: Bool) {
         self.marketStore = marketStore
         self.isActive = isActive
-
+        var initialVisibleSeries = Set(TimeMachineAssetSeries.allCases.map(\.id))
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-timeMachineHideAllSeries") {
+            initialVisibleSeries = []
+        } else if ProcessInfo.processInfo.arguments.contains("-timeMachineShowGoldSeries") {
+            initialVisibleSeries.insert("gold_cny")
+        }
+        #endif
+        _visibleTrendSeriesIDs = State(initialValue: initialVisibleSeries)
     }
 
     private var trendPoints: [TimeMachineTrendPoint] {
@@ -76,8 +84,16 @@ struct TimeMachineView: View {
         TimeMachineLiveMarketAnchors.from(marketStore: marketStore)
     }
 
-    private var detailTrendCards: [TimeMachineCombinedTrendDescriptor] {
-        cachedDetailTrendCards.filter { visibleDetailTrendSymbols.contains($0.symbol) }
+    private var unifiedMarketSeries: [TimeMachineMarketTrendSeries] {
+        Self.detailComparisonOptions.compactMap { option in
+            guard let points = cachedHistoryPointsBySymbol[option.symbol], points.count >= 2 else { return nil }
+            return TimeMachineMarketTrendSeries(
+                symbol: option.symbol,
+                title: option.title,
+                color: option.color,
+                points: points
+            )
+        }
     }
 
     private static var publicIndexConfigs: [(symbol: String, title: String, color: Color)] { [
@@ -125,7 +141,8 @@ struct TimeMachineView: View {
     private var detailHistoryPointsCacheToken: Int {
         var hasher = Hasher()
         hasher.combine(historyCacheToken)
-        for symbol in visibleDetailTrendSymbols.sorted() {
+        let marketSymbols = Set(Self.detailComparisonOptions.map(\.symbol))
+        for symbol in visibleTrendSeriesIDs.intersection(marketSymbols).sorted() {
             hasher.combine(symbol)
         }
         return hasher.finalize()
@@ -148,6 +165,9 @@ struct TimeMachineView: View {
         hasher.combine(selectedRange.rawValue)
         hasher.combine(modelSaveRevision)
         hasher.combine(historyCacheToken)
+        for seriesID in visibleTrendSeriesIDs.sorted() {
+            hasher.combine(seriesID)
+        }
         return hasher.finalize()
     }
 
@@ -180,8 +200,6 @@ struct TimeMachineView: View {
         if !force, token == lastVisualizationCacheToken {
             if includeDetailCards {
                 await refreshDetailTrendCardsIfNeeded()
-            } else if cachedDetailTrendCards.isEmpty {
-                scheduleDeferredDetailCardsRefresh(for: token)
             }
             return
         }
@@ -302,7 +320,7 @@ struct TimeMachineView: View {
         } else {
             cachedDetailTrendCards = []
             lastDetailTrendCardsCacheToken = nil
-            scheduleDeferredDetailCardsRefresh(for: cacheToken)
+            deferredDetailCardsTask?.cancel()
         }
     }
 
@@ -372,7 +390,7 @@ struct TimeMachineView: View {
     private func prepareFullHistorySeries() async -> TimeMachinePreparedHistory {
         let symbols = Self.detailComparisonOptions
             .map(\.symbol)
-            .filter { visibleDetailTrendSymbols.contains($0) }
+            .filter { visibleTrendSeriesIDs.contains($0) }
         let seriesBySymbol = Dictionary(uniqueKeysWithValues: symbols.compactMap { symbol in
             marketStore.history(for: symbol).map { (symbol, $0) }
         })
@@ -463,7 +481,7 @@ struct TimeMachineView: View {
         ]
 
         let publicIndexCards: [TimeMachineCombinedTrendDescriptor] = Self.publicIndexConfigs
-            .filter { visibleDetailTrendSymbols.contains($0.symbol) }
+            .filter { visibleTrendSeriesIDs.contains($0.symbol) }
             .compactMap { config -> TimeMachineCombinedTrendDescriptor? in
             guard let leftOnlyPoints = historyPointsBySymbol[config.symbol], leftOnlyPoints.count >= 2 else { return nil }
             let currency = marketStore.history(for: config.symbol)?.currency ?? "CNY"
@@ -504,7 +522,7 @@ struct TimeMachineView: View {
             )
         }
 
-        return primaryCards.filter { visibleDetailTrendSymbols.contains($0.symbol) } + publicIndexCards
+        return primaryCards.filter { visibleTrendSeriesIDs.contains($0.symbol) } + publicIndexCards
     }
 
     private func historyDrilldown(
@@ -635,20 +653,33 @@ struct TimeMachineView: View {
     }
 
     @MainActor
-    private func toggleDetailComparison(_ option: TimeMachineDetailComparisonOption) {
+    private func toggleTrendSeries(_ seriesID: String) {
+        let wasVisible = visibleTrendSeriesIDs.contains(seriesID)
         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-            if visibleDetailTrendSymbols.contains(option.symbol) {
-                visibleDetailTrendSymbols.remove(option.symbol)
+            if wasVisible {
+                visibleTrendSeriesIDs.remove(seriesID)
             } else {
-                visibleDetailTrendSymbols.insert(option.symbol)
+                visibleTrendSeriesIDs.insert(seriesID)
             }
         }
         lastFullHistoryPointsCacheToken = nil
         scheduleVisualizationRefresh(
             force: true,
-            includeDetailCards: true,
+            includeDetailCards: false,
             delayNanoseconds: 0
         )
+
+        guard !wasVisible,
+              Self.detailComparisonOptions.contains(where: { $0.symbol == seriesID }) else { return }
+        Task {
+            await marketStore.refreshHistory(for: Set([seriesID]))
+            guard !Task.isCancelled, isActive else { return }
+            scheduleVisualizationRefresh(
+                force: true,
+                includeDetailCards: false,
+                delayNanoseconds: 0
+            )
+        }
     }
 
     private var trendVideoExportBar: some View {
@@ -696,7 +727,11 @@ struct TimeMachineView: View {
                 TimeMachineHeroTrendCard(
                     points: filteredTrendPoints,
                     latestPoint: latestPoint,
+                    marketOptions: Self.detailComparisonOptions,
+                    marketSeries: unifiedMarketSeries,
+                    visibleSeriesIDs: visibleTrendSeriesIDs,
                     selectedRange: $selectedRange,
+                    onToggleSeries: toggleTrendSeries,
                     hasRecord: hasSnapshotRecord(on:),
                     onOpenRecord: openRecord(for:)
                 )
@@ -731,35 +766,6 @@ struct TimeMachineView: View {
                                     )
                                 }
 
-                                if !detailTrendCards.isEmpty || !Self.detailComparisonOptions.isEmpty {
-                                    TimeMachineSectionDivider()
-                                        .padding(.vertical, 14)
-                                        .onboardingAnchor(.timeMachineAnchors)
-
-                                    ForEach(detailTrendCards) { card in
-                                        if card.id != detailTrendCards.first?.id {
-                                            TimeMachineSectionDivider()
-                                                .padding(.vertical, 16)
-                                        }
-
-                                        TimeMachineDualAxisTrendCard(descriptor: card) { history in
-                                            selectedHistoryDrilldown = history
-                                        }
-                                    }
-
-                                    if !Self.detailComparisonOptions.isEmpty {
-                                        if !detailTrendCards.isEmpty {
-                                            TimeMachineSectionDivider()
-                                                .padding(.vertical, 12)
-                                        }
-
-                                        TimeMachineComparisonToggleButtons(
-                                            options: Self.detailComparisonOptions,
-                                            visibleSymbols: visibleDetailTrendSymbols,
-                                            onToggle: toggleDetailComparison
-                                        )
-                                    }
-                                }
                             } else {
                                 EmptyStateCard(
                                     title: AppLocalization.string("暂无趋势数据"),
@@ -780,9 +786,6 @@ struct TimeMachineView: View {
             .navigationDestination(item: $selectedRecordSnapshot) { snapshot in
                 SnapshotDetailView(snapshot: snapshot)
             }
-        }
-        .sheet(item: $selectedHistoryDrilldown) { descriptor in
-            TimeMachineHistoryDrilldownSheet(descriptor: descriptor)
         }
         .sheet(item: $trendVideoPreviewRequest) { request in
             TrendVideoPreviewSheet(points: request.points, rangeLabel: request.rangeLabel)

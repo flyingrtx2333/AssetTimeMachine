@@ -286,6 +286,15 @@ struct TimeMachineDetailComparisonOption: Identifiable {
     var id: String { symbol }
 }
 
+struct TimeMachineMarketTrendSeries: Identifiable {
+    let symbol: String
+    let title: String
+    let color: Color
+    let points: [TimeMachineSingleAxisPoint]
+
+    var id: String { symbol }
+}
+
 enum TimeMachineAxisValueStyle {
     case currency(code: String, suffix: String = "")
     case quantity(unit: String, maxFractionDigits: Int = 2)
@@ -334,7 +343,13 @@ enum TimeMachineAssetSeries: CaseIterable, Identifiable {
     case netAssets
     case liabilities
 
-    var id: String { title }
+    var id: String {
+        switch self {
+        case .mainAssets: return "portfolio.totalAssets"
+        case .netAssets: return "portfolio.netAssets"
+        case .liabilities: return "portfolio.liabilities"
+        }
+    }
 
     var title: String {
         switch self {
@@ -463,15 +478,35 @@ struct TimeMachineSectionDivider: View {
     }
 }
 
+private struct TimeMachineIndexedTrendPoint: Identifiable {
+    let date: Date
+    let indexedValue: Double
+
+    var id: Date { date }
+}
+
+private struct TimeMachineUnifiedTrendSeries: Identifiable {
+    let id: String
+    let title: String
+    let color: Color
+    let strokeStyle: StrokeStyle
+    let points: [TimeMachineIndexedTrendPoint]
+}
+
 struct TimeMachineHeroTrendCard: View {
     let points: [TimeMachineTrendPoint]
     let latestPoint: TimeMachineTrendPoint
+    let marketOptions: [TimeMachineDetailComparisonOption]
+    let marketSeries: [TimeMachineMarketTrendSeries]
+    let visibleSeriesIDs: Set<String>
     @Binding var selectedRange: TimeMachineRange
+    let onToggleSeries: (String) -> Void
     let hasRecord: ((Date) -> Bool)?
     let onOpenRecord: ((Date) -> Void)?
     @State private var selectedDate: Date?
     private let plotCornerRadius: CGFloat = 14
     private let displayPoints: [TimeMachineTrendPoint]
+    private let unifiedSeries: [TimeMachineUnifiedTrendSeries]
     private let valueDomain: ClosedRange<Double>
     private let dateDomain: ClosedRange<Date>
     private let axisDates: [Date]
@@ -482,13 +517,21 @@ struct TimeMachineHeroTrendCard: View {
     init(
         points: [TimeMachineTrendPoint],
         latestPoint: TimeMachineTrendPoint,
+        marketOptions: [TimeMachineDetailComparisonOption],
+        marketSeries: [TimeMachineMarketTrendSeries],
+        visibleSeriesIDs: Set<String>,
         selectedRange: Binding<TimeMachineRange>,
+        onToggleSeries: @escaping (String) -> Void,
         hasRecord: ((Date) -> Bool)? = nil,
         onOpenRecord: ((Date) -> Void)? = nil
     ) {
         self.points = points
         self.latestPoint = latestPoint
+        self.marketOptions = marketOptions
+        self.marketSeries = marketSeries
+        self.visibleSeriesIDs = visibleSeriesIDs
         self._selectedRange = selectedRange
+        self.onToggleSeries = onToggleSeries
         self.hasRecord = hasRecord
         self.onOpenRecord = onOpenRecord
 
@@ -497,11 +540,56 @@ struct TimeMachineHeroTrendCard: View {
             maxCount: 180
         )
         self.displayPoints = displayPoints
-        self.valueDomain = ChartLayoutSupport.paddedValueDomain(values: displayPoints.flatMap { point in
-            TimeMachineAssetSeries.allCases.map { $0.value(from: point) }
-        })
+
+        let assetSeries = TimeMachineAssetSeries.allCases.map { series in
+            TimeMachineUnifiedTrendSeries(
+                id: series.id,
+                title: series.title,
+                color: series.color,
+                strokeStyle: series.strokeStyle,
+                points: Self.indexedPoints(
+                    displayPoints.map { ($0.date, series.value(from: $0)) }
+                )
+            )
+        }
+        let marketSeriesBySymbol = Dictionary(uniqueKeysWithValues: marketSeries.map { ($0.symbol, $0) })
+        let indexedMarketSeries = marketOptions.compactMap { option -> TimeMachineUnifiedTrendSeries? in
+            guard let series = marketSeriesBySymbol[option.symbol] else { return nil }
+            let sampledPoints = evenlySampledItems(series.points.sorted { $0.date < $1.date }, maxCount: 180)
+            return TimeMachineUnifiedTrendSeries(
+                id: option.symbol,
+                title: option.title,
+                color: option.color,
+                strokeStyle: StrokeStyle(lineWidth: 2.1, lineCap: .round, dash: [7, 5]),
+                points: Self.indexedPoints(sampledPoints.map { ($0.date, $0.value) })
+            )
+        }
+        let unifiedSeries = assetSeries + indexedMarketSeries
+        self.unifiedSeries = unifiedSeries
+        let visibleValues = unifiedSeries
+            .filter { visibleSeriesIDs.contains($0.id) }
+            .flatMap { $0.points.map(\.indexedValue) }
+        self.valueDomain = visibleValues.isEmpty
+            ? 80...120
+            : ChartLayoutSupport.paddedValueDomain(values: visibleValues)
         self.dateDomain = Self.makeDateDomain(from: displayPoints)
         self.axisDates = chartAxisDates(displayPoints.map(\.date))
+    }
+
+    private static func indexedPoints(_ rawPoints: [(date: Date, value: Double)]) -> [TimeMachineIndexedTrendPoint] {
+        guard let base = rawPoints.first(where: { $0.value.isFinite && $0.value > 0.0001 }) else { return [] }
+        return rawPoints.compactMap { point in
+            guard point.date >= base.date,
+                  point.value.isFinite else { return nil }
+            return TimeMachineIndexedTrendPoint(
+                date: point.date,
+                indexedValue: point.value / base.value * 100
+            )
+        }
+    }
+
+    private var activeSeries: [TimeMachineUnifiedTrendSeries] {
+        unifiedSeries.filter { visibleSeriesIDs.contains($0.id) && !$0.points.isEmpty }
     }
 
     private var selectedPoint: TimeMachineTrendPoint {
@@ -533,81 +621,98 @@ struct TimeMachineHeroTrendCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             heroHeader
-            metricGrid
-            legendRow
+            seriesToggleRow
 
-            Chart {
-                ForEach(TimeMachineAssetSeries.allCases) { series in
-                    ForEach(displayPoints) { point in
-                        LineMark(
-                            x: .value(dateAxisKey, point.date),
-                            y: .value(series.title, series.value(from: point))
-                        )
-                        .foregroundStyle(by: .value(seriesAxisKey, series.title))
-                        .lineStyle(series.strokeStyle)
-                        .interpolationMethod(.catmullRom)
+            ZStack {
+                Chart {
+                    ForEach(activeSeries) { series in
+                        ForEach(series.points) { point in
+                            LineMark(
+                                x: .value(dateAxisKey, point.date),
+                                y: .value(series.title, point.indexedValue)
+                            )
+                            .foregroundStyle(by: .value(seriesAxisKey, series.id))
+                            .lineStyle(series.strokeStyle)
+                            .interpolationMethod(.monotone)
+                        }
+
+                        if let selectedSeriesPoint = nearestChartPoint(
+                            series.points,
+                            to: selectedPoint.date,
+                            date: \.date
+                        ) {
+                            PointMark(
+                                x: .value(dateAxisKey, selectedSeriesPoint.date),
+                                y: .value(series.title, selectedSeriesPoint.indexedValue)
+                            )
+                            .foregroundStyle(series.color)
+                            .symbolSize(selectedDate == nil ? 28 : 50)
+                        }
                     }
 
-                    PointMark(
-                        x: .value(dateAxisKey, selectedPoint.date),
-                        y: .value(series.title, series.value(from: selectedPoint))
-                    )
-                    .foregroundStyle(series.color)
-                    .symbolSize(selectedDate == nil ? 36 : 58)
+                    if selectedDate != nil {
+                        RuleMark(x: .value(selectedDateAxisKey, selectedPoint.date))
+                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.38))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 5]))
+                    }
                 }
-
-                if selectedDate != nil {
-                    RuleMark(x: .value(selectedDateAxisKey, selectedPoint.date))
-                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.38))
-                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 5]))
-                }
-            }
-            .chartForegroundStyleScale([
-                TimeMachineAssetSeries.mainAssets.title: TimeMachineAssetSeries.mainAssets.color,
-                TimeMachineAssetSeries.netAssets.title: TimeMachineAssetSeries.netAssets.color,
-                TimeMachineAssetSeries.liabilities.title: TimeMachineAssetSeries.liabilities.color,
-            ])
-            .frame(height: 226)
-            .chartXScale(domain: dateDomain)
-            .chartYScale(domain: valueDomain)
-            .chartXAxis {
-                AxisMarks(values: axisDates) { value in
-                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
-                        .foregroundStyle(AssetTheme.chartGrid.opacity(0.78))
-                    AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
-                        .foregroundStyle(AssetTheme.chartTick.opacity(0.7))
-                    AxisValueLabel(anchor: .top, verticalSpacing: 7) {
-                        if let date = value.as(Date.self) {
-                            TimeMachineAxisDateLabel(date: date, position: ChartLayoutSupport.axisLabelPosition(for: date, in: axisDates))
+                .chartForegroundStyleScale(
+                    domain: activeSeries.map(\.id),
+                    range: activeSeries.map(\.color)
+                )
+                .frame(height: 238)
+                .chartXScale(domain: dateDomain)
+                .chartYScale(domain: valueDomain)
+                .chartXAxis {
+                    AxisMarks(values: axisDates) { value in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
+                            .foregroundStyle(AssetTheme.chartGrid.opacity(0.78))
+                        AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
+                            .foregroundStyle(AssetTheme.chartTick.opacity(0.7))
+                        AxisValueLabel(anchor: .top, verticalSpacing: 7) {
+                            if let date = value.as(Date.self) {
+                                TimeMachineAxisDateLabel(date: date, position: ChartLayoutSupport.axisLabelPosition(for: date, in: axisDates))
+                            }
                         }
                     }
                 }
-            }
-            .chartYAxis {
-                AxisMarks(values: .automatic(desiredCount: 4)) { value in
-                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
-                        .foregroundStyle(AssetTheme.chartGrid.opacity(0.72))
-                    AxisValueLabel {
-                        if let y = value.as(Double.self) {
-                            Text(y.chartAxisCurrencyLabel(code: "CNY"))
-                                .font(.system(size: 9.5, weight: .medium, design: .default))
-                                .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                .chartYAxis {
+                    AxisMarks(values: .automatic(desiredCount: 4)) { value in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
+                            .foregroundStyle(AssetTheme.chartGrid.opacity(0.72))
+                        AxisValueLabel {
+                            if let y = value.as(Double.self) {
+                                Text(String(format: "%.0f", y))
+                                    .font(.system(size: 9.5, weight: .medium, design: .default))
+                                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                            }
                         }
                     }
                 }
-            }
-            .chartLegend(.hidden)
-            .chartOverlay { proxy in
-                TimeMachineDragOverlay(
-                    proxy: proxy,
-                    selectableValues: displayPoints,
-                    selectionDate: \.date
-                ) { date in
-                    selectedDate = date
+                .chartLegend(.hidden)
+                .chartOverlay { proxy in
+                    TimeMachineDragOverlay(
+                        proxy: proxy,
+                        selectableValues: displayPoints,
+                        selectionDate: \.date
+                    ) { date in
+                        selectedDate = date
+                    }
+                }
+                .padding(.bottom, 4)
+                .onboardingAnchor(.timeMachineChart)
+
+                if activeSeries.isEmpty {
+                    VStack(spacing: 7) {
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                            .font(.system(size: 19, weight: .medium))
+                        Text(AppLocalization.string("选择图例显示走势"))
+                            .font(AppTypography.captionStrong)
+                    }
+                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.7))
+                    .allowsHitTesting(false)
                 }
             }
-            .padding(.bottom, 4)
-            .onboardingAnchor(.timeMachineChart)
 
             if canOpenSelectedRecord {
                 Button {
@@ -630,9 +735,9 @@ struct TimeMachineHeroTrendCard: View {
     }
 
     private var heroHeader: some View {
-        VStack(alignment: .leading, spacing: 11) {
+        VStack(alignment: .leading, spacing: 9) {
             HStack(alignment: .center, spacing: 10) {
-                Text(AppLocalization.string("总资产"))
+                Text(AppLocalization.string("资产走势"))
                     .font(.system(size: 16, weight: .bold, design: .default))
                     .foregroundStyle(AssetTheme.textPrimary)
 
@@ -642,16 +747,7 @@ struct TimeMachineHeroTrendCard: View {
             }
             .onboardingAnchor(.timeMachineRange)
 
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(selectedPoint.mainAssets.currencyString())
-                    .font(.system(size: 31, weight: .bold, design: .default))
-                    .monospacedDigit()
-                    .foregroundStyle(AssetTheme.goldSoft)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.66)
-
-                Spacer(minLength: 8)
-
+            HStack(alignment: .center, spacing: 10) {
                 Text(selectedDate == nil ? dateRangeLabel : selectedPoint.date.chartAxisDateString)
                     .font(.system(size: 11, weight: .semibold, design: .default))
                     .monospacedDigit()
@@ -665,45 +761,42 @@ struct TimeMachineHeroTrendCard: View {
                         Capsule()
                             .stroke(AssetTheme.border.opacity(selectedDate == nil ? 0.28 : 0.58), lineWidth: 1)
                     )
+
+                Spacer(minLength: 8)
+
+                Text(AppLocalization.string("起点 = 100"))
+                    .font(AppTypography.chartCaptionStrong)
+                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.76))
+                    .monospacedDigit()
             }
         }
     }
 
-    private var metricGrid: some View {
-        LazyVGrid(
-            columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
-            spacing: 8
-        ) {
-            TimeMachineInlineMetric(
-                title: "净资产",
-                value: selectedPoint.netAssets.currencyString(),
-                accent: AssetTheme.positive
-            )
-            TimeMachineInlineMetric(
-                title: "负债",
-                value: selectedPoint.liabilities.currencyString(),
-                accent: AssetTheme.negative
-            )
-            TimeMachineInlineMetric(
-                title: "黄金折算",
-                value: selectedPoint.goldEquivalent?.plainNumberString() ?? "--",
-                accent: AssetTheme.gold
-            )
-            TimeMachineInlineMetric(
-                title: "纳指折算",
-                value: selectedPoint.nasdaqEquivalent?.plainNumberString() ?? "--",
-                accent: AssetTheme.accentBlue
-            )
-        }
-    }
-
-    private var legendRow: some View {
-        HStack(spacing: 7) {
+    private var seriesToggleRow: some View {
+        ATMFlowLayout(horizontalSpacing: 7, verticalSpacing: 7, rowAlignment: .leading) {
             ForEach(TimeMachineAssetSeries.allCases) { series in
-                TimeMachineHeroLegendItem(series: series)
+                TimeMachineUnifiedLegendButton(
+                    title: series.title,
+                    color: series.color,
+                    isDashed: series == .liabilities,
+                    isVisible: visibleSeriesIDs.contains(series.id)
+                ) {
+                    onToggleSeries(series.id)
+                }
             }
-            Spacer(minLength: 0)
+
+            ForEach(marketOptions) { option in
+                TimeMachineUnifiedLegendButton(
+                    title: option.title,
+                    color: option.color,
+                    isDashed: true,
+                    isVisible: visibleSeriesIDs.contains(option.symbol)
+                ) {
+                    onToggleSeries(option.symbol)
+                }
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var dateRangeLabel: String {
@@ -712,36 +805,54 @@ struct TimeMachineHeroTrendCard: View {
     }
 }
 
-struct TimeMachineHeroLegendItem: View {
-    let series: TimeMachineAssetSeries
+private struct TimeMachineUnifiedLegendButton: View {
+    let title: String
+    let color: Color
+    let isDashed: Bool
+    let isVisible: Bool
+    let action: () -> Void
 
     var body: some View {
-        HStack(spacing: 5) {
-            legendMark
+        Button(action: action) {
+            HStack(spacing: 6) {
+                legendMark
 
-            Text(series.title)
-                .font(.system(size: 10.5, weight: .semibold, design: .default))
-                .foregroundStyle(AssetTheme.textSecondary.opacity(0.88))
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold, design: .default))
+                    .lineLimit(1)
+
+                Image(systemName: isVisible ? "eye.fill" : "eye.slash")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(isVisible ? color : AssetTheme.textSecondary.opacity(0.64))
+            }
+            .foregroundStyle(isVisible ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.72))
+            .padding(.horizontal, 9)
+            .padding(.vertical, 7)
+            .background(isVisible ? color.opacity(0.10) : AssetTheme.overlayFaint, in: Capsule())
+            .overlay(
+                Capsule()
+                    .stroke(isVisible ? color.opacity(0.42) : AssetTheme.border.opacity(0.34), lineWidth: 0.8)
+            )
+            .contentShape(Capsule())
         }
-        .padding(.vertical, 4)
+        .buttonStyle(.plain)
+        .accessibilityLabel(AppLocalization.format(isVisible ? "隐藏%@" : "显示%@", title))
     }
 
     @ViewBuilder
     private var legendMark: some View {
-        if series == .liabilities {
+        if isDashed {
             HStack(spacing: 2) {
                 ForEach(0..<3, id: \.self) { _ in
                     Capsule()
-                        .fill(series.color)
+                        .fill(color)
                         .frame(width: 4, height: 3)
                 }
             }
             .frame(width: 16, alignment: .leading)
         } else {
             Capsule()
-                .fill(series.color)
+                .fill(color)
                 .frame(width: 16, height: 3)
         }
     }
