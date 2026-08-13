@@ -1,0 +1,108 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_SP500_ADD_EVENT_STUDY"] == "1" {
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else { return }
+
+            let dates = run.dailyStates.map(\.date)
+            let option = optionsBySymbol["sp500"]!
+            let input = BacktestEngine.advancedAssetInput(for: option) { symbol in
+                seriesBySymbol[normalizedHistorySymbol(symbol)]
+            }
+            func blankMA(_ values: [Double], _ period: Int) -> [Double?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func blankBoll(_ values: [Double], _ period: Int, _ multiplier: Double) -> [(middle: Double, lower: Double, upper: Double)?] {
+                Array(repeating: nil, count: values.count)
+            }
+            guard let prepared = BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+                assetSeries: input.assetSeries,
+                assetOption: input.assetOption,
+                fxSeries: input.fxSeries,
+                movingAverage: blankMA,
+                bollingerBands: blankBoll
+            ) else { return }
+            let cnyByDate = Dictionary(uniqueKeysWithValues: prepared.pricePoints.map { ($0.date, $0.cnyPrice) })
+            var alignedSP500: [Double] = []
+            var lastValue: Double?
+            for date in dates {
+                if let value = cnyByDate[date] { lastValue = value }
+                guard let value = lastValue else { return }
+                alignedSP500.append(value)
+            }
+
+            struct Event {
+                let index: Int
+                let date: Date
+                let priorWeight: Double
+                let targetWeight: Double
+                let gross: Double
+                let asset17: Double?
+                let portfolio17: Double?
+            }
+            var events: [Event] = []
+            for index in 1..<run.dailyStates.count {
+                let prior = run.dailyStates[index - 1].targetWeights["sp500"] ?? 0
+                let target = run.dailyStates[index].targetWeights["sp500"] ?? 0
+                let delta = target - prior
+                guard delta >= 0.10, target >= 0.20 else { continue }
+                let end = index + 17
+                let assetReturn = alignedSP500.indices.contains(end) && alignedSP500[index] > 0
+                    ? alignedSP500[end] / alignedSP500[index] - 1
+                    : nil
+                let portfolioReturn = run.report.points.indices.contains(end)
+                    && run.report.points[index].portfolioValue > 0
+                    ? run.report.points[end].portfolioValue / run.report.points[index].portfolioValue - 1
+                    : nil
+                events.append(Event(
+                    index: index,
+                    date: dates[index],
+                    priorWeight: prior,
+                    targetWeight: target,
+                    gross: run.dailyStates[index].targetWeights.values.reduce(0, +),
+                    asset17: assetReturn,
+                    portfolio17: portfolioReturn
+                ))
+            }
+
+            func percentile(_ value: Double, among values: [Double]) -> Double {
+                guard !values.isEmpty else { return 0 }
+                return Double(values.filter { $0 <= value }.count) / Double(values.count)
+            }
+            let completed = events.filter { $0.asset17 != nil && $0.portfolio17 != nil }
+            print("APP_CASH_CONFIDENCE_SP500_ADD_EVENT_STUDY")
+            print("date,prior_sp500,target_sp500,gross,sp500_cny_17d,portfolio_17d")
+            for event in events {
+                print([
+                    event.date.recordDateString,
+                    String(format: "%.6f", event.priorWeight),
+                    String(format: "%.6f", event.targetWeight),
+                    String(format: "%.6f", event.gross),
+                    event.asset17.map { String(format: "%.6f", $0 * 100) } ?? "pending",
+                    event.portfolio17.map { String(format: "%.6f", $0 * 100) } ?? "pending",
+                ].joined(separator: ","))
+            }
+            if let latest = events.last,
+               let currentAsset = alignedSP500.last.map({ $0 / alignedSP500[latest.index] - 1 }),
+               let currentPortfolio = run.report.points.last.map({ $0.portfolioValue / run.report.points[latest.index].portfolioValue - 1 }) {
+                print("LATEST_EVENT_CONTEXT")
+                print([
+                    latest.date.recordDateString,
+                    String(completed.count),
+                    String(format: "%.6f", currentAsset * 100),
+                    String(format: "%.6f", percentile(currentAsset, among: completed.compactMap(\.asset17))),
+                    String(format: "%.6f", currentPortfolio * 100),
+                    String(format: "%.6f", percentile(currentPortfolio, among: completed.compactMap(\.portfolio17))),
+                ].joined(separator: ","))
+            }
+            return
+        }

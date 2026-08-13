@@ -1,0 +1,201 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_GOLD_REAL_YIELD_ATTRIBUTION"] == "1" {
+            struct GoldRealYieldEvent {
+                let date: Date
+                let goldDecrease: Double
+                let grossDecrease: Double
+                let real21: Double?
+                let real42: Double?
+                let real63: Double?
+                let edge20: Double?
+                let edge60: Double?
+            }
+
+            func loadGoldMacroCSV(_ path: String, valueColumn: String) -> [String: Double] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [:] }
+                let lines = text.split(whereSeparator: \.isNewline)
+                guard let header = lines.first else { return [:] }
+                let columns = header.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
+                guard let valueIndex = columns.firstIndex(of: valueColumn) else { return [:] }
+                var output: [String: Double] = [:]
+                for line in lines.dropFirst() {
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count > valueIndex, let value = Double(fields[valueIndex]), value.isFinite else { continue }
+                    output[String(fields[0])] = value
+                }
+                return output
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else {
+                print("APP_CC_GOLD_REAL_YIELD_ATTRIBUTION\nbase_missing")
+                return
+            }
+
+            let dates = baseRun.dailyStates.map(\.date)
+            let dateIndex = Dictionary(uniqueKeysWithValues: dates.enumerated().map { ($0.element.recordDateString, $0.offset) })
+            let targetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let tradeDateKeys = Set(baseRun.report.trades.map { $0.date.recordDateString })
+            let orderedTradeDates = dates.filter { tradeDateKeys.contains($0.recordDateString) }
+
+            func blankGoldMA(_ values: [Double], _ period: Int) -> [Double?] { Array(repeating: nil, count: values.count) }
+            func blankGoldBoll(_ values: [Double], _ period: Int, _ multiplier: Double) -> [(middle: Double, lower: Double, upper: Double)?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func alignedGoldPrices(_ symbol: String) -> [Double]? {
+                guard let input = inputs.first(where: { $0.assetOption.symbol == symbol }),
+                      let prepared = BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+                        assetSeries: input.assetSeries,
+                        assetOption: input.assetOption,
+                        fxSeries: input.fxSeries,
+                        movingAverage: blankGoldMA,
+                        bollingerBands: blankGoldBoll
+                      ) else { return nil }
+                let map = Dictionary(uniqueKeysWithValues: prepared.pricePoints.map { ($0.date.recordDateString, $0.cnyPrice) })
+                var output: [Double] = []
+                output.reserveCapacity(dates.count)
+                var last: Double?
+                for date in dates {
+                    if let value = map[date.recordDateString] { last = value }
+                    guard let value = last else { return nil }
+                    output.append(value)
+                }
+                return output
+            }
+            let tradedSymbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            var pricesBySymbol: [String: [Double]] = [:]
+            for symbol in tradedSymbols {
+                guard let prices = alignedGoldPrices(symbol) else {
+                    print("APP_CC_GOLD_REAL_YIELD_ATTRIBUTION\nprice_missing_\(symbol)")
+                    return
+                }
+                pricesBySymbol[symbol] = prices
+            }
+
+            let realMap = loadGoldMacroCSV("tools/fixtures/macro-risk/DFII10.csv", valueColumn: "DFII10")
+            var realYield: [Double?] = []
+            var lastReal: Double?
+            for date in dates {
+                if let value = realMap[date.recordDateString] { lastReal = value }
+                realYield.append(lastReal)
+            }
+            let safeRealYield: [Double?] = [nil] + Array(realYield.dropLast())
+
+            func realChange(_ index: Int, _ lookback: Int) -> Double? {
+                guard index >= lookback, let now = safeRealYield[index], let prior = safeRealYield[index - lookback] else { return nil }
+                return now - prior
+            }
+            func portfolioForwardReturn(_ weights: [String: Double], start: Int, horizon: Int) -> Double? {
+                let end = start + horizon
+                guard start >= 0, end < dates.count else { return nil }
+                var terminal = 0.0
+                var gross = 0.0
+                for (symbol, weight) in weights where weight > 0 {
+                    guard let prices = pricesBySymbol[symbol], prices[start] > 0 else { continue }
+                    terminal += weight * prices[end] / prices[start]
+                    gross += weight
+                }
+                var cashGrowth = 1.0
+                if gross < 1 {
+                    for i in start..<end { cashGrowth *= 1 + CashYieldCNY.dailyReturn(on: dates[i]) }
+                    terminal += max(1 - gross, 0) * cashGrowth
+                }
+                return terminal - 1
+            }
+            func turnover(_ lhs: [String: Double], _ rhs: [String: Double]) -> Double {
+                let symbols = Set(lhs.keys).union(rhs.keys)
+                return symbols.reduce(0.0) { partial, symbol in
+                    partial + abs((lhs[symbol] ?? 0) - (rhs[symbol] ?? 0))
+                }
+            }
+
+            var previousTarget: [String: Double] = [:]
+            var events: [GoldRealYieldEvent] = []
+            for tradeDate in orderedTradeDates {
+                let key = tradeDate.recordDateString
+                guard let index = dateIndex[key], index > 0, let target = targetsByDate[key] else { continue }
+                let prior = previousTarget
+                previousTarget = target
+                if prior.isEmpty { continue }
+                let goldDecrease = (prior["gold_cny"] ?? 0) - (target["gold_cny"] ?? 0)
+                let grossDecrease = prior.values.reduce(0, +) - target.values.reduce(0, +)
+                guard goldDecrease >= 0.05 else { continue }
+                let cost = turnover(prior, target) * 0.0105
+                let edge20: Double?
+                if let newR = portfolioForwardReturn(target, start: index, horizon: 20),
+                   let oldR = portfolioForwardReturn(prior, start: index, horizon: 20) {
+                    edge20 = newR - oldR - cost
+                } else { edge20 = nil }
+                let edge60: Double?
+                if let newR = portfolioForwardReturn(target, start: index, horizon: 60),
+                   let oldR = portfolioForwardReturn(prior, start: index, horizon: 60) {
+                    edge60 = newR - oldR - cost
+                } else { edge60 = nil }
+                let signalIndex = index - 1
+                events.append(.init(
+                    date: tradeDate,
+                    goldDecrease: goldDecrease,
+                    grossDecrease: grossDecrease,
+                    real21: realChange(signalIndex, 21),
+                    real42: realChange(signalIndex, 42),
+                    real63: realChange(signalIndex, 63),
+                    edge20: edge20,
+                    edge60: edge60
+                ))
+            }
+
+            func printGoldGroup(_ name: String, _ group: [GoldRealYieldEvent]) {
+                let e20 = group.compactMap(\.edge20)
+                let e60 = group.compactMap(\.edge60)
+                let mean20 = e20.isEmpty ? nil : e20.reduce(0, +) / Double(e20.count)
+                let mean60 = e60.isEmpty ? nil : e60.reduce(0, +) / Double(e60.count)
+                let win20 = e20.isEmpty ? nil : Double(e20.filter { $0 > 0 }.count) / Double(e20.count)
+                let win60 = e60.isEmpty ? nil : Double(e60.filter { $0 > 0 }.count) / Double(e60.count)
+                let columns: [String] = [
+                    name,
+                    String(group.count),
+                    mean20.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    mean60.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    win20.map { String(format: "%.4f", $0) } ?? "n/a",
+                    win60.map { String(format: "%.4f", $0) } ?? "n/a",
+                ]
+                print(columns.joined(separator: ","))
+            }
+
+            print("APP_CC_GOLD_REAL_YIELD_GROUPS")
+            print("group,count,mean_edge20,mean_edge60,win20,win60")
+            printGoldGroup("all_gold_reduce", events)
+            printGoldGroup("gold_derisk", events.filter { $0.grossDecrease >= 0.03 })
+            for threshold in [0.0, -0.10, -0.20, -0.30] {
+                printGoldGroup("r21<=\(String(format: "%.2f", threshold))", events.filter { ($0.real21 ?? 99) <= threshold })
+                printGoldGroup("r42<=\(String(format: "%.2f", threshold))", events.filter { ($0.real42 ?? 99) <= threshold })
+                printGoldGroup("r63<=\(String(format: "%.2f", threshold))", events.filter { ($0.real63 ?? 99) <= threshold })
+            }
+
+            print("APP_CC_GOLD_REAL_YIELD_EVENTS")
+            print("date,gold_decrease,gross_decrease,real21,real42,real63,edge20,edge60")
+            for event in events {
+                let columns: [String] = [
+                    event.date.recordDateString,
+                    String(format: "%.6f", event.goldDecrease),
+                    String(format: "%.6f", event.grossDecrease),
+                    event.real21.map { String(format: "%.4f", $0) } ?? "n/a",
+                    event.real42.map { String(format: "%.4f", $0) } ?? "n/a",
+                    event.real63.map { String(format: "%.4f", $0) } ?? "n/a",
+                    event.edge20.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    event.edge60.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                ]
+                print(columns.joined(separator: ","))
+            }
+            return
+        }

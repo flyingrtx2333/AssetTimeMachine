@@ -1,0 +1,117 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_COST_AWARE_REBALANCE_GRID"] == "1" {
+            struct CostAwareCandidate {
+                let title: String
+                let enabled: Bool
+                let band: Double
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let trades: Int
+                let averageCashRatio: Double
+                let sliceRows: [SliceMetricRow]
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let parameterSets: [(String, Bool, Double)] = [
+                ("新冠军基线", false, 0.20),
+                ("成本感知-B10", true, 0.10),
+                ("成本感知-B15", true, 0.15),
+                ("成本感知-B20", true, 0.20),
+                ("成本感知-B25", true, 0.25),
+                ("成本感知-B30", true, 0.30),
+            ]
+
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", "0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", "2", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_QUALITY_GAP_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+            Darwin.setenv("ATM_CC_PORTFOLIO_VOL_TARGET", "99", 1)
+            Darwin.setenv("ATM_CC_CALM_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_VOL_FLOOR", "0", 1)
+            Darwin.setenv("ATM_CC_SECULAR_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_GOLD_TO_US_SHIFT_FRACTION", "0", 1)
+            Darwin.setenv("ATM_CC_EQUITY_CURVE_RISK_SCALE", "1", 1)
+            Darwin.setenv("ATM_CC_USD_CASH_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_US_RISK_ALLOCATION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_GLOBAL_RISK_PARITY_BLEND", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_MID_GROSS_CLIFFS", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_BREADTH_MICRO_BRAKES", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_HOLD_HYSTERESIS", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_MATURE_NASDAQ_BRAKE", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_CHINA_PURGE", "0", 1)
+
+            var candidates: [CostAwareCandidate] = []
+            for parameters in parameterSets {
+                Darwin.setenv("ATM_CC_COST_AWARE_REBALANCE", parameters.1 ? "1" : "0", 1)
+                Darwin.setenv("ATM_CC_COST_AWARE_BAND", String(parameters.2), 1)
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                let fullRow = MetricRow(
+                    title: parameters.0,
+                    id: "cash_confidence_cost_aware_rebalance_grid",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+                candidates.append(CostAwareCandidate(
+                    title: parameters.0,
+                    enabled: parameters.1,
+                    band: parameters.2,
+                    annualized: report.annualizedReturn ?? -1,
+                    maxDrawdown: report.maxDrawdown,
+                    sharpe: report.sharpeRatio ?? -1,
+                    trades: report.trades.count,
+                    averageCashRatio: report.averageCashRatio,
+                    sliceRows: metricRowsForSlices(
+                        title: parameters.0,
+                        id: "cash_confidence_cost_aware_rebalance_grid",
+                        points: report.points,
+                        fullRow: fullRow
+                    )
+                ))
+            }
+
+            let ranked = candidates.sorted { lhs, rhs in
+                let lhsScore = lhs.sharpe + 0.5 * lhs.annualized - 0.75 * lhs.maxDrawdown
+                let rhsScore = rhs.sharpe + 0.5 * rhs.annualized - 0.75 * rhs.maxDrawdown
+                if lhsScore == rhsScore { return lhs.annualized > rhs.annualized }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(ranked.flatMap(\.sliceRows), header: "APP_CASH_CONFIDENCE_COST_AWARE_REBALANCE_GRID")
+            print("APP_CASH_CONFIDENCE_COST_AWARE_REBALANCE_DIAGNOSTICS")
+            print("title,enabled,band,annualized,max_drawdown,sharpe,trades,average_cash_ratio")
+            for candidate in ranked {
+                print([
+                    candidate.title,
+                    candidate.enabled ? "1" : "0",
+                    String(format: "%.4f", candidate.band),
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio)
+                ].joined(separator: ","))
+            }
+            return
+        }

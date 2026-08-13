@@ -1,0 +1,317 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_DAILY_FACTOR_SOFT_TILT"] == "1" {
+            struct DailyFactorSoftTiltCandidate {
+                let title: String
+                let strength: Double
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCash: Double
+                let maxTargetGross: Double
+                let maxActualGross: Double
+                let minCash: Double
+                let financedDays: Int
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ), let baseStartDate = baseRun.report.points.first?.date else {
+                print("APP_CC_DAILY_FACTOR_SOFT_TILT\nbase_missing")
+                return
+            }
+            let dates = baseRun.dailyStates.map(\.date)
+            let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let baseTradeDates = Set(baseRun.report.trades.map { $0.date.recordDateString })
+            let dateIndex = Dictionary(uniqueKeysWithValues: dates.enumerated().map { ($0.element.recordDateString, $0.offset) })
+            let symbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+
+            func softBlankMA(_ values: [Double], _ period: Int) -> [Double?] { Array(repeating: nil, count: values.count) }
+            func softBlankBoll(_ values: [Double], _ period: Int, _ multiplier: Double) -> [(middle: Double, lower: Double, upper: Double)?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func alignedSoftPrices(_ symbol: String) -> [Double]? {
+                guard let input = inputs.first(where: { $0.assetOption.symbol == symbol }),
+                      let prepared = BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+                        assetSeries: input.assetSeries,
+                        assetOption: input.assetOption,
+                        fxSeries: input.fxSeries,
+                        movingAverage: softBlankMA,
+                        bollingerBands: softBlankBoll
+                      ) else { return nil }
+                let map = Dictionary(uniqueKeysWithValues: prepared.pricePoints.map { ($0.date.recordDateString, $0.cnyPrice) })
+                var output: [Double] = []
+                var last: Double?
+                for date in dates {
+                    if let value = map[date.recordDateString], value.isFinite, value > 0 { last = value }
+                    guard let value = last else { return nil }
+                    output.append(value)
+                }
+                return output
+            }
+            var prices: [String: [Double]] = [:]
+            for symbol in symbols {
+                guard let aligned = alignedSoftPrices(symbol) else {
+                    print("APP_CC_DAILY_FACTOR_SOFT_TILT\nprice_missing_\(symbol)")
+                    return
+                }
+                prices[symbol] = aligned
+            }
+
+            func softMomentum(_ values: [Double], at index: Int, lookback: Int) -> Double? {
+                guard index >= lookback, values[index - lookback] > 0 else { return nil }
+                return values[index] / values[index - lookback] - 1
+            }
+            func softVol(_ values: [Double], at index: Int, lookback: Int) -> Double? {
+                guard index >= lookback else { return nil }
+                var rs: [Double] = []
+                for i in (index - lookback + 1)...index {
+                    guard values[i - 1] > 0 else { return nil }
+                    rs.append(values[i] / values[i - 1] - 1)
+                }
+                let m = rs.reduce(0, +) / Double(rs.count)
+                let v = rs.reduce(0.0) { $0 + ($1 - m) * ($1 - m) } / Double(max(rs.count - 1, 1))
+                return sqrt(max(v, 0))
+            }
+            func softDrawdown(_ values: [Double], at index: Int, lookback: Int) -> Double? {
+                guard index >= lookback - 1 else { return nil }
+                let start = index - lookback + 1
+                var peak = values[start]
+                for i in start...index { peak = max(peak, values[i]) }
+                guard peak > 0 else { return nil }
+                return values[index] / peak - 1
+            }
+            func softMADistance(_ values: [Double], at index: Int, lookback: Int) -> Double? {
+                guard index >= lookback - 1 else { return nil }
+                let start = index - lookback + 1
+                var total = 0.0
+                for i in start...index { total += values[i] }
+                let ma = total / Double(lookback)
+                guard ma > 0 else { return nil }
+                return values[index] / ma - 1
+            }
+            func softRanks(_ raw: [String: Double]) -> [String: Double] {
+                let ordered = raw.sorted { lhs, rhs in
+                    if lhs.value == rhs.value { return lhs.key < rhs.key }
+                    return lhs.value < rhs.value
+                }
+                var result: [String: Double] = [:]
+                for (i, item) in ordered.enumerated() {
+                    let unitRank = Double(i) / Double(max(ordered.count - 1, 1))
+                    // z-score of [0, .25, .5, .75, 1] using sample standard deviation.
+                    result[item.key] = (unitRank - 0.5) / 0.3952847075
+                }
+                return result
+            }
+            func softScores(at signalIndex: Int) -> [String: Double]? {
+                guard signalIndex >= 252 else { return nil }
+                var ram: [String: Double] = [:]
+                for symbol in symbols {
+                    guard let v = prices[symbol],
+                          let m252 = softMomentum(v, at: signalIndex, lookback: 252),
+                          let vol60 = softVol(v, at: signalIndex, lookback: 60),
+                          vol60 > 1e-8 else { return nil }
+                    ram[symbol] = m252 / vol60
+                }
+                return softRanks(ram)
+            }
+            func goldVol20Percentile252(at signalIndex: Int) -> Double? {
+                guard let gold = prices["gold_cny"], signalIndex >= 271,
+                      let current = softVol(gold, at: signalIndex, lookback: 20) else { return nil }
+                let start = signalIndex - 251
+                var history: [Double] = []
+                history.reserveCapacity(252)
+                for index in start...signalIndex {
+                    guard let value = softVol(gold, at: index, lookback: 20) else { return nil }
+                    history.append(value)
+                }
+                let less = history.filter { $0 < current }.count
+                let equal = history.filter { abs($0 - current) < 1e-12 }.count
+                return (Double(less) + 0.5 * Double(equal)) / Double(history.count)
+            }
+            func breadth252(at signalIndex: Int) -> Double? {
+                guard signalIndex >= 252 else { return nil }
+                var positive = 0
+                for symbol in symbols {
+                    guard let values = prices[symbol],
+                          let momentum = softMomentum(values, at: signalIndex, lookback: 252) else { return nil }
+                    if momentum > 0 { positive += 1 }
+                }
+                return Double(positive) / Double(symbols.count)
+            }
+
+            let configs: [(String, Double, Bool)] = [
+                ("生产冠军重放控制组", 0.00, false),
+                ("固定breadth60_soft40", 0.400, false),
+                ("breadth自适应scale0.40", 0.400, true),
+                ("breadth自适应scale0.50", 0.500, true),
+                ("breadth自适应scale0.60", 0.600, true),
+                ("breadth自适应scale0.70", 0.700, true),
+            ]
+            var candidates: [DailyFactorSoftTiltCandidate] = []
+
+            for (title, strength, adaptiveBreadthStrength) in configs {
+                let grossMinimum = title == "生产冠军重放控制组" ? 0.0 : 0.85
+                let goldVolPercentileMaximum = title == "生产冠军重放控制组" ? 1.01 : 0.80
+                let breadthMinimum = title == "生产冠军重放控制组" ? 0.0 : 0.60
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cc_daily_factor_soft_tilt",
+                    title: title,
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "长期趋势质量soft tilt"
+                )
+                var pending: [String: Double] = [:]
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let key = data.dates[index].recordDateString
+                        guard baseTradeDates.contains(key), var target = baseTargets[key] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let baseGross = target.values.reduce(0, +)
+                        guard let alignedSignal = dateIndex[data.dates[signalIndex].recordDateString] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let goldVolAllowed: Bool
+                        if goldVolPercentileMaximum > 1.0 {
+                            goldVolAllowed = true
+                        } else if let percentile = goldVol20Percentile252(at: alignedSignal) {
+                            goldVolAllowed = percentile < goldVolPercentileMaximum
+                        } else {
+                            goldVolAllowed = false
+                        }
+                        let breadth = breadth252(at: alignedSignal) ?? 0.0
+                        let excluded = key >= exclusionStart && key <= exclusionEnd
+                        if strength > 0, !excluded, baseGross >= grossMinimum, goldVolAllowed, breadth >= breadthMinimum,
+                           let scores = softScores(at: alignedSignal) {
+                            let active = symbols.filter { (target[$0] ?? 0) >= 0.02 }
+                            if active.count >= 2 {
+                                let activeGross = active.reduce(0.0) { $0 + (target[$1] ?? 0) }
+                                var raw: [String: Double] = [:]
+                                for symbol in active {
+                                    raw[symbol] = (target[symbol] ?? 0) * exp(strength * (scores[symbol] ?? 0))
+                                }
+                                let rawGross = raw.values.reduce(0, +)
+                                if rawGross > 0 {
+                                    for symbol in active {
+                                        target[symbol] = activeGross * (raw[symbol] ?? 0) / rawGross
+                                    }
+                                }
+                            }
+                        }
+                        let gross = target.values.reduce(0, +)
+                        if gross > 1.0, gross > 0 { target = target.mapValues { max($0, 0) / gross } }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { continue }
+
+                let points = run.report.points.filter { $0.date >= baseStartDate }
+                if title == "g85_v80_s40全历史" {
+                    let dumpPath = "tools/research-results/daily-factor-lab/g85_v80_s40_points.csv"
+                    var dumpLines = ["date,value"]
+                    dumpLines.append(contentsOf: points.map { $0.date.recordDateString + "," + String(format: "%.10f", $0.portfolioValue) })
+                    try? (dumpLines.joined(separator: "\n") + "\n").write(toFile: dumpPath, atomically: true, encoding: .utf8)
+                    let stateDumpPath = "tools/research-results/daily-factor-lab/g85_v80_s40_states.csv"
+                    var stateLines = ["date,target_gold,target_nasdaq,target_sp500,target_csi300,target_shanghai,target_gross"]
+                    for state in run.dailyStates where state.date >= baseStartDate {
+                        let targetGross = state.targetWeights.values.reduce(0, +)
+                        stateLines.append([
+                            state.date.recordDateString,
+                            String(format: "%.10f", state.targetWeights["gold_cny"] ?? 0),
+                            String(format: "%.10f", state.targetWeights["nasdaq"] ?? 0),
+                            String(format: "%.10f", state.targetWeights["sp500"] ?? 0),
+                            String(format: "%.10f", state.targetWeights["csi300"] ?? 0),
+                            String(format: "%.10f", state.targetWeights["shanghai_composite"] ?? 0),
+                            String(format: "%.10f", targetGross),
+                        ].joined(separator: ","))
+                    }
+                    try? (stateLines.joined(separator: "\n") + "\n").write(toFile: stateDumpPath, atomically: true, encoding: .utf8)
+                }
+                guard let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                let fullRow = MetricRow(
+                    title: title,
+                    id: "cc_daily_factor_soft_tilt",
+                    annualized: metrics.annualizedReturn,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility,
+                    sharpe: metrics.sharpeRatio,
+                    start: points.first?.date.recordDateString ?? "n/a",
+                    end: points.last?.date.recordDateString ?? "n/a",
+                    pointCount: points.count
+                )
+                var maxTargetGross = 0.0
+                var maxActualGross = 0.0
+                var minCash = Double.greatestFiniteMagnitude
+                var financedDays = 0
+                for state in run.dailyStates where state.portfolioValue > 0 && state.date >= baseStartDate {
+                    maxTargetGross = max(maxTargetGross, state.targetWeights.values.reduce(0, +))
+                    maxActualGross = max(maxActualGross, state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue)
+                    minCash = min(minCash, state.cash / state.portfolioValue)
+                    if state.cash < -0.0001 { financedDays += 1 }
+                }
+                candidates.append(.init(
+                    title: title,
+                    strength: strength,
+                    annualized: metrics.annualizedReturn ?? -1,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility ?? -1,
+                    sharpe: metrics.sharpeRatio ?? -1,
+                    sliceRows: metricRowsForSlices(title: title, id: "cc_daily_factor_soft_tilt", points: points, fullRow: fullRow),
+                    trades: run.report.trades.filter { $0.date >= baseStartDate }.count,
+                    averageCash: run.report.averageCashRatio,
+                    maxTargetGross: maxTargetGross,
+                    maxActualGross: maxActualGross,
+                    minCash: minCash == Double.greatestFiniteMagnitude ? 0 : minCash,
+                    financedDays: financedDays
+                ))
+            }
+
+            print("APP_CC_DAILY_FACTOR_SOFT_TILT_BASE")
+            print(String(format: "%.6f,%.6f,%.6f,%d", (baseRun.report.annualizedReturn ?? 0) * 100, baseRun.report.maxDrawdown * 100, baseRun.report.sharpeRatio ?? 0, baseRun.report.trades.count))
+            candidates.sort { lhs, rhs in
+                let lhsScore = lhs.annualized - max(lhs.maxDrawdown - 0.08, 0) * 4
+                let rhsScore = rhs.annualized - max(rhs.maxDrawdown - 0.08, 0) * 4
+                if lhsScore == rhsScore { return lhs.sharpe > rhs.sharpe }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(candidates.flatMap(\.sliceRows), header: "APP_CC_DAILY_FACTOR_SOFT_TILT_GRID")
+            print("APP_CC_DAILY_FACTOR_SOFT_TILT_DIAGNOSTICS")
+            print("title,strength,trades,average_cash,max_target_gross,max_actual_gross,min_cash,financed_days")
+            for c in candidates {
+                print([
+                    c.title,
+                    String(format: "%.3f", c.strength),
+                    String(c.trades),
+                    String(format: "%.6f", c.averageCash),
+                    String(format: "%.9f", c.maxTargetGross),
+                    String(format: "%.9f", c.maxActualGross),
+                    String(format: "%.9f", c.minCash),
+                    String(c.financedDays),
+                ].joined(separator: ","))
+            }
+            return
+        }

@@ -1,0 +1,267 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_NFCI_VIX_RESIDUAL_JACKKNIFE"] == "1" {
+            func loadVIXJKSeries(_ path: String) -> [(releaseDate: String, value: Double)] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3, let value = Double(fields[2]), value.isFinite else { return nil }
+                    return (String(fields[0]), value)
+                }.sorted { $0.0 < $1.0 }
+            }
+            func loadVIXJKCSV(_ path: String, valueColumn: String) -> [String: Double] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [:] }
+                let lines = text.split(whereSeparator: \.isNewline)
+                guard let header = lines.first else { return [:] }
+                let columns = header.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
+                guard let valueIndex = columns.firstIndex(of: valueColumn) else { return [:] }
+                var output: [String: Double] = [:]
+                for line in lines.dropFirst() {
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count > valueIndex, let value = Double(fields[valueIndex]), value.isFinite else { continue }
+                    output[String(fields[0])] = value
+                }
+                return output
+            }
+            func alignVIXJK(_ map: [String: Double], dates: [Date]) -> [Double?] {
+                var output: [Double?] = []
+                var last: Double?
+                for date in dates {
+                    if let value = map[date.recordDateString] { last = value }
+                    output.append(last)
+                }
+                return output
+            }
+
+            let creditSeries = loadVIXJKSeries("tools/research-results/NFCICREDIT_initial_release.csv")
+            let leverageSeries = loadVIXJKSeries("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            let riskSeries = loadVIXJKSeries("tools/research-results/NFCIRISK_initial_release.csv")
+            let vixMap = loadVIXJKCSV("tools/fixtures/macro-risk/VIXCLS.csv", valueColumn: "VIXCLS")
+            let vix3mMap = loadVIXJKCSV("tools/fixtures/macro-risk/VXVCLS.csv", valueColumn: "VXVCLS")
+            guard creditSeries.count >= 700, leverageSeries.count >= 700, riskSeries.count >= 700,
+                  !vixMap.isEmpty, !vix3mMap.isEmpty else {
+                print("APP_CC_NFCI_VIX_RESIDUAL_JACKKNIFE\nseries_missing")
+                return
+            }
+            func vixJKChange(_ series: [(releaseDate: String, value: Double)], on signalDate: String, lookback: Int) -> Double? {
+                var latest: Int?
+                for index in series.indices {
+                    if series[index].releaseDate <= signalDate { latest = index } else { break }
+                }
+                guard let latest, latest >= lookback else { return nil }
+                return series[latest].value - series[latest - lookback].value
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ), let baseStartDate = baseRun.report.points.first?.date else {
+                print("APP_CC_NFCI_VIX_RESIDUAL_JACKKNIFE\nbase_missing")
+                return
+            }
+            let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let baseTradeDates = Set(baseRun.report.trades.map { $0.date.recordDateString })
+            let usSymbols: Set<String> = ["nasdaq", "sp500"]
+
+            func blankVIXJKMA(_ values: [Double], _ period: Int) -> [Double?] { Array(repeating: nil, count: values.count) }
+            func blankVIXJKBoll(_ values: [Double], _ period: Int, _ multiplier: Double) -> [(middle: Double, lower: Double, upper: Double)?] {
+                Array(repeating: nil, count: values.count)
+            }
+            guard let nasdaqInput = inputs.first(where: { $0.assetOption.symbol == "nasdaq" }),
+                  let preparedNasdaq = BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+                    assetSeries: nasdaqInput.assetSeries,
+                    assetOption: nasdaqInput.assetOption,
+                    fxSeries: nasdaqInput.fxSeries,
+                    movingAverage: blankVIXJKMA,
+                    bollingerBands: blankVIXJKBoll
+                  ) else { return }
+            let nasdaqCNYMap = Dictionary(uniqueKeysWithValues: preparedNasdaq.pricePoints.map { ($0.date.recordDateString, $0.cnyPrice) })
+
+            func runVIXJK(vixRetention: Double, excludedDate: String?, vixActivationDate: String) -> (run: ResearchTargetStrategyRun, events: [String], vixEvents: [String])? {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cc_nfci_vix_residual_jackknife",
+                    title: "NFCI VIX residual jackknife",
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "NFCI VIX残差稳健性"
+                )
+                var previousBase: [String: Double] = [:]
+                var pending: [String: Double] = [:]
+                var alignedVIX: [Double?] = []
+                var alignedVIX3M: [Double?] = []
+                var alignedNasdaqCNY: [Double] = []
+                var events: [String] = []
+                var vixEvents: [String] = []
+
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        if alignedVIX.isEmpty {
+                            alignedVIX = alignVIXJK(vixMap, dates: data.dates)
+                            alignedVIX3M = alignVIXJK(vix3mMap, dates: data.dates)
+                            var lastNasdaq: Double?
+                            for date in data.dates {
+                                if let value = nasdaqCNYMap[date.recordDateString] { lastNasdaq = value }
+                                guard let value = lastNasdaq else {
+                                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                }
+                                alignedNasdaqCNY.append(value)
+                            }
+                        }
+                        let executionKey = data.dates[index].recordDateString
+                        guard baseTradeDates.contains(executionKey), var target = baseTargets[executionKey] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let prior = previousBase
+                        previousBase = target
+                        guard !prior.isEmpty else {
+                            pending = target
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+                        let signalKey = data.dates[signalIndex].recordDateString
+                        let creditTrigger = vixJKChange(creditSeries, on: signalKey, lookback: 8).map { $0 <= -0.03 } ?? false
+                        let leverageTrigger = vixJKChange(leverageSeries, on: signalKey, lookback: 4).map { $0 <= -0.04 } ?? false
+                        let riskTrigger = !creditTrigger && !leverageTrigger
+                            && (vixJKChange(riskSeries, on: signalKey, lookback: 4).map { $0 <= -0.02 } ?? false)
+
+                        var vixRelease = false
+                        if !creditTrigger, !leverageTrigger, !riskTrigger,
+                           signalKey >= vixActivationDate,
+                           signalIndex >= 5,
+                           let vixNow = alignedVIX[signalIndex],
+                           let vixPrior = alignedVIX[signalIndex - 5],
+                           let vix3mPrior = alignedVIX3M[signalIndex - 5],
+                           vixPrior > 0, vix3mPrior > 0,
+                           alignedNasdaqCNY[signalIndex - 5] > 0 {
+                            let m5 = alignedNasdaqCNY[signalIndex] / alignedNasdaqCNY[signalIndex - 5] - 1
+                            vixRelease = (vixPrior / vix3mPrior >= 1.0 || vixPrior >= 30.0)
+                                && vixNow / vixPrior - 1 <= -0.10
+                                && m5 > 0
+                        }
+
+                        let priorGross = prior.values.reduce(0, +)
+                        let proposedGross = target.values.reduce(0, +)
+                        let priorUS = prior.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                        let proposedUS = target.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                        let usDecrease = priorUS - proposedUS
+                        let grossDecrease = priorGross - proposedGross
+                        var extras: [String: Double] = [:]
+                        var tag: String?
+
+                        if signalKey != excludedDate {
+                            if creditTrigger || leverageTrigger {
+                                if usDecrease >= 0.05, grossDecrease >= 0.03 {
+                                    let retention = creditTrigger && leverageTrigger ? 1.00 : 0.50
+                                    for symbol in usSymbols {
+                                        let reduction = max((prior[symbol] ?? 0) - (target[symbol] ?? 0), 0)
+                                        if reduction > 0 { extras[symbol] = retention * reduction }
+                                    }
+                                    tag = creditTrigger && leverageTrigger ? "CL" : (creditTrigger ? "C" : "L")
+                                } else if grossDecrease >= 0.05 {
+                                    for (symbol, priorWeight) in prior {
+                                        let reduction = max(priorWeight - (target[symbol] ?? 0), 0)
+                                        if reduction > 0 { extras[symbol] = reduction }
+                                    }
+                                    tag = "G"
+                                }
+                            } else if riskTrigger, grossDecrease >= 0.05 {
+                                for (symbol, priorWeight) in prior {
+                                    let reduction = max(priorWeight - (target[symbol] ?? 0), 0)
+                                    if reduction > 0 { extras[symbol] = 0.25 * reduction }
+                                }
+                                tag = "R"
+                            } else if vixRelease, grossDecrease >= 0.05 {
+                                for (symbol, priorWeight) in prior {
+                                    let reduction = max(priorWeight - (target[symbol] ?? 0), 0)
+                                    if reduction > 0 { extras[symbol] = vixRetention * reduction }
+                                }
+                                tag = "V"
+                            }
+                        }
+
+                        let desired = extras.values.reduce(0, +)
+                        if desired > 0 {
+                            let cash = max(1.0 - proposedGross, 0)
+                            let scale = min(1.0, cash / desired)
+                            for (symbol, extra) in extras { target[symbol, default: 0] += extra * scale }
+                            events.append(signalKey)
+                            if tag == "V" { vixEvents.append(signalKey) }
+                        }
+                        let gross = target.values.reduce(0, +)
+                        if gross > 1.0, gross > 0 { target = target.mapValues { max($0, 0) / gross } }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { return nil }
+                return (run, events, vixEvents)
+            }
+
+            print("APP_CC_NFCI_VIX_RESIDUAL_JACKKNIFE_BASE")
+            print(String(format: "%.6f,%.6f,%.6f,%d", (baseRun.report.annualizedReturn ?? 0) * 100, baseRun.report.maxDrawdown * 100, baseRun.report.sharpeRatio ?? 0, baseRun.report.trades.count))
+            print("APP_CC_NFCI_VIX_RESIDUAL_JACKKNIFE")
+            print("variant,excluded_event,annualized,max_drawdown,volatility,sharpe,trades,remaining_events,vix_events")
+            for (variant, retention) in [("vix25", 0.25), ("vix50", 0.50)] {
+                guard let baseline = runVIXJK(vixRetention: retention, excludedDate: nil, vixActivationDate: "0000-01-01") else { continue }
+                let eventDates = Array(Set(baseline.events)).sorted()
+                for excluded in ["none"] + eventDates {
+                    let result = excluded == "none" ? baseline : runVIXJK(vixRetention: retention, excludedDate: excluded, vixActivationDate: "0000-01-01")
+                    guard let result else { continue }
+                    let points = result.run.report.points.filter { $0.date >= baseStartDate }
+                    guard let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                    let columns: [String] = [
+                        variant,
+                        excluded,
+                        metrics.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                        String(format: "%.6f", metrics.maxDrawdown * 100),
+                        metrics.annualizedVolatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                        metrics.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a",
+                        String(result.run.report.trades.filter { $0.date >= baseStartDate }.count),
+                        String(Set(result.events).count),
+                        String(Set(result.vixEvents).count),
+                    ]
+                    print(columns.joined(separator: ","))
+                }
+            }
+
+            print("APP_CC_NFCI_VIX_RESIDUAL_OOS")
+            print("variant,activation,annualized,max_drawdown,sharpe,since2020,since2022,vix_events")
+            for (variant, retention) in [("vix25", 0.25), ("vix50", 0.50)] {
+                for activation in ["0000-01-01", "2018-01-01", "2022-01-01", "2024-01-01", "2025-01-01"] {
+                    guard let result = runVIXJK(vixRetention: retention, excludedDate: nil, vixActivationDate: activation) else { continue }
+                    let points = result.run.report.points.filter { $0.date >= baseStartDate }
+                    guard let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                    let m2020 = BacktestMetricsCalculator.performanceMetrics(from: points.filter { $0.date.recordDateString >= "2020-01-01" })
+                    let m2022 = BacktestMetricsCalculator.performanceMetrics(from: points.filter { $0.date.recordDateString >= "2022-01-01" })
+                    let columns: [String] = [
+                        variant,
+                        activation,
+                        metrics.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                        String(format: "%.6f", metrics.maxDrawdown * 100),
+                        metrics.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a",
+                        m2020?.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                        m2022?.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                        String(Set(result.vixEvents).count),
+                    ]
+                    print(columns.joined(separator: ","))
+                }
+            }
+            return
+        }

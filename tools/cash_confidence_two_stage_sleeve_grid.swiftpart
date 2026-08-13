@@ -1,0 +1,109 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_TWO_STAGE_SLEEVE_GRID"] == "1" {
+            struct TwoStageSleeveCandidate {
+                let title: String
+                let highThreshold: Double
+                let highCap: Double
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let trades: Int
+                let averageCashRatio: Double
+                let sliceRows: [SliceMetricRow]
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let parameterSets: [(String, Double, Double)] = [
+                ("动态19基线", 99.0, 0.190),
+                ("8%-降18", 0.08, 0.180),
+                ("8%-降17", 0.08, 0.170),
+                ("9%-降18", 0.09, 0.180),
+                ("9%-降17", 0.09, 0.170),
+                ("10%-降18", 0.10, 0.180),
+                ("10%-降17", 0.10, 0.170),
+                ("12%-降18", 0.12, 0.180),
+                ("12%-降17", 0.12, 0.170),
+            ]
+
+            Darwin.setenv("ATM_CC_GROWTH_SCALE", "1.05", 1)
+            Darwin.setenv("ATM_CC_FAST_BRIDGE", "0.15", 1)
+            Darwin.setenv("ATM_CC_SLEEVE_CAP", "0.2075", 1)
+            Darwin.setenv("ATM_CC_TRADE_BAND", "0.20", 1)
+            Darwin.setenv("ATM_CC_NASDAQ_MA", "40", 1)
+            Darwin.setenv("ATM_CC_NASDAQ_SCALE", "0.88", 1)
+            Darwin.setenv("ATM_CC_OTHER_SCALE", "0.80", 1)
+            Darwin.setenv("ATM_CC_LEADERSHIP_EVAL", "10", 1)
+            Darwin.setenv("ATM_CC_LEADERSHIP_PRIOR", "2.0", 1)
+            Darwin.setenv("ATM_CC_MIN_MIGRATION", "0.50", 1)
+            Darwin.setenv("ATM_CC_SUCCESS_EDGE", "0", 1)
+            Darwin.setenv("ATM_CC_EDGE_EXPONENT", "1", 1)
+            Darwin.setenv("ATM_CC_DYNAMIC_SLEEVE_VOL_THRESHOLD", "0.06", 1)
+            Darwin.setenv("ATM_CC_DYNAMIC_SLEEVE_LOW_CAP", "0.19", 1)
+
+            var candidates: [TwoStageSleeveCandidate] = []
+            for parameters in parameterSets {
+                Darwin.setenv("ATM_CC_DYNAMIC_SLEEVE_HIGH_VOL_THRESHOLD", String(parameters.1), 1)
+                Darwin.setenv("ATM_CC_DYNAMIC_SLEEVE_HIGH_VOL_CAP", String(parameters.2), 1)
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                let fullRow = MetricRow(
+                    title: parameters.0,
+                    id: "cash_confidence_two_stage_sleeve_grid",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+                candidates.append(TwoStageSleeveCandidate(
+                    title: parameters.0,
+                    highThreshold: parameters.1,
+                    highCap: parameters.2,
+                    annualized: report.annualizedReturn ?? -1,
+                    maxDrawdown: report.maxDrawdown,
+                    sharpe: report.sharpeRatio ?? -1,
+                    trades: report.trades.count,
+                    averageCashRatio: report.averageCashRatio,
+                    sliceRows: metricRowsForSlices(
+                        title: parameters.0,
+                        id: "cash_confidence_two_stage_sleeve_grid",
+                        points: report.points,
+                        fullRow: fullRow
+                    )
+                ))
+            }
+
+            let ranked = candidates.sorted { lhs, rhs in
+                let lhsScore = lhs.sharpe + 0.5 * lhs.annualized - 0.75 * lhs.maxDrawdown
+                let rhsScore = rhs.sharpe + 0.5 * rhs.annualized - 0.75 * rhs.maxDrawdown
+                if lhsScore == rhsScore { return lhs.annualized > rhs.annualized }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(ranked.flatMap(\.sliceRows), header: "APP_CASH_CONFIDENCE_TWO_STAGE_SLEEVE_GRID")
+            print("APP_CASH_CONFIDENCE_TWO_STAGE_SLEEVE_DIAGNOSTICS")
+            print("title,high_threshold,high_cap,annualized,max_drawdown,sharpe,trades,average_cash_ratio")
+            for candidate in ranked {
+                print([
+                    candidate.title,
+                    String(format: "%.4f", candidate.highThreshold),
+                    String(format: "%.4f", candidate.highCap),
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio)
+                ].joined(separator: ","))
+            }
+            return
+        }

@@ -1,0 +1,254 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_RETURN_SCALE_FRONTIER"] == "1" {
+            struct ReturnScaleCandidate {
+                let title: String
+                let scale: Double
+                let grossCap: Double
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let ytd2026Return: Double
+                let ytd2026Drawdown: Double
+                let trades: Int
+                let averageCashRatio: Double
+                let sliceRows: [SliceMetricRow]
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            let requestedBreadthStrength = ProcessInfo.processInfo.environment["ATM_CC_BREADTH_STRENGTH_SINGLE"] ?? "0.80"
+            let requestedBreadth40OneStrength = ProcessInfo.processInfo.environment["ATM_CC_BREADTH_40_ONE_STRENGTH_SINGLE"] ?? "1"
+            let requestedBreadth10FourStrength = ProcessInfo.processInfo.environment["ATM_CC_BREADTH_10_FOUR_STRENGTH_SINGLE"] ?? "1"
+            let requestedBreadth20OneStrength = ProcessInfo.processInfo.environment["ATM_CC_BREADTH_20_ONE_STRENGTH_SINGLE"] ?? "1"
+            let requestedUnwindThreshold = ProcessInfo.processInfo.environment["ATM_CC_UNWIND_THRESHOLD_SINGLE"] ?? "0.40"
+            let requestedUSAllocationMode = ProcessInfo.processInfo.environment["ATM_CC_US_ALLOCATION_MODE_SINGLE"] ?? "0"
+            let requestedUSAllocationBlend = ProcessInfo.processInfo.environment["ATM_CC_US_ALLOCATION_BLEND_SINGLE"] ?? "0"
+            let requestedUSMomentumGapScale = ProcessInfo.processInfo.environment["ATM_CC_US_MOMENTUM_GAP_SCALE_SINGLE"] ?? "0.20"
+            let requestedGoldShiftMode = ProcessInfo.processInfo.environment["ATM_CC_GOLD_SHIFT_MODE_SINGLE"] ?? "0"
+            let requestedGoldShiftFraction = ProcessInfo.processInfo.environment["ATM_CC_GOLD_SHIFT_FRACTION_SINGLE"] ?? "0"
+            let requestedDisableMidGrossCliffs = ProcessInfo.processInfo.environment["ATM_CC_DISABLE_MID_GROSS_CLIFFS_SINGLE"] ?? "0"
+            let requestedDisableBreadthBrakes = ProcessInfo.processInfo.environment["ATM_CC_DISABLE_BREADTH_BRAKES_SINGLE"] ?? "1"
+            let requestedDisableHoldHysteresis = ProcessInfo.processInfo.environment["ATM_CC_DISABLE_HOLD_HYSTERESIS_SINGLE"] ?? "0"
+            let requestedDisableMatureNasdaqBrake = ProcessInfo.processInfo.environment["ATM_CC_DISABLE_MATURE_NASDAQ_BRAKE_SINGLE"] ?? "1"
+            let requestedDisableChinaPurge = ProcessInfo.processInfo.environment["ATM_CC_DISABLE_CHINA_PURGE_SINGLE"] ?? "0"
+            let requestedNearPeakDeRiskFraction = ProcessInfo.processInfo.environment["ATM_CC_NEAR_PEAK_DERISK_FRACTION_SINGLE"] ?? "0.80"
+            let requestedNearPeakMaxRetention = ProcessInfo.processInfo.environment["ATM_CC_NEAR_PEAK_MAX_RETENTION_SINGLE"] ?? "0.25"
+            let requestedExitSentinelWeight = ProcessInfo.processInfo.environment["ATM_CC_EXIT_SENTINEL_WEIGHT_SINGLE"] ?? "0.05"
+            let requestedExitSentinelConfirmation = ProcessInfo.processInfo.environment["ATM_CC_EXIT_SENTINEL_CONFIRMATION_SINGLE"] ?? "1"
+            let requestedExitSentinelDD = ProcessInfo.processInfo.environment["ATM_CC_EXIT_SENTINEL_DD_SINGLE"] ?? "0.02"
+            let requestedExitSentinelVolMin = ProcessInfo.processInfo.environment["ATM_CC_EXIT_SENTINEL_VOL_MIN_SINGLE"] ?? "0.06"
+            let requestedExitSentinelVolMax = ProcessInfo.processInfo.environment["ATM_CC_EXIT_SENTINEL_VOL_MAX_SINGLE"] ?? "0.08"
+            let requestedExitSentinelPriorMin = ProcessInfo.processInfo.environment["ATM_CC_EXIT_SENTINEL_PRIOR_MIN_SINGLE"] ?? "0.40"
+            let requestedExitSentinelPriorMax = ProcessInfo.processInfo.environment["ATM_CC_EXIT_SENTINEL_PRIOR_MAX_SINGLE"] ?? "1.01"
+            let requestedExitSentinelLeaderGate = ProcessInfo.processInfo.environment["ATM_CC_EXIT_SENTINEL_LEADER_GATE_SINGLE"] ?? "4"
+            let requestedRiskIncreaseMigrationFloor = ProcessInfo.processInfo.environment["ATM_CC_RISK_INCREASE_MIGRATION_FLOOR_SINGLE"] ?? "0"
+            let requestedRiskIncreaseGrossCompletionMode = ProcessInfo.processInfo.environment["ATM_CC_RISK_INCREASE_GROSS_COMPLETION_MODE_SINGLE"] ?? "0"
+            let requestedGrossConfidenceShape = ProcessInfo.processInfo.environment["ATM_CC_GROSS_CONFIDENCE_SHAPE_SINGLE"] ?? "0"
+            let requestedComponentRebalanceMode = ProcessInfo.processInfo.environment["ATM_CC_COMPONENT_REBALANCE_MODE_SINGLE"] ?? "0"
+            let requestedComponentRebalanceBand = ProcessInfo.processInfo.environment["ATM_CC_COMPONENT_REBALANCE_BAND_SINGLE"] ?? "0"
+            let requestedComponentRebalanceVolCeiling = ProcessInfo.processInfo.environment["ATM_CC_COMPONENT_REBALANCE_VOL_CEILING_SINGLE"] ?? "99"
+            let requestedCostAwareRebalance = ProcessInfo.processInfo.environment["ATM_CC_COST_AWARE_REBALANCE_SINGLE"] ?? "0"
+            let requestedCostAwareBand = ProcessInfo.processInfo.environment["ATM_CC_COST_AWARE_BAND_SINGLE"] ?? "0.244"
+            let requestedNasdaqMA = ProcessInfo.processInfo.environment["ATM_CC_NASDAQ_MA_SINGLE"] ?? "40"
+            let requestedNasdaqScale = ProcessInfo.processInfo.environment["ATM_CC_NASDAQ_SCALE_SINGLE"] ?? "0.88"
+            let requestedOtherScale = ProcessInfo.processInfo.environment["ATM_CC_OTHER_SCALE_SINGLE"] ?? "0.80"
+            let requestedRecoverySleeveCap = ProcessInfo.processInfo.environment["ATM_CC_RECOVERY_SLEEVE_CAP_SINGLE"] ?? "0.2075"
+            let requestedCalmRiskVolFloor = ProcessInfo.processInfo.environment["ATM_CC_CALM_RISK_VOL_FLOOR_SINGLE"] ?? "0.09"
+            let requestedCalmRiskMaxScale = ProcessInfo.processInfo.environment["ATM_CC_CALM_RISK_MAX_SCALE_SINGLE"] ?? "1.15"
+            let requestedCalmRiskLeaderGate = ProcessInfo.processInfo.environment["ATM_CC_CALM_RISK_LEADER_GATE_SINGLE"] ?? "2"
+            let requestedCalmRiskShortLongVolRatioMax = ProcessInfo.processInfo.environment["ATM_CC_CALM_RISK_SHORT_LONG_VOL_RATIO_MAX_SINGLE"] ?? "1.0"
+            let requestedCalmRiskAllocationMode = ProcessInfo.processInfo.environment["ATM_CC_CALM_RISK_ALLOCATION_MODE_SINGLE"] ?? "4"
+            let requestedCalmCarryCap = ProcessInfo.processInfo.environment["ATM_CC_CALM_CARRY_CAP_SINGLE"] ?? "0"
+            let requestedConfirmedUSGrossFloor = ProcessInfo.processInfo.environment["ATM_CC_CONFIRMED_US_GROSS_FLOOR_SINGLE"] ?? "0"
+            let requestedReturnGoldScale = ProcessInfo.processInfo.environment["ATM_CC_RETURN_GOLD_SCALE_SINGLE"] ?? ""
+            let requestedReturnUSScale = ProcessInfo.processInfo.environment["ATM_CC_RETURN_US_SCALE_SINGLE"] ?? ""
+            let requestedReturnNasdaqScale = ProcessInfo.processInfo.environment["ATM_CC_RETURN_NASDAQ_SCALE_SINGLE"] ?? ""
+            let requestedReturnSP500Scale = ProcessInfo.processInfo.environment["ATM_CC_RETURN_SP500_SCALE_SINGLE"] ?? ""
+            let requestedReturnChinaScale = ProcessInfo.processInfo.environment["ATM_CC_RETURN_CHINA_SCALE_SINGLE"] ?? "1.30"
+            let requestedReturnChinaStrongScale = ProcessInfo.processInfo.environment["ATM_CC_RETURN_CHINA_STRONG_SCALE_SINGLE"] ?? ""
+            let requestedDecliningVolReturnScale = ProcessInfo.processInfo.environment["ATM_CC_DECLINING_VOL_RETURN_SCALE_SINGLE"] ?? "1.24"
+            let requestedDecliningVolReturnLeaderGate = ProcessInfo.processInfo.environment["ATM_CC_DECLINING_VOL_RETURN_LEADER_GATE_SINGLE"] ?? "0"
+
+            func setChampionEnvironment() {
+                Darwin.setenv("ATM_CC_RECOVERY_SLEEVE_CAP", requestedRecoverySleeveCap, 1)
+                Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", "60", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", "0.05", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", "2", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", "99", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_QUALITY_GAP_THRESHOLD", "99", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+                Darwin.setenv("ATM_CC_PORTFOLIO_VOL_TARGET", "99", 1)
+                Darwin.setenv("ATM_CC_CALM_CARRY_CAP", requestedCalmCarryCap, 1)
+                Darwin.setenv("ATM_CC_CALM_RISK_VOL_FLOOR", requestedCalmRiskVolFloor, 1)
+                Darwin.setenv("ATM_CC_CALM_RISK_MAX_SCALE", requestedCalmRiskMaxScale, 1)
+                Darwin.setenv("ATM_CC_CALM_RISK_LEADER_GATE", requestedCalmRiskLeaderGate, 1)
+                Darwin.setenv("ATM_CC_CALM_RISK_SHORT_LONG_VOL_RATIO_MAX", requestedCalmRiskShortLongVolRatioMax, 1)
+                Darwin.setenv("ATM_CC_CALM_RISK_ALLOCATION_MODE", requestedCalmRiskAllocationMode, 1)
+                Darwin.setenv("ATM_CC_CONFIRMED_US_GROSS_FLOOR", requestedConfirmedUSGrossFloor, 1)
+                Darwin.setenv("ATM_CC_SECULAR_CARRY_CAP", "0", 1)
+                Darwin.setenv("ATM_CC_GOLD_TO_US_SHIFT_MODE", requestedGoldShiftMode, 1)
+                Darwin.setenv("ATM_CC_GOLD_TO_US_SHIFT_FRACTION", requestedGoldShiftFraction, 1)
+                Darwin.setenv("ATM_CC_EQUITY_CURVE_RISK_SCALE", "1", 1)
+                Darwin.setenv("ATM_CC_USD_CASH_CAP", "0", 1)
+                Darwin.setenv("ATM_CC_US_RISK_ALLOCATION_MODE", requestedUSAllocationMode, 1)
+                Darwin.setenv("ATM_CC_US_RISK_ALLOCATION_BLEND", requestedUSAllocationBlend, 1)
+                Darwin.setenv("ATM_CC_US_RISK_MOMENTUM_GAP_SCALE", requestedUSMomentumGapScale, 1)
+                Darwin.setenv("ATM_CC_GLOBAL_RISK_PARITY_BLEND", "0", 1)
+                Darwin.setenv("ATM_CC_DISABLE_MID_GROSS_CLIFFS", requestedDisableMidGrossCliffs, 1)
+                Darwin.setenv("ATM_CC_DISABLE_BREADTH_MICRO_BRAKES", requestedDisableBreadthBrakes, 1)
+                Darwin.setenv("ATM_CC_BREADTH_MICRO_BRAKE_STRENGTH", requestedBreadthStrength, 1)
+                Darwin.setenv("ATM_CC_BREADTH_BRAKE_40_ONE_STRENGTH", requestedBreadth40OneStrength, 1)
+                Darwin.setenv("ATM_CC_BREADTH_BRAKE_10_FOUR_STRENGTH", requestedBreadth10FourStrength, 1)
+                Darwin.setenv("ATM_CC_BREADTH_BRAKE_20_ONE_STRENGTH", requestedBreadth20OneStrength, 1)
+                Darwin.setenv("ATM_CC_DISABLE_HOLD_HYSTERESIS", requestedDisableHoldHysteresis, 1)
+                Darwin.setenv("ATM_CC_DISABLE_MATURE_NASDAQ_BRAKE", requestedDisableMatureNasdaqBrake, 1)
+                Darwin.setenv("ATM_CC_NASDAQ_MA", requestedNasdaqMA, 1)
+                Darwin.setenv("ATM_CC_NASDAQ_SCALE", requestedNasdaqScale, 1)
+                Darwin.setenv("ATM_CC_OTHER_SCALE", requestedOtherScale, 1)
+                Darwin.setenv("ATM_CC_DISABLE_CHINA_PURGE", requestedDisableChinaPurge, 1)
+                Darwin.setenv("ATM_CC_COST_AWARE_REBALANCE", requestedCostAwareRebalance, 1)
+                Darwin.setenv("ATM_CC_COST_AWARE_BAND", requestedCostAwareBand, 1)
+                Darwin.setenv("ATM_CC_SLOW_ADD_FRACTION", "1", 1)
+                Darwin.setenv("ATM_CC_GROSS_CONFIDENCE_SHAPE", requestedGrossConfidenceShape, 1)
+                Darwin.setenv("ATM_CC_STAGED_HANDOFF_MODE", "0", 1)
+                Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_MODE", requestedComponentRebalanceMode, 1)
+                Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_BAND", requestedComponentRebalanceBand, 1)
+                Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_VOL_CEILING", requestedComponentRebalanceVolCeiling, 1)
+                Darwin.setenv("ATM_CC_BUY_CONFIRMATION_SESSIONS", "1", 1)
+                Darwin.setenv("ATM_CC_REBALANCE_TRIGGER_MODE", "0", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MODE", "11", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_FRACTION", requestedNearPeakDeRiskFraction, 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_DD_THRESHOLD", "0.04", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_DD_DECAY_MODE", "0", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_INCLUDE_EXIT", "0", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_GROSS_DROP_THRESHOLD", "0.02", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_SEVERITY_MODE", "5", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MAX_RETENTION", requestedNearPeakMaxRetention, 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MIN_RETENTION", "0", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_CUT_BUDGET_MODE", "0", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_BROAD_UNWIND_TURNOVER_THRESHOLD", requestedUnwindThreshold, 1)
+                Darwin.setenv("ATM_CC_DERISK_BUFFER_MODE", "0", 1)
+                Darwin.setenv("ATM_CC_DERISK_CALIBRATION_MODE", "0", 1)
+                Darwin.setenv("ATM_CC_RISK_INCREASE_MIGRATION_FLOOR", requestedRiskIncreaseMigrationFloor, 1)
+                Darwin.setenv("ATM_CC_RISK_INCREASE_GROSS_COMPLETION_MODE", requestedRiskIncreaseGrossCompletionMode, 1)
+                Darwin.setenv("ATM_CC_SMALL_RERISK_TURNOVER_FLOOR", "0", 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_WEIGHT", requestedExitSentinelWeight, 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_CONFIRMATION_SESSIONS", requestedExitSentinelConfirmation, 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_DD_THRESHOLD", requestedExitSentinelDD, 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_VOL_MIN", requestedExitSentinelVolMin, 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_VOL_MAX", requestedExitSentinelVolMax, 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_PRIOR_GROSS_MIN", requestedExitSentinelPriorMin, 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_PRIOR_GROSS_MAX", requestedExitSentinelPriorMax, 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_LEADER_GATE", requestedExitSentinelLeaderGate, 1)
+                Darwin.setenv("ATM_CC_RETURN_FINANCING_RATE", "0.05", 1)
+                Darwin.setenv("ATM_CC_DECLINING_VOL_RETURN_SCALE", requestedDecliningVolReturnScale, 1)
+                Darwin.setenv("ATM_CC_DECLINING_VOL_RETURN_LEADER_GATE", requestedDecliningVolReturnLeaderGate, 1)
+            }
+
+            func periodMetrics(_ points: [BacktestSeriesPoint], start: String) -> BacktestPerformanceMetrics? {
+                let selected = points.filter { $0.date.recordDateString >= start }
+                guard selected.count > 1 else { return nil }
+                return BacktestMetricsCalculator.performanceMetrics(from: selected)
+            }
+
+            let requestedScale = Double(ProcessInfo.processInfo.environment["ATM_CC_RETURN_SCALE_SINGLE"] ?? "1.22")
+            let requestedCap = Double(ProcessInfo.processInfo.environment["ATM_CC_RETURN_GROSS_CAP_SINGLE"] ?? "1.00")
+            let requestedTradeBand = ProcessInfo.processInfo.environment["ATM_CC_TRADE_BAND_SINGLE"] ?? "0.244"
+            let parameterSets: [(String, Double, Double)]
+            if let requestedScale, let requestedCap {
+                parameterSets = [
+                    (String(format: "风险倍率%.0f-总仓%.0f", requestedScale * 100, requestedCap * 100), requestedScale, requestedCap)
+                ]
+            } else {
+                parameterSets = [
+                    ("基线", 1.00, 1.00),
+                ]
+            }
+
+            var candidates: [ReturnScaleCandidate] = []
+            for parameters in parameterSets {
+                setChampionEnvironment()
+                Darwin.setenv("ATM_CC_TRADE_BAND", requestedTradeBand, 1)
+                Darwin.setenv("ATM_CC_RETURN_SCALE", String(parameters.1), 1)
+                Darwin.setenv("ATM_CC_RETURN_GOLD_SCALE", requestedReturnGoldScale, 1)
+                Darwin.setenv("ATM_CC_RETURN_US_SCALE", requestedReturnUSScale, 1)
+                Darwin.setenv("ATM_CC_RETURN_NASDAQ_SCALE", requestedReturnNasdaqScale, 1)
+                Darwin.setenv("ATM_CC_RETURN_SP500_SCALE", requestedReturnSP500Scale, 1)
+                Darwin.setenv("ATM_CC_RETURN_CHINA_SCALE", requestedReturnChinaScale, 1)
+                Darwin.setenv("ATM_CC_RETURN_CHINA_STRONG_SCALE", requestedReturnChinaStrongScale, 1)
+                Darwin.setenv("ATM_CC_RETURN_GROSS_CAP", String(parameters.2), 1)
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                let ytd = periodMetrics(report.points, start: "2026-01-01")
+                let fullRow = MetricRow(
+                    title: parameters.0,
+                    id: "cash_confidence_return_scale_frontier",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+                candidates.append(ReturnScaleCandidate(
+                    title: parameters.0,
+                    scale: parameters.1,
+                    grossCap: parameters.2,
+                    annualized: report.annualizedReturn ?? -1,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility ?? -1,
+                    sharpe: report.sharpeRatio ?? -1,
+                    ytd2026Return: ytd?.totalReturn ?? -1,
+                    ytd2026Drawdown: ytd?.maxDrawdown ?? -1,
+                    trades: report.trades.count,
+                    averageCashRatio: report.averageCashRatio,
+                    sliceRows: metricRowsForSlices(
+                        title: parameters.0,
+                        id: "cash_confidence_return_scale_frontier",
+                        points: report.points,
+                        fullRow: fullRow
+                    )
+                ))
+            }
+
+            let ranked = candidates.sorted { lhs, rhs in
+                if lhs.maxDrawdown <= 0.105, rhs.maxDrawdown > 0.105 { return true }
+                if rhs.maxDrawdown <= 0.105, lhs.maxDrawdown > 0.105 { return false }
+                return lhs.annualized == rhs.annualized ? lhs.sharpe > rhs.sharpe : lhs.annualized > rhs.annualized
+            }
+            printSliceRows(ranked.flatMap(\.sliceRows), header: "APP_CASH_CONFIDENCE_RETURN_SCALE_FRONTIER")
+            print("APP_CASH_CONFIDENCE_RETURN_SCALE_DIAGNOSTICS")
+            print("title,scale,gross_cap,annualized,max_drawdown,volatility,sharpe,ytd2026_return,ytd2026_drawdown,trades,average_cash_ratio")
+            for candidate in ranked {
+                print([
+                    candidate.title,
+                    String(format: "%.4f", candidate.scale),
+                    String(format: "%.4f", candidate.grossCap),
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.volatility * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(format: "%.6f", candidate.ytd2026Return * 100),
+                    String(format: "%.6f", candidate.ytd2026Drawdown * 100),
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio)
+                ].joined(separator: ","))
+            }
+            return
+        }

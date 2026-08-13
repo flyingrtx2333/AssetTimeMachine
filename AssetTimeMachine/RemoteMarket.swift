@@ -64,6 +64,54 @@ nonisolated struct PublicExchangeRates: Codable, Equatable, Sendable {
     }
 }
 
+nonisolated struct PublicMacroAsOfPoint: Codable, Equatable, Sendable {
+    let releaseDate: String
+    let referenceDate: String
+    let availableAt: Date
+    let value: Double
+    let source: String
+
+    enum CodingKeys: String, CodingKey {
+        case releaseDate = "release_date"
+        case referenceDate = "reference_date"
+        case availableAt = "available_at"
+        case value
+        case source
+    }
+}
+
+nonisolated struct PublicNFCISeries: Codable, Equatable, Sendable {
+    let seriesID: String
+    let label: String
+    let frequency: String
+    let lookbackReleases: Int
+    let points: [PublicMacroAsOfPoint]
+
+    enum CodingKeys: String, CodingKey {
+        case seriesID = "series_id"
+        case label
+        case frequency
+        case lookbackReleases = "lookback_releases"
+        case points
+    }
+}
+
+nonisolated struct PublicNFCIAsOfResponse: Codable, Equatable, Sendable {
+    let success: Bool
+    let source: String
+    let latestAvailableAt: Date?
+    let series: [PublicNFCISeries]
+    let availableSeries: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case success
+        case source
+        case latestAvailableAt = "latest_available_at"
+        case series
+        case availableSeries = "available_series"
+    }
+}
+
 nonisolated struct MarketEndpointDoc: Identifiable, Sendable {
     let title: String
     let path: String
@@ -99,6 +147,12 @@ enum RemoteMarketClient {
             title: "公共历史走势",
             path: "/api/v1/money/public/history?symbols=nasdaq,sp500,hsi&period=1year",
             description: "返回指数、黄金、原油与国债收益率基准信号等公共历史序列。",
+            symbol: nil
+        ),
+        .init(
+            title: "NFCI 实时点时序列",
+            path: "/api/v1/money/public/nfci-asof",
+            description: "返回 NFCI Credit / Leverage 首次可用值；历史值不可被后续修订覆盖。",
             symbol: nil
         ),
     ]
@@ -141,6 +195,22 @@ enum RemoteMarketClient {
         let (data, response) = try await URLSession.shared.data(from: components.url!)
         try validate(response: response, data: data)
         return try await decode(PublicHistoryResponse.self, from: data)
+    }
+
+    static func fetchNFCIAsOf(startDate: String? = nil, endDate: String? = nil) async throws -> PublicNFCIAsOfResponse {
+        var components = URLComponents(url: baseURL.appendingPathComponent("/api/v1/money/public/nfci-asof"), resolvingAgainstBaseURL: false)!
+        var queryItems: [URLQueryItem] = []
+        if let startDate, !startDate.isEmpty {
+            queryItems.append(.init(name: "start_date", value: startDate))
+        }
+        if let endDate, !endDate.isEmpty {
+            queryItems.append(.init(name: "end_date", value: endDate))
+        }
+        components.queryItems = queryItems.isEmpty ? nil : queryItems
+
+        let (data, response) = try await URLSession.shared.data(from: components.url!)
+        try validate(response: response, data: data)
+        return try await decode(PublicNFCIAsOfResponse.self, from: data)
     }
 
     static func fetchAssetCatalog() async throws -> [MarketAssetDescriptor] {
@@ -317,6 +387,7 @@ final class RemoteMarketStore: ObservableObject {
     @Published var overview: PublicMarketOverview?
     @Published var exchangeRates: [String: Double] = [:]
     @Published var exchangeRatesFetchedAt: Date?
+    @Published var nfciAsOf: PublicNFCIAsOfResponse?
     @Published var historySeries: [String: PublicHistorySeries] = [:] {
         didSet { historyRevision &+= 1 }
     }
@@ -451,9 +522,11 @@ final class RemoteMarketStore: ObservableObject {
         var refreshedExchangeRates: [String: Double]?
         var refreshedExchangeRatesFetchedAt: Date?
         var refreshedOverview: PublicMarketOverview?
+        var refreshedNFCIAsOf: PublicNFCIAsOfResponse?
 
         async let exchangeRatesRequest = RemoteMarketClient.fetchExchangeRates()
         async let overviewRequest = RemoteMarketClient.fetchOverview()
+        async let nfciRequest = RemoteMarketClient.fetchNFCIAsOf()
 
         do {
             let exchangeRates = try await exchangeRatesRequest
@@ -473,6 +546,12 @@ final class RemoteMarketStore: ObservableObject {
             firstErrorMessage = firstErrorMessage ?? error.localizedDescription
         }
 
+        do {
+            refreshedNFCIAsOf = try await nfciRequest
+        } catch {
+            // Rollout-compatible soft dependency: older servers may not expose NFCI yet.
+        }
+
         // Network work may have started before a cloud import. Publish the batch only
         // if its owner still accepts it, so an import cannot be interleaved with stale
         // market-driven UI or model updates.
@@ -489,6 +568,10 @@ final class RemoteMarketStore: ObservableObject {
         if let refreshedOverview,
            self.overview != refreshedOverview {
             self.overview = refreshedOverview
+        }
+        if let refreshedNFCIAsOf,
+           self.nfciAsOf != refreshedNFCIAsOf {
+            self.nfciAsOf = refreshedNFCIAsOf
         }
 
         let didRefreshAllLiveData = didRefreshExchangeRates && didRefreshOverview

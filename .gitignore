@@ -1,5 +1,6 @@
 # Xcode / local build products
 build/
+.build/
 DerivedData/
 *.xcarchive
 *.ipa
@@ -16,6 +17,13 @@ DerivedData/
 __pycache__/
 *.py[cod]
 *.log
+
+# Quant research caches / scratch fragments
+/tools/.*.swiftpart
+tools/research-results/nfci-credit-vintages/
+tools/research-results/nfcileverage-vintages/
+tools/research-results/nfcirisk-vintages/
+tools/research-results/.*
 
 # Private/local data
 marketing/app-store/private-backups/

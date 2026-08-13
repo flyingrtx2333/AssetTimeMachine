@@ -1,0 +1,313 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_RAM_SELL_THROTTLE_GRID"] == "1" {
+            struct RAMSellThrottleCandidate {
+                let title: String
+                let retention: Double
+                let signalMode: Int
+                let minimumBaseGross: Double
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let events: Int
+                let averageCash: Double
+                let maxTargetGross: Double
+                let maxActualGross: Double
+                let minCash: Double
+                let financedDays: Int
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ), let baseStartDate = baseRun.report.points.first?.date else {
+                print("APP_CC_RAM_SELL_THROTTLE_GRID\nbase_missing")
+                return
+            }
+
+            let dates = baseRun.dailyStates.map(\.date)
+            let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let baseTradeDates = Set(baseRun.report.trades.map { $0.date.recordDateString })
+            let dateIndex = Dictionary(uniqueKeysWithValues: dates.enumerated().map { ($0.element.recordDateString, $0.offset) })
+            let symbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+
+            func throttleBlankMA(_ values: [Double], _ period: Int) -> [Double?] { Array(repeating: nil, count: values.count) }
+            func throttleBlankBoll(_ values: [Double], _ period: Int, _ multiplier: Double) -> [(middle: Double, lower: Double, upper: Double)?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func alignedThrottlePrices(_ symbol: String) -> [Double]? {
+                guard let input = inputs.first(where: { $0.assetOption.symbol == symbol }),
+                      let prepared = BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+                        assetSeries: input.assetSeries,
+                        assetOption: input.assetOption,
+                        fxSeries: input.fxSeries,
+                        movingAverage: throttleBlankMA,
+                        bollingerBands: throttleBlankBoll
+                      ) else { return nil }
+                let map = Dictionary(uniqueKeysWithValues: prepared.pricePoints.map { ($0.date.recordDateString, $0.cnyPrice) })
+                var output: [Double] = []
+                var last: Double?
+                for date in dates {
+                    if let value = map[date.recordDateString], value.isFinite, value > 0 { last = value }
+                    guard let value = last else { return nil }
+                    output.append(value)
+                }
+                return output
+            }
+            var prices: [String: [Double]] = [:]
+            for symbol in symbols {
+                guard let aligned = alignedThrottlePrices(symbol) else { return }
+                prices[symbol] = aligned
+            }
+            func throttleMomentum(_ values: [Double], at index: Int, lookback: Int) -> Double? {
+                guard index >= lookback, values[index - lookback] > 0 else { return nil }
+                return values[index] / values[index - lookback] - 1
+            }
+            func throttleVol(_ values: [Double], at index: Int, lookback: Int) -> Double? {
+                guard index >= lookback else { return nil }
+                var rs: [Double] = []
+                rs.reserveCapacity(lookback)
+                for i in (index - lookback + 1)...index {
+                    guard values[i - 1] > 0 else { return nil }
+                    rs.append(values[i] / values[i - 1] - 1)
+                }
+                let mean = rs.reduce(0, +) / Double(rs.count)
+                let variance = rs.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) } / Double(max(rs.count - 1, 1))
+                return sqrt(max(variance, 0))
+            }
+            func throttleRanks(_ raw: [String: Double]) -> [String: Double] {
+                let ordered = raw.sorted { lhs, rhs in lhs.value == rhs.value ? lhs.key < rhs.key : lhs.value < rhs.value }
+                var result: [String: Double] = [:]
+                for (i, item) in ordered.enumerated() {
+                    result[item.key] = Double(i) / Double(max(ordered.count - 1, 1))
+                }
+                return result
+            }
+            struct RAMThrottleSignal {
+                let compositeTop: Set<String>
+                let shortTop: Set<String>
+                let longTop: Set<String>
+                let shortMomentum: [String: Double]
+                let longMomentum: [String: Double]
+            }
+            func throttleSignal(at signalIndex: Int) -> RAMThrottleSignal? {
+                guard signalIndex >= 252 else { return nil }
+                var shortScore: [String: Double] = [:]
+                var longScore: [String: Double] = [:]
+                var shortMomentum: [String: Double] = [:]
+                var longMomentum: [String: Double] = [:]
+                for symbol in symbols {
+                    guard let values = prices[symbol],
+                          let m60 = throttleMomentum(values, at: signalIndex, lookback: 60),
+                          let m252 = throttleMomentum(values, at: signalIndex, lookback: 252),
+                          let vol20 = throttleVol(values, at: signalIndex, lookback: 20),
+                          let vol60 = throttleVol(values, at: signalIndex, lookback: 60),
+                          vol20 > 1e-8, vol60 > 1e-8 else { return nil }
+                    shortMomentum[symbol] = m60
+                    longMomentum[symbol] = m252
+                    shortScore[symbol] = m60 / vol20
+                    longScore[symbol] = m252 / vol60
+                }
+                let shortRanks = throttleRanks(shortScore)
+                let longRanks = throttleRanks(longScore)
+                let composite = symbols.sorted { lhs, rhs in
+                    let ls = 0.5 * (shortRanks[lhs] ?? 0.5) + 0.5 * (longRanks[lhs] ?? 0.5)
+                    let rs = 0.5 * (shortRanks[rhs] ?? 0.5) + 0.5 * (longRanks[rhs] ?? 0.5)
+                    if ls == rs { return lhs < rhs }
+                    return ls > rs
+                }
+                let shortTop = Set(shortScore.sorted { lhs, rhs in lhs.value == rhs.value ? lhs.key < rhs.key : lhs.value > rhs.value }.prefix(2).map { $0.key })
+                let longTop = Set(longScore.sorted { lhs, rhs in lhs.value == rhs.value ? lhs.key < rhs.key : lhs.value > rhs.value }.prefix(2).map { $0.key })
+                return .init(
+                    compositeTop: Set(composite.prefix(2)),
+                    shortTop: shortTop,
+                    longTop: longTop,
+                    shortMomentum: shortMomentum,
+                    longMomentum: longMomentum
+                )
+            }
+
+            // signalMode:
+            // 0 = RAM252/60 Top2 + both absolute momenta positive
+            // 1 = short/long Top2 consensus + both absolute momenta positive
+            // 2 = composite Top2 + both absolute momenta positive
+            // 3 = long Top2 + long momentum positive + short momentum >= -2%
+            var parameterGrid: [(String, Double, Int, Double)] = [
+                ("生产冠军重放控制组", 0.00, 0, 0.00),
+            ]
+            for retention in [0.25, 0.50, 0.75] {
+                for minimumBaseGross in [0.00, 0.20, 0.40] {
+                    parameterGrid.append(("RAM长强卖出节流 r\(Int(retention * 100))-g\(Int(minimumBaseGross * 100))", retention, 0, minimumBaseGross))
+                    parameterGrid.append(("RAM双周期共识卖出节流 r\(Int(retention * 100))-g\(Int(minimumBaseGross * 100))", retention, 1, minimumBaseGross))
+                    parameterGrid.append(("RAM复合卖出节流 r\(Int(retention * 100))-g\(Int(minimumBaseGross * 100))", retention, 2, minimumBaseGross))
+                }
+            }
+            for retention in [0.25, 0.50] {
+                parameterGrid.append(("RAM长期韧性卖出节流 r\(Int(retention * 100))", retention, 3, 0.20))
+            }
+
+            var candidates: [RAMSellThrottleCandidate] = []
+            for (title, retention, signalMode, minimumBaseGross) in parameterGrid {
+                let researchConfig = ResearchTargetStrategyConfig(
+                    symbol: "cc_ram_sell_throttle",
+                    title: title,
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "RAM强势资产卖出节流"
+                )
+                var previousBase: [String: Double] = [:]
+                var pending: [String: Double] = [:]
+                var events = 0
+
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: researchConfig,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let key = data.dates[index].recordDateString
+                        guard baseTradeDates.contains(key), var target = baseTargets[key] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let prior = previousBase
+                        previousBase = target
+                        if retention > 0, !prior.isEmpty,
+                           let alignedSignal = dateIndex[data.dates[signalIndex].recordDateString],
+                           let factor = throttleSignal(at: alignedSignal) {
+                            let priorGross = prior.values.reduce(0, +)
+                            let proposedGross = target.values.reduce(0, +)
+                            let grossDecrease = priorGross - proposedGross
+                            if grossDecrease >= 0.03, proposedGross >= minimumBaseGross {
+                                var desiredExtra: [String: Double] = [:]
+                                for symbol in symbols {
+                                    let reduction = max((prior[symbol] ?? 0) - (target[symbol] ?? 0), 0)
+                                    guard reduction >= 0.025 else { continue }
+                                    let m60 = factor.shortMomentum[symbol] ?? -1
+                                    let m252 = factor.longMomentum[symbol] ?? -1
+                                    let eligible: Bool
+                                    switch signalMode {
+                                    case 1:
+                                        eligible = factor.shortTop.contains(symbol) && factor.longTop.contains(symbol) && m60 > 0 && m252 > 0
+                                    case 2:
+                                        eligible = factor.compositeTop.contains(symbol) && m60 > 0 && m252 > 0
+                                    case 3:
+                                        eligible = factor.longTop.contains(symbol) && m252 > 0 && m60 >= -0.02
+                                    default:
+                                        eligible = factor.longTop.contains(symbol) && m60 > 0 && m252 > 0
+                                    }
+                                    if eligible { desiredExtra[symbol] = retention * reduction }
+                                }
+                                let desired = desiredExtra.values.reduce(0, +)
+                                if desired >= 0.025 {
+                                    let availableCash = max(1.0 - proposedGross, 0)
+                                    let scale = min(1.0, availableCash / desired)
+                                    if scale > 0 {
+                                        for symbol in symbols {
+                                            guard let extra = desiredExtra[symbol], extra > 0 else { continue }
+                                            target[symbol, default: 0] += extra * scale
+                                        }
+                                        let gross = target.values.reduce(0, +)
+                                        if gross > 1.0, gross > 0 {
+                                            target = target.mapValues { max($0, 0) / gross }
+                                        }
+                                        events += 1
+                                    }
+                                }
+                            }
+                        }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { continue }
+
+                let points = run.report.points.filter { $0.date >= baseStartDate }
+                guard let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                let fullRow = MetricRow(
+                    title: title,
+                    id: "cc_ram_sell_throttle",
+                    annualized: metrics.annualizedReturn,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility,
+                    sharpe: metrics.sharpeRatio,
+                    start: points.first?.date.recordDateString ?? "n/a",
+                    end: points.last?.date.recordDateString ?? "n/a",
+                    pointCount: points.count
+                )
+                var maxTargetGross = 0.0
+                var maxActualGross = 0.0
+                var minCash = Double.greatestFiniteMagnitude
+                var financedDays = 0
+                for state in run.dailyStates where state.portfolioValue > 0 && state.date >= baseStartDate {
+                    maxTargetGross = max(maxTargetGross, state.targetWeights.values.reduce(0, +))
+                    maxActualGross = max(maxActualGross, state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue)
+                    minCash = min(minCash, state.cash / state.portfolioValue)
+                    if state.cash < -0.0001 { financedDays += 1 }
+                }
+                candidates.append(.init(
+                    title: title,
+                    retention: retention,
+                    signalMode: signalMode,
+                    minimumBaseGross: minimumBaseGross,
+                    annualized: metrics.annualizedReturn ?? -1,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility ?? -1,
+                    sharpe: metrics.sharpeRatio ?? -1,
+                    sliceRows: metricRowsForSlices(title: title, id: "cc_ram_sell_throttle", points: points, fullRow: fullRow),
+                    trades: run.report.trades.filter { $0.date >= baseStartDate }.count,
+                    events: events,
+                    averageCash: run.report.averageCashRatio,
+                    maxTargetGross: maxTargetGross,
+                    maxActualGross: maxActualGross,
+                    minCash: minCash == Double.greatestFiniteMagnitude ? 0 : minCash,
+                    financedDays: financedDays
+                ))
+            }
+
+            print("APP_CC_RAM_SELL_THROTTLE_BASE")
+            print(String(format: "%.6f,%.6f,%.6f,%d", (baseRun.report.annualizedReturn ?? 0) * 100, baseRun.report.maxDrawdown * 100, baseRun.report.sharpeRatio ?? 0, baseRun.report.trades.count))
+            candidates.sort { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 6
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 6
+                let lhsScore = lhs.sharpe + 0.5 * lhs.annualized - lhsPenalty
+                let rhsScore = rhs.sharpe + 0.5 * rhs.annualized - rhsPenalty
+                if lhsScore == rhsScore { return lhs.annualized > rhs.annualized }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(candidates.flatMap(\.sliceRows), header: "APP_CC_RAM_SELL_THROTTLE_GRID")
+            print("APP_CC_RAM_SELL_THROTTLE_DIAGNOSTICS")
+            print("title,retention,mode,min_base_gross,events,trades,average_cash,max_target_gross,max_actual_gross,min_cash,financed_days")
+            for c in candidates {
+                print([
+                    c.title,
+                    String(format: "%.3f", c.retention),
+                    String(c.signalMode),
+                    String(format: "%.2f", c.minimumBaseGross),
+                    String(c.events),
+                    String(c.trades),
+                    String(format: "%.6f", c.averageCash),
+                    String(format: "%.9f", c.maxTargetGross),
+                    String(format: "%.9f", c.maxActualGross),
+                    String(format: "%.9f", c.minCash),
+                    String(c.financedDays)
+                ].joined(separator: ","))
+            }
+            return
+        }

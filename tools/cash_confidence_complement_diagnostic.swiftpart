@@ -1,0 +1,139 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_COMPLEMENT_DIAGNOSTIC"] == "1" {
+            let cashMode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let complementModes: [AdvancedBacktestStrategyMode] = [
+                .coreGoldSatelliteRiskBudgetStateGateMomentum,
+                .coreGoldSatelliteSharpeStateGateMomentum,
+                .coreGoldSatelliteProfitLockMomentum,
+                .goldNasdaqDualTrendBarbell,
+            ]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            func inputs(for mode: AdvancedBacktestStrategyMode) -> [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)] {
+                mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+            }
+
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", "0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", "2", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_QUALITY_GAP_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+            Darwin.setenv("ATM_CC_PORTFOLIO_VOL_TARGET", "99", 1)
+            Darwin.setenv("ATM_CC_CALM_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_VOL_FLOOR", "0", 1)
+            Darwin.setenv("ATM_CC_SECULAR_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_GOLD_TO_US_SHIFT_FRACTION", "0", 1)
+            Darwin.setenv("ATM_CC_EQUITY_CURVE_RISK_SCALE", "1", 1)
+            Darwin.setenv("ATM_CC_USD_CASH_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MODE", "11", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_FRACTION", "0.875", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_DD_THRESHOLD", "0.04", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_INCLUDE_EXIT", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_GROSS_DROP_THRESHOLD", "0.02", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_SEVERITY_MODE", "5", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MAX_RETENTION", "0.25", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MIN_RETENTION", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_CUT_BUDGET_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_BROAD_UNWIND_TURNOVER_THRESHOLD", "0.60", 1)
+            Darwin.setenv("ATM_CC_BREADTH_MICRO_BRAKE_STRENGTH", "1", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_WEIGHT", "0", 1)
+            Darwin.setenv("ATM_CC_GOLD_DERISK_TURNOVER_FLOOR", "0", 1)
+
+            guard let cashRun = BacktestEngine.researchCashConfidenceRunWithTrace(
+                assetInputs: inputs(for: cashMode),
+                initialCash: 100_000,
+                settings: settings
+            ) else { return }
+
+            func dailyReturnMap(_ points: [BacktestSeriesPoint]) -> [String: Double] {
+                guard points.count > 1 else { return [:] }
+                var result: [String: Double] = [:]
+                for index in 1..<points.count where points[index - 1].portfolioValue > 0 {
+                    result[points[index].date.recordDateString] = points[index].portfolioValue / points[index - 1].portfolioValue - 1
+                }
+                return result
+            }
+
+            func correlation(_ lhs: [String: Double], _ rhs: [String: Double]) -> Double? {
+                let keys = Set(lhs.keys).intersection(rhs.keys)
+                guard keys.count > 2 else { return nil }
+                let pairs = keys.compactMap { key -> (Double, Double)? in
+                    guard let x = lhs[key], let y = rhs[key] else { return nil }
+                    return (x, y)
+                }
+                guard pairs.count > 2 else { return nil }
+                let meanX = pairs.reduce(0) { $0 + $1.0 } / Double(pairs.count)
+                let meanY = pairs.reduce(0) { $0 + $1.1 } / Double(pairs.count)
+                var covariance = 0.0
+                var varianceX = 0.0
+                var varianceY = 0.0
+                for pair in pairs {
+                    let dx = pair.0 - meanX
+                    let dy = pair.1 - meanY
+                    covariance += dx * dy
+                    varianceX += dx * dx
+                    varianceY += dy * dy
+                }
+                guard varianceX > 0, varianceY > 0 else { return nil }
+                return covariance / sqrt(varianceX * varianceY)
+            }
+
+            let cashReturns = dailyReturnMap(cashRun.report.points)
+            print("APP_CASH_CONFIDENCE_COMPLEMENT_DIAGNOSTIC")
+            func eraMetrics(_ points: [BacktestSeriesPoint], start: String, end: String) -> BacktestPerformanceMetrics? {
+                BacktestMetricsCalculator.performanceMetrics(from: points.filter {
+                    let key = $0.date.recordDateString
+                    return key >= start && key <= end
+                })
+            }
+            print("title,id,annualized,max_drawdown,volatility,sharpe,correlation_with_cash,sharpe_2012_2016,sharpe_2017_2021,return_2012_2016,return_2017_2021")
+            let cashEra1 = eraMetrics(cashRun.report.points, start: "2012-01-01", end: "2016-12-31")
+            let cashEra2 = eraMetrics(cashRun.report.points, start: "2017-01-01", end: "2021-12-31")
+            print([
+                "新冠军",
+                "cash-confidence-next",
+                String(format: "%.6f", (cashRun.report.annualizedReturn ?? 0) * 100),
+                String(format: "%.6f", cashRun.report.maxDrawdown * 100),
+                String(format: "%.6f", (cashRun.report.annualizedVolatility ?? 0) * 100),
+                String(format: "%.6f", cashRun.report.sharpeRatio ?? 0),
+                "1.000000",
+                String(format: "%.6f", cashEra1?.sharpeRatio ?? 0),
+                String(format: "%.6f", cashEra2?.sharpeRatio ?? 0),
+                String(format: "%.6f", (cashEra1?.annualizedReturn ?? 0) * 100),
+                String(format: "%.6f", (cashEra2?.annualizedReturn ?? 0) * 100),
+            ].joined(separator: ","))
+
+            for mode in complementModes {
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: inputs(for: mode),
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                let corr = correlation(cashReturns, dailyReturnMap(run.report.points))
+                let era1 = eraMetrics(run.report.points, start: "2012-01-01", end: "2016-12-31")
+                let era2 = eraMetrics(run.report.points, start: "2017-01-01", end: "2021-12-31")
+                print([
+                    mode.title,
+                    mode.rawValue,
+                    String(format: "%.6f", (run.report.annualizedReturn ?? 0) * 100),
+                    String(format: "%.6f", run.report.maxDrawdown * 100),
+                    String(format: "%.6f", (run.report.annualizedVolatility ?? 0) * 100),
+                    String(format: "%.6f", run.report.sharpeRatio ?? 0),
+                    corr.map { String(format: "%.6f", $0) } ?? "n/a",
+                    String(format: "%.6f", era1?.sharpeRatio ?? 0),
+                    String(format: "%.6f", era2?.sharpeRatio ?? 0),
+                    String(format: "%.6f", (era1?.annualizedReturn ?? 0) * 100),
+                    String(format: "%.6f", (era2?.annualizedReturn ?? 0) * 100),
+                ].joined(separator: ","))
+            }
+            return
+        }

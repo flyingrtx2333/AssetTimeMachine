@@ -1,0 +1,236 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_CREDIT_CORE_RAM_LEVERAGE_VALIDATION"] == "1" {
+            func loadCreditCoreValidationSeries(_ path: String) -> [(releaseDate: String, value: Double)] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3, let value = Double(fields[2]), value.isFinite else { return nil }
+                    return (String(fields[0]), value)
+                }.sorted { $0.0 < $1.0 }
+            }
+            let creditSeries = loadCreditCoreValidationSeries("tools/research-results/NFCICREDIT_initial_release.csv")
+            let leverageSeries = loadCreditCoreValidationSeries("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            guard creditSeries.count >= 700, leverageSeries.count >= 700 else { return }
+            func creditCoreValidationChange(_ series: [(releaseDate: String, value: Double)], on signalDate: String, lookback: Int) -> Double? {
+                var latest: Int?
+                for index in series.indices {
+                    if series[index].releaseDate <= signalDate { latest = index } else { break }
+                }
+                guard let latest, latest >= lookback else { return nil }
+                return series[latest].value - series[latest - lookback].value
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ), let baseStartDate = baseRun.report.points.first?.date else { return }
+            let dates = baseRun.dailyStates.map(\.date)
+            let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let baseTradeDates = Set(baseRun.report.trades.map { $0.date.recordDateString })
+            let dateIndex = Dictionary(uniqueKeysWithValues: dates.enumerated().map { ($0.element.recordDateString, $0.offset) })
+            let symbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            let usSymbols: Set<String> = ["nasdaq", "sp500"]
+
+            func creditCoreValidationBlankMA(_ values: [Double], _ period: Int) -> [Double?] { Array(repeating: nil, count: values.count) }
+            func creditCoreValidationBlankBoll(_ values: [Double], _ period: Int, _ multiplier: Double) -> [(middle: Double, lower: Double, upper: Double)?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func alignedCreditCoreValidationPrices(_ symbol: String) -> [Double]? {
+                guard let input = inputs.first(where: { $0.assetOption.symbol == symbol }),
+                      let prepared = BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+                        assetSeries: input.assetSeries,
+                        assetOption: input.assetOption,
+                        fxSeries: input.fxSeries,
+                        movingAverage: creditCoreValidationBlankMA,
+                        bollingerBands: creditCoreValidationBlankBoll
+                      ) else { return nil }
+                let map = Dictionary(uniqueKeysWithValues: prepared.pricePoints.map { ($0.date.recordDateString, $0.cnyPrice) })
+                var output: [Double] = []
+                var last: Double?
+                for date in dates {
+                    if let value = map[date.recordDateString], value.isFinite, value > 0 { last = value }
+                    guard let value = last else { return nil }
+                    output.append(value)
+                }
+                return output
+            }
+            var prices: [String: [Double]] = [:]
+            for symbol in symbols {
+                guard let aligned = alignedCreditCoreValidationPrices(symbol) else { return }
+                prices[symbol] = aligned
+            }
+            func creditCoreValidationMomentum(_ values: [Double], at index: Int, lookback: Int) -> Double? {
+                guard index >= lookback, values[index - lookback] > 0 else { return nil }
+                return values[index] / values[index - lookback] - 1
+            }
+            func creditCoreValidationVol(_ values: [Double], at index: Int, lookback: Int) -> Double? {
+                guard index >= lookback else { return nil }
+                var rs: [Double] = []
+                for i in (index - lookback + 1)...index {
+                    guard values[i - 1] > 0 else { return nil }
+                    rs.append(values[i] / values[i - 1] - 1)
+                }
+                let mean = rs.reduce(0, +) / Double(rs.count)
+                let variance = rs.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) } / Double(max(rs.count - 1, 1))
+                return sqrt(max(variance, 0))
+            }
+            func creditCoreValidationRAM(at signalIndex: Int) -> (top: Set<String>, m60: [String: Double], m252: [String: Double])? {
+                guard signalIndex >= 252 else { return nil }
+                var score: [String: Double] = [:]
+                var m60Map: [String: Double] = [:]
+                var m252Map: [String: Double] = [:]
+                for symbol in symbols {
+                    guard let values = prices[symbol],
+                          let m60 = creditCoreValidationMomentum(values, at: signalIndex, lookback: 60),
+                          let m252 = creditCoreValidationMomentum(values, at: signalIndex, lookback: 252),
+                          let vol60 = creditCoreValidationVol(values, at: signalIndex, lookback: 60), vol60 > 1e-8 else { return nil }
+                    m60Map[symbol] = m60
+                    m252Map[symbol] = m252
+                    score[symbol] = m252 / vol60
+                }
+                let top = Set(score.sorted { lhs, rhs in lhs.value == rhs.value ? lhs.key < rhs.key : lhs.value > rhs.value }.prefix(2).map { $0.key })
+                return (top, m60Map, m252Map)
+            }
+
+            func runCreditCoreValidated(
+                excludedExtraDate: String?,
+                excludedWholeDate: String?,
+                activationDate: String
+            ) -> (run: ResearchTargetStrategyRun, allEvents: [String], extraEvents: [String])? {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cc_credit_core_ram_leverage_validation",
+                    title: "Credit50+RAM-Leverage稳健性",
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "Credit50+RAM-Leverage稳健性"
+                )
+                var previousBase: [String: Double] = [:]
+                var pending: [String: Double] = [:]
+                var allEvents: [String] = []
+                var extraEvents: [String] = []
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let executionKey = data.dates[index].recordDateString
+                        guard baseTradeDates.contains(executionKey), var target = baseTargets[executionKey] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let prior = previousBase
+                        previousBase = target
+                        guard !prior.isEmpty else {
+                            pending = target
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+                        let signalKey = data.dates[signalIndex].recordDateString
+                        guard signalKey >= activationDate else {
+                            pending = target
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+                        let creditTrigger = creditCoreValidationChange(creditSeries, on: signalKey, lookback: 8).map { $0 <= -0.03 } ?? false
+                        let leverageTrigger = creditCoreValidationChange(leverageSeries, on: signalKey, lookback: 4).map { $0 <= -0.05 } ?? false
+                        let priorGross = prior.values.reduce(0, +)
+                        let proposedGross = target.values.reduce(0, +)
+                        let priorUS = prior.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                        let proposedUS = target.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                        let usDecrease = priorUS - proposedUS
+                        let grossDecrease = priorGross - proposedGross
+                        if signalKey != excludedWholeDate,
+                           usDecrease >= 0.05, grossDecrease >= 0.03, creditTrigger || leverageTrigger {
+                            let ram = dateIndex[signalKey].flatMap { creditCoreValidationRAM(at: $0) }
+                            var extras: [String: Double] = [:]
+                            var usedExtra = false
+                            for symbol in usSymbols {
+                                let reduction = max((prior[symbol] ?? 0) - (target[symbol] ?? 0), 0)
+                                guard reduction > 0 else { continue }
+                                var retention = creditTrigger ? 0.50 : 0.0
+                                let confirms = ram.map {
+                                    $0.top.contains(symbol) && ($0.m60[symbol] ?? -1) > 0 && ($0.m252[symbol] ?? -1) > 0
+                                } ?? false
+                                if signalKey != excludedExtraDate, leverageTrigger && !creditTrigger && confirms {
+                                    retention = max(retention, 0.50)
+                                    usedExtra = true
+                                }
+                                if signalKey != excludedExtraDate, creditTrigger && leverageTrigger && confirms {
+                                    retention = max(retention, 0.75)
+                                    usedExtra = true
+                                }
+                                if retention > 0 { extras[symbol] = retention * reduction }
+                            }
+                            let desired = extras.values.reduce(0, +)
+                            if desired > 0 {
+                                let cash = max(1.0 - proposedGross, 0)
+                                let scale = min(1.0, cash / desired)
+                                for (symbol, extra) in extras { target[symbol, default: 0] += extra * scale }
+                                allEvents.append(signalKey)
+                                if usedExtra { extraEvents.append(signalKey) }
+                            }
+                        }
+                        let gross = target.values.reduce(0, +)
+                        if gross > 1, gross > 0 { target = target.mapValues { max($0, 0) / gross } }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { return nil }
+                return (run, allEvents, extraEvents)
+            }
+
+            func creditCoreValidationMetrics(_ run: ResearchTargetStrategyRun) -> [String]? {
+                let points = run.report.points.filter { $0.date >= baseStartDate }
+                guard let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { return nil }
+                return [
+                    metrics.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    String(format: "%.6f", metrics.maxDrawdown * 100),
+                    metrics.annualizedVolatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    metrics.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a",
+                    String(run.report.trades.filter { $0.date >= baseStartDate }.count),
+                ]
+            }
+
+            print("APP_CC_CREDIT_CORE_RAM_LEVERAGE_VALIDATION_BASE")
+            print(String(format: "%.6f,%.6f,%.6f,%d", (baseRun.report.annualizedReturn ?? 0)*100, baseRun.report.maxDrawdown*100, baseRun.report.sharpeRatio ?? 0, baseRun.report.trades.count))
+            guard let baseline = runCreditCoreValidated(excludedExtraDate: nil, excludedWholeDate: nil, activationDate: "0000-01-01") else { return }
+            let allDates = Array(Set(baseline.allEvents)).sorted()
+            let extraDates = Array(Set(baseline.extraEvents)).sorted()
+            print("APP_CC_CREDIT_CORE_RAM_LEVERAGE_VALIDATION")
+            print("test,date,annualized,max_drawdown,volatility,sharpe,trades,all_events,extra_events")
+            if let metric = creditCoreValidationMetrics(baseline.run) {
+                print((["baseline", "none"] + metric + [String(allDates.count), String(extraDates.count)]).joined(separator: ","))
+            }
+            for excluded in extraDates {
+                guard let result = runCreditCoreValidated(excludedExtraDate: excluded, excludedWholeDate: nil, activationDate: "0000-01-01"),
+                      let metric = creditCoreValidationMetrics(result.run) else { continue }
+                print((["extra_jackknife", excluded] + metric + [String(Set(result.allEvents).count), String(Set(result.extraEvents).count)]).joined(separator: ","))
+            }
+            for excluded in allDates {
+                guard let result = runCreditCoreValidated(excludedExtraDate: nil, excludedWholeDate: excluded, activationDate: "0000-01-01"),
+                      let metric = creditCoreValidationMetrics(result.run) else { continue }
+                print((["whole_event_jackknife", excluded] + metric + [String(Set(result.allEvents).count), String(Set(result.extraEvents).count)]).joined(separator: ","))
+            }
+            for activation in ["2015-01-01", "2017-01-01", "2019-01-01", "2020-01-01"] {
+                guard let result = runCreditCoreValidated(excludedExtraDate: nil, excludedWholeDate: nil, activationDate: activation),
+                      let metric = creditCoreValidationMetrics(result.run) else { continue }
+                print((["activation", activation] + metric + [String(Set(result.allEvents).count), String(Set(result.extraEvents).count)]).joined(separator: ","))
+            }
+            print("extra_dates," + extraDates.joined(separator: "|"))
+            print("all_dates," + allDates.joined(separator: "|"))
+            return
+        }

@@ -1,0 +1,331 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_EXTERNAL_EVENT_ATTRIBUTION"] == "1" {
+            struct ExternalEventRow {
+                let date: Date
+                let type: String
+                let priorLeader: String
+                let newLeader: String
+                let grossDelta: Double
+                let usDelta: Double
+                let permission: Double?
+                let creditChangeZ: Double?
+                let vix: Double?
+                let termRatio: Double?
+                let vixRelease: Bool
+                let edge20: Double?
+                let edge60: Double?
+            }
+
+            func loadExternalCSV(_ path: String, valueColumn: String) -> [String: Double] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [:] }
+                let lines = text.split(whereSeparator: \.isNewline)
+                guard let header = lines.first else { return [:] }
+                let columns = header.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
+                guard let valueIndex = columns.firstIndex(of: valueColumn) else { return [:] }
+                var values: [String: Double] = [:]
+                for line in lines.dropFirst() {
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count > valueIndex,
+                          let value = Double(fields[valueIndex]), value.isFinite else { continue }
+                    values[String(fields[0])] = value
+                }
+                return values
+            }
+
+            func alignExternal(_ map: [String: Double], dates: [Date]) -> [Double?] {
+                var output: [Double?] = []
+                output.reserveCapacity(dates.count)
+                var lastValue: Double?
+                for date in dates {
+                    if let value = map[date.recordDateString] { lastValue = value }
+                    output.append(lastValue)
+                }
+                return output
+            }
+
+            func externalChange(_ values: [Double?], lookback: Int) -> [Double?] {
+                var output = Array<Double?>(repeating: nil, count: values.count)
+                guard values.count > lookback else { return output }
+                for index in lookback..<values.count {
+                    guard let current = values[index], let prior = values[index - lookback] else { continue }
+                    output[index] = current - prior
+                }
+                return output
+            }
+
+            func externalRollingZ(_ values: [Double?], window: Int = 756, minimumCount: Int = 252) -> [Double?] {
+                var output = Array<Double?>(repeating: nil, count: values.count)
+                for index in values.indices {
+                    let start = max(0, index - window + 1)
+                    let sample = values[start...index].compactMap { $0 }
+                    guard sample.count >= minimumCount, let current = values[index] else { continue }
+                    let mean = sample.reduce(0, +) / Double(sample.count)
+                    let variance = sample.count > 1
+                        ? sample.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) } / Double(sample.count - 1)
+                        : 0
+                    let sd = sqrt(max(variance, 0))
+                    guard sd > 0.0000001 else { continue }
+                    output[index] = min(max((current - mean) / sd, -4), 4)
+                }
+                return output
+            }
+
+            func eventLeader(_ weights: [String: Double]) -> String {
+                let gold = weights["gold_cny"] ?? 0
+                let nasdaq = weights["nasdaq"] ?? 0
+                let sp500 = weights["sp500"] ?? 0
+                let china = (weights["csi300"] ?? 0) + (weights["shanghai_composite"] ?? 0)
+                let gross = gold + nasdaq + sp500 + china
+                guard gross >= 0.05 else { return "cash" }
+                if gold >= nasdaq, gold >= sp500, gold >= china { return "gold" }
+                if nasdaq >= sp500, nasdaq >= china { return "nasdaq" }
+                if sp500 >= china { return "sp500" }
+                return "china"
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else {
+                print("APP_CC_EXTERNAL_EVENT_ATTRIBUTION\nbase_missing")
+                return
+            }
+
+            let dates = baseRun.dailyStates.map(\.date)
+            let dateIndex = Dictionary(uniqueKeysWithValues: dates.enumerated().map { ($0.element.recordDateString, $0.offset) })
+            let targetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let tradeDateKeys = Set(baseRun.report.trades.map { $0.date.recordDateString })
+            let orderedTradeDates = dates.filter { tradeDateKeys.contains($0.recordDateString) }
+
+            func blankExternalMA(_ values: [Double], _ period: Int) -> [Double?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func blankExternalBoll(_ values: [Double], _ period: Int, _ multiplier: Double) -> [(middle: Double, lower: Double, upper: Double)?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func alignedCNYExternalPrices(_ symbol: String) -> [Double]? {
+                guard let input = inputs.first(where: { $0.assetOption.symbol == symbol }),
+                      let prepared = BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+                        assetSeries: input.assetSeries,
+                        assetOption: input.assetOption,
+                        fxSeries: input.fxSeries,
+                        movingAverage: blankExternalMA,
+                        bollingerBands: blankExternalBoll
+                      ) else { return nil }
+                let map = Dictionary(uniqueKeysWithValues: prepared.pricePoints.map { ($0.date.recordDateString, $0.cnyPrice) })
+                var output: [Double] = []
+                output.reserveCapacity(dates.count)
+                var lastValue: Double?
+                for date in dates {
+                    if let value = map[date.recordDateString] { lastValue = value }
+                    guard let value = lastValue else { return nil }
+                    output.append(value)
+                }
+                return output
+            }
+
+            let tradedSymbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            var pricesBySymbol: [String: [Double]] = [:]
+            for symbol in tradedSymbols {
+                guard let prices = alignedCNYExternalPrices(symbol) else {
+                    print("APP_CC_EXTERNAL_EVENT_ATTRIBUTION\nprice_missing_\(symbol)")
+                    return
+                }
+                pricesBySymbol[symbol] = prices
+            }
+
+            let vix = alignExternal(loadExternalCSV("tools/fixtures/macro-risk/VIXCLS.csv", valueColumn: "VIXCLS"), dates: dates)
+            let vix3m = alignExternal(loadExternalCSV("tools/fixtures/macro-risk/VXVCLS.csv", valueColumn: "VXVCLS"), dates: dates)
+            let realYield = alignExternal(loadExternalCSV("tools/fixtures/macro-risk/DFII10.csv", valueColumn: "DFII10"), dates: dates)
+            let dgs10 = alignExternal(loadExternalCSV("tools/fixtures/macro-risk/fred_dgs10.csv", valueColumn: "DGS10"), dates: dates)
+            let dgs2 = alignExternal(loadExternalCSV("tools/fixtures/macro-risk/fred_dgs2.csv", valueColumn: "DGS2"), dates: dates)
+            let baa10y = alignExternal(loadExternalCSV("tools/fixtures/macro-risk/BAA10Y.csv", valueColumn: "BAA10Y"), dates: dates)
+            let curve: [Double?] = zip(dgs10, dgs2).map { lhs, rhs in
+                guard let lhs, let rhs else { return nil }
+                return lhs - rhs
+            }
+            let realZ = externalRollingZ(externalChange(realYield, lookback: 63))
+            let curveZ = externalRollingZ(externalChange(curve, lookback: 63))
+            let permission: [Double?] = zip(realZ, curveZ).map { real, curve in
+                guard let real, let curve else { return nil }
+                return 0.5 * (-real + curve)
+            }
+            let rawCreditChangeZ = externalRollingZ(externalChange(baa10y, lookback: 63))
+            // BAA10Y observations are released on the following business day, so add one
+            // extra trading-session lag beyond the strategy's normal T-1 signal delay.
+            let creditChangeZ: [Double?] = [nil] + Array(rawCreditChangeZ.dropLast())
+
+            func portfolioForwardReturn(_ weights: [String: Double], start: Int, horizon: Int) -> Double? {
+                let end = start + horizon
+                guard start >= 0, end < dates.count else { return nil }
+                var terminal = 0.0
+                var gross = 0.0
+                for (symbol, weight) in weights where weight > 0 {
+                    guard let prices = pricesBySymbol[symbol], prices[start] > 0 else { continue }
+                    terminal += weight * (prices[end] / prices[start])
+                    gross += weight
+                }
+                var cashGrowth = 1.0
+                if gross < 1 {
+                    for index in start..<end {
+                        cashGrowth *= 1 + CashYieldCNY.dailyReturn(on: dates[index])
+                    }
+                    terminal += max(1 - gross, 0) * cashGrowth
+                }
+                return terminal - 1
+            }
+
+            func targetTurnover(_ lhs: [String: Double], _ rhs: [String: Double]) -> Double {
+                let symbols = Set(lhs.keys).union(rhs.keys)
+                return symbols.reduce(0.0) { $0 + abs((lhs[$1] ?? 0) - (rhs[$1] ?? 0)) }
+            }
+
+            var rows: [ExternalEventRow] = []
+            var previousTarget: [String: Double] = [:]
+            for tradeDate in orderedTradeDates {
+                let key = tradeDate.recordDateString
+                guard let index = dateIndex[key], index > 0, let target = targetsByDate[key] else { continue }
+                let prior = previousTarget
+                previousTarget = target
+                if prior.isEmpty { continue }
+
+                let priorGross = prior.values.reduce(0, +)
+                let newGross = target.values.reduce(0, +)
+                let priorUS = (prior["nasdaq"] ?? 0) + (prior["sp500"] ?? 0)
+                let newUS = (target["nasdaq"] ?? 0) + (target["sp500"] ?? 0)
+                let grossDelta = newGross - priorGross
+                let usDelta = newUS - priorUS
+                let priorLeader = eventLeader(prior)
+                let newLeader = eventLeader(target)
+                let type: String
+                if usDelta >= 0.05 && grossDelta >= 0.03 {
+                    type = "us-rerisk"
+                } else if usDelta <= -0.05 && grossDelta <= -0.03 {
+                    type = "us-derisk"
+                } else if grossDelta >= 0.05 {
+                    type = "rerisk"
+                } else if grossDelta <= -0.05 {
+                    type = "derisk"
+                } else if priorLeader != newLeader {
+                    type = "leader-switch"
+                } else {
+                    type = "same-leader"
+                }
+
+                let signalIndex = index - 1
+                let permissionValue = permission.indices.contains(signalIndex) ? permission[signalIndex] : nil
+                let creditValue = creditChangeZ.indices.contains(signalIndex) ? creditChangeZ[signalIndex] : nil
+                let vixValue = vix.indices.contains(signalIndex) ? vix[signalIndex] : nil
+                let vix3mValue = vix3m.indices.contains(signalIndex) ? vix3m[signalIndex] : nil
+                let termRatio: Double? = {
+                    guard let vixValue, let vix3mValue, vix3mValue > 0 else { return nil }
+                    return vixValue / vix3mValue
+                }()
+                var release = false
+                if signalIndex >= 5,
+                   let vixNow = vix[signalIndex],
+                   let vixPrior = vix[signalIndex - 5],
+                   let vix3mPrior = vix3m[signalIndex - 5],
+                   vixPrior > 0, vix3mPrior > 0,
+                   let nasdaqPrices = pricesBySymbol["nasdaq"],
+                   nasdaqPrices[signalIndex - 5] > 0 {
+                    let m5 = nasdaqPrices[signalIndex] / nasdaqPrices[signalIndex - 5] - 1
+                    release = (vixPrior / vix3mPrior >= 1.0 || vixPrior >= 30)
+                        && vixNow / vixPrior - 1 <= -0.10
+                        && m5 > 0
+                }
+
+                let turnoverCost = targetTurnover(prior, target) * 0.0105
+                let edge20: Double? = {
+                    guard let next = portfolioForwardReturn(target, start: index, horizon: 20),
+                          let old = portfolioForwardReturn(prior, start: index, horizon: 20) else { return nil }
+                    return next - old - turnoverCost
+                }()
+                let edge60: Double? = {
+                    guard let next = portfolioForwardReturn(target, start: index, horizon: 60),
+                          let old = portfolioForwardReturn(prior, start: index, horizon: 60) else { return nil }
+                    return next - old - turnoverCost
+                }()
+
+                rows.append(ExternalEventRow(
+                    date: tradeDate,
+                    type: type,
+                    priorLeader: priorLeader,
+                    newLeader: newLeader,
+                    grossDelta: grossDelta,
+                    usDelta: usDelta,
+                    permission: permissionValue,
+                    creditChangeZ: creditValue,
+                    vix: vixValue,
+                    termRatio: termRatio,
+                    vixRelease: release,
+                    edge20: edge20,
+                    edge60: edge60
+                ))
+            }
+
+            func meanExternal(_ values: [Double]) -> Double? {
+                values.isEmpty ? nil : values.reduce(0, +) / Double(values.count)
+            }
+            func printExternalGroup(_ name: String, rows group: [ExternalEventRow]) {
+                let edge20 = group.compactMap(\.edge20)
+                let edge60 = group.compactMap(\.edge60)
+                let m20 = meanExternal(edge20)
+                let m60 = meanExternal(edge60)
+                let win20 = edge20.isEmpty ? nil : Double(edge20.filter { $0 > 0 }.count) / Double(edge20.count)
+                let win60 = edge60.isEmpty ? nil : Double(edge60.filter { $0 > 0 }.count) / Double(edge60.count)
+                print([
+                    name,
+                    String(group.count),
+                    m20.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    m60.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    win20.map { String(format: "%.4f", $0) } ?? "n/a",
+                    win60.map { String(format: "%.4f", $0) } ?? "n/a",
+                ].joined(separator: ","))
+            }
+
+            print("APP_CC_EXTERNAL_EVENT_ATTRIBUTION_BASE")
+            print("annualized,max_drawdown,sharpe,trades")
+            print(String(format: "%.6f,%.6f,%.6f,%d", (baseRun.report.annualizedReturn ?? 0) * 100, baseRun.report.maxDrawdown * 100, baseRun.report.sharpeRatio ?? 0, baseRun.report.trades.count))
+            print("APP_CC_EXTERNAL_EVENT_GROUPS")
+            print("group,count,mean_edge20,mean_edge60,win20,win60")
+            for type in ["us-rerisk", "us-derisk", "rerisk", "derisk", "leader-switch", "same-leader"] {
+                let group = rows.filter { $0.type == type }
+                printExternalGroup(type, rows: group)
+                printExternalGroup(type + ":macro-adverse", rows: group.filter { ($0.permission ?? 99) <= -0.75 })
+                printExternalGroup(type + ":macro-favorable", rows: group.filter { ($0.permission ?? -99) >= 0.75 })
+                printExternalGroup(type + ":credit-widen", rows: group.filter { ($0.creditChangeZ ?? -99) >= 0.75 })
+                printExternalGroup(type + ":credit-tighten", rows: group.filter { ($0.creditChangeZ ?? 99) <= -0.75 })
+                printExternalGroup(type + ":vix-panic", rows: group.filter { ($0.vix ?? 0) >= 30 || ($0.termRatio ?? 0) >= 1.0 })
+                printExternalGroup(type + ":vix-release", rows: group.filter(\.vixRelease))
+            }
+
+            print("APP_CC_EXTERNAL_EVENT_ROWS")
+            print("date,type,prior_leader,new_leader,gross_delta,us_delta,permission,credit_change_z,vix,term_ratio,vix_release,edge20,edge60")
+            for row in rows {
+                print([
+                    row.date.recordDateString,
+                    row.type,
+                    row.priorLeader,
+                    row.newLeader,
+                    String(format: "%.6f", row.grossDelta),
+                    String(format: "%.6f", row.usDelta),
+                    row.permission.map { String(format: "%.6f", $0) } ?? "n/a",
+                    row.creditChangeZ.map { String(format: "%.6f", $0) } ?? "n/a",
+                    row.vix.map { String(format: "%.4f", $0) } ?? "n/a",
+                    row.termRatio.map { String(format: "%.6f", $0) } ?? "n/a",
+                    row.vixRelease ? "true" : "false",
+                    row.edge20.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    row.edge60.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                ].joined(separator: ","))
+            }
+            return
+        }

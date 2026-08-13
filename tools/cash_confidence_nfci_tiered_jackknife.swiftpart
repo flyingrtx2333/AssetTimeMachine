@@ -1,0 +1,151 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_NFCI_COMBO_JACKKNIFE"] == "1" {
+            func loadNFCIJackknifeSeries(_ path: String) -> [(releaseDate: String, value: Double)] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3, let value = Double(fields[2]), value.isFinite else { return nil }
+                    return (String(fields[0]), value)
+                }.sorted { $0.0 < $1.0 }
+            }
+
+            let creditSeries = loadNFCIJackknifeSeries("tools/research-results/NFCICREDIT_initial_release.csv")
+            let leverageSeries = loadNFCIJackknifeSeries("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            guard creditSeries.count >= 700, leverageSeries.count >= 700 else {
+                print("APP_CC_NFCI_COMBO_JACKKNIFE\nseries_missing")
+                return
+            }
+            func nfciJKChange(_ series: [(releaseDate: String, value: Double)], on signalDate: String, lookback: Int) -> Double? {
+                var latest: Int?
+                for index in series.indices {
+                    if series[index].releaseDate <= signalDate { latest = index } else { break }
+                }
+                guard let latest, latest >= lookback else { return nil }
+                return series[latest].value - series[latest - lookback].value
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ), let baseStartDate = baseRun.report.points.first?.date else {
+                print("APP_CC_NFCI_COMBO_JACKKNIFE\nbase_missing")
+                return
+            }
+            let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let baseTradeDates = Set(baseRun.report.trades.map { $0.date.recordDateString })
+            let usSymbols: Set<String> = ["nasdaq", "sp500"]
+
+            func runNFCIComboJK(bothRetention: Double, excludedDate: String?) -> (run: ResearchTargetStrategyRun, events: [String])? {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cc_nfci_combo_jackknife",
+                    title: "NFCI combo jackknife",
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "NFCI信用杠杆联合稳健性"
+                )
+                var previousBase: [String: Double] = [:]
+                var pending: [String: Double] = [:]
+                var events: [String] = []
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let executionKey = data.dates[index].recordDateString
+                        guard baseTradeDates.contains(executionKey), var target = baseTargets[executionKey] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let prior = previousBase
+                        previousBase = target
+                        guard !prior.isEmpty else {
+                            pending = target
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+                        let signalKey = data.dates[signalIndex].recordDateString
+                        let creditTrigger = nfciJKChange(creditSeries, on: signalKey, lookback: 8).map { $0 <= -0.03 } ?? false
+                        let leverageTrigger = nfciJKChange(leverageSeries, on: signalKey, lookback: 4).map { $0 <= -0.05 } ?? false
+                        let priorGross = prior.values.reduce(0, +)
+                        let proposedGross = target.values.reduce(0, +)
+                        let priorUS = prior.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                        let proposedUS = target.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                        let usDecrease = priorUS - proposedUS
+                        let grossDecrease = priorGross - proposedGross
+                        if signalKey != excludedDate,
+                           usDecrease >= 0.05,
+                           grossDecrease >= 0.03,
+                           creditTrigger || leverageTrigger {
+                            let retention = creditTrigger && leverageTrigger ? bothRetention : 0.50
+                            var extras: [String: Double] = [:]
+                            for symbol in usSymbols {
+                                let reduction = max((prior[symbol] ?? 0) - (target[symbol] ?? 0), 0)
+                                if reduction > 0 { extras[symbol] = retention * reduction }
+                            }
+                            let desired = extras.values.reduce(0, +)
+                            if desired > 0 {
+                                let cash = max(1.0 - proposedGross, 0)
+                                let scale = min(1.0, cash / desired)
+                                for (symbol, extra) in extras { target[symbol, default: 0] += extra * scale }
+                                events.append(signalKey)
+                            }
+                        }
+                        let gross = target.values.reduce(0, +)
+                        if gross > 1, gross > 0 { target = target.mapValues { max($0, 0) / gross } }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { return nil }
+                return (run, events)
+            }
+
+            print("APP_CC_NFCI_COMBO_JACKKNIFE_BASE")
+            print(String(format: "%.6f,%.6f,%.6f,%d", (baseRun.report.annualizedReturn ?? 0) * 100, baseRun.report.maxDrawdown * 100, baseRun.report.sharpeRatio ?? 0, baseRun.report.trades.count))
+            print("APP_CC_NFCI_COMBO_JACKKNIFE")
+            print("variant,excluded_event,annualized,max_drawdown,volatility,sharpe,trades,remaining_events")
+            for (variantName, bothRetention) in [("tier75", 0.75), ("tier100", 1.00)] {
+                guard let baseline = runNFCIComboJK(bothRetention: bothRetention, excludedDate: nil) else { continue }
+                let eventDates = Array(Set(baseline.events)).sorted()
+                for excluded in ["none"] + eventDates {
+                    let result = excluded == "none"
+                        ? baseline
+                        : runNFCIComboJK(bothRetention: bothRetention, excludedDate: excluded)
+                    guard let result else { continue }
+                    let points = result.run.report.points.filter { $0.date >= baseStartDate }
+                    guard let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                    let annualizedText = metrics.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let drawdownText = String(format: "%.6f", metrics.maxDrawdown * 100)
+                    let volatilityText = metrics.annualizedVolatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let sharpeText = metrics.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a"
+                    let tradeText = String(result.run.report.trades.filter { $0.date >= baseStartDate }.count)
+                    let eventText = String(Set(result.events).count)
+                    let columns: [String] = [
+                        variantName,
+                        excluded,
+                        annualizedText,
+                        drawdownText,
+                        volatilityText,
+                        sharpeText,
+                        tradeText,
+                        eventText,
+                    ]
+                    print(columns.joined(separator: ","))
+                }
+            }
+            return
+        }

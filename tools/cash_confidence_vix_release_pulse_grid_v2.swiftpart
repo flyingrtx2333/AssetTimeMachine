@@ -1,0 +1,299 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_VIX_RELEASE_PULSE_GRID_V2"] == "1" {
+            struct VIXReleasePulseV2Candidate {
+                let title: String
+                let pulseFloor: Double
+                let duration: Int
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let triggerCount: Int
+                let pulseEntryCount: Int
+                let triggerDates: [String]
+                let maxTargetGross: Double
+                let maxActualGross: Double
+                let minCashRatio: Double
+                let financedDays: Int
+            }
+
+            func loadVIXV2CSV(_ path: String, valueColumn: String) -> [String: Double] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [:] }
+                let lines = text.split(whereSeparator: \.isNewline)
+                guard let header = lines.first else { return [:] }
+                let columns = header.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
+                guard let valueIndex = columns.firstIndex(of: valueColumn) else { return [:] }
+                var values: [String: Double] = [:]
+                for line in lines.dropFirst() {
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count > valueIndex,
+                          let value = Double(fields[valueIndex]),
+                          value.isFinite else { continue }
+                    values[String(fields[0])] = value
+                }
+                return values
+            }
+
+            func alignVIXV2(_ map: [String: Double], dates: [Date]) -> [Double?] {
+                var output: [Double?] = []
+                output.reserveCapacity(dates.count)
+                var lastValue: Double?
+                for date in dates {
+                    if let value = map[date.recordDateString] { lastValue = value }
+                    output.append(lastValue)
+                }
+                return output
+            }
+
+            let vixMap = loadVIXV2CSV("tools/fixtures/macro-risk/VIXCLS.csv", valueColumn: "VIXCLS")
+            let vix3mMap = loadVIXV2CSV("tools/fixtures/macro-risk/VXVCLS.csv", valueColumn: "VXVCLS")
+            guard !vixMap.isEmpty, !vix3mMap.isEmpty else {
+                print("APP_CC_VIX_RELEASE_PULSE_GRID_V2\nmacro_fixture_missing")
+                return
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ), let baseStartDate = baseRun.report.points.first?.date else {
+                print("APP_CC_VIX_RELEASE_PULSE_GRID_V2\nbase_missing")
+                return
+            }
+
+            let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            let baseActualWeightsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { state -> (String, [String: Double]) in
+                guard state.portfolioValue > 0 else { return (state.date.recordDateString, [:]) }
+                return (
+                    state.date.recordDateString,
+                    state.holdingsBySymbol.mapValues { $0 / state.portfolioValue }
+                )
+            })
+            let baseTradeDates = Set(baseRun.report.trades.map { $0.date.recordDateString })
+            let configurations: [(floor: Double, duration: Int)] = [
+                (0.0, 0),
+                (0.10, 21),
+                (0.10, 42),
+                (0.20, 21),
+                (0.20, 42),
+            ]
+            let usSymbols: Set<String> = ["nasdaq", "sp500"]
+            let cooldownSessions = 10
+            let baseUSMaximum = 0.20
+            var candidates: [VIXReleasePulseV2Candidate] = []
+
+            for configuration in configurations {
+                let pulseFloor = configuration.floor
+                let duration = configuration.duration
+                let title = pulseFloor > 0
+                    ? String(format: "VIX恐慌解除再入场V2-P%.0f-D%d", pulseFloor * 100, duration)
+                    : "冠军重放控制组"
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cc_vix_release_pulse_v2",
+                    title: title,
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "VIX恐慌解除现金试探仓V2"
+                )
+
+                var alignedVIX: [Double?] = []
+                var alignedVIX3M: [Double?] = []
+                var pendingWeights: [String: Double] = [:]
+                var overlayWasApplied = false
+                var activeUntilSignalIndex = -1
+                var lastTriggerSignalIndex = -10_000
+                var triggerDates: [String] = []
+                var pulseEntryCount = 0
+
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index),
+                              data.dates.indices.contains(signalIndex),
+                              let nasdaq = data.pricesBySymbol["nasdaq"],
+                              nasdaq.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        if alignedVIX.isEmpty {
+                            alignedVIX = alignVIXV2(vixMap, dates: data.dates)
+                            alignedVIX3M = alignVIXV2(vix3mMap, dates: data.dates)
+                        }
+
+                        let executionKey = data.dates[index].recordDateString
+                        let isBaseTradeDate = baseTradeDates.contains(executionKey)
+                        let baseActual = baseActualWeightsByDate[executionKey] ?? [:]
+                        let baseReference: [String: Double]
+                        if isBaseTradeDate, let baseTarget = baseTargetsByDate[executionKey] {
+                            baseReference = baseTarget
+                        } else {
+                            baseReference = baseActual
+                        }
+
+                        if pulseFloor > 0,
+                           signalIndex >= 5,
+                           alignedVIX.indices.contains(signalIndex),
+                           alignedVIX.indices.contains(signalIndex - 5),
+                           alignedVIX3M.indices.contains(signalIndex - 5),
+                           let vixNow = alignedVIX[signalIndex],
+                           let vixFiveAgo = alignedVIX[signalIndex - 5],
+                           let vix3mFiveAgo = alignedVIX3M[signalIndex - 5],
+                           vixFiveAgo > 0,
+                           vix3mFiveAgo > 0,
+                           let nasdaqMomentum5 = priceMomentum(nasdaq, at: signalIndex, lookback: 5) {
+                            let priorTermRatio = vixFiveAgo / vix3mFiveAgo
+                            let vixChange5 = vixNow / vixFiveAgo - 1
+                            let releaseTrigger = (priorTermRatio >= 1.0 || vixFiveAgo >= 30.0)
+                                && vixChange5 <= -0.10
+                                && nasdaqMomentum5 > 0
+                                && signalIndex - lastTriggerSignalIndex >= cooldownSessions
+                            if releaseTrigger {
+                                activeUntilSignalIndex = signalIndex + duration
+                                lastTriggerSignalIndex = signalIndex
+                                triggerDates.append(data.dates[signalIndex].recordDateString)
+                            }
+                        }
+
+                        let referenceUSGross = baseReference.reduce(0.0) {
+                            $0 + (usSymbols.contains($1.key) ? $1.value : 0)
+                        }
+                        let referenceGross = baseReference.values.reduce(0, +)
+                        let availableCash = max(1.0 - referenceGross, 0)
+                        let desiredExtraNasdaq = max(pulseFloor - referenceUSGross, 0)
+                        let extraNasdaq = min(desiredExtraNasdaq, availableCash)
+                        let overlayAppliedNow = pulseFloor > 0
+                            && signalIndex <= activeUntilSignalIndex
+                            && referenceUSGross < baseUSMaximum
+                            && extraNasdaq > 0.000001
+                        let overlayTransition = overlayAppliedNow != overlayWasApplied
+
+                        guard isBaseTradeDate || overlayTransition else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+
+                        var target = baseReference
+                        if overlayAppliedNow {
+                            target["nasdaq", default: 0] += extraNasdaq
+                            if !overlayWasApplied { pulseEntryCount += 1 }
+                        }
+                        let gross = target.values.reduce(0, +)
+                        if gross > 1.0, gross > 0 {
+                            target = target.mapValues { max($0, 0) / gross }
+                        }
+                        pendingWeights = target
+                        overlayWasApplied = overlayAppliedNow
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pendingWeights }
+                ) else { continue }
+
+                let comparablePoints = run.report.points.filter { $0.date >= baseStartDate }
+                guard let fullMetrics = BacktestMetricsCalculator.performanceMetrics(from: comparablePoints) else { continue }
+                let fullRow = MetricRow(
+                    title: title,
+                    id: "cc_vix_release_pulse_v2",
+                    annualized: fullMetrics.annualizedReturn,
+                    maxDrawdown: fullMetrics.maxDrawdown,
+                    volatility: fullMetrics.annualizedVolatility,
+                    sharpe: fullMetrics.sharpeRatio,
+                    start: comparablePoints.first?.date.recordDateString ?? "n/a",
+                    end: comparablePoints.last?.date.recordDateString ?? "n/a",
+                    pointCount: comparablePoints.count
+                )
+
+                var maxTargetGross = 0.0
+                var maxActualGross = 0.0
+                var minCashRatio = Double.greatestFiniteMagnitude
+                var financedDays = 0
+                for state in run.dailyStates where state.portfolioValue > 0 && state.date >= baseStartDate {
+                    maxTargetGross = max(maxTargetGross, state.targetWeights.values.reduce(0, +))
+                    let actualGross = state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue
+                    maxActualGross = max(maxActualGross, actualGross)
+                    let cashRatio = state.cash / state.portfolioValue
+                    minCashRatio = min(minCashRatio, cashRatio)
+                    if state.cash < -0.0001 { financedDays += 1 }
+                }
+
+                candidates.append(VIXReleasePulseV2Candidate(
+                    title: title,
+                    pulseFloor: pulseFloor,
+                    duration: duration,
+                    annualized: fullMetrics.annualizedReturn ?? -1,
+                    maxDrawdown: fullMetrics.maxDrawdown,
+                    volatility: fullMetrics.annualizedVolatility ?? -1,
+                    sharpe: fullMetrics.sharpeRatio ?? -1,
+                    sliceRows: metricRowsForSlices(
+                        title: title,
+                        id: "cc_vix_release_pulse_v2",
+                        points: comparablePoints,
+                        fullRow: fullRow
+                    ),
+                    trades: run.report.trades.filter { $0.date >= baseStartDate }.count,
+                    averageCashRatio: run.report.averageCashRatio,
+                    triggerCount: triggerDates.count,
+                    pulseEntryCount: pulseEntryCount,
+                    triggerDates: triggerDates,
+                    maxTargetGross: maxTargetGross,
+                    maxActualGross: maxActualGross,
+                    minCashRatio: minCashRatio == Double.greatestFiniteMagnitude ? 0 : minCashRatio,
+                    financedDays: financedDays
+                ))
+            }
+
+            print("APP_CC_VIX_RELEASE_PULSE_V2_BASE")
+            print("annualized,max_drawdown,volatility,sharpe,trades,average_cash_ratio,start,end,points")
+            print([
+                String(format: "%.6f", (baseRun.report.annualizedReturn ?? 0) * 100),
+                String(format: "%.6f", baseRun.report.maxDrawdown * 100),
+                String(format: "%.6f", (baseRun.report.annualizedVolatility ?? 0) * 100),
+                String(format: "%.6f", baseRun.report.sharpeRatio ?? 0),
+                String(baseRun.report.trades.count),
+                String(format: "%.6f", baseRun.report.averageCashRatio),
+                baseRun.report.points.first?.date.recordDateString ?? "n/a",
+                baseRun.report.points.last?.date.recordDateString ?? "n/a",
+                String(baseRun.report.points.count),
+            ].joined(separator: ","))
+
+            candidates.sort { lhs, rhs in
+                let lhsScore = lhs.annualized - max(lhs.maxDrawdown - 0.08, 0) * 2
+                let rhsScore = rhs.annualized - max(rhs.maxDrawdown - 0.08, 0) * 2
+                if lhsScore == rhsScore { return lhs.sharpe > rhs.sharpe }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(candidates.flatMap(\.sliceRows), header: "APP_CC_VIX_RELEASE_PULSE_GRID_V2")
+            print("APP_CC_VIX_RELEASE_PULSE_V2_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,trigger_count,pulse_entries,max_target_gross,max_actual_gross,min_cash_ratio,financed_days,trigger_dates")
+            for candidate in candidates {
+                print([
+                    candidate.title,
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio),
+                    String(candidate.triggerCount),
+                    String(candidate.pulseEntryCount),
+                    String(format: "%.9f", candidate.maxTargetGross),
+                    String(format: "%.9f", candidate.maxActualGross),
+                    String(format: "%.9f", candidate.minCashRatio),
+                    String(candidate.financedDays),
+                    candidate.triggerDates.joined(separator: "|"),
+                ].joined(separator: ","))
+            }
+            return
+        }

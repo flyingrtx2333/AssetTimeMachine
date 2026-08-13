@@ -1,0 +1,211 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_CONSENSUS_SCALER_GRID"] == "1" {
+            struct ConsensusScalerCandidate {
+                let title: String
+                let requiredAgreement: Int
+                let scale: Double
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let trades: Int
+                let averageCashRatio: Double
+                let sliceRows: [SliceMetricRow]
+            }
+
+            let cashMode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let confirmationModes: [AdvancedBacktestStrategyMode] = [
+                .coreGoldSatelliteRiskBudgetStateGateMomentum,
+                .coreGoldSatelliteSharpeStateGateMomentum,
+                .goldNasdaqDualTrendBarbell,
+            ]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            func inputs(for mode: AdvancedBacktestStrategyMode) -> [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)] {
+                mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+            }
+            let allInputs = cashMode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", "0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", "2", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_QUALITY_GAP_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+            Darwin.setenv("ATM_CC_PORTFOLIO_VOL_TARGET", "99", 1)
+            Darwin.setenv("ATM_CC_CALM_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_VOL_FLOOR", "0", 1)
+            Darwin.setenv("ATM_CC_SECULAR_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_GOLD_TO_US_SHIFT_FRACTION", "0", 1)
+            Darwin.setenv("ATM_CC_EQUITY_CURVE_RISK_SCALE", "1", 1)
+            Darwin.setenv("ATM_CC_USD_CASH_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_US_RISK_ALLOCATION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_GLOBAL_RISK_PARITY_BLEND", "0", 1)
+
+            guard let cashRun = BacktestEngine.researchCashConfidenceRunWithTrace(
+                assetInputs: allInputs,
+                initialCash: 100_000,
+                settings: settings
+            ) else { return }
+            let cashTargets = Dictionary(uniqueKeysWithValues: cashRun.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            var confirmationTargets: [AdvancedBacktestStrategyMode: [String: [String: Double]]] = [:]
+            for mode in confirmationModes {
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: inputs(for: mode),
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                confirmationTargets[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map {
+                    ($0.date.recordDateString, $0.targetWeights)
+                })
+            }
+            guard confirmationTargets.count == confirmationModes.count else { return }
+
+            func leader(_ weights: [String: Double]) -> String {
+                let gold = weights["gold_cny"] ?? 0
+                let us = (weights["nasdaq"] ?? 0) + (weights["sp500"] ?? 0)
+                let china = (weights["csi300"] ?? 0) + (weights["shanghai_composite"] ?? 0)
+                let gross = gold + us + china
+                guard gross >= 0.05 else { return "cash" }
+                if gold >= us, gold >= china { return "gold" }
+                if us >= china { return "us" }
+                return "china"
+            }
+
+            let parameterSets: [(String, Int, Double)] = [
+                ("新冠军基线", 4, 1.00),
+                ("两引擎共识-放大1.15", 2, 1.15),
+                ("两引擎共识-放大1.30", 2, 1.30),
+                ("三引擎共识-放大1.30", 3, 1.30),
+                ("三引擎共识-放大1.50", 3, 1.50),
+            ]
+            var candidates: [ConsensusScalerCandidate] = []
+            for parameters in parameterSets {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cash_confidence_consensus_scaler",
+                    title: parameters.0,
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.10,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "多引擎共识风险预算调仓"
+                )
+                var latestCashWeights: [String: Double] = [:]
+                var latestConfirmations: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+                var pendingWeights: [String: Double] = [:]
+                var previousWeights: [String: Double] = [:]
+                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                    assetInputs: allInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, _, data in
+                        guard data.dates.indices.contains(index) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let key = data.dates[index].recordDateString
+                        if let weights = cashTargets[key] { latestCashWeights = weights }
+                        for mode in confirmationModes {
+                            if let weights = confirmationTargets[mode]?[key] {
+                                latestConfirmations[mode] = weights
+                            }
+                        }
+                        guard !latestCashWeights.isEmpty,
+                              latestConfirmations.count == confirmationModes.count else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let cashLeader = leader(latestCashWeights)
+                        let agreements = confirmationModes.reduce(0) { count, mode in
+                            count + (leader(latestConfirmations[mode] ?? [:]) == cashLeader ? 1 : 0)
+                        }
+                        var target = latestCashWeights
+                        let gross = target.values.reduce(0, +)
+                        if cashLeader != "cash",
+                           gross >= 0.20,
+                           agreements >= parameters.1,
+                           parameters.2 > 1 {
+                            let scale = min(parameters.2, 1 / gross)
+                            target = target.mapValues { $0 * scale }
+                        }
+                        let symbols = Set(previousWeights.keys).union(target.keys)
+                        let difference = symbols.reduce(0.0) {
+                            $0 + abs((previousWeights[$1] ?? 0) - (target[$1] ?? 0))
+                        }
+                        pendingWeights = target
+                        let shouldRebalance = previousWeights.isEmpty
+                            ? !target.isEmpty
+                            : difference > 0.10
+                        if shouldRebalance { previousWeights = target }
+                        return BacktestRebalanceDecision(
+                            shouldRebalance: shouldRebalance,
+                            refreshOverlay: false
+                        )
+                    },
+                    targetWeights: { _, _ in pendingWeights }
+                ) else { continue }
+                let fullRow = MetricRow(
+                    title: parameters.0,
+                    id: "cash_confidence_consensus_scaler",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+                candidates.append(ConsensusScalerCandidate(
+                    title: parameters.0,
+                    requiredAgreement: parameters.1,
+                    scale: parameters.2,
+                    annualized: report.annualizedReturn ?? -1,
+                    maxDrawdown: report.maxDrawdown,
+                    sharpe: report.sharpeRatio ?? -1,
+                    trades: report.trades.count,
+                    averageCashRatio: report.averageCashRatio,
+                    sliceRows: metricRowsForSlices(
+                        title: parameters.0,
+                        id: "cash_confidence_consensus_scaler",
+                        points: report.points,
+                        fullRow: fullRow
+                    )
+                ))
+            }
+            let ranked = candidates.sorted { lhs, rhs in
+                let lhsScore = lhs.sharpe + 0.5 * lhs.annualized - 0.75 * lhs.maxDrawdown
+                let rhsScore = rhs.sharpe + 0.5 * rhs.annualized - 0.75 * rhs.maxDrawdown
+                if lhsScore == rhsScore { return lhs.annualized > rhs.annualized }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(ranked.flatMap(\.sliceRows), header: "APP_CASH_CONFIDENCE_CONSENSUS_SCALER_GRID")
+            print("APP_CASH_CONFIDENCE_CONSENSUS_SCALER_DIAGNOSTICS")
+            print("title,required_agreement,scale,annualized,max_drawdown,sharpe,trades,average_cash_ratio")
+            for candidate in ranked {
+                print([
+                    candidate.title,
+                    String(candidate.requiredAgreement),
+                    String(format: "%.4f", candidate.scale),
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio)
+                ].joined(separator: ","))
+            }
+            return
+        }

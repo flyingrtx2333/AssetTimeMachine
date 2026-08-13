@@ -1,0 +1,147 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_HIGH_RETURN_TRACE"] == "1" {
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", "0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", "2", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_QUALITY_GAP_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+            Darwin.setenv("ATM_CC_PORTFOLIO_VOL_TARGET", "99", 1)
+            Darwin.setenv("ATM_CC_CALM_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_VOL_FLOOR", "0", 1)
+            Darwin.setenv("ATM_CC_SECULAR_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_GOLD_TO_US_SHIFT_FRACTION", "0", 1)
+            Darwin.setenv("ATM_CC_EQUITY_CURVE_RISK_SCALE", "1", 1)
+            Darwin.setenv("ATM_CC_USD_CASH_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_US_RISK_ALLOCATION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_GLOBAL_RISK_PARITY_BLEND", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_MID_GROSS_CLIFFS", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_BREADTH_MICRO_BRAKES", "0", 1)
+            Darwin.setenv("ATM_CC_BREADTH_MICRO_BRAKE_STRENGTH", "0.80", 1)
+            Darwin.setenv("ATM_CC_DISABLE_HOLD_HYSTERESIS", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_MATURE_NASDAQ_BRAKE", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_CHINA_PURGE", "0", 1)
+            Darwin.setenv("ATM_CC_COST_AWARE_REBALANCE", "0", 1)
+            Darwin.setenv("ATM_CC_SLOW_ADD_FRACTION", "1", 1)
+            Darwin.setenv("ATM_CC_GROSS_CONFIDENCE_SHAPE", "0", 1)
+            Darwin.setenv("ATM_CC_STAGED_HANDOFF_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_BAND", "0", 1)
+            Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_VOL_CEILING", "99", 1)
+            Darwin.setenv("ATM_CC_BUY_CONFIRMATION_SESSIONS", "1", 1)
+            Darwin.setenv("ATM_CC_REBALANCE_TRIGGER_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MODE", "11", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_FRACTION", "0.875", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_DD_THRESHOLD", "0.04", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_DD_DECAY_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_INCLUDE_EXIT", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_GROSS_DROP_THRESHOLD", "0.02", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_SEVERITY_MODE", "5", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MAX_RETENTION", "0.25", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MIN_RETENTION", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_CUT_BUDGET_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_BROAD_UNWIND_TURNOVER_THRESHOLD", "0.40", 1)
+            Darwin.setenv("ATM_CC_DERISK_BUFFER_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_DERISK_CALIBRATION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_RISK_INCREASE_MIGRATION_FLOOR", "0", 1)
+            Darwin.setenv("ATM_CC_RISK_INCREASE_GROSS_COMPLETION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_SMALL_RERISK_TURNOVER_FLOOR", "0", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_WEIGHT", "0.05", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_CONFIRMATION_SESSIONS", "1", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_DD_THRESHOLD", "0.02", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_VOL_MIN", "0.06", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_VOL_MAX", "0.08", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_PRIOR_GROSS_MIN", "0.40", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_PRIOR_GROSS_MAX", "1.01", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_LEADER_GATE", "4", 1)
+            Darwin.setenv("ATM_CC_RETURN_SCALE", "1.34", 1)
+            Darwin.setenv("ATM_CC_RETURN_GROSS_CAP", "1.20", 1)
+            Darwin.setenv("ATM_CC_RETURN_FINANCING_RATE", "0.05", 1)
+            Darwin.setenv("ATM_CC_TRADE_BAND", "0.268", 1)
+            Darwin.setenv("ATM_CC_RETURN_DD_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_RESEARCH_POST_TRADE_GROSS_CAP", "1.20", 1)
+
+            guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else { return }
+
+            var targetGrossSum = 0.0
+            var actualGrossSum = 0.0
+            var maxTargetGross = 0.0
+            var maxActualGross = 0.0
+            var financedDays = 0
+            var targetLeveragedDays = 0
+            var maxFinancedRatio = 0.0
+            for state in run.dailyStates where state.portfolioValue > 0 {
+                let targetGross = state.targetWeights.values.reduce(0, +)
+                let actualGross = state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue
+                let financedRatio = max(-state.cash / state.portfolioValue, 0)
+                targetGrossSum += targetGross
+                actualGrossSum += actualGross
+                maxTargetGross = max(maxTargetGross, targetGross)
+                maxActualGross = max(maxActualGross, actualGross)
+                if targetGross > 1.000001 { targetLeveragedDays += 1 }
+                if state.cash < -0.0001 { financedDays += 1 }
+                maxFinancedRatio = max(maxFinancedRatio, financedRatio)
+            }
+
+            var peakValue = run.report.points.first?.portfolioValue ?? 0
+            var peakDate = run.report.points.first?.date.recordDateString ?? "n/a"
+            var worstDrawdown = 0.0
+            var worstPeakDate = peakDate
+            var worstTroughDate = peakDate
+            for point in run.report.points {
+                if point.portfolioValue > peakValue {
+                    peakValue = point.portfolioValue
+                    peakDate = point.date.recordDateString
+                }
+                let drawdown = peakValue > 0 ? max(1 - point.portfolioValue / peakValue, 0) : 0
+                if drawdown > worstDrawdown {
+                    worstDrawdown = drawdown
+                    worstPeakDate = peakDate
+                    worstTroughDate = point.date.recordDateString
+                }
+            }
+
+            let count = Double(max(run.dailyStates.count, 1))
+            print("APP_CASH_CONFIDENCE_HIGH_RETURN_TRACE")
+            print("metric,value")
+            print("annualized,\(String(format: "%.6f", (run.report.annualizedReturn ?? 0) * 100))")
+            print("max_drawdown,\(String(format: "%.6f", run.report.maxDrawdown * 100))")
+            print("sharpe,\(String(format: "%.6f", run.report.sharpeRatio ?? 0))")
+            print("trades,\(run.report.trades.count)")
+            print("average_target_gross,\(String(format: "%.6f", targetGrossSum / count))")
+            print("average_actual_gross,\(String(format: "%.6f", actualGrossSum / count))")
+            print("max_target_gross,\(String(format: "%.6f", maxTargetGross))")
+            print("max_actual_gross,\(String(format: "%.6f", maxActualGross))")
+            print("target_leveraged_days,\(targetLeveragedDays)")
+            print("financed_days,\(financedDays)")
+            print("max_financed_ratio,\(String(format: "%.6f", maxFinancedRatio))")
+            print("dd_peak,\(worstPeakDate)")
+            print("dd_trough,\(worstTroughDate)")
+            if let latest = run.dailyStates.last {
+                let targetGross = latest.targetWeights.values.reduce(0, +)
+                print("latest_date,\(latest.date.recordDateString)")
+                print("latest_target_gross,\(String(format: "%.6f", targetGross))")
+                print("latest_cash_ratio,\(String(format: "%.6f", latest.portfolioValue > 0 ? latest.cash / latest.portfolioValue : 0))")
+                for symbol in ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"] {
+                    print("latest_\(symbol),\(String(format: "%.6f", latest.targetWeights[symbol] ?? 0))")
+                }
+            }
+            return
+        }

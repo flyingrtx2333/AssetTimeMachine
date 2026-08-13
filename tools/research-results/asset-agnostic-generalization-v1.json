@@ -1,0 +1,295 @@
+{
+  "availableUnseenSymbols" : [
+    "dow_jones",
+    "hang_seng",
+    "nikkei225",
+    "shenzhen_component",
+    "chinext",
+    "oil_wti_cny"
+  ],
+  "criteria" : {
+    "maximumBasketDrawdown" : 0.25,
+    "minimumBasketSharpe" : 0.45,
+    "minimumMedianSingleAssetSharpe" : 0.25,
+    "minimumPositiveSharpeFraction" : 0.6,
+    "minimumUnseenAssets" : 4,
+    "requireBasketDrawdownBelowBenchmark" : true,
+    "requireBasketSharpeAtLeastBenchmark" : true,
+    "requireSymbolRenameInvariant" : true
+  },
+  "developmentReference" : {
+    "benchmark" : {
+      "annualizedReturn" : 0.09893260000615545,
+      "annualizedVolatility" : 0.14776487052894216,
+      "endDate" : "2026-08-13",
+      "maxDrawdown" : 0.5662627022902837,
+      "sharpeRatio" : 0.7593341761676626,
+      "startDate" : "2003-02-19",
+      "totalReturn" : 8.162048069394343,
+      "tradeCount" : 5,
+      "turnover" : 0.99
+    },
+    "drawdownImprovement" : 0.3863234514558974,
+    "name" : "development_reference",
+    "sharpeImprovement" : -0.11837864745490645,
+    "strategy" : {
+      "annualizedReturn" : 0.0384030517660654,
+      "annualizedVolatility" : 0.06655719645816013,
+      "endDate" : "2026-08-13",
+      "maxDrawdown" : 0.17993925083438633,
+      "sharpeRatio" : 0.6409555287127562,
+      "startDate" : "2003-02-19",
+      "totalReturn" : 1.422531907065248,
+      "tradeCount" : 372,
+      "turnover" : 38.6842990789495
+    },
+    "symbols" : [
+      "gold_cny",
+      "nasdaq_composite",
+      "sp500",
+      "csi300",
+      "shanghai_composite"
+    ]
+  },
+  "developmentReferenceSymbols" : [
+    "gold_cny",
+    "nasdaq_composite",
+    "sp500",
+    "csi300",
+    "shanghai_composite"
+  ],
+  "failures" : [
+    "Median unseen single-asset Sharpe 0.180 is below 0.250.",
+    "Unseen basket Sharpe 0.370 is below 0.450.",
+    "Unseen basket Sharpe 0.370 is below buy-and-hold 0.601.",
+    "Symbol-renaming invariance failed; strategy behavior is not demonstrably asset-name independent."
+  ],
+  "fixturePath" : "tools\/fixtures\/backtest-history\/generalization_public_history.json",
+  "generatedAtUTC" : "2026-08-13T06:51:35Z",
+  "medianSingleAssetSharpe" : 0.1799559923411682,
+  "missingPreferredUnseenSymbols" : [
+    "kospi",
+    "kospi200\/kospi_200"
+  ],
+  "passed" : false,
+  "positiveSharpeFraction" : 0.8333333333333334,
+  "strategyVersion" : "asset-agnostic-frozen-v1",
+  "symbolRenameInvariant" : false,
+  "unseenBasket" : {
+    "benchmark" : {
+      "annualizedReturn" : 0.0768833848107604,
+      "annualizedVolatility" : 0.16640932041553086,
+      "endDate" : "2026-08-07",
+      "maxDrawdown" : 0.3726797470626779,
+      "sharpeRatio" : 0.6006348918147434,
+      "startDate" : "2011-08-02",
+      "totalReturn" : 2.0408327076699684,
+      "tradeCount" : 6,
+      "turnover" : 0.99
+    },
+    "drawdownImprovement" : 0.20074311941408163,
+    "name" : "unseen_cross_market_basket",
+    "sharpeImprovement" : -0.23074111530110475,
+    "strategy" : {
+      "annualizedReturn" : 0.01627330737533761,
+      "annualizedVolatility" : 0.05473550726194975,
+      "endDate" : "2026-08-07",
+      "maxDrawdown" : 0.1719366276485963,
+      "sharpeRatio" : 0.36989377651363864,
+      "startDate" : "2011-08-02",
+      "totalReturn" : 0.274261467531727,
+      "tradeCount" : 230,
+      "turnover" : 19.015467678685333
+    },
+    "symbols" : [
+      "dow_jones",
+      "hang_seng",
+      "nikkei225",
+      "shenzhen_component",
+      "chinext",
+      "oil_wti_cny"
+    ]
+  },
+  "unseenSingleAssetFolds" : [
+    {
+      "benchmark" : {
+        "annualizedReturn" : 0.0641338792890358,
+        "annualizedVolatility" : 0.18158416659167767,
+        "endDate" : "2026-08-13",
+        "maxDrawdown" : 0.5377855813076748,
+        "sharpeRatio" : 0.4333252978213281,
+        "startDate" : "2001-01-03",
+        "totalReturn" : 3.912433547267204,
+        "tradeCount" : 1,
+        "turnover" : 0.99
+      },
+      "drawdownImprovement" : 0.27835082564718505,
+      "name" : "unseen_dow_jones",
+      "sharpeImprovement" : -0.2951852081814422,
+      "strategy" : {
+        "annualizedReturn" : 0.006360338823205192,
+        "annualizedVolatility" : 0.05826501361333097,
+        "endDate" : "2026-08-13",
+        "maxDrawdown" : 0.2594347556604898,
+        "sharpeRatio" : 0.1381400896398859,
+        "startDate" : "2001-01-03",
+        "totalReturn" : 0.17627678264283597,
+        "tradeCount" : 76,
+        "turnover" : 24.760195445577164
+      },
+      "symbols" : [
+        "dow_jones"
+      ]
+    },
+    {
+      "benchmark" : {
+        "annualizedReturn" : 0.019720416375874406,
+        "annualizedVolatility" : 0.23114549855680577,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.6518186042315757,
+        "sharpeRatio" : 0.20200238735487733,
+        "startDate" : "2001-01-10",
+        "totalReturn" : 0.6481287926126862,
+        "tradeCount" : 1,
+        "turnover" : 0.99
+      },
+      "drawdownImprovement" : 0.4388392707341907,
+      "name" : "unseen_hang_seng",
+      "sharpeImprovement" : 0.01976950768757324,
+      "strategy" : {
+        "annualizedReturn" : 0.009540166325538557,
+        "annualizedVolatility" : 0.04927416057830206,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.21297933349738496,
+        "sharpeRatio" : 0.22177189504245057,
+        "startDate" : "2001-01-10",
+        "totalReturn" : 0.2749796894606311,
+        "tradeCount" : 65,
+        "turnover" : 15.686964370963334
+      },
+      "symbols" : [
+        "hang_seng"
+      ]
+    },
+    {
+      "benchmark" : {
+        "annualizedReturn" : 0.06426351196382529,
+        "annualizedVolatility" : 0.23454680775755468,
+        "endDate" : "2026-08-07",
+        "maxDrawdown" : 0.613679360134245,
+        "sharpeRatio" : 0.3908209707956996,
+        "startDate" : "2001-01-12",
+        "totalReturn" : 3.9151923687339574,
+        "tradeCount" : 1,
+        "turnover" : 0.99
+      },
+      "drawdownImprovement" : 0.36728051336837475,
+      "name" : "unseen_nikkei225",
+      "sharpeImprovement" : -0.3367140823731513,
+      "strategy" : {
+        "annualizedReturn" : 0.0013956471319100938,
+        "annualizedVolatility" : 0.04694284218140253,
+        "endDate" : "2026-08-07",
+        "maxDrawdown" : 0.2463988467658702,
+        "sharpeRatio" : 0.054106888422548294,
+        "startDate" : "2001-01-12",
+        "totalReturn" : 0.036299618669704214,
+        "tradeCount" : 74,
+        "turnover" : 17.671094183177438
+      },
+      "symbols" : [
+        "nikkei225"
+      ]
+    },
+    {
+      "benchmark" : {
+        "annualizedReturn" : 0.045451475156897514,
+        "annualizedVolatility" : 0.26915666374355735,
+        "endDate" : "2026-08-13",
+        "maxDrawdown" : 0.7097556698515781,
+        "sharpeRatio" : 0.3057955738869784,
+        "startDate" : "2001-02-05",
+        "totalReturn" : 2.1086558623933525,
+        "tradeCount" : 1,
+        "turnover" : 0.99
+      },
+      "drawdownImprovement" : 0.5271405942300513,
+      "name" : "unseen_shenzhen_component",
+      "sharpeImprovement" : 0.1786318481981775,
+      "strategy" : {
+        "annualizedReturn" : 0.022079743842588595,
+        "annualizedVolatility" : 0.04914147621795045,
+        "endDate" : "2026-08-13",
+        "maxDrawdown" : 0.1826150756215268,
+        "sharpeRatio" : 0.48442742208515593,
+        "startDate" : "2001-02-05",
+        "totalReturn" : 0.7459064767501609,
+        "tradeCount" : 51,
+        "turnover" : 11.028512164904601
+      },
+      "symbols" : [
+        "shenzhen_component"
+      ]
+    },
+    {
+      "benchmark" : {
+        "annualizedReturn" : 0.10518245281158944,
+        "annualizedVolatility" : 0.3083408708370401,
+        "endDate" : "2026-08-13",
+        "maxDrawdown" : 0.6973995360915222,
+        "sharpeRatio" : 0.48888321523371475,
+        "startDate" : "2011-06-20",
+        "totalReturn" : 3.5494709241965348,
+        "tradeCount" : 1,
+        "turnover" : 0.99
+      },
+      "drawdownImprovement" : 0.49555861347313623,
+      "name" : "unseen_chinext",
+      "sharpeImprovement" : 0.044370912486429714,
+      "strategy" : {
+        "annualizedReturn" : 0.029113812677011186,
+        "annualizedVolatility" : 0.0587541230413502,
+        "endDate" : "2026-08-13",
+        "maxDrawdown" : 0.20184092261838593,
+        "sharpeRatio" : 0.5332541277201445,
+        "startDate" : "2011-06-20",
+        "totalReturn" : 0.544551094529893,
+        "tradeCount" : 21,
+        "turnover" : 3.9839246512210815
+      },
+      "symbols" : [
+        "chinext"
+      ]
+    },
+    {
+      "benchmark" : {
+        "annualizedReturn" : 0.03278926444977448,
+        "annualizedVolatility" : 0.40604095043832766,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.9079730673600335,
+        "sharpeRatio" : 0.2829735357228153,
+        "startDate" : "2001-01-10",
+        "totalReturn" : 1.2829307984116198,
+        "tradeCount" : 1,
+        "turnover" : 0.99
+      },
+      "drawdownImprovement" : 0.7030795775188394,
+      "name" : "unseen_oil_wti_cny",
+      "sharpeImprovement" : -0.44384060408028647,
+      "strategy" : {
+        "annualizedReturn" : -0.007905225352737966,
+        "annualizedVolatility" : 0.04256058087832884,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.20489348984119404,
+        "sharpeRatio" : -0.16086706835747117,
+        "startDate" : "2001-01-10",
+        "totalReturn" : -0.18377120439922578,
+        "tradeCount" : 64,
+        "turnover" : 10.851341634365333
+      },
+      "symbols" : [
+        "oil_wti_cny"
+      ]
+    }
+  ]
+}

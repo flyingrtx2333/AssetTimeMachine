@@ -1,0 +1,34 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_LIVE_RECENT_TRACE"] == "1" {
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else { return }
+
+            print("APP_CASH_CONFIDENCE_LIVE_RECENT_TRACE")
+            print("date,portfolio,cash_ratio,gross,gold,nasdaq,sp500,csi300,shanghai")
+            for state in run.dailyStates.suffix(45) {
+                let gross = state.targetWeights.values.reduce(0, +)
+                let cashRatio = state.portfolioValue > 0 ? max(state.cash / state.portfolioValue, 0) : 0
+                print([
+                    state.date.recordDateString,
+                    String(format: "%.6f", state.portfolioValue),
+                    String(format: "%.6f", cashRatio),
+                    String(format: "%.6f", gross),
+                    String(format: "%.6f", state.targetWeights["gold_cny"] ?? 0),
+                    String(format: "%.6f", state.targetWeights["nasdaq"] ?? 0),
+                    String(format: "%.6f", state.targetWeights["sp500"] ?? 0),
+                    String(format: "%.6f", state.targetWeights["csi300"] ?? 0),
+                    String(format: "%.6f", state.targetWeights["shanghai_composite"] ?? 0),
+                ].joined(separator: ","))
+            }
+            return
+        }

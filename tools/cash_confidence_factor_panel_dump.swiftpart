@@ -1,0 +1,110 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_FACTOR_PANEL_DUMP"] == "1" {
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else {
+                print("APP_CC_FACTOR_PANEL_DUMP\nbase_missing")
+                return
+            }
+
+            func blankFactorMA(_ values: [Double], _ period: Int) -> [Double?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func blankFactorBoll(_ values: [Double], _ period: Int, _ multiplier: Double) -> [(middle: Double, lower: Double, upper: Double)?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func preparedFactorSeries(_ symbol: String) -> PreparedAdvancedSeries? {
+                guard let input = inputs.first(where: { $0.assetOption.symbol == symbol }) else { return nil }
+                return BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+                    assetSeries: input.assetSeries,
+                    assetOption: input.assetOption,
+                    fxSeries: input.fxSeries,
+                    movingAverage: blankFactorMA,
+                    bollingerBands: blankFactorBoll
+                )
+            }
+
+            let symbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            var priceMaps: [String: [String: Double]] = [:]
+            for symbol in symbols {
+                guard let prepared = preparedFactorSeries(symbol) else {
+                    print("APP_CC_FACTOR_PANEL_DUMP\nprice_missing_\(symbol)")
+                    return
+                }
+                priceMaps[symbol] = Dictionary(uniqueKeysWithValues: prepared.pricePoints.map { ($0.date.recordDateString, $0.cnyPrice) })
+            }
+
+            var lastPrices: [String: Double] = [:]
+            var lines: [String] = []
+            lines.reserveCapacity(run.dailyStates.count + 1)
+            lines.append([
+                "date",
+                "portfolio_value",
+                "cash_ratio",
+                "target_gross",
+                "actual_gross",
+                "target_gold",
+                "target_nasdaq",
+                "target_sp500",
+                "target_csi300",
+                "target_shanghai",
+                "price_gold",
+                "price_nasdaq",
+                "price_sp500",
+                "price_csi300",
+                "price_shanghai",
+            ].joined(separator: ","))
+
+            for state in run.dailyStates where state.portfolioValue > 0 {
+                let dateKey = state.date.recordDateString
+                for symbol in symbols {
+                    if let value = priceMaps[symbol]?[dateKey], value.isFinite, value > 0 {
+                        lastPrices[symbol] = value
+                    }
+                }
+                guard symbols.allSatisfy({ lastPrices[$0] != nil }) else { continue }
+                let cashRatio = state.cash / state.portfolioValue
+                let targetGross = state.targetWeights.values.reduce(0, +)
+                let actualGross = state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue
+                let row: [String] = [
+                    dateKey,
+                    String(format: "%.10f", state.portfolioValue),
+                    String(format: "%.10f", cashRatio),
+                    String(format: "%.10f", targetGross),
+                    String(format: "%.10f", actualGross),
+                    String(format: "%.10f", state.targetWeights["gold_cny"] ?? 0),
+                    String(format: "%.10f", state.targetWeights["nasdaq"] ?? 0),
+                    String(format: "%.10f", state.targetWeights["sp500"] ?? 0),
+                    String(format: "%.10f", state.targetWeights["csi300"] ?? 0),
+                    String(format: "%.10f", state.targetWeights["shanghai_composite"] ?? 0),
+                    String(format: "%.10f", lastPrices["gold_cny"] ?? 0),
+                    String(format: "%.10f", lastPrices["nasdaq"] ?? 0),
+                    String(format: "%.10f", lastPrices["sp500"] ?? 0),
+                    String(format: "%.10f", lastPrices["csi300"] ?? 0),
+                    String(format: "%.10f", lastPrices["shanghai_composite"] ?? 0),
+                ]
+                lines.append(row.joined(separator: ","))
+            }
+
+            let outputPath = "tools/research-results/daily_factor_panel.csv"
+            let output = lines.joined(separator: "\n") + "\n"
+            do {
+                try output.write(toFile: outputPath, atomically: true, encoding: .utf8)
+                print("APP_CC_FACTOR_PANEL_DUMP")
+                let annualizedText = String(format: "%.6f", (run.report.annualizedReturn ?? 0) * 100)
+                let drawdownText = String(format: "%.6f", run.report.maxDrawdown * 100)
+                print("path=\(outputPath),rows=\(max(lines.count - 1, 0)),base_annualized=\(annualizedText),base_dd=\(drawdownText),trades=\(run.report.trades.count)")
+            } catch {
+                print("APP_CC_FACTOR_PANEL_DUMP\nwrite_failed=\(error)")
+            }
+            return
+        }

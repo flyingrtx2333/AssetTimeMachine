@@ -1,0 +1,217 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_DUAL_TREND_ACCOUNT_BLEND_GRID"] == "1" {
+            struct DualTrendAccountCandidate {
+                let title: String
+                let mode: Int
+                let allocation: Double
+                let baseGrossMaximum: Double
+                let dualGrossMinimum: Double
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let era2012Sharpe: Double
+                let era2017Sharpe: Double
+                let trades: Int
+                let averageCashRatio: Double
+                let sliceRows: [SliceMetricRow]
+            }
+
+            let cashMode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let dualMode = AdvancedBacktestStrategyMode.goldNasdaqDualTrendBarbell
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            func inputs(for mode: AdvancedBacktestStrategyMode) -> [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)] {
+                mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+            }
+            guard let cashRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs(for: cashMode),
+                initialCash: 100_000,
+                settings: settings,
+                mode: cashMode
+            ), let dualRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs(for: dualMode),
+                initialCash: 100_000,
+                settings: settings,
+                mode: dualMode
+            ) else {
+                print("APP_CASH_CONFIDENCE_DUAL_TREND_ACCOUNT_BLEND_GRID\ntrace_missing")
+                return
+            }
+
+            let cashTargets = Dictionary(uniqueKeysWithValues: cashRun.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            let dualTargets = Dictionary(uniqueKeysWithValues: dualRun.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            let cashTradeDates = Set(cashRun.report.trades.map { $0.date.recordDateString })
+            let dualTradeDates = Set(dualRun.report.trades.map { $0.date.recordDateString })
+            let allSymbols = Array(Set(cashMode.requiredSignalAssetSymbols + dualMode.requiredSignalAssetSymbols)).sorted()
+            let combinedInputs = allSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            // mode 0: production baseline; mode 1: static convex blend;
+            // mode 2: add a normalized dual-trend sleeve only from unused gross.
+            let parameterSets: [(String, Int, Double, Double, Double)] = [
+                ("Build158基线", 0, 0.00, 0.40, 0.00),
+                ("静态10%金纳双趋势", 1, 0.10, 1.00, 0.00),
+                ("低仓位袖套10%-主仓低于40%", 2, 0.10, 0.40, 0.20),
+                ("低仓位袖套15%-主仓低于40%", 2, 0.15, 0.40, 0.20),
+            ]
+
+            func eraMetrics(_ points: [BacktestSeriesPoint], start: String, end: String) -> BacktestPerformanceMetrics? {
+                BacktestMetricsCalculator.performanceMetrics(from: points.filter {
+                    let key = $0.date.recordDateString
+                    return key >= start && key <= end
+                })
+            }
+
+            var candidates: [DualTrendAccountCandidate] = []
+            for parameters in parameterSets {
+                let title = parameters.0
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cash_confidence_dual_trend_account_blend",
+                    title: title,
+                    warmupSessions: 1,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.0,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "置信度恢复与金纳双趋势同账户调仓"
+                )
+                var pendingWeights: [String: Double] = [:]
+                var previousWeights: [String: Double] = [:]
+                guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                    assetInputs: combinedInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, _, data in
+                        let key = data.dates[index].recordDateString
+                        let underlyingTradeDate = parameters.1 == 0
+                            ? cashTradeDates.contains(key)
+                            : (cashTradeDates.contains(key) || dualTradeDates.contains(key))
+                        guard underlyingTradeDate,
+                              let base = cashTargets[key],
+                              let dual = dualTargets[key] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        var target: [String: Double] = [:]
+                        if parameters.1 == 0 {
+                            target = base
+                        } else if parameters.1 == 1 {
+                            let share = min(max(parameters.2, 0), 1)
+                            let symbols = Set(base.keys).union(dual.keys)
+                            target = Dictionary(uniqueKeysWithValues: symbols.map { symbol in
+                                (symbol, (1 - share) * (base[symbol] ?? 0) + share * (dual[symbol] ?? 0))
+                            })
+                        } else {
+                            target = base
+                            let baseGross = base.values.reduce(0, +)
+                            let dualGross = dual.values.reduce(0, +)
+                            if baseGross < parameters.3,
+                               dualGross >= parameters.4,
+                               dualGross > 0 {
+                                let sleeveGross = min(
+                                    max(parameters.2, 0),
+                                    max(1 - baseGross, 0)
+                                )
+                                if sleeveGross > 0 {
+                                    for (symbol, weight) in dual where weight > 0 {
+                                        target[symbol, default: 0] += sleeveGross * weight / dualGross
+                                    }
+                                }
+                            }
+                        }
+                        let gross = target.values.reduce(0, +)
+                        if gross > 1, gross > 0 {
+                            target = target.mapValues { $0 / gross }
+                        }
+                        let symbols = Set(previousWeights.keys).union(target.keys)
+                        let difference = symbols.reduce(0.0) {
+                            $0 + abs((previousWeights[$1] ?? 0) - (target[$1] ?? 0))
+                        }
+                        pendingWeights = target
+                        let shouldRebalance = previousWeights.isEmpty
+                            ? !target.isEmpty
+                            : difference > 0.0000001
+                        previousWeights = target
+                        return BacktestRebalanceDecision(
+                            shouldRebalance: shouldRebalance,
+                            refreshOverlay: false
+                        )
+                    },
+                    targetWeights: { _, _ in pendingWeights }
+                ) else { continue }
+
+                let era2012 = eraMetrics(report.points, start: "2012-01-01", end: "2016-12-31")
+                let era2017 = eraMetrics(report.points, start: "2017-01-01", end: "2021-12-31")
+                let fullRow = MetricRow(
+                    title: title,
+                    id: "cash_confidence_dual_trend_account_blend_grid",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+                candidates.append(DualTrendAccountCandidate(
+                    title: title,
+                    mode: parameters.1,
+                    allocation: parameters.2,
+                    baseGrossMaximum: parameters.3,
+                    dualGrossMinimum: parameters.4,
+                    annualized: report.annualizedReturn ?? -1,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility ?? -1,
+                    sharpe: report.sharpeRatio ?? -1,
+                    era2012Sharpe: era2012?.sharpeRatio ?? -1,
+                    era2017Sharpe: era2017?.sharpeRatio ?? -1,
+                    trades: report.trades.count,
+                    averageCashRatio: report.averageCashRatio,
+                    sliceRows: metricRowsForSlices(
+                        title: title,
+                        id: "cash_confidence_dual_trend_account_blend_grid",
+                        points: report.points,
+                        fullRow: fullRow
+                    )
+                ))
+            }
+
+            let ranked = candidates.sorted { lhs, rhs in
+                let lhsScore = lhs.sharpe + 0.20 * lhs.era2012Sharpe + 0.20 * lhs.era2017Sharpe
+                let rhsScore = rhs.sharpe + 0.20 * rhs.era2012Sharpe + 0.20 * rhs.era2017Sharpe
+                if lhsScore == rhsScore { return lhs.annualized > rhs.annualized }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(ranked.flatMap(\.sliceRows), header: "APP_CASH_CONFIDENCE_DUAL_TREND_ACCOUNT_BLEND_GRID")
+            print("APP_CASH_CONFIDENCE_DUAL_TREND_ACCOUNT_BLEND_DIAGNOSTICS")
+            print("title,mode,allocation,base_gross_maximum,dual_gross_minimum,annualized,max_drawdown,volatility,sharpe,era2012_sharpe,era2017_sharpe,trades,average_cash_ratio")
+            for candidate in ranked {
+                print([
+                    candidate.title,
+                    String(candidate.mode),
+                    String(format: "%.4f", candidate.allocation),
+                    String(format: "%.4f", candidate.baseGrossMaximum),
+                    String(format: "%.4f", candidate.dualGrossMinimum),
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.volatility * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(format: "%.6f", candidate.era2012Sharpe),
+                    String(format: "%.6f", candidate.era2017Sharpe),
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio)
+                ].joined(separator: ","))
+            }
+            return
+        }

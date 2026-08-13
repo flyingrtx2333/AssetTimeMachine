@@ -1,0 +1,89 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_ALLOCATION_ERA_DIAGNOSTIC"] == "1" {
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", "0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", "2", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_QUALITY_GAP_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+            Darwin.setenv("ATM_CC_PORTFOLIO_VOL_TARGET", "99", 1)
+            Darwin.setenv("ATM_CC_CALM_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_VOL_FLOOR", "0", 1)
+
+            guard let run = BacktestEngine.researchCashConfidenceRunWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings
+            ) else { return }
+
+            let eras: [(String, String, String)] = [
+                ("2002-2006", "2002-01-01", "2006-12-31"),
+                ("2007-2011", "2007-01-01", "2011-12-31"),
+                ("2012-2016", "2012-01-01", "2016-12-31"),
+                ("2017-2021", "2017-01-01", "2021-12-31"),
+                ("2022-2026", "2022-01-01", "2026-12-31"),
+            ]
+            let symbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            print("APP_CASH_CONFIDENCE_ALLOCATION_ERA_DIAGNOSTIC")
+            print("era,days,avg_gross,avg_cash,gold,nasdaq,sp500,csi300,shanghai,gold_dom,nasdaq_dom,sp500_dom,china_dom,cash_dom")
+            for era in eras {
+                let states = run.dailyStates.filter {
+                    let key = $0.date.recordDateString
+                    return key >= era.1 && key <= era.2
+                }
+                guard !states.isEmpty else { continue }
+                var weightSums = Dictionary(uniqueKeysWithValues: symbols.map { ($0, 0.0) })
+                var grossSum = 0.0
+                var cashRatioSum = 0.0
+                var dominantCounts: [String: Int] = [:]
+                for state in states {
+                    let gross = state.targetWeights.values.reduce(0, +)
+                    grossSum += gross
+                    cashRatioSum += state.portfolioValue > 0 ? max(state.cash / state.portfolioValue, 0) : 0
+                    for symbol in symbols {
+                        weightSums[symbol, default: 0] += state.targetWeights[symbol] ?? 0
+                    }
+                    let china = (state.targetWeights["csi300"] ?? 0) + (state.targetWeights["shanghai_composite"] ?? 0)
+                    let candidates: [(String, Double)] = [
+                        ("gold", state.targetWeights["gold_cny"] ?? 0),
+                        ("nasdaq", state.targetWeights["nasdaq"] ?? 0),
+                        ("sp500", state.targetWeights["sp500"] ?? 0),
+                        ("china", china),
+                        ("cash", max(1 - gross, 0)),
+                    ]
+                    if let dominant = candidates.max(by: { $0.1 < $1.1 })?.0 {
+                        dominantCounts[dominant, default: 0] += 1
+                    }
+                }
+                let count = Double(states.count)
+                print([
+                    era.0,
+                    String(states.count),
+                    String(format: "%.6f", grossSum / count),
+                    String(format: "%.6f", cashRatioSum / count),
+                    String(format: "%.6f", weightSums["gold_cny", default: 0] / count),
+                    String(format: "%.6f", weightSums["nasdaq", default: 0] / count),
+                    String(format: "%.6f", weightSums["sp500", default: 0] / count),
+                    String(format: "%.6f", weightSums["csi300", default: 0] / count),
+                    String(format: "%.6f", weightSums["shanghai_composite", default: 0] / count),
+                    String(dominantCounts["gold", default: 0]),
+                    String(dominantCounts["nasdaq", default: 0]),
+                    String(dominantCounts["sp500", default: 0]),
+                    String(dominantCounts["china", default: 0]),
+                    String(dominantCounts["cash", default: 0]),
+                ].joined(separator: ","))
+            }
+            return
+        }

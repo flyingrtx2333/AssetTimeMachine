@@ -1,0 +1,326 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_EXTERNAL_TARGETED_RETENTION_GRID"] == "1" {
+            struct TargetedExternalRetentionCandidate {
+                let title: String
+                let creditRetention: Double
+                let vixRetention: Double
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let creditEvents: Int
+                let vixEvents: Int
+                let maxTargetGross: Double
+                let maxActualGross: Double
+                let minCashRatio: Double
+                let financedDays: Int
+                let eventDates: [String]
+            }
+
+            func loadTargetedExternalCSV(_ path: String, valueColumn: String) -> [String: Double] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [:] }
+                let lines = text.split(whereSeparator: \.isNewline)
+                guard let header = lines.first else { return [:] }
+                let columns = header.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
+                guard let valueIndex = columns.firstIndex(of: valueColumn) else { return [:] }
+                var result: [String: Double] = [:]
+                for line in lines.dropFirst() {
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count > valueIndex,
+                          let value = Double(fields[valueIndex]), value.isFinite else { continue }
+                    result[String(fields[0])] = value
+                }
+                return result
+            }
+
+            func alignTargetedExternal(_ map: [String: Double], dates: [Date]) -> [Double?] {
+                var output: [Double?] = []
+                output.reserveCapacity(dates.count)
+                var lastValue: Double?
+                for date in dates {
+                    if let value = map[date.recordDateString] { lastValue = value }
+                    output.append(lastValue)
+                }
+                return output
+            }
+
+            func changeTargetedExternal(_ values: [Double?], lookback: Int) -> [Double?] {
+                var output = Array<Double?>(repeating: nil, count: values.count)
+                guard values.count > lookback else { return output }
+                for index in lookback..<values.count {
+                    guard let current = values[index], let prior = values[index - lookback] else { continue }
+                    output[index] = current - prior
+                }
+                return output
+            }
+
+            func zTargetedExternal(_ values: [Double?], window: Int = 756, minimumCount: Int = 252) -> [Double?] {
+                var output = Array<Double?>(repeating: nil, count: values.count)
+                for index in values.indices {
+                    let start = max(0, index - window + 1)
+                    let sample = values[start...index].compactMap { $0 }
+                    guard sample.count >= minimumCount, let current = values[index] else { continue }
+                    let mean = sample.reduce(0, +) / Double(sample.count)
+                    let variance = sample.count > 1
+                        ? sample.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) } / Double(sample.count - 1)
+                        : 0
+                    let sd = sqrt(max(variance, 0))
+                    guard sd > 0.0000001 else { continue }
+                    output[index] = min(max((current - mean) / sd, -4), 4)
+                }
+                return output
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ), let baseStartDate = baseRun.report.points.first?.date else {
+                print("APP_CC_EXTERNAL_TARGETED_RETENTION_GRID\nbase_missing")
+                return
+            }
+
+            let dates = baseRun.dailyStates.map(\.date)
+            let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let baseTradeDates = Set(baseRun.report.trades.map { $0.date.recordDateString })
+            func blankTargetedMA(_ values: [Double], _ period: Int) -> [Double?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func blankTargetedBoll(_ values: [Double], _ period: Int, _ multiplier: Double) -> [(middle: Double, lower: Double, upper: Double)?] {
+                Array(repeating: nil, count: values.count)
+            }
+            guard let nasdaqInput = inputs.first(where: { $0.assetOption.symbol == "nasdaq" }),
+                  let preparedNasdaq = BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+                    assetSeries: nasdaqInput.assetSeries,
+                    assetOption: nasdaqInput.assetOption,
+                    fxSeries: nasdaqInput.fxSeries,
+                    movingAverage: blankTargetedMA,
+                    bollingerBands: blankTargetedBoll
+                  ) else {
+                print("APP_CC_EXTERNAL_TARGETED_RETENTION_GRID\nnasdaq_cny_missing")
+                return
+            }
+            let nasdaqCNYMap = Dictionary(uniqueKeysWithValues: preparedNasdaq.pricePoints.map { ($0.date.recordDateString, $0.cnyPrice) })
+            var nasdaqCNY: [Double] = []
+            nasdaqCNY.reserveCapacity(dates.count)
+            var lastNasdaqCNY: Double?
+            for date in dates {
+                if let value = nasdaqCNYMap[date.recordDateString] { lastNasdaqCNY = value }
+                guard let value = lastNasdaqCNY else {
+                    print("APP_CC_EXTERNAL_TARGETED_RETENTION_GRID\nnasdaq_cny_alignment_failed")
+                    return
+                }
+                nasdaqCNY.append(value)
+            }
+            let baa10y = alignTargetedExternal(loadTargetedExternalCSV("tools/fixtures/macro-risk/BAA10Y.csv", valueColumn: "BAA10Y"), dates: dates)
+            let rawCreditZ = zTargetedExternal(changeTargetedExternal(baa10y, lookback: 63))
+            let creditZ: [Double?] = [nil] + Array(rawCreditZ.dropLast())
+            let vix = alignTargetedExternal(loadTargetedExternalCSV("tools/fixtures/macro-risk/VIXCLS.csv", valueColumn: "VIXCLS"), dates: dates)
+            let vix3m = alignTargetedExternal(loadTargetedExternalCSV("tools/fixtures/macro-risk/VXVCLS.csv", valueColumn: "VXVCLS"), dates: dates)
+            let creditByDate = Dictionary(uniqueKeysWithValues: zip(dates, creditZ).map { ($0.0.recordDateString, $0.1) })
+
+            let configurations: [(String, Double, Double)] = [
+                ("冠军重放控制组", 0.00, 0.00),
+                ("信用收窄美股减仓保留75%", 0.75, 0.00),
+                ("信用收窄美股减仓完全保留", 1.00, 0.00),
+                ("VIX恐慌解除时减仓保留25%", 0.00, 0.25),
+                ("VIX恐慌解除时减仓保留50%", 0.00, 0.50),
+                ("信用保留75%+VIX解除保留25%", 0.75, 0.25),
+                ("信用完全保留+VIX解除保留25%", 1.00, 0.25),
+                ("信用保留75%+VIX解除保留50%", 0.75, 0.50),
+                ("信用完全保留+VIX解除保留50%", 1.00, 0.50),
+            ]
+            let usSymbols: Set<String> = ["nasdaq", "sp500"]
+            var candidates: [TargetedExternalRetentionCandidate] = []
+
+            for (title, creditRetention, vixRetention) in configurations {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cc_external_targeted_retention",
+                    title: title,
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "外部状态定向减仓保留"
+                )
+                var previousBaseWeights: [String: Double] = [:]
+                var pendingWeights: [String: Double] = [:]
+                var creditEvents = 0
+                var vixEvents = 0
+                var eventDates: [String] = []
+
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let executionKey = data.dates[index].recordDateString
+                        guard baseTradeDates.contains(executionKey), var target = baseTargetsByDate[executionKey] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let priorBase = previousBaseWeights
+                        previousBaseWeights = target
+                        guard !priorBase.isEmpty else {
+                            pendingWeights = target
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+
+                        let priorGross = priorBase.values.reduce(0, +)
+                        let proposedGross = target.values.reduce(0, +)
+                        let grossDecrease = priorGross - proposedGross
+                        let priorUS = priorBase.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                        let proposedUS = target.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                        let usDecrease = priorUS - proposedUS
+                        let signalKey = data.dates[signalIndex].recordDateString
+                        let creditTightening = (creditByDate[signalKey] ?? nil).map { $0 <= -0.75 } ?? false
+
+                        var vixRelease = false
+                        if signalIndex >= 5,
+                           vix.indices.contains(signalIndex), vix.indices.contains(signalIndex - 5),
+                           vix3m.indices.contains(signalIndex - 5),
+                           let vixNow = vix[signalIndex],
+                           let vixPrior = vix[signalIndex - 5],
+                           let vix3mPrior = vix3m[signalIndex - 5],
+                           vixPrior > 0, vix3mPrior > 0,
+                           nasdaqCNY.indices.contains(signalIndex), nasdaqCNY.indices.contains(signalIndex - 5),
+                           nasdaqCNY[signalIndex - 5] > 0 {
+                            let nasdaqMomentum5 = nasdaqCNY[signalIndex] / nasdaqCNY[signalIndex - 5] - 1
+                            vixRelease = (vixPrior / vix3mPrior >= 1.0 || vixPrior >= 30)
+                                && vixNow / vixPrior - 1 <= -0.10
+                                && nasdaqMomentum5 > 0
+                        }
+
+                        var desiredRetentionBySymbol: [String: Double] = [:]
+                        if creditRetention > 0,
+                           creditTightening,
+                           usDecrease >= 0.05,
+                           grossDecrease >= 0.03 {
+                            for symbol in usSymbols {
+                                let reduction = max((priorBase[symbol] ?? 0) - (target[symbol] ?? 0), 0)
+                                if reduction > 0 {
+                                    desiredRetentionBySymbol[symbol] = max(desiredRetentionBySymbol[symbol] ?? 0, creditRetention * reduction)
+                                }
+                            }
+                            creditEvents += 1
+                            eventDates.append("C:" + signalKey)
+                        }
+
+                        if vixRetention > 0,
+                           vixRelease,
+                           grossDecrease >= 0.05 {
+                            for (symbol, priorWeight) in priorBase {
+                                let reduction = max(priorWeight - (target[symbol] ?? 0), 0)
+                                if reduction > 0 {
+                                    desiredRetentionBySymbol[symbol] = max(desiredRetentionBySymbol[symbol] ?? 0, vixRetention * reduction)
+                                }
+                            }
+                            vixEvents += 1
+                            eventDates.append("V:" + signalKey)
+                        }
+
+                        let totalDesired = desiredRetentionBySymbol.values.reduce(0, +)
+                        if totalDesired > 0 {
+                            let availableCash = max(1.0 - proposedGross, 0)
+                            let retentionScale = min(1.0, availableCash / totalDesired)
+                            for (symbol, extra) in desiredRetentionBySymbol {
+                                target[symbol, default: 0] += extra * retentionScale
+                            }
+                        }
+                        let gross = target.values.reduce(0, +)
+                        if gross > 1.0, gross > 0 {
+                            target = target.mapValues { max($0, 0) / gross }
+                        }
+                        pendingWeights = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pendingWeights }
+                ) else { continue }
+
+                let comparablePoints = run.report.points.filter { $0.date >= baseStartDate }
+                guard let metrics = BacktestMetricsCalculator.performanceMetrics(from: comparablePoints) else { continue }
+                let fullRow = MetricRow(
+                    title: title,
+                    id: "cc_external_targeted_retention",
+                    annualized: metrics.annualizedReturn,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility,
+                    sharpe: metrics.sharpeRatio,
+                    start: comparablePoints.first?.date.recordDateString ?? "n/a",
+                    end: comparablePoints.last?.date.recordDateString ?? "n/a",
+                    pointCount: comparablePoints.count
+                )
+                var maxTargetGross = 0.0
+                var maxActualGross = 0.0
+                var minCashRatio = Double.greatestFiniteMagnitude
+                var financedDays = 0
+                for state in run.dailyStates where state.portfolioValue > 0 && state.date >= baseStartDate {
+                    maxTargetGross = max(maxTargetGross, state.targetWeights.values.reduce(0, +))
+                    maxActualGross = max(maxActualGross, state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue)
+                    minCashRatio = min(minCashRatio, state.cash / state.portfolioValue)
+                    if state.cash < -0.0001 { financedDays += 1 }
+                }
+                candidates.append(TargetedExternalRetentionCandidate(
+                    title: title,
+                    creditRetention: creditRetention,
+                    vixRetention: vixRetention,
+                    annualized: metrics.annualizedReturn ?? -1,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility ?? -1,
+                    sharpe: metrics.sharpeRatio ?? -1,
+                    sliceRows: metricRowsForSlices(title: title, id: "cc_external_targeted_retention", points: comparablePoints, fullRow: fullRow),
+                    trades: run.report.trades.filter { $0.date >= baseStartDate }.count,
+                    averageCashRatio: run.report.averageCashRatio,
+                    creditEvents: creditEvents,
+                    vixEvents: vixEvents,
+                    maxTargetGross: maxTargetGross,
+                    maxActualGross: maxActualGross,
+                    minCashRatio: minCashRatio == Double.greatestFiniteMagnitude ? 0 : minCashRatio,
+                    financedDays: financedDays,
+                    eventDates: eventDates
+                ))
+            }
+
+            print("APP_CC_EXTERNAL_TARGETED_RETENTION_BASE")
+            print("annualized,max_drawdown,volatility,sharpe,trades,average_cash_ratio")
+            print(String(format: "%.6f,%.6f,%.6f,%.6f,%d,%.6f", (baseRun.report.annualizedReturn ?? 0) * 100, baseRun.report.maxDrawdown * 100, (baseRun.report.annualizedVolatility ?? 0) * 100, baseRun.report.sharpeRatio ?? 0, baseRun.report.trades.count, baseRun.report.averageCashRatio))
+            candidates.sort { lhs, rhs in
+                let lhsScore = lhs.annualized - max(lhs.maxDrawdown - 0.08, 0) * 2
+                let rhsScore = rhs.annualized - max(rhs.maxDrawdown - 0.08, 0) * 2
+                if lhsScore == rhsScore { return lhs.sharpe > rhs.sharpe }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(candidates.flatMap(\.sliceRows), header: "APP_CC_EXTERNAL_TARGETED_RETENTION_GRID")
+            print("APP_CC_EXTERNAL_TARGETED_RETENTION_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,credit_events,vix_events,max_target_gross,max_actual_gross,min_cash_ratio,financed_days,event_dates")
+            for candidate in candidates {
+                print([
+                    candidate.title,
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio),
+                    String(candidate.creditEvents),
+                    String(candidate.vixEvents),
+                    String(format: "%.9f", candidate.maxTargetGross),
+                    String(format: "%.9f", candidate.maxActualGross),
+                    String(format: "%.9f", candidate.minCashRatio),
+                    String(candidate.financedDays),
+                    candidate.eventDates.joined(separator: "|"),
+                ].joined(separator: ","))
+            }
+            return
+        }

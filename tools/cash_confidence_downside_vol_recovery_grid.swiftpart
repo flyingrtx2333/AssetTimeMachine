@@ -1,0 +1,106 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_DOWNSIDE_VOL_RECOVERY_GRID"] == "1" {
+            struct DownsideVolRecoveryCandidate {
+                let title: String
+                let blend: Double
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let trades: Int
+                let averageCashRatio: Double
+                let sliceRows: [SliceMetricRow]
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let blends: [Double] = [0, 0.25, 0.50, 0.75, 1.00]
+
+            Darwin.setenv("ATM_CC_GROWTH_SCALE", "1.05", 1)
+            Darwin.setenv("ATM_CC_FAST_BRIDGE", "0.15", 1)
+            Darwin.setenv("ATM_CC_SLEEVE_CAP", "0.2075", 1)
+            Darwin.setenv("ATM_CC_TRADE_BAND", "0.20", 1)
+            Darwin.setenv("ATM_CC_NASDAQ_MA", "40", 1)
+            Darwin.setenv("ATM_CC_NASDAQ_SCALE", "0.88", 1)
+            Darwin.setenv("ATM_CC_OTHER_SCALE", "0.80", 1)
+            Darwin.setenv("ATM_CC_LEADERSHIP_EVAL", "10", 1)
+            Darwin.setenv("ATM_CC_LEADERSHIP_PRIOR", "2.0", 1)
+            Darwin.setenv("ATM_CC_MIN_MIGRATION", "0.50", 1)
+            Darwin.setenv("ATM_CC_SUCCESS_EDGE", "0", 1)
+            Darwin.setenv("ATM_CC_EDGE_EXPONENT", "1", 1)
+            Darwin.setenv("ATM_CC_DYNAMIC_SLEEVE_VOL_THRESHOLD", "0.06", 1)
+            Darwin.setenv("ATM_CC_DYNAMIC_SLEEVE_LOW_CAP", "0.19", 1)
+            Darwin.setenv("ATM_CC_DYNAMIC_SLEEVE_HIGH_VOL_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_DYNAMIC_SLEEVE_HIGH_VOL_CAP", "0.19", 1)
+            Darwin.setenv("ATM_CC_SINGLE_INDEX_SLEEVE_CAP", "0.2075", 1)
+            Darwin.setenv("ATM_CC_SHALLOW_DD_THRESHOLD", "0", 1)
+            Darwin.setenv("ATM_CC_SHALLOW_DD_SLEEVE_CAP", "0.2075", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MOMENTUM_LOOKBACK", "95", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MOMENTUM_SCALE", "50", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_VOL_EXPONENT", "0.60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_SHORT_MOMENTUM_LOOKBACK", "0", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_SHORT_MOMENTUM_WEIGHT", "0", 1)
+
+            var candidates: [DownsideVolRecoveryCandidate] = []
+            for blend in blends {
+                Darwin.setenv("ATM_CC_RECOVERY_DOWNSIDE_VOL_BLEND", String(blend), 1)
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                let title = String(format: "下行波动混合%.0f%%", blend * 100)
+                let fullRow = MetricRow(
+                    title: title,
+                    id: "cash_confidence_downside_vol_recovery_grid",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+                candidates.append(DownsideVolRecoveryCandidate(
+                    title: title,
+                    blend: blend,
+                    annualized: report.annualizedReturn ?? -1,
+                    maxDrawdown: report.maxDrawdown,
+                    sharpe: report.sharpeRatio ?? -1,
+                    trades: report.trades.count,
+                    averageCashRatio: report.averageCashRatio,
+                    sliceRows: metricRowsForSlices(
+                        title: title,
+                        id: "cash_confidence_downside_vol_recovery_grid",
+                        points: report.points,
+                        fullRow: fullRow
+                    )
+                ))
+            }
+
+            let ranked = candidates.sorted { lhs, rhs in
+                let lhsScore = lhs.sharpe + 0.5 * lhs.annualized - 0.75 * lhs.maxDrawdown
+                let rhsScore = rhs.sharpe + 0.5 * rhs.annualized - 0.75 * rhs.maxDrawdown
+                if lhsScore == rhsScore { return lhs.annualized > rhs.annualized }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(ranked.flatMap(\.sliceRows), header: "APP_CASH_CONFIDENCE_DOWNSIDE_VOL_RECOVERY_GRID")
+            print("APP_CASH_CONFIDENCE_DOWNSIDE_VOL_RECOVERY_DIAGNOSTICS")
+            print("title,blend,annualized,max_drawdown,sharpe,trades,average_cash_ratio")
+            for candidate in ranked {
+                print([
+                    candidate.title,
+                    String(format: "%.4f", candidate.blend),
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio)
+                ].joined(separator: ","))
+            }
+            return
+        }

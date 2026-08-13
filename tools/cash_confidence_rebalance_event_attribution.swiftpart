@@ -1,0 +1,399 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_REBALANCE_EVENT_ATTRIBUTION"] == "1" {
+            struct RebalanceEventOutcome {
+                let date: Date
+                let type: String
+                let transition: String
+                let volatilityBucket: String
+                let drawdownBucket: String
+                let turnover: Double
+                let cost: Double
+                let priorGross: Double
+                let targetGross: Double
+                let net5: Double?
+                let net20: Double?
+                let net60: Double?
+            }
+
+            struct AttributionAggregate {
+                var values5: [Double] = []
+                var values20: [Double] = []
+                var values60: [Double] = []
+                var turnoverSum = 0.0
+                var costSum = 0.0
+                var count = 0
+
+                mutating func add(_ event: RebalanceEventOutcome) {
+                    count += 1
+                    turnoverSum += event.turnover
+                    costSum += event.cost
+                    if let value = event.net5 { values5.append(value) }
+                    if let value = event.net20 { values20.append(value) }
+                    if let value = event.net60 { values60.append(value) }
+                }
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", "0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", "2", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_QUALITY_GAP_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+            Darwin.setenv("ATM_CC_PORTFOLIO_VOL_TARGET", "99", 1)
+            Darwin.setenv("ATM_CC_CALM_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_VOL_FLOOR", "0.09", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_MAX_SCALE", "1.15", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_LEADER_GATE", "2", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_SHORT_LONG_VOL_RATIO_MAX", "1.0", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_ALLOCATION_MODE", "4", 1)
+            Darwin.setenv("ATM_CC_SECULAR_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_GOLD_TO_US_SHIFT_FRACTION", "0", 1)
+            Darwin.setenv("ATM_CC_EQUITY_CURVE_RISK_SCALE", "1", 1)
+            Darwin.setenv("ATM_CC_USD_CASH_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_US_RISK_ALLOCATION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_GLOBAL_RISK_PARITY_BLEND", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_MID_GROSS_CLIFFS", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_BREADTH_MICRO_BRAKES", "1", 1)
+            Darwin.setenv("ATM_CC_DISABLE_HOLD_HYSTERESIS", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_MATURE_NASDAQ_BRAKE", "1", 1)
+            Darwin.setenv("ATM_CC_DISABLE_CHINA_PURGE", "0", 1)
+            Darwin.setenv("ATM_CC_COST_AWARE_REBALANCE", "0", 1)
+            Darwin.setenv("ATM_CC_SLOW_ADD_FRACTION", "1", 1)
+            Darwin.setenv("ATM_CC_GROSS_CONFIDENCE_SHAPE", "0", 1)
+            Darwin.setenv("ATM_CC_STAGED_HANDOFF_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_BAND", "0", 1)
+            Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_VOL_CEILING", "99", 1)
+            Darwin.setenv("ATM_CC_BUY_CONFIRMATION_SESSIONS", "1", 1)
+            Darwin.setenv("ATM_CC_REBALANCE_TRIGGER_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MODE", "11", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_FRACTION", "0.80", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_DD_THRESHOLD", "0.04", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_INCLUDE_EXIT", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_GROSS_DROP_THRESHOLD", "0.02", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_SEVERITY_MODE", "5", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MAX_RETENTION", "0.25", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MIN_RETENTION", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_CUT_BUDGET_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_BROAD_UNWIND_TURNOVER_THRESHOLD", "0.40", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_WEIGHT", "0.05", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_CONFIRMATION_SESSIONS", "1", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_DD_THRESHOLD", "0.02", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_VOL_MIN", "0.06", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_VOL_MAX", "0.08", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_PRIOR_GROSS_MIN", "0.40", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_PRIOR_GROSS_MAX", "1.01", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_LEADER_GATE", "4", 1)
+            Darwin.setenv("ATM_CC_TRADE_BAND", "0.244", 1)
+            Darwin.setenv("ATM_CC_RETURN_SCALE", "1.22", 1)
+            Darwin.setenv("ATM_CC_RETURN_GROSS_CAP", "1.00", 1)
+            Darwin.setenv("ATM_CC_RETURN_CHINA_SCALE", "1.30", 1)
+            Darwin.setenv("ATM_CC_DECLINING_VOL_RETURN_SCALE", "1.24", 1)
+            Darwin.setenv("ATM_CC_DECLINING_VOL_RETURN_LEADER_GATE", "0", 1)
+            Darwin.setenv("ATM_CC_SAME_LEADER_REWEIGHT_BASE_TURNOVER", "0.20", 1)
+            Darwin.setenv("ATM_CC_SAME_LEADER_REWEIGHT_MID_TURNOVER", "0.30", 1)
+            Darwin.setenv("ATM_CC_SAME_LEADER_REWEIGHT_MID_VOL_MIN", "0.06", 1)
+            Darwin.setenv("ATM_CC_SAME_LEADER_REWEIGHT_MIN_TURNOVER", "0.50", 1)
+            Darwin.setenv("ATM_CC_SAME_LEADER_REWEIGHT_LEADER_GATE", "0", 1)
+            Darwin.setenv("ATM_CC_SAME_LEADER_REWEIGHT_VOL_MIN", "0.08", 1)
+            Darwin.setenv("ATM_CC_SAME_LEADER_REWEIGHT_EXTREME_VOL_MIN", "0.12", 1)
+            Darwin.setenv("ATM_CC_SAME_LEADER_REWEIGHT_EXTREME_LEADER_GATE", "2", 1)
+            Darwin.setenv("ATM_CC_HIGH_VOL_LEADERSHIP_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_HIGH_VOL_LEADERSHIP_MIGRATION_CAP", "1", 1)
+
+            guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else { return }
+
+            let states = run.dailyStates
+            let dates = states.map(\.date)
+            guard states.count > 100, dates.count == run.report.points.count else { return }
+
+            func blankMA(_ values: [Double], _ period: Int) -> [Double?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func blankBoll(_ values: [Double], _ period: Int, _ multiplier: Double) -> [(middle: Double, lower: Double, upper: Double)?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func alignedCNYPrices(symbol: String) -> [Double]? {
+                guard let option = optionsBySymbol[symbol] else { return nil }
+                let input = BacktestEngine.advancedAssetInput(for: option) { rawSymbol in
+                    seriesBySymbol[normalizedHistorySymbol(rawSymbol)]
+                }
+                guard let prepared = BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+                    assetSeries: input.assetSeries,
+                    assetOption: input.assetOption,
+                    fxSeries: input.fxSeries,
+                    movingAverage: blankMA,
+                    bollingerBands: blankBoll
+                ) else { return nil }
+                let map = Dictionary(uniqueKeysWithValues: prepared.pricePoints.map { ($0.date, $0.cnyPrice) })
+                var output: [Double] = []
+                output.reserveCapacity(dates.count)
+                var lastValue: Double?
+                for date in dates {
+                    if let value = map[date] { lastValue = value }
+                    guard let value = lastValue else { return nil }
+                    output.append(value)
+                }
+                return output
+            }
+
+            let symbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            var pricesBySymbol: [String: [Double]] = [:]
+            for symbol in symbols {
+                guard let prices = alignedCNYPrices(symbol: symbol) else {
+                    print("APP_CASH_CONFIDENCE_REBALANCE_EVENT_ATTRIBUTION\nmissing_\(symbol)")
+                    return
+                }
+                pricesBySymbol[symbol] = prices
+            }
+
+            let portfolioValues = run.report.points.map(\.portfolioValue)
+            let executionCostRate = 0.0105
+
+            func gross(_ weights: [String: Double]) -> Double {
+                weights.values.reduce(0, +)
+            }
+            func leader(_ weights: [String: Double]) -> String {
+                let gold = weights["gold_cny"] ?? 0
+                let nasdaq = weights["nasdaq"] ?? 0
+                let sp500 = weights["sp500"] ?? 0
+                let china = (weights["csi300"] ?? 0) + (weights["shanghai_composite"] ?? 0)
+                let total = gold + nasdaq + sp500 + china
+                guard total >= 0.05 else { return "cash" }
+                if gold >= nasdaq, gold >= sp500, gold >= china { return "gold" }
+                if nasdaq >= sp500, nasdaq >= china { return "nasdaq" }
+                if sp500 >= china { return "sp500" }
+                return "china"
+            }
+            func eventType(prior: [String: Double], target: [String: Double]) -> String {
+                let priorGross = gross(prior)
+                let targetGross = gross(target)
+                if priorGross < 0.05, targetGross >= 0.05 { return "enter-risk" }
+                if priorGross >= 0.05, targetGross < 0.05 { return "exit-risk" }
+                if targetGross < priorGross - 0.02 { return "de-risk" }
+                if targetGross > priorGross + 0.02 { return "re-risk" }
+                if leader(prior) != leader(target) { return "leader-switch" }
+                return "same-leader-reweight"
+            }
+            func volatility(at index: Int) -> Double? {
+                guard index >= 60 else { return nil }
+                var returns: [Double] = []
+                for cursor in (index - 59)...index where cursor > 0 && portfolioValues[cursor - 1] > 0 {
+                    returns.append(portfolioValues[cursor] / portfolioValues[cursor - 1] - 1)
+                }
+                guard returns.count > 1 else { return nil }
+                let mean = returns.reduce(0, +) / Double(returns.count)
+                let variance = returns.reduce(0.0) { $0 + pow($1 - mean, 2) }
+                    / Double(returns.count - 1)
+                return sqrt(max(variance, 0)) * sqrt(252)
+            }
+            func drawdown(at index: Int) -> Double {
+                guard portfolioValues.indices.contains(index) else { return 0 }
+                let start = max(0, index - 251)
+                let peak = portfolioValues[start...index].max() ?? portfolioValues[index]
+                return peak > 0 ? max(1 - portfolioValues[index] / peak, 0) : 0
+            }
+            func volatilityBucket(_ value: Double?) -> String {
+                guard let value else { return "vol-na" }
+                if value < 0.04 { return "vol<4" }
+                if value < 0.06 { return "vol4-6" }
+                if value < 0.08 { return "vol6-8" }
+                return "vol>=8"
+            }
+            func drawdownBucket(_ value: Double) -> String {
+                if value < 0.02 { return "dd<2" }
+                if value < 0.04 { return "dd2-4" }
+                if value < 0.06 { return "dd4-6" }
+                return "dd>=6"
+            }
+            func eraBucket(_ date: Date) -> String {
+                let year = Calendar(identifier: .gregorian).component(.year, from: date)
+                if year <= 2006 { return "2002-2006" }
+                if year <= 2011 { return "2007-2011" }
+                if year <= 2016 { return "2012-2016" }
+                if year <= 2021 { return "2017-2021" }
+                return "2022-2026"
+            }
+            func cashReturn(from start: Int, to end: Int) -> Double {
+                guard end > start else { return 0 }
+                var growth = 1.0
+                for cursor in (start + 1)...end {
+                    growth *= 1 + CashYieldCNY.dailyReturn(on: dates[cursor - 1])
+                }
+                return growth - 1
+            }
+            func netBenefit(
+                prior: [String: Double],
+                target: [String: Double],
+                at index: Int,
+                horizon: Int,
+                cost: Double
+            ) -> Double? {
+                let end = index + horizon
+                guard dates.indices.contains(end) else { return nil }
+                let cashHorizonReturn = cashReturn(from: index, to: end)
+                var benefit = 0.0
+                for symbol in symbols {
+                    guard let prices = pricesBySymbol[symbol],
+                          prices.indices.contains(index),
+                          prices.indices.contains(end),
+                          prices[index] > 0 else { return nil }
+                    let assetReturn = prices[end] / prices[index] - 1
+                    let delta = (target[symbol] ?? 0) - (prior[symbol] ?? 0)
+                    benefit += delta * (assetReturn - cashHorizonReturn)
+                }
+                return benefit - cost
+            }
+
+            var events: [RebalanceEventOutcome] = []
+            for index in 1..<states.count {
+                let prior = states[index - 1].targetWeights
+                let target = states[index].targetWeights
+                let allSymbols = Set(prior.keys).union(target.keys)
+                let turnover = allSymbols.reduce(0.0) {
+                    $0 + abs((target[$1] ?? 0) - (prior[$1] ?? 0))
+                }
+                guard turnover > 0.000001 else { continue }
+                let cost = turnover * executionCostRate
+                let priorLeader = leader(prior)
+                let targetLeader = leader(target)
+                events.append(RebalanceEventOutcome(
+                    date: dates[index],
+                    type: eventType(prior: prior, target: target),
+                    transition: priorLeader + "->" + targetLeader,
+                    volatilityBucket: volatilityBucket(volatility(at: index - 1)),
+                    drawdownBucket: drawdownBucket(drawdown(at: index - 1)),
+                    turnover: turnover,
+                    cost: cost,
+                    priorGross: gross(prior),
+                    targetGross: gross(target),
+                    net5: netBenefit(prior: prior, target: target, at: index, horizon: 5, cost: cost),
+                    net20: netBenefit(prior: prior, target: target, at: index, horizon: 20, cost: cost),
+                    net60: netBenefit(prior: prior, target: target, at: index, horizon: 60, cost: cost)
+                ))
+            }
+
+            func median(_ values: [Double]) -> Double {
+                let sorted = values.sorted()
+                guard !sorted.isEmpty else { return 0 }
+                if sorted.count.isMultiple(of: 2) {
+                    let middle = sorted.count / 2
+                    return 0.5 * (sorted[middle - 1] + sorted[middle])
+                }
+                return sorted[sorted.count / 2]
+            }
+            func average(_ values: [Double]) -> Double {
+                values.isEmpty ? 0 : values.reduce(0, +) / Double(values.count)
+            }
+            func winRate(_ values: [Double]) -> Double {
+                values.isEmpty ? 0 : Double(values.filter { $0 > 0 }.count) / Double(values.count)
+            }
+            func printAggregates(_ grouped: [String: AttributionAggregate], header: String) {
+                print(header)
+                print("group,count,average_turnover,average_cost,mean_net5,median_net5,win5,mean_net20,median_net20,win20,mean_net60,median_net60,win60")
+                for key in grouped.keys.sorted() {
+                    guard let item = grouped[key] else { continue }
+                    print([
+                        key,
+                        String(item.count),
+                        String(format: "%.6f", item.count > 0 ? item.turnoverSum / Double(item.count) : 0),
+                        String(format: "%.6f", item.count > 0 ? item.costSum / Double(item.count) : 0),
+                        String(format: "%.6f", average(item.values5) * 100),
+                        String(format: "%.6f", median(item.values5) * 100),
+                        String(format: "%.6f", winRate(item.values5)),
+                        String(format: "%.6f", average(item.values20) * 100),
+                        String(format: "%.6f", median(item.values20) * 100),
+                        String(format: "%.6f", winRate(item.values20)),
+                        String(format: "%.6f", average(item.values60) * 100),
+                        String(format: "%.6f", median(item.values60) * 100),
+                        String(format: "%.6f", winRate(item.values60))
+                    ].joined(separator: ","))
+                }
+            }
+
+            var byType: [String: AttributionAggregate] = [:]
+            var byTransition: [String: AttributionAggregate] = [:]
+            var byTypeVolatility: [String: AttributionAggregate] = [:]
+            var byTypeDrawdown: [String: AttributionAggregate] = [:]
+            var byTypeTurnover: [String: AttributionAggregate] = [:]
+            var byTypePriorLeader: [String: AttributionAggregate] = [:]
+            var byEraType: [String: AttributionAggregate] = [:]
+            var byEraTransition: [String: AttributionAggregate] = [:]
+            for event in events {
+                byType[event.type, default: AttributionAggregate()].add(event)
+                byTransition[event.transition, default: AttributionAggregate()].add(event)
+                byTypeVolatility[event.type + "|" + event.volatilityBucket, default: AttributionAggregate()].add(event)
+                byTypeDrawdown[event.type + "|" + event.drawdownBucket, default: AttributionAggregate()].add(event)
+                let turnoverBucket: String
+                if event.turnover < 0.20 {
+                    turnoverBucket = "turn<20"
+                } else if event.turnover < 0.40 {
+                    turnoverBucket = "turn20-40"
+                } else if event.turnover < 0.60 {
+                    turnoverBucket = "turn40-60"
+                } else {
+                    turnoverBucket = "turn>=60"
+                }
+                byTypeTurnover[event.type + "|" + turnoverBucket, default: AttributionAggregate()].add(event)
+                let priorLeader = event.transition.split(separator: "-", maxSplits: 1).first.map(String.init) ?? "unknown"
+                byTypePriorLeader[event.type + "|" + priorLeader, default: AttributionAggregate()].add(event)
+                let era = eraBucket(event.date)
+                byEraType[era + "|" + event.type, default: AttributionAggregate()].add(event)
+                byEraTransition[era + "|" + event.transition, default: AttributionAggregate()].add(event)
+            }
+
+            print("APP_CASH_CONFIDENCE_REBALANCE_EVENT_OVERVIEW")
+            print("events,trades,full_annualized,full_drawdown,full_sharpe")
+            print([
+                String(events.count),
+                String(run.report.trades.count),
+                String(format: "%.6f", (run.report.annualizedReturn ?? 0) * 100),
+                String(format: "%.6f", run.report.maxDrawdown * 100),
+                String(format: "%.6f", run.report.sharpeRatio ?? 0)
+            ].joined(separator: ","))
+            printAggregates(byType, header: "APP_CASH_CONFIDENCE_REBALANCE_BY_TYPE")
+            printAggregates(byTransition.filter { $0.value.count >= 3 }, header: "APP_CASH_CONFIDENCE_REBALANCE_BY_TRANSITION")
+            printAggregates(byTypeVolatility.filter { $0.value.count >= 3 }, header: "APP_CASH_CONFIDENCE_REBALANCE_BY_TYPE_VOLATILITY")
+            printAggregates(byTypeDrawdown.filter { $0.value.count >= 3 }, header: "APP_CASH_CONFIDENCE_REBALANCE_BY_TYPE_DRAWDOWN")
+            printAggregates(byTypeTurnover.filter { $0.value.count >= 3 }, header: "APP_CASH_CONFIDENCE_REBALANCE_BY_TYPE_TURNOVER")
+            printAggregates(byTypePriorLeader.filter { $0.value.count >= 3 }, header: "APP_CASH_CONFIDENCE_REBALANCE_BY_TYPE_PRIOR_LEADER")
+            printAggregates(byEraType.filter { $0.value.count >= 2 }, header: "APP_CASH_CONFIDENCE_REBALANCE_BY_ERA_TYPE")
+            printAggregates(byEraTransition.filter { $0.value.count >= 2 }, header: "APP_CASH_CONFIDENCE_REBALANCE_BY_ERA_TRANSITION")
+
+            print("APP_CASH_CONFIDENCE_REBALANCE_WORST_20D")
+            print("date,type,transition,volatility_bucket,drawdown_bucket,turnover,cost,prior_gross,target_gross,net5,net20,net60")
+            for event in events.filter({ $0.net20 != nil }).sorted(by: { ($0.net20 ?? 0) < ($1.net20 ?? 0) }).prefix(30) {
+                print([
+                    event.date.recordDateString,
+                    event.type,
+                    event.transition,
+                    event.volatilityBucket,
+                    event.drawdownBucket,
+                    String(format: "%.6f", event.turnover),
+                    String(format: "%.6f", event.cost),
+                    String(format: "%.6f", event.priorGross),
+                    String(format: "%.6f", event.targetGross),
+                    String(format: "%.6f", (event.net5 ?? 0) * 100),
+                    String(format: "%.6f", (event.net20 ?? 0) * 100),
+                    String(format: "%.6f", (event.net60 ?? 0) * 100)
+                ].joined(separator: ","))
+            }
+            return
+        }

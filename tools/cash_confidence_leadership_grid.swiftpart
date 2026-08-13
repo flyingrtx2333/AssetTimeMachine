@@ -1,0 +1,115 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_LEADERSHIP_GRID"] == "1" {
+            struct CashConfidenceLeadershipCandidate {
+                let title: String
+                let evaluationSessions: Int
+                let priorEvidence: Double
+                let minimumMigration: Double
+                let successEdge: Double
+                let edgeExponent: Double
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let trades: Int
+                let averageCashRatio: Double
+                let sliceRows: [SliceMetricRow]
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let parameterSets: [(String, Int, Double, Double, Double, Double)] = [
+                ("领导权基线", 10, 2.0, 0.50, 0.000, 1.00),
+                ("短窗快速学习", 5, 1.0, 0.45, 0.000, 1.00),
+                ("短窗保守迁移", 5, 2.0, 0.35, 0.000, 1.50),
+                ("长窗强先验", 20, 4.0, 0.40, 0.000, 1.00),
+                ("长窗低底仓", 20, 2.0, 0.30, 0.000, 1.50),
+                ("高迁移底仓", 10, 2.0, 0.65, 0.000, 1.00),
+                ("要求超额0.5%", 10, 2.0, 0.45, 0.005, 1.00),
+                ("凸性置信映射", 10, 2.0, 0.40, 0.000, 2.00),
+                ("凹性置信映射", 10, 2.0, 0.40, 0.000, 0.50),
+            ]
+
+            Darwin.setenv("ATM_CC_GROWTH_SCALE", "1.05", 1)
+            Darwin.setenv("ATM_CC_FAST_BRIDGE", "0.15", 1)
+            Darwin.setenv("ATM_CC_SLEEVE_CAP", "0.2075", 1)
+            Darwin.setenv("ATM_CC_TRADE_BAND", "0.20", 1)
+            Darwin.setenv("ATM_CC_NASDAQ_MA", "40", 1)
+            Darwin.setenv("ATM_CC_NASDAQ_SCALE", "0.88", 1)
+            Darwin.setenv("ATM_CC_OTHER_SCALE", "0.80", 1)
+
+            var candidates: [CashConfidenceLeadershipCandidate] = []
+            for parameters in parameterSets {
+                Darwin.setenv("ATM_CC_LEADERSHIP_EVAL", String(parameters.1), 1)
+                Darwin.setenv("ATM_CC_LEADERSHIP_PRIOR", String(parameters.2), 1)
+                Darwin.setenv("ATM_CC_MIN_MIGRATION", String(parameters.3), 1)
+                Darwin.setenv("ATM_CC_SUCCESS_EDGE", String(parameters.4), 1)
+                Darwin.setenv("ATM_CC_EDGE_EXPONENT", String(parameters.5), 1)
+
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                let fullRow = MetricRow(
+                    title: parameters.0,
+                    id: "cash_confidence_leadership_grid",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+                candidates.append(CashConfidenceLeadershipCandidate(
+                    title: parameters.0,
+                    evaluationSessions: parameters.1,
+                    priorEvidence: parameters.2,
+                    minimumMigration: parameters.3,
+                    successEdge: parameters.4,
+                    edgeExponent: parameters.5,
+                    annualized: report.annualizedReturn ?? -1,
+                    maxDrawdown: report.maxDrawdown,
+                    sharpe: report.sharpeRatio ?? -1,
+                    trades: report.trades.count,
+                    averageCashRatio: report.averageCashRatio,
+                    sliceRows: metricRowsForSlices(
+                        title: parameters.0,
+                        id: "cash_confidence_leadership_grid",
+                        points: report.points,
+                        fullRow: fullRow
+                    )
+                ))
+            }
+
+            let ranked = candidates.sorted { lhs, rhs in
+                let lhsScore = lhs.sharpe + 0.50 * lhs.annualized - 0.75 * lhs.maxDrawdown
+                let rhsScore = rhs.sharpe + 0.50 * rhs.annualized - 0.75 * rhs.maxDrawdown
+                if lhsScore == rhsScore { return lhs.annualized > rhs.annualized }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(ranked.flatMap(\.sliceRows), header: "APP_CASH_CONFIDENCE_LEADERSHIP_GRID")
+            print("APP_CASH_CONFIDENCE_LEADERSHIP_DIAGNOSTICS")
+            print("title,evaluation,prior,min_migration,success_edge,edge_exponent,annualized,max_drawdown,sharpe,trades,average_cash_ratio")
+            for candidate in ranked {
+                print([
+                    candidate.title,
+                    String(candidate.evaluationSessions),
+                    String(format: "%.3f", candidate.priorEvidence),
+                    String(format: "%.3f", candidate.minimumMigration),
+                    String(format: "%.4f", candidate.successEdge),
+                    String(format: "%.3f", candidate.edgeExponent),
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio)
+                ].joined(separator: ","))
+            }
+            return
+        }

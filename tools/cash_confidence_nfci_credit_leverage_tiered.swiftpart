@@ -1,0 +1,229 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_NFCI_CREDIT_LEVERAGE_COMBO"] == "1" {
+            struct NFCIComboCandidate {
+                let title: String
+                let creditRetention: Double
+                let leverageRetention: Double
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let creditEvents: Int
+                let leverageEvents: Int
+                let unionEvents: Int
+                let eventDates: [String]
+                let maxTargetGross: Double
+                let maxActualGross: Double
+                let minCashRatio: Double
+                let financedDays: Int
+            }
+
+            func loadNFCIComboSeries(_ path: String) -> [(releaseDate: String, value: Double)] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3, let value = Double(fields[2]), value.isFinite else { return nil }
+                    return (String(fields[0]), value)
+                }.sorted { $0.0 < $1.0 }
+            }
+
+            let creditSeries = loadNFCIComboSeries("tools/research-results/NFCICREDIT_initial_release.csv")
+            let leverageSeries = loadNFCIComboSeries("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            guard creditSeries.count >= 700, leverageSeries.count >= 700 else {
+                print("APP_CC_NFCI_CREDIT_LEVERAGE_COMBO\nseries_missing")
+                return
+            }
+            func componentChange(_ series: [(releaseDate: String, value: Double)], on signalDate: String, lookback: Int) -> Double? {
+                var latest: Int?
+                for index in series.indices {
+                    if series[index].releaseDate <= signalDate { latest = index } else { break }
+                }
+                guard let latest, latest >= lookback else { return nil }
+                return series[latest].value - series[latest - lookback].value
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ), let baseStartDate = baseRun.report.points.first?.date else {
+                print("APP_CC_NFCI_CREDIT_LEVERAGE_COMBO\nbase_missing")
+                return
+            }
+            let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let baseTradeDates = Set(baseRun.report.trades.map { $0.date.recordDateString })
+            let usSymbols: Set<String> = ["nasdaq", "sp500"]
+            let configs: [(String, Double, Double, Double, String)] = [
+                ("冠军重放控制组", 0.00, 0.00, 0.00, "9999-01-01"),
+                ("Credit50", 0.50, 0.00, 0.50, "0000-01-01"),
+                ("Leverage50", 0.00, 0.50, 0.50, "0000-01-01"),
+                ("Leverage75", 0.00, 0.75, 0.75, "0000-01-01"),
+                ("Credit50+Leverage50", 0.50, 0.50, 0.50, "0000-01-01"),
+                ("Credit50+Leverage75", 0.50, 0.75, 0.75, "0000-01-01"),
+                ("单信号50双信号75", 0.50, 0.50, 0.75, "0000-01-01"),
+                ("单信号50双信号100", 0.50, 0.50, 1.00, "0000-01-01"),
+                ("组合50仅2017+", 0.50, 0.50, 0.50, "2017-01-01"),
+                ("组合75仅2017+", 0.50, 0.75, 0.75, "2017-01-01"),
+                ("组合50仅2019+", 0.50, 0.50, 0.50, "2019-01-01"),
+                ("组合75仅2019+", 0.50, 0.75, 0.75, "2019-01-01"),
+                ("组合50仅2020+", 0.50, 0.50, 0.50, "2020-01-01"),
+                ("组合75仅2020+", 0.50, 0.75, 0.75, "2020-01-01"),
+                ("分层75仅2017+", 0.50, 0.50, 0.75, "2017-01-01"),
+                ("分层75仅2020+", 0.50, 0.50, 0.75, "2020-01-01"),
+            ]
+            var candidates: [NFCIComboCandidate] = []
+
+            for (title, creditRetention, leverageRetention, bothRetention, activationDate) in configs {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cc_nfci_credit_leverage_combo",
+                    title: title,
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "NFCI信用杠杆组合减仓保留"
+                )
+                var previousBase: [String: Double] = [:]
+                var pending: [String: Double] = [:]
+                var creditEvents = 0
+                var leverageEvents = 0
+                var unionDates: Set<String> = []
+                var taggedDates: [String] = []
+
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let executionKey = data.dates[index].recordDateString
+                        guard baseTradeDates.contains(executionKey), var target = baseTargets[executionKey] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let prior = previousBase
+                        previousBase = target
+                        guard !prior.isEmpty else {
+                            pending = target
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+                        let signalKey = data.dates[signalIndex].recordDateString
+                        let creditTrigger = creditRetention > 0
+                            && signalKey >= activationDate
+                            && (componentChange(creditSeries, on: signalKey, lookback: 8).map { $0 <= -0.03 } ?? false)
+                        let leverageTrigger = leverageRetention > 0
+                            && signalKey >= activationDate
+                            && (componentChange(leverageSeries, on: signalKey, lookback: 4).map { $0 <= -0.05 } ?? false)
+                        let priorGross = prior.values.reduce(0, +)
+                        let proposedGross = target.values.reduce(0, +)
+                        let priorUS = prior.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                        let proposedUS = target.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                        let usDecrease = priorUS - proposedUS
+                        let grossDecrease = priorGross - proposedGross
+                        if usDecrease >= 0.05, grossDecrease >= 0.03, creditTrigger || leverageTrigger {
+                            let retention = creditTrigger && leverageTrigger ? bothRetention : max(creditTrigger ? creditRetention : 0, leverageTrigger ? leverageRetention : 0)
+                            var extras: [String: Double] = [:]
+                            for symbol in usSymbols {
+                                let reduction = max((prior[symbol] ?? 0) - (target[symbol] ?? 0), 0)
+                                if reduction > 0 { extras[symbol] = retention * reduction }
+                            }
+                            let desired = extras.values.reduce(0, +)
+                            if desired > 0 {
+                                let cash = max(1.0 - proposedGross, 0)
+                                let scale = min(1.0, cash / desired)
+                                for (symbol, extra) in extras { target[symbol, default: 0] += extra * scale }
+                                if creditTrigger { creditEvents += 1 }
+                                if leverageTrigger { leverageEvents += 1 }
+                                unionDates.insert(signalKey)
+                                let prefix = creditTrigger && leverageTrigger ? "CL:" : (creditTrigger ? "C:" : "L:")
+                                taggedDates.append(prefix + signalKey)
+                            }
+                        }
+                        let gross = target.values.reduce(0, +)
+                        if gross > 1, gross > 0 { target = target.mapValues { max($0, 0) / gross } }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { continue }
+
+                let points = run.report.points.filter { $0.date >= baseStartDate }
+                guard let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                let fullRow = MetricRow(
+                    title: title,
+                    id: "cc_nfci_credit_leverage_combo",
+                    annualized: metrics.annualizedReturn,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility,
+                    sharpe: metrics.sharpeRatio,
+                    start: points.first?.date.recordDateString ?? "n/a",
+                    end: points.last?.date.recordDateString ?? "n/a",
+                    pointCount: points.count
+                )
+                var maxTargetGross = 0.0
+                var maxActualGross = 0.0
+                var minCashRatio = Double.greatestFiniteMagnitude
+                var financedDays = 0
+                for state in run.dailyStates where state.portfolioValue > 0 && state.date >= baseStartDate {
+                    maxTargetGross = max(maxTargetGross, state.targetWeights.values.reduce(0, +))
+                    maxActualGross = max(maxActualGross, state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue)
+                    minCashRatio = min(minCashRatio, state.cash / state.portfolioValue)
+                    if state.cash < -0.0001 { financedDays += 1 }
+                }
+                candidates.append(.init(
+                    title: title,
+                    creditRetention: creditRetention,
+                    leverageRetention: leverageRetention,
+                    annualized: metrics.annualizedReturn ?? -1,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility ?? -1,
+                    sharpe: metrics.sharpeRatio ?? -1,
+                    sliceRows: metricRowsForSlices(title: title, id: "cc_nfci_credit_leverage_combo", points: points, fullRow: fullRow),
+                    trades: run.report.trades.filter { $0.date >= baseStartDate }.count,
+                    averageCashRatio: run.report.averageCashRatio,
+                    creditEvents: creditEvents,
+                    leverageEvents: leverageEvents,
+                    unionEvents: unionDates.count,
+                    eventDates: taggedDates,
+                    maxTargetGross: maxTargetGross,
+                    maxActualGross: maxActualGross,
+                    minCashRatio: minCashRatio == Double.greatestFiniteMagnitude ? 0 : minCashRatio,
+                    financedDays: financedDays
+                ))
+            }
+
+            print("APP_CC_NFCI_CREDIT_LEVERAGE_BASE")
+            print(String(format: "%.6f,%.6f,%.6f,%d", (baseRun.report.annualizedReturn ?? 0) * 100, baseRun.report.maxDrawdown * 100, baseRun.report.sharpeRatio ?? 0, baseRun.report.trades.count))
+            candidates.sort { lhs, rhs in
+                let lhsScore = lhs.annualized - max(lhs.maxDrawdown - 0.08, 0) * 2
+                let rhsScore = rhs.annualized - max(rhs.maxDrawdown - 0.08, 0) * 2
+                if lhsScore == rhsScore { return lhs.sharpe > rhs.sharpe }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(candidates.flatMap(\.sliceRows), header: "APP_CC_NFCI_CREDIT_LEVERAGE_GRID")
+            print("APP_CC_NFCI_CREDIT_LEVERAGE_DIAGNOSTICS")
+            print("title,credit_events,leverage_events,union_events,trades,average_cash,max_target_gross,max_actual_gross,min_cash,financed_days,event_dates")
+            for c in candidates {
+                print([
+                    c.title, String(c.creditEvents), String(c.leverageEvents), String(c.unionEvents), String(c.trades),
+                    String(format: "%.6f", c.averageCashRatio), String(format: "%.9f", c.maxTargetGross),
+                    String(format: "%.9f", c.maxActualGross), String(format: "%.9f", c.minCashRatio),
+                    String(c.financedDays), c.eventDates.joined(separator: "|")
+                ].joined(separator: ","))
+            }
+            return
+        }

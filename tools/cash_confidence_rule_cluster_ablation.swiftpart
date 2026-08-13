@@ -1,0 +1,135 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_RULE_CLUSTER_ABLATION"] == "1" {
+            struct RuleClusterCandidate {
+                let title: String
+                let disableMidGross: Bool
+                let disableBreadth: Bool
+                let disableHold: Bool
+                let disableMatureNasdaq: Bool
+                let disableChina: Bool
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let trades: Int
+                let averageCashRatio: Double
+                let sliceRows: [SliceMetricRow]
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let parameterSets: [(String, Bool, Bool, Bool, Bool, Bool)] = [
+                ("Build158基线", false, false, false, false, false),
+                ("移除中仓位断崖", true, false, false, false, false),
+                ("移除微型宽度刹车", false, true, false, false, false),
+                ("移除持仓冻结", false, false, true, false, false),
+                ("移除成熟纳指刹车", false, false, false, true, false),
+                ("移除低置信中国清零", false, false, false, false, true),
+            ]
+
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", "0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", "2", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_QUALITY_GAP_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+            Darwin.setenv("ATM_CC_PORTFOLIO_VOL_TARGET", "99", 1)
+            Darwin.setenv("ATM_CC_CALM_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_VOL_FLOOR", "0", 1)
+            Darwin.setenv("ATM_CC_SECULAR_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_GOLD_TO_US_SHIFT_FRACTION", "0", 1)
+            Darwin.setenv("ATM_CC_EQUITY_CURVE_RISK_SCALE", "1", 1)
+            Darwin.setenv("ATM_CC_USD_CASH_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_US_RISK_ALLOCATION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_GLOBAL_RISK_PARITY_BLEND", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MODE", "11", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_FRACTION", "0.875", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_DD_THRESHOLD", "0.04", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_INCLUDE_EXIT", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_GROSS_DROP_THRESHOLD", "0.02", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_SEVERITY_MODE", "5", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MAX_RETENTION", "0.25", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MIN_RETENTION", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_CUT_BUDGET_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_BROAD_UNWIND_TURNOVER_THRESHOLD", "0.60", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_WEIGHT", "0", 1)
+
+            var candidates: [RuleClusterCandidate] = []
+            for parameters in parameterSets {
+                Darwin.setenv("ATM_CC_DISABLE_MID_GROSS_CLIFFS", parameters.1 ? "1" : "0", 1)
+                Darwin.setenv("ATM_CC_DISABLE_BREADTH_MICRO_BRAKES", parameters.2 ? "1" : "0", 1)
+                Darwin.setenv("ATM_CC_DISABLE_HOLD_HYSTERESIS", parameters.3 ? "1" : "0", 1)
+                Darwin.setenv("ATM_CC_DISABLE_MATURE_NASDAQ_BRAKE", parameters.4 ? "1" : "0", 1)
+                Darwin.setenv("ATM_CC_DISABLE_CHINA_PURGE", parameters.5 ? "1" : "0", 1)
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                let fullRow = MetricRow(
+                    title: parameters.0,
+                    id: "cash_confidence_rule_cluster_ablation",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+                candidates.append(RuleClusterCandidate(
+                    title: parameters.0,
+                    disableMidGross: parameters.1,
+                    disableBreadth: parameters.2,
+                    disableHold: parameters.3,
+                    disableMatureNasdaq: parameters.4,
+                    disableChina: parameters.5,
+                    annualized: report.annualizedReturn ?? -1,
+                    maxDrawdown: report.maxDrawdown,
+                    sharpe: report.sharpeRatio ?? -1,
+                    trades: report.trades.count,
+                    averageCashRatio: report.averageCashRatio,
+                    sliceRows: metricRowsForSlices(
+                        title: parameters.0,
+                        id: "cash_confidence_rule_cluster_ablation",
+                        points: report.points,
+                        fullRow: fullRow
+                    )
+                ))
+            }
+
+            let ranked = candidates.sorted { lhs, rhs in
+                let lhsScore = lhs.sharpe + 0.5 * lhs.annualized - 0.75 * lhs.maxDrawdown
+                let rhsScore = rhs.sharpe + 0.5 * rhs.annualized - 0.75 * rhs.maxDrawdown
+                if lhsScore == rhsScore { return lhs.annualized > rhs.annualized }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(ranked.flatMap(\.sliceRows), header: "APP_CASH_CONFIDENCE_RULE_CLUSTER_ABLATION")
+            print("APP_CASH_CONFIDENCE_RULE_CLUSTER_DIAGNOSTICS")
+            print("title,disable_mid_gross,disable_breadth,disable_hold,disable_mature_nasdaq,disable_china,annualized,max_drawdown,sharpe,trades,average_cash_ratio")
+            for candidate in ranked {
+                print([
+                    candidate.title,
+                    candidate.disableMidGross ? "1" : "0",
+                    candidate.disableBreadth ? "1" : "0",
+                    candidate.disableHold ? "1" : "0",
+                    candidate.disableMatureNasdaq ? "1" : "0",
+                    candidate.disableChina ? "1" : "0",
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio)
+                ].joined(separator: ","))
+            }
+            return
+        }

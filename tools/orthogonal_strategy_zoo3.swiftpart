@@ -1,0 +1,457 @@
+        if ProcessInfo.processInfo.environment["ATM_ORTHOGONAL_STRATEGY_ZOO3"] == "1" {
+            enum Zoo3Family: String {
+                case meanVariance
+                case maxSharpe
+                case maxDiversification
+                case equalRiskContribution
+                case downsideSelector
+                case calmarSelector
+                case bayesianDrift
+                case varianceRatioTrend
+                case cusumChangePoint
+            }
+
+            struct Zoo3Variant {
+                let id: String
+                let title: String
+                let family: Zoo3Family
+                let rebalanceSessions: Int
+                let rebalanceBand: Double
+                let p1: Double
+                let p2: Double
+                let intParam: Int
+            }
+
+            struct Zoo3Metrics {
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+            }
+
+            struct Zoo3Result {
+                let variant: Zoo3Variant
+                let full: Zoo3Metrics
+                let last10y: Zoo3Metrics
+                let since2020: Zoo3Metrics
+                let since2022: Zoo3Metrics
+                let trades: Int
+                let averageCashRatio: Double
+            }
+
+            let coreSymbols = ["gold_cny", "nasdaq", "sp500"]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = coreSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            let variants: [Zoo3Variant] = [
+                .init(id: "mvo_126_l2", title: "均值方差126-λ2", family: .meanVariance, rebalanceSessions: 63, rebalanceBand: 0.06, p1: 126, p2: 2, intParam: 0),
+                .init(id: "mvo_126_l4", title: "均值方差126-λ4", family: .meanVariance, rebalanceSessions: 63, rebalanceBand: 0.06, p1: 126, p2: 4, intParam: 0),
+                .init(id: "mvo_252_l4", title: "均值方差252-λ4", family: .meanVariance, rebalanceSessions: 63, rebalanceBand: 0.06, p1: 252, p2: 4, intParam: 0),
+                .init(id: "mvo_252_l8", title: "均值方差252-λ8", family: .meanVariance, rebalanceSessions: 63, rebalanceBand: 0.06, p1: 252, p2: 8, intParam: 0),
+
+                .init(id: "max_sharpe_126", title: "滚动最大Sharpe126", family: .maxSharpe, rebalanceSessions: 63, rebalanceBand: 0.06, p1: 126, p2: 0, intParam: 0),
+                .init(id: "max_sharpe_252", title: "滚动最大Sharpe252", family: .maxSharpe, rebalanceSessions: 63, rebalanceBand: 0.06, p1: 252, p2: 0, intParam: 0),
+
+                .init(id: "max_div_63", title: "最大分散化63", family: .maxDiversification, rebalanceSessions: 63, rebalanceBand: 0.04, p1: 63, p2: 0, intParam: 0),
+                .init(id: "max_div_126", title: "最大分散化126", family: .maxDiversification, rebalanceSessions: 63, rebalanceBand: 0.04, p1: 126, p2: 0, intParam: 0),
+                .init(id: "erc_63", title: "等风险贡献ERC63", family: .equalRiskContribution, rebalanceSessions: 63, rebalanceBand: 0.04, p1: 63, p2: 0, intParam: 0),
+                .init(id: "erc_126", title: "等风险贡献ERC126", family: .equalRiskContribution, rebalanceSessions: 63, rebalanceBand: 0.04, p1: 126, p2: 0, intParam: 0),
+
+                .init(id: "sortino_top1_126", title: "下行风险动量Top1-126", family: .downsideSelector, rebalanceSessions: 63, rebalanceBand: 0.10, p1: 126, p2: 0.90, intParam: 1),
+                .init(id: "sortino_top2_126", title: "下行风险动量Top2-126", family: .downsideSelector, rebalanceSessions: 63, rebalanceBand: 0.10, p1: 126, p2: 0.90, intParam: 2),
+                .init(id: "calmar_top1_252", title: "Calmar强度Top1-252", family: .calmarSelector, rebalanceSessions: 63, rebalanceBand: 0.10, p1: 252, p2: 0.90, intParam: 1),
+                .init(id: "calmar_top2_252", title: "Calmar强度Top2-252", family: .calmarSelector, rebalanceSessions: 63, rebalanceBand: 0.10, p1: 252, p2: 0.90, intParam: 2),
+
+                .init(id: "bayes_drift_126_t05", title: "贝叶斯漂移126-t0.5", family: .bayesianDrift, rebalanceSessions: 63, rebalanceBand: 0.08, p1: 126, p2: 0.5, intParam: 0),
+                .init(id: "bayes_drift_126_t10", title: "贝叶斯漂移126-t1.0", family: .bayesianDrift, rebalanceSessions: 63, rebalanceBand: 0.08, p1: 126, p2: 1.0, intParam: 0),
+                .init(id: "bayes_drift_252_t10", title: "贝叶斯漂移252-t1.0", family: .bayesianDrift, rebalanceSessions: 63, rebalanceBand: 0.08, p1: 252, p2: 1.0, intParam: 0),
+
+                .init(id: "variance_ratio_105", title: "方差比趋势VR1.05", family: .varianceRatioTrend, rebalanceSessions: 21, rebalanceBand: 0.10, p1: 1.05, p2: 0.90, intParam: 0),
+                .init(id: "variance_ratio_115", title: "方差比趋势VR1.15", family: .varianceRatioTrend, rebalanceSessions: 21, rebalanceBand: 0.10, p1: 1.15, p2: 0.90, intParam: 0),
+
+                .init(id: "cusum_h20", title: "CUSUM变点阈值2.0", family: .cusumChangePoint, rebalanceSessions: 5, rebalanceBand: 0.08, p1: 2.0, p2: 0.85, intParam: 0),
+                .init(id: "cusum_h30", title: "CUSUM变点阈值3.0", family: .cusumChangePoint, rebalanceSessions: 5, rebalanceBand: 0.08, p1: 3.0, p2: 0.85, intParam: 0),
+            ]
+
+            func price(_ symbol: String, _ index: Int, _ data: ResearchTargetDataContext) -> Double? {
+                guard let values = data.pricesBySymbol[symbol], values.indices.contains(index), values[index] > 0 else { return nil }
+                return values[index]
+            }
+
+            func momentum(_ symbol: String, _ index: Int, _ lookback: Int, _ data: ResearchTargetDataContext) -> Double? {
+                guard lookback > 0, index >= lookback,
+                      let values = data.pricesBySymbol[symbol], values.indices.contains(index),
+                      values[index] > 0, values[index - lookback] > 0 else { return nil }
+                return values[index] / values[index - lookback] - 1
+            }
+
+            func movingAverage(_ symbol: String, _ index: Int, _ period: Int, _ data: ResearchTargetDataContext) -> Double? {
+                guard period > 1, index >= period - 1,
+                      let values = data.pricesBySymbol[symbol], values.indices.contains(index) else { return nil }
+                var total = 0.0
+                for cursor in (index - period + 1)...index {
+                    guard values[cursor] > 0 else { return nil }
+                    total += values[cursor]
+                }
+                return total / Double(period)
+            }
+
+            func returns(_ symbol: String, _ index: Int, _ lookback: Int, _ data: ResearchTargetDataContext) -> [Double]? {
+                guard lookback > 1, index >= lookback,
+                      let values = data.pricesBySymbol[symbol], values.indices.contains(index) else { return nil }
+                var result: [Double] = []
+                for cursor in (index - lookback + 1)...index {
+                    guard cursor > 0, values[cursor] > 0, values[cursor - 1] > 0 else { return nil }
+                    result.append(values[cursor] / values[cursor - 1] - 1)
+                }
+                return result
+            }
+
+            func metrics(_ points: [BacktestSeriesPoint]) -> Zoo3Metrics? {
+                guard points.count > 1,
+                      let result = BacktestMetricsCalculator.performanceMetrics(from: points) else { return nil }
+                return Zoo3Metrics(
+                    annualized: result.annualizedReturn ?? -1,
+                    maxDrawdown: result.maxDrawdown,
+                    volatility: result.annualizedVolatility ?? -1,
+                    sharpe: result.sharpeRatio ?? -1
+                )
+            }
+
+            func covarianceStats(_ index: Int, _ lookback: Int, _ data: ResearchTargetDataContext) -> (means: [Double], covariance: [[Double]], vols: [Double])? {
+                let series = coreSymbols.compactMap { returns($0, index, lookback, data) }
+                guard series.count == 3,
+                      series[0].count == series[1].count,
+                      series[0].count == series[2].count,
+                      series[0].count > 2 else { return nil }
+                let means = series.map { $0.reduce(0, +) / Double($0.count) }
+                var covariance = Array(repeating: Array(repeating: 0.0, count: 3), count: 3)
+                for i in 0..<3 {
+                    for j in 0..<3 {
+                        var sum = 0.0
+                        for cursor in series[i].indices {
+                            sum += (series[i][cursor] - means[i]) * (series[j][cursor] - means[j])
+                        }
+                        covariance[i][j] = sum / Double(series[i].count - 1)
+                    }
+                }
+                let vols = (0..<3).map { sqrt(max(covariance[$0][$0], 0)) * sqrt(252) }
+                return (means, covariance, vols)
+            }
+
+            func portfolioVariance(_ w: [Double], _ covariance: [[Double]]) -> Double {
+                var result = 0.0
+                for i in 0..<3 {
+                    for j in 0..<3 { result += w[i] * w[j] * covariance[i][j] }
+                }
+                return result
+            }
+
+            func gridOptimalWeights(_ family: Zoo3Family, index: Int, lookback: Int, riskAversion: Double, data: ResearchTargetDataContext) -> [String: Double] {
+                guard let stats = covarianceStats(index, lookback, data) else { return [:] }
+                let annualMeans = stats.means.map { $0 * 252 }
+                let annualCovariance = stats.covariance.map { row in row.map { $0 * 252 } }
+                var bestScore = -Double.infinity
+                var best = [0.0, 0.0, 0.0]
+                for gi in 0...20 {
+                    for ni in 0...(20 - gi) {
+                        let si = 20 - gi - ni
+                        let w = [Double(gi) / 20, Double(ni) / 20, Double(si) / 20]
+                        let variance = max(portfolioVariance(w, annualCovariance), 0)
+                        let expected = zip(w, annualMeans).reduce(0.0) { $0 + $1.0 * $1.1 }
+                        let volatility = sqrt(variance)
+                        let score: Double
+                        switch family {
+                        case .meanVariance:
+                            score = expected - riskAversion * variance
+                        case .maxSharpe:
+                            score = volatility > 0 ? expected / volatility : -Double.infinity
+                        case .maxDiversification:
+                            let weightedVol = zip(w, stats.vols).reduce(0.0) { $0 + $1.0 * $1.1 }
+                            score = volatility > 0 ? weightedVol / volatility : -Double.infinity
+                        case .equalRiskContribution:
+                            guard variance > 0 else { continue }
+                            var contributions: [Double] = []
+                            for i in 0..<3 {
+                                var marginal = 0.0
+                                for j in 0..<3 { marginal += annualCovariance[i][j] * w[j] }
+                                contributions.append(w[i] * marginal / variance)
+                            }
+                            let meanRC = contributions.reduce(0, +) / 3
+                            let dispersion = contributions.reduce(0.0) { $0 + pow($1 - meanRC, 2) }
+                            score = -dispersion
+                        default:
+                            score = -Double.infinity
+                        }
+                        if score > bestScore {
+                            bestScore = score
+                            best = w
+                        }
+                    }
+                }
+                let gross = 0.95
+                return [
+                    "gold_cny": best[0] * gross,
+                    "nasdaq": best[1] * gross,
+                    "sp500": best[2] * gross,
+                ].filter { $0.value > 0.000001 }
+            }
+
+            func downsideScore(_ symbol: String, index: Int, lookback: Int, data: ResearchTargetDataContext) -> Double? {
+                guard let mom = momentum(symbol, index, lookback, data), mom > 0,
+                      let r = returns(symbol, index, lookback, data), !r.isEmpty else { return nil }
+                let downside = r.map { min($0, 0) }
+                let variance = downside.reduce(0.0) { $0 + $1 * $1 } / Double(downside.count)
+                let downsideVol = sqrt(max(variance, 0)) * sqrt(252)
+                return mom / max(downsideVol, 0.04)
+            }
+
+            func drawdownMagnitude(_ symbol: String, index: Int, lookback: Int, data: ResearchTargetDataContext) -> Double? {
+                guard index >= lookback,
+                      let values = data.pricesBySymbol[symbol], values.indices.contains(index) else { return nil }
+                var peak = 0.0
+                var worst = 0.0
+                for cursor in (index - lookback)...index {
+                    guard values[cursor] > 0 else { return nil }
+                    peak = max(peak, values[cursor])
+                    if peak > 0 { worst = max(worst, 1 - values[cursor] / peak) }
+                }
+                return worst
+            }
+
+            func driftTStat(_ symbol: String, index: Int, lookback: Int, data: ResearchTargetDataContext) -> (t: Double, vol: Double)? {
+                guard let r = returns(symbol, index, lookback, data), r.count > 2 else { return nil }
+                let mean = r.reduce(0, +) / Double(r.count)
+                let variance = r.reduce(0.0) { $0 + pow($1 - mean, 2) } / Double(r.count - 1)
+                let sd = sqrt(max(variance, 0))
+                guard sd > 0 else { return nil }
+                return (mean / (sd / sqrt(Double(r.count))), sd * sqrt(252))
+            }
+
+            func varianceRatio(_ symbol: String, index: Int, lookback: Int, step: Int, data: ResearchTargetDataContext) -> Double? {
+                guard let daily = returns(symbol, index, lookback, data), daily.count > step + 2,
+                      let prices = data.pricesBySymbol[symbol] else { return nil }
+                let dailyMean = daily.reduce(0, +) / Double(daily.count)
+                let dailyVar = daily.reduce(0.0) { $0 + pow($1 - dailyMean, 2) } / Double(daily.count - 1)
+                guard dailyVar > 0 else { return nil }
+                var multi: [Double] = []
+                var cursor = index - lookback
+                while cursor + step <= index {
+                    guard prices[cursor] > 0, prices[cursor + step] > 0 else { return nil }
+                    multi.append(prices[cursor + step] / prices[cursor] - 1)
+                    cursor += step
+                }
+                guard multi.count > 1 else { return nil }
+                let mean = multi.reduce(0, +) / Double(multi.count)
+                let variance = multi.reduce(0.0) { $0 + pow($1 - mean, 2) } / Double(multi.count - 1)
+                return variance / (Double(step) * dailyVar)
+            }
+
+            func regularTarget(_ variant: Zoo3Variant, _ context: StrategyTargetContext, _ data: ResearchTargetDataContext) -> [String: Double] {
+                let index = context.signalIndex
+                guard index >= 20 else { return [:] }
+                switch variant.family {
+                case .meanVariance, .maxSharpe, .maxDiversification, .equalRiskContribution:
+                    return gridOptimalWeights(
+                        variant.family,
+                        index: index,
+                        lookback: Int(variant.p1),
+                        riskAversion: variant.p2,
+                        data: data
+                    )
+
+                case .downsideSelector:
+                    let lookback = Int(variant.p1)
+                    let ranked = coreSymbols.compactMap { symbol -> (String, Double)? in
+                        guard let score = downsideScore(symbol, index: index, lookback: lookback, data: data) else { return nil }
+                        return (symbol, score)
+                    }.sorted { $0.1 > $1.1 }
+                    let selected = Array(ranked.prefix(max(variant.intParam, 1)))
+                    guard !selected.isEmpty else { return [:] }
+                    let each = variant.p2 / Double(selected.count)
+                    return Dictionary(uniqueKeysWithValues: selected.map { ($0.0, each) })
+
+                case .calmarSelector:
+                    let lookback = Int(variant.p1)
+                    let ranked = coreSymbols.compactMap { symbol -> (String, Double)? in
+                        guard let mom = momentum(symbol, index, lookback, data), mom > 0,
+                              let dd = drawdownMagnitude(symbol, index: index, lookback: lookback, data: data) else { return nil }
+                        return (symbol, mom / max(dd, 0.05))
+                    }.sorted { $0.1 > $1.1 }
+                    let selected = Array(ranked.prefix(max(variant.intParam, 1)))
+                    guard !selected.isEmpty else { return [:] }
+                    let each = variant.p2 / Double(selected.count)
+                    return Dictionary(uniqueKeysWithValues: selected.map { ($0.0, each) })
+
+                case .bayesianDrift:
+                    let lookback = Int(variant.p1)
+                    let eligible = coreSymbols.compactMap { symbol -> (String, Double)? in
+                        guard let stat = driftTStat(symbol, index: index, lookback: lookback, data: data),
+                              stat.t >= variant.p2 else { return nil }
+                        return (symbol, 1 / max(stat.vol, 0.04))
+                    }
+                    let denominator = eligible.reduce(0.0) { $0 + $1.1 }
+                    guard denominator > 0 else { return [:] }
+                    return Dictionary(uniqueKeysWithValues: eligible.map { ($0.0, 0.90 * $0.1 / denominator) })
+
+                case .varianceRatioTrend:
+                    let ranked = coreSymbols.compactMap { symbol -> (String, Double)? in
+                        guard let vr = varianceRatio(symbol, index: index, lookback: 126, step: 5, data: data),
+                              vr >= variant.p1,
+                              let mom = momentum(symbol, index, 63, data), mom > 0 else { return nil }
+                        return (symbol, vr * mom)
+                    }.sorted { $0.1 > $1.1 }
+                    guard let best = ranked.first else { return [:] }
+                    return [best.0: variant.p2]
+
+                case .cusumChangePoint:
+                    return [:]
+                }
+            }
+
+            let commonStart = Calendar(identifier: .gregorian).date(from: DateComponents(year: 2002, month: 2, day: 4))!
+            let since2020 = Calendar(identifier: .gregorian).date(from: DateComponents(year: 2020, month: 1, day: 1))!
+            let since2022 = Calendar(identifier: .gregorian).date(from: DateComponents(year: 2022, month: 1, day: 1))!
+            var results: [Zoo3Result] = []
+
+            for variant in variants {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: variant.id,
+                    title: variant.title,
+                    warmupSessions: 21,
+                    rebalanceSessions: variant.rebalanceSessions,
+                    rebalanceBand: variant.rebalanceBand,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "第三批异构策略研究"
+                )
+                var cusumPositive = 0.0
+                var cusumNegative = 0.0
+                var cusumState: String?
+                let report: AdvancedBacktestReport?
+                if variant.family == .cusumChangePoint {
+                    report = BacktestEngine.runResearchTargetProviderStrategy(
+                        assetInputs: inputs,
+                        initialCash: 100_000,
+                        settings: settings,
+                        config: config,
+                        targetWeights: { context, data in
+                            let index = context.signalIndex
+                            guard index >= 70,
+                                  let r5 = momentum("nasdaq", index, 5, data),
+                                  let stat = driftTStat("nasdaq", index: index, lookback: 63, data: data) else {
+                                return [:]
+                            }
+                            let fiveDayVol = max(stat.vol / sqrt(252) * sqrt(5), 0.005)
+                            let z = r5 / fiveDayVol
+                            cusumPositive = max(0, cusumPositive + z - 0.10)
+                            cusumNegative = min(0, cusumNegative + z + 0.10)
+                            if cusumPositive >= variant.p1 {
+                                cusumState = "nasdaq"
+                                cusumPositive = 0
+                                cusumNegative = 0
+                            } else if cusumNegative <= -variant.p1 {
+                                let goldUp = (price("gold_cny", index, data) ?? 0) >= (movingAverage("gold_cny", index, 150, data) ?? Double.infinity)
+                                    && (momentum("gold_cny", index, 126, data) ?? -1) > 0
+                                cusumState = goldUp ? "gold_cny" : nil
+                                cusumPositive = 0
+                                cusumNegative = 0
+                            }
+                            if cusumState == "nasdaq" {
+                                let nUp = (price("nasdaq", index, data) ?? 0) >= (movingAverage("nasdaq", index, 200, data) ?? Double.infinity)
+                                if !nUp { cusumState = nil }
+                            }
+                            if cusumState == "gold_cny" {
+                                let gUp = (price("gold_cny", index, data) ?? 0) >= (movingAverage("gold_cny", index, 150, data) ?? Double.infinity)
+                                if !gUp { cusumState = nil }
+                            }
+                            return cusumState.map { [$0: variant.p2] } ?? [:]
+                        }
+                    )
+                } else {
+                    report = BacktestEngine.runResearchTargetProviderStrategy(
+                        assetInputs: inputs,
+                        initialCash: 100_000,
+                        settings: settings,
+                        config: config,
+                        targetWeights: { context, data in regularTarget(variant, context, data) }
+                    )
+                }
+                guard let report else { continue }
+                let commonPoints = report.points.filter { $0.date >= commonStart }
+                let lastDate = commonPoints.last?.date ?? commonStart
+                let last10yStart = Calendar(identifier: .gregorian).date(byAdding: .year, value: -10, to: lastDate) ?? commonStart
+                guard let full = metrics(commonPoints),
+                      let last10y = metrics(commonPoints.filter { $0.date >= last10yStart }),
+                      let m2020 = metrics(commonPoints.filter { $0.date >= since2020 }),
+                      let m2022 = metrics(commonPoints.filter { $0.date >= since2022 }) else { continue }
+                results.append(.init(
+                    variant: variant,
+                    full: full,
+                    last10y: last10y,
+                    since2020: m2020,
+                    since2022: m2022,
+                    trades: report.trades.count,
+                    averageCashRatio: report.averageCashRatio
+                ))
+            }
+
+            results.sort { lhs, rhs in
+                let lhsScore = lhs.full.annualized + 0.35 * lhs.since2020.annualized + 0.20 * lhs.last10y.annualized
+                    - 0.90 * max(lhs.full.maxDrawdown - 0.08, 0)
+                let rhsScore = rhs.full.annualized + 0.35 * rhs.since2020.annualized + 0.20 * rhs.last10y.annualized
+                    - 0.90 * max(rhs.full.maxDrawdown - 0.08, 0)
+                if lhsScore == rhsScore { return lhs.full.sharpe > rhs.full.sharpe }
+                return lhsScore > rhsScore
+            }
+
+            print("APP_ORTHOGONAL_STRATEGY_ZOO3")
+            print("title,id,family,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_dd,since2020_annualized,since2020_dd,since2022_annualized,since2022_dd,trades,average_cash_ratio")
+            for row in results {
+                print([
+                    row.variant.title,
+                    row.variant.id,
+                    row.variant.family.rawValue,
+                    String(format: "%.6f", row.full.annualized * 100),
+                    String(format: "%.6f", row.full.maxDrawdown * 100),
+                    String(format: "%.6f", row.full.volatility * 100),
+                    String(format: "%.6f", row.full.sharpe),
+                    String(format: "%.6f", row.last10y.annualized * 100),
+                    String(format: "%.6f", row.last10y.maxDrawdown * 100),
+                    String(format: "%.6f", row.since2020.annualized * 100),
+                    String(format: "%.6f", row.since2020.maxDrawdown * 100),
+                    String(format: "%.6f", row.since2022.annualized * 100),
+                    String(format: "%.6f", row.since2022.maxDrawdown * 100),
+                    String(row.trades),
+                    String(format: "%.6f", row.averageCashRatio),
+                ].joined(separator: ","))
+            }
+
+            let championMode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let championInputs = championMode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            if let champion = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: championInputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: championMode
+            ), let comparable = metrics(champion.report.points.filter { $0.date >= commonStart }) {
+                print("APP_ORTHOGONAL_ZOO3_CHAMPION")
+                print("annualized,max_drawdown,volatility,sharpe,trades,average_cash_ratio")
+                print([
+                    String(format: "%.6f", comparable.annualized * 100),
+                    String(format: "%.6f", comparable.maxDrawdown * 100),
+                    String(format: "%.6f", comparable.volatility * 100),
+                    String(format: "%.6f", comparable.sharpe),
+                    String(champion.report.trades.count),
+                    String(format: "%.6f", champion.report.averageCashRatio),
+                ].joined(separator: ","))
+            }
+            return
+        }

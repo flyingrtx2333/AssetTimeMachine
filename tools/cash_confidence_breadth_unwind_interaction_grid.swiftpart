@@ -1,0 +1,198 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_BREADTH_UNWIND_INTERACTION_GRID"] == "1" {
+            struct BreadthUnwindInteractionCandidate {
+                let title: String
+                let brakeStrength: Double
+                let unwindThreshold: Double
+                let fastReviewVolatility: Double
+                let fastReviewQualityGap: Double
+                let fastReviewSessions: Int
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let era2012Sharpe: Double
+                let era2017Sharpe: Double
+                let since2022Sharpe: Double
+                let ytd2026Return: Double
+                let ytd2026Drawdown: Double
+                let trades: Int
+                let averageCashRatio: Double
+                let sliceRows: [SliceMetricRow]
+            }
+
+            let strategyMode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = strategyMode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let parameterSets: [(String, Double, Double, Double, Double, Int)] = [
+                ("哨兵78-换手45", 0.78, 0.45, 99.0, 99.0, 60),
+                ("哨兵79-换手45", 0.79, 0.45, 99.0, 99.0, 60),
+                ("哨兵80-换手45", 0.80, 0.45, 99.0, 99.0, 60),
+                ("哨兵81-换手45", 0.81, 0.45, 99.0, 99.0, 60),
+            ]
+
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", "0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", "2", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+            Darwin.setenv("ATM_CC_PORTFOLIO_VOL_TARGET", "99", 1)
+            Darwin.setenv("ATM_CC_CALM_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_VOL_FLOOR", "0", 1)
+            Darwin.setenv("ATM_CC_SECULAR_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_GOLD_TO_US_SHIFT_FRACTION", "0", 1)
+            Darwin.setenv("ATM_CC_EQUITY_CURVE_RISK_SCALE", "1", 1)
+            Darwin.setenv("ATM_CC_USD_CASH_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_US_RISK_ALLOCATION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_GLOBAL_RISK_PARITY_BLEND", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_MID_GROSS_CLIFFS", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_BREADTH_MICRO_BRAKES", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_HOLD_HYSTERESIS", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_MATURE_NASDAQ_BRAKE", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_CHINA_PURGE", "0", 1)
+            Darwin.setenv("ATM_CC_COST_AWARE_REBALANCE", "0", 1)
+            Darwin.setenv("ATM_CC_SLOW_ADD_FRACTION", "1", 1)
+            Darwin.setenv("ATM_CC_GROSS_CONFIDENCE_SHAPE", "0", 1)
+            Darwin.setenv("ATM_CC_STAGED_HANDOFF_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_BAND", "0", 1)
+            Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_VOL_CEILING", "99", 1)
+            Darwin.setenv("ATM_CC_BUY_CONFIRMATION_SESSIONS", "1", 1)
+            Darwin.setenv("ATM_CC_REBALANCE_TRIGGER_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MODE", "11", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_FRACTION", "0.875", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_DD_THRESHOLD", "0.04", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_DD_DECAY_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_INCLUDE_EXIT", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_GROSS_DROP_THRESHOLD", "0.02", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_SEVERITY_MODE", "5", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MAX_RETENTION", "0.25", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MIN_RETENTION", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_CUT_BUDGET_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_DERISK_BUFFER_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_DERISK_CALIBRATION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_RISK_INCREASE_MIGRATION_FLOOR", "0", 1)
+            Darwin.setenv("ATM_CC_RISK_INCREASE_GROSS_COMPLETION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_SMALL_RERISK_TURNOVER_FLOOR", "0", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_WEIGHT", "0.05", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_CONFIRMATION_SESSIONS", "1", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_DD_THRESHOLD", "0.02", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_VOL_MIN", "0.06", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_VOL_MAX", "0.08", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_PRIOR_GROSS_MIN", "0.40", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_PRIOR_GROSS_MAX", "1.01", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_LEADER_GATE", "4", 1)
+
+            func selectedMetrics(_ points: [BacktestSeriesPoint], start: String, end: String? = nil) -> BacktestPerformanceMetrics? {
+                let selected = points.filter {
+                    let key = $0.date.recordDateString
+                    return key >= start && (end == nil || key <= end!)
+                }
+                guard selected.count > 1 else { return nil }
+                return BacktestMetricsCalculator.performanceMetrics(from: selected)
+            }
+
+            var candidates: [BreadthUnwindInteractionCandidate] = []
+            for parameters in parameterSets {
+                Darwin.setenv("ATM_CC_BREADTH_MICRO_BRAKE_STRENGTH", String(parameters.1), 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_BROAD_UNWIND_TURNOVER_THRESHOLD", String(parameters.2), 1)
+                Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", String(parameters.3), 1)
+                Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_QUALITY_GAP_THRESHOLD", String(parameters.4), 1)
+                Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_SESSIONS", String(parameters.5), 1)
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: strategyMode
+                ) else { continue }
+                let era2012 = selectedMetrics(report.points, start: "2012-01-01", end: "2016-12-31")
+                let era2017 = selectedMetrics(report.points, start: "2017-01-01", end: "2021-12-31")
+                let since2022 = selectedMetrics(report.points, start: "2022-01-01")
+                let ytd2026 = selectedMetrics(report.points, start: "2026-01-01")
+                let fullRow = MetricRow(
+                    title: parameters.0,
+                    id: "cash_confidence_breadth_unwind_interaction_grid",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+                candidates.append(BreadthUnwindInteractionCandidate(
+                    title: parameters.0,
+                    brakeStrength: parameters.1,
+                    unwindThreshold: parameters.2,
+                    fastReviewVolatility: parameters.3,
+                    fastReviewQualityGap: parameters.4,
+                    fastReviewSessions: parameters.5,
+                    annualized: report.annualizedReturn ?? -1,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility ?? -1,
+                    sharpe: report.sharpeRatio ?? -1,
+                    era2012Sharpe: era2012?.sharpeRatio ?? -1,
+                    era2017Sharpe: era2017?.sharpeRatio ?? -1,
+                    since2022Sharpe: since2022?.sharpeRatio ?? -1,
+                    ytd2026Return: ytd2026?.totalReturn ?? -1,
+                    ytd2026Drawdown: ytd2026?.maxDrawdown ?? -1,
+                    trades: report.trades.count,
+                    averageCashRatio: report.averageCashRatio,
+                    sliceRows: metricRowsForSlices(
+                        title: parameters.0,
+                        id: "cash_confidence_breadth_unwind_interaction_grid",
+                        points: report.points,
+                        fullRow: fullRow
+                    )
+                ))
+            }
+
+            let ranked = candidates.sorted { lhs, rhs in
+                let lhsScore = lhs.sharpe
+                    + 0.20 * lhs.era2012Sharpe
+                    + 0.20 * lhs.era2017Sharpe
+                    + 0.10 * lhs.since2022Sharpe
+                    + 0.25 * lhs.annualized
+                    - 0.50 * lhs.maxDrawdown
+                let rhsScore = rhs.sharpe
+                    + 0.20 * rhs.era2012Sharpe
+                    + 0.20 * rhs.era2017Sharpe
+                    + 0.10 * rhs.since2022Sharpe
+                    + 0.25 * rhs.annualized
+                    - 0.50 * rhs.maxDrawdown
+                if lhsScore == rhsScore { return lhs.annualized > rhs.annualized }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(ranked.flatMap(\.sliceRows), header: "APP_CASH_CONFIDENCE_BREADTH_UNWIND_INTERACTION_GRID")
+            print("APP_CASH_CONFIDENCE_BREADTH_UNWIND_INTERACTION_DIAGNOSTICS")
+            print("title,brake_strength,unwind_threshold,fast_review_volatility,fast_review_quality_gap,fast_review_sessions,annualized,max_drawdown,volatility,sharpe,era2012_sharpe,era2017_sharpe,since2022_sharpe,ytd2026_return,ytd2026_drawdown,trades,average_cash_ratio")
+            for candidate in ranked {
+                print([
+                    candidate.title,
+                    String(format: "%.4f", candidate.brakeStrength),
+                    String(format: "%.4f", candidate.unwindThreshold),
+                    String(format: "%.4f", candidate.fastReviewVolatility),
+                    String(format: "%.4f", candidate.fastReviewQualityGap),
+                    String(candidate.fastReviewSessions),
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.volatility * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(format: "%.6f", candidate.era2012Sharpe),
+                    String(format: "%.6f", candidate.era2017Sharpe),
+                    String(format: "%.6f", candidate.since2022Sharpe),
+                    String(format: "%.6f", candidate.ytd2026Return * 100),
+                    String(format: "%.6f", candidate.ytd2026Drawdown * 100),
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio)
+                ].joined(separator: ","))
+            }
+            return
+        }

@@ -1,0 +1,290 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_DAILY_FACTOR_RANK_SLEEVE"] == "1" {
+            struct DailyFactorRankCandidate {
+                let title: String
+                let blend: Double
+                let cadence: Int
+                let activationDate: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCash: Double
+                let maxTargetGross: Double
+                let maxActualGross: Double
+                let minCash: Double
+                let financedDays: Int
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ), let baseStartDate = baseRun.report.points.first?.date else {
+                print("APP_CC_DAILY_FACTOR_RANK_SLEEVE\nbase_missing")
+                return
+            }
+
+            let dates = baseRun.dailyStates.map(\.date)
+            let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let baseTradeDates = Set(baseRun.report.trades.map { $0.date.recordDateString })
+            let dateIndex = Dictionary(uniqueKeysWithValues: dates.enumerated().map { ($0.element.recordDateString, $0.offset) })
+            let symbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+
+            func factorBlankMA(_ values: [Double], _ period: Int) -> [Double?] { Array(repeating: nil, count: values.count) }
+            func factorBlankBoll(_ values: [Double], _ period: Int, _ multiplier: Double) -> [(middle: Double, lower: Double, upper: Double)?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func alignedFactorPrices(_ symbol: String) -> [Double]? {
+                guard let input = inputs.first(where: { $0.assetOption.symbol == symbol }),
+                      let prepared = BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+                        assetSeries: input.assetSeries,
+                        assetOption: input.assetOption,
+                        fxSeries: input.fxSeries,
+                        movingAverage: factorBlankMA,
+                        bollingerBands: factorBlankBoll
+                      ) else { return nil }
+                let map = Dictionary(uniqueKeysWithValues: prepared.pricePoints.map { ($0.date.recordDateString, $0.cnyPrice) })
+                var output: [Double] = []
+                output.reserveCapacity(dates.count)
+                var last: Double?
+                for date in dates {
+                    if let value = map[date.recordDateString], value.isFinite, value > 0 { last = value }
+                    guard let value = last else { return nil }
+                    output.append(value)
+                }
+                return output
+            }
+
+            var prices: [String: [Double]] = [:]
+            for symbol in symbols {
+                guard let aligned = alignedFactorPrices(symbol) else {
+                    print("APP_CC_DAILY_FACTOR_RANK_SLEEVE\nprice_missing_\(symbol)")
+                    return
+                }
+                prices[symbol] = aligned
+            }
+
+            func momentum(_ values: [Double], at index: Int, lookback: Int) -> Double? {
+                guard index >= lookback, values[index - lookback] > 0 else { return nil }
+                return values[index] / values[index - lookback] - 1
+            }
+            func realizedVol(_ values: [Double], at index: Int, lookback: Int) -> Double? {
+                guard index >= lookback else { return nil }
+                var returns: [Double] = []
+                returns.reserveCapacity(lookback)
+                for i in (index - lookback + 1)...index {
+                    guard values[i - 1] > 0 else { return nil }
+                    returns.append(values[i] / values[i - 1] - 1)
+                }
+                let mean = returns.reduce(0, +) / Double(returns.count)
+                let variance = returns.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) } / Double(max(returns.count - 1, 1))
+                return sqrt(max(variance, 0))
+            }
+            func rankValues(_ raw: [String: Double]) -> [String: Double] {
+                let ordered = raw.sorted { lhs, rhs in
+                    if lhs.value == rhs.value { return lhs.key < rhs.key }
+                    return lhs.value < rhs.value
+                }
+                guard ordered.count > 1 else { return Dictionary(uniqueKeysWithValues: ordered.map { ($0.key, 0.5) }) }
+                var result: [String: Double] = [:]
+                for (idx, item) in ordered.enumerated() {
+                    result[item.key] = Double(idx) / Double(ordered.count - 1)
+                }
+                return result
+            }
+            func factorTopTwo(at signalIndex: Int, mode: Int) -> [String]? {
+                guard signalIndex >= 252 else { return nil }
+                var ram60: [String: Double] = [:]
+                var ram252: [String: Double] = [:]
+                for symbol in symbols {
+                    guard let values = prices[symbol],
+                          let m60 = momentum(values, at: signalIndex, lookback: 60),
+                          let m252 = momentum(values, at: signalIndex, lookback: 252),
+                          let v20 = realizedVol(values, at: signalIndex, lookback: 20),
+                          let v60 = realizedVol(values, at: signalIndex, lookback: 60),
+                          v20 > 1e-8, v60 > 1e-8 else { return nil }
+                    ram60[symbol] = m60 / v20
+                    ram252[symbol] = m252 / v60
+                }
+                let r60 = rankValues(ram60)
+                let r252 = rankValues(ram252)
+                let composite = symbols.map { symbol in
+                    (symbol, 0.5 * (r60[symbol] ?? 0.5) + 0.5 * (r252[symbol] ?? 0.5))
+                }.sorted { lhs, rhs in
+                    if lhs.1 == rhs.1 { return lhs.0 < rhs.0 }
+                    return lhs.1 > rhs.1
+                }
+                if mode == 1 {
+                    let shortRanked = r60.sorted { lhs, rhs in
+                        if lhs.value == rhs.value { return lhs.key < rhs.key }
+                        return lhs.value > rhs.value
+                    }
+                    return Array(shortRanked.prefix(2).map { $0.key })
+                }
+                if mode == 2 {
+                    return Array(composite.prefix(2).map { $0.0 })
+                }
+                let longRanked = r252.sorted { lhs, rhs in
+                    if lhs.value == rhs.value { return lhs.key < rhs.key }
+                    return lhs.value > rhs.value
+                }
+                return Array(longRanked.prefix(2).map { $0.key })
+            }
+
+            let configs: [(String, Double, Int, String, Int, Double, Double)] = [
+                ("生产冠军重放控制组", 0.000, 0, "0000-01-01", 0, 0.0, 1.01),
+                ("中仓RAM60_20每20日2.5%", 0.025, 20, "0000-01-01", 1, 0.40, 0.60),
+                ("中仓RAM60_20每20日5%", 0.050, 20, "0000-01-01", 1, 0.40, 0.60),
+                ("中仓RAM252_60每20日2.5%", 0.025, 20, "0000-01-01", 0, 0.40, 0.60),
+                ("中仓RAM252_60每20日5%", 0.050, 20, "0000-01-01", 0, 0.40, 0.60),
+                ("中仓双周期RAM每20日2.5%", 0.025, 20, "0000-01-01", 2, 0.40, 0.60),
+                ("中仓双周期RAM每20日5%", 0.050, 20, "0000-01-01", 2, 0.40, 0.60),
+                ("中仓RAM252_60每40日5%", 0.050, 40, "0000-01-01", 0, 0.40, 0.60),
+            ]
+
+            var candidates: [DailyFactorRankCandidate] = []
+            for (title, blend, cadence, activationDate, factorMode, grossMinimum, grossMaximum) in configs {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cc_daily_factor_rank_sleeve",
+                    title: title,
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "双周期风险调整动量因子袖套"
+                )
+                var pending: [String: Double] = [:]
+                var lastFactorReviewIndex: Int?
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let key = data.dates[index].recordDateString
+                        guard var target = baseTargets[key] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let isBaseTrade = baseTradeDates.contains(key)
+                        let factorDue: Bool
+                        if cadence > 0, key >= activationDate {
+                            if let last = lastFactorReviewIndex {
+                                factorDue = index - last >= cadence
+                            } else {
+                                factorDue = true
+                            }
+                        } else {
+                            factorDue = false
+                        }
+                        guard isBaseTrade || factorDue else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        if factorDue { lastFactorReviewIndex = index }
+
+                        let baseGross = target.values.reduce(0, +)
+                        if blend > 0, key >= activationDate,
+                           baseGross >= grossMinimum, baseGross < grossMaximum,
+                           let alignedSignal = dateIndex[data.dates[signalIndex].recordDateString],
+                           let topTwo = factorTopTwo(at: alignedSignal, mode: factorMode) {
+                            if baseGross > 0 {
+                                var factorWeights: [String: Double] = [:]
+                                for symbol in topTwo { factorWeights[symbol] = baseGross * 0.5 }
+                                for symbol in symbols {
+                                    target[symbol] = (1 - blend) * (target[symbol] ?? 0) + blend * (factorWeights[symbol] ?? 0)
+                                }
+                            }
+                        }
+                        let gross = target.values.reduce(0, +)
+                        if gross > 1.0, gross > 0 { target = target.mapValues { max($0, 0) / gross } }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { continue }
+
+                let points = run.report.points.filter { $0.date >= baseStartDate }
+                guard let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                let fullRow = MetricRow(
+                    title: title,
+                    id: "cc_daily_factor_rank_sleeve",
+                    annualized: metrics.annualizedReturn,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility,
+                    sharpe: metrics.sharpeRatio,
+                    start: points.first?.date.recordDateString ?? "n/a",
+                    end: points.last?.date.recordDateString ?? "n/a",
+                    pointCount: points.count
+                )
+                var maxTargetGross = 0.0
+                var maxActualGross = 0.0
+                var minCash = Double.greatestFiniteMagnitude
+                var financedDays = 0
+                for state in run.dailyStates where state.portfolioValue > 0 && state.date >= baseStartDate {
+                    maxTargetGross = max(maxTargetGross, state.targetWeights.values.reduce(0, +))
+                    maxActualGross = max(maxActualGross, state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue)
+                    minCash = min(minCash, state.cash / state.portfolioValue)
+                    if state.cash < -0.0001 { financedDays += 1 }
+                }
+                candidates.append(.init(
+                    title: title,
+                    blend: blend,
+                    cadence: cadence,
+                    activationDate: activationDate,
+                    annualized: metrics.annualizedReturn ?? -1,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility ?? -1,
+                    sharpe: metrics.sharpeRatio ?? -1,
+                    sliceRows: metricRowsForSlices(title: title, id: "cc_daily_factor_rank_sleeve", points: points, fullRow: fullRow),
+                    trades: run.report.trades.filter { $0.date >= baseStartDate }.count,
+                    averageCash: run.report.averageCashRatio,
+                    maxTargetGross: maxTargetGross,
+                    maxActualGross: maxActualGross,
+                    minCash: minCash == Double.greatestFiniteMagnitude ? 0 : minCash,
+                    financedDays: financedDays
+                ))
+            }
+
+            print("APP_CC_DAILY_FACTOR_RANK_BASE")
+            print(String(format: "%.6f,%.6f,%.6f,%d", (baseRun.report.annualizedReturn ?? 0) * 100, baseRun.report.maxDrawdown * 100, baseRun.report.sharpeRatio ?? 0, baseRun.report.trades.count))
+            candidates.sort { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.08, 0) * 4
+                let rhsPenalty = max(rhs.maxDrawdown - 0.08, 0) * 4
+                let lhsScore = lhs.annualized - lhsPenalty
+                let rhsScore = rhs.annualized - rhsPenalty
+                if lhsScore == rhsScore { return lhs.sharpe > rhs.sharpe }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(candidates.flatMap(\.sliceRows), header: "APP_CC_DAILY_FACTOR_RANK_GRID")
+            print("APP_CC_DAILY_FACTOR_RANK_DIAGNOSTICS")
+            print("title,blend,cadence,activation,trades,average_cash,max_target_gross,max_actual_gross,min_cash,financed_days")
+            for candidate in candidates {
+                print([
+                    candidate.title,
+                    String(format: "%.4f", candidate.blend),
+                    String(candidate.cadence),
+                    candidate.activationDate,
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCash),
+                    String(format: "%.9f", candidate.maxTargetGross),
+                    String(format: "%.9f", candidate.maxActualGross),
+                    String(format: "%.9f", candidate.minCash),
+                    String(candidate.financedDays),
+                ].joined(separator: ","))
+            }
+            return
+        }

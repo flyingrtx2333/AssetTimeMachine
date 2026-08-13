@@ -1,0 +1,107 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_RECOVERY_ENTRY_GRID"] == "1" {
+            struct RecoveryEntryCandidate {
+                let title: String
+                let minimumWaterDuration: Int
+                let minimumDrawdown: Double
+                let maximumEntries: Int
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let trades: Int
+                let averageCashRatio: Double
+                let sliceRows: [SliceMetricRow]
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let parameterSets: [(String, Int, Double, Int)] = [
+                ("新基线-W60-D5-E2", 60, 0.05, 2),
+                ("早入场-W40", 40, 0.05, 2),
+                ("晚入场-W80", 80, 0.05, 2),
+                ("晚入场-W100", 100, 0.05, 2),
+                ("浅回撤-D4", 60, 0.04, 2),
+                ("深回撤-D6", 60, 0.06, 2),
+                ("深回撤-D7", 60, 0.07, 2),
+                ("单次进入-E1", 60, 0.05, 1),
+                ("三次进入-E3", 60, 0.05, 3),
+            ]
+
+            var candidates: [RecoveryEntryCandidate] = []
+            Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_QUALITY_GAP_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MOMENTUM_GAP", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+            for parameters in parameterSets {
+                Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", String(parameters.1), 1)
+                Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", String(parameters.2), 1)
+                Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", String(parameters.3), 1)
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                let fullRow = MetricRow(
+                    title: parameters.0,
+                    id: "cash_confidence_recovery_entry_grid",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+                candidates.append(RecoveryEntryCandidate(
+                    title: parameters.0,
+                    minimumWaterDuration: parameters.1,
+                    minimumDrawdown: parameters.2,
+                    maximumEntries: parameters.3,
+                    annualized: report.annualizedReturn ?? -1,
+                    maxDrawdown: report.maxDrawdown,
+                    sharpe: report.sharpeRatio ?? -1,
+                    trades: report.trades.count,
+                    averageCashRatio: report.averageCashRatio,
+                    sliceRows: metricRowsForSlices(
+                        title: parameters.0,
+                        id: "cash_confidence_recovery_entry_grid",
+                        points: report.points,
+                        fullRow: fullRow
+                    )
+                ))
+            }
+
+            let ranked = candidates.sorted { lhs, rhs in
+                let lhsScore = lhs.sharpe + 0.5 * lhs.annualized - 0.75 * lhs.maxDrawdown
+                let rhsScore = rhs.sharpe + 0.5 * rhs.annualized - 0.75 * rhs.maxDrawdown
+                if lhsScore == rhsScore { return lhs.annualized > rhs.annualized }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(ranked.flatMap(\.sliceRows), header: "APP_CASH_CONFIDENCE_RECOVERY_ENTRY_GRID")
+            print("APP_CASH_CONFIDENCE_RECOVERY_ENTRY_DIAGNOSTICS")
+            print("title,minimum_water_duration,minimum_drawdown,maximum_entries,annualized,max_drawdown,sharpe,trades,average_cash_ratio")
+            for candidate in ranked {
+                print([
+                    candidate.title,
+                    String(candidate.minimumWaterDuration),
+                    String(format: "%.4f", candidate.minimumDrawdown),
+                    String(candidate.maximumEntries),
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio)
+                ].joined(separator: ","))
+            }
+            return
+        }

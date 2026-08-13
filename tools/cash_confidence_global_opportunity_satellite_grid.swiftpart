@@ -1,0 +1,299 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_GLOBAL_OPPORTUNITY_SATELLITE_GRID"] == "1" {
+            struct GlobalOpportunityCandidate {
+                let title: String
+                let cap: Double
+                let leaderCount: Int
+                let reviewSessions: Int
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let era2012Sharpe: Double
+                let era2017Sharpe: Double
+                let tradeEvents: Int
+                let averageSatelliteWeight: Double
+                let sliceRows: [SliceMetricRow]
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let baseInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", "0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", "2", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_QUALITY_GAP_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+            Darwin.setenv("ATM_CC_PORTFOLIO_VOL_TARGET", "99", 1)
+            Darwin.setenv("ATM_CC_CALM_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_VOL_FLOOR", "0", 1)
+            Darwin.setenv("ATM_CC_SECULAR_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_GOLD_TO_US_SHIFT_FRACTION", "0", 1)
+            Darwin.setenv("ATM_CC_EQUITY_CURVE_RISK_SCALE", "1", 1)
+            Darwin.setenv("ATM_CC_USD_CASH_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_US_RISK_ALLOCATION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_GLOBAL_RISK_PARITY_BLEND", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_MID_GROSS_CLIFFS", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_BREADTH_MICRO_BRAKES", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_HOLD_HYSTERESIS", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_MATURE_NASDAQ_BRAKE", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_CHINA_PURGE", "0", 1)
+            Darwin.setenv("ATM_CC_COST_AWARE_REBALANCE", "0", 1)
+            Darwin.setenv("ATM_CC_SLOW_ADD_FRACTION", "1", 1)
+            Darwin.setenv("ATM_CC_GROSS_CONFIDENCE_SHAPE", "0", 1)
+
+            guard let baseRun = BacktestEngine.researchCashConfidenceRunWithTrace(
+                assetInputs: baseInputs,
+                initialCash: 100_000,
+                settings: settings
+            ) else { return }
+            let dates = baseRun.report.points.map(\.date)
+            let baseValues = baseRun.report.points.map(\.portfolioValue)
+            guard dates.count > 300, dates.count == baseValues.count else { return }
+
+            func blankMA(_ values: [Double], _ period: Int) -> [Double?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func blankBoll(_ values: [Double], _ period: Int, _ multiplier: Double) -> [(middle: Double, lower: Double, upper: Double)?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func alignedCNYPrices(symbol: String) -> [Double]? {
+                guard let option = optionsBySymbol[symbol] else { return nil }
+                let input = BacktestEngine.advancedAssetInput(for: option) { rawSymbol in
+                    seriesBySymbol[normalizedHistorySymbol(rawSymbol)]
+                }
+                guard let prepared = BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+                    assetSeries: input.assetSeries,
+                    assetOption: input.assetOption,
+                    fxSeries: input.fxSeries,
+                    movingAverage: blankMA,
+                    bollingerBands: blankBoll
+                ) else { return nil }
+                let map = Dictionary(uniqueKeysWithValues: prepared.pricePoints.map { ($0.date, $0.cnyPrice) })
+                var output: [Double] = []
+                output.reserveCapacity(dates.count)
+                var lastValue: Double?
+                for date in dates {
+                    if let value = map[date] { lastValue = value }
+                    guard let value = lastValue else { return nil }
+                    output.append(value)
+                }
+                return output
+            }
+
+            let satelliteSymbols = ["dowjones", "nikkei", "hsi"]
+            var pricesBySymbol: [String: [Double]] = [:]
+            for symbol in satelliteSymbols {
+                guard let prices = alignedCNYPrices(symbol: symbol) else {
+                    print("APP_CASH_CONFIDENCE_GLOBAL_OPPORTUNITY_SATELLITE_GRID\nmissing_\(symbol)")
+                    return
+                }
+                pricesBySymbol[symbol] = prices
+            }
+
+            var cashRatioByDate: [String: Double] = [:]
+            var grossByDate: [String: Double] = [:]
+            for state in baseRun.dailyStates {
+                cashRatioByDate[state.date.recordDateString] = state.portfolioValue > 0
+                    ? max(state.cash / state.portfolioValue, 0)
+                    : 0
+                grossByDate[state.date.recordDateString] = state.targetWeights.values.reduce(0, +)
+            }
+            var alignedCashRatio: [Double] = []
+            var alignedGross: [Double] = []
+            var lastCashRatio = 0.0
+            var lastGross = 0.0
+            for date in dates {
+                let key = date.recordDateString
+                if let ratio = cashRatioByDate[key] { lastCashRatio = ratio }
+                if let gross = grossByDate[key] { lastGross = gross }
+                alignedCashRatio.append(lastCashRatio)
+                alignedGross.append(lastGross)
+            }
+
+            func momentum(_ values: [Double], at index: Int, lookback: Int) -> Double? {
+                guard lookback > 0,
+                      values.indices.contains(index),
+                      values.indices.contains(index - lookback),
+                      values[index - lookback] > 0 else { return nil }
+                return values[index] / values[index - lookback] - 1
+            }
+            func movingAverage(_ values: [Double], at index: Int, period: Int) -> Double? {
+                guard period > 0, index - period + 1 >= 0 else { return nil }
+                return values[(index - period + 1)...index].reduce(0, +) / Double(period)
+            }
+            func annualizedVolatility(_ values: [Double], at index: Int, lookback: Int) -> Double? {
+                guard lookback > 2, index - lookback + 1 >= 1 else { return nil }
+                var returns: [Double] = []
+                for cursor in (index - lookback + 1)...index {
+                    guard values[cursor - 1] > 0 else { return nil }
+                    returns.append(values[cursor] / values[cursor - 1] - 1)
+                }
+                guard returns.count > 1 else { return nil }
+                let mean = returns.reduce(0, +) / Double(returns.count)
+                let variance = returns.reduce(0.0) {
+                    $0 + pow($1 - mean, 2)
+                } / Double(returns.count - 1)
+                return sqrt(max(variance, 0)) * sqrt(252)
+            }
+            func eraMetrics(_ points: [BacktestSeriesPoint], start: String, end: String) -> BacktestPerformanceMetrics? {
+                BacktestMetricsCalculator.performanceMetrics(from: points.filter {
+                    let key = $0.date.recordDateString
+                    return key >= start && key <= end
+                })
+            }
+
+            let parameterSets: [(String, Double, Int, Int)] = [
+                ("冠军基线", 0.00, 1, 20),
+                ("全球卫星10%-Top1-月度", 0.10, 1, 20),
+                ("全球卫星15%-Top1-月度", 0.15, 1, 20),
+                ("全球卫星10%-Top2-月度", 0.10, 2, 20),
+                ("全球卫星15%-Top2-月度", 0.15, 2, 20),
+                ("全球卫星10%-Top1-双月", 0.10, 1, 40),
+                ("全球卫星10%-Top2-双月", 0.10, 2, 40),
+            ]
+            let executionCostRate = 0.0105
+            let cashReserve = 0.10
+            let momentumLookback = 126
+            let trendMA = 126
+            var candidates: [GlobalOpportunityCandidate] = []
+
+            for parameters in parameterSets {
+                var value = baseValues[0]
+                var points = [BacktestSeriesPoint(date: dates[0], portfolioValue: value, sequence: 0)]
+                points.reserveCapacity(dates.count)
+                var currentWeights: [String: Double] = [:]
+                var lastReviewIndex = -10_000
+                var tradeEvents = 0
+                var satelliteWeightSum = 0.0
+
+                for index in 1..<dates.count {
+                    let signalIndex = index - 1
+                    var turnoverCost = 0.0
+                    if parameters.1 > 0,
+                       signalIndex >= max(momentumLookback, trendMA),
+                       signalIndex - lastReviewIndex >= parameters.3 {
+                        var ranked: [(symbol: String, score: Double, inverseVolatility: Double)] = []
+                        for symbol in satelliteSymbols {
+                            guard let prices = pricesBySymbol[symbol],
+                                  let shortMomentum = momentum(prices, at: signalIndex, lookback: 20),
+                                  let longMomentum = momentum(prices, at: signalIndex, lookback: momentumLookback),
+                                  let average = movingAverage(prices, at: signalIndex, period: trendMA),
+                                  let volatility = annualizedVolatility(prices, at: signalIndex, lookback: 40),
+                                  prices[signalIndex] >= average,
+                                  shortMomentum > 0,
+                                  longMomentum > 0 else { continue }
+                            let score = (0.30 * shortMomentum + 0.70 * longMomentum) / max(volatility, 0.05)
+                            ranked.append((symbol, score, 1 / max(volatility, 0.05)))
+                        }
+                        ranked.sort { $0.score > $1.score }
+                        let leaders = Array(ranked.prefix(parameters.2))
+                        let availableCash = max(alignedCashRatio[index] - cashReserve, 0)
+                        let availableGross = max(1 - alignedGross[index], 0)
+                        let totalWeight = min(parameters.1, availableCash, availableGross)
+                        var newWeights: [String: Double] = [:]
+                        if totalWeight > 0, !leaders.isEmpty {
+                            let denominator = leaders.reduce(0.0) { $0 + $1.inverseVolatility }
+                            for leader in leaders {
+                                newWeights[leader.symbol] = denominator > 0
+                                    ? totalWeight * leader.inverseVolatility / denominator
+                                    : totalWeight / Double(leaders.count)
+                            }
+                        }
+                        let symbols = Set(currentWeights.keys).union(newWeights.keys)
+                        let turnover = symbols.reduce(0.0) {
+                            $0 + abs((currentWeights[$1] ?? 0) - (newWeights[$1] ?? 0))
+                        }
+                        turnoverCost = turnover * executionCostRate
+                        if turnover >= 0.01 { tradeEvents += 1 }
+                        currentWeights = newWeights
+                        lastReviewIndex = signalIndex
+                    }
+
+                    let baseReturn = baseValues[index] / baseValues[index - 1] - 1
+                    let cashReturn = CashYieldCNY.dailyReturn(on: dates[index - 1])
+                    var combinedReturn = baseReturn
+                    for (symbol, weight) in currentWeights {
+                        guard let prices = pricesBySymbol[symbol], prices[index - 1] > 0 else { continue }
+                        let assetReturn = prices[index] / prices[index - 1] - 1
+                        combinedReturn += weight * (assetReturn - cashReturn)
+                    }
+                    combinedReturn -= turnoverCost
+                    value *= max(1 + combinedReturn, 0.0001)
+                    points.append(BacktestSeriesPoint(date: dates[index], portfolioValue: value, sequence: index))
+                    satelliteWeightSum += currentWeights.values.reduce(0, +)
+                }
+
+                guard let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                let era2012 = eraMetrics(points, start: "2012-01-01", end: "2016-12-31")
+                let era2017 = eraMetrics(points, start: "2017-01-01", end: "2021-12-31")
+                let fullRow = MetricRow(
+                    title: parameters.0,
+                    id: "cash_confidence_global_opportunity_satellite_grid",
+                    annualized: metrics.annualizedReturn,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility,
+                    sharpe: metrics.sharpeRatio,
+                    start: points.first?.date.recordDateString ?? "n/a",
+                    end: points.last?.date.recordDateString ?? "n/a",
+                    pointCount: points.count
+                )
+                candidates.append(GlobalOpportunityCandidate(
+                    title: parameters.0,
+                    cap: parameters.1,
+                    leaderCount: parameters.2,
+                    reviewSessions: parameters.3,
+                    annualized: metrics.annualizedReturn ?? -1,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility ?? -1,
+                    sharpe: metrics.sharpeRatio ?? -1,
+                    era2012Sharpe: era2012?.sharpeRatio ?? -1,
+                    era2017Sharpe: era2017?.sharpeRatio ?? -1,
+                    tradeEvents: tradeEvents,
+                    averageSatelliteWeight: satelliteWeightSum / Double(max(points.count - 1, 1)),
+                    sliceRows: metricRowsForSlices(
+                        title: parameters.0,
+                        id: "cash_confidence_global_opportunity_satellite_grid",
+                        points: points,
+                        fullRow: fullRow
+                    )
+                ))
+            }
+
+            let ranked = candidates.sorted { lhs, rhs in
+                let lhsScore = lhs.sharpe + 0.20 * lhs.era2012Sharpe + 0.20 * lhs.era2017Sharpe
+                let rhsScore = rhs.sharpe + 0.20 * rhs.era2012Sharpe + 0.20 * rhs.era2017Sharpe
+                if lhsScore == rhsScore { return lhs.annualized > rhs.annualized }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(ranked.flatMap(\.sliceRows), header: "APP_CASH_CONFIDENCE_GLOBAL_OPPORTUNITY_SATELLITE_GRID")
+            print("APP_CASH_CONFIDENCE_GLOBAL_OPPORTUNITY_SATELLITE_DIAGNOSTICS")
+            print("title,cap,leader_count,review_sessions,annualized,max_drawdown,volatility,sharpe,era2012_sharpe,era2017_sharpe,trade_events,average_satellite_weight")
+            for candidate in ranked {
+                print([
+                    candidate.title,
+                    String(format: "%.4f", candidate.cap),
+                    String(candidate.leaderCount),
+                    String(candidate.reviewSessions),
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.volatility * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(format: "%.6f", candidate.era2012Sharpe),
+                    String(format: "%.6f", candidate.era2017Sharpe),
+                    String(candidate.tradeEvents),
+                    String(format: "%.6f", candidate.averageSatelliteWeight)
+                ].joined(separator: ","))
+            }
+            return
+        }

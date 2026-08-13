@@ -1,0 +1,109 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_NASDAQ_BRAKE_GRID"] == "1" {
+            struct NasdaqBrakeCandidate {
+                let title: String
+                let maPeriod: Int
+                let nasdaqScale: Double
+                let otherScale: Double
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let trades: Int
+                let averageCashRatio: Double
+                let sliceRows: [SliceMetricRow]
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let parameterSets: [(String, Int, Double, Double)] = [
+                ("纳指刹车基线", 40, 0.88, 0.80),
+                ("短均线刹车", 20, 0.88, 0.80),
+                ("中短均线刹车", 30, 0.88, 0.80),
+                ("长均线刹车", 60, 0.88, 0.80),
+                ("柔和刹车", 40, 0.92, 0.86),
+                ("强力刹车", 40, 0.84, 0.72),
+                ("等比例刹车", 40, 0.85, 0.85),
+                ("保纳指减其余", 40, 0.92, 0.72),
+                ("减纳指保其余", 40, 0.84, 0.88),
+            ]
+
+            Darwin.setenv("ATM_CC_GROWTH_SCALE", "1.05", 1)
+            Darwin.setenv("ATM_CC_FAST_BRIDGE", "0.15", 1)
+            Darwin.setenv("ATM_CC_SLEEVE_CAP", "0.2075", 1)
+            Darwin.setenv("ATM_CC_TRADE_BAND", "0.20", 1)
+            Darwin.setenv("ATM_CC_LEADERSHIP_EVAL", "10", 1)
+            Darwin.setenv("ATM_CC_LEADERSHIP_PRIOR", "2.0", 1)
+            Darwin.setenv("ATM_CC_MIN_MIGRATION", "0.50", 1)
+            Darwin.setenv("ATM_CC_SUCCESS_EDGE", "0", 1)
+            Darwin.setenv("ATM_CC_EDGE_EXPONENT", "1", 1)
+
+            var candidates: [NasdaqBrakeCandidate] = []
+            for parameters in parameterSets {
+                Darwin.setenv("ATM_CC_NASDAQ_MA", String(parameters.1), 1)
+                Darwin.setenv("ATM_CC_NASDAQ_SCALE", String(parameters.2), 1)
+                Darwin.setenv("ATM_CC_OTHER_SCALE", String(parameters.3), 1)
+
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                let fullRow = MetricRow(
+                    title: parameters.0,
+                    id: "cash_confidence_nasdaq_brake_grid",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+                candidates.append(NasdaqBrakeCandidate(
+                    title: parameters.0,
+                    maPeriod: parameters.1,
+                    nasdaqScale: parameters.2,
+                    otherScale: parameters.3,
+                    annualized: report.annualizedReturn ?? -1,
+                    maxDrawdown: report.maxDrawdown,
+                    sharpe: report.sharpeRatio ?? -1,
+                    trades: report.trades.count,
+                    averageCashRatio: report.averageCashRatio,
+                    sliceRows: metricRowsForSlices(
+                        title: parameters.0,
+                        id: "cash_confidence_nasdaq_brake_grid",
+                        points: report.points,
+                        fullRow: fullRow
+                    )
+                ))
+            }
+
+            let ranked = candidates.sorted { lhs, rhs in
+                let lhsScore = lhs.sharpe + 0.50 * lhs.annualized - 0.75 * lhs.maxDrawdown
+                let rhsScore = rhs.sharpe + 0.50 * rhs.annualized - 0.75 * rhs.maxDrawdown
+                if lhsScore == rhsScore { return lhs.annualized > rhs.annualized }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(ranked.flatMap(\.sliceRows), header: "APP_CASH_CONFIDENCE_NASDAQ_BRAKE_GRID")
+            print("APP_CASH_CONFIDENCE_NASDAQ_BRAKE_DIAGNOSTICS")
+            print("title,ma_period,nasdaq_scale,other_scale,annualized,max_drawdown,sharpe,trades,average_cash_ratio")
+            for candidate in ranked {
+                print([
+                    candidate.title,
+                    String(candidate.maPeriod),
+                    String(format: "%.4f", candidate.nasdaqScale),
+                    String(format: "%.4f", candidate.otherScale),
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio)
+                ].joined(separator: ","))
+            }
+            return
+        }

@@ -1,0 +1,166 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_BREADTH_SENTINEL_VALIDATION"] == "1" {
+            let strategyMode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = strategyMode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            func setCommonEnvironment() {
+                Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", "60", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", "0.05", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", "2", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", "99", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_QUALITY_GAP_THRESHOLD", "99", 1)
+                Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+                Darwin.setenv("ATM_CC_PORTFOLIO_VOL_TARGET", "99", 1)
+                Darwin.setenv("ATM_CC_CALM_CARRY_CAP", "0", 1)
+                Darwin.setenv("ATM_CC_CALM_RISK_VOL_FLOOR", "0", 1)
+                Darwin.setenv("ATM_CC_SECULAR_CARRY_CAP", "0", 1)
+                Darwin.setenv("ATM_CC_GOLD_TO_US_SHIFT_FRACTION", "0", 1)
+                Darwin.setenv("ATM_CC_EQUITY_CURVE_RISK_SCALE", "1", 1)
+                Darwin.setenv("ATM_CC_USD_CASH_CAP", "0", 1)
+                Darwin.setenv("ATM_CC_US_RISK_ALLOCATION_MODE", "0", 1)
+                Darwin.setenv("ATM_CC_GLOBAL_RISK_PARITY_BLEND", "0", 1)
+                Darwin.setenv("ATM_CC_DISABLE_MID_GROSS_CLIFFS", "0", 1)
+                Darwin.setenv("ATM_CC_DISABLE_BREADTH_MICRO_BRAKES", "0", 1)
+                Darwin.setenv("ATM_CC_DISABLE_HOLD_HYSTERESIS", "0", 1)
+                Darwin.setenv("ATM_CC_DISABLE_MATURE_NASDAQ_BRAKE", "0", 1)
+                Darwin.setenv("ATM_CC_DISABLE_CHINA_PURGE", "0", 1)
+                Darwin.setenv("ATM_CC_COST_AWARE_REBALANCE", "0", 1)
+                Darwin.setenv("ATM_CC_SLOW_ADD_FRACTION", "1", 1)
+                Darwin.setenv("ATM_CC_GROSS_CONFIDENCE_SHAPE", "0", 1)
+                Darwin.setenv("ATM_CC_STAGED_HANDOFF_MODE", "0", 1)
+                Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_MODE", "0", 1)
+                Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_BAND", "0", 1)
+                Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_VOL_CEILING", "99", 1)
+                Darwin.setenv("ATM_CC_BUY_CONFIRMATION_SESSIONS", "1", 1)
+                Darwin.setenv("ATM_CC_REBALANCE_TRIGGER_MODE", "0", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MODE", "11", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_FRACTION", "0.875", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_DD_THRESHOLD", "0.04", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_DD_DECAY_MODE", "0", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_INCLUDE_EXIT", "0", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_GROSS_DROP_THRESHOLD", "0.02", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_SEVERITY_MODE", "5", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MAX_RETENTION", "0.25", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MIN_RETENTION", "0", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_CUT_BUDGET_MODE", "0", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_BROAD_UNWIND_TURNOVER_THRESHOLD", "0.60", 1)
+                Darwin.setenv("ATM_CC_DERISK_BUFFER_MODE", "0", 1)
+                Darwin.setenv("ATM_CC_DERISK_CALIBRATION_MODE", "0", 1)
+                Darwin.setenv("ATM_CC_RISK_INCREASE_MIGRATION_FLOOR", "0", 1)
+                Darwin.setenv("ATM_CC_RISK_INCREASE_GROSS_COMPLETION_MODE", "0", 1)
+                Darwin.setenv("ATM_CC_SMALL_RERISK_TURNOVER_FLOOR", "0", 1)
+            }
+
+            func setBaseline() {
+                setCommonEnvironment()
+                Darwin.setenv("ATM_CC_BREADTH_MICRO_BRAKE_STRENGTH", "1", 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_WEIGHT", "0", 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_LEADER_GATE", "0", 1)
+            }
+
+            func setCandidate() {
+                setCommonEnvironment()
+                Darwin.setenv("ATM_CC_BREADTH_MICRO_BRAKE_STRENGTH", "0.80", 1)
+                Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_BROAD_UNWIND_TURNOVER_THRESHOLD", "0.45", 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_WEIGHT", "0.05", 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_CONFIRMATION_SESSIONS", "1", 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_DD_THRESHOLD", "0.02", 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_VOL_MIN", "0.06", 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_VOL_MAX", "0.08", 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_PRIOR_GROSS_MIN", "0.40", 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_PRIOR_GROSS_MAX", "1.01", 1)
+                Darwin.setenv("ATM_CC_EXIT_SENTINEL_LEADER_GATE", "4", 1)
+            }
+
+            setBaseline()
+            guard let baseline = BacktestEngine.runAdvancedRotationStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: strategyMode
+            ) else { return }
+            setCandidate()
+            guard let candidate = BacktestEngine.runAdvancedRotationStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: strategyMode
+            ) else { return }
+
+            func metrics(_ points: [BacktestSeriesPoint], start: String, end: String) -> BacktestPerformanceMetrics? {
+                let selected = points.filter {
+                    let key = $0.date.recordDateString
+                    return key >= start && key <= end
+                }
+                guard selected.count > 1 else { return nil }
+                return BacktestMetricsCalculator.performanceMetrics(from: selected)
+            }
+
+            func printComparison(
+                kind: String,
+                label: String,
+                start: String,
+                end: String
+            ) {
+                guard let base = metrics(baseline.points, start: start, end: end),
+                      let next = metrics(candidate.points, start: start, end: end) else { return }
+                print([
+                    kind,
+                    label,
+                    start,
+                    end,
+                    String(format: "%.6f", base.sharpeRatio ?? -99),
+                    String(format: "%.6f", next.sharpeRatio ?? -99),
+                    String(format: "%.6f", (next.sharpeRatio ?? 0) - (base.sharpeRatio ?? 0)),
+                    String(format: "%.6f", (base.annualizedReturn ?? 0) * 100),
+                    String(format: "%.6f", (next.annualizedReturn ?? 0) * 100),
+                    String(format: "%.6f", base.maxDrawdown * 100),
+                    String(format: "%.6f", next.maxDrawdown * 100),
+                ].joined(separator: ","))
+            }
+
+            print("APP_CASH_CONFIDENCE_BREADTH_SENTINEL_VALIDATION")
+            print("kind,label,start,end,baseline_sharpe,candidate_sharpe,sharpe_delta,baseline_annualized,candidate_annualized,baseline_drawdown,candidate_drawdown")
+            let finalEnd = candidate.points.last?.date.recordDateString ?? "2026-12-31"
+            for year in stride(from: 2002, through: 2022, by: 2) {
+                printComparison(
+                    kind: "rolling-start",
+                    label: String(year),
+                    start: String(format: "%04d-01-01", year),
+                    end: finalEnd
+                )
+            }
+            for year in [2010, 2014, 2018, 2022, 2026] {
+                printComparison(
+                    kind: "rolling-end",
+                    label: String(year),
+                    start: "2002-01-01",
+                    end: String(format: "%04d-12-31", year)
+                )
+            }
+            let eras: [(String, String, String)] = [
+                ("2002-2006", "2002-01-01", "2006-12-31"),
+                ("2007-2011", "2007-01-01", "2011-12-31"),
+                ("2012-2016", "2012-01-01", "2016-12-31"),
+                ("2017-2021", "2017-01-01", "2021-12-31"),
+                ("2022-2026", "2022-01-01", finalEnd),
+            ]
+            for era in eras {
+                printComparison(
+                    kind: "era",
+                    label: era.0,
+                    start: era.1,
+                    end: era.2
+                )
+            }
+            return
+        }

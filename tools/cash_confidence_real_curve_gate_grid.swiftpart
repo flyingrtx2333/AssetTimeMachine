@@ -1,0 +1,328 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_REAL_CURVE_GATE_GRID"] == "1" {
+            enum RealCurveGateKind: String {
+                case control
+                case z075
+                case z100
+                case percentile15
+                case percentile20
+            }
+
+            struct RealCurveGateCandidate {
+                let title: String
+                let kind: RealCurveGateKind
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let gatedEventCount: Int
+                let gatedDates: [String]
+                let maxTargetGross: Double
+                let maxActualGross: Double
+                let minCashRatio: Double
+                let financedDays: Int
+            }
+
+            func loadRealCurveCSV(_ path: String, valueColumn: String) -> [String: Double] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [:] }
+                let lines = text.split(whereSeparator: \.isNewline)
+                guard let header = lines.first else { return [:] }
+                let columns = header.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
+                guard let valueIndex = columns.firstIndex(of: valueColumn) else { return [:] }
+                var values: [String: Double] = [:]
+                for line in lines.dropFirst() {
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count > valueIndex,
+                          let value = Double(fields[valueIndex]),
+                          value.isFinite else { continue }
+                    values[String(fields[0])] = value
+                }
+                return values
+            }
+
+            func alignRealCurve(_ map: [String: Double], dates: [Date]) -> [Double?] {
+                var output: [Double?] = []
+                output.reserveCapacity(dates.count)
+                var lastValue: Double?
+                for date in dates {
+                    if let value = map[date.recordDateString] { lastValue = value }
+                    output.append(lastValue)
+                }
+                return output
+            }
+
+            func changeRealCurve(_ values: [Double?], lookback: Int) -> [Double?] {
+                var output = Array<Double?>(repeating: nil, count: values.count)
+                guard lookback > 0, values.count > lookback else { return output }
+                for index in lookback..<values.count {
+                    guard let current = values[index], let previous = values[index - lookback] else { continue }
+                    output[index] = current - previous
+                }
+                return output
+            }
+
+            func rollingZRealCurve(_ values: [Double?], window: Int, minimumCount: Int) -> [Double?] {
+                var output = Array<Double?>(repeating: nil, count: values.count)
+                guard window > 2 else { return output }
+                for index in values.indices {
+                    let start = max(0, index - window + 1)
+                    let sample = values[start...index].compactMap { $0 }
+                    guard sample.count >= minimumCount, let current = values[index] else { continue }
+                    let mean = sample.reduce(0, +) / Double(sample.count)
+                    let variance = sample.count > 1
+                        ? sample.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) } / Double(sample.count - 1)
+                        : 0
+                    let standardDeviation = sqrt(max(variance, 0))
+                    guard standardDeviation > 0.0000001 else { continue }
+                    output[index] = min(max((current - mean) / standardDeviation, -4), 4)
+                }
+                return output
+            }
+
+            func rollingPercentileRealCurve(_ values: [Double?], window: Int, minimumCount: Int) -> [Double?] {
+                var output = Array<Double?>(repeating: nil, count: values.count)
+                guard window > 2 else { return output }
+                for index in values.indices {
+                    let start = max(0, index - window + 1)
+                    let sample = values[start...index].compactMap { $0 }.sorted()
+                    guard sample.count >= minimumCount, let current = values[index] else { continue }
+                    var count = 0
+                    for value in sample {
+                        if value <= current { count += 1 } else { break }
+                    }
+                    output[index] = Double(count) / Double(sample.count)
+                }
+                return output
+            }
+
+            let realYieldMap = loadRealCurveCSV("tools/fixtures/macro-risk/DFII10.csv", valueColumn: "DFII10")
+            let tenYearMap = loadRealCurveCSV("tools/fixtures/macro-risk/fred_dgs10.csv", valueColumn: "DGS10")
+            let twoYearMap = loadRealCurveCSV("tools/fixtures/macro-risk/fred_dgs2.csv", valueColumn: "DGS2")
+            guard !realYieldMap.isEmpty, !tenYearMap.isEmpty, !twoYearMap.isEmpty else {
+                print("APP_CC_REAL_CURVE_GATE_GRID\nmacro_fixture_missing")
+                return
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ), let baseStartDate = baseRun.report.points.first?.date else {
+                print("APP_CC_REAL_CURVE_GATE_GRID\nbase_missing")
+                return
+            }
+
+            let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            let baseTradeDates = Set(baseRun.report.trades.map { $0.date.recordDateString })
+            let macroDates = baseRun.dailyStates.map(\.date)
+            let realYield = alignRealCurve(realYieldMap, dates: macroDates)
+            let tenYear = alignRealCurve(tenYearMap, dates: macroDates)
+            let twoYear = alignRealCurve(twoYearMap, dates: macroDates)
+            let curveSpread: [Double?] = zip(tenYear, twoYear).map { lhs, rhs in
+                guard let lhs, let rhs else { return nil }
+                return lhs - rhs
+            }
+            let realChange63 = changeRealCurve(realYield, lookback: 63)
+            let curveChange63 = changeRealCurve(curveSpread, lookback: 63)
+            let realZ = rollingZRealCurve(realChange63, window: 756, minimumCount: 252)
+            let curveZ = rollingZRealCurve(curveChange63, window: 756, minimumCount: 252)
+            let permission: [Double?] = zip(realZ, curveZ).map { real, curve in
+                guard let real, let curve else { return nil }
+                return 0.5 * (-real + curve)
+            }
+            let permissionPercentile = rollingPercentileRealCurve(permission, window: 756, minimumCount: 252)
+            let permissionByDate = Dictionary(uniqueKeysWithValues: zip(macroDates, permission).map {
+                ($0.0.recordDateString, $0.1)
+            })
+            let percentileByDate = Dictionary(uniqueKeysWithValues: zip(macroDates, permissionPercentile).map {
+                ($0.0.recordDateString, $0.1)
+            })
+
+            let configurations: [(kind: RealCurveGateKind, title: String)] = [
+                (.control, "冠军重放控制组"),
+                (.z075, "宏观许可Z≤-0.75新增美股半放行"),
+                (.z100, "宏观许可Z≤-1.00新增美股半放行"),
+                (.percentile15, "宏观许可历史最差15%新增美股半放行"),
+                (.percentile20, "宏观许可历史最差20%新增美股半放行"),
+            ]
+            let usSymbols: Set<String> = ["nasdaq", "sp500"]
+            let passThrough = 0.50
+            var candidates: [RealCurveGateCandidate] = []
+
+            for configuration in configurations {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cc_real_curve_gate",
+                    title: configuration.title,
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "实际利率期限曲线许可调仓"
+                )
+                var pendingWeights: [String: Double] = [:]
+                var gatedDates: [String] = []
+
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let executionKey = data.dates[index].recordDateString
+                        guard baseTradeDates.contains(executionKey), var target = baseTargetsByDate[executionKey] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+
+                        if configuration.kind != .control {
+                            let signalKey = data.dates[signalIndex].recordDateString
+                            let permissionValue = permissionByDate[signalKey] ?? nil
+                            let percentileValue = percentileByDate[signalKey] ?? nil
+                            let macroAdverse: Bool
+                            switch configuration.kind {
+                            case .control:
+                                macroAdverse = false
+                            case .z075:
+                                macroAdverse = permissionValue.map { $0 <= -0.75 } ?? false
+                            case .z100:
+                                macroAdverse = permissionValue.map { $0 <= -1.00 } ?? false
+                            case .percentile15:
+                                macroAdverse = percentileValue.map { $0 <= 0.15 } ?? false
+                            case .percentile20:
+                                macroAdverse = percentileValue.map { $0 <= 0.20 } ?? false
+                            }
+
+                            if macroAdverse {
+                                let previousUS = pendingWeights.reduce(0.0) {
+                                    $0 + (usSymbols.contains($1.key) ? $1.value : 0)
+                                }
+                                let proposedUS = target.reduce(0.0) {
+                                    $0 + (usSymbols.contains($1.key) ? $1.value : 0)
+                                }
+                                let increase = proposedUS - previousUS
+                                if increase > 0.000001, proposedUS > 0 {
+                                    let allowedUS = previousUS + passThrough * increase
+                                    let scale = max(min(allowedUS / proposedUS, 1), 0)
+                                    for symbol in usSymbols where target[symbol] != nil {
+                                        target[symbol] = (target[symbol] ?? 0) * scale
+                                    }
+                                    gatedDates.append(data.dates[signalIndex].recordDateString)
+                                }
+                            }
+                        }
+
+                        let gross = target.values.reduce(0, +)
+                        if gross > 1.0, gross > 0 {
+                            target = target.mapValues { max($0, 0) / gross }
+                        }
+                        pendingWeights = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pendingWeights }
+                ) else { continue }
+
+                let comparablePoints = run.report.points.filter { $0.date >= baseStartDate }
+                guard let fullMetrics = BacktestMetricsCalculator.performanceMetrics(from: comparablePoints) else { continue }
+                let fullRow = MetricRow(
+                    title: configuration.title,
+                    id: "cc_real_curve_gate",
+                    annualized: fullMetrics.annualizedReturn,
+                    maxDrawdown: fullMetrics.maxDrawdown,
+                    volatility: fullMetrics.annualizedVolatility,
+                    sharpe: fullMetrics.sharpeRatio,
+                    start: comparablePoints.first?.date.recordDateString ?? "n/a",
+                    end: comparablePoints.last?.date.recordDateString ?? "n/a",
+                    pointCount: comparablePoints.count
+                )
+
+                var maxTargetGross = 0.0
+                var maxActualGross = 0.0
+                var minCashRatio = Double.greatestFiniteMagnitude
+                var financedDays = 0
+                for state in run.dailyStates where state.portfolioValue > 0 && state.date >= baseStartDate {
+                    maxTargetGross = max(maxTargetGross, state.targetWeights.values.reduce(0, +))
+                    let actualGross = state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue
+                    maxActualGross = max(maxActualGross, actualGross)
+                    let cashRatio = state.cash / state.portfolioValue
+                    minCashRatio = min(minCashRatio, cashRatio)
+                    if state.cash < -0.0001 { financedDays += 1 }
+                }
+
+                candidates.append(RealCurveGateCandidate(
+                    title: configuration.title,
+                    kind: configuration.kind,
+                    annualized: fullMetrics.annualizedReturn ?? -1,
+                    maxDrawdown: fullMetrics.maxDrawdown,
+                    volatility: fullMetrics.annualizedVolatility ?? -1,
+                    sharpe: fullMetrics.sharpeRatio ?? -1,
+                    sliceRows: metricRowsForSlices(
+                        title: configuration.title,
+                        id: "cc_real_curve_gate",
+                        points: comparablePoints,
+                        fullRow: fullRow
+                    ),
+                    trades: run.report.trades.filter { $0.date >= baseStartDate }.count,
+                    averageCashRatio: run.report.averageCashRatio,
+                    gatedEventCount: gatedDates.count,
+                    gatedDates: gatedDates,
+                    maxTargetGross: maxTargetGross,
+                    maxActualGross: maxActualGross,
+                    minCashRatio: minCashRatio == Double.greatestFiniteMagnitude ? 0 : minCashRatio,
+                    financedDays: financedDays
+                ))
+            }
+
+            print("APP_CC_REAL_CURVE_GATE_BASE")
+            print("annualized,max_drawdown,volatility,sharpe,trades,average_cash_ratio,start,end,points")
+            print([
+                String(format: "%.6f", (baseRun.report.annualizedReturn ?? 0) * 100),
+                String(format: "%.6f", baseRun.report.maxDrawdown * 100),
+                String(format: "%.6f", (baseRun.report.annualizedVolatility ?? 0) * 100),
+                String(format: "%.6f", baseRun.report.sharpeRatio ?? 0),
+                String(baseRun.report.trades.count),
+                String(format: "%.6f", baseRun.report.averageCashRatio),
+                baseRun.report.points.first?.date.recordDateString ?? "n/a",
+                baseRun.report.points.last?.date.recordDateString ?? "n/a",
+                String(baseRun.report.points.count),
+            ].joined(separator: ","))
+
+            candidates.sort { lhs, rhs in
+                let lhsScore = lhs.annualized - max(lhs.maxDrawdown - 0.08, 0) * 2
+                let rhsScore = rhs.annualized - max(rhs.maxDrawdown - 0.08, 0) * 2
+                if lhsScore == rhsScore { return lhs.sharpe > rhs.sharpe }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(candidates.flatMap(\.sliceRows), header: "APP_CC_REAL_CURVE_GATE_GRID")
+            print("APP_CC_REAL_CURVE_GATE_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,gated_events,max_target_gross,max_actual_gross,min_cash_ratio,financed_days,gated_dates")
+            for candidate in candidates {
+                print([
+                    candidate.title,
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio),
+                    String(candidate.gatedEventCount),
+                    String(format: "%.9f", candidate.maxTargetGross),
+                    String(format: "%.9f", candidate.maxActualGross),
+                    String(format: "%.9f", candidate.minCashRatio),
+                    String(candidate.financedDays),
+                    candidate.gatedDates.joined(separator: "|"),
+                ].joined(separator: ","))
+            }
+            return
+        }

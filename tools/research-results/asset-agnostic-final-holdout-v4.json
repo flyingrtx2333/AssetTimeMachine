@@ -1,0 +1,284 @@
+{
+  "basket" : {
+    "benchmark" : {
+      "annualizedReturn" : 0.060260417391134524,
+      "annualizedVolatility" : 0.20348176910107252,
+      "endDate" : "2026-08-12",
+      "maxDrawdown" : 0.6902524442680713,
+      "sharpeRatio" : 0.3842243120405666,
+      "startDate" : "2002-04-08",
+      "totalReturn" : 3.155925024263719,
+      "tradeCount" : 8,
+      "turnover" : 1
+    },
+    "name" : "final_cross_market_basket_v4",
+    "strategy" : {
+      "annualizedReturn" : 0.022766491439578873,
+      "annualizedVolatility" : 0.056857631066581704,
+      "endDate" : "2026-08-12",
+      "maxDrawdown" : 0.2669883021488214,
+      "sharpeRatio" : 0.416911143097581,
+      "startDate" : "2002-04-08",
+      "totalReturn" : 0.7298497009695666,
+      "tradeCount" : 123,
+      "turnover" : 8.078197374254305
+    },
+    "symbols" : [
+      "holdout_norway",
+      "holdout_denmark",
+      "holdout_finland",
+      "holdout_belgium",
+      "holdout_austria",
+      "holdout_portugal",
+      "holdout_new_zealand",
+      "holdout_south_africa"
+    ]
+  },
+  "failures" : [
+    "Basket Sharpe 0.417 is below 0.450.",
+    "Basket max drawdown 26.70% exceeds 25%."
+  ],
+  "fixturePath" : "tools\/fixtures\/backtest-history\/asset_agnostic_final_holdout_v4.json",
+  "generatedAtUTC" : "2026-08-13T07:55:05Z",
+  "medianSingleAssetSharpe" : 0.2663070293164108,
+  "passed" : false,
+  "positiveSharpeFraction" : 1,
+  "singleAssetFolds" : [
+    {
+      "benchmark" : {
+        "annualizedReturn" : 0.05669208667167247,
+        "annualizedVolatility" : 0.27969971939633553,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.7643762183235867,
+        "sharpeRatio" : 0.3340050935782273,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 2.8284625380898234,
+        "tradeCount" : 1,
+        "turnover" : 1
+      },
+      "name" : "holdout_norway",
+      "strategy" : {
+        "annualizedReturn" : 0.012528126493260405,
+        "annualizedVolatility" : 0.0544937037640407,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.25907967393008824,
+        "sharpeRatio" : 0.2514340831860429,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 0.35405276357383575,
+        "tradeCount" : 17,
+        "turnover" : 3.6996607375048893
+      },
+      "symbols" : [
+        "holdout_norway"
+      ]
+    },
+    {
+      "benchmark" : {
+        "annualizedReturn" : 0.09594866731478624,
+        "annualizedVolatility" : 0.2220704658265814,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.6391399137916687,
+        "sharpeRatio" : 0.5162350014413802,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 8.304467154456649,
+        "tradeCount" : 1,
+        "turnover" : 1
+      },
+      "name" : "holdout_denmark",
+      "strategy" : {
+        "annualizedReturn" : 0.025042796285479785,
+        "annualizedVolatility" : 0.04961531404265917,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.18126694569977864,
+        "sharpeRatio" : 0.5138821870062439,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 0.8260539632103725,
+        "tradeCount" : 18,
+        "turnover" : 5.183229452863542
+      },
+      "symbols" : [
+        "holdout_denmark"
+      ]
+    },
+    {
+      "benchmark" : {
+        "annualizedReturn" : 0.022856941570203793,
+        "annualizedVolatility" : 0.25459527739210913,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.7399363317166378,
+        "sharpeRatio" : 0.2145869100064871,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 0.7335778965181186,
+        "tradeCount" : 1,
+        "turnover" : 1
+      },
+      "name" : "holdout_finland",
+      "strategy" : {
+        "annualizedReturn" : 0.003535148764591378,
+        "annualizedVolatility" : 0.034336792571003964,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.170293105167048,
+        "sharpeRatio" : 0.11798330065572288,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 0.08970969123419281,
+        "tradeCount" : 23,
+        "turnover" : 4.5482019223311
+      },
+      "symbols" : [
+        "holdout_finland"
+      ]
+    },
+    {
+      "benchmark" : {
+        "annualizedReturn" : 0.040672276165408805,
+        "annualizedVolatility" : 0.2195329811440315,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.7517096628497038,
+        "sharpeRatio" : 0.2882985797509782,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 1.6394195607745568,
+        "tradeCount" : 1,
+        "turnover" : 1
+      },
+      "name" : "holdout_belgium",
+      "strategy" : {
+        "annualizedReturn" : 0.014199023423917767,
+        "annualizedVolatility" : 0.05508764349704004,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.20616370514872517,
+        "sharpeRatio" : 0.27866325716484136,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 0.40951215034013555,
+        "tradeCount" : 18,
+        "turnover" : 6.323273438317575
+      },
+      "symbols" : [
+        "holdout_belgium"
+      ]
+    },
+    {
+      "benchmark" : {
+        "annualizedReturn" : 0.06910581605775401,
+        "annualizedVolatility" : 0.2502566168603915,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.7669324906991011,
+        "sharpeRatio" : 0.387703059507098,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 4.087540235031187,
+        "tradeCount" : 1,
+        "turnover" : 1
+      },
+      "name" : "holdout_austria",
+      "strategy" : {
+        "annualizedReturn" : 0.026375382215598542,
+        "annualizedVolatility" : 0.04992738438139558,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.27124195039643495,
+        "sharpeRatio" : 0.5365305556429295,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 0.8847326098003916,
+        "tradeCount" : 20,
+        "turnover" : 4.434786657654762
+      },
+      "symbols" : [
+        "holdout_austria"
+      ]
+    },
+    {
+      "benchmark" : {
+        "annualizedReturn" : 0.0013867112097631917,
+        "annualizedVolatility" : 0.21436453974944814,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.8236587339229418,
+        "sharpeRatio" : 0.11386486435310801,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 0.03431157037240751,
+        "tradeCount" : 1,
+        "turnover" : 1
+      },
+      "name" : "holdout_portugal",
+      "strategy" : {
+        "annualizedReturn" : 0.01348300466797192,
+        "annualizedVolatility" : 0.04134235420204345,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.31688894200151674,
+        "sharpeRatio" : 0.3385107745124724,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 0.385484879357066,
+        "tradeCount" : 23,
+        "turnover" : 6.072479746470179
+      },
+      "symbols" : [
+        "holdout_portugal"
+      ]
+    },
+    {
+      "benchmark" : {
+        "annualizedReturn" : 0.05031350680712299,
+        "annualizedVolatility" : 0.34029624760252003,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.6959325033768273,
+        "sharpeRatio" : 0.280405214705982,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 2.303765336391307,
+        "tradeCount" : 1,
+        "turnover" : 1
+      },
+      "name" : "holdout_new_zealand",
+      "strategy" : {
+        "annualizedReturn" : 0.022421686892854398,
+        "annualizedVolatility" : 0.21281130430867454,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.48985128209660933,
+        "sharpeRatio" : 0.19091295252891627,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 0.7157078578758895,
+        "tradeCount" : 14,
+        "turnover" : 5.316577950023294
+      },
+      "symbols" : [
+        "holdout_new_zealand"
+      ]
+    },
+    {
+      "benchmark" : {
+        "annualizedReturn" : 0.07864554062332019,
+        "annualizedVolatility" : 0.28046456478201565,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.6507139707628125,
+        "sharpeRatio" : 0.4053917970361659,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 5.315855902475702,
+        "tradeCount" : 1,
+        "turnover" : 1
+      },
+      "name" : "holdout_south_africa",
+      "strategy" : {
+        "annualizedReturn" : 0.009901134817019264,
+        "annualizedVolatility" : 0.041431250130974324,
+        "endDate" : "2026-08-12",
+        "maxDrawdown" : 0.1865156822539319,
+        "sharpeRatio" : 0.2539508014679803,
+        "startDate" : "2002-04-08",
+        "totalReturn" : 0.2710678094725574,
+        "tradeCount" : 24,
+        "turnover" : 4.361495658254247
+      },
+      "symbols" : [
+        "holdout_south_africa"
+      ]
+    }
+  ],
+  "strategyVersion" : "asset-agnostic-sparse-frozen-v4",
+  "symbolRenameInvariant" : true,
+  "symbols" : [
+    "holdout_norway",
+    "holdout_denmark",
+    "holdout_finland",
+    "holdout_belgium",
+    "holdout_austria",
+    "holdout_portugal",
+    "holdout_new_zealand",
+    "holdout_south_africa"
+  ]
+}

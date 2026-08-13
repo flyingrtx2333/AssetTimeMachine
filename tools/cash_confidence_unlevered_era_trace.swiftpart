@@ -1,0 +1,188 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_UNLEVERED_ERA_TRACE"] == "1" {
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            Darwin.setenv("ATM_CC_RECOVERY_SLEEVE_CAP", "0.2075", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", "0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", "2", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_QUALITY_GAP_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+            Darwin.setenv("ATM_CC_PORTFOLIO_VOL_TARGET", "99", 1)
+            Darwin.setenv("ATM_CC_CALM_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_VOL_FLOOR", "0.09", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_MAX_SCALE", "1.15", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_LEADER_GATE", "2", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_SHORT_LONG_VOL_RATIO_MAX", "1.0", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_ALLOCATION_MODE", "4", 1)
+            Darwin.setenv("ATM_CC_SECULAR_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_GOLD_TO_US_SHIFT_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_GOLD_TO_US_SHIFT_FRACTION", "0", 1)
+            Darwin.setenv("ATM_CC_EQUITY_CURVE_RISK_SCALE", "1", 1)
+            Darwin.setenv("ATM_CC_USD_CASH_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_US_RISK_ALLOCATION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_GLOBAL_RISK_PARITY_BLEND", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_MID_GROSS_CLIFFS", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_BREADTH_MICRO_BRAKES", "1", 1)
+            Darwin.setenv("ATM_CC_DISABLE_HOLD_HYSTERESIS", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_MATURE_NASDAQ_BRAKE", "1", 1)
+            Darwin.setenv("ATM_CC_DISABLE_CHINA_PURGE", "0", 1)
+            Darwin.setenv("ATM_CC_COST_AWARE_REBALANCE", "0", 1)
+            Darwin.setenv("ATM_CC_SLOW_ADD_FRACTION", "1", 1)
+            Darwin.setenv("ATM_CC_GROSS_CONFIDENCE_SHAPE", "0", 1)
+            Darwin.setenv("ATM_CC_STAGED_HANDOFF_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_BAND", "0", 1)
+            Darwin.setenv("ATM_CC_COMPONENT_REBALANCE_VOL_CEILING", "99", 1)
+            Darwin.setenv("ATM_CC_BUY_CONFIRMATION_SESSIONS", "1", 1)
+            Darwin.setenv("ATM_CC_REBALANCE_TRIGGER_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MODE", "11", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_FRACTION", "0.80", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_DD_THRESHOLD", "0.04", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_DD_DECAY_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_INCLUDE_EXIT", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_GROSS_DROP_THRESHOLD", "0.02", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_SEVERITY_MODE", "5", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MAX_RETENTION", "0.25", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_MIN_RETENTION", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_CUT_BUDGET_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_NEAR_PEAK_DERISK_BROAD_UNWIND_TURNOVER_THRESHOLD", "0.40", 1)
+            Darwin.setenv("ATM_CC_DERISK_BUFFER_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_DERISK_CALIBRATION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_RISK_INCREASE_MIGRATION_FLOOR", "0", 1)
+            Darwin.setenv("ATM_CC_RISK_INCREASE_GROSS_COMPLETION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_SMALL_RERISK_TURNOVER_FLOOR", "0", 1)
+            let traceExitSentinelWeight = ProcessInfo.processInfo.environment["ATM_CC_TRACE_EXIT_SENTINEL_WEIGHT"] ?? "0.05"
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_WEIGHT", traceExitSentinelWeight, 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_CONFIRMATION_SESSIONS", "1", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_DD_THRESHOLD", "0.02", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_VOL_MIN", "0.06", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_VOL_MAX", "0.24", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_PRIOR_GROSS_MIN", "0.05", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_PRIOR_GROSS_MAX", "0.35", 1)
+            Darwin.setenv("ATM_CC_EXIT_SENTINEL_LEADER_GATE", "0", 1)
+            Darwin.setenv("ATM_CC_SP500_CROSS_CONFIRMATION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_IDLE_DUAL_TREND_SLEEVE_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_OUTPUT_ASSET_ABLATION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_TRADE_BAND", "0.244", 1)
+            Darwin.setenv("ATM_CC_RETURN_SCALE", "1.22", 1)
+            Darwin.setenv("ATM_CC_RETURN_GOLD_SCALE", "1.22", 1)
+            Darwin.setenv("ATM_CC_RETURN_US_SCALE", "1.22", 1)
+            Darwin.setenv("ATM_CC_RETURN_CHINA_SCALE", "1.30", 1)
+            Darwin.setenv("ATM_CC_RETURN_GROSS_CAP", "1.0", 1)
+            Darwin.setenv("ATM_CC_DECLINING_VOL_RETURN_SCALE", "1.24", 1)
+            Darwin.setenv("ATM_CC_DECLINING_VOL_RETURN_LEADER_GATE", "0", 1)
+
+            guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else { return }
+
+            func leader(_ weights: [String: Double]) -> String {
+                let gold = weights["gold_cny"] ?? 0
+                let nasdaq = weights["nasdaq"] ?? 0
+                let sp500 = weights["sp500"] ?? 0
+                let china = (weights["csi300"] ?? 0) + (weights["shanghai_composite"] ?? 0)
+                let gross = gold + nasdaq + sp500 + china
+                guard gross >= 0.05 else { return "cash" }
+                if gold >= nasdaq, gold >= sp500, gold >= china { return "gold" }
+                if nasdaq >= sp500, nasdaq >= china { return "nasdaq" }
+                if sp500 >= china { return "sp500" }
+                return "china"
+            }
+
+            var maxTargetGross = 0.0
+            var maxActualGross = 0.0
+            var minCashRatio = Double.greatestFiniteMagnitude
+            var financedDays = 0
+            for state in run.dailyStates where state.portfolioValue > 0 {
+                let targetGross = state.targetWeights.values.reduce(0, +)
+                let actualGross = state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue
+                let cashRatio = state.cash / state.portfolioValue
+                maxTargetGross = max(maxTargetGross, targetGross)
+                maxActualGross = max(maxActualGross, actualGross)
+                minCashRatio = min(minCashRatio, cashRatio)
+                if state.cash < -0.0001 { financedDays += 1 }
+            }
+            print("APP_CASH_CONFIDENCE_UNLEVERED_AUDIT")
+            print("max_target_gross,max_actual_gross,min_cash_ratio,financed_days")
+            print([
+                String(format: "%.9f", maxTargetGross),
+                String(format: "%.9f", maxActualGross),
+                String(format: "%.9f", minCashRatio == Double.greatestFiniteMagnitude ? 0 : minCashRatio),
+                String(financedDays),
+            ].joined(separator: ","))
+
+            print("APP_CASH_CONFIDENCE_UNLEVERED_ERA_TRACE")
+            print("year,return,max_drawdown,sharpe,avg_target_gross,avg_actual_cash,gold_days,nasdaq_days,sp500_days,china_days,cash_days,min_cash_ratio")
+            for year in 2002...2026 {
+                let prefix = String(year) + "-"
+                let points = run.report.points.filter { $0.date.recordDateString.hasPrefix(prefix) }
+                let states = run.dailyStates.filter { $0.date.recordDateString.hasPrefix(prefix) }
+                guard points.count > 1,
+                      !states.isEmpty,
+                      let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                let avgGross = states.reduce(0.0) { $0 + $1.targetWeights.values.reduce(0, +) } / Double(states.count)
+                let cashRatios = states.compactMap { state -> Double? in
+                    guard state.portfolioValue > 0 else { return nil }
+                    return state.cash / state.portfolioValue
+                }
+                let avgCash = cashRatios.isEmpty ? 0 : cashRatios.reduce(0, +) / Double(cashRatios.count)
+                let minCash = cashRatios.min() ?? 0
+                var counts: [String: Int] = ["gold": 0, "nasdaq": 0, "sp500": 0, "china": 0, "cash": 0]
+                for state in states { counts[leader(state.targetWeights), default: 0] += 1 }
+                let totalReturnText = String(format: "%.6f", metrics.totalReturn * 100)
+                let drawdownText = String(format: "%.6f", metrics.maxDrawdown * 100)
+                let sharpeText = String(format: "%.6f", metrics.sharpeRatio ?? 0)
+                let avgGrossText = String(format: "%.6f", avgGross)
+                let avgCashText = String(format: "%.6f", avgCash)
+                let minCashText = String(format: "%.6f", minCash)
+                let columns: [String] = [
+                    String(year), totalReturnText, drawdownText, sharpeText,
+                    avgGrossText, avgCashText,
+                    String(counts["gold"] ?? 0), String(counts["nasdaq"] ?? 0),
+                    String(counts["sp500"] ?? 0), String(counts["china"] ?? 0),
+                    String(counts["cash"] ?? 0), minCashText,
+                ]
+                print(columns.joined(separator: ","))
+            }
+
+            print("APP_CASH_CONFIDENCE_UNLEVERED_MONTH_TRACE")
+            print("month,return,max_drawdown,avg_target_gross,gold_days,nasdaq_days,sp500_days,china_days,cash_days")
+            for year in 2017...2021 {
+                for month in 1...12 {
+                    let prefix = String(format: "%04d-%02d-", year, month)
+                    let points = run.report.points.filter { $0.date.recordDateString.hasPrefix(prefix) }
+                    let states = run.dailyStates.filter { $0.date.recordDateString.hasPrefix(prefix) }
+                    guard points.count > 1,
+                          !states.isEmpty,
+                          let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                    let avgGross = states.reduce(0.0) { $0 + $1.targetWeights.values.reduce(0, +) } / Double(states.count)
+                    var counts: [String: Int] = ["gold": 0, "nasdaq": 0, "sp500": 0, "china": 0, "cash": 0]
+                    for state in states { counts[leader(state.targetWeights), default: 0] += 1 }
+                    let columns: [String] = [
+                        String(format: "%04d-%02d", year, month),
+                        String(format: "%.6f", metrics.totalReturn * 100),
+                        String(format: "%.6f", metrics.maxDrawdown * 100),
+                        String(format: "%.6f", avgGross),
+                        String(counts["gold"] ?? 0), String(counts["nasdaq"] ?? 0),
+                        String(counts["sp500"] ?? 0), String(counts["china"] ?? 0), String(counts["cash"] ?? 0),
+                    ]
+                    print(columns.joined(separator: ","))
+                }
+            }
+            return
+        }

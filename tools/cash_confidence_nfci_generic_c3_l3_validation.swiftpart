@@ -1,0 +1,159 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_NFCI_GENERIC_C3_L3_VALIDATION"] == "1" {
+            func loadGenericC3L3Series(_ path: String) -> [(releaseDate: String, value: Double)] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3, let value = Double(fields[2]), value.isFinite else { return nil }
+                    return (String(fields[0]), value)
+                }.sorted { $0.0 < $1.0 }
+            }
+            let creditSeries = loadGenericC3L3Series("tools/research-results/NFCICREDIT_initial_release.csv")
+            let leverageSeries = loadGenericC3L3Series("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            guard creditSeries.count >= 700, leverageSeries.count >= 700 else { return }
+            func genericC3L3Change(_ series: [(releaseDate: String, value: Double)], on date: String, lookback: Int) -> Double? {
+                var latest: Int?
+                for index in series.indices {
+                    if series[index].releaseDate <= date { latest = index } else { break }
+                }
+                guard let latest, latest >= lookback else { return nil }
+                return series[latest].value - series[latest - lookback].value
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs, initialCash: 100_000, settings: settings, mode: mode
+            ), let baseStartDate = baseRun.report.points.first?.date else { return }
+            let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let baseTradeDates = Set(baseRun.report.trades.map { $0.date.recordDateString })
+            let usSymbols: Set<String> = ["nasdaq", "sp500"]
+
+            func runGenericC3L3(excludedDate: String?, activationDate: String) -> (run: ResearchTargetStrategyRun, events: [String])? {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cc_nfci_generic_c3_l3_validation", title: "Generic100 C-0.03 L-0.03 validation",
+                    warmupSessions: 21, rebalanceSessions: 1, rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0, allowsFinancedExposure: false,
+                    financingAnnualRate: 0, buyReason: "Generic100 C-0.03 L-0.03 validation"
+                )
+                var previousBase: [String: Double] = [:]
+                var pending: [String: Double] = [:]
+                var events: [String] = []
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs, initialCash: 100_000, settings: settings, config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let executionKey = data.dates[index].recordDateString
+                        guard baseTradeDates.contains(executionKey), var target = baseTargets[executionKey] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let prior = previousBase
+                        previousBase = target
+                        guard !prior.isEmpty else {
+                            pending = target
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+                        let signalKey = data.dates[signalIndex].recordDateString
+                        guard signalKey >= activationDate, signalKey != excludedDate else {
+                            pending = target
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+                        let credit = genericC3L3Change(creditSeries, on: signalKey, lookback: 8).map { $0 <= -0.03 } ?? false
+                        let leverage = genericC3L3Change(leverageSeries, on: signalKey, lookback: 4).map { $0 <= -0.03 } ?? false
+                        let priorGross = prior.values.reduce(0, +)
+                        let proposedGross = target.values.reduce(0, +)
+                        let priorUS = prior.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                        let proposedUS = target.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                        let usDecrease = priorUS - proposedUS
+                        let grossDecrease = priorGross - proposedGross
+                        var extras: [String: Double] = [:]
+                        if credit || leverage {
+                            if usDecrease >= 0.05, grossDecrease >= 0.03 {
+                                let retention = credit && leverage ? 1.00 : 0.50
+                                for symbol in usSymbols {
+                                    let reduction = max((prior[symbol] ?? 0) - (target[symbol] ?? 0), 0)
+                                    if reduction > 0 { extras[symbol] = retention * reduction }
+                                }
+                            } else if grossDecrease >= 0.05 {
+                                for (symbol, priorWeight) in prior {
+                                    let reduction = max(priorWeight - (target[symbol] ?? 0), 0)
+                                    if reduction > 0 { extras[symbol] = reduction }
+                                }
+                            }
+                        }
+                        let desired = extras.values.reduce(0, +)
+                        if desired > 0 {
+                            let cash = max(1.0 - proposedGross, 0)
+                            let scale = min(1.0, cash / desired)
+                            for (symbol, extra) in extras { target[symbol, default: 0] += extra * scale }
+                            events.append(signalKey)
+                        }
+                        let gross = target.values.reduce(0, +)
+                        if gross > 1, gross > 0 { target = target.mapValues { max($0, 0) / gross } }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { return nil }
+                return (run, events)
+            }
+
+            func genericC3L3Metrics(_ run: ResearchTargetStrategyRun) -> (full: BacktestPerformanceMetrics, since2020: BacktestPerformanceMetrics?, last10: BacktestPerformanceMetrics?, since2022: BacktestPerformanceMetrics?)? {
+                let points = run.report.points.filter { $0.date >= baseStartDate }
+                guard let full = BacktestMetricsCalculator.performanceMetrics(from: points) else { return nil }
+                return (
+                    full,
+                    BacktestMetricsCalculator.performanceMetrics(from: points.filter { $0.date.recordDateString >= "2020-01-01" }),
+                    BacktestMetricsCalculator.performanceMetrics(from: points.filter { $0.date.recordDateString >= "2016-08-15" }),
+                    BacktestMetricsCalculator.performanceMetrics(from: points.filter { $0.date.recordDateString >= "2022-01-01" })
+                )
+            }
+            func metricColumns(_ m: BacktestPerformanceMetrics) -> [String] {
+                [
+                    m.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    String(format: "%.6f", m.maxDrawdown * 100),
+                    m.annualizedVolatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    m.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a"
+                ]
+            }
+
+            print("APP_CC_NFCI_GENERIC_C3_L3_VALIDATION_BASE")
+            print(String(format: "%.6f,%.6f,%.6f,%d", (baseRun.report.annualizedReturn ?? 0) * 100, baseRun.report.maxDrawdown * 100, baseRun.report.sharpeRatio ?? 0, baseRun.report.trades.count))
+            guard let baseline = runGenericC3L3(excludedDate: nil, activationDate: "0000-01-01"),
+                  let baseMetrics = genericC3L3Metrics(baseline.run) else { return }
+            let eventDates = Array(Set(baseline.events)).sorted()
+            print("APP_CC_NFCI_GENERIC_C3_L3_JACKKNIFE")
+            print("excluded,annualized,max_drawdown,volatility,sharpe,trades,events")
+            print((["none"] + metricColumns(baseMetrics.full) + [String(baseline.run.report.trades.filter { $0.date >= baseStartDate }.count), String(eventDates.count)]).joined(separator: ","))
+            for excluded in eventDates {
+                guard let result = runGenericC3L3(excludedDate: excluded, activationDate: "0000-01-01"),
+                      let metrics = genericC3L3Metrics(result.run) else { continue }
+                print(([excluded] + metricColumns(metrics.full) + [String(result.run.report.trades.filter { $0.date >= baseStartDate }.count), String(Set(result.events).count)]).joined(separator: ","))
+            }
+            print("APP_CC_NFCI_GENERIC_C3_L3_ACTIVATION")
+            print("activation,annualized,max_drawdown,volatility,sharpe,since2020_annualized,since2020_sharpe,last10_annualized,last10_sharpe,since2022_annualized,since2022_sharpe,trades,events")
+            for activation in ["2015-01-01", "2017-01-01", "2019-01-01", "2020-01-01", "2021-01-01"] {
+                guard let result = runGenericC3L3(excludedDate: nil, activationDate: activation),
+                      let metrics = genericC3L3Metrics(result.run) else { continue }
+                var row: [String] = [activation]
+                row.append(contentsOf: metricColumns(metrics.full))
+                let a2020 = metrics.since2020?.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                let s2020 = metrics.since2020?.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a"
+                let a10 = metrics.last10?.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                let s10 = metrics.last10?.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a"
+                let a2022 = metrics.since2022?.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                let s2022 = metrics.since2022?.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a"
+                let tradeCount = String(result.run.report.trades.filter { $0.date >= baseStartDate }.count)
+                let eventCount = String(Set(result.events).count)
+                row.append(contentsOf: [a2020, s2020, a10, s10, a2022, s2022, tradeCount, eventCount])
+                print(row.joined(separator: ","))
+            }
+            print("event_dates," + eventDates.joined(separator: "|"))
+            return
+        }

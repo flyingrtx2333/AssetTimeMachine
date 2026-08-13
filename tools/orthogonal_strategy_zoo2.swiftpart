@@ -1,0 +1,548 @@
+        if ProcessInfo.processInfo.environment["ATM_ORTHOGONAL_STRATEGY_ZOO2"] == "1" {
+            enum Zoo2Family: String {
+                case fourStateTrend
+                case dualMomentum
+                case turtleBreakout
+                case volatilityPercentileRegime
+                case knnAnalogue
+                case markovState
+                case rollingLinearPredictor
+                case adaptiveAutocorrelation
+            }
+
+            struct Zoo2Variant {
+                let id: String
+                let title: String
+                let family: Zoo2Family
+                let rebalanceSessions: Int
+                let rebalanceBand: Double
+                let p1: Double
+                let p2: Double
+                let p3: Double
+                let intParam: Int
+            }
+
+            struct Zoo2Metrics {
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+            }
+
+            struct Zoo2Result {
+                let variant: Zoo2Variant
+                let full: Zoo2Metrics
+                let last10y: Zoo2Metrics
+                let since2020: Zoo2Metrics
+                let since2022: Zoo2Metrics
+                let trades: Int
+                let averageCashRatio: Double
+            }
+
+            let coreSymbols = ["gold_cny", "nasdaq", "sp500"]
+            let researchSymbols = ["gold_cny", "nasdaq", "sp500", "oil_wti_cny"]
+            let zeroFillSymbols: Set<String> = ["oil_wti_cny"]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = researchSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            let variants: [Zoo2Variant] = [
+                .init(id: "four_state_35_60", title: "四象限金纳趋势35/60", family: .fourStateTrend, rebalanceSessions: 21, rebalanceBand: 0.08, p1: 0.35, p2: 0.60, p3: 0.90, intParam: 0),
+                .init(id: "four_state_30_65", title: "四象限金纳趋势30/65", family: .fourStateTrend, rebalanceSessions: 21, rebalanceBand: 0.08, p1: 0.30, p2: 0.65, p3: 0.90, intParam: 0),
+                .init(id: "four_state_slow", title: "四象限金纳趋势慢频", family: .fourStateTrend, rebalanceSessions: 63, rebalanceBand: 0.10, p1: 0.35, p2: 0.60, p3: 0.90, intParam: 0),
+
+                .init(id: "dual_momentum_126", title: "核心Dual Momentum 126", family: .dualMomentum, rebalanceSessions: 63, rebalanceBand: 0.10, p1: 126, p2: 0.90, p3: 0, intParam: 0),
+                .init(id: "dual_momentum_252", title: "核心Dual Momentum 252", family: .dualMomentum, rebalanceSessions: 63, rebalanceBand: 0.10, p1: 252, p2: 0.90, p3: 0, intParam: 0),
+                .init(id: "dual_momentum_blend", title: "核心Dual Momentum 126/252", family: .dualMomentum, rebalanceSessions: 63, rebalanceBand: 0.10, p1: 126, p2: 0.90, p3: 252, intParam: 1),
+
+                .init(id: "turtle_63_20", title: "Turtle突破63/退出20", family: .turtleBreakout, rebalanceSessions: 5, rebalanceBand: 0.05, p1: 63, p2: 20, p3: 0.90, intParam: 0),
+                .init(id: "turtle_126_63", title: "Turtle突破126/退出63", family: .turtleBreakout, rebalanceSessions: 5, rebalanceBand: 0.05, p1: 126, p2: 63, p3: 0.90, intParam: 0),
+                .init(id: "turtle_252_126", title: "Turtle突破252/退出126", family: .turtleBreakout, rebalanceSessions: 5, rebalanceBand: 0.05, p1: 252, p2: 126, p3: 0.90, intParam: 0),
+
+                .init(id: "vol_percentile_40_75", title: "波动分位状态40/75", family: .volatilityPercentileRegime, rebalanceSessions: 21, rebalanceBand: 0.08, p1: 0.40, p2: 0.75, p3: 0.90, intParam: 0),
+                .init(id: "vol_percentile_30_70", title: "波动分位状态30/70", family: .volatilityPercentileRegime, rebalanceSessions: 21, rebalanceBand: 0.08, p1: 0.30, p2: 0.70, p3: 0.90, intParam: 0),
+
+                .init(id: "knn_10", title: "历史相似状态KNN-10", family: .knnAnalogue, rebalanceSessions: 21, rebalanceBand: 0.10, p1: 0.015, p2: 0.85, p3: 0, intParam: 10),
+                .init(id: "knn_25", title: "历史相似状态KNN-25", family: .knnAnalogue, rebalanceSessions: 21, rebalanceBand: 0.10, p1: 0.015, p2: 0.85, p3: 0, intParam: 25),
+
+                .init(id: "markov_21", title: "离散状态Markov-21", family: .markovState, rebalanceSessions: 21, rebalanceBand: 0.10, p1: 21, p2: 0.85, p3: 0, intParam: 12),
+                .init(id: "markov_42", title: "离散状态Markov-42", family: .markovState, rebalanceSessions: 21, rebalanceBand: 0.10, p1: 42, p2: 0.85, p3: 0, intParam: 10),
+
+                .init(id: "linear_predictor_504", title: "滚动线性预测504", family: .rollingLinearPredictor, rebalanceSessions: 21, rebalanceBand: 0.10, p1: 504, p2: 0.015, p3: 0.85, intParam: 0),
+                .init(id: "linear_predictor_1008", title: "滚动线性预测1008", family: .rollingLinearPredictor, rebalanceSessions: 21, rebalanceBand: 0.10, p1: 1008, p2: 0.015, p3: 0.85, intParam: 0),
+
+                .init(id: "autocorr_005", title: "自相关自适应5%", family: .adaptiveAutocorrelation, rebalanceSessions: 5, rebalanceBand: 0.10, p1: 0.05, p2: 0.85, p3: 0, intParam: 0),
+                .init(id: "autocorr_012", title: "自相关自适应12%", family: .adaptiveAutocorrelation, rebalanceSessions: 5, rebalanceBand: 0.10, p1: 0.12, p2: 0.85, p3: 0, intParam: 0),
+            ]
+
+            func price(_ symbol: String, _ index: Int, _ data: ResearchTargetDataContext) -> Double? {
+                guard let values = data.pricesBySymbol[symbol], values.indices.contains(index), values[index] > 0 else { return nil }
+                return values[index]
+            }
+
+            func momentum(_ symbol: String, _ index: Int, _ lookback: Int, _ data: ResearchTargetDataContext) -> Double? {
+                guard lookback > 0,
+                      index >= lookback,
+                      let values = data.pricesBySymbol[symbol],
+                      values.indices.contains(index),
+                      values[index] > 0,
+                      values[index - lookback] > 0 else { return nil }
+                return values[index] / values[index - lookback] - 1
+            }
+
+            func movingAverage(_ symbol: String, _ index: Int, _ period: Int, _ data: ResearchTargetDataContext) -> Double? {
+                guard period > 1,
+                      index >= period - 1,
+                      let values = data.pricesBySymbol[symbol],
+                      values.indices.contains(index) else { return nil }
+                var total = 0.0
+                for cursor in (index - period + 1)...index {
+                    guard values[cursor] > 0 else { return nil }
+                    total += values[cursor]
+                }
+                return total / Double(period)
+            }
+
+            func dailyReturns(_ symbol: String, _ index: Int, _ lookback: Int, _ data: ResearchTargetDataContext) -> [Double]? {
+                guard lookback > 1,
+                      index >= lookback,
+                      let values = data.pricesBySymbol[symbol],
+                      values.indices.contains(index) else { return nil }
+                var result: [Double] = []
+                for cursor in (index - lookback + 1)...index {
+                    guard cursor > 0, values[cursor] > 0, values[cursor - 1] > 0 else { return nil }
+                    result.append(values[cursor] / values[cursor - 1] - 1)
+                }
+                return result
+            }
+
+            func volatility(_ symbol: String, _ index: Int, _ lookback: Int, _ data: ResearchTargetDataContext) -> Double? {
+                guard let values = dailyReturns(symbol, index, lookback, data), values.count > 1 else { return nil }
+                let mean = values.reduce(0, +) / Double(values.count)
+                let variance = values.reduce(0.0) { $0 + pow($1 - mean, 2) } / Double(values.count - 1)
+                return sqrt(max(variance, 0)) * sqrt(252)
+            }
+
+            func priorHigh(_ symbol: String, _ index: Int, _ lookback: Int, _ data: ResearchTargetDataContext) -> Double? {
+                guard lookback > 1,
+                      index >= lookback,
+                      let values = data.pricesBySymbol[symbol] else { return nil }
+                var high = 0.0
+                for cursor in (index - lookback)..<index {
+                    guard values[cursor] > 0 else { return nil }
+                    high = max(high, values[cursor])
+                }
+                return high > 0 ? high : nil
+            }
+
+            func priorLow(_ symbol: String, _ index: Int, _ lookback: Int, _ data: ResearchTargetDataContext) -> Double? {
+                guard lookback > 1,
+                      index >= lookback,
+                      let values = data.pricesBySymbol[symbol] else { return nil }
+                var low = Double.infinity
+                for cursor in (index - lookback)..<index {
+                    guard values[cursor] > 0 else { return nil }
+                    low = min(low, values[cursor])
+                }
+                return low.isFinite ? low : nil
+            }
+
+            func uptrend(_ symbol: String, _ index: Int, ma: Int, mom: Int, _ data: ResearchTargetDataContext) -> Bool {
+                guard let current = price(symbol, index, data),
+                      let average = movingAverage(symbol, index, ma, data),
+                      let m = momentum(symbol, index, mom, data) else { return false }
+                return current >= average && m > 0
+            }
+
+            func metrics(_ points: [BacktestSeriesPoint]) -> Zoo2Metrics? {
+                guard points.count > 1,
+                      let result = BacktestMetricsCalculator.performanceMetrics(from: points) else { return nil }
+                return Zoo2Metrics(
+                    annualized: result.annualizedReturn ?? -1,
+                    maxDrawdown: result.maxDrawdown,
+                    volatility: result.annualizedVolatility ?? -1,
+                    sharpe: result.sharpeRatio ?? -1
+                )
+            }
+
+            func normalSolve(_ matrix: [[Double]], _ rhs: [Double]) -> [Double]? {
+                let n = rhs.count
+                guard matrix.count == n, matrix.allSatisfy({ $0.count == n }) else { return nil }
+                var a = matrix
+                var b = rhs
+                for pivot in 0..<n {
+                    var bestRow = pivot
+                    for row in pivot..<n where abs(a[row][pivot]) > abs(a[bestRow][pivot]) {
+                        bestRow = row
+                    }
+                    if abs(a[bestRow][pivot]) < 1e-10 { return nil }
+                    if bestRow != pivot {
+                        a.swapAt(bestRow, pivot)
+                        b.swapAt(bestRow, pivot)
+                    }
+                    let divisor = a[pivot][pivot]
+                    for col in pivot..<n { a[pivot][col] /= divisor }
+                    b[pivot] /= divisor
+                    for row in 0..<n where row != pivot {
+                        let factor = a[row][pivot]
+                        if abs(factor) < 1e-14 { continue }
+                        for col in pivot..<n { a[row][col] -= factor * a[pivot][col] }
+                        b[row] -= factor * b[pivot]
+                    }
+                }
+                return b
+            }
+
+            func featureVector(_ index: Int, _ data: ResearchTargetDataContext) -> [Double]? {
+                guard let n20 = momentum("nasdaq", index, 20, data),
+                      let n63 = momentum("nasdaq", index, 63, data),
+                      let s20 = momentum("sp500", index, 20, data),
+                      let g20 = momentum("gold_cny", index, 20, data),
+                      let nvol = volatility("nasdaq", index, 20, data) else { return nil }
+                return [n20 / 0.10, n63 / 0.20, s20 / 0.10, g20 / 0.10, nvol / 0.30]
+            }
+
+            func stateCode(_ index: Int, _ data: ResearchTargetDataContext) -> Int? {
+                guard let n63 = momentum("nasdaq", index, 63, data),
+                      let g63 = momentum("gold_cny", index, 63, data),
+                      let n20vol = volatility("nasdaq", index, 20, data),
+                      let n63vol = volatility("nasdaq", index, 63, data),
+                      let nPrice = price("nasdaq", index, data),
+                      let nMA = movingAverage("nasdaq", index, 200, data) else { return nil }
+                var code = 0
+                if n63 > 0 { code |= 1 }
+                if g63 > 0 { code |= 2 }
+                if nPrice >= nMA { code |= 4 }
+                if n20vol > n63vol { code |= 8 }
+                return code
+            }
+
+            func volatilityPercentile(_ symbol: String, _ index: Int, shortLookback: Int, window: Int, _ data: ResearchTargetDataContext) -> Double? {
+                guard let current = volatility(symbol, index, shortLookback, data), index >= window else { return nil }
+                var samples: [Double] = []
+                var cursor = index - window
+                while cursor < index {
+                    if let value = volatility(symbol, cursor, shortLookback, data) { samples.append(value) }
+                    cursor += 5
+                }
+                guard !samples.isEmpty else { return nil }
+                let below = samples.filter { $0 <= current }.count
+                return Double(below) / Double(samples.count)
+            }
+
+            func regularTarget(_ variant: Zoo2Variant, _ context: StrategyTargetContext, _ data: ResearchTargetDataContext) -> [String: Double] {
+                let index = context.signalIndex
+                guard index >= 20 else { return [:] }
+
+                switch variant.family {
+                case .fourStateTrend:
+                    let nUp = uptrend("nasdaq", index, ma: 200, mom: 126, data)
+                    let gUp = uptrend("gold_cny", index, ma: 150, mom: 126, data)
+                    if nUp && gUp {
+                        return ["gold_cny": variant.p1, "nasdaq": variant.p2]
+                    }
+                    if nUp { return ["nasdaq": variant.p3] }
+                    if gUp { return ["gold_cny": variant.p3] }
+                    return [:]
+
+                case .dualMomentum:
+                    let shortLookback = Int(variant.p1)
+                    let longLookback = Int(variant.p3)
+                    let ranked = coreSymbols.compactMap { symbol -> (String, Double)? in
+                        guard let short = momentum(symbol, index, shortLookback, data) else { return nil }
+                        let score: Double
+                        if variant.intParam == 1,
+                           longLookback > 0,
+                           let long = momentum(symbol, index, longLookback, data) {
+                            score = 0.5 * short + 0.5 * long
+                        } else {
+                            score = short
+                        }
+                        return score > 0 ? (symbol, score) : nil
+                    }.sorted { $0.1 > $1.1 }
+                    guard let best = ranked.first else { return [:] }
+                    return [best.0: variant.p2]
+
+                case .volatilityPercentileRegime:
+                    guard let percentile = volatilityPercentile("nasdaq", index, shortLookback: 20, window: 504, data) else { return [:] }
+                    let nUp = uptrend("nasdaq", index, ma: 200, mom: 126, data)
+                    let gUp = uptrend("gold_cny", index, ma: 150, mom: 126, data)
+                    if nUp && percentile <= variant.p1 {
+                        return ["nasdaq": variant.p3]
+                    }
+                    if nUp && percentile <= variant.p2 {
+                        return gUp ? ["nasdaq": 0.55, "gold_cny": 0.35] : ["nasdaq": 0.65]
+                    }
+                    if gUp {
+                        return nUp ? ["gold_cny": 0.70, "nasdaq": 0.15] : ["gold_cny": 0.85]
+                    }
+                    return [:]
+
+                case .knnAnalogue:
+                    guard index >= 300,
+                          let currentFeature = featureVector(index, data) else { return [:] }
+                    let start = max(126, index - 1260)
+                    var neighbours: [(distance: Double, nReturn: Double, gReturn: Double)] = []
+                    var cursor = start
+                    while cursor + 21 <= index {
+                        if let feature = featureVector(cursor, data),
+                           let n0 = price("nasdaq", cursor, data),
+                           let n1 = price("nasdaq", cursor + 21, data),
+                           let g0 = price("gold_cny", cursor, data),
+                           let g1 = price("gold_cny", cursor + 21, data) {
+                            var distance = 0.0
+                            for k in currentFeature.indices {
+                                distance += pow(currentFeature[k] - feature[k], 2)
+                            }
+                            neighbours.append((distance, n1 / n0 - 1, g1 / g0 - 1))
+                        }
+                        cursor += 5
+                    }
+                    let selected = Array(neighbours.sorted { $0.distance < $1.distance }.prefix(max(variant.intParam, 1)))
+                    guard selected.count >= max(5, variant.intParam / 2) else { return [:] }
+                    let nForecast = selected.reduce(0.0) { $0 + $1.nReturn } / Double(selected.count)
+                    let gForecast = selected.reduce(0.0) { $0 + $1.gReturn } / Double(selected.count)
+                    if max(nForecast, gForecast) < variant.p1 { return [:] }
+                    return [nForecast >= gForecast ? "nasdaq" : "gold_cny": variant.p2]
+
+                case .markovState:
+                    let horizon = Int(variant.p1)
+                    guard index >= max(300, horizon + 126), let currentState = stateCode(index, data) else { return [:] }
+                    var nReturns: [Double] = []
+                    var gReturns: [Double] = []
+                    var sReturns: [Double] = []
+                    var cursor = max(126, index - 1512)
+                    while cursor + horizon <= index {
+                        if stateCode(cursor, data) == currentState,
+                           let n0 = price("nasdaq", cursor, data), let n1 = price("nasdaq", cursor + horizon, data),
+                           let g0 = price("gold_cny", cursor, data), let g1 = price("gold_cny", cursor + horizon, data),
+                           let s0 = price("sp500", cursor, data), let s1 = price("sp500", cursor + horizon, data) {
+                            nReturns.append(n1 / n0 - 1)
+                            gReturns.append(g1 / g0 - 1)
+                            sReturns.append(s1 / s0 - 1)
+                        }
+                        cursor += 5
+                    }
+                    guard nReturns.count >= variant.intParam else { return [:] }
+                    let rows = [
+                        ("nasdaq", nReturns.reduce(0, +) / Double(nReturns.count)),
+                        ("gold_cny", gReturns.reduce(0, +) / Double(gReturns.count)),
+                        ("sp500", sReturns.reduce(0, +) / Double(sReturns.count)),
+                    ].sorted { $0.1 > $1.1 }
+                    guard let best = rows.first, best.1 > 0 else { return [:] }
+                    return [best.0: variant.p2]
+
+                case .rollingLinearPredictor:
+                    let window = Int(variant.p1)
+                    let horizon = 21
+                    guard index >= max(window, 126) else { return [:] }
+                    var xtx = Array(repeating: Array(repeating: 0.0, count: 4), count: 4)
+                    var xty = Array(repeating: 0.0, count: 4)
+                    var sampleCount = 0
+                    var cursor = max(63, index - window)
+                    while cursor + horizon <= index {
+                        if let g20 = momentum("gold_cny", cursor, 20, data),
+                           let s20 = momentum("sp500", cursor, 20, data),
+                           let n20 = momentum("nasdaq", cursor, 20, data),
+                           let n0 = price("nasdaq", cursor, data),
+                           let n1 = price("nasdaq", cursor + horizon, data) {
+                            let x = [1.0, g20, s20, n20]
+                            let y = n1 / n0 - 1
+                            for i in 0..<4 {
+                                xty[i] += x[i] * y
+                                for j in 0..<4 { xtx[i][j] += x[i] * x[j] }
+                            }
+                            sampleCount += 1
+                        }
+                        cursor += 5
+                    }
+                    guard sampleCount >= 30 else { return [:] }
+                    for i in 0..<4 { xtx[i][i] += 0.001 }
+                    guard let beta = normalSolve(xtx, xty),
+                          let g20 = momentum("gold_cny", index, 20, data),
+                          let s20 = momentum("sp500", index, 20, data),
+                          let n20 = momentum("nasdaq", index, 20, data) else { return [:] }
+                    let x = [1.0, g20, s20, n20]
+                    let forecast = zip(beta, x).reduce(0.0) { $0 + $1.0 * $1.1 }
+                    if forecast >= variant.p2 { return ["nasdaq": variant.p3] }
+                    if forecast <= -variant.p2,
+                       uptrend("gold_cny", index, ma: 150, mom: 126, data) {
+                        return ["gold_cny": 0.75]
+                    }
+                    return [:]
+
+                case .adaptiveAutocorrelation:
+                    guard index >= 260,
+                          let nPrice = price("nasdaq", index, data),
+                          let nMA = movingAverage("nasdaq", index, 200, data),
+                          nPrice >= nMA else {
+                        if uptrend("gold_cny", index, ma: 150, mom: 126, data) { return ["gold_cny": 0.65] }
+                        return [:]
+                    }
+                    var weekly: [Double] = []
+                    var cursor = index - 250
+                    while cursor + 5 <= index {
+                        if let p0 = price("nasdaq", cursor, data), let p1 = price("nasdaq", cursor + 5, data) {
+                            weekly.append(p1 / p0 - 1)
+                        }
+                        cursor += 5
+                    }
+                    guard weekly.count > 10 else { return [:] }
+                    let mean = weekly.reduce(0, +) / Double(weekly.count)
+                    var covariance = 0.0
+                    var variance = 0.0
+                    for i in 1..<weekly.count {
+                        covariance += (weekly[i] - mean) * (weekly[i - 1] - mean)
+                        variance += pow(weekly[i - 1] - mean, 2)
+                    }
+                    guard variance > 0,
+                          let last5 = momentum("nasdaq", index, 5, data) else { return [:] }
+                    let phi = covariance / variance
+                    if phi >= variant.p1, last5 > 0 { return ["nasdaq": variant.p2] }
+                    if phi <= -variant.p1, last5 < 0 { return ["nasdaq": variant.p2] }
+                    if uptrend("gold_cny", index, ma: 150, mom: 126, data) { return ["gold_cny": 0.60] }
+                    return [:]
+
+                case .turtleBreakout:
+                    return [:]
+                }
+            }
+
+            let commonStart = Calendar(identifier: .gregorian).date(from: DateComponents(year: 2002, month: 2, day: 4))!
+            let since2020 = Calendar(identifier: .gregorian).date(from: DateComponents(year: 2020, month: 1, day: 1))!
+            let since2022 = Calendar(identifier: .gregorian).date(from: DateComponents(year: 2022, month: 1, day: 1))!
+            var results: [Zoo2Result] = []
+
+            for variant in variants {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: variant.id,
+                    title: variant.title,
+                    warmupSessions: 21,
+                    rebalanceSessions: variant.rebalanceSessions,
+                    rebalanceBand: variant.rebalanceBand,
+                    zeroFillBeforeFirstSymbols: zeroFillSymbols,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "第二批异构策略研究"
+                )
+
+                var heldSymbol: String?
+                let report: AdvancedBacktestReport?
+                if variant.family == .turtleBreakout {
+                    report = BacktestEngine.runResearchTargetProviderStrategy(
+                        assetInputs: inputs,
+                        initialCash: 100_000,
+                        settings: settings,
+                        config: config,
+                        targetWeights: { context, data in
+                            let index = context.signalIndex
+                            let entryLookback = Int(variant.p1)
+                            let exitLookback = Int(variant.p2)
+                            if let held = heldSymbol {
+                                if let current = price(held, index, data),
+                                   let exit = priorLow(held, index, exitLookback, data),
+                                   current <= exit {
+                                    heldSymbol = nil
+                                    return [:]
+                                }
+                                return [held: variant.p3]
+                            }
+                            let candidates = coreSymbols.compactMap { symbol -> (String, Double)? in
+                                guard let current = price(symbol, index, data),
+                                      let high = priorHigh(symbol, index, entryLookback, data),
+                                      let mom = momentum(symbol, index, entryLookback, data),
+                                      current >= high * 0.995,
+                                      mom > 0 else { return nil }
+                                return (symbol, mom)
+                            }.sorted { $0.1 > $1.1 }
+                            guard let best = candidates.first else { return [:] }
+                            heldSymbol = best.0
+                            return [best.0: variant.p3]
+                        }
+                    )
+                } else {
+                    report = BacktestEngine.runResearchTargetProviderStrategy(
+                        assetInputs: inputs,
+                        initialCash: 100_000,
+                        settings: settings,
+                        config: config,
+                        targetWeights: { context, data in regularTarget(variant, context, data) }
+                    )
+                }
+                guard let report else { continue }
+                let commonPoints = report.points.filter { $0.date >= commonStart }
+                let lastDate = commonPoints.last?.date ?? commonStart
+                let last10yStart = Calendar(identifier: .gregorian).date(byAdding: .year, value: -10, to: lastDate) ?? commonStart
+                guard let full = metrics(commonPoints),
+                      let last10y = metrics(commonPoints.filter { $0.date >= last10yStart }),
+                      let m2020 = metrics(commonPoints.filter { $0.date >= since2020 }),
+                      let m2022 = metrics(commonPoints.filter { $0.date >= since2022 }) else { continue }
+                results.append(.init(
+                    variant: variant,
+                    full: full,
+                    last10y: last10y,
+                    since2020: m2020,
+                    since2022: m2022,
+                    trades: report.trades.count,
+                    averageCashRatio: report.averageCashRatio
+                ))
+            }
+
+            results.sort { lhs, rhs in
+                let lhsScore = lhs.full.annualized + 0.35 * lhs.since2020.annualized + 0.20 * lhs.last10y.annualized
+                    - 0.90 * max(lhs.full.maxDrawdown - 0.08, 0)
+                let rhsScore = rhs.full.annualized + 0.35 * rhs.since2020.annualized + 0.20 * rhs.last10y.annualized
+                    - 0.90 * max(rhs.full.maxDrawdown - 0.08, 0)
+                if lhsScore == rhsScore { return lhs.full.sharpe > rhs.full.sharpe }
+                return lhsScore > rhsScore
+            }
+
+            print("APP_ORTHOGONAL_STRATEGY_ZOO2")
+            print("title,id,family,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_dd,since2020_annualized,since2020_dd,since2022_annualized,since2022_dd,trades,average_cash_ratio")
+            for row in results {
+                print([
+                    row.variant.title,
+                    row.variant.id,
+                    row.variant.family.rawValue,
+                    String(format: "%.6f", row.full.annualized * 100),
+                    String(format: "%.6f", row.full.maxDrawdown * 100),
+                    String(format: "%.6f", row.full.volatility * 100),
+                    String(format: "%.6f", row.full.sharpe),
+                    String(format: "%.6f", row.last10y.annualized * 100),
+                    String(format: "%.6f", row.last10y.maxDrawdown * 100),
+                    String(format: "%.6f", row.since2020.annualized * 100),
+                    String(format: "%.6f", row.since2020.maxDrawdown * 100),
+                    String(format: "%.6f", row.since2022.annualized * 100),
+                    String(format: "%.6f", row.since2022.maxDrawdown * 100),
+                    String(row.trades),
+                    String(format: "%.6f", row.averageCashRatio),
+                ].joined(separator: ","))
+            }
+
+            let championMode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let championInputs = championMode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            if let champion = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: championInputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: championMode
+            ), let comparable = metrics(champion.report.points.filter { $0.date >= commonStart }) {
+                print("APP_ORTHOGONAL_ZOO2_CHAMPION")
+                print("annualized,max_drawdown,volatility,sharpe,trades,average_cash_ratio")
+                print([
+                    String(format: "%.6f", comparable.annualized * 100),
+                    String(format: "%.6f", comparable.maxDrawdown * 100),
+                    String(format: "%.6f", comparable.volatility * 100),
+                    String(format: "%.6f", comparable.sharpe),
+                    String(champion.report.trades.count),
+                    String(format: "%.6f", champion.report.averageCashRatio),
+                ].joined(separator: ","))
+            }
+            return
+        }

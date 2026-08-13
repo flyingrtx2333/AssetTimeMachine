@@ -1,0 +1,184 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_SP500_ROLE_DIAGNOSTIC"] == "1" {
+            struct SP500RoleAggregate {
+                var count = 0
+                var weightSum = 0.0
+                var excess20: [Double] = []
+                var excess60: [Double] = []
+                var versusNasdaq20: [Double] = []
+                var versusNasdaq60: [Double] = []
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else { return }
+
+            let dates = run.dailyStates.map(\.date)
+            func blankMA(_ values: [Double], _ period: Int) -> [Double?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func blankBoll(_ values: [Double], _ period: Int, _ multiplier: Double) -> [(middle: Double, lower: Double, upper: Double)?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func alignedPrices(symbol: String) -> [Double]? {
+                guard let option = optionsBySymbol[symbol] else { return nil }
+                let input = BacktestEngine.advancedAssetInput(for: option) { rawSymbol in
+                    seriesBySymbol[normalizedHistorySymbol(rawSymbol)]
+                }
+                guard let prepared = BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+                    assetSeries: input.assetSeries,
+                    assetOption: input.assetOption,
+                    fxSeries: input.fxSeries,
+                    movingAverage: blankMA,
+                    bollingerBands: blankBoll
+                ) else { return nil }
+                let map = Dictionary(uniqueKeysWithValues: prepared.pricePoints.map { ($0.date, $0.cnyPrice) })
+                var result: [Double] = []
+                var last: Double?
+                for date in dates {
+                    if let value = map[date] { last = value }
+                    guard let value = last else { return nil }
+                    result.append(value)
+                }
+                return result
+            }
+            guard let sp500 = alignedPrices(symbol: "sp500"),
+                  let nasdaq = alignedPrices(symbol: "nasdaq") else { return }
+
+            func momentum(_ prices: [Double], at index: Int, lookback: Int) -> Double? {
+                guard index >= lookback,
+                      prices.indices.contains(index),
+                      prices[index - lookback] > 0 else { return nil }
+                return prices[index] / prices[index - lookback] - 1
+            }
+            func annualVol(_ prices: [Double], at index: Int, lookback: Int = 63) -> Double? {
+                guard index >= lookback else { return nil }
+                var values: [Double] = []
+                for cursor in (index - lookback + 1)...index where cursor > 0 && prices[cursor - 1] > 0 {
+                    values.append(prices[cursor] / prices[cursor - 1] - 1)
+                }
+                guard values.count > 1 else { return nil }
+                let mean = values.reduce(0, +) / Double(values.count)
+                let variance = values.reduce(0.0) { $0 + pow($1 - mean, 2) }
+                    / Double(values.count - 1)
+                return sqrt(max(variance, 0)) * sqrt(252)
+            }
+            func cashReturn(from start: Int, to end: Int) -> Double {
+                guard end > start else { return 0 }
+                var growth = 1.0
+                for cursor in (start + 1)...end {
+                    growth *= 1 + CashYieldCNY.dailyReturn(on: dates[cursor - 1])
+                }
+                return growth - 1
+            }
+            func average(_ values: [Double]) -> Double {
+                values.isEmpty ? 0 : values.reduce(0, +) / Double(values.count)
+            }
+            func median(_ values: [Double]) -> Double {
+                let sorted = values.sorted()
+                guard !sorted.isEmpty else { return 0 }
+                if sorted.count.isMultiple(of: 2) {
+                    let middle = sorted.count / 2
+                    return 0.5 * (sorted[middle - 1] + sorted[middle])
+                }
+                return sorted[sorted.count / 2]
+            }
+            func winRate(_ values: [Double]) -> Double {
+                values.isEmpty ? 0 : Double(values.filter { $0 > 0 }.count) / Double(values.count)
+            }
+
+            var grouped: [String: SP500RoleAggregate] = [:]
+            for index in 1..<run.dailyStates.count {
+                let priorWeight = run.dailyStates[index - 1].targetWeights["sp500"] ?? 0
+                let weight = run.dailyStates[index].targetWeights["sp500"] ?? 0
+                guard weight >= 0.05,
+                      abs(weight - priorWeight) > 0.000001,
+                      index >= 126,
+                      let spMomentum20 = momentum(sp500, at: index, lookback: 20),
+                      let spMomentum126 = momentum(sp500, at: index, lookback: 126),
+                      let nasdaqMomentum20 = momentum(nasdaq, at: index, lookback: 20),
+                      let nasdaqMomentum126 = momentum(nasdaq, at: index, lookback: 126),
+                      let spVol = annualVol(sp500, at: index) else { continue }
+                let relative126 = nasdaqMomentum126 - spMomentum126
+                let relativeBucket: String
+                if relative126 > 0.10 {
+                    relativeBucket = "nasdaq>>sp500"
+                } else if relative126 > 0.03 {
+                    relativeBucket = "nasdaq>sp500"
+                } else if relative126 < -0.10 {
+                    relativeBucket = "sp500>>nasdaq"
+                } else if relative126 < -0.03 {
+                    relativeBucket = "sp500>nasdaq"
+                } else {
+                    relativeBucket = "relative-flat"
+                }
+                let shortBucket: String
+                if spMomentum20 < 0, nasdaqMomentum20 < 0 {
+                    shortBucket = "both-short-negative"
+                } else if spMomentum20 > 0, nasdaqMomentum20 < 0 {
+                    shortBucket = "sp-only-short-positive"
+                } else if spMomentum20 < 0, nasdaqMomentum20 > 0 {
+                    shortBucket = "nasdaq-only-short-positive"
+                } else {
+                    shortBucket = "both-short-positive"
+                }
+                let trendBucket = spMomentum126 > 0 ? "sp-long-positive" : "sp-long-negative"
+                let volBucket = spVol < 0.15 ? "sp-vol-low" : (spVol < 0.22 ? "sp-vol-mid" : "sp-vol-high")
+                let keys = [
+                    "relative|" + relativeBucket,
+                    "short|" + shortBucket,
+                    "trend|" + trendBucket,
+                    "vol|" + volBucket,
+                    "joint|" + relativeBucket + "|" + shortBucket,
+                ]
+                for key in keys {
+                    var item = grouped[key, default: SP500RoleAggregate()]
+                    item.count += 1
+                    item.weightSum += weight
+                    for horizon in [20, 60] {
+                        let end = index + horizon
+                        guard dates.indices.contains(end), sp500[index] > 0, nasdaq[index] > 0 else { continue }
+                        let spReturn = sp500[end] / sp500[index] - 1
+                        let nasdaqReturn = nasdaq[end] / nasdaq[index] - 1
+                        let excess = spReturn - cashReturn(from: index, to: end)
+                        if horizon == 20 {
+                            item.excess20.append(excess)
+                            item.versusNasdaq20.append(spReturn - nasdaqReturn)
+                        } else {
+                            item.excess60.append(excess)
+                            item.versusNasdaq60.append(spReturn - nasdaqReturn)
+                        }
+                    }
+                    grouped[key] = item
+                }
+            }
+
+            print("APP_CASH_CONFIDENCE_SP500_ROLE_DIAGNOSTIC")
+            print("group,count,average_weight,mean_excess20,median_excess20,win_excess20,mean_vs_nasdaq20,mean_excess60,median_excess60,win_excess60,mean_vs_nasdaq60")
+            for key in grouped.keys.sorted() {
+                guard let item = grouped[key], item.count >= 3 else { continue }
+                print([
+                    key,
+                    String(item.count),
+                    String(format: "%.6f", item.weightSum / Double(item.count)),
+                    String(format: "%.6f", average(item.excess20) * 100),
+                    String(format: "%.6f", median(item.excess20) * 100),
+                    String(format: "%.6f", winRate(item.excess20)),
+                    String(format: "%.6f", average(item.versusNasdaq20) * 100),
+                    String(format: "%.6f", average(item.excess60) * 100),
+                    String(format: "%.6f", median(item.excess60) * 100),
+                    String(format: "%.6f", winRate(item.excess60)),
+                    String(format: "%.6f", average(item.versusNasdaq60) * 100),
+                ].joined(separator: ","))
+            }
+            return
+        }

@@ -1,0 +1,112 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_RECOVERY_CORE_GRID"] == "1" {
+            struct CashConfidenceCoreCandidate {
+                let title: String
+                let growthScale: Double
+                let bridgeRatio: Double
+                let sleeveCap: Double
+                let tradeBand: Double
+                let annualized: Double
+                let maxDrawdown: Double
+                let sharpe: Double
+                let trades: Int
+                let averageCashRatio: Double
+                let sliceRows: [SliceMetricRow]
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let parameterSets: [(String, Double, Double, Double, Double)] = [
+                ("恢复核心基线", 1.050, 0.150, 0.2075, 0.20),
+                ("低增长放大", 1.025, 0.150, 0.2075, 0.20),
+                ("高增长放大", 1.075, 0.150, 0.2075, 0.20),
+                ("低桥接", 1.050, 0.100, 0.2075, 0.20),
+                ("高桥接", 1.050, 0.200, 0.2075, 0.20),
+                ("小恢复袖套", 1.050, 0.150, 0.1600, 0.20),
+                ("大恢复袖套", 1.050, 0.150, 0.2500, 0.20),
+                ("均衡增强", 1.060, 0.175, 0.2250, 0.20),
+                ("降低调仓阈值", 1.050, 0.150, 0.2075, 0.16),
+            ]
+
+            Darwin.setenv("ATM_CC_NASDAQ_MA", "40", 1)
+            Darwin.setenv("ATM_CC_NASDAQ_SCALE", "0.88", 1)
+            Darwin.setenv("ATM_CC_OTHER_SCALE", "0.80", 1)
+            Darwin.setenv("ATM_CC_LEADERSHIP_EVAL", "10", 1)
+            Darwin.setenv("ATM_CC_LEADERSHIP_PRIOR", "2.0", 1)
+            Darwin.setenv("ATM_CC_MIN_MIGRATION", "0.50", 1)
+            Darwin.setenv("ATM_CC_SUCCESS_EDGE", "0", 1)
+            Darwin.setenv("ATM_CC_EDGE_EXPONENT", "1", 1)
+
+            var candidates: [CashConfidenceCoreCandidate] = []
+            for parameters in parameterSets {
+                Darwin.setenv("ATM_CC_GROWTH_SCALE", String(parameters.1), 1)
+                Darwin.setenv("ATM_CC_FAST_BRIDGE", String(parameters.2), 1)
+                Darwin.setenv("ATM_CC_SLEEVE_CAP", String(parameters.3), 1)
+                Darwin.setenv("ATM_CC_TRADE_BAND", String(parameters.4), 1)
+
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                let fullRow = MetricRow(
+                    title: parameters.0,
+                    id: "cash_confidence_recovery_core_grid",
+                    annualized: report.annualizedReturn,
+                    maxDrawdown: report.maxDrawdown,
+                    volatility: report.annualizedVolatility,
+                    sharpe: report.sharpeRatio,
+                    start: report.points.first?.date.recordDateString ?? "n/a",
+                    end: report.points.last?.date.recordDateString ?? "n/a",
+                    pointCount: report.points.count
+                )
+                candidates.append(CashConfidenceCoreCandidate(
+                    title: parameters.0,
+                    growthScale: parameters.1,
+                    bridgeRatio: parameters.2,
+                    sleeveCap: parameters.3,
+                    tradeBand: parameters.4,
+                    annualized: report.annualizedReturn ?? -1,
+                    maxDrawdown: report.maxDrawdown,
+                    sharpe: report.sharpeRatio ?? -1,
+                    trades: report.trades.count,
+                    averageCashRatio: report.averageCashRatio,
+                    sliceRows: metricRowsForSlices(
+                        title: parameters.0,
+                        id: "cash_confidence_recovery_core_grid",
+                        points: report.points,
+                        fullRow: fullRow
+                    )
+                ))
+            }
+
+            let ranked = candidates.sorted { lhs, rhs in
+                let lhsScore = lhs.sharpe + 0.75 * lhs.annualized - lhs.maxDrawdown
+                let rhsScore = rhs.sharpe + 0.75 * rhs.annualized - rhs.maxDrawdown
+                if lhsScore == rhsScore { return lhs.annualized > rhs.annualized }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(ranked.flatMap(\.sliceRows), header: "APP_CASH_CONFIDENCE_RECOVERY_CORE_GRID")
+            print("APP_CASH_CONFIDENCE_RECOVERY_CORE_DIAGNOSTICS")
+            print("title,growth_scale,bridge_ratio,sleeve_cap,trade_band,annualized,max_drawdown,sharpe,trades,average_cash_ratio")
+            for candidate in ranked {
+                print([
+                    candidate.title,
+                    String(format: "%.4f", candidate.growthScale),
+                    String(format: "%.4f", candidate.bridgeRatio),
+                    String(format: "%.4f", candidate.sleeveCap),
+                    String(format: "%.4f", candidate.tradeBand),
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio)
+                ].joined(separator: ","))
+            }
+            return
+        }

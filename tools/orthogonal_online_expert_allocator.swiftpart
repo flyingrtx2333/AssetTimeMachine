@@ -1,0 +1,525 @@
+        if ProcessInfo.processInfo.environment["ATM_ORTHOGONAL_ONLINE_EXPERT_ALLOCATOR"] == "1" {
+            enum ExpertKind: String, CaseIterable {
+                case staticBarbell
+                case fourStateTrend
+                case dualMomentum
+                case turtleSlow
+                case hrp
+            }
+
+            struct AllocatorVariant {
+                let id: String
+                let title: String
+                let lookback: Int
+                let reviewSessions: Int
+                let temperature: Double
+                let winnerTakeAll: Bool
+                let topCount: Int
+            }
+
+            struct AllocatorMetrics {
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+            }
+
+            struct AllocatorResult {
+                let variant: AllocatorVariant
+                let full: AllocatorMetrics
+                let last10y: AllocatorMetrics
+                let since2020: AllocatorMetrics
+                let since2022: AllocatorMetrics
+                let trades: Int
+                let averageCashRatio: Double
+                let allocationChanges: Int
+                let maxTargetGross: Double
+                let maxActualGross: Double
+                let minCashRatio: Double
+                let financedDays: Int
+            }
+
+            let symbols = ["gold_cny", "nasdaq", "sp500"]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = symbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            func price(_ symbol: String, _ index: Int, _ data: ResearchTargetDataContext) -> Double? {
+                guard let values = data.pricesBySymbol[symbol], values.indices.contains(index), values[index] > 0 else { return nil }
+                return values[index]
+            }
+
+            func momentum(_ symbol: String, _ index: Int, _ lookback: Int, _ data: ResearchTargetDataContext) -> Double? {
+                guard lookback > 0, index >= lookback,
+                      let values = data.pricesBySymbol[symbol], values.indices.contains(index),
+                      values[index] > 0, values[index - lookback] > 0 else { return nil }
+                return values[index] / values[index - lookback] - 1
+            }
+
+            func movingAverage(_ symbol: String, _ index: Int, _ period: Int, _ data: ResearchTargetDataContext) -> Double? {
+                guard period > 1, index >= period - 1,
+                      let values = data.pricesBySymbol[symbol], values.indices.contains(index) else { return nil }
+                var total = 0.0
+                for cursor in (index - period + 1)...index {
+                    guard values[cursor] > 0 else { return nil }
+                    total += values[cursor]
+                }
+                return total / Double(period)
+            }
+
+            func returns(_ symbol: String, _ index: Int, _ lookback: Int, _ data: ResearchTargetDataContext) -> [Double]? {
+                guard lookback > 1, index >= lookback,
+                      let values = data.pricesBySymbol[symbol], values.indices.contains(index) else { return nil }
+                var result: [Double] = []
+                for cursor in (index - lookback + 1)...index {
+                    guard cursor > 0, values[cursor] > 0, values[cursor - 1] > 0 else { return nil }
+                    result.append(values[cursor] / values[cursor - 1] - 1)
+                }
+                return result
+            }
+
+            func correlation(_ lhs: [Double], _ rhs: [Double]) -> Double {
+                guard lhs.count == rhs.count, lhs.count > 2 else { return 0 }
+                let lm = lhs.reduce(0, +) / Double(lhs.count)
+                let rm = rhs.reduce(0, +) / Double(rhs.count)
+                var cov = 0.0
+                var lv = 0.0
+                var rv = 0.0
+                for i in lhs.indices {
+                    let a = lhs[i] - lm
+                    let b = rhs[i] - rm
+                    cov += a * b
+                    lv += a * a
+                    rv += b * b
+                }
+                guard lv > 0, rv > 0 else { return 0 }
+                return cov / sqrt(lv * rv)
+            }
+
+            func hrpWeights(_ index: Int, _ data: ResearchTargetDataContext) -> [String: Double] {
+                let lookback = 126
+                guard let g = returns("gold_cny", index, lookback, data),
+                      let n = returns("nasdaq", index, lookback, data),
+                      let s = returns("sp500", index, lookback, data),
+                      g.count == n.count, g.count == s.count else { return [:] }
+                let series = [g, n, s]
+                let pairRows: [(Int, Int, Double)] = [
+                    (0, 1, correlation(g, n)),
+                    (0, 2, correlation(g, s)),
+                    (1, 2, correlation(n, s)),
+                ]
+                let closest = pairRows.max { $0.2 < $1.2 } ?? pairRows[0]
+                let pair = [closest.0, closest.1]
+                let singleton = [0, 1, 2].first { !pair.contains($0) } ?? 0
+                func variance(_ values: [Double]) -> Double {
+                    let mean = values.reduce(0, +) / Double(values.count)
+                    return values.reduce(0.0) { $0 + pow($1 - mean, 2) } / Double(max(values.count - 1, 1))
+                }
+                let pairVars = pair.map { max(variance(series[$0]), 1e-8) }
+                let inv = pairVars.map { 1 / $0 }
+                let invTotal = inv.reduce(0, +)
+                let pairWeights = inv.map { $0 / invTotal }
+                var pairPortfolio = Array(repeating: 0.0, count: g.count)
+                for cursor in pairPortfolio.indices {
+                    pairPortfolio[cursor] = pairWeights[0] * series[pair[0]][cursor]
+                        + pairWeights[1] * series[pair[1]][cursor]
+                }
+                let pairVar = max(variance(pairPortfolio), 1e-8)
+                let singletonVar = max(variance(series[singleton]), 1e-8)
+                let pairClusterWeight = singletonVar / (singletonVar + pairVar)
+                let gross = 0.90
+                return [
+                    symbols[pair[0]]: gross * pairClusterWeight * pairWeights[0],
+                    symbols[pair[1]]: gross * pairClusterWeight * pairWeights[1],
+                    symbols[singleton]: gross * (1 - pairClusterWeight),
+                ].filter { $0.value > 0.000001 }
+            }
+
+            func expertTarget(_ kind: ExpertKind, _ index: Int, _ data: ResearchTargetDataContext, turtleState: inout String?) -> [String: Double] {
+                switch kind {
+                case .staticBarbell:
+                    return ["gold_cny": 0.50, "nasdaq": 0.50]
+
+                case .fourStateTrend:
+                    let nUp = (price("nasdaq", index, data) ?? 0) >= (movingAverage("nasdaq", index, 200, data) ?? Double.infinity)
+                        && (momentum("nasdaq", index, 126, data) ?? -1) > 0
+                    let gUp = (price("gold_cny", index, data) ?? 0) >= (movingAverage("gold_cny", index, 150, data) ?? Double.infinity)
+                        && (momentum("gold_cny", index, 126, data) ?? -1) > 0
+                    if nUp && gUp { return ["gold_cny": 0.35, "nasdaq": 0.60] }
+                    if nUp { return ["nasdaq": 0.90] }
+                    if gUp { return ["gold_cny": 0.90] }
+                    return [:]
+
+                case .dualMomentum:
+                    let ranked = symbols.compactMap { symbol -> (String, Double)? in
+                        guard let m126 = momentum(symbol, index, 126, data),
+                              let m252 = momentum(symbol, index, 252, data) else { return nil }
+                        let score = 0.5 * m126 + 0.5 * m252
+                        return score > 0 ? (symbol, score) : nil
+                    }.sorted { $0.1 > $1.1 }
+                    guard let best = ranked.first else { return [:] }
+                    return [best.0: 0.90]
+
+                case .turtleSlow:
+                    if let held = turtleState {
+                        guard index >= 126,
+                              let values = data.pricesBySymbol[held],
+                              values.indices.contains(index) else { return [:] }
+                        var low = Double.infinity
+                        for cursor in (index - 126)..<index {
+                            guard values[cursor] > 0 else { continue }
+                            low = min(low, values[cursor])
+                        }
+                        if low.isFinite, values[index] <= low {
+                            turtleState = nil
+                            return [:]
+                        }
+                        return [held: 0.90]
+                    }
+                    guard index >= 252 else { return [:] }
+                    let candidates = symbols.compactMap { symbol -> (String, Double)? in
+                        guard let values = data.pricesBySymbol[symbol], values.indices.contains(index),
+                              let mom = momentum(symbol, index, 252, data), mom > 0 else { return nil }
+                        var high = 0.0
+                        for cursor in (index - 252)..<index where values[cursor] > 0 {
+                            high = max(high, values[cursor])
+                        }
+                        guard high > 0, values[index] >= high * 0.995 else { return nil }
+                        return (symbol, mom)
+                    }.sorted { $0.1 > $1.1 }
+                    guard let best = candidates.first else { return [:] }
+                    turtleState = best.0
+                    return [best.0: 0.90]
+
+                case .hrp:
+                    return hrpWeights(index, data)
+                }
+            }
+
+            var expertRuns: [ExpertKind: ResearchTargetStrategyRun] = [:]
+            for kind in ExpertKind.allCases {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "orthogonal_expert_\(kind.rawValue)",
+                    title: kind.rawValue,
+                    warmupSessions: 21,
+                    rebalanceSessions: kind == .turtleSlow ? 5 : 21,
+                    rebalanceBand: 0.06,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "正交专家影子调仓"
+                )
+                var turtleState: String?
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    targetWeights: { context, data in
+                        expertTarget(kind, context.signalIndex, data, turtleState: &turtleState)
+                    }
+                ) else { continue }
+                expertRuns[kind] = run
+            }
+            guard expertRuns.count == ExpertKind.allCases.count else {
+                print("APP_ORTHOGONAL_ONLINE_EXPERT_ALLOCATOR\nexpert_trace_missing")
+                return
+            }
+
+            let variants: [AllocatorVariant] = [
+                .init(id: "expert_wta_126_21", title: "专家竞争WTA-126/21", lookback: 126, reviewSessions: 21, temperature: 0, winnerTakeAll: true, topCount: 1),
+                .init(id: "expert_wta_252_21", title: "专家竞争WTA-252/21", lookback: 252, reviewSessions: 21, temperature: 0, winnerTakeAll: true, topCount: 1),
+                .init(id: "expert_top2_126", title: "专家竞争Top2-126", lookback: 126, reviewSessions: 21, temperature: 0, winnerTakeAll: true, topCount: 2),
+                .init(id: "expert_soft_126_t05", title: "专家软分配126-T0.5", lookback: 126, reviewSessions: 21, temperature: 0.50, winnerTakeAll: false, topCount: 5),
+                .init(id: "expert_soft_252_t05", title: "专家软分配252-T0.5", lookback: 252, reviewSessions: 21, temperature: 0.50, winnerTakeAll: false, topCount: 5),
+                .init(id: "expert_soft_252_t10", title: "专家软分配252-T1.0", lookback: 252, reviewSessions: 63, temperature: 1.00, winnerTakeAll: false, topCount: 5),
+                .init(id: "expert_top2_252_63", title: "专家竞争Top2-252/63", lookback: 252, reviewSessions: 63, temperature: 0, winnerTakeAll: true, topCount: 2),
+            ]
+
+            let commonStart = Calendar(identifier: .gregorian).date(from: DateComponents(year: 2002, month: 2, day: 4))!
+            let since2020 = Calendar(identifier: .gregorian).date(from: DateComponents(year: 2020, month: 1, day: 1))!
+            let since2022 = Calendar(identifier: .gregorian).date(from: DateComponents(year: 2022, month: 1, day: 1))!
+
+            func metrics(_ points: [BacktestSeriesPoint]) -> AllocatorMetrics? {
+                guard points.count > 1,
+                      let result = BacktestMetricsCalculator.performanceMetrics(from: points) else { return nil }
+                return AllocatorMetrics(
+                    annualized: result.annualizedReturn ?? -1,
+                    maxDrawdown: result.maxDrawdown,
+                    volatility: result.annualizedVolatility ?? -1,
+                    sharpe: result.sharpeRatio ?? -1
+                )
+            }
+
+            var results: [AllocatorResult] = []
+            for variant in variants {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: variant.id,
+                    title: variant.title,
+                    warmupSessions: variant.lookback,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.10,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "在线专家竞争调仓"
+                )
+
+                var alignedValues: [ExpertKind: [Double?]] = [:]
+                var targetMaps: [ExpertKind: [String: [String: Double]]] = [:]
+                for kind in ExpertKind.allCases {
+                    guard let run = expertRuns[kind] else { continue }
+                    targetMaps[kind] = Dictionary(uniqueKeysWithValues: run.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+                }
+                var latestTargets: [ExpertKind: [String: Double]] = [:]
+                var shares = Dictionary(uniqueKeysWithValues: ExpertKind.allCases.map { ($0, 1.0 / Double(ExpertKind.allCases.count)) })
+                var lastReviewIndex = -10_000
+                var pending: [String: Double] = [:]
+                var previous: [String: Double] = [:]
+                var allocationChanges = 0
+
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard signalIndex >= variant.lookback,
+                              data.dates.indices.contains(index),
+                              data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        if alignedValues.isEmpty {
+                            for kind in ExpertKind.allCases {
+                                guard let expertRun = expertRuns[kind] else { continue }
+                                let valueMap = Dictionary(uniqueKeysWithValues: expertRun.report.points.map { ($0.date.recordDateString, $0.portfolioValue) })
+                                var lastValue: Double?
+                                var values: [Double?] = []
+                                values.reserveCapacity(data.dates.count)
+                                for date in data.dates {
+                                    if let value = valueMap[date.recordDateString] { lastValue = value }
+                                    values.append(lastValue)
+                                }
+                                alignedValues[kind] = values
+                            }
+                        }
+
+                        let executionKey = data.dates[index].recordDateString
+                        var expertTargetChanged = false
+                        for kind in ExpertKind.allCases {
+                            if let target = targetMaps[kind]?[executionKey] {
+                                let prior = latestTargets[kind] ?? [:]
+                                let keys = Set(prior.keys).union(target.keys)
+                                if keys.reduce(0.0, { $0 + abs((prior[$1] ?? 0) - (target[$1] ?? 0)) }) > 0.000001 {
+                                    expertTargetChanged = true
+                                }
+                                latestTargets[kind] = target
+                            }
+                        }
+                        guard latestTargets.count == ExpertKind.allCases.count else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+
+                        if signalIndex - lastReviewIndex >= variant.reviewSessions {
+                            var scores: [(ExpertKind, Double)] = []
+                            for kind in ExpertKind.allCases {
+                                guard let values = alignedValues[kind],
+                                      values.indices.contains(signalIndex),
+                                      values.indices.contains(signalIndex - variant.lookback),
+                                      let start = values[signalIndex - variant.lookback],
+                                      let current = values[signalIndex],
+                                      start > 0 else {
+                                    scores.append((kind, -10))
+                                    continue
+                                }
+                                var daily: [Double] = []
+                                var peak = start
+                                var dd = 0.0
+                                for cursor in (signalIndex - variant.lookback + 1)...signalIndex {
+                                    guard let prior = values[cursor - 1],
+                                          let value = values[cursor], prior > 0 else { continue }
+                                    daily.append(value / prior - 1)
+                                    peak = max(peak, value)
+                                    if peak > 0 { dd = max(dd, 1 - value / peak) }
+                                }
+                                let totalReturn = current / start - 1
+                                let annualReturn = pow(max(1 + totalReturn, 0.0001), 252 / Double(variant.lookback)) - 1
+                                let mean = daily.isEmpty ? 0 : daily.reduce(0, +) / Double(daily.count)
+                                let variance = daily.count > 1
+                                    ? daily.reduce(0.0) { $0 + pow($1 - mean, 2) } / Double(daily.count - 1)
+                                    : 0
+                                let vol = sqrt(max(variance, 0)) * sqrt(252)
+                                let quality = annualReturn / max(vol, 0.03) + 0.25 * annualReturn - 1.5 * dd
+                                scores.append((kind, min(max(quality, -5), 5)))
+                            }
+                            let sorted = scores.sorted { lhs, rhs in
+                                if lhs.1 == rhs.1 { return lhs.0.rawValue < rhs.0.rawValue }
+                                return lhs.1 > rhs.1
+                            }
+                            var newShares = Dictionary(uniqueKeysWithValues: ExpertKind.allCases.map { ($0, 0.0) })
+                            if variant.winnerTakeAll {
+                                let selected = Array(sorted.prefix(max(variant.topCount, 1)))
+                                if !selected.isEmpty {
+                                    let each = 1.0 / Double(selected.count)
+                                    for row in selected { newShares[row.0] = each }
+                                }
+                            } else {
+                                let maxScore = sorted.first?.1 ?? 0
+                                var raw: [ExpertKind: Double] = [:]
+                                for row in sorted {
+                                    raw[row.0] = exp((row.1 - maxScore) / max(variant.temperature, 0.10))
+                                }
+                                let denominator = raw.values.reduce(0, +)
+                                if denominator > 0 {
+                                    for kind in ExpertKind.allCases {
+                                        newShares[kind] = min((raw[kind] ?? 0) / denominator, 0.60)
+                                    }
+                                    let total = newShares.values.reduce(0, +)
+                                    if total > 0 { newShares = newShares.mapValues { $0 / total } }
+                                }
+                            }
+                            let change = ExpertKind.allCases.reduce(0.0) {
+                                $0 + abs((shares[$1] ?? 0) - (newShares[$1] ?? 0))
+                            }
+                            if change > 0.05 { allocationChanges += 1 }
+                            shares = newShares
+                            lastReviewIndex = signalIndex
+                            expertTargetChanged = true
+                        }
+
+                        guard expertTargetChanged || previous.isEmpty else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        var target: [String: Double] = [:]
+                        for kind in ExpertKind.allCases {
+                            let share = shares[kind] ?? 0
+                            for (symbol, weight) in latestTargets[kind] ?? [:] {
+                                target[symbol, default: 0] += share * weight
+                            }
+                        }
+                        let gross = target.values.reduce(0, +)
+                        if gross > 1, gross > 0 { target = target.mapValues { $0 / gross } }
+                        pending = target
+                        let keys = Set(previous.keys).union(target.keys)
+                        let difference = keys.reduce(0.0) { $0 + abs((previous[$1] ?? 0) - (target[$1] ?? 0)) }
+                        let should = previous.isEmpty ? !target.isEmpty : difference > 0.10
+                        if should { previous = target }
+                        return BacktestRebalanceDecision(shouldRebalance: should, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { continue }
+
+                let points = run.report.points.filter { $0.date >= commonStart }
+                let lastDate = points.last?.date ?? commonStart
+                let last10yStart = Calendar(identifier: .gregorian).date(byAdding: .year, value: -10, to: lastDate) ?? commonStart
+                guard let full = metrics(points),
+                      let last10y = metrics(points.filter { $0.date >= last10yStart }),
+                      let m2020 = metrics(points.filter { $0.date >= since2020 }),
+                      let m2022 = metrics(points.filter { $0.date >= since2022 }) else { continue }
+
+                var maxTargetGross = 0.0
+                var maxActualGross = 0.0
+                var minCashRatio = Double.greatestFiniteMagnitude
+                var financedDays = 0
+                for state in run.dailyStates where state.portfolioValue > 0 && state.date >= commonStart {
+                    let targetGross = state.targetWeights.values.reduce(0, +)
+                    let actualGross = state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue
+                    let cashRatio = state.cash / state.portfolioValue
+                    maxTargetGross = max(maxTargetGross, targetGross)
+                    maxActualGross = max(maxActualGross, actualGross)
+                    minCashRatio = min(minCashRatio, cashRatio)
+                    if state.cash < -0.0001 { financedDays += 1 }
+                }
+
+                results.append(.init(
+                    variant: variant,
+                    full: full,
+                    last10y: last10y,
+                    since2020: m2020,
+                    since2022: m2022,
+                    trades: run.report.trades.count,
+                    averageCashRatio: run.report.averageCashRatio,
+                    allocationChanges: allocationChanges,
+                    maxTargetGross: maxTargetGross,
+                    maxActualGross: maxActualGross,
+                    minCashRatio: minCashRatio == Double.greatestFiniteMagnitude ? 0 : minCashRatio,
+                    financedDays: financedDays
+                ))
+            }
+
+            results.sort { lhs, rhs in
+                let lhsScore = lhs.full.annualized + 0.35 * lhs.since2020.annualized + 0.20 * lhs.last10y.annualized
+                    - 1.0 * max(lhs.full.maxDrawdown - 0.08, 0)
+                let rhsScore = rhs.full.annualized + 0.35 * rhs.since2020.annualized + 0.20 * rhs.last10y.annualized
+                    - 1.0 * max(rhs.full.maxDrawdown - 0.08, 0)
+                if lhsScore == rhsScore { return lhs.full.sharpe > rhs.full.sharpe }
+                return lhsScore > rhsScore
+            }
+
+            print("APP_ORTHOGONAL_ONLINE_EXPERT_ALLOCATOR")
+            print("title,id,annualized,max_drawdown,volatility,sharpe,last10y_annualized,last10y_dd,since2020_annualized,since2020_dd,since2022_annualized,since2022_dd,trades,average_cash_ratio,allocation_changes,max_target_gross,max_actual_gross,min_cash_ratio,financed_days")
+            for row in results {
+                print([
+                    row.variant.title,
+                    row.variant.id,
+                    String(format: "%.6f", row.full.annualized * 100),
+                    String(format: "%.6f", row.full.maxDrawdown * 100),
+                    String(format: "%.6f", row.full.volatility * 100),
+                    String(format: "%.6f", row.full.sharpe),
+                    String(format: "%.6f", row.last10y.annualized * 100),
+                    String(format: "%.6f", row.last10y.maxDrawdown * 100),
+                    String(format: "%.6f", row.since2020.annualized * 100),
+                    String(format: "%.6f", row.since2020.maxDrawdown * 100),
+                    String(format: "%.6f", row.since2022.annualized * 100),
+                    String(format: "%.6f", row.since2022.maxDrawdown * 100),
+                    String(row.trades),
+                    String(format: "%.6f", row.averageCashRatio),
+                    String(row.allocationChanges),
+                    String(format: "%.6f", row.maxTargetGross),
+                    String(format: "%.6f", row.maxActualGross),
+                    String(format: "%.6f", row.minCashRatio),
+                    String(row.financedDays),
+                ].joined(separator: ","))
+            }
+
+            print("APP_ORTHOGONAL_EXPERT_BASES")
+            print("expert,annualized,max_drawdown,volatility,sharpe,trades,average_cash_ratio")
+            for kind in ExpertKind.allCases {
+                guard let expert = expertRuns[kind], let m = metrics(expert.report.points.filter { $0.date >= commonStart }) else { continue }
+                print([
+                    kind.rawValue,
+                    String(format: "%.6f", m.annualized * 100),
+                    String(format: "%.6f", m.maxDrawdown * 100),
+                    String(format: "%.6f", m.volatility * 100),
+                    String(format: "%.6f", m.sharpe),
+                    String(expert.report.trades.count),
+                    String(format: "%.6f", expert.report.averageCashRatio),
+                ].joined(separator: ","))
+            }
+
+            let championMode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let championInputs = championMode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            if let champion = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: championInputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: championMode
+            ), let comparable = metrics(champion.report.points.filter { $0.date >= commonStart }) {
+                print("APP_ORTHOGONAL_EXPERT_CHAMPION")
+                print("annualized,max_drawdown,volatility,sharpe,trades,average_cash_ratio")
+                print([
+                    String(format: "%.6f", comparable.annualized * 100),
+                    String(format: "%.6f", comparable.maxDrawdown * 100),
+                    String(format: "%.6f", comparable.volatility * 100),
+                    String(format: "%.6f", comparable.sharpe),
+                    String(champion.report.trades.count),
+                    String(format: "%.6f", champion.report.averageCashRatio),
+                ].joined(separator: ","))
+            }
+            return
+        }

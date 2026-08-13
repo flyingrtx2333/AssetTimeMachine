@@ -1,0 +1,80 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_LOW_NOISE_PRODUCTION_VALIDATION"] == "1" {
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else { return }
+
+            func metrics(start: String, end: String? = nil) -> BacktestPerformanceMetrics? {
+                let points = run.report.points.filter { point in
+                    let key = point.date.recordDateString
+                    if let end { return key >= start && key <= end }
+                    return key >= start
+                }
+                guard points.count > 1 else { return nil }
+                return BacktestMetricsCalculator.performanceMetrics(from: points)
+            }
+
+            let finalEnd = run.report.points.last?.date.recordDateString ?? "n/a"
+            let slices: [(String, String, String?)] = [
+                ("full", "2002-01-01", nil),
+                ("since2020", "2020-01-01", nil),
+                ("last10y", "2016-08-09", nil),
+                ("since2022", "2022-01-01", nil),
+                ("2026YTD", "2026-01-01", nil),
+            ]
+            print("APP_CASH_CONFIDENCE_LOW_NOISE_PRODUCTION_METRICS")
+            print("slice,annualized,total_return,max_drawdown,volatility,sharpe,start,end,points")
+            for slice in slices {
+                guard let result = metrics(start: slice.1, end: slice.2) else { continue }
+                let points = run.report.points.filter { point in
+                    let key = point.date.recordDateString
+                    if let end = slice.2 { return key >= slice.1 && key <= end }
+                    return key >= slice.1
+                }
+                print([
+                    slice.0,
+                    String(format: "%.6f", (result.annualizedReturn ?? 0) * 100),
+                    String(format: "%.6f", result.totalReturn * 100),
+                    String(format: "%.6f", result.maxDrawdown * 100),
+                    String(format: "%.6f", (result.annualizedVolatility ?? 0) * 100),
+                    String(format: "%.6f", result.sharpeRatio ?? 0),
+                    points.first?.date.recordDateString ?? "n/a",
+                    points.last?.date.recordDateString ?? finalEnd,
+                    String(points.count),
+                ].joined(separator: ","))
+            }
+
+            var maxTargetGross = 0.0
+            var maxActualGross = 0.0
+            var minCashRatio = Double.greatestFiniteMagnitude
+            var financedDays = 0
+            for state in run.dailyStates where state.portfolioValue > 0 {
+                let targetGross = state.targetWeights.values.reduce(0, +)
+                let actualGross = state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue
+                let cashRatio = state.cash / state.portfolioValue
+                maxTargetGross = max(maxTargetGross, targetGross)
+                maxActualGross = max(maxActualGross, actualGross)
+                minCashRatio = min(minCashRatio, cashRatio)
+                if state.cash < -0.0001 { financedDays += 1 }
+            }
+            print("APP_CASH_CONFIDENCE_LOW_NOISE_PRODUCTION_AUDIT")
+            print("max_target_gross,max_actual_gross,min_cash_ratio,financed_days,trades,average_cash_ratio")
+            print([
+                String(format: "%.9f", maxTargetGross),
+                String(format: "%.9f", maxActualGross),
+                String(format: "%.9f", minCashRatio == Double.greatestFiniteMagnitude ? 0 : minCashRatio),
+                String(financedDays),
+                String(run.report.trades.count),
+                String(format: "%.6f", run.report.averageCashRatio),
+            ].joined(separator: ","))
+            return
+        }

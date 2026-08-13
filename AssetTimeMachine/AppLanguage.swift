@@ -41,9 +41,21 @@ final class AppLanguageStore: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        let marketingLanguage: AppLanguage? = {
+            guard let index = arguments.firstIndex(of: "-marketingLanguage"),
+                  index + 1 < arguments.count else { return nil }
+            return AppLanguage(rawValue: arguments[index + 1])
+        }()
+        #else
+        let marketingLanguage: AppLanguage? = nil
+        #endif
+
         let rawValue = defaults.string(forKey: AppLocalization.languageDefaultsKey)
             ?? AppLanguage.system.rawValue
-        let language = AppLanguage(rawValue: rawValue) ?? .system
+        let language = marketingLanguage ?? AppLanguage(rawValue: rawValue) ?? .system
         self.language = language
         AppLocalization.activate(language)
     }

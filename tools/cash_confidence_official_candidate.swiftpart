@@ -1,0 +1,25 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_OFFICIAL_CANDIDATE"] == "1" {
+            let threshold = ProcessInfo.processInfo.environment["ATM_CC_DYNAMIC_SLEEVE_VOL_THRESHOLD"] ?? "0.06"
+            let lowCap = ProcessInfo.processInfo.environment["ATM_CC_DYNAMIC_SLEEVE_LOW_CAP"] ?? "0.17"
+            Darwin.setenv("ATM_CC_GROWTH_SCALE", "1.05", 1)
+            Darwin.setenv("ATM_CC_FAST_BRIDGE", "0.15", 1)
+            Darwin.setenv("ATM_CC_SLEEVE_CAP", "0.2075", 1)
+            Darwin.setenv("ATM_CC_TRADE_BAND", "0.20", 1)
+            Darwin.setenv("ATM_CC_NASDAQ_MA", "40", 1)
+            Darwin.setenv("ATM_CC_NASDAQ_SCALE", "0.88", 1)
+            Darwin.setenv("ATM_CC_OTHER_SCALE", "0.80", 1)
+            Darwin.setenv("ATM_CC_LEADERSHIP_EVAL", "10", 1)
+            Darwin.setenv("ATM_CC_LEADERSHIP_PRIOR", "2.0", 1)
+            Darwin.setenv("ATM_CC_MIN_MIGRATION", "0.50", 1)
+            Darwin.setenv("ATM_CC_SUCCESS_EDGE", "0", 1)
+            Darwin.setenv("ATM_CC_EDGE_EXPONENT", "1", 1)
+            Darwin.setenv("ATM_CC_DYNAMIC_SLEEVE_VOL_THRESHOLD", threshold, 1)
+            Darwin.setenv("ATM_CC_DYNAMIC_SLEEVE_LOW_CAP", lowCap, 1)
+
+            let collected = collectAppStrategyRows(seriesBySymbol: seriesBySymbol, settings: settings)
+            let selectedRows = collected.sliceRows.filter {
+                $0.row.id == "risk-contribution-cash-confidence-router"
+            }
+            printSliceRows(selectedRows, header: "APP_CASH_CONFIDENCE_OFFICIAL_CANDIDATE")
+            return
+        }

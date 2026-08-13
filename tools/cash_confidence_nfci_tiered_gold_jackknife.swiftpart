@@ -1,0 +1,250 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_NFCI_TIERED_GOLD_COMBO"] == "1" {
+            struct NFCITieredGoldCandidate {
+                let title: String
+                let goldRetention: Double
+                let excludedGoldDate: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let nfciEvents: Int
+                let goldEvents: Int
+                let maxTargetGross: Double
+                let maxActualGross: Double
+                let minCashRatio: Double
+                let financedDays: Int
+            }
+
+            func loadComboSeries(_ path: String) -> [(releaseDate: String, value: Double)] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3, let value = Double(fields[2]), value.isFinite else { return nil }
+                    return (String(fields[0]), value)
+                }.sorted { $0.0 < $1.0 }
+            }
+            func loadComboMacro(_ path: String, valueColumn: String) -> [String: Double] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [:] }
+                let lines = text.split(whereSeparator: \.isNewline)
+                guard let header = lines.first else { return [:] }
+                let columns = header.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
+                guard let valueIndex = columns.firstIndex(of: valueColumn) else { return [:] }
+                var output: [String: Double] = [:]
+                for line in lines.dropFirst() {
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count > valueIndex, let value = Double(fields[valueIndex]), value.isFinite else { continue }
+                    output[String(fields[0])] = value
+                }
+                return output
+            }
+
+            let creditSeries = loadComboSeries("tools/research-results/NFCICREDIT_initial_release.csv")
+            let leverageSeries = loadComboSeries("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            guard creditSeries.count >= 700, leverageSeries.count >= 700 else {
+                print("APP_CC_NFCI_TIERED_GOLD_COMBO\nseries_missing")
+                return
+            }
+            func componentChange(_ series: [(releaseDate: String, value: Double)], on signalDate: String, lookback: Int) -> Double? {
+                var latest: Int?
+                for index in series.indices {
+                    if series[index].releaseDate <= signalDate { latest = index } else { break }
+                }
+                guard let latest, latest >= lookback else { return nil }
+                return series[latest].value - series[latest - lookback].value
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ), let baseStartDate = baseRun.report.points.first?.date else {
+                print("APP_CC_NFCI_TIERED_GOLD_COMBO\nbase_missing")
+                return
+            }
+            let dates = baseRun.dailyStates.map(\.date)
+            let dateIndex = Dictionary(uniqueKeysWithValues: dates.enumerated().map { ($0.element.recordDateString, $0.offset) })
+            let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let baseTradeDates = Set(baseRun.report.trades.map { $0.date.recordDateString })
+            let realMap = loadComboMacro("tools/fixtures/macro-risk/DFII10.csv", valueColumn: "DFII10")
+            var alignedReal: [Double?] = []
+            var lastReal: Double?
+            for date in dates {
+                if let value = realMap[date.recordDateString] { lastReal = value }
+                alignedReal.append(lastReal)
+            }
+            let safeReal: [Double?] = [nil] + Array(alignedReal.dropLast())
+            let usSymbols: Set<String> = ["nasdaq", "sp500"]
+            let configs: [(String, Double, String)] = [
+                ("黄金25完整", 0.25, ""),
+                ("黄金25排除2005-03-30", 0.25, "2005-03-30"),
+                ("黄金25排除2011-01-06", 0.25, "2011-01-06"),
+                ("黄金25排除2011-09-16", 0.25, "2011-09-16"),
+                ("黄金25排除2014-12-09", 0.25, "2014-12-09"),
+                ("黄金25排除2015-11-11", 0.25, "2015-11-11"),
+                ("黄金25排除2016-11-16", 0.25, "2016-11-16"),
+                ("黄金25排除2016-12-05", 0.25, "2016-12-05"),
+                ("黄金25排除2025-04-24", 0.25, "2025-04-24"),
+                ("黄金25排除2026-01-05", 0.25, "2026-01-05"),
+            ]
+            var candidates: [NFCITieredGoldCandidate] = []
+
+            for (title, goldRetention, excludedGoldDate) in configs {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cc_nfci_tiered_gold_combo",
+                    title: title,
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "NFCI分层与实际利率黄金保留"
+                )
+                var previousBase: [String: Double] = [:]
+                var pending: [String: Double] = [:]
+                var nfciEvents = 0
+                var goldEvents = 0
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let executionKey = data.dates[index].recordDateString
+                        guard baseTradeDates.contains(executionKey), var target = baseTargets[executionKey] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let prior = previousBase
+                        previousBase = target
+                        guard !prior.isEmpty else {
+                            pending = target
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+                        let signalKey = data.dates[signalIndex].recordDateString
+                        let creditTrigger = componentChange(creditSeries, on: signalKey, lookback: 8).map { $0 <= -0.03 } ?? false
+                        let leverageTrigger = componentChange(leverageSeries, on: signalKey, lookback: 4).map { $0 <= -0.05 } ?? false
+                        let priorGross = prior.values.reduce(0, +)
+                        let proposedGross = target.values.reduce(0, +)
+                        let priorUS = prior.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                        let proposedUS = target.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                        let usDecrease = priorUS - proposedUS
+                        let grossDecrease = priorGross - proposedGross
+                        var desiredExtras: [String: Double] = [:]
+
+                        if usDecrease >= 0.05, grossDecrease >= 0.03, creditTrigger || leverageTrigger {
+                            let retention = creditTrigger && leverageTrigger ? 1.00 : 0.50
+                            for symbol in usSymbols {
+                                let reduction = max((prior[symbol] ?? 0) - (target[symbol] ?? 0), 0)
+                                if reduction > 0 { desiredExtras[symbol, default: 0] += retention * reduction }
+                            }
+                            nfciEvents += 1
+                        }
+
+                        if goldRetention > 0,
+                           signalKey != excludedGoldDate,
+                           grossDecrease >= 0.03,
+                           let alignedSignal = dateIndex[signalKey],
+                           alignedSignal >= 21,
+                           let realNow = safeReal[alignedSignal],
+                           let realPrior = safeReal[alignedSignal - 21],
+                           realNow - realPrior >= 0.10 {
+                            let goldDecrease = (prior["gold_cny"] ?? 0) - (target["gold_cny"] ?? 0)
+                            if goldDecrease >= 0.05 {
+                                desiredExtras["gold_cny", default: 0] += goldRetention * goldDecrease
+                                goldEvents += 1
+                            }
+                        }
+
+                        let desiredTotal = desiredExtras.values.reduce(0, +)
+                        if desiredTotal > 0 {
+                            let availableCash = max(1.0 - proposedGross, 0)
+                            let scale = min(1.0, availableCash / desiredTotal)
+                            for (symbol, extra) in desiredExtras {
+                                target[symbol, default: 0] += extra * scale
+                            }
+                        }
+                        let gross = target.values.reduce(0, +)
+                        if gross > 1.0, gross > 0 { target = target.mapValues { max($0, 0) / gross } }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { continue }
+
+                let points = run.report.points.filter { $0.date >= baseStartDate }
+                guard let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                let fullRow = MetricRow(
+                    title: title,
+                    id: "cc_nfci_tiered_gold_combo",
+                    annualized: metrics.annualizedReturn,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility,
+                    sharpe: metrics.sharpeRatio,
+                    start: points.first?.date.recordDateString ?? "n/a",
+                    end: points.last?.date.recordDateString ?? "n/a",
+                    pointCount: points.count
+                )
+                var maxTargetGross = 0.0
+                var maxActualGross = 0.0
+                var minCashRatio = Double.greatestFiniteMagnitude
+                var financedDays = 0
+                for state in run.dailyStates where state.portfolioValue > 0 && state.date >= baseStartDate {
+                    maxTargetGross = max(maxTargetGross, state.targetWeights.values.reduce(0, +))
+                    maxActualGross = max(maxActualGross, state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue)
+                    minCashRatio = min(minCashRatio, state.cash / state.portfolioValue)
+                    if state.cash < -0.0001 { financedDays += 1 }
+                }
+                candidates.append(.init(
+                    title: title,
+                    goldRetention: goldRetention,
+                    excludedGoldDate: excludedGoldDate,
+                    annualized: metrics.annualizedReturn ?? -1,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility ?? -1,
+                    sharpe: metrics.sharpeRatio ?? -1,
+                    sliceRows: metricRowsForSlices(title: title, id: "cc_nfci_tiered_gold_combo", points: points, fullRow: fullRow),
+                    trades: run.report.trades.filter { $0.date >= baseStartDate }.count,
+                    averageCashRatio: run.report.averageCashRatio,
+                    nfciEvents: nfciEvents,
+                    goldEvents: goldEvents,
+                    maxTargetGross: maxTargetGross,
+                    maxActualGross: maxActualGross,
+                    minCashRatio: minCashRatio == Double.greatestFiniteMagnitude ? 0 : minCashRatio,
+                    financedDays: financedDays
+                ))
+            }
+
+            print("APP_CC_NFCI_TIERED_GOLD_BASE")
+            print(String(format: "%.6f,%.6f,%.6f,%d", (baseRun.report.annualizedReturn ?? 0) * 100, baseRun.report.maxDrawdown * 100, baseRun.report.sharpeRatio ?? 0, baseRun.report.trades.count))
+            candidates.sort { lhs, rhs in
+                let lhsScore = lhs.annualized - max(lhs.maxDrawdown - 0.08, 0) * 2
+                let rhsScore = rhs.annualized - max(rhs.maxDrawdown - 0.08, 0) * 2
+                if lhsScore == rhsScore { return lhs.sharpe > rhs.sharpe }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(candidates.flatMap(\.sliceRows), header: "APP_CC_NFCI_TIERED_GOLD_GRID")
+            print("APP_CC_NFCI_TIERED_GOLD_DIAGNOSTICS")
+            print("title,nfci_events,gold_events,trades,average_cash,max_target_gross,max_actual_gross,min_cash,financed_days")
+            for candidate in candidates {
+                print([
+                    candidate.title, String(candidate.nfciEvents), String(candidate.goldEvents), String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio), String(format: "%.9f", candidate.maxTargetGross),
+                    String(format: "%.9f", candidate.maxActualGross), String(format: "%.9f", candidate.minCashRatio), String(candidate.financedDays)
+                ].joined(separator: ","))
+            }
+            return
+        }

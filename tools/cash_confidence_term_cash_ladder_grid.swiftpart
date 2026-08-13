@@ -1,0 +1,415 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_TERM_CASH_LADDER_GRID"] == "1" {
+            struct TermCashLadderCandidate {
+                let title: String
+                let maturitySessions: Int
+                let reviewSessions: Int
+                let reserve: Double
+                let spreadRealization: Double
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let era2012Sharpe: Double
+                let era2017Sharpe: Double
+                let averageLockedWeight: Double
+                let entries: Int
+                let earlyBreaks: Int
+                let points: [BacktestSeriesPoint]
+                let sliceRows: [SliceMetricRow]
+            }
+            struct TermCashTranche {
+                var weight: Double
+                let maturityDate: Date
+                let annualRate: Double
+                var accruedExcessPerWeight: Double
+            }
+            struct TermRatePoint {
+                let date: Date
+                let threeMonthRate: Double
+                let oneYearRate: Double
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let baseInputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", "0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", "2", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_QUALITY_GAP_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+            Darwin.setenv("ATM_CC_PORTFOLIO_VOL_TARGET", "99", 1)
+            Darwin.setenv("ATM_CC_CALM_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_VOL_FLOOR", "0", 1)
+            Darwin.setenv("ATM_CC_SECULAR_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_GOLD_TO_US_SHIFT_FRACTION", "0", 1)
+            Darwin.setenv("ATM_CC_EQUITY_CURVE_RISK_SCALE", "1", 1)
+            Darwin.setenv("ATM_CC_USD_CASH_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_US_RISK_ALLOCATION_MODE", "0", 1)
+            Darwin.setenv("ATM_CC_GLOBAL_RISK_PARITY_BLEND", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_MID_GROSS_CLIFFS", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_BREADTH_MICRO_BRAKES", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_HOLD_HYSTERESIS", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_MATURE_NASDAQ_BRAKE", "0", 1)
+            Darwin.setenv("ATM_CC_DISABLE_CHINA_PURGE", "0", 1)
+            Darwin.setenv("ATM_CC_COST_AWARE_REBALANCE", "0", 1)
+            Darwin.setenv("ATM_CC_SLOW_ADD_FRACTION", "1", 1)
+            Darwin.setenv("ATM_CC_GROSS_CONFIDENCE_SHAPE", "0", 1)
+
+            guard let baseRun = BacktestEngine.researchCashConfidenceRunWithTrace(
+                assetInputs: baseInputs,
+                initialCash: 100_000,
+                settings: settings
+            ) else { return }
+            let dates = baseRun.report.points.map(\.date)
+            let baseValues = baseRun.report.points.map(\.portfolioValue)
+            guard dates.count > 300, dates.count == baseValues.count else { return }
+
+            var cashRatioByDate: [String: Double] = [:]
+            for state in baseRun.dailyStates {
+                cashRatioByDate[state.date.recordDateString] = state.portfolioValue > 0
+                    ? min(max(state.cash / state.portfolioValue, 0), 1)
+                    : 0
+            }
+            var alignedCashRatio: [Double] = []
+            var lastCashRatio = 0.0
+            for date in dates {
+                if let ratio = cashRatioByDate[date.recordDateString] {
+                    lastCashRatio = ratio
+                }
+                alignedCashRatio.append(lastCashRatio)
+            }
+
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = TimeZone(secondsFromGMT: 0)
+            formatter.dateFormat = "yyyy-MM-dd"
+            var termCalendar = Calendar(identifier: .gregorian)
+            termCalendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+            func parsedDate(_ text: String) -> Date {
+                formatter.date(from: text) ?? Date(timeIntervalSince1970: 0)
+            }
+            let termRatePoints: [TermRatePoint] = [
+                .init(date: parsedDate("2002-02-21"), threeMonthRate: 0.0171, oneYearRate: 0.0198),
+                .init(date: parsedDate("2004-10-29"), threeMonthRate: 0.0171, oneYearRate: 0.0225),
+                .init(date: parsedDate("2006-08-19"), threeMonthRate: 0.0180, oneYearRate: 0.0252),
+                .init(date: parsedDate("2007-03-18"), threeMonthRate: 0.0198, oneYearRate: 0.0279),
+                .init(date: parsedDate("2007-05-19"), threeMonthRate: 0.0207, oneYearRate: 0.0306),
+                .init(date: parsedDate("2007-07-21"), threeMonthRate: 0.0234, oneYearRate: 0.0333),
+                .init(date: parsedDate("2007-08-22"), threeMonthRate: 0.0261, oneYearRate: 0.0360),
+                .init(date: parsedDate("2007-09-15"), threeMonthRate: 0.0288, oneYearRate: 0.0387),
+                .init(date: parsedDate("2007-12-21"), threeMonthRate: 0.0333, oneYearRate: 0.0414),
+                .init(date: parsedDate("2008-10-09"), threeMonthRate: 0.0315, oneYearRate: 0.0387),
+                .init(date: parsedDate("2008-10-30"), threeMonthRate: 0.0288, oneYearRate: 0.0360),
+                .init(date: parsedDate("2008-11-27"), threeMonthRate: 0.0198, oneYearRate: 0.0252),
+                .init(date: parsedDate("2008-12-23"), threeMonthRate: 0.0171, oneYearRate: 0.0225),
+                .init(date: parsedDate("2010-10-20"), threeMonthRate: 0.0191, oneYearRate: 0.0250),
+                .init(date: parsedDate("2010-12-26"), threeMonthRate: 0.0225, oneYearRate: 0.0275),
+                .init(date: parsedDate("2011-02-09"), threeMonthRate: 0.0260, oneYearRate: 0.0300),
+                .init(date: parsedDate("2011-04-06"), threeMonthRate: 0.0285, oneYearRate: 0.0325),
+                .init(date: parsedDate("2011-07-07"), threeMonthRate: 0.0310, oneYearRate: 0.0350),
+                .init(date: parsedDate("2012-06-08"), threeMonthRate: 0.0285, oneYearRate: 0.0325),
+                .init(date: parsedDate("2012-07-06"), threeMonthRate: 0.0260, oneYearRate: 0.0300),
+                .init(date: parsedDate("2014-11-22"), threeMonthRate: 0.0235, oneYearRate: 0.0275),
+                .init(date: parsedDate("2015-03-01"), threeMonthRate: 0.0210, oneYearRate: 0.0250),
+                .init(date: parsedDate("2015-05-11"), threeMonthRate: 0.0185, oneYearRate: 0.0225),
+                .init(date: parsedDate("2015-06-28"), threeMonthRate: 0.0160, oneYearRate: 0.0200),
+                .init(date: parsedDate("2015-08-26"), threeMonthRate: 0.0135, oneYearRate: 0.0175),
+                .init(date: parsedDate("2015-10-24"), threeMonthRate: 0.0110, oneYearRate: 0.0150),
+            ]
+            let sixMonthRatePoints: [(date: Date, annualRate: Double)] = [
+                (parsedDate("2002-02-21"), 0.0189),
+                (parsedDate("2004-10-29"), 0.0207),
+                (parsedDate("2006-08-19"), 0.0225),
+                (parsedDate("2007-03-18"), 0.0243),
+                (parsedDate("2007-05-19"), 0.0261),
+                (parsedDate("2007-07-21"), 0.0288),
+                (parsedDate("2007-08-22"), 0.0315),
+                (parsedDate("2007-09-15"), 0.0342),
+                (parsedDate("2007-12-21"), 0.0378),
+                (parsedDate("2008-10-09"), 0.0351),
+                (parsedDate("2008-10-30"), 0.0324),
+                (parsedDate("2008-11-27"), 0.0225),
+                (parsedDate("2008-12-23"), 0.0198),
+                (parsedDate("2010-10-20"), 0.0220),
+                (parsedDate("2010-12-26"), 0.0250),
+                (parsedDate("2011-02-09"), 0.0280),
+                (parsedDate("2011-04-06"), 0.0305),
+                (parsedDate("2011-07-07"), 0.0330),
+                (parsedDate("2012-06-08"), 0.0305),
+                (parsedDate("2012-07-06"), 0.0280),
+                (parsedDate("2014-11-22"), 0.0255),
+                (parsedDate("2015-03-01"), 0.0230),
+                (parsedDate("2015-05-11"), 0.0205),
+                (parsedDate("2015-06-28"), 0.0180),
+                (parsedDate("2015-08-26"), 0.0155),
+                (parsedDate("2015-10-24"), 0.0130),
+            ]
+            func termAnnualRate(on date: Date, maturitySessions: Int) -> Double {
+                if maturitySessions >= 100, maturitySessions < 200 {
+                    var effectiveRate = sixMonthRatePoints.first?.annualRate
+                        ?? CashYieldCNY.annualRate(on: date)
+                    for candidate in sixMonthRatePoints {
+                        if candidate.date <= date {
+                            effectiveRate = candidate.annualRate
+                        } else {
+                            break
+                        }
+                    }
+                    return effectiveRate
+                }
+                var point = termRatePoints.first
+                for candidate in termRatePoints {
+                    if candidate.date <= date {
+                        point = candidate
+                    } else {
+                        break
+                    }
+                }
+                guard let point else { return CashYieldCNY.annualRate(on: date) }
+                return maturitySessions >= 200 ? point.oneYearRate : point.threeMonthRate
+            }
+            func eraMetrics(_ points: [BacktestSeriesPoint], start: String, end: String) -> BacktestPerformanceMetrics? {
+                BacktestMetricsCalculator.performanceMetrics(from: points.filter {
+                    let key = $0.date.recordDateString
+                    return key >= start && key <= end
+                })
+            }
+
+            let parameterSets: [(String, Int, Int, Double, Double)] = [
+                ("冠军活期基线", 0, 0, 1.00, 0.00),
+                ("三月梯队-保留0%-兑现100%", 63, 5, 0.00, 1.00),
+                ("六月梯队-保留0%-兑现100%", 126, 10, 0.00, 1.00),
+                ("六月梯队-保留0%-兑现90%", 126, 10, 0.00, 0.90),
+                ("六月梯队-保留0%-兑现80%", 126, 10, 0.00, 0.80),
+                ("六月梯队-保留5%-兑现100%", 126, 10, 0.05, 1.00),
+                ("六月梯队-保留5%-兑现90%", 126, 10, 0.05, 0.90),
+                ("六月梯队-保留5%-兑现80%", 126, 10, 0.05, 0.80),
+            ]
+            var candidates: [TermCashLadderCandidate] = []
+
+            for parameters in parameterSets {
+                let maturitySessions = parameters.1
+                let reviewSessions = parameters.2
+                let reserve = parameters.3
+                let spreadRealization = parameters.4
+                let trancheCount = maturitySessions > 0
+                    ? max(maturitySessions / max(reviewSessions, 1), 1)
+                    : 1
+                var tranches: [TermCashTranche] = []
+                var lastReviewIndex = -10_000
+                var value = baseValues[0]
+                var points = [BacktestSeriesPoint(date: dates[0], portfolioValue: value, sequence: 0)]
+                points.reserveCapacity(dates.count)
+                var lockedWeightSum = 0.0
+                var entries = 0
+                var earlyBreaks = 0
+
+                for index in 1..<dates.count {
+                    let signalIndex = index - 1
+                    tranches.removeAll {
+                        $0.maturityDate <= dates[signalIndex] || $0.weight <= 0.0000001
+                    }
+                    let availableLockedCapacity = max(alignedCashRatio[signalIndex] - reserve, 0)
+                    var earlyWithdrawalClawback = 0.0
+                    var currentLocked = tranches.reduce(0.0) { $0 + $1.weight }
+                    if currentLocked > availableLockedCapacity + 0.0000001 {
+                        var excess = currentLocked - availableLockedCapacity
+                        while excess > 0.0000001, let tranche = tranches.last {
+                            earlyWithdrawalClawback += tranche.weight
+                                * tranche.accruedExcessPerWeight
+                            excess -= tranche.weight
+                            tranches.removeLast()
+                            earlyBreaks += 1
+                        }
+                        currentLocked = tranches.reduce(0.0) { $0 + $1.weight }
+                    }
+
+                    if maturitySessions > 0,
+                       signalIndex - lastReviewIndex >= reviewSessions {
+                        let targetLocked = availableLockedCapacity
+                        let stepCapacity = targetLocked / Double(trancheCount)
+                        let newWeight = min(max(targetLocked - currentLocked, 0), stepCapacity)
+                        if newWeight > 0.0001 {
+                            let maturityMonths = maturitySessions >= 200
+                                ? 12
+                                : (maturitySessions >= 100 ? 6 : 3)
+                            let maturityDate = termCalendar.date(
+                                byAdding: .month,
+                                value: maturityMonths,
+                                to: dates[signalIndex]
+                            ) ?? dates[signalIndex]
+                            tranches.append(TermCashTranche(
+                                weight: newWeight,
+                                maturityDate: maturityDate,
+                                annualRate: termAnnualRate(
+                                    on: dates[signalIndex],
+                                    maturitySessions: maturitySessions
+                                ),
+                                accruedExcessPerWeight: 0
+                            ))
+                            entries += 1
+                            currentLocked += newWeight
+                        }
+                        lastReviewIndex = signalIndex
+                    }
+
+                    let demandAnnualRate = CashYieldCNY.annualRate(on: dates[signalIndex])
+                    var excessCashReturn = 0.0
+                    for trancheIndex in tranches.indices {
+                        let spread = max(tranches[trancheIndex].annualRate - demandAnnualRate, 0)
+                            * min(max(spreadRealization, 0), 1)
+                        let excessPerWeight = spread / 252.0
+                        excessCashReturn += tranches[trancheIndex].weight * excessPerWeight
+                        tranches[trancheIndex].accruedExcessPerWeight += excessPerWeight
+                    }
+                    let baseReturn = baseValues[index] / baseValues[index - 1] - 1
+                    value *= max(
+                        1 + baseReturn + excessCashReturn - earlyWithdrawalClawback,
+                        0.0001
+                    )
+                    points.append(BacktestSeriesPoint(date: dates[index], portfolioValue: value, sequence: index))
+                    lockedWeightSum += currentLocked
+                }
+
+                guard let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                let era2012 = eraMetrics(points, start: "2012-01-01", end: "2016-12-31")
+                let era2017 = eraMetrics(points, start: "2017-01-01", end: "2021-12-31")
+                let fullRow = MetricRow(
+                    title: parameters.0,
+                    id: "cash_confidence_term_cash_ladder_grid",
+                    annualized: metrics.annualizedReturn,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility,
+                    sharpe: metrics.sharpeRatio,
+                    start: points.first?.date.recordDateString ?? "n/a",
+                    end: points.last?.date.recordDateString ?? "n/a",
+                    pointCount: points.count
+                )
+                candidates.append(TermCashLadderCandidate(
+                    title: parameters.0,
+                    maturitySessions: maturitySessions,
+                    reviewSessions: reviewSessions,
+                    reserve: reserve,
+                    spreadRealization: spreadRealization,
+                    annualized: metrics.annualizedReturn ?? -1,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility ?? -1,
+                    sharpe: metrics.sharpeRatio ?? -1,
+                    era2012Sharpe: era2012?.sharpeRatio ?? -1,
+                    era2017Sharpe: era2017?.sharpeRatio ?? -1,
+                    averageLockedWeight: lockedWeightSum / Double(max(points.count - 1, 1)),
+                    entries: entries,
+                    earlyBreaks: earlyBreaks,
+                    points: points,
+                    sliceRows: metricRowsForSlices(
+                        title: parameters.0,
+                        id: "cash_confidence_term_cash_ladder_grid",
+                        points: points,
+                        fullRow: fullRow
+                    )
+                ))
+            }
+
+            let ranked = candidates.sorted { lhs, rhs in
+                let lhsScore = lhs.sharpe + 0.20 * lhs.era2012Sharpe + 0.20 * lhs.era2017Sharpe
+                let rhsScore = rhs.sharpe + 0.20 * rhs.era2012Sharpe + 0.20 * rhs.era2017Sharpe
+                if lhsScore == rhsScore { return lhs.annualized > rhs.annualized }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(ranked.flatMap(\.sliceRows), header: "APP_CASH_CONFIDENCE_TERM_CASH_LADDER_GRID")
+            print("APP_CASH_CONFIDENCE_TERM_CASH_LADDER_DIAGNOSTICS")
+            print("title,maturity_sessions,review_sessions,reserve,spread_realization,annualized,max_drawdown,volatility,sharpe,era2012_sharpe,era2017_sharpe,average_locked_weight,entries,early_breaks")
+            for candidate in ranked {
+                print([
+                    candidate.title,
+                    String(candidate.maturitySessions),
+                    String(candidate.reviewSessions),
+                    String(format: "%.4f", candidate.reserve),
+                    String(format: "%.4f", candidate.spreadRealization),
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.volatility * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(format: "%.6f", candidate.era2012Sharpe),
+                    String(format: "%.6f", candidate.era2017Sharpe),
+                    String(format: "%.6f", candidate.averageLockedWeight),
+                    String(candidate.entries),
+                    String(candidate.earlyBreaks)
+                ].joined(separator: ","))
+            }
+
+            let validationTitles: Set<String> = [
+                "冠军活期基线",
+                "三月梯队-保留0%-兑现100%",
+                "六月梯队-保留0%-兑现100%",
+                "六月梯队-保留0%-兑现90%",
+                "六月梯队-保留5%-兑现100%",
+            ]
+            let validationCandidates = candidates.filter { validationTitles.contains($0.title) }
+            let formalCutoff = "2026-07-03"
+            let rollingStarts = [
+                "2002-02-04", "2004-01-01", "2006-01-01", "2008-01-01",
+                "2010-01-01", "2012-01-01", "2014-01-01", "2016-01-01",
+                "2018-01-01", "2020-01-01", "2022-01-01",
+            ]
+            print("APP_CASH_CONFIDENCE_TERM_CASH_LADDER_ROLLING_STARTS")
+            print("title,start,end,points,annualized,max_drawdown,volatility,sharpe")
+            for candidate in validationCandidates {
+                for start in rollingStarts {
+                    let selected = candidate.points.filter {
+                        let key = $0.date.recordDateString
+                        return key >= start && key <= formalCutoff
+                    }
+                    guard let result = BacktestMetricsCalculator.performanceMetrics(from: selected) else { continue }
+                    print([
+                        candidate.title,
+                        selected.first?.date.recordDateString ?? "n/a",
+                        selected.last?.date.recordDateString ?? "n/a",
+                        String(selected.count),
+                        String(format: "%.6f", (result.annualizedReturn ?? 0) * 100),
+                        String(format: "%.6f", result.maxDrawdown * 100),
+                        String(format: "%.6f", (result.annualizedVolatility ?? 0) * 100),
+                        String(format: "%.6f", result.sharpeRatio ?? 0),
+                    ].joined(separator: ","))
+                }
+            }
+
+            let eras = [
+                ("2002-2006", "2002-01-01", "2006-12-31"),
+                ("2007-2011", "2007-01-01", "2011-12-31"),
+                ("2012-2016", "2012-01-01", "2016-12-31"),
+                ("2017-2021", "2017-01-01", "2021-12-31"),
+                ("2022-2026", "2022-01-01", formalCutoff),
+            ]
+            print("APP_CASH_CONFIDENCE_TERM_CASH_LADDER_ERAS")
+            print("title,era,annualized,max_drawdown,volatility,sharpe")
+            for candidate in validationCandidates {
+                for era in eras {
+                    let selected = candidate.points.filter {
+                        let key = $0.date.recordDateString
+                        return key >= era.1 && key <= era.2
+                    }
+                    guard let result = BacktestMetricsCalculator.performanceMetrics(from: selected) else { continue }
+                    print([
+                        candidate.title,
+                        era.0,
+                        String(format: "%.6f", (result.annualizedReturn ?? 0) * 100),
+                        String(format: "%.6f", result.maxDrawdown * 100),
+                        String(format: "%.6f", (result.annualizedVolatility ?? 0) * 100),
+                        String(format: "%.6f", result.sharpeRatio ?? 0),
+                    ].joined(separator: ","))
+                }
+            }
+            return
+        }

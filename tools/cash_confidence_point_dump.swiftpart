@@ -1,0 +1,24 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_POINT_DUMP"] == "1" {
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else {
+                print("CASH_CONFIDENCE_POINT_DUMP\nrun_missing")
+                return
+            }
+            print("CASH_CONFIDENCE_POINT_DUMP")
+            print("date,value")
+            for point in report.points {
+                print(point.date.recordDateString + "," + String(format: "%.10f", point.portfolioValue))
+            }
+            return
+        }

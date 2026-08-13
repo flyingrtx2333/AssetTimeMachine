@@ -1,0 +1,156 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_FIXED_SLEEVE_ENSEMBLE_GRID"] == "1" {
+            struct FixedSleeveCandidate {
+                let title: String
+                let complementID: String
+                let complementWeight: Double
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let era2012Sharpe: Double
+                let era2017Sharpe: Double
+                let sliceRows: [SliceMetricRow]
+            }
+
+            let modes: [AdvancedBacktestStrategyMode] = [
+                .riskContributionCashConfidenceRouter,
+                .riskContributionRecoveryRouter,
+                .riskContributionRegimeRouter,
+                .goldNasdaqDualTrendBarbell,
+                .coreGoldSatelliteSharpeStateGateMomentum,
+            ]
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            func inputs(for mode: AdvancedBacktestStrategyMode) -> [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)] {
+                mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+            }
+
+            var reports: [AdvancedBacktestStrategyMode: AdvancedBacktestReport] = [:]
+            for mode in modes {
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs(for: mode),
+                    initialCash: 100_000,
+                    settings: settings,
+                    mode: mode
+                ) else { continue }
+                reports[mode] = report
+            }
+            guard reports.count == modes.count,
+                  let cashReport = reports[.riskContributionCashConfidenceRouter] else {
+                print("APP_CASH_CONFIDENCE_FIXED_SLEEVE_ENSEMBLE_GRID\nreport_missing")
+                return
+            }
+
+            let commonDates = modes.reduce(Set(cashReport.points.map { $0.date.recordDateString })) { partial, mode in
+                guard let report = reports[mode] else { return [] }
+                return partial.intersection(report.points.map { $0.date.recordDateString })
+            }.sorted()
+            guard commonDates.count > 1000 else {
+                print("APP_CASH_CONFIDENCE_FIXED_SLEEVE_ENSEMBLE_GRID\ncommon_dates_missing")
+                return
+            }
+            let datesByKey = Dictionary(uniqueKeysWithValues: cashReport.points.map { ($0.date.recordDateString, $0.date) })
+            var normalizedValues: [AdvancedBacktestStrategyMode: [String: Double]] = [:]
+            for mode in modes {
+                guard let report = reports[mode] else { continue }
+                let map = Dictionary(uniqueKeysWithValues: report.points.map { ($0.date.recordDateString, $0.portfolioValue) })
+                guard let firstKey = commonDates.first,
+                      let firstValue = map[firstKey],
+                      firstValue > 0 else { continue }
+                normalizedValues[mode] = Dictionary(uniqueKeysWithValues: commonDates.compactMap { key in
+                    map[key].map { (key, $0 / firstValue) }
+                })
+            }
+            guard normalizedValues.count == modes.count else { return }
+
+            let parameterSets: [(String, AdvancedBacktestStrategyMode?, Double)] = [
+                ("主策略基线", nil, 0.00),
+                ("90%主策略+10%水下恢复", .riskContributionRecoveryRouter, 0.10),
+                ("80%主策略+20%水下恢复", .riskContributionRecoveryRouter, 0.20),
+                ("90%主策略+10%制度路由", .riskContributionRegimeRouter, 0.10),
+                ("90%主策略+10%金纳双趋势", .goldNasdaqDualTrendBarbell, 0.10),
+                ("90%主策略+10%高夏普状态机", .coreGoldSatelliteSharpeStateGateMomentum, 0.10),
+            ]
+
+            func makePoints(complement: AdvancedBacktestStrategyMode?, weight: Double) -> [BacktestSeriesPoint] {
+                let cashValues = normalizedValues[.riskContributionCashConfidenceRouter] ?? [:]
+                let complementValues = complement.flatMap { normalizedValues[$0] } ?? cashValues
+                let w = complement == nil ? 0 : min(max(weight, 0), 1)
+                return commonDates.enumerated().compactMap { index, key in
+                    guard let date = datesByKey[key],
+                          let cashValue = cashValues[key],
+                          let otherValue = complementValues[key] else { return nil }
+                    let value = 100_000 * ((1 - w) * cashValue + w * otherValue)
+                    return BacktestSeriesPoint(date: date, portfolioValue: value, sequence: index)
+                }
+            }
+            func eraMetrics(_ points: [BacktestSeriesPoint], start: String, end: String) -> BacktestPerformanceMetrics? {
+                BacktestMetricsCalculator.performanceMetrics(from: points.filter {
+                    let key = $0.date.recordDateString
+                    return key >= start && key <= end
+                })
+            }
+
+            var candidates: [FixedSleeveCandidate] = []
+            for parameters in parameterSets {
+                let points = makePoints(complement: parameters.1, weight: parameters.2)
+                guard let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                let era2012 = eraMetrics(points, start: "2012-01-01", end: "2016-12-31")
+                let era2017 = eraMetrics(points, start: "2017-01-01", end: "2021-12-31")
+                let fullRow = MetricRow(
+                    title: parameters.0,
+                    id: "cash_confidence_fixed_sleeve_ensemble_grid",
+                    annualized: metrics.annualizedReturn,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility,
+                    sharpe: metrics.sharpeRatio,
+                    start: points.first?.date.recordDateString ?? "n/a",
+                    end: points.last?.date.recordDateString ?? "n/a",
+                    pointCount: points.count
+                )
+                candidates.append(FixedSleeveCandidate(
+                    title: parameters.0,
+                    complementID: parameters.1?.rawValue ?? "none",
+                    complementWeight: parameters.2,
+                    annualized: metrics.annualizedReturn ?? -1,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility ?? -1,
+                    sharpe: metrics.sharpeRatio ?? -1,
+                    era2012Sharpe: era2012?.sharpeRatio ?? -1,
+                    era2017Sharpe: era2017?.sharpeRatio ?? -1,
+                    sliceRows: metricRowsForSlices(
+                        title: parameters.0,
+                        id: "cash_confidence_fixed_sleeve_ensemble_grid",
+                        points: points,
+                        fullRow: fullRow
+                    )
+                ))
+            }
+
+            let ranked = candidates.sorted { lhs, rhs in
+                let lhsScore = lhs.sharpe + 0.20 * lhs.era2012Sharpe + 0.20 * lhs.era2017Sharpe
+                let rhsScore = rhs.sharpe + 0.20 * rhs.era2012Sharpe + 0.20 * rhs.era2017Sharpe
+                if lhsScore == rhsScore { return lhs.annualized > rhs.annualized }
+                return lhsScore > rhsScore
+            }
+            printSliceRows(ranked.flatMap(\.sliceRows), header: "APP_CASH_CONFIDENCE_FIXED_SLEEVE_ENSEMBLE_GRID")
+            print("APP_CASH_CONFIDENCE_FIXED_SLEEVE_ENSEMBLE_DIAGNOSTICS")
+            print("title,complement_id,complement_weight,annualized,max_drawdown,volatility,sharpe,era2012_sharpe,era2017_sharpe")
+            for candidate in ranked {
+                print([
+                    candidate.title,
+                    candidate.complementID,
+                    String(format: "%.4f", candidate.complementWeight),
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.volatility * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(format: "%.6f", candidate.era2012Sharpe),
+                    String(format: "%.6f", candidate.era2017Sharpe),
+                ].joined(separator: ","))
+            }
+            return
+        }

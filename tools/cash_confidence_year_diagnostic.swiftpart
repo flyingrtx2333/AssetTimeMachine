@@ -1,0 +1,49 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_YEAR_DIAGNOSTIC"] == "1" {
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", "0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", "2", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+            Darwin.setenv("ATM_CC_PORTFOLIO_VOL_TARGET", "99", 1)
+            Darwin.setenv("ATM_CC_CALM_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_CALM_RISK_VOL_FLOOR", "0", 1)
+            Darwin.setenv("ATM_CC_SECULAR_CARRY_CAP", "0", 1)
+            Darwin.setenv("ATM_CC_GOLD_TO_US_SHIFT_FRACTION", "0", 1)
+
+            guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else { return }
+
+            print("APP_CASH_CONFIDENCE_YEAR_DIAGNOSTIC")
+            print("year,points,return,max_drawdown,volatility,sharpe")
+            for year in 2002...2026 {
+                let prefix = String(year) + "-"
+                let points = report.points.filter { $0.date.recordDateString.hasPrefix(prefix) }
+                guard points.count > 1,
+                      let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                print([
+                    String(year),
+                    String(points.count),
+                    String(format: "%.6f", metrics.totalReturn * 100),
+                    String(format: "%.6f", metrics.maxDrawdown * 100),
+                    String(format: "%.6f", (metrics.annualizedVolatility ?? 0) * 100),
+                    String(format: "%.6f", metrics.sharpeRatio ?? 0),
+                ].joined(separator: ","))
+            }
+            return
+        }

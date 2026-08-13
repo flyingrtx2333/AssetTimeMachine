@@ -1,0 +1,59 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_ERA_DIAGNOSTIC"] == "1" {
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_BREAK_THRESHOLD", "-0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_COOLDOWN_SESSIONS", "150", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_HOLD_SESSIONS", "10", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_WATER_DURATION", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MIN_DRAWDOWN", "0.05", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_MAX_ENTRIES", "2", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_REVIEW_SESSIONS", "60", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SHARE_CAP", "1", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_VOL_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_FAST_REVIEW_QUALITY_GAP_THRESHOLD", "99", 1)
+            Darwin.setenv("ATM_CC_RECOVERY_LEADER_SWITCH_MIN_SESSIONS", "10000", 1)
+            Darwin.setenv("ATM_CC_PORTFOLIO_VOL_TARGET", "99", 1)
+
+            guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else { return }
+
+            let eras: [(String, String, String)] = [
+                ("2002-2006", "2002-01-01", "2006-12-31"),
+                ("2007-2011", "2007-01-01", "2011-12-31"),
+                ("2012-2016", "2012-01-01", "2016-12-31"),
+                ("2017-2021", "2017-01-01", "2021-12-31"),
+                ("2022-2026", "2022-01-01", "2026-12-31"),
+                ("2002-2011", "2002-01-01", "2011-12-31"),
+                ("2012-2021", "2012-01-01", "2021-12-31"),
+            ]
+            print("APP_CASH_CONFIDENCE_ERA_DIAGNOSTIC")
+            print("era,start,end,points,annualized,max_drawdown,volatility,sharpe")
+            for era in eras {
+                let points = report.points.filter {
+                    let key = $0.date.recordDateString
+                    return key >= era.1 && key <= era.2
+                }
+                guard let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                print([
+                    era.0,
+                    points.first?.date.recordDateString ?? "n/a",
+                    points.last?.date.recordDateString ?? "n/a",
+                    String(points.count),
+                    String(format: "%.6f", (metrics.annualizedReturn ?? 0) * 100),
+                    String(format: "%.6f", metrics.maxDrawdown * 100),
+                    String(format: "%.6f", (metrics.annualizedVolatility ?? 0) * 100),
+                    String(format: "%.6f", metrics.sharpeRatio ?? 0),
+                ].joined(separator: ","))
+            }
+            return
+        }

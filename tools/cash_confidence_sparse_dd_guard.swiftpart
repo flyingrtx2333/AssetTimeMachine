@@ -1,0 +1,301 @@
+        if ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_SPARSE_DD_GUARD_GRID"] == "1" {
+            struct CashConfidenceGuardCandidate {
+                let title: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let sliceRows: [SliceMetricRow]
+                let trades: Int
+                let averageCashRatio: Double
+                let stateChanges: Int
+                let averageRecoveryDays: Double
+                let medianRecoveryDays: Double
+                let maxRecoveryDays: Int
+                let daysBelowFive: Int
+                let daysBelowSeven: Int
+            }
+
+            func cashConfidenceWaterStats(_ points: [BacktestSeriesPoint]) -> (Double, Double, Int, Int, Int) {
+                guard let first = points.first else { return (0, 0, 0, 0, 0) }
+                var peakValue = first.portfolioValue
+                var peakIndex = 0
+                var episodeStart: Int?
+                var episodeDepth = 0.0
+                var durations: [Int] = []
+                var daysBelowFive = 0
+                var daysBelowSeven = 0
+                for (index, point) in points.enumerated() {
+                    if point.portfolioValue >= peakValue {
+                        if let start = episodeStart, episodeDepth >= 0.05 {
+                            durations.append(index - start)
+                        }
+                        peakValue = point.portfolioValue
+                        peakIndex = index
+                        episodeStart = nil
+                        episodeDepth = 0
+                        continue
+                    }
+                    let drawdown = peakValue > 0 ? 1 - point.portfolioValue / peakValue : 0
+                    if drawdown >= 0.05 { daysBelowFive += 1 }
+                    if drawdown >= 0.07 { daysBelowSeven += 1 }
+                    if episodeStart == nil { episodeStart = peakIndex }
+                    episodeDepth = max(episodeDepth, drawdown)
+                }
+                let sorted = durations.sorted()
+                let average = sorted.isEmpty ? 0 : Double(sorted.reduce(0, +)) / Double(sorted.count)
+                let median: Double
+                if sorted.isEmpty {
+                    median = 0
+                } else if sorted.count.isMultiple(of: 2) {
+                    let middle = sorted.count / 2
+                    median = Double(sorted[middle - 1] + sorted[middle]) / 2
+                } else {
+                    median = Double(sorted[sorted.count / 2])
+                }
+                return (average, median, sorted.max() ?? 0, daysBelowFive, daysBelowSeven)
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let baseRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ) else {
+                print("APP_CASH_CONFIDENCE_SPARSE_DD_GUARD_GRID\nbase_missing")
+                return
+            }
+
+            let baseTargetsByDate = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            let baseTradeDates = Set(baseRun.report.trades.map { $0.date.recordDateString })
+            let shadowPoints = baseRun.report.points
+            var shadowDrawdownByDate: [String: Double] = [:]
+            var shadowFastByDate: [String: Bool] = [:]
+            var shadowStrongByDate: [String: Bool] = [:]
+            var shadowPeak = shadowPoints.first?.portfolioValue ?? 0
+            for index in shadowPoints.indices {
+                let value = shadowPoints[index].portfolioValue
+                shadowPeak = max(shadowPeak, value)
+                shadowDrawdownByDate[shadowPoints[index].date.recordDateString] = shadowPeak > 0
+                    ? max(1 - value / shadowPeak, 0)
+                    : 0
+                guard index >= 60 else {
+                    shadowFastByDate[shadowPoints[index].date.recordDateString] = false
+                    shadowStrongByDate[shadowPoints[index].date.recordDateString] = false
+                    continue
+                }
+                let ma20 = shadowPoints[(index - 19)...index].map(\.portfolioValue).reduce(0, +) / 20
+                let ma60 = shadowPoints[(index - 59)...index].map(\.portfolioValue).reduce(0, +) / 60
+                let mom20 = shadowPoints[index - 20].portfolioValue > 0
+                    ? value / shadowPoints[index - 20].portfolioValue - 1
+                    : 0
+                let mom60 = shadowPoints[index - 60].portfolioValue > 0
+                    ? value / shadowPoints[index - 60].portfolioValue - 1
+                    : 0
+                shadowFastByDate[shadowPoints[index].date.recordDateString] = value > ma20 && mom20 > 0
+                shadowStrongByDate[shadowPoints[index].date.recordDateString] = value > ma60 && mom20 > 0 && mom60 > 0
+            }
+
+            let traceOnly = ProcessInfo.processInfo.environment["ATM_CASH_CONFIDENCE_GUARD_TRACE"] == "1"
+            let traceWarningDD = Double(ProcessInfo.processInfo.environment["ATM_CC_WARNING_DD"] ?? "0.040") ?? 0.040
+            let traceCrisisDD = Double(ProcessInfo.processInfo.environment["ATM_CC_CRISIS_DD"] ?? "0.060") ?? 0.060
+            let traceWarningScale = Double(ProcessInfo.processInfo.environment["ATM_CC_WARNING_SCALE"] ?? "0.90") ?? 0.90
+            let traceCrisisScale = Double(ProcessInfo.processInfo.environment["ATM_CC_CRISIS_SCALE"] ?? "0.70") ?? 0.70
+            let useShadowDrawdown = ProcessInfo.processInfo.environment["ATM_CC_USE_SHADOW_DD"] != "0"
+            let warningDDOptions = traceOnly ? [traceWarningDD] : [0.035, 0.040, 0.045]
+            let crisisDDOptions = traceOnly ? [traceCrisisDD] : [0.055, 0.060, 0.065]
+            let warningScaleOptions = traceOnly ? [traceWarningScale] : [0.85, 0.90, 0.95]
+            let crisisScaleOptions = traceOnly ? [traceCrisisScale] : [0.60, 0.70, 0.80]
+            var candidates: [CashConfidenceGuardCandidate] = []
+
+            for warningDD in warningDDOptions {
+                for crisisDD in crisisDDOptions where crisisDD > warningDD {
+                    for warningScale in warningScaleOptions {
+                        for crisisScale in crisisScaleOptions where crisisScale < warningScale {
+                            let title = String(
+                                format: "置信度稀疏回撤闸门-W%.1f/%.0f-C%.1f/%.0f",
+                                warningDD * 100,
+                                warningScale * 100,
+                                crisisDD * 100,
+                                crisisScale * 100
+                            )
+                            let config = ResearchTargetStrategyConfig(
+                                symbol: "cash_confidence_sparse_dd_guard",
+                                title: title,
+                                warmupSessions: 1,
+                                rebalanceSessions: 1,
+                                rebalanceBand: 0.08,
+                                maxGrossExposure: 1.0,
+                                allowsFinancedExposure: false,
+                                financingAnnualRate: 0,
+                                buyReason: "置信度稀疏回撤闸门调仓"
+                            )
+
+                            var state = 0
+                            var recoveryStreak = 0
+                            var stateEnteredIndex = -10_000
+                            var stateChanges = 0
+                            var latestBaseWeights: [String: Double] = [:]
+                            var pendingWeights: [String: Double] = [:]
+                            var previousWeights: [String: Double] = [:]
+
+                            guard let report = BacktestEngine.runResearchTargetProviderStrategy(
+                                assetInputs: inputs,
+                                initialCash: 100_000,
+                                settings: settings,
+                                config: config,
+                                contextualRebalanceDecision: { context, data in
+                                    guard context.signalIndex >= 1,
+                                          data.dates.indices.contains(context.index),
+                                          data.dates.indices.contains(context.signalIndex) else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+                                    let executionDateKey = data.dates[context.index].recordDateString
+                                    let signalDateKey = data.dates[context.signalIndex].recordDateString
+                                    if let raw = baseTargetsByDate[executionDateKey], !raw.isEmpty {
+                                        latestBaseWeights = raw
+                                    }
+                                    guard !latestBaseWeights.isEmpty else {
+                                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                    }
+
+                                    let previousPeak = context.points.map(\.portfolioValue).max() ?? context.preRebalanceValue
+                                    let accountPeak = max(previousPeak, context.preRebalanceValue)
+                                    let accountDrawdown = accountPeak > 0
+                                        ? max(1 - context.preRebalanceValue / accountPeak, 0)
+                                        : 0
+                                    let shadowDrawdown = shadowDrawdownByDate[signalDateKey] ?? 0
+                                    let effectiveDrawdown = useShadowDrawdown ? max(accountDrawdown, shadowDrawdown) : accountDrawdown
+                                    let shadowFast = shadowFastByDate[signalDateKey] ?? false
+                                    let shadowStrong = shadowStrongByDate[signalDateKey] ?? false
+                                    let previousState = state
+
+                                    if effectiveDrawdown >= crisisDD {
+                                        state = 2
+                                        recoveryStreak = 0
+                                    } else if effectiveDrawdown >= warningDD {
+                                        state = max(state, 1)
+                                        recoveryStreak = 0
+                                    } else if state == 2 {
+                                        recoveryStreak = shadowFast ? recoveryStreak + 1 : 0
+                                        if context.index - stateEnteredIndex >= 5,
+                                           effectiveDrawdown <= warningDD,
+                                           recoveryStreak >= 3 {
+                                            state = 1
+                                            recoveryStreak = 0
+                                        }
+                                    } else if state == 1 {
+                                        recoveryStreak = shadowStrong ? recoveryStreak + 1 : 0
+                                        if effectiveDrawdown <= warningDD * 0.55,
+                                           recoveryStreak >= 5 {
+                                            state = 0
+                                            recoveryStreak = 0
+                                        }
+                                    }
+
+                                    if state != previousState {
+                                        stateChanges += 1
+                                        stateEnteredIndex = context.index
+                                    }
+                                    let scale = state == 0 ? 1.0 : (state == 1 ? warningScale : crisisScale)
+                                    pendingWeights = latestBaseWeights.mapValues { $0 * scale }
+                                    let gross = pendingWeights.values.reduce(0, +)
+                                    if gross > 1, gross > 0 {
+                                        pendingWeights = pendingWeights.mapValues { $0 / gross }
+                                    }
+                                    let shouldRebalance = previousWeights.isEmpty
+                                        ? !pendingWeights.isEmpty
+                                        : state != previousState || baseTradeDates.contains(executionDateKey)
+                                    if shouldRebalance { previousWeights = pendingWeights }
+                                    return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
+                                },
+                                targetWeights: { _, _ in pendingWeights }
+                            ) else { continue }
+
+                            let fullRow = MetricRow(
+                                title: title,
+                                id: "cash_confidence_sparse_dd_guard",
+                                annualized: report.annualizedReturn,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility,
+                                sharpe: report.sharpeRatio,
+                                start: report.points.first?.date.recordDateString ?? "n/a",
+                                end: report.points.last?.date.recordDateString ?? "n/a",
+                                pointCount: report.points.count
+                            )
+                            let water = cashConfidenceWaterStats(report.points)
+                            candidates.append(CashConfidenceGuardCandidate(
+                                title: title,
+                                annualized: report.annualizedReturn ?? -1,
+                                maxDrawdown: report.maxDrawdown,
+                                volatility: report.annualizedVolatility ?? -1,
+                                sharpe: report.sharpeRatio ?? -1,
+                                sliceRows: metricRowsForSlices(
+                                    title: title,
+                                    id: "cash_confidence_sparse_dd_guard",
+                                    points: report.points,
+                                    fullRow: fullRow
+                                ),
+                                trades: report.trades.count,
+                                averageCashRatio: report.averageCashRatio,
+                                stateChanges: stateChanges,
+                                averageRecoveryDays: water.0,
+                                medianRecoveryDays: water.1,
+                                maxRecoveryDays: water.2,
+                                daysBelowFive: water.3,
+                                daysBelowSeven: water.4
+                            ))
+                        }
+                    }
+                }
+            }
+
+            let valid = candidates.filter {
+                $0.annualized >= 0.108 && $0.maxDrawdown <= 0.070 && $0.sharpe >= 1.50
+            }.sorted {
+                if $0.sharpe == $1.sharpe { return $0.annualized > $1.annualized }
+                return $0.sharpe > $1.sharpe
+            }
+            let frontier = candidates.sorted { lhs, rhs in
+                let lhsPenalty = max(lhs.maxDrawdown - 0.070, 0) * 8
+                    + max(0.108 - lhs.annualized, 0) * 4
+                    + max(1.50 - lhs.sharpe, 0) * 0.20
+                let rhsPenalty = max(rhs.maxDrawdown - 0.070, 0) * 8
+                    + max(0.108 - rhs.annualized, 0) * 4
+                    + max(1.50 - rhs.sharpe, 0) * 0.20
+                if lhsPenalty == rhsPenalty { return lhs.sharpe > rhs.sharpe }
+                return lhsPenalty < rhsPenalty
+            }
+            let selected = Array((valid.isEmpty ? frontier : valid).prefix(20))
+            printSliceRows(
+                selected.flatMap(\.sliceRows),
+                header: valid.isEmpty
+                    ? "APP_CASH_CONFIDENCE_SPARSE_DD_GUARD_NEAR_FRONTIER"
+                    : "APP_CASH_CONFIDENCE_SPARSE_DD_GUARD_VALID"
+            )
+            print("APP_CASH_CONFIDENCE_SPARSE_DD_GUARD_DIAGNOSTICS")
+            print("title,trades,average_cash_ratio,state_changes,avg_recovery,median_recovery,max_recovery,days_below_5,days_below_7")
+            for candidate in selected {
+                print([
+                    candidate.title,
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCashRatio),
+                    String(candidate.stateChanges),
+                    String(format: "%.3f", candidate.averageRecoveryDays),
+                    String(format: "%.3f", candidate.medianRecoveryDays),
+                    String(candidate.maxRecoveryDays),
+                    String(candidate.daysBelowFive),
+                    String(candidate.daysBelowSeven)
+                ].joined(separator: ","))
+            }
+            return
+        }
