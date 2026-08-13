@@ -1,6 +1,22 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "资产持仓走势": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Asset Allocation Over Time" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "各资产仓位走势" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "各資產倉位走勢" } }
+      }
+    },
+    "总仓位": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Total Exposure" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "总仓位" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "總倉位" } }
+      }
+    },
     "持仓比例": {
       "extractionState": "manual",
       "localizations": {

@@ -84,6 +84,7 @@ struct AdvancedBacktestResultContent<MiddleContent: View>: View {
 
                     BacktestExposureChartSection(
                         points: report.exposurePoints,
+                        assetSeries: report.assetExposureSeries,
                         averageRatio: report.averageExposureRatio
                     )
                 }

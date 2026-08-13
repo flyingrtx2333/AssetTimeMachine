@@ -489,6 +489,38 @@ nonisolated enum BacktestEngine {
         }
     }
 
+    static func assetExposureSeries(
+        from dailyStates: [BacktestDailyState],
+        symbolOrder: [String],
+        titlesBySymbol: [String: String]
+    ) -> [BacktestAssetExposureSeries] {
+        let heldSymbols = Set(dailyStates.flatMap { $0.holdingsBySymbol.keys })
+        var seenSymbols: Set<String> = []
+        let orderedSymbols = symbolOrder.filter {
+            heldSymbols.contains($0) && seenSymbols.insert($0).inserted
+        }
+            + heldSymbols.subtracting(symbolOrder).sorted()
+
+        return orderedSymbols.compactMap { symbol in
+            let points = dailyStates.enumerated().compactMap { sequence, state -> BacktestExposurePoint? in
+                guard state.portfolioValue.isFinite, state.portfolioValue > 0 else { return nil }
+                let holdingValue = max(state.holdingsBySymbol[symbol] ?? 0, 0)
+                let ratio = holdingValue / state.portfolioValue
+                guard ratio.isFinite else { return nil }
+                return BacktestExposurePoint(date: state.date, ratio: ratio, sequence: sequence)
+            }
+            guard points.contains(where: { $0.ratio > 0.000001 }) else { return nil }
+            return BacktestAssetExposureSeries(
+                symbol: symbol,
+                title: titlesBySymbol[symbol] ?? symbol,
+                points: BacktestExposureSampling.sampled(
+                    points,
+                    maxCount: BacktestExposureSampling.assetSeriesMaxCount
+                )
+            )
+        }
+    }
+
     /// Presents a continuous strategy run inside a user-selected measurement window.
     ///
     /// Stateful rotation strategies must see the history before the selected start
@@ -577,6 +609,16 @@ nonisolated enum BacktestEngine {
         }
         let statesInRange = dailyStates.filter { bounds.contains($0.date) }
         let exposurePoints = exposurePoints(from: statesInRange)
+        let exposureTitles = Dictionary(uniqueKeysWithValues: report.assetExposureSeries.map { ($0.symbol, $0.title) })
+            .merging(
+                Dictionary(uniqueKeysWithValues: report.benchmarkSeries.map { ($0.id, $0.title) }),
+                uniquingKeysWith: { current, _ in current }
+            )
+        let trimmedAssetExposureSeries = assetExposureSeries(
+            from: statesInRange,
+            symbolOrder: report.assetExposureSeries.map(\.symbol) + report.benchmarkSeries.map(\.id),
+            titlesBySymbol: exposureTitles
+        )
         var inheritedUnitsBySymbol: [String: Double] = [:]
         for trade in report.trades where trade.date < bounds.lowerBound {
             switch trade.action {
@@ -713,7 +755,8 @@ nonisolated enum BacktestEngine {
             sharpeRatio: metrics.sharpeRatio,
             cashYieldSummary: cashYieldSummary,
             riskSignalSummary: riskSignalSummary,
-            exposurePoints: exposurePoints
+            exposurePoints: exposurePoints,
+            assetExposureSeries: trimmedAssetExposureSeries
         )
     }
 
@@ -1259,7 +1302,17 @@ nonisolated enum BacktestEngine {
             sharpeRatio: metrics.sharpeRatio,
             cashYieldSummary: cashYieldSummary,
             riskSignalSummary: nil,
-            exposurePoints: exposurePoints
+            exposurePoints: exposurePoints,
+            assetExposureSeries: [
+                BacktestAssetExposureSeries(
+                    symbol: assetOption.symbol,
+                    title: assetOption.title,
+                    points: BacktestExposureSampling.sampled(
+                        exposurePoints,
+                        maxCount: BacktestExposureSampling.assetSeriesMaxCount
+                    )
+                )
+            ]
         )
     }
 
@@ -4270,7 +4323,12 @@ nonisolated enum BacktestEngine {
             sharpeRatio: metrics.sharpeRatio,
             cashYieldSummary: simulation.cashYieldSummary,
             riskSignalSummary: riskSignalSummary,
-            exposurePoints: exposurePoints(from: simulation.dailyStates)
+            exposurePoints: exposurePoints(from: simulation.dailyStates),
+            assetExposureSeries: assetExposureSeries(
+                from: simulation.dailyStates,
+                symbolOrder: tradableSymbols,
+                titlesBySymbol: optionBySymbol.mapValues(\.title)
+            )
         )
         return ResearchTargetStrategyRun(report: report, dailyStates: simulation.dailyStates)
     }
@@ -11483,7 +11541,12 @@ nonisolated enum BacktestEngine {
             sharpeRatio: metrics.sharpeRatio,
             cashYieldSummary: simulation.cashYieldSummary,
             riskSignalSummary: riskSignalSummary,
-            exposurePoints: exposurePoints(from: simulation.dailyStates)
+            exposurePoints: exposurePoints(from: simulation.dailyStates),
+            assetExposureSeries: assetExposureSeries(
+                from: simulation.dailyStates,
+                symbolOrder: tradableSymbols,
+                titlesBySymbol: optionBySymbol.mapValues(\.title)
+            )
         )
         return AdvancedRotationStrategyRun(report: report, dailyStates: simulation.dailyStates)
     }
@@ -11572,9 +11635,13 @@ nonisolated enum BacktestEngine {
         var combinedPoints: [BacktestSeriesPoint] = []
         var combinedBenchmarkPoints: [BacktestSeriesPoint] = []
         var combinedExposurePoints: [BacktestExposurePoint] = []
+        var combinedAssetExposurePoints = Array(repeating: [BacktestExposurePoint](), count: reports.count)
         combinedPoints.reserveCapacity(allDates.count)
         combinedBenchmarkPoints.reserveCapacity(allDates.count)
         combinedExposurePoints.reserveCapacity(allDates.count)
+        for index in combinedAssetExposurePoints.indices {
+            combinedAssetExposurePoints[index].reserveCapacity(allDates.count)
+        }
 
         for date in allDates {
             guard !Task.isCancelled else { return nil }
@@ -11617,6 +11684,14 @@ nonisolated enum BacktestEngine {
                     ratio: max(investedValue / totalValue, 0),
                     sequence: combinedExposurePoints.count
                 ))
+                for reportIndex in reports.indices {
+                    let investedAssetValue = valueByReportIndex[reportIndex] * exposureByReportIndex[reportIndex]
+                    combinedAssetExposurePoints[reportIndex].append(BacktestExposurePoint(
+                        date: date,
+                        ratio: max(investedAssetValue / totalValue, 0),
+                        sequence: combinedAssetExposurePoints[reportIndex].count
+                    ))
+                }
             }
         }
 
@@ -11624,6 +11699,20 @@ nonisolated enum BacktestEngine {
               let metrics = performanceMetrics(from: combinedPoints) else { return nil }
 
         let assetReports = reports.flatMap(\.assetReports)
+        let assetExposureSeries = reports.indices.compactMap { reportIndex -> BacktestAssetExposureSeries? in
+            let sourceSeries = reports[reportIndex].assetExposureSeries.first
+            let sourceReport = reports[reportIndex].assetReports.first
+            guard let symbol = sourceSeries?.symbol ?? sourceReport?.symbol,
+                  let title = sourceSeries?.title ?? sourceReport?.title else { return nil }
+            return BacktestAssetExposureSeries(
+                symbol: symbol,
+                title: title,
+                points: BacktestExposureSampling.sampled(
+                    combinedAssetExposurePoints[reportIndex],
+                    maxCount: BacktestExposureSampling.assetSeriesMaxCount
+                )
+            )
+        }
         let benchmarkSeries = reports.flatMap(\.benchmarkSeries)
         let trades = reports.flatMap(\.trades).sorted { lhs, rhs in
             if lhs.date == rhs.date { return lhs.assetSymbol < rhs.assetSymbol }
@@ -11653,7 +11742,8 @@ nonisolated enum BacktestEngine {
             sharpeRatio: metrics.sharpeRatio,
             cashYieldSummary: cashYieldSummary,
             riskSignalSummary: nil,
-            exposurePoints: combinedExposurePoints
+            exposurePoints: combinedExposurePoints,
+            assetExposureSeries: assetExposureSeries
         )
     }
 

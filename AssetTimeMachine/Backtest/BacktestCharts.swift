@@ -96,6 +96,22 @@ enum BacktestChartPalette {
         return palette[abs(index) % palette.count]
     }
 
+    nonisolated static func exposureLine(at index: Int) -> Color {
+        let palette: [Color] = [
+            Color(red: 0.93, green: 0.63, blue: 0.18),
+            Color(red: 0.16, green: 0.58, blue: 0.95),
+            Color(red: 0.22, green: 0.72, blue: 0.45),
+            Color(red: 0.74, green: 0.38, blue: 0.92),
+            Color(red: 0.95, green: 0.32, blue: 0.31),
+            Color(red: 0.10, green: 0.72, blue: 0.76),
+            Color(red: 0.95, green: 0.47, blue: 0.16),
+            Color(red: 0.42, green: 0.50, blue: 0.94),
+            Color(red: 0.54, green: 0.72, blue: 0.20),
+            Color(red: 0.90, green: 0.31, blue: 0.64)
+        ]
+        return palette[abs(index) % palette.count]
+    }
+
     static var strategyAreaTop: Color { strategyLine.opacity(0.18) }
     static var strategyAreaBottom: Color { strategyLine.opacity(0.025) }
 }
@@ -806,6 +822,7 @@ struct BacktestValueChartSection: View {
 
 struct BacktestExposureChartSection: View {
     let points: [BacktestExposurePoint]
+    let assetSeries: [BacktestAssetExposureSeries]
     let averageRatio: Double
 
     private var chartPoints: [BacktestExposurePoint] {
@@ -814,6 +831,16 @@ struct BacktestExposureChartSection: View {
 
     private var peakRatio: Double {
         points.map(\.ratio).max() ?? 0
+    }
+
+    private var sampledAssetSeries: [BacktestAssetExposureSeries] {
+        assetSeries.map { series in
+            BacktestAssetExposureSeries(
+                symbol: series.symbol,
+                title: series.title,
+                points: BacktestExposureSampling.sampled(series.points)
+            )
+        }
     }
 
     private var yMaximum: Double {
@@ -829,7 +856,7 @@ struct BacktestExposureChartSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(AppLocalization.string("持仓比例走势"))
+                Text(AppLocalization.string(assetSeries.isEmpty ? "持仓比例走势" : "资产持仓走势"))
                     .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
 
@@ -845,26 +872,52 @@ struct BacktestExposureChartSection: View {
                 .monospacedDigit()
             }
 
-            Chart(chartPoints) { point in
-                AreaMark(
-                    x: .value(AppLocalization.string("日期"), point.date),
-                    yStart: .value(AppLocalization.string("持仓比例"), 0),
-                    yEnd: .value(AppLocalization.string("持仓比例"), point.ratio)
-                )
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [BacktestChartPalette.strategyLine.opacity(0.24), BacktestChartPalette.strategyLine.opacity(0.025)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
+            Chart {
+                if assetSeries.isEmpty {
+                    ForEach(chartPoints) { point in
+                        AreaMark(
+                            x: .value(AppLocalization.string("日期"), point.date),
+                            yStart: .value(AppLocalization.string("持仓比例"), 0),
+                            yEnd: .value(AppLocalization.string("持仓比例"), point.ratio)
+                        )
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [BacktestChartPalette.strategyLine.opacity(0.24), BacktestChartPalette.strategyLine.opacity(0.025)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
 
-                LineMark(
-                    x: .value(AppLocalization.string("日期"), point.date),
-                    y: .value(AppLocalization.string("持仓比例"), point.ratio)
-                )
-                .foregroundStyle(BacktestChartPalette.strategyLine)
-                .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                        LineMark(
+                            x: .value(AppLocalization.string("日期"), point.date),
+                            y: .value(AppLocalization.string("持仓比例"), point.ratio)
+                        )
+                        .foregroundStyle(BacktestChartPalette.strategyLine)
+                        .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                    }
+                } else {
+                    ForEach(Array(sampledAssetSeries.enumerated()), id: \.element.id) { index, series in
+                        ForEach(series.points) { point in
+                            LineMark(
+                                x: .value(AppLocalization.string("日期"), point.date),
+                                y: .value(AppLocalization.string("持仓比例"), point.ratio),
+                                series: .value(AppLocalization.string("资产"), series.symbol)
+                            )
+                            .foregroundStyle(BacktestChartPalette.exposureLine(at: index))
+                            .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                        }
+                    }
+
+                    ForEach(chartPoints) { point in
+                        LineMark(
+                            x: .value(AppLocalization.string("日期"), point.date),
+                            y: .value(AppLocalization.string("持仓比例"), point.ratio),
+                            series: .value(AppLocalization.string("资产"), "total-exposure")
+                        )
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                        .lineStyle(StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
+                    }
+                }
             }
             .frame(height: 160)
             .chartXScale(range: .plotDimension(startPadding: 4, endPadding: 32))
@@ -897,7 +950,36 @@ struct BacktestExposureChartSection: View {
             }
             .allowsHitTesting(false)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(AppLocalization.string("持仓比例走势"))
+            .accessibilityLabel(AppLocalization.string(assetSeries.isEmpty ? "持仓比例走势" : "资产持仓走势"))
+
+            if !assetSeries.isEmpty {
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 96), spacing: 10, alignment: .leading)],
+                    alignment: .leading,
+                    spacing: 7
+                ) {
+                    ForEach(Array(assetSeries.enumerated()), id: \.element.id) { index, series in
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(BacktestChartPalette.exposureLine(at: index))
+                                .frame(width: 7, height: 7)
+                            Text(series.title)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.82)
+                        }
+                    }
+
+                    HStack(spacing: 6) {
+                        Capsule()
+                            .fill(AssetTheme.textSecondary.opacity(0.72))
+                            .frame(width: 12, height: 2)
+                        Text(AppLocalization.string("总仓位"))
+                            .lineLimit(1)
+                    }
+                }
+                .font(AppTypography.chartCaption)
+                .foregroundStyle(AssetTheme.textSecondary)
+            }
         }
     }
 }

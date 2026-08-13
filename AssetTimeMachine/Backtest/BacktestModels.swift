@@ -703,7 +703,17 @@ struct BacktestExposurePoint: Identifiable, Sendable {
     nonisolated var id: Int { sequence }
 }
 
+struct BacktestAssetExposureSeries: Identifiable, Sendable {
+    let symbol: String
+    let title: String
+    let points: [BacktestExposurePoint]
+
+    nonisolated var id: String { symbol }
+}
+
 enum BacktestExposureSampling {
+    static let assetSeriesMaxCount = 280
+
     nonisolated static func sampled(
         _ points: [BacktestExposurePoint],
         maxCount: Int = 360
@@ -1140,6 +1150,7 @@ struct AdvancedBacktestReport {
     let cashYieldSummary: CashYieldSummary
     let riskSignalSummary: MarketRiskSignalSummary?
     let exposurePoints: [BacktestExposurePoint]
+    let assetExposureSeries: [BacktestAssetExposureSeries]
     private let exactAverageExposureRatio: Double?
 
     nonisolated init(
@@ -1159,6 +1170,7 @@ struct AdvancedBacktestReport {
         cashYieldSummary: CashYieldSummary,
         riskSignalSummary: MarketRiskSignalSummary?,
         exposurePoints: [BacktestExposurePoint] = [],
+        assetExposureSeries: [BacktestAssetExposureSeries] = [],
         averageExposureRatio: Double? = nil
     ) {
         self.points = points
@@ -1177,6 +1189,7 @@ struct AdvancedBacktestReport {
         self.cashYieldSummary = cashYieldSummary
         self.riskSignalSummary = riskSignalSummary
         self.exposurePoints = exposurePoints
+        self.assetExposureSeries = assetExposureSeries
         self.exactAverageExposureRatio = averageExposureRatio
     }
 
@@ -2336,6 +2349,30 @@ struct BacktestRecordExposurePointPayload: Codable {
     }
 }
 
+struct BacktestRecordAssetExposureSeriesPayload: Codable {
+    let symbol: String
+    let title: String
+    let points: [BacktestRecordExposurePointPayload]
+
+    init(series: BacktestAssetExposureSeries, maxPointCount: Int) {
+        symbol = series.symbol
+        title = series.title
+        points = BacktestExposureSampling.sampled(series.points, maxCount: maxPointCount)
+            .enumerated()
+            .map { index, point in
+                BacktestRecordExposurePointPayload(point: point, sequence: index)
+            }
+    }
+
+    var assetExposureSeries: BacktestAssetExposureSeries {
+        BacktestAssetExposureSeries(
+            symbol: symbol,
+            title: title,
+            points: points.sorted { $0.sequence < $1.sequence }.map(\.exposurePoint)
+        )
+    }
+}
+
 struct BacktestRecordCashYieldRatePointPayload: Codable {
     let date: Date
     let annualRate: Double
@@ -2498,6 +2535,7 @@ struct BacktestRecordConfigPayload: Codable {
     var advancedBenchmarkSeries: [BacktestRecordAdvancedBenchmarkSeriesPayload]? = nil
     var advancedCombinedBenchmarkPoints: [BacktestRecordPointPayload]? = nil
     var advancedExposurePoints: [BacktestRecordExposurePointPayload]? = nil
+    var advancedAssetExposureSeries: [BacktestRecordAssetExposureSeriesPayload]? = nil
     var advancedAverageExposureRatio: Double? = nil
     var finalCash: Double? = nil
     var finalUnits: Double? = nil
@@ -2607,6 +2645,13 @@ enum BacktestRecordCodec {
         BacktestExposureSampling.sampled(points, maxCount: maxCount).enumerated().map { index, point in
             BacktestRecordExposurePointPayload(point: point, sequence: index)
         }
+    }
+
+    static func assetExposureSeriesPayloads(
+        from series: [BacktestAssetExposureSeries],
+        maxPointCount: Int = BacktestExposureSampling.assetSeriesMaxCount
+    ) -> [BacktestRecordAssetExposureSeriesPayload] {
+        series.map { BacktestRecordAssetExposureSeriesPayload(series: $0, maxPointCount: maxPointCount) }
     }
 
     static func advancedAssetChartPayloads(from assetReports: [AdvancedBacktestAssetReport], maxPricePointCount: Int = 240) -> [BacktestRecordAdvancedAssetChartPayload] {
@@ -2789,6 +2834,8 @@ enum BacktestRecordCodec {
         let exposurePoints = (config.advancedExposurePoints ?? [])
             .sorted { $0.sequence < $1.sequence }
             .map(\.exposurePoint)
+        let assetExposureSeries = (config.advancedAssetExposureSeries ?? [])
+            .map(\.assetExposureSeries)
 
         return AdvancedBacktestReport(
             points: points,
@@ -2807,6 +2854,7 @@ enum BacktestRecordCodec {
             cashYieldSummary: config.cashYieldSummary?.cashYieldSummary ?? defaultCashYieldSummary(for: points),
             riskSignalSummary: config.riskSignalSummary?.riskSignalSummary,
             exposurePoints: exposurePoints,
+            assetExposureSeries: assetExposureSeries,
             averageExposureRatio: config.advancedAverageExposureRatio
         )
     }
