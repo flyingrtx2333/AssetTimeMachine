@@ -1043,7 +1043,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Local Data Can’t Be Opened"
+            "value": "Local Data Can't Be Opened"
           }
         },
         "zh-Hans": {
@@ -2643,7 +2643,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "All History"
+            "value": "Full History"
           }
         },
         "zh-Hans": {
@@ -3586,7 +3586,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Backtest Asset Type"
+            "value": "Backtest Asset"
           }
         },
         "zh-Hans": {
@@ -3931,7 +3931,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "DCA Value"
+            "value": "DCA Portfolio Value"
           }
         },
         "zh-Hans": {
@@ -3954,7 +3954,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "DCA Count"
+            "value": "Contributions"
           }
         },
         "zh-Hans": {
@@ -3977,7 +3977,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "DCA Interval"
+            "value": "Contribution Interval"
           }
         },
         "zh-Hans": {
@@ -4000,7 +4000,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "DCA Frequency"
+            "value": "Contribution Frequency"
           }
         },
         "zh-Hans": {
@@ -4115,7 +4115,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You have reached financial freedom"
+            "value": "Financial Independence Achieved"
           }
         },
         "zh-Hans": {
@@ -4483,7 +4483,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "WeChat"
+            "value": "WeChat Pay"
           }
         },
         "zh-Hans": {
@@ -4713,7 +4713,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Property"
+            "value": "Real Estate"
           }
         },
         "zh-Hans": {
@@ -5012,7 +5012,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Financial freedom is not achievable with the current settings"
+            "value": "Financial independence is not achievable under the current assumptions"
           }
         },
         "zh-Hans": {
@@ -6162,7 +6162,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Contribution per Cycle"
+            "value": "Contribution Amount"
           }
         },
         "zh-Hans": {
@@ -6576,7 +6576,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Used to set monthly spending for financial freedom projections."
+            "value": "Used as monthly spending in the financial-independence projection."
           }
         },
         "zh-Hans": {
@@ -7381,7 +7381,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Record at least two snapshots to estimate time to financial freedom"
+            "value": "Record at least two snapshots to estimate your financial-independence date"
           }
         },
         "zh-Hans": {
@@ -7864,7 +7864,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Time to Financial Freedom"
+            "value": "Time to Financial Independence"
           }
         },
         "zh-Hans": {
@@ -8853,7 +8853,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Configure Backtest"
+            "value": "Allocation Backtest"
           }
         },
         "zh-Hans": {
@@ -9014,7 +9014,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bank Card"
+            "value": "Bank Account"
           }
         },
         "zh-Hans": {
@@ -9152,7 +9152,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Estimated time to financial freedom: %d year(s)"
+            "value": "Estimated time: %d yr"
           }
         },
         "zh-Hans": {
@@ -9175,7 +9175,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Estimated time to financial freedom: %d year(s) and %d month(s)"
+            "value": "Estimated time: %d yr %d mo"
           }
         },
         "zh-Hans": {
@@ -9198,7 +9198,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Estimated time to financial freedom: %d month(s)"
+            "value": "Estimated time: %d mo"
           }
         },
         "zh-Hans": {
@@ -9773,7 +9773,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "An independent two-asset strategy: 55% strategic gold and 45% Nasdaq. Each sleeve independently uses MA200 plus 126/252-session momentum to classify strong, neutral, or weak conditions. It reviews about every 63 trading sessions, keeps most exposure in neutral regimes, cuts clearly weak sleeves to a small position, and leaves the remainder in cash. No leverage; verified with a 1% trading fee."
+            "value": "Independent two-asset strategy with strategic weights of 55% gold and 45% Nasdaq. Each sleeve uses its 200-day moving average and 126/252-session momentum to classify strong, neutral, and weak regimes. The strategy reviews allocations roughly every 63 trading sessions, retains most exposure in neutral regimes, and moves weak sleeves toward cash. It is unlevered, and results include a 1% trading fee."
           }
         },
         "zh-Hans": {
@@ -10302,7 +10302,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Current unlevered Sharpe champion: retains the 15% fast bridge, 20.75% underwater-recovery sleeve, and existing cash constraints, while adding online calibration of leadership-transition reliability. After leadership rotates among gold, Nasdaq, the S&P 500, or China equities, strict T-1 data evaluates the next 10 trading sessions and records whether the new leader outperforms the former leader. A Beta(2,2) prior continuously updates each prospective leader’s historical realization rate. On a future transition to that leader, at least 50% of the target is executed, with stronger historical reliability moving execution closer to a full migration; risk reduction and moves to cash are never delayed. Gross exposure is capped at 100%, cash cannot be negative, and the existing 20% target-deviation/key-transition rebalance policy remains. Results include 1% fees and 0.05% slippage."
+            "value": "Current unlevered Sharpe champion: retains the 15% fast bridge, 20.75% underwater-recovery sleeve, and existing cash constraints, while adding online calibration of leadership-transition reliability. After leadership rotates among gold, Nasdaq, the S&P 500, or China equities, strict T-1 data evaluates the next 10 trading sessions and records whether the new leader outperforms the former leader. A Beta(2,2) prior continuously updates each prospective leader's historical realization rate. On a future transition to that leader, at least 50% of the target is executed, with stronger historical reliability moving execution closer to a full migration; risk reduction and moves to cash are never delayed. Gross exposure is capped at 100%, cash cannot be negative, and the existing 20% target-deviation/key-transition rebalance policy remains. Results include 1% fees and 0.05% slippage."
           }
         },
         "zh-Hans": {
@@ -10946,7 +10946,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Experimental all-round enhancement: first builds target weights from the High-Sharpe State Engine (40%), Aggressive Risk Budget (25%), and Dual-Trend Gold–Nasdaq Barbell (35%), then applies 1.00×, 1.20×, or 1.40× risk scaling according to the underlying engines’ exposure consensus. Every 42 trading sessions it estimates up to 126 sessions of covariance. When one asset contributes more than 65% of portfolio risk, 60% of target weights are reallocated toward lower-volatility and less positively correlated assets. When existing US-equity exposure is at least 10%, the target proposes a single 10%–20% increase, and both Nasdaq and S&P 500 five-session momentum are negative, only 60% of the incremental exposure is executed. When China-equity targets fall by at least 15%, US-equity targets rise by 5%–10%, and either Nasdaq or S&P 500 five-session momentum has not turned positive, only 50% of the incremental US exposure is executed to avoid immediately transferring regional exit risk into US equities. Gross exposure is capped at 110%, negative cash is financed at 5% annually, and trades require more than 8% target-weight change. All trades use the unified 1% fee and 0.05% slippage assumptions."
+            "value": "Experimental all-round enhancement: first builds target weights from the High-Sharpe State Engine (40%), Aggressive Risk Budget (25%), and Dual-Trend Gold–Nasdaq Barbell (35%), then applies 1.00×, 1.20×, or 1.40× risk scaling according to the underlying engines' exposure consensus. Every 42 trading sessions it estimates up to 126 sessions of covariance. When one asset contributes more than 65% of portfolio risk, 60% of target weights are reallocated toward lower-volatility and less positively correlated assets. When existing US-equity exposure is at least 10%, the target proposes a single 10%–20% increase, and both Nasdaq and S&P 500 five-session momentum are negative, only 60% of the incremental exposure is executed. When China-equity targets fall by at least 15%, US-equity targets rise by 5%–10%, and either Nasdaq or S&P 500 five-session momentum has not turned positive, only 50% of the incremental US exposure is executed to avoid immediately transferring regional exit risk into US equities. Gross exposure is capped at 110%, negative cash is financed at 5% annually, and trades require more than 8% target-weight change. All trades use the unified 1% fee and 0.05% slippage assumptions."
           }
         },
         "zh-Hans": {
@@ -11105,7 +11105,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ · %2$@ · Single %3$@ · Position %4$.0f%% · Rate %5$.2f%% · Slippage%6$.2f%%"
+            "value": "%1$@ · %2$@ · Per Trade %3$@ · Exposure %4$.0f%% · Fee %5$.2f%% · Slippage %6$.2f%%"
           }
         },
         "zh-Hans": {
@@ -11174,7 +11174,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ · Wait for historical market conditions to generate today’s position adjustment"
+            "value": "%1$@ · Waiting for sufficient market history"
           }
         },
         "zh-Hans": {
@@ -11427,7 +11427,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@; %2$.2f%% transaction fee and %3$.2f%% slippage have been included."
+            "value": "%1$@ Results include a %2$.2f%% trading fee and %3$.2f%% slippage."
           }
         },
         "zh-Hans": {
@@ -11588,7 +11588,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "0 means closed"
+            "value": "0 to disable"
           }
         },
         "zh-Hans": {
@@ -11634,7 +11634,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preferred since 2001: Gold 65%, S&P 15.7%, Nasdaq 19.3%, need to stand on MA200 and the 120-day momentum is positive; rebalance every 20 trading days, target fluctuation is 8.5%"
+            "value": "Historical candidate since 2001: 65% gold, 15.7% S&P 500, and 19.3% Nasdaq. Each asset must be above its 200-day moving average with positive 120-session momentum. Rebalanced every 20 trading sessions with 8.5% target volatility."
           }
         },
         "zh-Hans": {
@@ -11657,7 +11657,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aggressive candidates since 2001: Gold 50%, S&P 15%, Nasdaq 35%, need to stand on MA220 and the 120-day momentum is positive; rebalance every 20 trading days, target fluctuation is 11%"
+            "value": "Growth candidate since 2001: 50% gold, 15% S&P 500, and 35% Nasdaq. Each asset must be above its 220-day moving average with positive 120-session momentum. Rebalanced every 20 trading sessions with 11% target volatility."
           }
         },
         "zh-Hans": {
@@ -11726,7 +11726,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "20-day strength ranking, the strongest asset is selected every 20 trading days, and it needs to stand above MA60, otherwise it will be a short position; the income elasticity is high, but the maximum historical drawdown is significantly higher than other selected strategies."
+            "value": "Ranks assets by 20-day relative strength and rotates into the leader every 20 trading sessions, provided it is above its 60-day moving average; otherwise the strategy moves to cash. This higher-return profile has historically experienced materially larger drawdowns than the other Featured strategies."
           }
         },
         "zh-Hans": {
@@ -11749,7 +11749,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "20-day strength ranking, hold the strongest assets every 20 trading days; target fluctuation is 12%, maximum investment is 90%"
+            "value": "20-day strength ranking, hold the strongest assets every 20 trading days; target volatility is 12%, maximum investment is 90%"
           }
         },
         "zh-Hans": {
@@ -11841,7 +11841,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "40-day strength ranking, position adjustment every 20 trading days, holding up to 3 qualified assets; target fluctuation 12%, maximum investment 75%"
+            "value": "Ranks assets by 40-day relative strength and rebalances every 20 trading sessions, holding up to three qualifying assets. Target volatility is 12%, with maximum exposure of 75%."
           }
         },
         "zh-Hans": {
@@ -11864,7 +11864,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "40-day strength ranking, position adjustment every 20 trading days, holding up to 3 qualified assets; target fluctuation 12%, maximum investment 90%"
+            "value": "Ranks assets by 40-day relative strength and rebalances every 20 trading sessions, holding up to three qualifying assets. Target volatility is 12%, with maximum exposure of 90%."
           }
         },
         "zh-Hans": {
@@ -11887,7 +11887,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "40-day strength ranking, position adjustment every 20 trading days, holding up to 3 qualified assets; target fluctuation 6%, maximum investment 35%"
+            "value": "Ranks assets by 40-day relative strength and rebalances every 20 trading sessions, holding up to three qualifying assets. Target volatility is 6%, with maximum exposure of 35%."
           }
         },
         "zh-Hans": {
@@ -11910,7 +11910,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "40-day strength ranking, position adjustment every 20 trading days, holding up to 3 qualified assets; target fluctuation is 8%, maximum investment is 55%"
+            "value": "Ranks assets by 40-day relative strength and rebalances every 20 trading sessions, holding up to three qualifying assets. Target volatility is 8%, with maximum exposure of 55%."
           }
         },
         "zh-Hans": {
@@ -11933,7 +11933,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ on the 5th · %2$@ on the 21st · Retracement %3$@ · Fluctuation %4$@"
+            "value": "5-day %1$@ · 21-day %2$@ · Drawdown %3$@ · Volatility %4$@"
           }
         },
         "zh-Hans": {
@@ -11956,7 +11956,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "App-only state machine candidate: based on one-way wave control dual engines; when the strategy itself weakens in the past 90 days or the retracement expands, reduce the risk budget to 70%, and then open it after recovery."
+            "value": "Balanced dual-engine allocation. When the strategy's trailing 90-day return weakens or drawdown deepens, the risk budget is reduced to 70%; full exposure is restored after conditions recover."
           }
         },
         "zh-Hans": {
@@ -12025,7 +12025,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A-shares are overheated and do not pursue high momentum to build positions"
+            "value": "China-Equity Overheat Guard Entry"
           }
         },
         "zh-Hans": {
@@ -12370,7 +12370,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Strict no-leverage enhancement strategy: continue to use the confidence recovery bottom layer and 20.75% recovery sleeve, run with a hard upper limit of 100% of the total position; close the historically redundant width micro brake and mature Nasdaq brake, and make full use of idle cash when the wave is low and the trend is confirmed. When the leader's assets remain unchanged and the total risk change does not exceed 2%, a 20%/30%/50% graded handover filter will be used according to the portfolio fluctuation; when the gold leader and the 60-day portfolio fluctuation reaches 12%, faster position adjustment will be resumed. 80% of the near-peak position reduction will be implemented, and 5% of the A-share exit sentinels will be retained. All signals strictly use T-1 data, financing and negative cash are prohibited, and 1% transaction fee and 0.05% slippage are included."
+            "value": "Strictly unlevered strategy built on the Confidence Recovery engine and a recovery sleeve capped at 20.75%, with total exposure limited to 100%. It deploys idle cash more fully when volatility is low and trends are confirmed, while volatility-based turnover bands reduce unnecessary rebalancing. Near portfolio highs, 80% of scheduled risk reduction is executed, with a 5% China-equity exit buffer retained. All signals use T−1 data; leverage and negative cash balances are prohibited. Results include a 1.00% trading fee and 0.05% slippage."
           }
         },
         "zh-Hans": {
@@ -12439,7 +12439,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "September Risk Gate Trend Position Building"
+            "value": "September Risk-Gate Trend Entry"
           }
         },
         "zh-Hans": {
@@ -12508,7 +12508,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buy conditions"
+            "value": "Buy Rule"
           }
         },
         "zh-Hans": {
@@ -12623,7 +12623,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Exchange conditions"
+            "value": "Swap Rules"
           }
         },
         "zh-Hans": {
@@ -12669,7 +12669,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trading Fee"
+            "value": "Fee"
           }
         },
         "zh-Hans": {
@@ -12831,7 +12831,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Today’s strategy"
+            "value": "Today's strategy"
           }
         },
         "zh-Hans": {
@@ -12877,7 +12877,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Today’s position adjustment reminder"
+            "value": "Today's Rebalance Alert"
           }
         },
         "zh-Hans": {
@@ -13245,7 +13245,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Low retracement rotation"
+            "value": "Low drawdown rotation"
           }
         },
         "zh-Hans": {
@@ -13268,7 +13268,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Low retracement rotation position opening"
+            "value": "Low-Drawdown Rotation Entry"
           }
         },
         "zh-Hans": {
@@ -13314,7 +13314,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "In use"
+            "value": "Active"
           }
         },
         "zh-Hans": {
@@ -13337,7 +13337,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Generate using reminder policy in settings"
+            "value": "Generated using the notification strategy selected in Settings"
           }
         },
         "zh-Hans": {
@@ -13360,7 +13360,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "For example 0.05"
+            "value": "e.g., 0.05"
           }
         },
         "zh-Hans": {
@@ -13383,7 +13383,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Example 1"
+            "value": "e.g., 1"
           }
         },
         "zh-Hans": {
@@ -13429,7 +13429,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "For example 100000"
+            "value": "e.g., 100,000"
           }
         },
         "zh-Hans": {
@@ -13682,7 +13682,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yuan"
+            "value": "CNY"
           }
         },
         "zh-Hans": {
@@ -13728,7 +13728,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Global Repair Infection Control Opening Position"
+            "value": "Global Recovery Contagion Control Entry"
           }
         },
         "zh-Hans": {
@@ -13797,7 +13797,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "All backtest records"
+            "value": "All Backtest Records"
           }
         },
         "zh-Hans": {
@@ -13820,7 +13820,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Total %1$d records"
+            "value": "%1$d Records"
           }
         },
         "zh-Hans": {
@@ -13889,7 +13889,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Internal defensive sleeve: On the basis of one-way wave control, the risk budget is smoothly reduced according to the combination's own retracement and profit-locking state after rapid rise."
+            "value": "Defensive sleeve that gradually reduces the risk budget when portfolio drawdown deepens or a rapid advance triggers profit protection."
           }
         },
         "zh-Hans": {
@@ -13935,7 +13935,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cooling days"
+            "value": "Cooldown"
           }
         },
         "zh-Hans": {
@@ -13958,7 +13958,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Net worth trend"
+            "value": "Equity Curve"
           }
         },
         "zh-Hans": {
@@ -14050,7 +14050,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Initial Funding"
+            "value": "Initial Capital"
           }
         },
         "zh-Hans": {
@@ -14280,7 +14280,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dynamic Sleeve Sharp Strategy"
+            "value": "Dynamic Sleeve Sharpe Strategy"
           }
         },
         "zh-Hans": {
@@ -14303,7 +14303,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dynamic Sleeve Sharp Strategy to Open a Position"
+            "value": "Dynamic-Sleeve Sharpe Entry"
           }
         },
         "zh-Hans": {
@@ -14395,7 +14395,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One-way wave control element strategy"
+            "value": "One-Way Volatility-Control Meta-Strategy"
           }
         },
         "zh-Hans": {
@@ -14418,7 +14418,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One-way wave control element strategy to open a position"
+            "value": "One-Way Volatility-Control Meta-Strategy Entry"
           }
         },
         "zh-Hans": {
@@ -14465,7 +14465,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Single purchase amount"
+            "value": "Amount per Trade"
           }
         },
         "zh-Hans": {
@@ -14511,7 +14511,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sell conditions"
+            "value": "Sell Rule"
           }
         },
         "zh-Hans": {
@@ -14718,7 +14718,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Double Canary Momentum Defensive Position Building"
+            "value": "Dual-Canary Momentum Defense Entry"
           }
         },
         "zh-Hans": {
@@ -14856,7 +14856,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Retracement momentum"
+            "value": "Drawdown momentum"
           }
         },
         "zh-Hans": {
@@ -14879,7 +14879,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Retracement and re-entry to build a position with momentum"
+            "value": "Drawdown Re-Entry Momentum Entry"
           }
         },
         "zh-Hans": {
@@ -14925,7 +14925,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cash warehouses with no assets invested in the backtest will calculate interest on a daily basis based on the historical demand deposit benchmark interest rate; the actual income of banks, monetary funds or cash management products may be different."
+            "value": "Uninvested cash in backtests accrues daily interest at the historical RMB demand-deposit benchmark rate. Actual returns on bank deposits, money market funds, or cash-management products may differ."
           }
         },
         "zh-Hans": {
@@ -14948,7 +14948,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Backtest interval"
+            "value": "Backtest Period"
           }
         },
         "zh-Hans": {
@@ -15063,7 +15063,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The September risk gate is superimposed on the steady retracement ladder trend: only 25% of the equity positions will be retained in September, and the interests that are cut will be given priority to gold with an effective trend; the goal is to reduce the maximum retracement of the recent independent range."
+            "value": "The September risk gate is superimposed on the steady drawdown ladder trend: only 25% of the equity positions will be retained in September, and the interests that are cut will be given priority to gold with an effective trend; the goal is to reduce the maximum drawdown of the recent independent range."
           }
         },
         "zh-Hans": {
@@ -15155,7 +15155,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Balanced rotation position opening"
+            "value": "Balanced Rotation Entry"
           }
         },
         "zh-Hans": {
@@ -15178,7 +15178,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Core"
+            "value": "Basic"
           }
         },
         "zh-Hans": {
@@ -15201,7 +15201,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Basic backtesting"
+            "value": "Basic Backtest"
           }
         },
         "zh-Hans": {
@@ -15224,7 +15224,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Basic Strategy"
+            "value": "Basic Strategies"
           }
         },
         "zh-Hans": {
@@ -15247,7 +15247,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enhanced candidates: Following the popularity upper limit meta-framework, the risk budget of a single equity exceeding the upper limit is not directly idle; priority is given to gold with effective trends and relative strength, otherwise it is transferred to confirmed assets with positive momentum, standing on MA120 and low volatility."
+            "value": "Enhanced Heat-Cap candidate. Risk budget above the single-equity cap is redirected first to gold when trend and relative-strength signals are positive; otherwise it is allocated to a lower-volatility asset with positive momentum above its 120-day moving average."
           }
         },
         "zh-Hans": {
@@ -15293,7 +15293,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enhance the upper limit of popularity to open positions"
+            "value": "Enhanced Heat-Cap Entry"
           }
         },
         "zh-Hans": {
@@ -15339,7 +15339,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enhanced rotational position building"
+            "value": "Enhanced Rotation Entry"
           }
         },
         "zh-Hans": {
@@ -15431,7 +15431,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fixed investment"
+            "value": "DCA"
           }
         },
         "zh-Hans": {
@@ -15707,7 +15707,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Average Cash Position"
+            "value": "Average Cash Allocation"
           }
         },
         "zh-Hans": {
@@ -15776,7 +15776,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The annualized return is about %1$@, the maximum drawdown is about %2$@, and the sharp drawdown is about %3$.2f."
+            "value": "Annualized return is approximately %1$@, maximum drawdown is approximately %2$@, and the Sharpe ratio is approximately %3$.2f."
           }
         },
         "zh-Hans": {
@@ -15891,7 +15891,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Strong wave control and rotation to open a position"
+            "value": "Momentum Volatility-Control Rotation Entry"
           }
         },
         "zh-Hans": {
@@ -16144,7 +16144,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Current unfinanced Sharp Champion: retains 15% fast bridging and up to 20.75% recovery sleeve; automatically shrinks to 19% during high volatility, and is allocated between Nasdaq/S&P based on 95-day momentum, downside volatility and trend efficiency. The recovery sleeve exited when the dual index fell 5% simultaneously on the 3rd day, and cooled down for 150 days after exiting. The leading asset switching continues to use Beta(2,2) redemption rate calibration; when it is not liquidation and reduction and the basic net value is less than 4% from the 252-day high, a buffer of up to 25% will be retained based on the impact of the decline in total positions and the total change of hands, and will be dispersed to this sale of assets when the position is broadly reduced. All signals strictly use T-1 data, the total position is capped at 100%, cash cannot be negative, and 1% transaction fee and 0.05% slippage are included."
+            "value": "Unlevered Sharpe leader. Retains the 15% fast bridge and a recovery sleeve of up to 20.75%, contracting the sleeve to 19% in high volatility and allocating between Nasdaq and the S&P 500 using 95-session momentum, downside volatility, and trend efficiency. The sleeve exits after both indices fall 5% over three sessions and then observes a 150-session cooldown. Leadership transitions use a Beta(2, 2) reliability model. Near a 252-session portfolio high, up to 25% of non-liquidation risk reduction may be buffered based on exposure and turnover impact. Signals use T−1 data, gross exposure is capped at 100%, cash remains non-negative, and results include a 1% trading fee and 0.05% slippage."
           }
         },
         "zh-Hans": {
@@ -16191,7 +16191,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No assets currently meet the policy conditions"
+            "value": "No assets currently meet the strategy criteria"
           }
         },
         "zh-Hans": {
@@ -16352,7 +16352,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Current high Sharp candidates: superimpose infection control, US dollar cash, gold panic lock-in profit, and sparse risk reduction when the target portfolio volatility is high and the momentum quality is insufficient."
+            "value": "Current high Sharpe candidates: superimpose infection control, US dollar cash, gold panic lock-in profit, and sparse risk reduction when the target portfolio volatility is high and the momentum quality is insufficient."
           }
         },
         "zh-Hans": {
@@ -16398,7 +16398,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Manual scanning · Comprehensive sorting"
+            "value": "On-Demand Scan · Composite Ranking"
           }
         },
         "zh-Hans": {
@@ -16421,7 +16421,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open the asset time machine and update the latest strategy signals."
+            "value": "Open Asset Time Machine to refresh the latest strategy signals."
           }
         },
         "zh-Hans": {
@@ -16444,7 +16444,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open the asset time machine to view the latest strategy signals."
+            "value": "Open Asset Time Machine to view the latest strategy signals."
           }
         },
         "zh-Hans": {
@@ -16467,7 +16467,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open Asset Time Machine and select a strategy as a daily reminder."
+            "value": "Open Asset Time Machine and select a strategy for daily alerts."
           }
         },
         "zh-Hans": {
@@ -16559,7 +16559,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hold the mid-break position to lock in profit and build a defensive position"
+            "value": "In-Position Profit-Lock Defense Entry"
           }
         },
         "zh-Hans": {
@@ -16651,7 +16651,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Backtest each asset independently with buy/sell conditions"
+            "value": "Backtest each asset independently using its buy and sell rules"
           }
         },
         "zh-Hans": {
@@ -16674,7 +16674,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "According to the current parameters, the monthly expenses need to be controlled within %1$@."
+            "value": "Based on these assumptions, keep monthly spending below %1$@."
           }
         },
         "zh-Hans": {
@@ -16697,7 +16697,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "According to the current parameters, the monthly expenses need to be controlled within %1$@, or the income should increase to %2$@/month."
+            "value": "Based on these assumptions, either keep monthly spending below %1$@ or increase monthly income to %2$@."
           }
         },
         "zh-Hans": {
@@ -16812,7 +16812,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recommended candidates: With the recent loss-volatility meta strategy as the core, the core position is increased to 97.5%; when the gold trend and relative strength are effective at the same time, hang 10% of the gold satellite, taking into account the income and about 9% retracement control."
+            "value": "Recommended candidate built on the Recent-Loss Volatility Meta-Strategy with 97.5% core exposure. Adds a 10% gold satellite when both gold trend and relative strength are positive, targeting stronger returns while keeping historical drawdown near 9%."
           }
         },
         "zh-Hans": {
@@ -16858,7 +16858,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reminder Policy"
+            "value": "Notification Strategy"
           }
         },
         "zh-Hans": {
@@ -16950,7 +16950,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Priority candidate for income: gold serves as a defensive bottom position, and the Nasdaq/S&P/A-share index only enters the market when the 90-day retracement is controllable and momentum or RSI becomes stronger again; rebalance every 40 trading days, with a target fluctuation of 7.5% and a maximum position of 65%."
+            "value": "Priority candidate for income: gold serves as a defensive bottom position, and the Nasdaq/S&P/A-share index only enters the market when the 90-day drawdown is controllable and momentum or RSI becomes stronger again; rebalance every 40 trading days, with a target volatility of 7.5% and a maximum position of 65%."
           }
         },
         "zh-Hans": {
@@ -16973,7 +16973,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Income retracement candidates: Use the equity curve state machine as the bottom layer, lower the low-risk level to 73%, and clear the corresponding A-share sleeve when the A-share bubble breaks; the goal is to push the maximum retracement within 10% at an annualized rate of about 10%."
+            "value": "Return–Drawdown candidate built on an equity-curve state machine. Reduces the low-risk allocation to 73% and exits the relevant China-equity sleeve after a post-bubble breakdown, targeting roughly 10% annualized return with sub-10% maximum drawdown."
           }
         },
         "zh-Hans": {
@@ -16996,7 +16996,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yield Retracement Gate State Machine"
+            "value": "Yield Drawdown Gate State Machine"
           }
         },
         "zh-Hans": {
@@ -17019,7 +17019,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Profit retracement door state machine position opening"
+            "value": "Return–Drawdown Gate Entry"
           }
         },
         "zh-Hans": {
@@ -17065,7 +17065,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The strategy is only used as a reference for position adjustment based on historical backtesting and does not constitute investment advice."
+            "value": "Rebalance guidance is based solely on historical backtests and does not constitute investment advice."
           }
         },
         "zh-Hans": {
@@ -17134,7 +17134,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "New champion candidate: The recent loss volatility meta strategy maintains full core, and the gold satellite is 10% when the gold trend and relative strength are effective; the total position is capped at 85%, and the February weak equity brake and net value light brake are used to control the retracement."
+            "value": "New champion candidate: The recent loss volatility meta strategy maintains full core, and the gold satellite is 10% when the gold trend and relative strength are effective; the total position is capped at 85%, and the February weak equity brake and net value light brake are used to control the drawdown."
           }
         },
         "zh-Hans": {
@@ -17157,7 +17157,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "New Sharp Champion: Use gold handover protection as the defensive engine and equity width as the offensive engine; when the offensive engine is ahead but its own fluctuation is higher than the defensive engine, it will only reduce the position but not increase the position, and keep the remaining cash."
+            "value": "New Sharpe Champion: Use gold handover protection as the defensive engine and equity width as the offensive engine; when the offensive engine is ahead but its own volatility is higher than the defensive engine, it will only reduce the position but not increase the position, and keep the remaining cash."
           }
         },
         "zh-Hans": {
@@ -17226,7 +17226,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "New high-yield line: With the dynamic sleeve as the core, the free budget will only undertake global repair opportunities such as Hang Seng/Nikkei when the retracement repair is confirmed; temporarily suppress the equity position when the A/H stock bubble falls and the global width weakens."
+            "value": "Return-focused candidate built on the Dynamic Sleeve strategy. Idle risk budget is deployed into Hang Seng or Nikkei recovery opportunities only after drawdown recovery is confirmed; equity exposure is reduced when A/H-share excesses unwind or global breadth weakens."
           }
         },
         "zh-Hans": {
@@ -17272,7 +17272,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No calendar low retracement compounding"
+            "value": "No calendar low drawdown compounding"
           }
         },
         "zh-Hans": {
@@ -17433,7 +17433,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Intelligent optimization strategy"
+            "value": "Strategy Optimizer"
           }
         },
         "zh-Hans": {
@@ -17456,7 +17456,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not supported yet"
+            "value": "Not Available"
           }
         },
         "zh-Hans": {
@@ -17640,7 +17640,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pay more attention to the holding experience: gold 73%, S&P 1%, Nasdaq 26%, need to stand on MA220 and the 120-day momentum is positive; when the equity retracement exceeds 6%/12% from the 180-day high, the position will be reduced in stages, and priority will be transferred to gold or cash."
+            "value": "Designed for a smoother holding experience: 73% gold, 1% S&P 500, and 26% Nasdaq. Assets must be above their 220-day moving averages with positive 120-session momentum. Equity exposure is reduced in stages after 6% and 12% drawdowns from 180-session highs, with proceeds shifted to gold or cash."
           }
         },
         "zh-Hans": {
@@ -17686,7 +17686,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Maximum position"
+            "value": "Max Exposure"
           }
         },
         "zh-Hans": {
@@ -17824,7 +17824,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recent backtest"
+            "value": "Recent Backtests"
           }
         },
         "zh-Hans": {
@@ -17917,7 +17917,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Monthly Candidate: Follow the popularity cap meta-strategy framework, but check it approximately every 30 trading days; increase the single equity cap to 72%, retain the golden satellite, February weak braking and net value light braking, and pursue a smoother full-cycle retracement."
+            "value": "Monthly Candidate: Follow the popularity cap meta-strategy framework, but check it approximately every 30 trading days; increase the single equity cap to 72%, retain the gold satellite, February weak braking and net value light braking, and pursue a smoother full-cycle drawdown."
           }
         },
         "zh-Hans": {
@@ -17940,7 +17940,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Monthly Popularity Upper Limit Yuan"
+            "value": "Monthly Heat-Cap Meta-Strategy"
           }
         },
         "zh-Hans": {
@@ -17963,7 +17963,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Monthly hot upper limit yuan to open a position"
+            "value": "Monthly Heat-Cap Meta-Strategy Entry"
           }
         },
         "zh-Hans": {
@@ -18032,7 +18032,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Closing Assets"
+            "value": "Ending Portfolio Value"
           }
         },
         "zh-Hans": {
@@ -18239,7 +18239,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Equity breadth attack engine position building"
+            "value": "Equity-Breadth Growth Engine Entry"
           }
         },
         "zh-Hans": {
@@ -18262,7 +18262,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The conditional signal uses the closing price of the previous trading day to confirm and the closing price of the next trading day to complete the transaction."
+            "value": "Signals are confirmed at the prior trading day's close; trades execute at the next trading day's close."
           }
         },
         "zh-Hans": {
@@ -18331,7 +18331,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Extremely stable rotation position opening"
+            "value": "Ultra-Stable Rotation Entry"
           }
         },
         "zh-Hans": {
@@ -18377,7 +18377,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "View more (total %1$d pens)"
+            "value": "View All (%1$d Trades)"
           }
         },
         "zh-Hans": {
@@ -18400,7 +18400,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "How Financial Freedom Is Calculated"
+            "value": "How Financial Independence Is Calculated"
           }
         },
         "zh-Hans": {
@@ -18446,7 +18446,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Core Momentum + Gold Satellite Conservative Positioning"
+            "value": "Core Momentum + Gold Satellite — Conservative Entry"
           }
         },
         "zh-Hans": {
@@ -18469,7 +18469,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Core Momentum + Gold Satellite Balanced Position Building"
+            "value": "Core Momentum + Gold Satellite — Balanced Entry"
           }
         },
         "zh-Hans": {
@@ -18492,7 +18492,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Core Momentum + Golden Satellite Full Core Position Opening"
+            "value": "Core Momentum + Gold Satellite — Full-Core Entry"
           }
         },
         "zh-Hans": {
@@ -18515,7 +18515,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Core Momentum + Golden Satellite Offensive Position Building"
+            "value": "Core Momentum + Gold Satellite — Aggressive Entry"
           }
         },
         "zh-Hans": {
@@ -18584,7 +18584,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Core Momentum + Golden Satellite (full core)"
+            "value": "Core Momentum + Gold Satellite — Full Core"
           }
         },
         "zh-Hans": {
@@ -18607,7 +18607,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Core Momentum + Golden Satellite (Offensive)"
+            "value": "Core Momentum + Gold Satellite — Aggressive"
           }
         },
         "zh-Hans": {
@@ -18653,7 +18653,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Core Gold Trend Satellite Position Building"
+            "value": "Core Gold Trend Satellite Entry"
           }
         },
         "zh-Hans": {
@@ -18676,7 +18676,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Generate position adjustment reminders based on the latest market prices and asset records."
+            "value": "Generate rebalance alerts from the latest market data and portfolio records."
           }
         },
         "zh-Hans": {
@@ -18699,7 +18699,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stop loss line"
+            "value": "Stop Loss"
           }
         },
         "zh-Hans": {
@@ -18722,7 +18722,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stop loss triggered"
+            "value": "Stop-Loss Triggered"
           }
         },
         "zh-Hans": {
@@ -18745,7 +18745,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Take Profit Line"
+            "value": "Take Profit"
           }
         },
         "zh-Hans": {
@@ -18768,7 +18768,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Take profit triggered"
+            "value": "Take-Profit Triggered"
           }
         },
         "zh-Hans": {
@@ -19205,7 +19205,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No matching policy"
+            "value": "No Matching Strategies"
           }
         },
         "zh-Hans": {
@@ -19343,7 +19343,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Popularity upper limit meta-strategy"
+            "value": "Heat-Cap Meta-Strategy"
           }
         },
         "zh-Hans": {
@@ -19366,7 +19366,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Popularity upper limit meta-strategy for building a position"
+            "value": "Heat-Cap Meta-Strategy Entry"
           }
         },
         "zh-Hans": {
@@ -19458,7 +19458,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cash income accrues interest on demand"
+            "value": "Cash earns interest at the historical RMB demand-deposit rate"
           }
         },
         "zh-Hans": {
@@ -19643,7 +19643,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Profit and Loss"
+            "value": "P&L"
           }
         },
         "zh-Hans": {
@@ -19712,7 +19712,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Target investment %1$@, cash %2$@; evaluate according to %3$d daily signal, target fluctuation %4$@."
+            "value": "Target investment %1$@, cash %2$@; evaluate according to %3$d daily signal, target volatility %4$@."
           }
         },
         "zh-Hans": {
@@ -19850,7 +19850,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accelerated offensive sleeve positioning confirmed"
+            "value": "Confirmed-Acceleration Growth Sleeve Entry"
           }
         },
         "zh-Hans": {
@@ -19896,7 +19896,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Robust Low Volatility Momentum Positioning"
+            "value": "Robust Low-Volatility Momentum Entry"
           }
         },
         "zh-Hans": {
@@ -19919,7 +19919,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Steady retracement ladder trend"
+            "value": "Steady drawdown ladder trend"
           }
         },
         "zh-Hans": {
@@ -19942,7 +19942,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Steady retracement ladder trend position opening"
+            "value": "Steady Drawdown-Ladder Trend Entry"
           }
         },
         "zh-Hans": {
@@ -19965,7 +19965,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Candidates for robust enhancement: With the recent loss volatility meta strategy as the core, only 95% of core positions are used; when gold’s 90-day momentum is positive, stands on the 120-day moving average, and outperforms the S&P on 60 days, hang 10% of the gold satellite; when equity weakens in February, lower the equity position."
+            "value": "Conservative candidate built on the Recent-Loss Volatility Meta-Strategy with 95% core exposure. Adds a 10% gold satellite when gold has positive 90-session momentum, is above its 120-day moving average, and has outperformed the S&P 500 over 60 sessions; trims equities when February conditions weaken."
           }
         },
         "zh-Hans": {
@@ -19988,7 +19988,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Candidates for robust enhancement: retain the main body of high, short and weak dual gatekeepers, but US stock/A share positions need to be confirmed by the same group of brother indexes; if the brother index has weakened significantly, first reduce the total position to 60%, and give priority to gold or cash."
+            "value": "Conservative candidate based on the High-Zone Dual-Guard engine. U.S. and China equity positions require confirmation from a peer index; if the peer weakens materially, total exposure is cut to 60% and redirected toward gold or cash."
           }
         },
         "zh-Hans": {
@@ -20034,7 +20034,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Steady rotation of position building"
+            "value": "Robust Rotation Entry"
           }
         },
         "zh-Hans": {
@@ -20149,7 +20149,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Strategy Equity"
+            "value": "Strategy Value"
           }
         },
         "zh-Hans": {
@@ -20172,7 +20172,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Policy Parameters"
+            "value": "Strategy Parameters"
           }
         },
         "zh-Hans": {
@@ -20195,7 +20195,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Strategy Backtesting"
+            "value": "Strategy Backtest"
           }
         },
         "zh-Hans": {
@@ -20241,7 +20241,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Policy Reminder"
+            "value": "Strategy Alert"
           }
         },
         "zh-Hans": {
@@ -20264,7 +20264,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Strategy Benefits"
+            "value": "Strategy Return"
           }
         },
         "zh-Hans": {
@@ -20333,7 +20333,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Policy settings"
+            "value": "Strategy Settings"
           }
         },
         "zh-Hans": {
@@ -20471,7 +20471,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Portfolio net value falls"
+            "value": "Chart Baseline"
           }
         },
         "zh-Hans": {
@@ -20586,7 +20586,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Comprehensive champion candidate: usually follow the momentum of high position, short position and weak double gatekeeping; when the recent losses and fluctuations of this strategy are magnified at the same time, in the short term, it will switch to holding the mid-break position to lock in the profit defensive engine, and then attack after recovery."
+            "value": "Composite candidate that normally follows the High-Zone Dual-Guard Momentum engine. When the strategy's recent losses and volatility rise together, it temporarily shifts to the In-Position Profit-Lock Defense engine and returns to growth positioning after conditions recover."
           }
         },
         "zh-Hans": {
@@ -20701,7 +20701,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "USD Cash Repair Strategy Position Opening"
+            "value": "USD Cash Recovery Entry"
           }
         },
         "zh-Hans": {
@@ -20770,7 +20770,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Custom policy"
+            "value": "Custom Strategy"
           }
         },
         "zh-Hans": {
@@ -20793,7 +20793,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Custom strategies currently do not support real-time position adjustment suggestions; it is recommended to use the rotation/long-term strategy in the strategy directory first."
+            "value": "Real-time rebalance guidance is not available for custom strategies. Choose a rotation or long-term strategy from the Strategy Library instead."
           }
         },
         "zh-Hans": {
@@ -21161,7 +21161,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This signal uses the multi-year historical prices of S&P 500 priority and Nasdaq backup, and combines short-term declines, monthly declines, stage retracements and volatility increases to provide risk temperature for portfolio scheduling; it is not a tradable position, nor does it change the range of visible assets."
+            "value": "This signal prioritizes multi-year S&P 500 history and falls back to Nasdaq data. It combines short-horizon and monthly declines, drawdown, and rising volatility into a portfolio risk indicator. It is not tradable and does not alter the available asset universe."
           }
         },
         "zh-Hans": {
@@ -21530,7 +21530,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Excess returns"
+            "value": "Excess Return"
           }
         },
         "zh-Hans": {
@@ -21668,7 +21668,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rotation switching/short position"
+            "value": "Rotation or Cash"
           }
         },
         "zh-Hans": {
@@ -21714,7 +21714,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The rotation strategy uses the signal of the previous trading day and the closing price of the next position adjustment day to complete the transaction."
+            "value": "Signals use the prior trading day's data; trades execute at the next scheduled rebalance close."
           }
         },
         "zh-Hans": {
@@ -21875,7 +21875,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recent losses and volatility meta strategy to open a position"
+            "value": "Recent-Loss Volatility Meta-Strategy Entry"
           }
         },
         "zh-Hans": {
@@ -21944,7 +21944,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$d years of financial freedom are needed"
+            "value": "%1$d yr to Financial Independence"
           }
         },
         "zh-Hans": {
@@ -22013,7 +22013,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aggressive candidate: The core is still the recent loss volatility meta strategy, the core position is 97.5%, and the golden satellite is increased to 15%; the historical return is higher, but the maximum drawdown is closer to 10%."
+            "value": "Aggressive candidate: The core is still the recent loss volatility meta strategy, the core position is 97.5%, and the gold satellite is increased to 15%; the historical return is higher, but the maximum drawdown is closer to 10%."
           }
         },
         "zh-Hans": {
@@ -22059,7 +22059,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Continuous rise"
+            "value": "Consecutive Up Days"
           }
         },
         "zh-Hans": {
@@ -22082,7 +22082,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Continuous decline"
+            "value": "Consecutive Down Days"
           }
         },
         "zh-Hans": {
@@ -22220,7 +22220,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "After selecting a strategy, you can receive daily reminders of target positions and buying and selling amounts."
+            "value": "Select a strategy to receive daily target-allocation and trade-amount alerts."
           }
         },
         "zh-Hans": {
@@ -22404,7 +22404,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pair Confirmed Double Gatekeeper Momentum Position Opening"
+            "value": "Peer-Confirmation Dual-Guard Momentum Entry"
           }
         },
         "zh-Hans": {
@@ -22450,7 +22450,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Backtest again"
+            "value": "Run Backtest Again"
           }
         },
         "zh-Hans": {
@@ -22519,7 +22519,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jinner Low Drawdown Rotation"
+            "value": "Gold–Nasdaq Low-Drawdown Rotation"
           }
         },
         "zh-Hans": {
@@ -22542,7 +22542,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jinna low retracement rotation position opening"
+            "value": "Gold–Nasdaq Low-Drawdown Rotation Entry"
           }
         },
         "zh-Hans": {
@@ -22565,7 +22565,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kinner Combination Scheduling"
+            "value": "Gold–Nasdaq Portfolio Scheduler"
           }
         },
         "zh-Hans": {
@@ -22588,7 +22588,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jinna combination scheduling to open a position"
+            "value": "Gold–Nasdaq Portfolio Scheduler Entry"
           }
         },
         "zh-Hans": {
@@ -22611,7 +22611,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Long-term low retracement trend"
+            "value": "Long-term low drawdown trend"
           }
         },
         "zh-Hans": {
@@ -22634,7 +22634,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open a position in the long-term low retracement trend"
+            "value": "Long-Term Low-Drawdown Trend Entry"
           }
         },
         "zh-Hans": {
@@ -22680,7 +22680,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Long-term low volatility momentum positioning"
+            "value": "Long-Term Low-Volatility Momentum Entry"
           }
         },
         "zh-Hans": {
@@ -22703,7 +22703,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Long-term strengthening low retracement trend"
+            "value": "Long-term strengthening low drawdown trend"
           }
         },
         "zh-Hans": {
@@ -22726,7 +22726,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Long-term enhanced low retracement trend position building"
+            "value": "Enhanced Long-Term Low-Drawdown Trend Entry"
           }
         },
         "zh-Hans": {
@@ -22749,7 +22749,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Long-term enhancement candidates: Gold 73%, S&P 1%, Nasdaq 26%. It needs to stand above MA220 and the 120-day momentum is positive; the target fluctuation is 9.5%, and the equity position will be automatically reduced when the Nasdaq fluctuates overheating."
+            "value": "Long-term enhancement candidates: Gold 73%, S&P 1%, Nasdaq 26%. It needs to stand above MA220 and the 120-day momentum is positive; the target volatility is 9.5%, and the equity position will be automatically reduced when the Nasdaq fluctuates overheating."
           }
         },
         "zh-Hans": {
@@ -22772,7 +22772,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Long-term breadth risk budget: Use approximately 420 trading days to compare the golden handover with the equity breadth engine; retain at least 50% of the target position when the offensive engine is more volatile, and retain 50% of the defensive portfolio when the risk weakens. There is no financing in the whole process, and it is rebalanced according to the 8% weight deviation threshold to adapt to the 1% transaction fee."
+            "value": "Long-horizon risk-budget strategy that compares the Gold Transition and Equity Breadth engines over roughly 420 trading sessions. It retains at least 50% of the target allocation when the growth engine is more volatile and keeps 50% in the defensive allocation when risk conditions weaken. The strategy is unlevered and rebalances when weights drift by more than 8%, accounting for a 1% trading fee."
           }
         },
         "zh-Hans": {
@@ -22795,7 +22795,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Long-term trend allocation to build a position"
+            "value": "Long-Term Trend Allocation Entry"
           }
         },
         "zh-Hans": {
@@ -23025,7 +23025,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Risk efficiency enhancement strategy for position building"
+            "value": "Risk-Efficiency Enhancement Entry"
           }
         },
         "zh-Hans": {
@@ -23210,7 +23210,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "High, short, weak and double gatekeeper momentum to build a position"
+            "value": "High-Zone Deceleration Dual-Guard Momentum Entry"
           }
         },
         "zh-Hans": {
@@ -23233,7 +23233,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "High Sharp"
+            "value": "High Sharpe"
           }
         },
         "zh-Hans": {
@@ -23256,7 +23256,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "High Sharp candidate: based on dual-engine routing and gold diversified credit; when the strategy's 75-day return weakens or the retracement expands, the risk budget is reduced to 45%, and it will only be opened after the 75-day return becomes stronger again."
+            "value": "High Sharpe candidate: based on dual-engine routing and gold diversified credit; when the strategy's 75-day return weakens or the drawdown expands, the risk budget is reduced to 45%, and it will only be opened after the 75-day return becomes stronger again."
           }
         },
         "zh-Hans": {
@@ -23279,7 +23279,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "High Sharp Candidate: Make a 315-day relative return hysteresis switch between confirmed acceleration offensive sleeves and lock-in defensive sleeves; high-end 95%, low-end 25%, no financing in the whole process."
+            "value": "High-Sharpe candidate that switches between Confirmed-Acceleration Growth and Profit-Lock Defense sleeves using a 315-session relative-return hysteresis signal. Exposure is 95% in the growth state and 25% in the defensive state; no leverage is used."
           }
         },
         "zh-Hans": {
@@ -23325,7 +23325,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "High Sharp state machine position opening"
+            "value": "High-Sharpe State-Machine Entry"
           }
         },
         "zh-Hans": {
@@ -23394,7 +23394,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gold/Nasdaq dual asset selection: the increase in the past 20 days must exceed 2% and stand above MA250; switch to stronger assets every 40 trading days, with a target fluctuation of 8%, and a maximum investment of 90%"
+            "value": "Gold/Nasdaq dual asset selection: the increase in the past 20 days must exceed 2% and stand above MA250; switch to stronger assets every 40 trading days, with a target volatility of 8%, and a maximum investment of 90%"
           }
         },
         "zh-Hans": {
@@ -23417,7 +23417,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Golden Handover Protection"
+            "value": "Gold Transition Protection"
           }
         },
         "zh-Hans": {
@@ -23440,7 +23440,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gold handover protection for opening a position"
+            "value": "Gold Transition Protection Entry"
           }
         },
         "zh-Hans": {
@@ -23463,7 +23463,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gold is the core of defense, and the Nasdaq/S&P is only a trend satellite; gold looks at MA120, and equity looks at MA250. It is rebalanced every 20 trading days, with a target fluctuation of 9.5%."
+            "value": "Gold is the core of defense, and the Nasdaq/S&P is only a trend satellite; gold looks at MA120, and equity looks at MA250. It is rebalanced every 20 trading days, with a target volatility of 9.5%."
           }
         },
         "zh-Hans": {
@@ -23509,7 +23509,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gold Panic Lock-in Profit Strategy to Open a Position"
+            "value": "Gold Panic Profit-Lock Entry"
           }
         },
         "zh-Hans": {
@@ -23946,7 +23946,7 @@
           "en": {
             "stringUnit": {
               "state": "translated",
-              "value": "Average Cash Position"
+              "value": "Average Cash Allocation"
             }
           },
           "zh-Hans": {
@@ -24038,7 +24038,7 @@
           "en": {
             "stringUnit": {
               "state": "translated",
-              "value": "Scan candidate policies"
+              "value": "Scan Candidate Strategies"
             }
           },
           "zh-Hans": {
@@ -24130,7 +24130,7 @@
           "en": {
             "stringUnit": {
               "state": "translated",
-              "value": "Smoothly reduce the risk budget based on the state of the portfolio's retracement and rapid rise, emphasizing the holding experience."
+              "value": "Smoothly reduce the risk budget based on the state of the portfolio's drawdown and rapid rise, emphasizing the holding experience."
             }
           },
           "zh-Hans": {
@@ -24360,7 +24360,7 @@
           "en": {
             "stringUnit": {
               "state": "translated",
-              "value": "Research strategies for position adjustment"
+              "value": "Research Strategy Rebalance"
             }
           },
           "zh-Hans": {
@@ -24406,7 +24406,7 @@
           "en": {
             "stringUnit": {
               "state": "translated",
-              "value": "Short position"
+              "value": "Cash"
             }
           },
           "zh-Hans": {
@@ -24797,7 +24797,7 @@
           "en": {
             "stringUnit": {
               "state": "translated",
-              "value": "Candidate strategies can be scanned if needed"
+              "value": "Run a scan to evaluate candidate strategies"
             }
           },
           "zh-Hans": {

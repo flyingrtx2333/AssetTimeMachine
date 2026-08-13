@@ -1494,6 +1494,7 @@ struct AdvancedBacktestView: View {
                 .foregroundStyle(AssetTheme.textSecondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.86)
+                .layoutPriority(1)
 
             Spacer(minLength: 6)
 
