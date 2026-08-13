@@ -1,5 +1,21 @@
 import Foundation
 
+nonisolated struct MarketAssetDescriptor: Codable, Equatable, Identifiable, Sendable {
+    let symbol: String
+    let category: String
+    let label: String
+    let currency: String
+    let unit: String
+    let source: String?
+
+    var id: String { symbol }
+}
+
+nonisolated struct MarketAssetCatalogResponse: Codable, Equatable, Sendable {
+    let success: Bool
+    let assets: [MarketAssetDescriptor]
+}
+
 nonisolated struct PublicHistoryDailyBar: Codable, Identifiable, Equatable, Sendable {
     let dateText: String
     let date: Date
@@ -109,4 +125,13 @@ nonisolated struct PublicHistorySeries: Codable, Identifiable, Equatable, Sendab
 nonisolated struct PublicHistoryResponse: Codable, Equatable, Sendable {
     let success: Bool
     let series: [PublicHistorySeries]
+    let availableSymbols: [String]?
+    let catalog: [MarketAssetDescriptor]?
+
+    enum CodingKeys: String, CodingKey {
+        case success
+        case series
+        case availableSymbols = "available_symbols"
+        case catalog
+    }
 }

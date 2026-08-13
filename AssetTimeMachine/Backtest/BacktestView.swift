@@ -147,6 +147,7 @@ struct BacktestView: View {
     @State private var hasStartedBacktest = false
     @State private var hasPlayedInitialBacktestAnimation = false
     @State private var isBacktestLoading = false
+    @State private var backtestRunStage: BacktestRunStage?
     @State private var backtestRefreshToken = 0
     @State private var allocationReport: BacktestReport?
     @State private var dcaReport: DCABacktestReport?
@@ -204,8 +205,15 @@ struct BacktestView: View {
 
     @State private var activeDCAConfigSheet: DCAConfigSheet?
 
-    private let indexOptions = BacktestDefaults.indexOptions
-    private let dcaAssetOptions = BacktestDefaults.dcaAssetOptions
+    private var dcaAssetOptions: [BacktestAssetOption] {
+        marketStore.backtestAssetOptions
+    }
+
+    private var indexOptions: [BacktestIndexOption] {
+        dcaAssetOptions
+            .filter { $0.category == "index" }
+            .map { BacktestIndexOption(symbol: $0.symbol, title: $0.title, color: $0.color) }
+    }
 
     private var positiveIndexOptions: [BacktestIndexOption] {
         indexOptions.filter { indexWeights[$0.symbol, default: 0] > 0 }
@@ -414,9 +422,9 @@ struct BacktestView: View {
                                             onTapAllocation: {
                                                 showsAllocationSheet = true
                                             },
-                                            onTapPrimaryAction: hasActiveReport ? nil : {
-                                                hasStartedBacktest = true
-                                                scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: true)
+                                            runStage: isBacktestLoading ? backtestRunStage : nil,
+                                            onTapPrimaryAction: isBacktestLoading || hasActiveReport ? nil : {
+                                                startStandardBacktest()
                                             }
                                         )
                                         .onboardingAnchor(.backtestConfiguration)
@@ -439,9 +447,9 @@ struct BacktestView: View {
                                             onTapInterval: {
                                                 activeDCAConfigSheet = .interval
                                             },
-                                            onTapPrimaryAction: hasActiveReport ? nil : {
-                                                hasStartedBacktest = true
-                                                scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: true)
+                                            runStage: isBacktestLoading ? backtestRunStage : nil,
+                                            onTapPrimaryAction: isBacktestLoading || hasActiveReport ? nil : {
+                                                startStandardBacktest()
                                             }
                                         )
                                         .onboardingAnchor(.backtestConfiguration)
@@ -456,11 +464,6 @@ struct BacktestView: View {
                                     }
                                 }
                                 .frame(maxWidth: .infinity)
-
-                                if isBacktestLoading {
-                                    BacktestLoadingView()
-                                        .padding(.top, 8)
-                                }
 
                                 if !isBacktestLoading {
                                     switch backtestMode {
@@ -579,7 +582,7 @@ struct BacktestView: View {
                         selectedStartDate = startDate
                         selectedEndDate = endDate
                     }
-                    .presentationDetents([.fraction(0.82), .large])
+                    .presentationDetents([.fraction(0.68), .large])
                     .presentationDragIndicator(.visible)
                 } else {
                     ContentUnavailableView(AppLocalization.string("暂无可用历史数据"), systemImage: "calendar.badge.exclamationmark")
@@ -608,7 +611,11 @@ struct BacktestView: View {
                 refreshBacktestRecordCache(force: false)
                 guard selectedPage == .standard else { return }
                 lastObservedRelevantHistoryToken = relevantHistoryToken
+                await marketStore.refreshAssetCatalogIfNeeded()
+                guard !Task.isCancelled else { return }
                 await marketStore.refreshHistoryIfNeeded()
+                guard !Task.isCancelled else { return }
+                await marketStore.refreshHistory(for: relevantBacktestHistorySymbols)
                 guard !Task.isCancelled else { return }
                 scheduleBacktestDataRefresh(delayNanoseconds: 0)
                 if hasStartedBacktest, !hasActiveReport {
@@ -620,6 +627,7 @@ struct BacktestView: View {
                 pendingBacktestComputationTask?.cancel()
                 pendingBacktestComputationTask = nil
                 isBacktestLoading = false
+                backtestRunStage = nil
             }
         }
         .onChange(of: selectedPage) { _, newValue in
@@ -628,10 +636,14 @@ struct BacktestView: View {
                 pendingBacktestComputationTask?.cancel()
                 pendingBacktestComputationTask = nil
                 isBacktestLoading = false
+                backtestRunStage = nil
             }
             guard isActive, !isRestoringBacktestRecord else { return }
             if newValue == .standard {
-                Task { await marketStore.refreshHistoryIfNeeded() }
+                Task {
+                    await marketStore.refreshHistoryIfNeeded()
+                    await marketStore.refreshHistory(for: relevantBacktestHistorySymbols)
+                }
             }
             guard newValue == .standard else { return }
             scheduleBacktestDataRefresh(delayNanoseconds: 0, force: true)
@@ -776,11 +788,7 @@ struct BacktestView: View {
         self.goldWeight = goldWeight
         self.indexWeights = indexWeights
 
-        if isActive {
-            scheduleBacktestDataRefresh(delayNanoseconds: 0, force: true)
-        }
-        guard hasStartedBacktest else { return }
-        scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: false)
+        refreshRelevantStandardHistoryIfNeeded()
     }
 
     private func applyDCAConfiguration(assetSymbol: String, contributionAmount: Double, intervalDays: Int) {
@@ -788,11 +796,49 @@ struct BacktestView: View {
         dcaContributionAmount = contributionAmount
         dcaIntervalDays = intervalDays
 
-        if isActive {
-            scheduleBacktestDataRefresh(delayNanoseconds: 0, force: true)
+        refreshRelevantStandardHistoryIfNeeded()
+    }
+
+    @MainActor
+    private func startStandardBacktest() {
+        hasStartedBacktest = true
+        isBacktestLoading = true
+        backtestRunStage = .loadingHistory
+        Task {
+            await marketStore.refreshHistoryIfNeeded()
+            guard !Task.isCancelled else { return }
+            await marketStore.refreshHistory(for: relevantBacktestHistorySymbols)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                guard isActive, selectedPage == .standard else { return }
+                scheduleBacktestDataRefresh(delayNanoseconds: 0, force: true)
+                scheduleBacktestRefresh(
+                    animated: true,
+                    forceAnimation: true,
+                    showLoading: true,
+                    saveRecord: true
+                )
+            }
         }
-        guard hasStartedBacktest else { return }
-        scheduleBacktestRefresh(animated: true, forceAnimation: true, showLoading: true, saveRecord: false)
+    }
+
+    private func refreshRelevantStandardHistoryIfNeeded() {
+        guard isActive else { return }
+        Task {
+            await marketStore.refreshHistory(for: relevantBacktestHistorySymbols)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                guard isActive, selectedPage == .standard else { return }
+                scheduleBacktestDataRefresh(delayNanoseconds: 0, force: true)
+                guard hasStartedBacktest else { return }
+                scheduleBacktestRefresh(
+                    animated: true,
+                    forceAnimation: true,
+                    showLoading: true,
+                    saveRecord: false
+                )
+            }
+        }
     }
 
     @MainActor
@@ -810,6 +856,7 @@ struct BacktestView: View {
 
         if showLoading {
             isBacktestLoading = true
+            backtestRunStage = .preparing
         }
 
         let preparationToken = backtestDataCacheToken
@@ -855,6 +902,13 @@ struct BacktestView: View {
                 }
             }
 
+            if showLoading {
+                await MainActor.run {
+                    guard currentToken == backtestRefreshToken else { return }
+                    backtestRunStage = .calculating
+                }
+            }
+
             let computationTask = Task.detached(priority: .userInitiated) { () -> StandardBacktestComputationOutput in
                 let preparedData = cachedPreparation ?? StandardBacktestDataSupport.prepare(preparationRequest)
                 let result: StandardBacktestComputationResult
@@ -886,11 +940,20 @@ struct BacktestView: View {
             }
 
             guard !Task.isCancelled else { return }
+            if showLoading {
+                await MainActor.run {
+                    guard currentToken == backtestRefreshToken else { return }
+                    backtestRunStage = saveRecord ? .saving : .finalizing
+                }
+                try? await Task.sleep(nanoseconds: 90_000_000)
+                guard !Task.isCancelled else { return }
+            }
             await MainActor.run {
                 guard currentToken == backtestRefreshToken else { return }
                 applyStandardBacktestPreparedData(output.preparedData, token: preparationToken)
                 applyBacktestResult(output.result, animated: animated, forceAnimation: forceAnimation, saveRecord: saveRecord)
                 isBacktestLoading = false
+                backtestRunStage = nil
                 pendingBacktestComputationTask = nil
             }
         }
@@ -1176,6 +1239,7 @@ struct BacktestView: View {
         hasStartedBacktest = false
         hasPlayedInitialBacktestAnimation = false
         isBacktestLoading = false
+        backtestRunStage = nil
         backtestMode = .allocation
         cashWeight = BacktestDefaults.cashWeight
         goldWeight = BacktestDefaults.goldWeight
@@ -1366,6 +1430,7 @@ struct BacktestAllocationCard: View {
     let selectedDateRangeLabel: String
     let onTapRange: () -> Void
     let onTapAllocation: () -> Void
+    let runStage: BacktestRunStage?
     let onTapPrimaryAction: (() -> Void)?
 
     private let chartSize: CGFloat = 148
@@ -1439,18 +1504,24 @@ struct BacktestAllocationCard: View {
             }
             .buttonStyle(.plain)
 
-            if let onTapPrimaryAction {
+            if runStage != nil || onTapPrimaryAction != nil {
                 VStack(spacing: 0) {
                     Rectangle()
                         .fill(AssetTheme.border.opacity(0.34))
                         .frame(height: 1)
                         .padding(.horizontal, 18)
 
-                    HStack {
-                        BacktestPrimaryActionButton(title: AppLocalization.string("开始回测"), systemImage: "play.fill", action: onTapPrimaryAction)
+                    if let runStage {
+                        BacktestRunProgressView(stage: runStage)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 16)
+                    } else if let onTapPrimaryAction {
+                        HStack {
+                            BacktestPrimaryActionButton(title: AppLocalization.string("开始回测"), systemImage: "play.fill", action: onTapPrimaryAction)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 14)
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 14)
                 }
                 .onboardingAnchor(.backtestStart)
             }

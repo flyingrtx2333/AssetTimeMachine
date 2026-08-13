@@ -3,6 +3,73 @@ import SwiftData
 import Charts
 import UIKit
 
+enum BacktestRunStage: Equatable {
+    case loadingHistory
+    case preparing
+    case calculating
+    case finalizing
+    case saving
+
+    var progress: Double {
+        switch self {
+        case .loadingHistory: return 0.14
+        case .preparing: return 0.28
+        case .calculating: return 0.62
+        case .finalizing: return 0.86
+        case .saving: return 0.96
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .loadingHistory:
+            return AppLocalization.string("正在加载历史数据…")
+        case .preparing:
+            return AppLocalization.string("正在准备回测数据…")
+        case .calculating:
+            return AppLocalization.string("正在计算回测…")
+        case .finalizing:
+            return AppLocalization.string("正在生成图表与指标…")
+        case .saving:
+            return AppLocalization.string("正在保存回测记录…")
+        }
+    }
+}
+
+struct BacktestRunProgressView: View {
+    let stage: BacktestRunStage
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                ProgressView()
+                    .controlSize(.small)
+                    .tint(AssetTheme.gold)
+
+                Text(stage.message)
+                    .font(AppTypography.meta)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .lineLimit(2)
+
+                Spacer(minLength: 8)
+
+                Text("\(Int((stage.progress * 100).rounded()))%")
+                    .font(AppTypography.chartAxisStrip)
+                    .monospacedDigit()
+                    .foregroundStyle(AssetTheme.goldSoft)
+            }
+
+            ProgressView(value: stage.progress)
+                .tint(AssetTheme.gold)
+                .animation(.easeOut(duration: 0.28), value: stage.progress)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(AppLocalization.string("回测进度"))
+        .accessibilityValue("\(Int((stage.progress * 100).rounded()))% · \(stage.message)")
+    }
+}
+
 struct BacktestDCACard: View {
     let assetTitle: String
     let amount: Double
@@ -13,6 +80,7 @@ struct BacktestDCACard: View {
     let onTapAsset: () -> Void
     let onTapAmount: () -> Void
     let onTapInterval: () -> Void
+    let runStage: BacktestRunStage?
     let onTapPrimaryAction: (() -> Void)?
 
     var body: some View {
@@ -56,18 +124,24 @@ struct BacktestDCACard: View {
             .padding(.horizontal, 6)
             .padding(.bottom, 18)
 
-            if let onTapPrimaryAction {
+            if runStage != nil || onTapPrimaryAction != nil {
                 VStack(spacing: 0) {
                     Rectangle()
                         .fill(AssetTheme.border.opacity(0.34))
                         .frame(height: 1)
                         .padding(.horizontal, 18)
 
-                    HStack {
-                        BacktestPrimaryActionButton(title: AppLocalization.string("开始回测"), systemImage: "play.fill", action: onTapPrimaryAction)
+                    if let runStage {
+                        BacktestRunProgressView(stage: runStage)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 16)
+                    } else if let onTapPrimaryAction {
+                        HStack {
+                            BacktestPrimaryActionButton(title: AppLocalization.string("开始回测"), systemImage: "play.fill", action: onTapPrimaryAction)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 14)
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 14)
                 }
                 .onboardingAnchor(.backtestStart)
             }
@@ -202,10 +276,16 @@ struct BacktestActionChip: View {
     }
 }
 
+private enum BacktestDateEndpoint {
+    case start
+    case end
+}
+
 struct BacktestDateRangeSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var startDate: Date
     @State private var endDate: Date
+    @State private var activeEndpoint: BacktestDateEndpoint = .start
     let availableBounds: ClosedRange<Date>
     let onApply: (Date, Date) -> Void
 
@@ -244,157 +324,145 @@ struct BacktestDateRangeSheet: View {
         )
     }
 
+    private var activeDateBinding: Binding<Date> {
+        switch activeEndpoint {
+        case .start:
+            return startDateBinding
+        case .end:
+            return endDateBinding
+        }
+    }
+
+    private var activeDateBounds: ClosedRange<Date> {
+        switch activeEndpoint {
+        case .start:
+            return availableBounds.lowerBound...endDate
+        case .end:
+            return startDate...availableBounds.upperBound
+        }
+    }
+
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AssetTheme.pageGradient.ignoresSafeArea()
+        ZStack {
+            AssetTheme.pageGradient.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                sheetHeader
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        summaryCard
+                    VStack(alignment: .leading, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(alignment: .firstTextBaseline) {
+                                Text(AppLocalization.string("快速选择"))
+                                    .font(AppTypography.captionStrong)
+                                    .foregroundStyle(AssetTheme.textSecondary)
 
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text(AppLocalization.string("快速选择"))
-                                .font(AppTypography.captionStrong)
-                                .foregroundStyle(AssetTheme.textSecondary)
+                                Spacer(minLength: 12)
+
+                                Text(AppLocalization.format("%d天", selectedSpanDays))
+                                    .font(AppTypography.microLabel.monospacedDigit())
+                                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                            }
 
                             LazyVGrid(
-                                columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
-                                spacing: 10
+                                columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
+                                spacing: 8
                             ) {
                                 BacktestRangePresetButton(
-                                    title: AppLocalization.string("全部历史"),
-                                    isSelected: matchesRange(start: availableBounds.lowerBound, end: availableBounds.upperBound)
+                                    title: AppLocalization.string("3年"),
+                                    isSelected: matchesPreset(yearsBack: 3)
                                 ) {
-                                    startDate = availableBounds.lowerBound
-                                    endDate = availableBounds.upperBound
+                                    applyRelativePreset(yearsBack: 3)
                                 }
 
                                 BacktestRangePresetButton(
-                                    title: AppLocalization.string("近1年"),
-                                    isSelected: matchesPreset(yearsBack: 1)
+                                    title: AppLocalization.string("5年"),
+                                    isSelected: matchesPreset(yearsBack: 5)
                                 ) {
-                                    applyRelativePreset(yearsBack: 1)
+                                    applyRelativePreset(yearsBack: 5)
                                 }
 
                                 BacktestRangePresetButton(
-                                    title: AppLocalization.string("近6个月"),
-                                    isSelected: matchesPreset(monthsBack: 6)
+                                    title: AppLocalization.string("10年"),
+                                    isSelected: matchesPreset(yearsBack: 10)
                                 ) {
-                                    applyRelativePreset(monthsBack: 6)
+                                    applyRelativePreset(yearsBack: 10)
                                 }
                             }
                         }
 
-                        BacktestCalendarCard(
-                            title: AppLocalization.string("开始日期"),
-                            value: startDate.longDateString,
-                            accent: AssetTheme.gold,
-                            selection: startDateBinding,
-                            bounds: availableBounds.lowerBound...endDate
-                        )
+                        HStack(spacing: 18) {
+                            BacktestDateEndpointButton(
+                                title: AppLocalization.string("开始日期"),
+                                value: startDate.recordDateString,
+                                isSelected: activeEndpoint == .start
+                            ) {
+                                activeEndpoint = .start
+                            }
 
-                        BacktestCalendarCard(
-                            title: AppLocalization.string("结束日期"),
-                            value: endDate.longDateString,
-                            accent: AssetTheme.goldSoft,
-                            selection: endDateBinding,
-                            bounds: startDate...availableBounds.upperBound
-                        )
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 20)
-                    .padding(.bottom, 36)
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(AppLocalization.string("取消")) {
-                        dismiss()
-                    }
-                    .foregroundStyle(AssetTheme.textSecondary)
-                }
+                            BacktestDateEndpointButton(
+                                title: AppLocalization.string("结束日期"),
+                                value: endDate.recordDateString,
+                                isSelected: activeEndpoint == .end
+                            ) {
+                                activeEndpoint = .end
+                            }
+                        }
 
-                ToolbarItem(placement: .principal) {
-                    Text(AppLocalization.string("调整时间"))
-                        .font(AppTypography.blockTitleBold)
-                        .foregroundStyle(AssetTheme.textPrimary)
-                }
+                        DatePicker("", selection: activeDateBinding, in: activeDateBounds, displayedComponents: .date)
+                            .labelsHidden()
+                            .datePickerStyle(.graphical)
+                            .tint(AssetTheme.gold)
+                            .environment(\.locale, AppLocalization.currentLocale)
+                            .id(activeEndpoint)
 
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(AppLocalization.string("完成")) {
-                        onApply(startDate, endDate)
-                        dismiss()
+                        Text(AppLocalization.format(
+                            "可选范围：%@ - %@",
+                            availableBounds.lowerBound.recordDateString,
+                            availableBounds.upperBound.recordDateString
+                        ))
+                        .font(AppTypography.microLabel)
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                        .frame(maxWidth: .infinity, alignment: .center)
                     }
-                    .fontWeight(.bold)
-                    .foregroundStyle(AssetTheme.gold)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 8)
+                    .padding(.bottom, 20)
                 }
             }
         }
     }
 
-    private var summaryCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(AppLocalization.string("已选区间"))
-                        .font(AppTypography.captionStrong)
-                        .foregroundStyle(AssetTheme.textSecondary)
+    private var sheetHeader: some View {
+        ZStack {
+            Text(AppLocalization.string("调整时间"))
+                .font(AppTypography.blockTitleBold)
+                .foregroundStyle(AssetTheme.textPrimary)
 
-                    Text("\(startDate.recordDateString) - \(endDate.recordDateString)")
-                        .font(AppTypography.sheetTitle)
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.82)
+            HStack {
+                Button(AppLocalization.string("取消")) {
+                    dismiss()
                 }
+                .foregroundStyle(AssetTheme.textSecondary)
 
-                Spacer(minLength: 8)
+                Spacer()
 
-                VStack(alignment: .trailing, spacing: 6) {
-                    Text(AppLocalization.string("天数"))
-                        .font(AppTypography.captionStrong)
-                        .foregroundStyle(AssetTheme.textSecondary)
-                    Text(AppLocalization.format("%d天", selectedSpanDays))
-                        .font(.title3.weight(.bold))
-                        .foregroundStyle(AssetTheme.gold)
+                Button(AppLocalization.string("完成")) {
+                    onApply(startDate, endDate)
+                    dismiss()
                 }
-            }
-
-            Rectangle()
-                .fill(AssetTheme.border.opacity(0.4))
-                .frame(height: 1)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(AppLocalization.string("可选范围"))
-                    .font(AppTypography.captionStrong)
-                    .foregroundStyle(AssetTheme.textSecondary)
-
-                Text("\(availableBounds.lowerBound.longDateString) - \(availableBounds.upperBound.longDateString)")
-                    .font(AppTypography.rowTitle)
-                    .foregroundStyle(AssetTheme.textPrimary)
+                .fontWeight(.semibold)
+                .foregroundStyle(AssetTheme.gold)
             }
         }
-        .padding(18)
-        .background(
-            LinearGradient(
-                colors: [Color.white.opacity(0.05), AssetTheme.overlaySoft.opacity(0.35), Color.black.opacity(0.08)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ),
-            in: RoundedRectangle(cornerRadius: 26, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [Color.white.opacity(0.12), Color.white.opacity(0.03)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-        )
-        .shadow(color: Color.black.opacity(0.12), radius: 16, y: 8)
+        .font(AppTypography.meta)
+        .frame(height: 48)
+        .padding(.horizontal, 18)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(AssetTheme.border.opacity(0.32))
+                .frame(height: 1)
+        }
     }
 
     private func applyRelativePreset(monthsBack: Int? = nil, yearsBack: Int? = nil) {
@@ -409,6 +477,7 @@ struct BacktestDateRangeSheet: View {
 
         startDate = max(targetStart, availableBounds.lowerBound)
         endDate = availableBounds.upperBound
+        activeEndpoint = .start
     }
 
     private func matchesPreset(monthsBack: Int? = nil, yearsBack: Int? = nil) -> Bool {
@@ -438,108 +507,45 @@ struct BacktestRangePresetButton: View {
         Button(action: action) {
             Text(AppLocalization.string(title))
                 .font(AppTypography.captionStrong)
-                .foregroundStyle(isSelected ? Color.black.opacity(0.88) : AssetTheme.textPrimary)
+                .foregroundStyle(isSelected ? AssetTheme.goldSoft : AssetTheme.textPrimary)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                .padding(.vertical, 8)
                 .background(
-                    isSelected
-                        ? AnyShapeStyle(
-                            LinearGradient(
-                                colors: [AssetTheme.gold.opacity(0.98), AssetTheme.goldSoft.opacity(0.9)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        : AnyShapeStyle(AssetTheme.overlaySoft),
-                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    isSelected ? AssetTheme.gold.opacity(0.16) : AssetTheme.overlaySubtle,
+                    in: Capsule()
                 )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(
-                            isSelected ? Color.white.opacity(0.12) : AssetTheme.border.opacity(0.7),
-                            lineWidth: 1
-                        )
-                )
-                .shadow(color: isSelected ? AssetTheme.gold.opacity(0.14) : .clear, radius: 10, y: 5)
         }
         .buttonStyle(.plain)
     }
 }
 
-struct BacktestCalendarCard: View {
+private struct BacktestDateEndpointButton: View {
     let title: String
     let value: String
-    let accent: Color
-    let selection: Binding<Date>
-    let bounds: ClosedRange<Date>
+    let isSelected: Bool
+    let action: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(AppLocalization.string(title))
-                        .font(AppTypography.captionStrong)
-                        .foregroundStyle(AssetTheme.textSecondary)
-                    Text(value)
-                        .font(.title3.weight(.bold))
-                        .foregroundStyle(accent)
-                }
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title)
+                    .font(AppTypography.microLabel)
+                    .foregroundStyle(AssetTheme.textSecondary)
 
-                Spacer(minLength: 8)
+                Text(value)
+                    .font(AppTypography.rowTitle)
+                    .monospacedDigit()
+                    .foregroundStyle(isSelected ? AssetTheme.goldSoft : AssetTheme.textPrimary)
+                    .lineLimit(1)
 
-                Image(systemName: "calendar")
-                    .font(AppTypography.metaStrong)
-                    .foregroundStyle(accent)
-                    .padding(10)
-                    .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(AssetTheme.border.opacity(0.65), lineWidth: 1)
-                    )
+                Rectangle()
+                    .fill(isSelected ? AssetTheme.gold : AssetTheme.border.opacity(0.46))
+                    .frame(height: isSelected ? 2 : 1)
             }
-
-            DatePicker(title, selection: selection, in: bounds, displayedComponents: .date)
-                .labelsHidden()
-                .datePickerStyle(.graphical)
-                .tint(AssetTheme.gold)
-                .environment(\.locale, Locale(identifier: "zh_CN"))
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(18)
-        .background(
-            LinearGradient(
-                colors: [Color.white.opacity(0.04), AssetTheme.overlaySoft.opacity(0.32), Color.black.opacity(0.08)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ),
-            in: RoundedRectangle(cornerRadius: 26, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [Color.white.opacity(0.1), Color.white.opacity(0.02)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-        )
-        .shadow(color: Color.black.opacity(0.1), radius: 16, y: 8)
-    }
-}
-
-struct BacktestLoadingView: View {
-    var body: some View {
-        VStack(spacing: 14) {
-            ProgressView()
-                .tint(AssetTheme.gold)
-                .scaleEffect(1.15)
-            Text(AppLocalization.string("正在重新回测..."))
-                .font(AppTypography.rowTitle)
-                .foregroundStyle(AssetTheme.textPrimary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 32)
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
@@ -1487,13 +1493,27 @@ struct BacktestDCASettingSheet: View {
 struct AdvancedBacktestAssetPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedSymbols: Set<String>
+    @State private var selectedSectionID: String
     let assetOptions: [BacktestAssetOption]
     let onApply: (Set<String>) -> Void
 
     init(selectedSymbols: Set<String>, assetOptions: [BacktestAssetOption], onApply: @escaping (Set<String>) -> Void) {
-        _selectedSymbols = State(initialValue: selectedSymbols.isEmpty ? [BacktestDefaults.dcaAssetSymbol] : selectedSymbols)
+        let initialSelection = selectedSymbols.isEmpty ? [BacktestDefaults.dcaAssetSymbol] : selectedSymbols
+        _selectedSymbols = State(initialValue: initialSelection)
+        let selectedSection = assetOptions.first { initialSelection.contains($0.symbol) }?.category
+            ?? assetOptions.first?.category
+            ?? "index"
+        _selectedSectionID = State(initialValue: selectedSection)
         self.assetOptions = assetOptions
         self.onApply = onApply
+    }
+
+    private var catalogAssets: [MarketAssetDescriptor] {
+        assetOptions.map(\.marketDescriptor)
+    }
+
+    private var visibleOptions: [BacktestAssetOption] {
+        assetOptions.filter { $0.category == selectedSectionID }
     }
 
     var body: some View {
@@ -1509,34 +1529,29 @@ struct AdvancedBacktestAssetPickerSheet: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.horizontal, 2)
 
-                        ForEach(assetOptions) { option in
-                            Button {
-                                toggle(option.symbol)
-                            } label: {
-                                HStack(spacing: 12) {
-                                    Circle()
-                                        .fill(option.color)
-                                        .frame(width: 10, height: 10)
+                        MarketAssetCategoryStrip(
+                            assets: catalogAssets,
+                            selectedSectionID: $selectedSectionID
+                        )
 
-                                    Text(AppLocalization.string(option.title))
-                                        .font(AppTypography.rowTitle)
-                                        .foregroundStyle(AssetTheme.textPrimary)
-
-                                    Spacer(minLength: 12)
-
-                                    Image(systemName: selectedSymbols.contains(option.symbol) ? "checkmark.circle.fill" : "circle")
-                                        .font(AppTypography.blockTitle)
-                                        .foregroundStyle(selectedSymbols.contains(option.symbol) ? option.color : AssetTheme.textSecondary.opacity(0.7))
+                        VStack(spacing: 0) {
+                            ForEach(Array(visibleOptions.enumerated()), id: \.element.id) { index, option in
+                                MarketAssetOptionTile(
+                                    asset: option.marketDescriptor,
+                                    isSelected: selectedSymbols.contains(option.symbol),
+                                    showsCheckbox: true
+                                ) {
+                                    toggle(option.symbol)
                                 }
-                                .padding(16)
-                                .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                        .stroke(selectedSymbols.contains(option.symbol) ? option.color.opacity(0.45) : AssetTheme.border.opacity(0.68), lineWidth: 1)
-                                )
+
+                                if index < visibleOptions.count - 1 {
+                                    Divider()
+                                        .overlay(AssetTheme.border.opacity(0.28))
+                                        .padding(.leading, 51)
+                                }
                             }
-                            .buttonStyle(.plain)
                         }
+                        .background(AssetTheme.overlaySubtle, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 20)
@@ -1580,13 +1595,23 @@ struct AdvancedBacktestAssetPickerSheet: View {
 struct BacktestDCAAssetSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedSymbol: String
+    @State private var selectedSectionID: String
     let assetOptions: [BacktestAssetOption]
     let onApply: (String) -> Void
 
     init(selectedSymbol: String, assetOptions: [BacktestAssetOption], onApply: @escaping (String) -> Void) {
         _selectedSymbol = State(initialValue: selectedSymbol)
+        _selectedSectionID = State(initialValue: assetOptions.first(where: { $0.symbol == selectedSymbol })?.category ?? assetOptions.first?.category ?? "index")
         self.assetOptions = assetOptions
         self.onApply = onApply
+    }
+
+    private var catalogAssets: [MarketAssetDescriptor] {
+        assetOptions.map(\.marketDescriptor)
+    }
+
+    private var visibleOptions: [BacktestAssetOption] {
+        assetOptions.filter { $0.category == selectedSectionID }
     }
 
     var body: some View {
@@ -1596,36 +1621,30 @@ struct BacktestDCAAssetSheet: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 12) {
-                        ForEach(assetOptions) { option in
-                            Button {
-                                selectedSymbol = option.symbol
-                                onApply(option.symbol)
-                                dismiss()
-                            } label: {
-                                HStack(spacing: 12) {
-                                    Circle()
-                                        .fill(option.color)
-                                        .frame(width: 10, height: 10)
+                        MarketAssetCategoryStrip(
+                            assets: catalogAssets,
+                            selectedSectionID: $selectedSectionID
+                        )
 
-                                    Text(AppLocalization.string(option.title))
-                                        .font(AppTypography.rowTitle)
-                                        .foregroundStyle(AssetTheme.textPrimary)
-
-                                    Spacer(minLength: 12)
-
-                                    Image(systemName: selectedSymbol == option.symbol ? "checkmark.circle.fill" : "circle")
-                                        .font(AppTypography.blockTitle)
-                                        .foregroundStyle(selectedSymbol == option.symbol ? option.color : AssetTheme.textSecondary.opacity(0.7))
+                        VStack(spacing: 0) {
+                            ForEach(Array(visibleOptions.enumerated()), id: \.element.id) { index, option in
+                                MarketAssetOptionTile(
+                                    asset: option.marketDescriptor,
+                                    isSelected: selectedSymbol == option.symbol
+                                ) {
+                                    selectedSymbol = option.symbol
+                                    onApply(option.symbol)
+                                    dismiss()
                                 }
-                                .padding(16)
-                                .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                        .stroke(AssetTheme.border.opacity(0.68), lineWidth: 1)
-                                )
+
+                                if index < visibleOptions.count - 1 {
+                                    Divider()
+                                        .overlay(AssetTheme.border.opacity(0.28))
+                                        .padding(.leading, 51)
+                                }
                             }
-                            .buttonStyle(.plain)
                         }
+                        .background(AssetTheme.overlaySubtle, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 20)

@@ -191,10 +191,10 @@ struct SnapshotListView: View {
         let groups = SnapshotRecordLayoutBuilder.categoryItemGroups(from: categories)
         return groups.nonLiability
             .flatMap(\.items)
-            .first(where: { $0.autoPricedAssetKind != nil })
+            .first(where: { $0.marketAssetSymbol != nil })
         ?? groups.liability
             .flatMap(\.items)
-            .first(where: { $0.autoPricedAssetKind != nil })
+            .first(where: { $0.marketAssetSymbol != nil })
     }
 
     private var forcedDebugQuickEditItem: AssetItem? {
@@ -313,10 +313,10 @@ struct SnapshotListView: View {
             }
         }
         .sheet(isPresented: $showsAddAssetItemSheet, onDismiss: finishAssetEditorDraft) {
-            AddAssetItemSheet()
+            AddAssetItemSheet(marketStore: marketStore)
         }
         .sheet(item: $editingAssetItem, onDismiss: finishAssetEditorDraft) { item in
-            EditAssetItemSheet(item: item, snapshot: currentSnapshot)
+            EditAssetItemSheet(item: item, snapshot: currentSnapshot, marketStore: marketStore)
         }
         .overlay {
             #if DEBUG
@@ -776,7 +776,7 @@ struct SnapshotListView: View {
     private func syncAutoRatesIfPossible() async {
         guard let snapshot = currentSnapshot else { return }
         guard snapshot.entries.contains(where: { entry in
-            entry.item?.resolvedAutoPricedAssetKind != nil
+            entry.item?.autoPricedMarketSymbol != nil
         }) else { return }
 
         var didMutateEntries = false
@@ -1452,7 +1452,7 @@ struct LiabilityEntryCard: View {
                     onTap: {
                         if isReadOnly, let entry = snapshotEntry {
                             onReadOnlyEdit?(entry)
-                        } else if item.valuationMethod == .directAmount || item.autoPricedAssetKind == nil {
+                        } else if item.valuationMethod == .directAmount || item.marketAssetSymbol == nil {
                             onBeginInlineEdit(activeField)
                         } else {
                             onEditValue()
@@ -1692,7 +1692,7 @@ struct AssetEntryCompactCard: View {
                     onTap: {
                         if isReadOnly, let entry = snapshotEntry {
                             onReadOnlyEdit?(entry)
-                        } else if item.valuationMethod == .directAmount || item.autoPricedAssetKind == nil {
+                        } else if item.valuationMethod == .directAmount || item.marketAssetSymbol == nil {
                             onBeginInlineEdit(activeField)
                         } else {
                             onEditValue()
@@ -1935,10 +1935,12 @@ struct AssetIconView: View {
 struct AssetEditorForm: View {
     @Binding var name: String
     @Binding var selectedCategoryID: UUID?
-    @Binding var selectedAutoPricedAssetKind: AutoPricedAssetKind?
+    @Binding var selectedMarketAssetSymbol: String?
+    @Binding var valuationMethod: ValuationMethod
     @Binding var selectedIconName: String
     let sortedCategories: [AssetCategory]
-    let isAutoPricedLocked: Bool
+    let marketAssets: [MarketAssetDescriptor]
+    let isMarketAssetLocked: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -2024,66 +2026,48 @@ struct AssetEditorForm: View {
             }
 
             VStack(alignment: .leading, spacing: 12) {
-                Text(AppLocalization.string("特殊资产"))
+                Text(AppLocalization.string("关联市场标的"))
                     .font(AppTypography.rowTitle)
-                    .foregroundStyle(AssetTheme.textSecondary)
+                    .foregroundStyle(AssetTheme.textPrimary)
 
-                Text(AppLocalization.string(isAutoPricedLocked ? "该资产已绑定自动定价类型。如需调整，请新建资产类型。" : "以下资产支持数量录入，价格将自动更新。"))
+                Text(AppLocalization.string(isMarketAssetLocked ? "已有关联记录，市场标的不可修改。" : "先选资产大类，再选择对应标的；名称仍可按账户自由填写。"))
                     .font(AppTypography.meta)
-                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.8))
+                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.82))
 
-                LazyVGrid(columns: autoAssetGridColumns, alignment: .leading, spacing: 10) {
-                    Button {
-                        guard !isAutoPricedLocked else { return }
-                        selectedAutoPricedAssetKind = nil
-                    } label: {
-                        VStack(spacing: 6) {
-                            Image(systemName: "square.grid.2x2")
-                                .font(AppTypography.blockTitle)
-                                .foregroundStyle(selectedAutoPricedAssetKind == nil ? AssetTheme.gold : AssetTheme.textPrimary)
-                                .shadow(color: selectedAutoPricedAssetKind == nil ? AssetTheme.gold.opacity(0.45) : .clear, radius: 10)
-                            Text(AppLocalization.string("普通资产"))
-                                .font(AppTypography.chartCaption)
-                                .foregroundStyle(selectedAutoPricedAssetKind == nil ? AssetTheme.goldSoft : AssetTheme.textSecondary)
-                                .multilineTextAlignment(.center)
-                                .shadow(color: selectedAutoPricedAssetKind == nil ? AssetTheme.gold.opacity(0.3) : .clear, radius: 8)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
-                        .contentShape(Rectangle())
-                        .opacity(isAutoPricedLocked ? 0.5 : 1)
+                MarketAssetCatalogSelector(
+                    assets: marketAssets,
+                    selectedSymbol: $selectedMarketAssetSymbol,
+                    isLocked: isMarketAssetLocked
+                ) { asset in
+                    guard let asset else {
+                        valuationMethod = .directAmount
+                        return
                     }
-                    .buttonStyle(.plain)
-                    .disabled(isAutoPricedLocked)
+                    if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        name = asset.displayTitle
+                    }
+                    if selectedIconName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        selectedIconName = asset.suggestedIconKey
+                    }
+                }
 
-                    ForEach(AutoPricedAssetKind.allCases) { kind in
-                        Button {
-                            guard !isAutoPricedLocked else { return }
-                            selectedAutoPricedAssetKind = kind
-                            if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                name = kind.defaultName
-                            }
-                        } label: {
-                            VStack(spacing: 6) {
-                                Image(systemName: autoAssetSymbolName(for: kind))
-                                    .font(AppTypography.blockTitle)
-                                    .foregroundStyle(selectedAutoPricedAssetKind == kind ? AssetTheme.gold : AssetTheme.textPrimary)
-                                    .shadow(color: selectedAutoPricedAssetKind == kind ? AssetTheme.gold.opacity(0.45) : .clear, radius: 10)
-                                Text(kind.defaultName)
-                                    .font(AppTypography.chartCaption)
-                                    .foregroundStyle(selectedAutoPricedAssetKind == kind ? AssetTheme.goldSoft : AssetTheme.textSecondary)
-                                    .multilineTextAlignment(.center)
-                                    .lineLimit(2)
-                                    .shadow(color: selectedAutoPricedAssetKind == kind ? AssetTheme.gold.opacity(0.3) : .clear, radius: 8)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
-                            .contentShape(Rectangle())
-                            .opacity(isAutoPricedLocked && selectedAutoPricedAssetKind != kind ? 0.5 : 1)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(AppLocalization.string("记录方式"))
+                        .font(AppTypography.captionStrong)
+                        .foregroundStyle(AssetTheme.textSecondary)
+
+                    Picker(AppLocalization.string("记录方式"), selection: $valuationMethod) {
+                        ForEach(ValuationMethod.allCases) { method in
+                            Text(method.displayName).tag(method)
                         }
-                        .buttonStyle(.plain)
-                        .disabled(isAutoPricedLocked)
                     }
+                    .pickerStyle(.segmented)
+
+                    Text(AppLocalization.string(valuationMethod == .directAmount
+                        ? "适合银行卡、基金账户等直接记录总金额。"
+                        : "按数量和市场参考价计算金额，也可手动修正单价。"))
+                        .font(AppTypography.microLabel)
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.75))
                 }
             }
         }
@@ -2094,10 +2078,12 @@ struct AddAssetItemSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query private var categories: [AssetCategory]
+    let marketStore: RemoteMarketStore
 
     @State private var name = ""
     @State private var selectedCategoryID: UUID?
-    @State private var selectedAutoPricedAssetKind: AutoPricedAssetKind?
+    @State private var selectedMarketAssetSymbol: String?
+    @State private var valuationMethod: ValuationMethod = .directAmount
     @State private var selectedIconName = ""
     @State private var errorMessage: String?
 
@@ -2124,13 +2110,18 @@ struct AddAssetItemSheet: View {
         if !trimmed.isEmpty {
             return trimmed
         }
-        return selectedAutoPricedAssetKind?.defaultName ?? ""
+        return selectedMarketAssetSymbol
+            .flatMap(marketStore.assetDescriptor(for:))?
+            .displayTitle ?? ""
     }
 
     private var resolvedIconName: String {
         let trimmed = selectedIconName.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { return trimmed }
-        return AssetItemService.suggestedIconName(for: resolvedName, autoPricedAssetKind: selectedAutoPricedAssetKind)
+        return AssetItemService.suggestedIconName(
+            for: resolvedName,
+            marketAsset: selectedMarketAssetSymbol.flatMap(marketStore.assetDescriptor(for:))
+        )
     }
 
     var body: some View {
@@ -2143,10 +2134,12 @@ struct AddAssetItemSheet: View {
                         AssetEditorForm(
                             name: $name,
                             selectedCategoryID: $selectedCategoryID,
-                            selectedAutoPricedAssetKind: $selectedAutoPricedAssetKind,
+                            selectedMarketAssetSymbol: $selectedMarketAssetSymbol,
+                            valuationMethod: $valuationMethod,
                             selectedIconName: $selectedIconName,
                             sortedCategories: sortedCategories,
-                            isAutoPricedLocked: false
+                            marketAssets: marketStore.selectableAssetCatalog,
+                            isMarketAssetLocked: false
                         )
 
                         if let errorMessage {
@@ -2200,6 +2193,14 @@ struct AddAssetItemSheet: View {
                 if selectedCategoryID == nil {
                     selectedCategoryID = sortedCategories.first?.id
                 }
+                await marketStore.refreshAssetCatalogIfNeeded()
+            }
+            .task(id: "\(selectedMarketAssetSymbol ?? "")|\(valuationMethod.rawValue)") {
+                guard valuationMethod == .quantityAndUnitPrice,
+                      let selectedMarketAssetSymbol else { return }
+                async let liveRefresh: Bool = marketStore.refreshLiveData()
+                async let historyRefresh: Void = marketStore.refreshHistory(for: Set([selectedMarketAssetSymbol]))
+                _ = await (liveRefresh, historyRefresh)
             }
         }
     }
@@ -2212,8 +2213,8 @@ struct AddAssetItemSheet: View {
             _ = try AssetItemService.createItem(
                 name: resolvedName,
                 category: selectedCategory,
-                valuationMethod: selectedAutoPricedAssetKind == nil ? .directAmount : .quantityAndUnitPrice,
-                autoPricedAssetKind: selectedAutoPricedAssetKind,
+                valuationMethod: valuationMethod,
+                marketAssetSymbol: selectedMarketAssetSymbol,
                 iconName: resolvedIconName,
                 in: modelContext
             )
@@ -2297,12 +2298,12 @@ struct QuickRecordValueSheet: View {
 
     private var trailingUnitPriceTitle: String? {
         guard item.valuationMethod == .quantityAndUnitPrice else { return nil }
-        return AppLocalization.string(item.autoPricedAssetKind == nil ? "单价" : "参考单价")
+        return AppLocalization.string(item.marketAssetSymbol == nil ? "单价" : "参考单价")
     }
 
     private var trailingUnitPriceValue: String? {
         guard item.valuationMethod == .quantityAndUnitPrice else { return nil }
-        if item.autoPricedAssetKind != nil,
+        if item.marketAssetSymbol != nil,
            let rate = item.resolvedAutoUnitPrice(using: marketStore) {
             return rate.currencyString()
         }
@@ -2311,7 +2312,7 @@ struct QuickRecordValueSheet: View {
 
     private var trailingUnitPriceTimestamp: String? {
         guard item.valuationMethod == .quantityAndUnitPrice,
-              item.autoPricedAssetKind != nil,
+              item.marketAssetSymbol != nil,
               let fetchedAt = item.autoPriceFetchedAt(using: marketStore) else {
             return nil
         }
@@ -2364,7 +2365,7 @@ struct QuickRecordValueSheet: View {
                 }
             }
 
-            if item.autoPricedAssetKind != nil {
+            if item.marketAssetSymbol != nil {
                 HStack(spacing: 8) {
                     Button {
                         manualAutoPriceRefreshTask?.cancel()
@@ -2527,7 +2528,7 @@ struct QuickRecordValueSheet: View {
         case .quantityAndUnitPrice:
             let quantity = try validatedNumber(from: quantityText, fieldName: primaryFieldTitle)
             let unitPrice: Double?
-            if let autoRate = item.resolvedAutoUnitPrice(using: marketStore), item.autoPricedAssetKind != nil {
+            if let autoRate = item.resolvedAutoUnitPrice(using: marketStore), item.marketAssetSymbol != nil {
                 unitPrice = autoRate
                 unitPriceText = autoRate.plainNumberString()
             } else {
@@ -2541,7 +2542,7 @@ struct QuickRecordValueSheet: View {
 
     @MainActor
     private func refreshAutoPriceManually() async {
-        guard item.autoPricedAssetKind != nil, !Task.isCancelled else { return }
+        guard item.marketAssetSymbol != nil, !Task.isCancelled else { return }
         isRefreshingAutoPrice = true
         errorMessage = nil
         defer {
@@ -2608,23 +2609,30 @@ struct EditAssetItemSheet: View {
 
     let item: AssetItem
     let snapshot: AssetSnapshot?
+    let marketStore: RemoteMarketStore
     @State private var name: String
     @State private var selectedCategoryID: UUID?
-    @State private var selectedAutoPricedAssetKind: AutoPricedAssetKind?
+    @State private var selectedMarketAssetSymbol: String?
+    @State private var valuationMethod: ValuationMethod
     @State private var selectedIconName: String
     @State private var recordQuantityText: String
     @State private var recordUnitPriceText: String
     @State private var errorMessage: String?
 
-    init(item: AssetItem, snapshot: AssetSnapshot?) {
+    init(item: AssetItem, snapshot: AssetSnapshot?, marketStore: RemoteMarketStore) {
         self.item = item
         self.snapshot = snapshot
+        self.marketStore = marketStore
         _name = State(initialValue: item.name)
         _selectedCategoryID = State(initialValue: item.category?.id)
-        _selectedAutoPricedAssetKind = State(initialValue: item.autoPricedAssetKind)
+        _selectedMarketAssetSymbol = State(initialValue: item.marketAssetSymbol)
+        _valuationMethod = State(initialValue: item.valuationMethod)
         let storedIconName = (item.iconName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let initialIcon = storedIconName.isEmpty
-            ? AssetItemService.suggestedIconName(for: item.name, autoPricedAssetKind: item.autoPricedAssetKind)
+            ? AssetItemService.suggestedIconName(
+                for: item.name,
+                marketAsset: item.marketAssetSymbol.flatMap(marketStore.assetDescriptor(for:))
+            )
             : storedIconName
         _selectedIconName = State(initialValue: initialIcon)
         let currentEntry = snapshot?.entries.first(where: { $0.item?.id == item.id })
@@ -2653,11 +2661,33 @@ struct EditAssetItemSheet: View {
     private var resolvedIconName: String {
         let trimmed = selectedIconName.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { return trimmed }
-        return AssetItemService.suggestedIconName(for: name, autoPricedAssetKind: selectedAutoPricedAssetKind)
+        return AssetItemService.suggestedIconName(
+            for: name,
+            marketAsset: selectedMarketAssetSymbol.flatMap(marketStore.assetDescriptor(for:))
+        )
     }
 
     private var showsRecordPricingEditor: Bool {
-        item.valuationMethod == .quantityAndUnitPrice
+        valuationMethod == .quantityAndUnitPrice
+    }
+
+    private var editorMarketAssets: [MarketAssetDescriptor] {
+        let assets = marketStore.selectableAssetCatalog
+        guard let selectedMarketAssetSymbol,
+              !assets.contains(where: { $0.canonicalSymbol == BacktestAssetSymbol.normalized(selectedMarketAssetSymbol) }) else {
+            return assets
+        }
+
+        let legacyKind = item.autoPricedAssetKind
+        let descriptor = MarketAssetDescriptor(
+            symbol: selectedMarketAssetSymbol,
+            category: legacyKind?.isCurrency == true ? "fx" : "other",
+            label: legacyKind?.displayName ?? item.name,
+            currency: legacyKind?.isCurrency == true ? legacyKind?.rawValue.uppercased() ?? "" : "CNY",
+            unit: legacyKind?.isCurrency == true ? "currency" : "",
+            source: nil
+        )
+        return assets + [descriptor]
     }
 
     var body: some View {
@@ -2670,10 +2700,12 @@ struct EditAssetItemSheet: View {
                         AssetEditorForm(
                             name: $name,
                             selectedCategoryID: $selectedCategoryID,
-                            selectedAutoPricedAssetKind: $selectedAutoPricedAssetKind,
+                            selectedMarketAssetSymbol: $selectedMarketAssetSymbol,
+                            valuationMethod: $valuationMethod,
                             selectedIconName: $selectedIconName,
                             sortedCategories: sortedCategories,
-                            isAutoPricedLocked: item.autoPricedAssetKind != nil
+                            marketAssets: editorMarketAssets,
+                            isMarketAssetLocked: !item.entries.isEmpty
                         )
 
                         if showsRecordPricingEditor {
@@ -2772,6 +2804,14 @@ struct EditAssetItemSheet: View {
                 if selectedCategoryID == nil {
                     selectedCategoryID = item.category?.id ?? sortedCategories.first?.id
                 }
+                await marketStore.refreshAssetCatalogIfNeeded()
+            }
+            .task(id: "\(selectedMarketAssetSymbol ?? "")|\(valuationMethod.rawValue)") {
+                guard valuationMethod == .quantityAndUnitPrice,
+                      let selectedMarketAssetSymbol else { return }
+                async let liveRefresh: Bool = marketStore.refreshLiveData()
+                async let historyRefresh: Void = marketStore.refreshHistory(for: Set([selectedMarketAssetSymbol]))
+                _ = await (liveRefresh, historyRefresh)
             }
         }
     }
@@ -2785,6 +2825,8 @@ struct EditAssetItemSheet: View {
                 item,
                 name: name.trimmingCharacters(in: .whitespacesAndNewlines),
                 iconName: resolvedIconName,
+                valuationMethod: valuationMethod,
+                marketAssetSymbol: .some(selectedMarketAssetSymbol),
                 category: selectedCategory,
                 in: modelContext
             )

@@ -8,6 +8,7 @@ enum AssetItemService {
         category: AssetCategory,
         valuationMethod: ValuationMethod = .directAmount,
         autoPricedAssetKind: AutoPricedAssetKind? = nil,
+        marketAssetSymbol: String? = nil,
         note: String = "",
         iconName: String? = nil,
         in context: ModelContext
@@ -22,6 +23,9 @@ enum AssetItemService {
             sortOrder: nextSortOrder,
             category: category
         )
+        if let marketAssetSymbol {
+            item.marketAssetSymbol = marketAssetSymbol
+        }
         context.insert(item)
         try context.save()
         return item
@@ -35,6 +39,7 @@ enum AssetItemService {
         iconName: String? = nil,
         valuationMethod: ValuationMethod? = nil,
         autoPricedAssetKind: AutoPricedAssetKind?? = nil,
+        marketAssetSymbol: String?? = nil,
         isActive: Bool? = nil,
         category: AssetCategory? = nil,
         in context: ModelContext
@@ -44,6 +49,7 @@ enum AssetItemService {
         if let iconName { item.iconName = iconName }
         if let valuationMethod { item.valuationMethod = valuationMethod }
         if let autoPricedAssetKind { item.autoPricedAssetKind = autoPricedAssetKind }
+        if let marketAssetSymbol { item.marketAssetSymbol = marketAssetSymbol }
         if let isActive { item.isActive = isActive }
         if let category { item.category = category }
         item.updatedAt = .now
@@ -101,10 +107,24 @@ enum AssetItemService {
         return ""
     }
 
+    static func suggestedIconName(
+        for name: String,
+        marketAsset: MarketAssetDescriptor?
+    ) -> String {
+        marketAsset?.suggestedIconKey
+            ?? suggestedIconName(
+                for: name,
+                autoPricedAssetKind: inferredAutoPricedAssetKind(for: name)
+            )
+    }
+
     static func resolvedIconKey(for item: AssetItem) -> String {
         let explicitIcon = (item.iconName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         if !explicitIcon.isEmpty {
             return explicitIcon
+        }
+        if let symbol = item.marketAssetSymbol {
+            return "market_asset|unknown|\(symbol)"
         }
         return suggestedIconName(for: item.name, autoPricedAssetKind: item.autoPricedAssetKind)
     }

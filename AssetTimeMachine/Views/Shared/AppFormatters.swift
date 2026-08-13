@@ -187,7 +187,7 @@ extension AssetItem {
 
     var autoPricedMarketSymbol: String? {
         guard valuationMethod == .quantityAndUnitPrice else { return nil }
-        return resolvedAutoPricedAssetKind?.marketSymbol
+        return marketAssetSymbol ?? resolvedAutoPricedAssetKind?.marketSymbol
     }
 
     var autoExchangeRateCurrencyCode: String? {
@@ -222,7 +222,17 @@ extension AssetItem {
         }
 
         if let symbol = autoPricedMarketSymbol {
-            return marketStore.market(for: symbol)?.price
+            let rawPrice = marketStore.market(for: symbol)?.price
+                ?? marketStore.history(for: symbol)?.prices.last
+            guard let rawPrice, rawPrice.isFinite, rawPrice > 0 else { return nil }
+            let currency = marketStore.assetDescriptor(for: symbol)?.currency
+                ?? marketStore.market(for: symbol)?.currency
+                ?? "CNY"
+            let rawCurrencyCode = currency.uppercased()
+            let currencyCode = rawCurrencyCode == "USDT" ? "USD" : rawCurrencyCode
+            guard currencyCode != "CNY" else { return rawPrice }
+            guard let rate = marketStore.exchangeRate(for: currencyCode), rate > 0 else { return nil }
+            return rawPrice / rate
         }
 
         return nil
@@ -236,22 +246,14 @@ extension AssetItem {
             return AppLocalization.format("现价 %@", (1 / rate).currencyString())
         }
 
-        guard let symbol = autoPricedMarketSymbol,
-              let market = marketStore.market(for: symbol) else {
+        guard let symbol = autoPricedMarketSymbol else {
             return nil
         }
-
-        let currencyCode = market.currency.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        let priceText: String
-        if currencyCode.count == 3 {
-            priceText = market.price.currencyString(code: currencyCode)
-        } else if currencyCode.isEmpty {
-            priceText = market.price.plainNumberString()
-        } else {
-            priceText = "\(market.price.plainNumberString()) \(currencyCode)"
-        }
-
-        let unit = market.unit.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let cnyPrice = resolvedAutoUnitPrice(using: marketStore) else { return nil }
+        let descriptor = marketStore.assetDescriptor(for: symbol)
+        let priceText = cnyPrice.currencyString()
+        let unit = (descriptor?.unit ?? marketStore.market(for: symbol)?.unit ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         let unitSuffix = unit.isEmpty ? "" : "/\(unit)"
         return AppLocalization.format("现价 %@%@", priceText, unitSuffix)
     }

@@ -201,6 +201,20 @@ final class AssetItem {
         }
         set { autoPricedAssetKindRawValue = newValue?.rawValue }
     }
+
+    /// The persisted field predates the shared market catalog. Keep the storage
+    /// name for migration compatibility while allowing any backend catalog symbol.
+    var marketAssetSymbol: String? {
+        get {
+            guard let rawValue = autoPricedAssetKindRawValue?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !rawValue.isEmpty else { return nil }
+            return BacktestAssetSymbol.normalized(rawValue)
+        }
+        set {
+            let normalized = newValue.map(BacktestAssetSymbol.normalized)
+            autoPricedAssetKindRawValue = normalized?.isEmpty == false ? normalized : nil
+        }
+    }
 }
 
 @Model

@@ -138,7 +138,7 @@ private actor CloudExportProjectionStore {
                     note: item.note,
                     iconName: ((item.iconName ?? "").isEmpty ? nil : item.iconName),
                     valuationMethod: item.valuationMethod.rawValue,
-                    autoPricedAssetKind: item.autoPricedAssetKind?.rawValue,
+                    autoPricedAssetKind: item.marketAssetSymbol,
                     sortOrder: item.sortOrder,
                     isActive: item.isActive,
                     createdAt: item.createdAt,
@@ -333,7 +333,7 @@ enum ImportExportService {
                     note: $0.note,
                     iconName: (($0.iconName ?? "").isEmpty ? nil : $0.iconName),
                     valuationMethod: $0.valuationMethod.rawValue,
-                    autoPricedAssetKind: $0.autoPricedAssetKind?.rawValue,
+                    autoPricedAssetKind: $0.marketAssetSymbol,
                     sortOrder: $0.sortOrder,
                     isActive: $0.isActive,
                     createdAt: $0.createdAt,
@@ -617,8 +617,7 @@ enum ImportExportService {
                         ValuationMethod(rawValue: itemPayload.valuationMethod) ?? .directAmount
                     ).rawValue
                     let targetAutoPricedAssetKindRawValue = itemPayload.autoPricedAssetKind
-                        .flatMap(AutoPricedAssetKind.init(rawValue:))?
-                        .rawValue
+                        .map(BacktestAssetSymbol.normalized)
                     let targetCategory = itemPayload.categoryID.flatMap { categoryMap[$0] }
 
                     if item.name != itemPayload.name {
@@ -667,6 +666,7 @@ enum ImportExportService {
                         updatedAt: itemPayload.updatedAt,
                         category: itemPayload.categoryID.flatMap { categoryMap[$0] }
                     )
+                    item.marketAssetSymbol = itemPayload.autoPricedAssetKind
                     context.insert(item)
                     itemMap[item.id] = item
                 }

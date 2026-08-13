@@ -1385,6 +1385,10 @@ enum StrategyRebalanceActionBuilder {
     }
 
     private static func itemMatchesStrategySymbol(_ item: AssetItem, symbol: String) -> Bool {
+        if let marketSymbol = item.marketAssetSymbol,
+           BacktestAssetSymbol.normalized(marketSymbol) == BacktestAssetSymbol.normalized(symbol) {
+            return true
+        }
         if symbol == "gold_cny", item.resolvedAutoPricedAssetKind == .gold {
             return true
         }
@@ -2826,14 +2830,70 @@ struct BacktestIndexOption: Identifiable {
     var id: String { symbol }
 }
 
+nonisolated enum BacktestAssetSymbol {
+    static func normalized(_ symbol: String) -> String {
+        switch symbol.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "gold":
+            return "gold_cny"
+        case "nasdaq_composite", "nasdaq":
+            return "nasdaq"
+        case "hang_seng", "hsi":
+            return "hsi"
+        case "nikkei225", "nikkei":
+            return "nikkei"
+        case "oil_wti", "oil_wti_cny", "wti":
+            return "oil_wti_cny"
+        case "dow_jones", "dowjones":
+            return "dowjones"
+        case "cn_10y", "china_10y", "china_10y_yield", "cgb_10y", "cn_10y_yield":
+            return "cn_10y_yield"
+        case "us10y", "us_10y", "treasury_10y", "us_treasury_10y", "us_10y_yield":
+            return "us_10y_yield"
+        case "us2y", "us_2y", "us_2y_yield":
+            return "us_2y_yield"
+        case "us3m", "us_3m", "us_3m_yield":
+            return "us_3m_yield"
+        case let normalized:
+            return normalized
+        }
+    }
+}
+
 struct BacktestAssetOption: Identifiable, Sendable {
     let symbol: String
     let title: String
     let color: Color
     let requiresHistoricalFX: Bool
     let historicalFXSymbol: String?
+    let category: String
+    let iconName: String
+    let currency: String
+    let unit: String
 
     var id: String { symbol }
+
+    init(
+        symbol: String,
+        title: String,
+        color: Color,
+        requiresHistoricalFX: Bool,
+        historicalFXSymbol: String?,
+        category: String = "other",
+        iconName: String = "chart.line.uptrend.xyaxis",
+        currency: String = "CNY",
+        unit: String = ""
+    ) {
+        self.symbol = symbol
+        self.title = title
+        self.color = color
+        self.requiresHistoricalFX = requiresHistoricalFX
+        self.historicalFXSymbol = historicalFXSymbol
+        self.category = category
+        self.iconName = iconName
+        self.currency = currency
+        self.unit = unit
+    }
+
 }
 
 struct BacktestPerformanceMetrics {

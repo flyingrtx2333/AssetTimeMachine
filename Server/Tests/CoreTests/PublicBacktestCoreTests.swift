@@ -92,6 +92,35 @@ final class PublicBacktestCoreTests: XCTestCase {
         ))
     }
 
+    func testForeignUnitsPerCNYSupportsHighJPYRates() throws {
+        let date = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: "2024-01-02"))
+        let lookup = BacktestHistoricalLookup(
+            points: [.init(date: date, price: 20)]
+        )
+        let option = BacktestAssetOption(
+            symbol: "nikkei",
+            title: "日经225",
+            color: .blue,
+            requiresHistoricalFX: true,
+            historicalFXSymbol: "jpy_per_cny"
+        )
+
+        XCTAssertEqual(
+            try XCTUnwrap(BacktestFXConverter.cnyPrice(
+                for: .init(date: date, price: 4_000),
+                assetOption: option,
+                fxLookup: lookup
+            )),
+            200,
+            accuracy: 0.000_001
+        )
+        XCTAssertEqual(
+            try XCTUnwrap(BacktestFXConverter.cnyMultiplier(on: date, assetOption: option, fxLookup: lookup)),
+            0.05,
+            accuracy: 0.000_001
+        )
+    }
+
     func testUSDAssetOHLCUsesTheSameCNYConversionAsClosePrices() throws {
         let dates = ["2024-01-02", "2024-01-03"]
         let asset = PublicHistorySeries(

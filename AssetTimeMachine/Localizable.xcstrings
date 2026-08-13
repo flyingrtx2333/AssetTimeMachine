@@ -1,6 +1,126 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "指数": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Indices" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "指数" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "指數" } }
+      }
+    },
+    "大宗商品": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Commodities" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "大宗商品" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "大宗商品" } }
+      }
+    },
+    "贵金属": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Precious Metals" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "贵金属" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "貴金屬" } }
+      }
+    },
+    "数字货币": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Crypto" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "数字货币" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "數字貨幣" } }
+      }
+    },
+    "外汇": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "FX" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "外汇" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "外匯" } }
+      }
+    },
+    "布伦特原油": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Brent Crude" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "布伦特原油" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "布蘭特原油" } }
+      }
+    },
+    "白银": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Silver" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "白银" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "白銀" } }
+      }
+    },
+    "铜": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Copper" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "铜" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "銅" } }
+      }
+    },
+    "关联市场标的": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Market Asset" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "关联市场标的" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "關聯市場標的" } }
+      }
+    },
+    "已有关联记录，市场标的不可修改。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "The market asset cannot be changed after records exist." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "已有关联记录，市场标的不可修改。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "已有關聯記錄，市場標的不可修改。" } }
+      }
+    },
+    "先选资产大类，再选择对应标的；名称仍可按账户自由填写。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Choose a category and market asset; the account name remains customizable." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "先选资产大类，再选择对应标的；名称仍可按账户自由填写。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "先選資產大類，再選擇對應標的；名稱仍可按帳戶自由填寫。" } }
+      }
+    },
+    "记录方式": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Entry Method" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "记录方式" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "記錄方式" } }
+      }
+    },
+    "不关联市场标的": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No market asset" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "不关联市场标的" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "不關聯市場標的" } }
+      }
+    },
+    "适合银行卡、基金账户等直接记录总金额。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Best for bank and fund accounts recorded by total value." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "适合银行卡、基金账户等直接记录总金额。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "適合銀行卡、基金帳戶等直接記錄總金額。" } }
+      }
+    },
+    "按数量和市场参考价计算金额，也可手动修正单价。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Calculates value from quantity and market reference price; price remains editable." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "按数量和市场参考价计算金额，也可手动修正单价。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "按數量和市場參考價計算金額，也可手動修正單價。" } }
+      }
+    },
     "今日策略已生成": {
       "extractionState": "manual",
       "localizations": {
@@ -79,6 +199,46 @@
         "en": { "stringUnit": { "state": "translated", "value": "Matching current holdings" } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在匹配当前持仓" } },
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在匹配目前持倉" } }
+      }
+    },
+    "回测进度": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Backtest progress" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "回测进度" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "回測進度" } }
+      }
+    },
+    "正在准备回测数据…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Preparing backtest data..." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在准备回测数据…" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在準備回測資料…" } }
+      }
+    },
+    "正在生成图表与指标…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Generating charts and metrics..." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在生成图表与指标…" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在產生圖表與指標…" } }
+      }
+    },
+    "正在保存回测记录…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Saving backtest record..." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在保存回测记录…" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在儲存回測記錄…" } }
+      }
+    },
+    "可选范围：%@ - %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Available: %1$@ - %2$@" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "可选范围：%@ - %@" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "可選範圍：%1$@ - %2$@" } }
       }
     },
     "%@调仓": {
@@ -1230,6 +1390,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld天"
+          }
+        }
+      }
+    },
+    "10年": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10 years"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10年"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10年"
           }
         }
       }
@@ -11570,6 +11753,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "3年"
+          }
+        }
+      }
+    },
+    "5年": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 years"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5年"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5年"
           }
         }
       }

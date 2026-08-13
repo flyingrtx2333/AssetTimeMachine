@@ -44,6 +44,9 @@ nonisolated enum BacktestFXConverter {
     ) -> Double? {
         guard assetOption.requiresHistoricalFX else { return point.price }
         guard let fxRate = validatedFXRate(on: point.date, fxLookup: fxLookup) else { return nil }
+        if assetOption.historicalFXSymbol?.hasSuffix("_per_cny") == true {
+            return point.price / fxRate
+        }
         if fxRate < 1 {
             // Preserve the established operation order because threshold-based strategies
             // can legitimately react to sub-ULP differences around a signal boundary.
@@ -62,6 +65,9 @@ nonisolated enum BacktestFXConverter {
     ) -> Double? {
         guard assetOption.requiresHistoricalFX else { return 1 }
         guard let fxRate = validatedFXRate(on: date, fxLookup: fxLookup) else { return nil }
+        if assetOption.historicalFXSymbol?.hasSuffix("_per_cny") == true {
+            return 1 / fxRate
+        }
         if fxRate < 1 {
             return 1 / fxRate
         }

@@ -36,6 +36,20 @@ enum AssetIconRegistry {
         if let definition = definition(for: key) {
             return definition.symbolName
         }
+        if key.hasPrefix("market_asset|") {
+            let parts = key.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+            if parts.count == 3 {
+                let descriptor = MarketAssetDescriptor(
+                    symbol: parts[2],
+                    category: parts[1],
+                    label: parts[2],
+                    currency: "",
+                    unit: "",
+                    source: nil
+                )
+                return descriptor.assetIconName
+            }
+        }
         return fallbackSymbolName(for: categoryGroup)
     }
 

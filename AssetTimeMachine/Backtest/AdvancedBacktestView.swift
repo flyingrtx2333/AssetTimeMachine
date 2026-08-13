@@ -39,6 +39,7 @@ struct AdvancedBacktestView: View {
     @State private var isRefreshingReport = false
     @State private var isOptimizingStrategies = false
     @State private var isLoadingRequiredHistory = false
+    @State private var backtestRunStage: BacktestRunStage?
     @State private var pendingRefreshTask: Task<Void, Never>?
     @State private var pendingDataCacheTask: Task<Void, Never>?
     @State private var pendingReportComputationTask: Task<AdvancedBacktestComputationResult, Never>?
@@ -70,7 +71,7 @@ struct AdvancedBacktestView: View {
     }
 
     private var assetOptions: [BacktestAssetOption] {
-        BacktestDefaults.dcaAssetOptions
+        marketStore.backtestAssetOptions
     }
 
     private var strategyTemplates: [AdvancedBacktestStrategyTemplate] {
@@ -98,7 +99,7 @@ struct AdvancedBacktestView: View {
         var options = selectedAssetOptions
         var symbols = Set(options.map(\.symbol))
         for signalSymbol in strategyMode.requiredSignalAssetSymbols where !symbols.contains(signalSymbol) {
-            if let option = BacktestDefaults.strategyAssetOptions.first(where: { $0.symbol == signalSymbol }) {
+            if let option = (assetOptions + BacktestDefaults.strategyAssetOptions).first(where: { $0.symbol == signalSymbol }) {
                 options.append(option)
                 symbols.insert(signalSymbol)
             }
@@ -265,6 +266,14 @@ struct AdvancedBacktestView: View {
         return (AppLocalization.string("当前数据暂时无法完成回测"), false)
     }
 
+    private var isBacktestRunning: Bool {
+        isRefreshingReport || isLoadingRequiredHistory
+    }
+
+    private var visibleBacktestRunStage: BacktestRunStage {
+        backtestRunStage ?? (isLoadingRequiredHistory ? .loadingHistory : .calculating)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             configSection
@@ -289,6 +298,9 @@ struct AdvancedBacktestView: View {
                 assetOptions: assetOptions
             ) { updatedSymbols in
                 selectedAssetSymbols = updatedSymbols.isEmpty ? [BacktestDefaults.dcaAssetSymbol] : updatedSymbols
+                Task {
+                    await marketStore.refreshHistory(for: relevantHistorySymbols)
+                }
             }
             .presentationDetents([.fraction(0.62), .large])
             .presentationDragIndicator(.visible)
@@ -302,6 +314,8 @@ struct AdvancedBacktestView: View {
                     selectedStartDate = startDate
                     selectedEndDate = endDate
                 }
+                .presentationDetents([.fraction(0.68), .large])
+                .presentationDragIndicator(.visible)
             }
         }
         .sheet(isPresented: $showsStrategyLibrary) {
@@ -353,13 +367,17 @@ struct AdvancedBacktestView: View {
             if isActive {
                 latestSnapshot = try? SnapshotService.latestSnapshot(in: modelContext)
                 observedMarketIsLoading = marketStore.isLoading
+                await marketStore.refreshAssetCatalogIfNeeded()
+                guard !Task.isCancelled else { return }
                 scheduleAdvancedDataCacheRefresh(force: true)
                 lastObservedRelevantHistoryToken = relevantHistoryToken
                 let shouldForceHistoryRefresh = isMissingSelectedHistoryData
                 if shouldForceHistoryRefresh {
                     await MainActor.run { isLoadingRequiredHistory = true }
                 }
-                await marketStore.refreshHistoryIfNeeded(force: shouldForceHistoryRefresh)
+                await marketStore.refreshHistoryIfNeeded()
+                guard !Task.isCancelled else { return }
+                await marketStore.refreshHistory(for: relevantHistorySymbols)
                 guard !Task.isCancelled else { return }
                 if shouldForceHistoryRefresh {
                     await MainActor.run { isLoadingRequiredHistory = false }
@@ -390,7 +408,9 @@ struct AdvancedBacktestView: View {
 
     @ViewBuilder
     private var advancedStartedContent: some View {
-        if let report {
+        if isBacktestRunning {
+            EmptyView()
+        } else if let report {
             AdvancedBacktestResultContent(
                 report: report,
                 comparisonSeries: cachedComparisonSeries,
@@ -558,11 +578,17 @@ struct AdvancedBacktestView: View {
                 }
             }
 
-            BacktestPrimaryActionButton(
-                title: hasStartedBacktest ? AppLocalization.string("重新回测") : AppLocalization.string("开始回测"),
-                systemImage: hasStartedBacktest ? "arrow.clockwise" : "play.fill"
-            ) {
-                startAdvancedBacktest()
+            if isBacktestRunning {
+                BacktestRunProgressView(stage: visibleBacktestRunStage)
+                    .padding(.horizontal, 2)
+                    .padding(.vertical, 8)
+            } else {
+                BacktestPrimaryActionButton(
+                    title: hasStartedBacktest ? AppLocalization.string("重新回测") : AppLocalization.string("开始回测"),
+                    systemImage: hasStartedBacktest ? "arrow.clockwise" : "play.fill"
+                ) {
+                    startAdvancedBacktest()
+                }
             }
         }
     }
@@ -572,15 +598,20 @@ struct AdvancedBacktestView: View {
         hasStartedBacktest = true
 
         guard isMissingSelectedHistoryData else {
+            isRefreshingReport = true
+            backtestRunStage = .preparing
             scheduleAdvancedDataCacheRefresh(force: true)
             scheduleRefresh(delayNanoseconds: 0, saveRecord: true)
             return
         }
 
         isRefreshingReport = false
+        isLoadingRequiredHistory = true
+        backtestRunStage = .loadingHistory
         Task {
-            await MainActor.run { isLoadingRequiredHistory = true }
-            await marketStore.refreshHistoryIfNeeded(force: true)
+            await marketStore.refreshHistoryIfNeeded()
+            guard !Task.isCancelled else { return }
+            await marketStore.refreshHistory(for: relevantHistorySymbols)
             await MainActor.run { isLoadingRequiredHistory = false }
             guard !Task.isCancelled else { return }
             await MainActor.run {
@@ -666,6 +697,8 @@ struct AdvancedBacktestView: View {
         pendingOptimizationComputationTask = nil
         isRefreshingReport = false
         isOptimizingStrategies = false
+        isLoadingRequiredHistory = false
+        backtestRunStage = nil
     }
 
     @MainActor
@@ -718,6 +751,8 @@ struct AdvancedBacktestView: View {
         pendingOptimizationComputationTask?.cancel()
         pendingReportComputationTask = nil
         pendingOptimizationComputationTask = nil
+        isRefreshingReport = true
+        backtestRunStage = .preparing
 
         let capturedOptions = calculationAssetOptions
         let capturedHistorySnapshots = AdvancedBacktestDataSupport.historySnapshots(
@@ -735,6 +770,7 @@ struct AdvancedBacktestView: View {
             hasOptimizedStrategies = false
             isRefreshingReport = false
             isOptimizingStrategies = false
+            backtestRunStage = isLoadingRequiredHistory ? .loadingHistory : nil
             pendingRefreshTask = nil
             return
         }
@@ -761,7 +797,6 @@ struct AdvancedBacktestView: View {
         let capturedTakeProfitRatio = takeProfitRatio
         let capturedConfigSummary = advancedConfigSummary()
 
-        isRefreshingReport = true
         bestCandidates = []
         hasOptimizedStrategies = false
         isOptimizingStrategies = false
@@ -784,6 +819,11 @@ struct AdvancedBacktestView: View {
                 } catch {
                     return
                 }
+            }
+
+            await MainActor.run {
+                guard !Task.isCancelled else { return }
+                backtestRunStage = .calculating
             }
 
             let hasPreparedData = lastAdvancedDataCacheToken == capturedDataCacheToken
@@ -902,8 +942,17 @@ struct AdvancedBacktestView: View {
 
             guard !Task.isCancelled else { return }
 
+            await MainActor.run {
+                backtestRunStage = .finalizing
+            }
+            try? await Task.sleep(nanoseconds: 70_000_000)
+            guard !Task.isCancelled else { return }
+
             var recordDraft: AdvancedBacktestRecordDraft?
             if saveRecord, let report = refreshedResult.report {
+                await MainActor.run {
+                    backtestRunStage = .saving
+                }
                 let draft = await Task.detached(priority: .utility) {
                     AdvancedBacktestDataSupport.buildRecordDraft(
                         report: report,
@@ -940,6 +989,7 @@ struct AdvancedBacktestView: View {
                 hasOptimizedStrategies = false
                 isRefreshingReport = false
                 isOptimizingStrategies = false
+                backtestRunStage = nil
                 pendingRefreshTask = nil
             }
         }
