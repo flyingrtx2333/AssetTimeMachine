@@ -78,6 +78,16 @@ struct AdvancedBacktestResultContent<MiddleContent: View>: View {
                     footnote: executionAssumptionText
                 )
 
+                if !report.exposurePoints.isEmpty {
+                    Divider()
+                        .overlay(AssetTheme.border.opacity(0.6))
+
+                    BacktestExposureChartSection(
+                        points: report.exposurePoints,
+                        averageRatio: report.averageExposureRatio
+                    )
+                }
+
                 if showsRebalanceAdvice {
                     Divider()
                         .overlay(AssetTheme.border.opacity(0.6))

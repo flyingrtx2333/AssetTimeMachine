@@ -155,10 +155,6 @@ extension MarketAssetDescriptor {
         "market_asset|\(sectionID)|\(canonicalSymbol)"
     }
 
-    var subtitle: String {
-        let currencyText = currency.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        return currencyText.isEmpty ? canonicalSymbol.uppercased() : "\(canonicalSymbol.uppercased()) · \(currencyText)"
-    }
 }
 
 enum MarketAssetCatalog {
@@ -273,18 +269,11 @@ struct MarketAssetOptionTile: View {
                     .foregroundStyle(isSelected ? AssetTheme.gold : asset.color)
                     .frame(width: 28, height: 28)
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(asset.displayTitle)
-                        .font(AppTypography.rowTitle)
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-
-                    Text(asset.subtitle)
-                        .font(AppTypography.microLabel)
-                        .foregroundStyle(AssetTheme.textSecondary)
-                        .lineLimit(1)
-                }
+                Text(asset.displayTitle)
+                    .font(AppTypography.rowTitle)
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
 
                 Spacer(minLength: 4)
 
@@ -299,7 +288,8 @@ struct MarketAssetOptionTile: View {
                 }
             }
             .padding(.horizontal, 12)
-            .frame(minHeight: 58)
+            .padding(.vertical, 9)
+            .frame(minHeight: 50)
             .background(isSelected ? AssetTheme.gold.opacity(0.08) : Color.clear)
             .contentShape(Rectangle())
         }

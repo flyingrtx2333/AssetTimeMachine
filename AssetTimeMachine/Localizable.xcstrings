@@ -1,6 +1,38 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "持仓比例": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Exposure" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "持仓比例" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "持倉比例" } }
+      }
+    },
+    "持仓比例走势": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Exposure Over Time" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "持仓比例走势" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "持倉比例走勢" } }
+      }
+    },
+    "显示零资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Show zero balances" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "显示零资产" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "顯示零資產" } }
+      }
+    },
+    "隐藏零资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Hide zero balances" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "隐藏零资产" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "隱藏零資產" } }
+      }
+    },
     "指数": {
       "extractionState": "manual",
       "localizations": {

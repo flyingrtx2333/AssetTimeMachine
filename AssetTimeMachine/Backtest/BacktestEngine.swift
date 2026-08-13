@@ -479,6 +479,16 @@ nonisolated enum BacktestEngine {
         )
     }
 
+    static func exposurePoints(from dailyStates: [BacktestDailyState]) -> [BacktestExposurePoint] {
+        dailyStates.enumerated().compactMap { sequence, state in
+            guard state.portfolioValue.isFinite, state.portfolioValue > 0 else { return nil }
+            let investedValue = state.holdingsBySymbol.values.reduce(0, +)
+            let ratio = max(investedValue / state.portfolioValue, 0)
+            guard ratio.isFinite else { return nil }
+            return BacktestExposurePoint(date: state.date, ratio: ratio, sequence: sequence)
+        }
+    }
+
     /// Presents a continuous strategy run inside a user-selected measurement window.
     ///
     /// Stateful rotation strategies must see the history before the selected start
@@ -566,6 +576,7 @@ nonisolated enum BacktestEngine {
             )
         }
         let statesInRange = dailyStates.filter { bounds.contains($0.date) }
+        let exposurePoints = exposurePoints(from: statesInRange)
         var inheritedUnitsBySymbol: [String: Double] = [:]
         for trade in report.trades where trade.date < bounds.lowerBound {
             switch trade.action {
@@ -701,7 +712,8 @@ nonisolated enum BacktestEngine {
             annualizedVolatility: metrics.annualizedVolatility,
             sharpeRatio: metrics.sharpeRatio,
             cashYieldSummary: cashYieldSummary,
-            riskSignalSummary: riskSignalSummary
+            riskSignalSummary: riskSignalSummary,
+            exposurePoints: exposurePoints
         )
     }
 
@@ -1037,6 +1049,7 @@ nonisolated enum BacktestEngine {
         var cashInterestEarned = 0.0
         var cashAnnualRateSum = 0.0
         var cashAnnualRateSampleCount = 0
+        var exposurePoints: [BacktestExposurePoint] = []
 
         for (index, point) in pricePoints.enumerated() {
             if index.isMultiple(of: 64), Task.isCancelled { return nil }
@@ -1176,10 +1189,16 @@ nonisolated enum BacktestEngine {
                 maxDrawdown = max(maxDrawdown, (peakValue - portfolioValue) / peakValue)
             }
             if portfolioValue > 0 {
-                exposureSum += min(max((unitsHeld * point.cnyPrice) / portfolioValue, 0), 1)
+                let exposureRatio = min(max((unitsHeld * point.cnyPrice) / portfolioValue, 0), 1)
+                exposureSum += exposureRatio
                 exposureSampleCount += 1
                 cashRatioSum += min(max(cash / portfolioValue, 0), 1)
                 cashRatioSampleCount += 1
+                exposurePoints.append(BacktestExposurePoint(
+                    date: point.date,
+                    ratio: exposureRatio,
+                    sequence: exposurePoints.count
+                ))
             }
             points.append(.init(date: point.date, portfolioValue: portfolioValue, sequence: points.count))
         }
@@ -1239,7 +1258,8 @@ nonisolated enum BacktestEngine {
             annualizedVolatility: metrics.annualizedVolatility,
             sharpeRatio: metrics.sharpeRatio,
             cashYieldSummary: cashYieldSummary,
-            riskSignalSummary: nil
+            riskSignalSummary: nil,
+            exposurePoints: exposurePoints
         )
     }
 
@@ -4249,7 +4269,8 @@ nonisolated enum BacktestEngine {
             annualizedVolatility: metrics.annualizedVolatility,
             sharpeRatio: metrics.sharpeRatio,
             cashYieldSummary: simulation.cashYieldSummary,
-            riskSignalSummary: riskSignalSummary
+            riskSignalSummary: riskSignalSummary,
+            exposurePoints: exposurePoints(from: simulation.dailyStates)
         )
         return ResearchTargetStrategyRun(report: report, dailyStates: simulation.dailyStates)
     }
@@ -11461,7 +11482,8 @@ nonisolated enum BacktestEngine {
             annualizedVolatility: metrics.annualizedVolatility,
             sharpeRatio: metrics.sharpeRatio,
             cashYieldSummary: simulation.cashYieldSummary,
-            riskSignalSummary: riskSignalSummary
+            riskSignalSummary: riskSignalSummary,
+            exposurePoints: exposurePoints(from: simulation.dailyStates)
         )
         return AdvancedRotationStrategyRun(report: report, dailyStates: simulation.dailyStates)
     }
@@ -11545,10 +11567,14 @@ nonisolated enum BacktestEngine {
         var benchmarkValueByReportIndex = Array(repeating: perAssetInitialCash, count: reports.count)
         var cursors = Array(repeating: 0, count: reports.count)
         var benchmarkCursors = Array(repeating: 0, count: reports.count)
+        var exposureCursors = Array(repeating: 0, count: reports.count)
+        var exposureByReportIndex = Array(repeating: 0.0, count: reports.count)
         var combinedPoints: [BacktestSeriesPoint] = []
         var combinedBenchmarkPoints: [BacktestSeriesPoint] = []
+        var combinedExposurePoints: [BacktestExposurePoint] = []
         combinedPoints.reserveCapacity(allDates.count)
         combinedBenchmarkPoints.reserveCapacity(allDates.count)
+        combinedExposurePoints.reserveCapacity(allDates.count)
 
         for date in allDates {
             guard !Task.isCancelled else { return nil }
@@ -11568,12 +11594,30 @@ nonisolated enum BacktestEngine {
                     benchmarkCursor += 1
                 }
                 benchmarkCursors[reportIndex] = benchmarkCursor
+
+                let exposurePoints = reports[reportIndex].exposurePoints
+                var exposureCursor = exposureCursors[reportIndex]
+                while exposureCursor < exposurePoints.count, exposurePoints[exposureCursor].date <= date {
+                    exposureByReportIndex[reportIndex] = exposurePoints[exposureCursor].ratio
+                    exposureCursor += 1
+                }
+                exposureCursors[reportIndex] = exposureCursor
             }
 
             let totalValue = valueByReportIndex.reduce(0, +)
             let totalBenchmarkValue = benchmarkValueByReportIndex.reduce(0, +)
             combinedPoints.append(BacktestSeriesPoint(date: date, portfolioValue: totalValue, sequence: combinedPoints.count))
             combinedBenchmarkPoints.append(BacktestSeriesPoint(date: date, portfolioValue: totalBenchmarkValue, sequence: combinedBenchmarkPoints.count))
+            if totalValue > 0 {
+                let investedValue = reports.indices.reduce(0.0) { partial, reportIndex in
+                    partial + valueByReportIndex[reportIndex] * exposureByReportIndex[reportIndex]
+                }
+                combinedExposurePoints.append(BacktestExposurePoint(
+                    date: date,
+                    ratio: max(investedValue / totalValue, 0),
+                    sequence: combinedExposurePoints.count
+                ))
+            }
         }
 
         guard let last = combinedPoints.last,
@@ -11608,7 +11652,8 @@ nonisolated enum BacktestEngine {
             annualizedVolatility: metrics.annualizedVolatility,
             sharpeRatio: metrics.sharpeRatio,
             cashYieldSummary: cashYieldSummary,
-            riskSignalSummary: nil
+            riskSignalSummary: nil,
+            exposurePoints: combinedExposurePoints
         )
     }
 

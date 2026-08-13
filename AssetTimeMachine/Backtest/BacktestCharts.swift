@@ -804,6 +804,104 @@ struct BacktestValueChartSection: View {
     }
 }
 
+struct BacktestExposureChartSection: View {
+    let points: [BacktestExposurePoint]
+    let averageRatio: Double
+
+    private var chartPoints: [BacktestExposurePoint] {
+        BacktestExposureSampling.sampled(points)
+    }
+
+    private var peakRatio: Double {
+        points.map(\.ratio).max() ?? 0
+    }
+
+    private var yMaximum: Double {
+        guard peakRatio > 1 else { return 1 }
+        return max(ceil(peakRatio * 4) / 4, 1.25)
+    }
+
+    private var yAxisValues: [Double] {
+        let step = yMaximum / 4
+        return (0...4).map { Double($0) * step }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(AppLocalization.string("持仓比例走势"))
+                    .font(AppTypography.rowTitle)
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                Spacer(minLength: 8)
+
+                HStack(spacing: 5) {
+                    Text(AppLocalization.string("平均仓位"))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                    Text(averageRatio.percentString(maxFractionDigits: 0))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                }
+                .font(AppTypography.chartCaptionStrong)
+                .monospacedDigit()
+            }
+
+            Chart(chartPoints) { point in
+                AreaMark(
+                    x: .value(AppLocalization.string("日期"), point.date),
+                    yStart: .value(AppLocalization.string("持仓比例"), 0),
+                    yEnd: .value(AppLocalization.string("持仓比例"), point.ratio)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [BacktestChartPalette.strategyLine.opacity(0.24), BacktestChartPalette.strategyLine.opacity(0.025)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+
+                LineMark(
+                    x: .value(AppLocalization.string("日期"), point.date),
+                    y: .value(AppLocalization.string("持仓比例"), point.ratio)
+                )
+                .foregroundStyle(BacktestChartPalette.strategyLine)
+                .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+            }
+            .frame(height: 160)
+            .chartXScale(range: .plotDimension(startPadding: 4, endPadding: 32))
+            .chartYScale(domain: 0...yMaximum)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 4)) {
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                        .foregroundStyle(AssetTheme.border.opacity(0.35))
+                    AxisValueLabel(format: .dateTime.year())
+                        .font(AppTypography.chartAxisCompact)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading, values: yAxisValues) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                        .foregroundStyle(AssetTheme.border.opacity(0.35))
+                    AxisValueLabel {
+                        if let ratio = value.as(Double.self) {
+                            Text(ratio.percentString(maxFractionDigits: 0))
+                                .font(AppTypography.chartAxisCompact)
+                                .monospacedDigit()
+                                .foregroundStyle(AssetTheme.textSecondary)
+                        }
+                    }
+                }
+            }
+            .chartPlotStyle { plotArea in
+                plotArea.clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+            .allowsHitTesting(false)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(AppLocalization.string("持仓比例走势"))
+        }
+    }
+}
+
 struct BacktestAllocationSlice: Identifiable {
     let title: String
     let amount: Double

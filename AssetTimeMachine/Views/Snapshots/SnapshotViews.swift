@@ -177,6 +177,7 @@ struct SnapshotListView: View {
     @State private var cachedItemsByID: [UUID: AssetItem] = [:]
     @State private var itemsByIDCacheToken: String = ""
     @State private var persistenceErrorMessage: String?
+    @AppStorage("app.records.showsZeroBalanceAssets") private var showsZeroBalanceAssets = true
 
     private var currentSnapshot: AssetSnapshot? {
         if let currentSnapshotID,
@@ -252,6 +253,13 @@ struct SnapshotListView: View {
                                 totalAssets: layout.displayedTotalAssets,
                                 netAssets: layout.displayedNetAssets,
                                 totalLiabilities: layout.displayedTotalLiabilities,
+                                showsZeroBalanceAssets: showsZeroBalanceAssets,
+                                onToggleZeroBalanceAssets: {
+                                    dismissKeyboard()
+                                    withAnimation(.easeInOut(duration: 0.18)) {
+                                        showsZeroBalanceAssets.toggle()
+                                    }
+                                },
                                 onAddAsset: {
                                     dismissKeyboard()
                                     presentAddAssetItemEditor()
@@ -274,7 +282,8 @@ struct SnapshotListView: View {
                                 },
                                 onEditValue: { item in
                                     presentQuickEdit(for: item)
-                                }
+                                },
+                                showsZeroBalanceAssets: showsZeroBalanceAssets
                             )
 
                         } else if isPreparingInitialSnapshot || !didPrepare || currentSnapshotValue != nil {
@@ -943,45 +952,59 @@ struct RecordSnapshotSections: View {
     let onBeginInlineEdit: (RecordInputField) -> Void
     let onEdit: (AssetItem) -> Void
     let onEditValue: (AssetItem) -> Void
+    var showsZeroBalanceAssets: Bool = true
     var isReadOnly: Bool = false
     var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
 
+    private func visibleItems(in items: [AssetItem]) -> [AssetItem] {
+        guard !showsZeroBalanceAssets else { return items }
+        return items.filter { item in
+            abs(layout.displayEntriesByItemID[item.id]?.resolvedAmount ?? 0) > 0.000_001
+        }
+    }
+
     var body: some View {
         ForEach(layout.nonLiabilityCategoryItems) { categoryItems in
-            RecordCategoryCard(
-                category: categoryItems.category,
-                items: categoryItems.items,
-                snapshotEntriesByItemID: layout.displayEntriesByItemID,
-                onboardingInputItemID: categoryItems.id == layout.onboardingInputTargetCategoryID ? categoryItems.items.first?.id : nil,
-                onboardingActiveAnchorID: onboardingActiveAnchorID,
-                amountInputs: $amountInputs,
-                quantityInputs: $quantityInputs,
-                unitPriceInputs: $unitPriceInputs,
-                focusedField: $focusedField,
-                inlineEditingField: inlineEditingField,
-                onBeginInlineEdit: onBeginInlineEdit,
-                onEdit: onEdit,
-                onEditValue: onEditValue,
-                isReadOnly: isReadOnly,
-                onReadOnlyEdit: onReadOnlyEdit
-            )
+            let items = visibleItems(in: categoryItems.items)
+            if !items.isEmpty {
+                RecordCategoryCard(
+                    category: categoryItems.category,
+                    items: items,
+                    snapshotEntriesByItemID: layout.displayEntriesByItemID,
+                    onboardingInputItemID: categoryItems.id == layout.onboardingInputTargetCategoryID ? items.first?.id : nil,
+                    onboardingActiveAnchorID: onboardingActiveAnchorID,
+                    amountInputs: $amountInputs,
+                    quantityInputs: $quantityInputs,
+                    unitPriceInputs: $unitPriceInputs,
+                    focusedField: $focusedField,
+                    inlineEditingField: inlineEditingField,
+                    onBeginInlineEdit: onBeginInlineEdit,
+                    onEdit: onEdit,
+                    onEditValue: onEditValue,
+                    isReadOnly: isReadOnly,
+                    onReadOnlyEdit: onReadOnlyEdit
+                )
+            }
         }
 
         ForEach(layout.liabilityCategoryItems) { categoryItems in
-            LiabilityCategorySection(
-                category: categoryItems.category,
-                items: categoryItems.items,
-                snapshotEntriesByItemID: layout.displayEntriesByItemID,
-                amountInputs: $amountInputs,
-                quantityInputs: $quantityInputs,
-                focusedField: $focusedField,
-                inlineEditingField: inlineEditingField,
-                onBeginInlineEdit: onBeginInlineEdit,
-                onEdit: onEdit,
-                onEditValue: onEditValue,
-                isReadOnly: isReadOnly,
-                onReadOnlyEdit: onReadOnlyEdit
-            )
+            let items = visibleItems(in: categoryItems.items)
+            if !items.isEmpty {
+                LiabilityCategorySection(
+                    category: categoryItems.category,
+                    items: items,
+                    snapshotEntriesByItemID: layout.displayEntriesByItemID,
+                    amountInputs: $amountInputs,
+                    quantityInputs: $quantityInputs,
+                    focusedField: $focusedField,
+                    inlineEditingField: inlineEditingField,
+                    onBeginInlineEdit: onBeginInlineEdit,
+                    onEdit: onEdit,
+                    onEditValue: onEditValue,
+                    isReadOnly: isReadOnly,
+                    onReadOnlyEdit: onReadOnlyEdit
+                )
+            }
         }
     }
 }
@@ -992,6 +1015,8 @@ struct RecordPageHero: View {
     let netAssets: Double
     let totalLiabilities: Double
     var showsActionChips: Bool = true
+    var showsZeroBalanceAssets: Bool = true
+    var onToggleZeroBalanceAssets: () -> Void = {}
     let onAddAsset: () -> Void
 
     private var netAssetColor: Color {
@@ -1038,6 +1063,22 @@ struct RecordPageHero: View {
 
                 if showsActionChips {
                     HStack(spacing: 8) {
+                        Button(action: onToggleZeroBalanceAssets) {
+                            Image(systemName: showsZeroBalanceAssets ? "eye" : "eye.slash")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(showsZeroBalanceAssets ? AssetTheme.goldSoft : AssetTheme.textSecondary)
+                                .frame(width: 32, height: 32)
+                                .background(AssetTheme.overlaySoft.opacity(0.62), in: Circle())
+                                .overlay(
+                                    Circle()
+                                        .stroke(AssetTheme.border.opacity(0.34), lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(AppLocalization.string(
+                            showsZeroBalanceAssets ? "隐藏零资产" : "显示零资产"
+                        ))
+
                         NavigationLink {
                             SnapshotArchiveView()
                         } label: {
@@ -1415,7 +1456,7 @@ struct LiabilityEntryCard: View {
 
     var body: some View {
         RecordInputCard {
-            HStack(alignment: .center, spacing: 8) {
+            AdaptiveRecordEntryRow {
                 Button {
                     if isReadOnly, let entry = snapshotEntry {
                         onReadOnlyEdit?(entry)
@@ -1423,24 +1464,19 @@ struct LiabilityEntryCard: View {
                         onEdit()
                     }
                 } label: {
-                    HStack(alignment: .center, spacing: 6) {
+                    HStack(alignment: .top, spacing: 6) {
                         RecordEntryGlyph(item: item, tint: hasDisplayValue ? AssetTheme.negative : AssetTheme.negative.opacity(0.72))
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(AppLocalization.string(item.name))
-                                .font(AppTypography.chartLegendMedium)
-                                .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                                .allowsTightening(true)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .layoutPriority(1)
+                        Text(AppLocalization.string(item.name))
+                            .font(AppTypography.chartLegendMedium)
+                            .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
                     }
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-
+            } trailing: {
                 RecordInlineValueSlot(
                     text: item.valuationMethod == .directAmount ? $amountText : $quantityText,
                     displayValue: displayValue,
@@ -1537,6 +1573,40 @@ struct RecordInputCard<Content: View>: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 11)
         .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
+    }
+}
+
+struct AdaptiveRecordEntryRow<Leading: View, Trailing: View>: View {
+    let leading: Leading
+    let trailing: Trailing
+
+    init(
+        @ViewBuilder leading: () -> Leading,
+        @ViewBuilder trailing: () -> Trailing
+    ) {
+        self.leading = leading()
+        self.trailing = trailing()
+    }
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .center, spacing: 8) {
+                leading
+                    .fixedSize(horizontal: true, vertical: false)
+
+                Spacer(minLength: 0)
+
+                trailing
+            }
+
+            VStack(alignment: .leading, spacing: 7) {
+                leading
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                trailing
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+        }
     }
 }
 
@@ -1654,7 +1724,7 @@ struct AssetEntryCompactCard: View {
 
     var body: some View {
         RecordInputCard {
-            HStack(alignment: .center, spacing: 8) {
+            AdaptiveRecordEntryRow {
                 Button {
                     if isReadOnly, let entry = snapshotEntry {
                         onReadOnlyEdit?(entry)
@@ -1662,24 +1732,19 @@ struct AssetEntryCompactCard: View {
                         onEdit()
                     }
                 } label: {
-                    HStack(alignment: .center, spacing: 6) {
+                    HStack(alignment: .top, spacing: 6) {
                         RecordEntryGlyph(item: item, tint: hasDisplayValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.74))
 
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(AppLocalization.string(item.name))
-                                .font(AppTypography.chartLegendMedium)
-                                .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                                .allowsTightening(true)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .layoutPriority(1)
+                        Text(AppLocalization.string(item.name))
+                            .font(AppTypography.chartLegendMedium)
+                            .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
                     }
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-
+            } trailing: {
                 RecordInlineValueSlot(
                     text: item.valuationMethod == .directAmount ? $amountText : $quantityText,
                     displayValue: displayValue,
@@ -2030,9 +2095,11 @@ struct AssetEditorForm: View {
                     .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
 
-                Text(AppLocalization.string(isMarketAssetLocked ? "已有关联记录，市场标的不可修改。" : "先选资产大类，再选择对应标的；名称仍可按账户自由填写。"))
-                    .font(AppTypography.meta)
-                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.82))
+                if isMarketAssetLocked {
+                    Text(AppLocalization.string("已有关联记录，市场标的不可修改。"))
+                        .font(AppTypography.meta)
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.82))
+                }
 
                 MarketAssetCatalogSelector(
                     assets: marketAssets,
@@ -2062,12 +2129,6 @@ struct AssetEditorForm: View {
                         }
                     }
                     .pickerStyle(.segmented)
-
-                    Text(AppLocalization.string(valuationMethod == .directAmount
-                        ? "适合银行卡、基金账户等直接记录总金额。"
-                        : "按数量和市场参考价计算金额，也可手动修正单价。"))
-                        .font(AppTypography.microLabel)
-                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.75))
                 }
             }
         }

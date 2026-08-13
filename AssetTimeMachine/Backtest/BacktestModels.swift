@@ -695,6 +695,52 @@ struct AdvancedBacktestBenchmarkSeries: Identifiable {
     let points: [BacktestSeriesPoint]
 }
 
+struct BacktestExposurePoint: Identifiable, Sendable {
+    let date: Date
+    let ratio: Double
+    let sequence: Int
+
+    nonisolated var id: Int { sequence }
+}
+
+enum BacktestExposureSampling {
+    nonisolated static func sampled(
+        _ points: [BacktestExposurePoint],
+        maxCount: Int = 360
+    ) -> [BacktestExposurePoint] {
+        guard points.count > maxCount, maxCount >= 4 else { return points }
+
+        let interiorCount = points.count - 2
+        let bucketCount = max((maxCount - 2) / 2, 1)
+        let bucketSize = Int(ceil(Double(interiorCount) / Double(bucketCount)))
+        var output: [BacktestExposurePoint] = [points[0]]
+        output.reserveCapacity(maxCount)
+
+        var lowerBound = 1
+        while lowerBound < points.count - 1 {
+            let upperBound = min(lowerBound + bucketSize, points.count - 1)
+            let bucket = points[lowerBound..<upperBound]
+            guard let minimum = bucket.min(by: { $0.ratio < $1.ratio }),
+                  let maximum = bucket.max(by: { $0.ratio < $1.ratio }) else { break }
+            if minimum.date <= maximum.date {
+                output.append(minimum)
+                if maximum.sequence != minimum.sequence { output.append(maximum) }
+            } else {
+                output.append(maximum)
+                if maximum.sequence != minimum.sequence { output.append(minimum) }
+            }
+            lowerBound = upperBound
+        }
+
+        if let last = points.last, output.last?.date != last.date {
+            output.append(last)
+        }
+        return output.enumerated().map { sequence, point in
+            BacktestExposurePoint(date: point.date, ratio: point.ratio, sequence: sequence)
+        }
+    }
+}
+
 struct CashYieldRatePoint: Identifiable {
     let date: Date
     let annualRate: Double
@@ -1093,6 +1139,46 @@ struct AdvancedBacktestReport {
     let sharpeRatio: Double?
     let cashYieldSummary: CashYieldSummary
     let riskSignalSummary: MarketRiskSignalSummary?
+    let exposurePoints: [BacktestExposurePoint]
+    private let exactAverageExposureRatio: Double?
+
+    nonisolated init(
+        points: [BacktestSeriesPoint],
+        benchmarkPoints: [BacktestSeriesPoint],
+        benchmarkSeries: [AdvancedBacktestBenchmarkSeries],
+        trades: [AdvancedBacktestTrade],
+        assetReports: [AdvancedBacktestAssetReport],
+        finalPortfolioValue: Double,
+        finalCash: Double,
+        finalUnits: Double,
+        totalReturn: Double,
+        annualizedReturn: Double?,
+        maxDrawdown: Double,
+        annualizedVolatility: Double?,
+        sharpeRatio: Double?,
+        cashYieldSummary: CashYieldSummary,
+        riskSignalSummary: MarketRiskSignalSummary?,
+        exposurePoints: [BacktestExposurePoint] = [],
+        averageExposureRatio: Double? = nil
+    ) {
+        self.points = points
+        self.benchmarkPoints = benchmarkPoints
+        self.benchmarkSeries = benchmarkSeries
+        self.trades = trades
+        self.assetReports = assetReports
+        self.finalPortfolioValue = finalPortfolioValue
+        self.finalCash = finalCash
+        self.finalUnits = finalUnits
+        self.totalReturn = totalReturn
+        self.annualizedReturn = annualizedReturn
+        self.maxDrawdown = maxDrawdown
+        self.annualizedVolatility = annualizedVolatility
+        self.sharpeRatio = sharpeRatio
+        self.cashYieldSummary = cashYieldSummary
+        self.riskSignalSummary = riskSignalSummary
+        self.exposurePoints = exposurePoints
+        self.exactAverageExposureRatio = averageExposureRatio
+    }
 
     var initialPortfolioValue: Double {
         points.first?.portfolioValue ?? 0
@@ -1119,6 +1205,12 @@ struct AdvancedBacktestReport {
     }
 
     var averageExposureRatio: Double {
+        if let exactAverageExposureRatio {
+            return exactAverageExposureRatio
+        }
+        if !exposurePoints.isEmpty {
+            return exposurePoints.reduce(0) { $0 + $1.ratio } / Double(exposurePoints.count)
+        }
         guard !assetReports.isEmpty else { return 0 }
         return assetReports.reduce(0) { $0 + $1.exposureRatio } / Double(assetReports.count)
     }
@@ -2228,6 +2320,22 @@ struct BacktestRecordAdvancedBenchmarkSeriesPayload: Codable, Identifiable {
     }
 }
 
+struct BacktestRecordExposurePointPayload: Codable {
+    let date: Date
+    let ratio: Double
+    let sequence: Int
+
+    init(point: BacktestExposurePoint, sequence: Int) {
+        date = point.date
+        ratio = point.ratio
+        self.sequence = sequence
+    }
+
+    var exposurePoint: BacktestExposurePoint {
+        BacktestExposurePoint(date: date, ratio: ratio, sequence: sequence)
+    }
+}
+
 struct BacktestRecordCashYieldRatePointPayload: Codable {
     let date: Date
     let annualRate: Double
@@ -2389,6 +2497,8 @@ struct BacktestRecordConfigPayload: Codable {
     var advancedAssetCharts: [BacktestRecordAdvancedAssetChartPayload]? = nil
     var advancedBenchmarkSeries: [BacktestRecordAdvancedBenchmarkSeriesPayload]? = nil
     var advancedCombinedBenchmarkPoints: [BacktestRecordPointPayload]? = nil
+    var advancedExposurePoints: [BacktestRecordExposurePointPayload]? = nil
+    var advancedAverageExposureRatio: Double? = nil
     var finalCash: Double? = nil
     var finalUnits: Double? = nil
     var cashYieldSummary: BacktestRecordCashYieldSummaryPayload? = nil
@@ -2487,6 +2597,15 @@ enum BacktestRecordCodec {
                 title: benchmarkSeries.title,
                 points: sampledPoints
             )
+        }
+    }
+
+    static func exposurePointPayloads(
+        from points: [BacktestExposurePoint],
+        maxCount: Int = 360
+    ) -> [BacktestRecordExposurePointPayload] {
+        BacktestExposureSampling.sampled(points, maxCount: maxCount).enumerated().map { index, point in
+            BacktestRecordExposurePointPayload(point: point, sequence: index)
         }
     }
 
@@ -2667,6 +2786,9 @@ enum BacktestRecordCodec {
             : storedCombinedBenchmarkPoints
         let assetReports = advancedAssetReports(from: config)
         let finalPortfolioValue = record.finalValue ?? points.last?.portfolioValue ?? 0
+        let exposurePoints = (config.advancedExposurePoints ?? [])
+            .sorted { $0.sequence < $1.sequence }
+            .map(\.exposurePoint)
 
         return AdvancedBacktestReport(
             points: points,
@@ -2683,7 +2805,9 @@ enum BacktestRecordCodec {
             annualizedVolatility: record.annualizedVolatility,
             sharpeRatio: record.sharpeRatio,
             cashYieldSummary: config.cashYieldSummary?.cashYieldSummary ?? defaultCashYieldSummary(for: points),
-            riskSignalSummary: config.riskSignalSummary?.riskSignalSummary
+            riskSignalSummary: config.riskSignalSummary?.riskSignalSummary,
+            exposurePoints: exposurePoints,
+            averageExposureRatio: config.advancedAverageExposureRatio
         )
     }
 

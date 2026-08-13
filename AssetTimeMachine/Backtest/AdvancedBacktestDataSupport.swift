@@ -282,6 +282,8 @@ enum AdvancedBacktestDataSupport {
             advancedAssetCharts: BacktestRecordCodec.advancedAssetChartPayloads(from: report.assetReports),
             advancedBenchmarkSeries: BacktestRecordCodec.advancedBenchmarkSeriesPayloads(from: report.benchmarkSeries),
             advancedCombinedBenchmarkPoints: BacktestRecordCodec.pointPayloads(from: report.benchmarkPoints),
+            advancedExposurePoints: BacktestRecordCodec.exposurePointPayloads(from: report.exposurePoints),
+            advancedAverageExposureRatio: report.averageExposureRatio,
             finalCash: report.finalCash,
             finalUnits: report.finalUnits,
             cashYieldSummary: BacktestRecordCodec.cashYieldSummaryPayload(from: report.cashYieldSummary),

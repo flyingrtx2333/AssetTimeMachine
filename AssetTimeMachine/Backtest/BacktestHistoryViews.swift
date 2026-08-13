@@ -935,6 +935,10 @@ struct BacktestHistoryRow: View {
         return "\(startDate.recordDateString) - \(endDate.recordDateString)"
     }
 
+    private var compactContextText: String {
+        displaySubtitle ?? record.createdAt.recordDateString
+    }
+
     var body: some View {
         Group {
             if isSelectionMode {
@@ -969,39 +973,33 @@ struct BacktestHistoryRow: View {
     }
 
     private var rowContent: some View {
-        VStack(alignment: .leading, spacing: 13) {
-            HStack(alignment: .top, spacing: 12) {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(alignment: .center, spacing: 10) {
                 if isSelectionMode {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.title3.weight(.semibold))
+                        .font(AppTypography.blockTitle)
                         .foregroundStyle(isSelected ? AssetTheme.gold : AssetTheme.textSecondary.opacity(0.45))
-                        .frame(width: 24, height: 32)
+                        .frame(width: 22, height: 28)
                 }
 
                 Image(systemName: iconName)
-                    .font(AppTypography.blockTitle)
+                    .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.gold)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 28, height: 28)
                     .background(AssetTheme.gold.opacity(0.12), in: Circle())
 
-                VStack(alignment: .leading, spacing: 5) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(displayTitle)
                         .font(AppTypography.rowTitle)
                         .foregroundStyle(AssetTheme.textPrimary)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    Text(record.createdAt.recordDateString)
-                        .font(AppTypography.caption)
+                    Text(compactContextText)
+                        .font(AppTypography.chartCaption)
                         .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-
-                    if let displaySubtitle {
-                        Text(displaySubtitle)
-                            .font(AppTypography.chartCaption)
-                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                        .lineLimit(showsDetailedContext ? 2 : 1)
+                        .fixedSize(horizontal: false, vertical: showsDetailedContext)
                 }
 
                 Spacer(minLength: 6)
@@ -1010,21 +1008,22 @@ struct BacktestHistoryRow: View {
                     Image(systemName: "chevron.right")
                         .font(AppTypography.captionStrong)
                         .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-                        .padding(.top, 8)
                 }
             }
 
-            HStack(alignment: .top, spacing: 8) {
+            HStack(alignment: .top, spacing: 0) {
                 historyMetricBlock(
                     title: AppLocalization.string("平均年化"),
                     value: annualizedReturnText,
                     valueColor: annualizedReturnColor
                 )
+                compactMetricDivider
                 historyMetricBlock(
                     title: AppLocalization.string("最大回撤"),
                     value: record.maxDrawdown.percentString(),
                     valueColor: AssetTheme.negative
                 )
+                compactMetricDivider
                 historyMetricBlock(
                     title: AppLocalization.string("夏普"),
                     value: sharpeRatioText,
@@ -1032,19 +1031,27 @@ struct BacktestHistoryRow: View {
                 )
             }
         }
-        .padding(16)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 11)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private var compactMetricDivider: some View {
+        Rectangle()
+            .fill(AssetTheme.border.opacity(0.45))
+            .frame(width: 1, height: 22)
+            .padding(.horizontal, 8)
+    }
+
     private func historyMetricBlock(title: String, value: String, valueColor: Color) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(AppTypography.chartCaption)
                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
             Text(value)
-                .font(AppTypography.chartAxisStrip)
+                .font(AppTypography.captionStrong)
                 .foregroundStyle(valueColor)
                 .monospacedDigit()
                 .lineLimit(1)
