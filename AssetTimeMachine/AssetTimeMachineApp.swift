@@ -25,7 +25,7 @@ final class AssetTimeMachineAppDelegate: NSObject, UIApplicationDelegate, UNUser
 struct AssetTimeMachineApp: App {
     @UIApplicationDelegateAdaptor(AssetTimeMachineAppDelegate.self) private var appDelegate
     @AppStorage("app.appearanceMode") private var appearanceModeRawValue: String = AppAppearanceMode.system.rawValue
-    @AppStorage("app.language") private var appLanguageRawValue: String = AppLanguage.system.rawValue
+    @StateObject private var appLanguageStore = AppLanguageStore()
     private let modelBootstrap: AppModelContainerBootstrap
 
     init() {
@@ -37,10 +37,6 @@ struct AssetTimeMachineApp: App {
         AppAppearanceMode(rawValue: appearanceModeRawValue) ?? .system
     }
 
-    private var appLanguage: AppLanguage {
-        AppLanguage(rawValue: appLanguageRawValue) ?? .system
-    }
-
     var body: some Scene {
         WindowGroup {
             Group {
@@ -50,7 +46,8 @@ struct AssetTimeMachineApp: App {
                     PersistentStoreUnavailableView()
                 }
             }
-                .environment(\.locale, appLanguage.locale)
+                .environment(\.locale, appLanguageStore.language.locale)
+                .environmentObject(appLanguageStore)
                 .preferredColorScheme(appearanceMode.colorScheme)
         }
         .modelContainer(modelBootstrap.container)

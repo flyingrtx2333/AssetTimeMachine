@@ -77,7 +77,7 @@ struct TimeMachineView: View {
     }
 
     private var detailTrendCards: [TimeMachineCombinedTrendDescriptor] {
-        cachedDetailTrendCards
+        cachedDetailTrendCards.filter { visibleDetailTrendSymbols.contains($0.symbol) }
     }
 
     private static var publicIndexConfigs: [(symbol: String, title: String, color: Color)] { [
@@ -95,10 +95,6 @@ struct TimeMachineView: View {
     ] + publicIndexConfigs.map { config in
         TimeMachineDetailComparisonOption(symbol: config.symbol, title: config.title, color: config.color)
     } }
-
-    private var hiddenDetailComparisonOptions: [TimeMachineDetailComparisonOption] {
-        Self.detailComparisonOptions.filter { !visibleDetailTrendSymbols.contains($0.symbol) }
-    }
 
     private var historyCacheToken: Int {
         var hasher = Hasher()
@@ -485,7 +481,7 @@ struct TimeMachineView: View {
             return TimeMachineCombinedTrendDescriptor(
                 symbol: config.symbol,
                 title: config.title,
-                subtitle: currency == "CNY" ? AppLocalization.string("按当前总资产折算") : AppLocalization.string("按当前总资产、当前汇率估算"),
+                subtitle: nil,
                 leftTitle: AppLocalization.string("指数现价"),
                 rightTitle: AppLocalization.string("资产折算"),
                 points: comparisonPoints,
@@ -639,10 +635,13 @@ struct TimeMachineView: View {
     }
 
     @MainActor
-    private func revealDetailComparison(_ option: TimeMachineDetailComparisonOption) {
-        guard !visibleDetailTrendSymbols.contains(option.symbol) else { return }
+    private func toggleDetailComparison(_ option: TimeMachineDetailComparisonOption) {
         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-            _ = visibleDetailTrendSymbols.insert(option.symbol)
+            if visibleDetailTrendSymbols.contains(option.symbol) {
+                visibleDetailTrendSymbols.remove(option.symbol)
+            } else {
+                visibleDetailTrendSymbols.insert(option.symbol)
+            }
         }
         lastFullHistoryPointsCacheToken = nil
         scheduleVisualizationRefresh(
@@ -732,7 +731,7 @@ struct TimeMachineView: View {
                                     )
                                 }
 
-                                if !detailTrendCards.isEmpty || !hiddenDetailComparisonOptions.isEmpty {
+                                if !detailTrendCards.isEmpty || !Self.detailComparisonOptions.isEmpty {
                                     TimeMachineSectionDivider()
                                         .padding(.vertical, 14)
                                         .onboardingAnchor(.timeMachineAnchors)
@@ -748,15 +747,17 @@ struct TimeMachineView: View {
                                         }
                                     }
 
-                                    if !hiddenDetailComparisonOptions.isEmpty {
+                                    if !Self.detailComparisonOptions.isEmpty {
                                         if !detailTrendCards.isEmpty {
                                             TimeMachineSectionDivider()
                                                 .padding(.vertical, 12)
                                         }
 
-                                        TimeMachineComparisonRevealButtons(options: hiddenDetailComparisonOptions) { option in
-                                            revealDetailComparison(option)
-                                        }
+                                        TimeMachineComparisonToggleButtons(
+                                            options: Self.detailComparisonOptions,
+                                            visibleSymbols: visibleDetailTrendSymbols,
+                                            onToggle: toggleDetailComparison
+                                        )
                                     }
                                 }
                             } else {

@@ -4,7 +4,7 @@ import Combine
 
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
-    @AppStorage("app.language") private var appLanguageRawValue = AppLanguage.system.rawValue
+    @EnvironmentObject private var appLanguageStore: AppLanguageStore
     @AppStorage("dashboard.monthlyExpense") private var monthlyExpense: Double = 3000
     @AppStorage("dashboard.monthlyExpenseSeedVersion") private var monthlyExpenseSeedVersion: Int = 0
     @AppStorage("dashboard.inflationRate") private var inflationRate: Double = 0.05
@@ -125,7 +125,7 @@ struct DashboardView: View {
                 delayNanoseconds: 120_000_000
             )
         }
-        .onChange(of: appLanguageRawValue) { _, _ in
+        .onChange(of: appLanguageStore.language) { _, _ in
             guard isActive else { return }
             requestDashboardDataRefresh(delayNanoseconds: 0)
         }
@@ -423,8 +423,6 @@ struct DashboardView: View {
 }
 
 struct DashboardTodayStrategyButton: View {
-    @AppStorage("app.language") private var appLanguageRawValue = AppLanguage.system.rawValue
-
     var body: some View {
         HStack(spacing: 7) {
             Image(systemName: "scope")

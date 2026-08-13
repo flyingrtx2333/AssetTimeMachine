@@ -45,7 +45,7 @@ private enum StrategyHoldingPalette {
 
 struct TodayPositionAdviceCard: View {
     @Environment(\.modelContext) private var modelContext
-    @AppStorage("app.language") private var appLanguageRawValue = AppLanguage.system.rawValue
+    @EnvironmentObject private var appLanguageStore: AppLanguageStore
     @AppStorage("app.strategyNotifications.templateID") private var strategyTemplateID = StrategyNotificationDefaults.defaultTemplateID
     @ObservedObject var marketStore: RemoteMarketStore
     let isActive: Bool
@@ -117,7 +117,7 @@ struct TodayPositionAdviceCard: View {
             guard isActive, !adviceStore.isRefreshing, adviceStore.advice != nil else { return }
             Task { await refreshAdvice(force: false) }
         }
-        .onChange(of: appLanguageRawValue) { _, _ in
+        .onChange(of: appLanguageStore.language) { _, _ in
             let latestSnapshot = try? SnapshotService.latestSnapshot(in: modelContext)
             adviceStore.refreshLocalization(
                 templateID: strategyTemplateID,

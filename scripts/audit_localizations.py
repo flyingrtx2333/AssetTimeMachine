@@ -20,6 +20,9 @@ LOCALIZATION_CALL = re.compile(
 FORMAT_CALL = re.compile(
     r'AppLocalization\.format\(\s*"((?:[^"\\]|\\.)*)"'
 )
+NESTED_FORMAT_CALL = re.compile(
+    r'AppLocalization\.format\(\s*AppLocalization\.string\(\s*"((?:[^"\\]|\\.)*)"'
+)
 CHINESE_LITERAL = re.compile(
     r'"((?:[^"\\]|\\.)*[\u3400-\u9fff](?:[^"\\]|\\.)*)"'
 )
@@ -47,6 +50,7 @@ def main() -> int:
         source = path.read_text(errors="ignore")
         localized_keys.update(decoded_literal(match.group(1)) for match in LOCALIZATION_CALL.finditer(source))
         format_keys.update(decoded_literal(match.group(1)) for match in FORMAT_CALL.finditer(source))
+        format_keys.update(decoded_literal(match.group(1)) for match in NESTED_FORMAT_CALL.finditer(source))
         chinese_literals.update(decoded_literal(match.group(1)) for match in CHINESE_LITERAL.finditer(source))
 
     missing = sorted((localized_keys | chinese_literals) - set(catalog))

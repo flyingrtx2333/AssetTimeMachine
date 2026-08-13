@@ -918,13 +918,13 @@ struct DashboardFreedomSection: View {
         case .unreachable:
             if let requiredSalary = projection.requiredMonthlySalaryToReachFreedom {
                 return AppLocalization.format(
-                    AppLocalization.string("按当前参数，需控制月开销在 %@ 以内，或收入涨到 %@/月。"),
+                    "按当前参数，需控制月开销在 %@ 以内，或收入涨到 %@/月。",
                     projection.maximumReachableMonthlyExpense.currencyString(),
                     requiredSalary.currencyString()
                 )
             } else {
                 return AppLocalization.format(
-                    AppLocalization.string("按当前参数，需控制月开销在 %@ 以内。"),
+                    "按当前参数，需控制月开销在 %@ 以内。",
                     projection.maximumReachableMonthlyExpense.currencyString()
                 )
             }
@@ -1341,7 +1341,7 @@ struct DashboardFreedomProjectionChart: View {
     }
 
     private func crossingBadge(for monthOffset: Double) -> some View {
-        Text(AppLocalization.format(AppLocalization.string("约 %@ 追平"), crossingLabel(for: monthOffset)))
+        Text(AppLocalization.format("约 %@ 追平", crossingLabel(for: monthOffset)))
             .font(.system(size: 10.5, weight: .semibold, design: .default))
             .foregroundStyle(AssetTheme.textPrimary)
             .padding(.horizontal, 8)
@@ -1359,11 +1359,11 @@ struct DashboardFreedomProjectionChart: View {
             let years = roundedMonths / 12
             let months = roundedMonths % 12
             if months > 0 {
-                return AppLocalization.format(AppLocalization.string("%d 年 %d 月"), years, months)
+                return AppLocalization.format("%d 年 %d 月", years, months)
             }
-            return AppLocalization.format(AppLocalization.string("%d 年"), years)
+            return AppLocalization.format("%d 年", years)
         }
-        return AppLocalization.format(AppLocalization.string("%d 月"), max(roundedMonths, 1))
+        return AppLocalization.format("%d 月", max(roundedMonths, 1))
     }
 
     private func projectionLegendChip(title: String, color: Color, dashed: Bool = false) -> some View {

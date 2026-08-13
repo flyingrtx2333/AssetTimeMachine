@@ -36,6 +36,16 @@ enum BacktestChartSeriesTitle {
 enum BacktestChartSeriesKey {
     static let strategy = "strategy"
     static let legacyBenchmark = "benchmark"
+    private static let assetBenchmarkPrefix = "asset-benchmark-"
+
+    static func assetBenchmark(_ symbol: String) -> String {
+        "\(assetBenchmarkPrefix)\(symbol)"
+    }
+
+    static func assetSymbol(fromBenchmarkID id: String) -> String? {
+        guard id.hasPrefix(assetBenchmarkPrefix) else { return nil }
+        return String(id.dropFirst(assetBenchmarkPrefix.count))
+    }
 }
 
 struct BacktestChartComparisonSeries: Identifiable {
@@ -98,12 +108,12 @@ enum BacktestChartPalette {
 
     nonisolated static func exposureLine(at index: Int) -> Color {
         let palette: [Color] = [
-            Color(red: 0.93, green: 0.63, blue: 0.18),
             Color(red: 0.16, green: 0.58, blue: 0.95),
             Color(red: 0.22, green: 0.72, blue: 0.45),
             Color(red: 0.74, green: 0.38, blue: 0.92),
             Color(red: 0.95, green: 0.32, blue: 0.31),
             Color(red: 0.10, green: 0.72, blue: 0.76),
+            Color(red: 0.93, green: 0.63, blue: 0.18),
             Color(red: 0.95, green: 0.47, blue: 0.16),
             Color(red: 0.42, green: 0.50, blue: 0.94),
             Color(red: 0.54, green: 0.72, blue: 0.20),
@@ -122,7 +132,6 @@ struct InteractiveBacktestChart: View, Equatable {
     var comparisonSeries: [BacktestChartComparisonSeries] = []
     var valueStyle: BacktestChartValueStyle = .multiple
     var visibleSeriesIDs: Set<String> = []
-    var placesViewportControlsAboveChart = false
     var onVisibleDateDomainChange: ((ClosedRange<Date>) -> Void)? = nil
     @State private var selectedDate: Date?
     @State private var viewportStartRatio: Double = 0
@@ -131,7 +140,6 @@ struct InteractiveBacktestChart: View, Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.valueStyle == rhs.valueStyle
             && lhs.visibleSeriesIDs == rhs.visibleSeriesIDs
-            && lhs.placesViewportControlsAboveChart == rhs.placesViewportControlsAboveChart
             && seriesIdentityMatches(lhs.points, rhs.points)
             && seriesIdentityMatches(lhs.comparisonPoints, rhs.comparisonPoints)
             && comparisonIdentityMatches(lhs.comparisonSeries, rhs.comparisonSeries)
@@ -529,9 +537,6 @@ struct InteractiveBacktestChart: View, Equatable {
                     .stroke(AssetTheme.border.opacity(0.48), lineWidth: 1)
             )
             .shadow(color: Color.black.opacity(0.14), radius: 10, y: 5)
-            .padding(.trailing, 6)
-            .padding(.top, placesViewportControlsAboveChart ? 0 : 8)
-            .offset(y: placesViewportControlsAboveChart ? -44 : 0)
         }
     }
 
@@ -560,69 +565,70 @@ struct InteractiveBacktestChart: View, Equatable {
         let comparisonSeries = resolvedComparisonSeries
         let strategySeries = BacktestChartSeriesTitle.strategy
 
-        Chart {
-            strategyMarks(domain: domain, strategySeries: strategySeries)
-            comparisonMarks(seriesList: comparisonSeries, visibleSeriesIDs: visibleSeriesIDs)
-            selectionMarks()
-        }
-        .frame(height: 220)
-        .chartXScale(domain: xDomain)
-        .chartXScale(range: .plotDimension(startPadding: 4, endPadding: 46))
-        .chartYScale(domain: domain)
-        .chartForegroundStyleScale(domain: foregroundStyleDomain, range: foregroundStyleRange)
-        .animation(.easeInOut(duration: 0.2), value: visibleSeriesIDs)
-        .animation(.easeInOut(duration: 0.18), value: viewportStartRatio)
-        .animation(.easeInOut(duration: 0.18), value: visibleSpanRatio)
-        .chartPlotStyle { plotArea in
-            plotArea
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
-        .chartXAxis {
-            AxisMarks(values: BacktestChartData.dateAxisValues(in: xDomain)) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
-                    .foregroundStyle(AssetTheme.border.opacity(0.35))
-                AxisValueLabel {
-                    if let date = value.as(Date.self) {
-                        Text(date, format: .dateTime.year())
-                            .foregroundStyle(AssetTheme.textSecondary)
-                    }
-                }
-            }
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
-                    .foregroundStyle(AssetTheme.border.opacity(0.35))
-                AxisValueLabel {
-                    if let doubleValue = value.as(Double.self) {
-                        Text(valueStyle.axisLabel(for: doubleValue))
-                            .font(AppTypography.chartAxisCompact)
-                            .monospacedDigit()
-                            .foregroundStyle(AssetTheme.textSecondary)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                            .frame(width: 42, alignment: .trailing)
-                    }
-                }
-            }
-        }
-        .chartLegend(.hidden)
-        .chartOverlay { proxy in
-            TimeMachineDragOverlay(
-                proxy: proxy,
-                selectableValues: interactionPoints,
-                selectionDate: \.date
-            ) { date in
-                selectedDate = date
-            } onEnded: {
-                selectedDate = nil
-            }
-        }
-        .overlay(alignment: .topLeading) {
-            selectedValueBadge
-        }
-        .overlay(alignment: .topTrailing) {
+        VStack(alignment: .trailing, spacing: 8) {
             viewportControls
+
+            Chart {
+                strategyMarks(domain: domain, strategySeries: strategySeries)
+                comparisonMarks(seriesList: comparisonSeries, visibleSeriesIDs: visibleSeriesIDs)
+                selectionMarks()
+            }
+            .frame(height: 220)
+            .chartXScale(domain: xDomain)
+            .chartXScale(range: .plotDimension(startPadding: 4, endPadding: 46))
+            .chartYScale(domain: domain)
+            .chartForegroundStyleScale(domain: foregroundStyleDomain, range: foregroundStyleRange)
+            .animation(.easeInOut(duration: 0.2), value: visibleSeriesIDs)
+            .animation(.easeInOut(duration: 0.18), value: viewportStartRatio)
+            .animation(.easeInOut(duration: 0.18), value: visibleSpanRatio)
+            .chartPlotStyle { plotArea in
+                plotArea
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .chartXAxis {
+                AxisMarks(values: BacktestChartData.dateAxisValues(in: xDomain)) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                        .foregroundStyle(AssetTheme.border.opacity(0.35))
+                    AxisValueLabel {
+                        if let date = value.as(Date.self) {
+                            Text(date, format: .dateTime.year())
+                                .foregroundStyle(AssetTheme.textSecondary)
+                        }
+                    }
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                        .foregroundStyle(AssetTheme.border.opacity(0.35))
+                    AxisValueLabel {
+                        if let doubleValue = value.as(Double.self) {
+                            Text(valueStyle.axisLabel(for: doubleValue))
+                                .font(AppTypography.chartAxisCompact)
+                                .monospacedDigit()
+                                .foregroundStyle(AssetTheme.textSecondary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+                                .frame(width: 42, alignment: .trailing)
+                        }
+                    }
+                }
+            }
+            .chartLegend(.hidden)
+            .chartOverlay { proxy in
+                TimeMachineDragOverlay(
+                    proxy: proxy,
+                    selectableValues: interactionPoints,
+                    selectionDate: \.date
+                ) { date in
+                    selectedDate = date
+                } onEnded: {
+                    selectedDate = nil
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                selectedValueBadge
+            }
         }
         .onChange(of: points.count) { _, _ in
             clampViewport()
@@ -779,8 +785,7 @@ struct BacktestValueChartSection: View {
                 points: chartPoints,
                 comparisonSeries: chartComparisonSeries,
                 valueStyle: valueStyle,
-                visibleSeriesIDs: effectiveVisibleSeriesIDs,
-                placesViewportControlsAboveChart: true
+                visibleSeriesIDs: effectiveVisibleSeriesIDs
             )
             .equatable()
 
@@ -856,6 +861,15 @@ struct BacktestValueChartSection: View {
     }
 }
 
+private struct CombinedBacktestLegendItem: Identifiable {
+    let id: String
+    let title: String
+    let color: Color
+    let isDashed: Bool
+    let valueSeriesID: String?
+    let exposureSeriesID: String?
+}
+
 struct AdvancedBacktestCombinedChartSection: View {
     let points: [BacktestSeriesPoint]
     let comparisonSeries: [BacktestChartComparisonSeries]
@@ -863,8 +877,7 @@ struct AdvancedBacktestCombinedChartSection: View {
     let assetExposureSeries: [BacktestAssetExposureSeries]
     let averageExposureRatio: Double
 
-    @State private var visibleValueSeriesIDs: Set<String> = []
-    @State private var visibleExposureSeriesIDs: Set<String> = []
+    @State private var hiddenLegendItemIDs: Set<String> = []
     @State private var visibleDateDomain: ClosedRange<Date>?
     @State private var showsLegend = false
 
@@ -876,47 +889,95 @@ struct AdvancedBacktestCombinedChartSection: View {
         comparisonSeries.compactMap { series in
             let sampledPoints = BacktestChartData.sampledPoints(from: series.points)
             guard !sampledPoints.isEmpty else { return nil }
+            let symbol = BacktestChartSeriesKey.assetSymbol(fromBenchmarkID: series.id)
             return BacktestChartComparisonSeries(
                 id: series.id,
                 title: series.title,
                 points: sampledPoints,
-                color: series.color
+                color: symbol.flatMap { assetColors[$0] } ?? series.color
             )
         }
     }
 
-    private var valueLegendItems: [BacktestChartLegendItem] {
-        BacktestChartData.legendItems(for: chartComparisonSeries)
+    private var assetSymbols: [String] {
+        var symbols = assetExposureSeries.map(\.symbol)
+        for series in comparisonSeries {
+            guard let symbol = BacktestChartSeriesKey.assetSymbol(fromBenchmarkID: series.id),
+                  !symbols.contains(symbol) else { continue }
+            symbols.append(symbol)
+        }
+        return symbols
     }
 
-    private var exposureLegendItems: [BacktestChartLegendItem] {
-        let assets = assetExposureSeries.enumerated().map { index, series in
-            BacktestChartLegendItem(
-                id: BacktestExposureSeriesKey.asset(series.symbol),
+    private var assetColors: [String: Color] {
+        Dictionary(uniqueKeysWithValues: assetSymbols.enumerated().map { index, symbol in
+            (symbol, BacktestChartPalette.exposureLine(at: index))
+        })
+    }
+
+    private var legendItems: [CombinedBacktestLegendItem] {
+        var items = [CombinedBacktestLegendItem(
+            id: "combined.strategy",
+            title: BacktestChartSeriesTitle.strategy,
+            color: BacktestChartPalette.strategyLine,
+            isDashed: false,
+            valueSeriesID: BacktestChartSeriesKey.strategy,
+            exposureSeriesID: nil
+        )]
+
+        for symbol in assetSymbols {
+            let comparison = chartComparisonSeries.first {
+                BacktestChartSeriesKey.assetSymbol(fromBenchmarkID: $0.id) == symbol
+            }
+            let exposure = assetExposureSeries.first { $0.symbol == symbol }
+            items.append(CombinedBacktestLegendItem(
+                id: "combined.asset.\(symbol)",
+                title: exposure?.title ?? comparison?.title ?? symbol,
+                color: assetColors[symbol] ?? BacktestChartPalette.exposureLine(at: items.count - 1),
+                isDashed: false,
+                valueSeriesID: comparison?.id,
+                exposureSeriesID: exposure.map { BacktestExposureSeriesKey.asset($0.symbol) }
+            ))
+        }
+
+        items.append(contentsOf: chartComparisonSeries.compactMap { series in
+            guard BacktestChartSeriesKey.assetSymbol(fromBenchmarkID: series.id) == nil else { return nil }
+            return CombinedBacktestLegendItem(
+                id: "combined.value.\(series.id)",
                 title: series.title,
-                color: BacktestChartPalette.exposureLine(at: index),
-                isDashed: false
+                color: series.color,
+                isDashed: true,
+                valueSeriesID: series.id,
+                exposureSeriesID: nil
             )
+        })
+
+        if !exposurePoints.isEmpty || !assetExposureSeries.isEmpty {
+            items.append(CombinedBacktestLegendItem(
+                id: "combined.exposure.total",
+                title: AppLocalization.string("总仓位"),
+                color: assetExposureSeries.isEmpty
+                    ? BacktestChartPalette.strategyLine
+                    : AssetTheme.textSecondary.opacity(0.72),
+                isDashed: !assetExposureSeries.isEmpty,
+                valueSeriesID: nil,
+                exposureSeriesID: BacktestExposureSeriesKey.total
+            ))
         }
-        let total = BacktestChartLegendItem(
-            id: BacktestExposureSeriesKey.total,
-            title: AppLocalization.string("总仓位"),
-            color: assetExposureSeries.isEmpty ? BacktestChartPalette.strategyLine : AssetTheme.textSecondary.opacity(0.72),
-            isDashed: !assetExposureSeries.isEmpty
-        )
-        return assets + [total]
+
+        return items
     }
 
     private var effectiveVisibleValueSeriesIDs: Set<String> {
-        let available = Set(valueLegendItems.map(\.id))
-        let selected = visibleValueSeriesIDs.intersection(available)
-        return selected.isEmpty ? available : selected
+        Set(legendItems.compactMap { item in
+            hiddenLegendItemIDs.contains(item.id) ? nil : item.valueSeriesID
+        })
     }
 
     private var effectiveVisibleExposureSeriesIDs: Set<String> {
-        let available = Set(exposureLegendItems.map(\.id))
-        let selected = visibleExposureSeriesIDs.intersection(available)
-        return selected.isEmpty ? available : selected
+        Set(legendItems.compactMap { item in
+            hiddenLegendItemIDs.contains(item.id) ? nil : item.exposureSeriesID
+        })
     }
 
     var body: some View {
@@ -948,7 +1009,6 @@ struct AdvancedBacktestCombinedChartSection: View {
                 comparisonSeries: chartComparisonSeries,
                 valueStyle: .currency(code: "CNY"),
                 visibleSeriesIDs: effectiveVisibleValueSeriesIDs,
-                placesViewportControlsAboveChart: false,
                 onVisibleDateDomainChange: { domain in
                     visibleDateDomain = domain
                 }
@@ -978,74 +1038,39 @@ struct AdvancedBacktestCombinedChartSection: View {
                 points: exposurePoints,
                 assetSeries: assetExposureSeries,
                 dateDomain: visibleDateDomain,
-                visibleSeriesIDs: effectiveVisibleExposureSeriesIDs
+                visibleSeriesIDs: effectiveVisibleExposureSeriesIDs,
+                assetColors: assetColors
             )
 
             if showsLegend {
                 Divider()
                     .overlay(AssetTheme.border.opacity(0.45))
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(AppLocalization.string("净值走势"))
-                        .font(AppTypography.chartCaptionStrong)
-                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-
-                    ATMFlowLayout(horizontalSpacing: 8, verticalSpacing: 8, rowAlignment: .center) {
-                        ForEach(valueLegendItems) { item in
-                            combinedLegendToggle(
-                                item,
-                                isVisible: effectiveVisibleValueSeriesIDs.contains(item.id),
-                                canHide: effectiveVisibleValueSeriesIDs.count > 1,
-                                isExposureSeries: false
-                            )
-                        }
+                ATMFlowLayout(horizontalSpacing: 8, verticalSpacing: 8, rowAlignment: .center) {
+                    ForEach(legendItems) { item in
+                        combinedLegendToggle(item)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    Text(AppLocalization.string(assetExposureSeries.isEmpty ? "持仓比例走势" : "资产持仓走势"))
-                        .font(AppTypography.chartCaptionStrong)
-                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-                        .padding(.top, 2)
-
-                    ATMFlowLayout(horizontalSpacing: 8, verticalSpacing: 8, rowAlignment: .center) {
-                        ForEach(exposureLegendItems) { item in
-                            combinedLegendToggle(
-                                item,
-                                isVisible: effectiveVisibleExposureSeriesIDs.contains(item.id),
-                                canHide: effectiveVisibleExposureSeriesIDs.count > 1,
-                                isExposureSeries: true
-                            )
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
+        .onChange(of: legendItems.map(\.id)) { _, itemIDs in
+            hiddenLegendItemIDs.formIntersection(itemIDs)
+        }
     }
 
-    private func combinedLegendToggle(
-        _ item: BacktestChartLegendItem,
-        isVisible: Bool,
-        canHide: Bool,
-        isExposureSeries: Bool
-    ) -> some View {
-        Button {
+    private func combinedLegendToggle(_ item: CombinedBacktestLegendItem) -> some View {
+        let isVisible = !hiddenLegendItemIDs.contains(item.id)
+        let canHide = canHide(item)
+
+        return Button {
             guard !isVisible || canHide else { return }
             withAnimation(.easeInOut(duration: 0.18)) {
-                if isExposureSeries {
-                    visibleExposureSeriesIDs = toggledSeries(
-                        item.id,
-                        current: effectiveVisibleExposureSeriesIDs,
-                        available: Set(exposureLegendItems.map(\.id))
-                    )
+                if isVisible {
+                    hiddenLegendItemIDs.insert(item.id)
                 } else {
-                    visibleValueSeriesIDs = toggledSeries(
-                        item.id,
-                        current: effectiveVisibleValueSeriesIDs,
-                        available: Set(valueLegendItems.map(\.id))
-                    )
+                    hiddenLegendItemIDs.remove(item.id)
                 }
             }
         } label: {
@@ -1078,19 +1103,17 @@ struct AdvancedBacktestCombinedChartSection: View {
         .accessibilityHint(AppLocalization.string(isVisible ? "点击隐藏曲线" : "点击显示曲线"))
     }
 
-    private func toggledSeries(
-        _ id: String,
-        current: Set<String>,
-        available: Set<String>
-    ) -> Set<String> {
-        var next = current
-        if next.contains(id) {
-            guard next.count > 1 else { return next }
-            next.remove(id)
-        } else {
-            next.insert(id)
+    private func canHide(_ item: CombinedBacktestLegendItem) -> Bool {
+        let visibleItems = legendItems.filter { !hiddenLegendItemIDs.contains($0.id) }
+        if item.valueSeriesID != nil,
+           visibleItems.filter({ $0.valueSeriesID != nil }).count <= 1 {
+            return false
         }
-        return next.intersection(available)
+        if item.exposureSeriesID != nil,
+           visibleItems.filter({ $0.exposureSeriesID != nil }).count <= 1 {
+            return false
+        }
+        return true
     }
 }
 
@@ -1099,6 +1122,7 @@ struct BacktestExposureChartSection: View {
     let assetSeries: [BacktestAssetExposureSeries]
     var dateDomain: ClosedRange<Date>? = nil
     var visibleSeriesIDs: Set<String> = []
+    var assetColors: [String: Color] = [:]
 
     private var chartPoints: [BacktestExposurePoint] {
         BacktestExposureSampling.sampled(points)
@@ -1181,7 +1205,7 @@ struct BacktestExposureChartSection: View {
                                     y: .value(AppLocalization.string("持仓比例"), point.ratio),
                                     series: .value(AppLocalization.string("资产"), series.symbol)
                                 )
-                                .foregroundStyle(BacktestChartPalette.exposureLine(at: index))
+                                .foregroundStyle(assetColors[series.symbol] ?? BacktestChartPalette.exposureLine(at: index))
                                 .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
                             }
                         }

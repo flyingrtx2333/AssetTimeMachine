@@ -5053,52 +5053,6 @@
         }
       }
     },
-    "按当前总资产、当前汇率估算": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estimated using current total assets and exchange rates"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "按当前总资产、当前汇率估算"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "按當前總資產、當前匯率估算"
-          }
-        }
-      }
-    },
-    "按当前总资产折算": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Converted using current total assets"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "按当前总资产折算"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "按當前總資產折算"
-          }
-        }
-      }
-    },
     "按当前月均净资产增长 %@ 估算，在通胀率维持 %@ 的条件下，月开销需控制在 %@ 以内。": {
       "extractionState": "stale",
       "localizations": {
@@ -6429,6 +6383,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "點這裡調整時間範圍和資產配置，回測會按這些條件計算。"
+          }
+        }
+      }
+    },
+    "在 App Store 评分": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rate on the App Store"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 App Store 评分"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 App Store 評分"
           }
         }
       }
@@ -17286,6 +17263,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "顯示%1$@"
+          }
+        }
+      }
+    },
+    "隐藏%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide %1$@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐藏%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隱藏%1$@"
           }
         }
       }

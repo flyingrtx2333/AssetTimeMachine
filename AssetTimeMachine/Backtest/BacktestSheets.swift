@@ -963,7 +963,6 @@ struct AdvancedStrategyLibrarySheet: View {
 }
 
 struct CuratedStrategyBadge: View {
-    @AppStorage("app.language") private var appLanguageRawValue = AppLanguage.system.rawValue
     var compact = false
 
     var body: some View {

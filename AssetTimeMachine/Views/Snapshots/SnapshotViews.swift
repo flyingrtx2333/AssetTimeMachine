@@ -1227,12 +1227,6 @@ struct RecordCategoryCard: View {
     var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
     @State private var draggedItemID: UUID?
 
-    private let compactColumns = [
-        GridItem(.flexible(), spacing: 0, alignment: .top),
-        GridItem(.flexible(), spacing: 0, alignment: .top)
-    ]
-
-
     private var categoryTotal: Double {
         items.reduce(0) { partialResult, item in
             partialResult + (snapshotEntry(for: item)?.resolvedAmount ?? 0)
@@ -1245,15 +1239,6 @@ struct RecordCategoryCard: View {
 
     private var inputBlocks: [InputBlock] {
         items.isEmpty ? [] : [.compact(items)]
-    }
-
-    private func showsRightDivider(at index: Int, total: Int) -> Bool {
-        index % 2 == 0 && index + 1 < total
-    }
-
-    private func showsBottomDivider(at index: Int, total: Int) -> Bool {
-        let rowCount = Int(ceil(Double(total) / 2.0))
-        return index / 2 < rowCount - 1
     }
 
     var body: some View {
@@ -1269,54 +1254,38 @@ struct RecordCategoryCard: View {
                     switch block {
                     case let .compact(compactItems):
                         RecordMatrixSurface {
-                            LazyVGrid(columns: compactColumns, alignment: .leading, spacing: 0) {
-                                ForEach(Array(compactItems.enumerated()), id: \.element.id) { index, item in
-                                    ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID, allowsReorder: !isReadOnly) {
-                                        AssetEntryCompactCard(
-                                            item: item,
-                                            snapshotEntry: snapshotEntry(for: item),
-                                            amountText: Binding(
-                                                get: { amountInputs[item.id] ?? "" },
-                                                set: { newValue in
-                                                    amountInputs[item.id] = newValue
-                                                }
-                                            ),
-                                            quantityText: Binding(
-                                                get: { quantityInputs[item.id] ?? "" },
-                                                set: { newValue in
-                                                    quantityInputs[item.id] = newValue
-                                                }
-                                            ),
-                                            focusedField: $focusedField,
-                                            inlineEditingField: inlineEditingField,
-                                            onBeginInlineEdit: onBeginInlineEdit,
-                                            inputWidth: inputWidth,
-                                            isOnboardingTarget: item.id == onboardingInputItemID,
-                                            showsOnboardingInputPreview: onboardingActiveAnchorID == .recordsFirstInput && item.id == onboardingInputItemID,
-                                            onEdit: {
-                                                onEdit(item)
-                                            },
-                                            onEditValue: {
-                                                onEditValue(item)
-                                            },
-                                            isReadOnly: isReadOnly,
-                                            onReadOnlyEdit: onReadOnlyEdit
-                                        )
-                                    }
-                                    .overlay(alignment: .trailing) {
-                                        if showsRightDivider(at: index, total: compactItems.count) {
-                                            Rectangle()
-                                                .fill(AssetTheme.border.opacity(0.34))
-                                                .frame(width: 1)
-                                        }
-                                    }
-                                    .overlay(alignment: .bottom) {
-                                        if showsBottomDivider(at: index, total: compactItems.count) {
-                                            Rectangle()
-                                                .fill(AssetTheme.border.opacity(0.34))
-                                                .frame(height: 1)
-                                        }
-                                    }
+                            RecordItemMatrix(items: compactItems) { item in
+                                ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID, allowsReorder: !isReadOnly) {
+                                    AssetEntryCompactCard(
+                                        item: item,
+                                        snapshotEntry: snapshotEntry(for: item),
+                                        amountText: Binding(
+                                            get: { amountInputs[item.id] ?? "" },
+                                            set: { newValue in
+                                                amountInputs[item.id] = newValue
+                                            }
+                                        ),
+                                        quantityText: Binding(
+                                            get: { quantityInputs[item.id] ?? "" },
+                                            set: { newValue in
+                                                quantityInputs[item.id] = newValue
+                                            }
+                                        ),
+                                        focusedField: $focusedField,
+                                        inlineEditingField: inlineEditingField,
+                                        onBeginInlineEdit: onBeginInlineEdit,
+                                        inputWidth: inputWidth,
+                                        isOnboardingTarget: item.id == onboardingInputItemID,
+                                        showsOnboardingInputPreview: onboardingActiveAnchorID == .recordsFirstInput && item.id == onboardingInputItemID,
+                                        onEdit: {
+                                            onEdit(item)
+                                        },
+                                        onEditValue: {
+                                            onEditValue(item)
+                                        },
+                                        isReadOnly: isReadOnly,
+                                        onReadOnlyEdit: onReadOnlyEdit
+                                    )
                                 }
                             }
                         }
@@ -1344,9 +1313,6 @@ struct LiabilityCategorySection: View {
     var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
     @State private var draggedItemID: UUID?
 
-    private let columns = [GridItem(.flexible(), spacing: 0), GridItem(.flexible(), spacing: 0)]
-
-
     private var categoryTotal: Double {
         items.reduce(0) { partialResult, item in
             partialResult + (snapshotEntry(for: item)?.resolvedAmount ?? 0)
@@ -1355,15 +1321,6 @@ struct LiabilityCategorySection: View {
 
     private func snapshotEntry(for item: AssetItem) -> AssetEntry? {
         snapshotEntriesByItemID[item.id]
-    }
-
-    private func showsRightDivider(at index: Int, total: Int) -> Bool {
-        index % 2 == 0 && index + 1 < total
-    }
-
-    private func showsBottomDivider(at index: Int, total: Int) -> Bool {
-        let rowCount = Int(ceil(Double(total) / 2.0))
-        return index / 2 < rowCount - 1
     }
 
     var body: some View {
@@ -1375,52 +1332,36 @@ struct LiabilityCategorySection: View {
             )
 
             RecordMatrixSurface {
-                LazyVGrid(columns: columns, alignment: .leading, spacing: 0) {
-                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID, allowsReorder: !isReadOnly) {
-                            LiabilityEntryCard(
-                                item: item,
-                                snapshotEntry: snapshotEntry(for: item),
-                                amountText: Binding(
-                                    get: { amountInputs[item.id] ?? "" },
-                                    set: { newValue in
-                                        amountInputs[item.id] = newValue
-                                    }
-                                ),
-                                quantityText: Binding(
-                                    get: { quantityInputs[item.id] ?? "" },
-                                    set: { newValue in
-                                        quantityInputs[item.id] = newValue
-                                    }
-                                ),
-                                focusedField: $focusedField,
-                                inlineEditingField: inlineEditingField,
-                                onBeginInlineEdit: onBeginInlineEdit,
-                                inputWidth: inputWidth,
-                                onEdit: {
-                                    onEdit(item)
-                                },
-                                onEditValue: {
-                                    onEditValue(item)
-                                },
-                                isReadOnly: isReadOnly,
-                                onReadOnlyEdit: onReadOnlyEdit
-                            )
-                        }
-                        .overlay(alignment: .trailing) {
-                            if showsRightDivider(at: index, total: items.count) {
-                                Rectangle()
-                                    .fill(AssetTheme.border.opacity(0.34))
-                                    .frame(width: 1)
-                            }
-                        }
-                        .overlay(alignment: .bottom) {
-                            if showsBottomDivider(at: index, total: items.count) {
-                                Rectangle()
-                                    .fill(AssetTheme.border.opacity(0.34))
-                                    .frame(height: 1)
-                            }
-                        }
+                RecordItemMatrix(items: items) { item in
+                    ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID, allowsReorder: !isReadOnly) {
+                        LiabilityEntryCard(
+                            item: item,
+                            snapshotEntry: snapshotEntry(for: item),
+                            amountText: Binding(
+                                get: { amountInputs[item.id] ?? "" },
+                                set: { newValue in
+                                    amountInputs[item.id] = newValue
+                                }
+                            ),
+                            quantityText: Binding(
+                                get: { quantityInputs[item.id] ?? "" },
+                                set: { newValue in
+                                    quantityInputs[item.id] = newValue
+                                }
+                            ),
+                            focusedField: $focusedField,
+                            inlineEditingField: inlineEditingField,
+                            onBeginInlineEdit: onBeginInlineEdit,
+                            inputWidth: inputWidth,
+                            onEdit: {
+                                onEdit(item)
+                            },
+                            onEditValue: {
+                                onEditValue(item)
+                            },
+                            isReadOnly: isReadOnly,
+                            onReadOnlyEdit: onReadOnlyEdit
+                        )
                     }
                 }
             }
@@ -1470,8 +1411,9 @@ struct LiabilityEntryCard: View {
                         Text(AppLocalization.string(item.name))
                             .font(AppTypography.chartLegendMedium)
                             .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.86)
+                            .allowsTightening(true)
                     }
                     .contentShape(Rectangle())
                 }
@@ -1559,6 +1501,114 @@ struct RecordMatrixSurface<Content: View>: View {
     }
 }
 
+private struct RecordItemLayoutRow: Identifiable {
+    let leading: AssetItem
+    let trailing: AssetItem?
+    let spansFullWidth: Bool
+
+    var id: String {
+        if spansFullWidth {
+            return "full-\(leading.id.uuidString)"
+        }
+        return "pair-\(leading.id.uuidString)-\(trailing?.id.uuidString ?? "empty")"
+    }
+}
+
+private enum RecordItemLayoutPolicy {
+    private static let compactNameFont = UIFont.systemFont(ofSize: 11, weight: .regular)
+    private static let compactNameWidth: CGFloat = 62
+
+    static func rows(for items: [AssetItem]) -> [RecordItemLayoutRow] {
+        var rows: [RecordItemLayoutRow] = []
+        var pendingCompactItem: AssetItem?
+
+        for item in items {
+            if spansFullWidth(item) {
+                if let pending = pendingCompactItem {
+                    rows.append(RecordItemLayoutRow(
+                        leading: pending,
+                        trailing: nil,
+                        spansFullWidth: false
+                    ))
+                }
+                rows.append(RecordItemLayoutRow(
+                    leading: item,
+                    trailing: nil,
+                    spansFullWidth: true
+                ))
+                pendingCompactItem = nil
+            } else if let pending = pendingCompactItem {
+                rows.append(RecordItemLayoutRow(
+                    leading: pending,
+                    trailing: item,
+                    spansFullWidth: false
+                ))
+                pendingCompactItem = nil
+            } else {
+                pendingCompactItem = item
+            }
+        }
+
+        if let pending = pendingCompactItem {
+            rows.append(RecordItemLayoutRow(
+                leading: pending,
+                trailing: nil,
+                spansFullWidth: false
+            ))
+        }
+
+        return rows
+    }
+
+    private static func spansFullWidth(_ item: AssetItem) -> Bool {
+        let title = AppLocalization.string(item.name) as NSString
+        let width = title.size(withAttributes: [.font: compactNameFont]).width
+        return width > compactNameWidth
+    }
+}
+
+private struct RecordItemMatrix<Cell: View>: View {
+    let rows: [RecordItemLayoutRow]
+    let cell: (AssetItem) -> Cell
+
+    init(items: [AssetItem], @ViewBuilder cell: @escaping (AssetItem) -> Cell) {
+        rows = RecordItemLayoutPolicy.rows(for: items)
+        self.cell = cell
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                HStack(spacing: 0) {
+                    cell(row.leading)
+                        .frame(maxWidth: .infinity)
+
+                    if !row.spansFullWidth {
+                        Rectangle()
+                            .fill(AssetTheme.border.opacity(0.34))
+                            .frame(width: 1)
+
+                        if let trailing = row.trailing {
+                            cell(trailing)
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Color.clear
+                                .frame(maxWidth: .infinity)
+                                .accessibilityHidden(true)
+                        }
+                    }
+                }
+
+                if index < rows.count - 1 {
+                    Rectangle()
+                        .fill(AssetTheme.border.opacity(0.34))
+                        .frame(height: 1)
+                }
+            }
+        }
+    }
+}
+
 struct RecordInputCard<Content: View>: View {
     @ViewBuilder var content: Content
 
@@ -1589,23 +1639,13 @@ struct AdaptiveRecordEntryRow<Leading: View, Trailing: View>: View {
     }
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: 8) {
-                leading
-                    .fixedSize(horizontal: true, vertical: false)
+        HStack(alignment: .center, spacing: 8) {
+            leading
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(1)
 
-                Spacer(minLength: 0)
-
-                trailing
-            }
-
-            VStack(alignment: .leading, spacing: 7) {
-                leading
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                trailing
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-            }
+            trailing
+                .fixedSize(horizontal: true, vertical: false)
         }
     }
 }
@@ -1738,8 +1778,9 @@ struct AssetEntryCompactCard: View {
                         Text(AppLocalization.string(item.name))
                             .font(AppTypography.chartLegendMedium)
                             .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.86)
+                            .allowsTightening(true)
                     }
                     .contentShape(Rectangle())
                 }
@@ -3025,7 +3066,7 @@ struct SnapshotArchiveView: View {
             }
         } message: { projection in
             Text(AppLocalization.format(
-                AppLocalization.string("将删除 %@ 的资产记录，删除后无法恢复。"),
+                "将删除 %@ 的资产记录，删除后无法恢复。",
                 projection.date.longDateString
             ))
         }

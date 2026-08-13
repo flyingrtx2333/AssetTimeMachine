@@ -8,8 +8,8 @@ import Combine
 struct SettingsView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var appLanguageStore: AppLanguageStore
     @AppStorage("app.appearanceMode") private var appearanceModeRawValue: String = AppAppearanceMode.system.rawValue
-    @AppStorage("app.language") private var appLanguageRawValue: String = AppLanguage.system.rawValue
     @AppStorage("app.notifications.enabled") private var notificationEnabled = false
     @AppStorage("app.notifications.intervalHours") private var notificationIntervalHours: Double = 1
     @AppStorage("app.strategyNotifications.enabled") private var strategyNotificationEnabled = false
@@ -25,7 +25,7 @@ struct SettingsView: View {
     @State private var strategyTestNotificationMessage: String?
     @State private var cachedNotificationPreview = AppLocalization.string("暂无资产记录")
     @State private var showsLanguageSelection = false
-    @State private var pendingAppLanguageRawValue: String?
+    @State private var pendingAppLanguage: AppLanguage?
 
     init(
         cloudStore: AssetTimeMachineCloudStore,
@@ -75,7 +75,7 @@ struct SettingsView: View {
     }
 
     private var currentAppLanguage: AppLanguage {
-        AppLanguage(rawValue: appLanguageRawValue) ?? .system
+        appLanguageStore.language
     }
 
     private var appVersionText: String {
@@ -92,6 +92,10 @@ struct SettingsView: View {
         default:
             return AppLocalization.string("未知版本")
         }
+    }
+
+    private var appStoreReviewURL: URL? {
+        URL(string: "itms-apps://itunes.apple.com/app/id6764277773?action=write-review")
     }
 
     var body: some View {
@@ -123,7 +127,7 @@ struct SettingsView: View {
                         .onboardingAnchor(.settingsAppearance)
 
                         Button {
-                            pendingAppLanguageRawValue = nil
+                            pendingAppLanguage = nil
                             showsLanguageSelection = true
                         } label: {
                             LabeledContent {
@@ -395,6 +399,27 @@ struct SettingsView: View {
                     }
 
                     Section {
+                        Button {
+                            guard let appStoreReviewURL else { return }
+                            openURL(appStoreReviewURL)
+                        } label: {
+                            HStack(spacing: 12) {
+                                SettingsRowLabel(
+                                    title: AppLocalization.string("在 App Store 评分"),
+                                    systemImage: "star.fill",
+                                    color: AssetTheme.gold
+                                )
+
+                                Spacer()
+
+                                Image(systemName: "arrow.up.right.square")
+                                    .font(AppTypography.metaStrong)
+                                    .foregroundStyle(AssetTheme.textSecondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .listRowBackground(AssetTheme.surface)
+
                         LabeledContent {
                             SettingsValueText(appVersionText)
                                 .monospacedDigit()
@@ -410,6 +435,7 @@ struct SettingsView: View {
                         Text(AppLocalization.string("关于"))
                     }
                 }
+                .id(appLanguageStore.language.rawValue)
                 .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
                 .environment(\.defaultMinListRowHeight, 54)
@@ -442,7 +468,7 @@ struct SettingsView: View {
                 AppLanguageSelectionSheet(
                     currentLanguage: currentAppLanguage
                 ) { language in
-                    pendingAppLanguageRawValue = language.rawValue
+                    pendingAppLanguage = language
                     showsLanguageSelection = false
                 }
                 .presentationDetents([.height(330)])
@@ -459,18 +485,12 @@ struct SettingsView: View {
 
     @MainActor
     private func applyPendingAppLanguage() {
-        guard let pendingAppLanguageRawValue else { return }
-        self.pendingAppLanguageRawValue = nil
-        guard pendingAppLanguageRawValue != appLanguageRawValue else { return }
+        guard let pendingAppLanguage else { return }
+        self.pendingAppLanguage = nil
+        guard pendingAppLanguage != appLanguageStore.language else { return }
 
-        // Commit only after the sheet has fully dismissed. Updating the root
-        // locale while a Menu/Picker presentation is still alive can make
-        // SwiftUI rebuild the presenting hierarchy underneath UIKit.
-        Task { @MainActor in
-            await Task.yield()
-            appLanguageRawValue = pendingAppLanguageRawValue
-            refreshNotificationPreview()
-        }
+        appLanguageStore.select(pendingAppLanguage)
+        refreshNotificationPreview()
     }
 
     private func intervalLabel(_ hours: Double) -> String {
@@ -491,7 +511,7 @@ struct SettingsView: View {
         }
         let metrics = PortfolioCalculator.metrics(for: latestSnapshot)
         cachedNotificationPreview = AppLocalization.format(
-            AppLocalization.string("总资产 %@ · 净资产 %@ · 负债 %@"),
+            "总资产 %@ · 净资产 %@ · 负债 %@",
             metrics.totalAssets.currencyString(),
             metrics.netAssets.currencyString(),
             metrics.totalLiabilities.currencyString()
@@ -548,7 +568,7 @@ struct SettingsRowLabel: View {
                         .foregroundStyle(.white)
                 )
 
-            Text(AppLocalization.string(title))
+            Text(title)
                 .foregroundStyle(AssetTheme.textPrimary)
         }
     }

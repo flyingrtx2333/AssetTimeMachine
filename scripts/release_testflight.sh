@@ -97,6 +97,7 @@ require_command xcodebuild
 require_command xcrun
 require_file "$PROJECT/project.pbxproj"
 require_file "$ASC_ENV"
+require_file "scripts/audit_localizations.py"
 
 set -a
 # shellcheck disable=SC1090
@@ -189,6 +190,9 @@ STATUS_LOG="$BUILD_DIR/build-status.log"
 
 log "Version $MARKETING_VERSION ($CURRENT_BUILD)"
 log "Build dir: $BUILD_DIR"
+
+log "Auditing localizations"
+python3 scripts/audit_localizations.py
 
 log "Running git diff --check"
 git diff --check

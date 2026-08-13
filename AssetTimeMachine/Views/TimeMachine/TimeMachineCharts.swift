@@ -1139,6 +1139,26 @@ struct TimeMachineAnnualSurplusCard: View {
         TimeMachineSurplusFormatting.paddedDomain(values: points.map(\.surplus))
     }
 
+    private var dateDomain: ClosedRange<Date> {
+        let sortedDates = points.map(\.yearStart).sorted()
+        guard let first = sortedDates.first, let last = sortedDates.last else {
+            let fallback = Date()
+            return fallback...fallback.addingTimeInterval(365 * 24 * 60 * 60)
+        }
+
+        if first == last {
+            let calendar = Calendar.current
+            let lower = calendar.date(byAdding: .month, value: -6, to: first) ?? first.addingTimeInterval(-182 * 24 * 60 * 60)
+            let upper = calendar.date(byAdding: .month, value: 6, to: first) ?? first.addingTimeInterval(182 * 24 * 60 * 60)
+            return lower...upper
+        }
+
+        let interval = last.timeIntervalSince(first)
+        let yearSpacing = interval / Double(max(sortedDates.count - 1, 1))
+        let padding = max(yearSpacing * 0.42, 45 * 24 * 60 * 60)
+        return first.addingTimeInterval(-padding)...last.addingTimeInterval(padding)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center, spacing: 8) {
@@ -1201,6 +1221,7 @@ struct TimeMachineAnnualSurplusCard: View {
         GeometryReader { geometry in
             let leftWidth: CGFloat = 46
             let chartWidth = max(geometry.size.width - leftWidth - 18, 120)
+            let barWidth = min(max(chartWidth / CGFloat(max(points.count, 1)) * 0.42, 10), 34)
 
             HStack(spacing: 6) {
                 TimeMachineAxisStrip(
@@ -1221,7 +1242,8 @@ struct TimeMachineAnnualSurplusCard: View {
                         BarMark(
                             x: .value(AppLocalization.string("年份"), point.yearStart),
                             yStart: .value(AppLocalization.string("零线"), normalized(0, in: domain)),
-                            yEnd: .value(AppLocalization.string("年结余"), normalized(point.surplus, in: domain))
+                            yEnd: .value(AppLocalization.string("年结余"), normalized(point.surplus, in: domain)),
+                            width: .fixed(barWidth)
                         )
                         .foregroundStyle(TimeMachineSurplusFormatting.color(for: point.surplus).opacity(selectedPoint?.id == point.id ? 0.96 : 0.82))
                     }
@@ -1233,6 +1255,10 @@ struct TimeMachineAnnualSurplusCard: View {
                     }
                 }
                 .frame(width: chartWidth, height: 138)
+                .chartXScale(
+                    domain: dateDomain,
+                    range: .plotDimension(startPadding: 4, endPadding: 4)
+                )
                 .chartYScale(domain: 0...1)
                 .chartYAxis(.hidden)
                 .chartXAxis {
@@ -1346,9 +1372,10 @@ struct TimeMachineCurrentAnchorCard: View {
     }
 }
 
-struct TimeMachineComparisonRevealButtons: View {
+struct TimeMachineComparisonToggleButtons: View {
     let options: [TimeMachineDetailComparisonOption]
-    let onReveal: (TimeMachineDetailComparisonOption) -> Void
+    let visibleSymbols: Set<String>
+    let onToggle: (TimeMachineDetailComparisonOption) -> Void
 
     private let columns = [
         GridItem(.adaptive(minimum: 118), spacing: 8, alignment: .leading)
@@ -1362,28 +1389,42 @@ struct TimeMachineComparisonRevealButtons: View {
 
             LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
                 ForEach(options) { option in
+                    let isVisible = visibleSymbols.contains(option.symbol)
                     Button {
-                        onReveal(option)
+                        onToggle(option)
                     } label: {
                         HStack(spacing: 7) {
                             Circle()
                                 .fill(option.color)
                                 .frame(width: 7, height: 7)
-                            Text(AppLocalization.format("显示%@", option.title))
+                            Text(option.title)
                                 .font(.system(size: 12.5, weight: .semibold, design: .default))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.76)
+
+                            Spacer(minLength: 4)
+
+                            Image(systemName: isVisible ? "eye.fill" : "eye.slash")
+                                .font(.system(size: 10.5, weight: .semibold))
+                                .foregroundStyle(isVisible ? option.color : AssetTheme.textSecondary.opacity(0.72))
                         }
                         .foregroundStyle(AssetTheme.textPrimary)
                         .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
                         .padding(.horizontal, 12)
-                        .background(AssetTheme.surface.opacity(0.62), in: Capsule())
+                        .background(
+                            isVisible ? option.color.opacity(0.10) : AssetTheme.surface.opacity(0.62),
+                            in: Capsule()
+                        )
                         .overlay(
                             Capsule()
-                                .stroke(AssetTheme.border.opacity(0.42), lineWidth: 1)
+                                .stroke(
+                                    isVisible ? option.color.opacity(0.46) : AssetTheme.border.opacity(0.42),
+                                    lineWidth: 1
+                                )
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(AppLocalization.format(isVisible ? "隐藏%@" : "显示%@", option.title))
                 }
             }
         }

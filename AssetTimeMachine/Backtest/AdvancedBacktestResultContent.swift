@@ -21,7 +21,7 @@ enum AdvancedBacktestPresentation {
             )
             guard !points.isEmpty else { return nil }
             return BacktestChartComparisonSeries(
-                id: "asset-benchmark-\(series.id)",
+                id: BacktestChartSeriesKey.assetBenchmark(series.id),
                 title: series.title,
                 points: points,
                 color: BacktestChartPalette.comparisonLine(at: index)
