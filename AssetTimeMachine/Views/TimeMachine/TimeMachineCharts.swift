@@ -478,11 +478,17 @@ struct TimeMachineSectionDivider: View {
     }
 }
 
-private struct TimeMachineIndexedTrendPoint: Identifiable {
+private struct TimeMachineUnifiedTrendPoint: Identifiable {
     let date: Date
-    let indexedValue: Double
+    let plotValue: Double
+    let displayValue: Double
 
     var id: Date { date }
+}
+
+private enum TimeMachineUnifiedTrendScale {
+    case assetValue
+    case marketReturn
 }
 
 private struct TimeMachineUnifiedTrendSeries: Identifiable {
@@ -490,7 +496,8 @@ private struct TimeMachineUnifiedTrendSeries: Identifiable {
     let title: String
     let color: Color
     let strokeStyle: StrokeStyle
-    let points: [TimeMachineIndexedTrendPoint]
+    let scale: TimeMachineUnifiedTrendScale
+    let points: [TimeMachineUnifiedTrendPoint]
 }
 
 struct TimeMachineHeroTrendCard: View {
@@ -508,6 +515,8 @@ struct TimeMachineHeroTrendCard: View {
     private let displayPoints: [TimeMachineTrendPoint]
     private let unifiedSeries: [TimeMachineUnifiedTrendSeries]
     private let valueDomain: ClosedRange<Double>
+    private let assetValueDomain: ClosedRange<Double>?
+    private let marketReturnDomain: ClosedRange<Double>?
     private let dateDomain: ClosedRange<Date>
     private let axisDates: [Date]
     private var dateAxisKey: String { AppLocalization.string("日期") }
@@ -541,56 +550,112 @@ struct TimeMachineHeroTrendCard: View {
         )
         self.displayPoints = displayPoints
 
-        let assetSeries = TimeMachineAssetSeries.allCases.map { series in
+        let visibleAssetSeries = TimeMachineAssetSeries.allCases.filter {
+            visibleSeriesIDs.contains($0.id)
+        }
+        let assetValues = visibleAssetSeries.flatMap { series in
+            displayPoints.map { series.value(from: $0) }.filter(\.isFinite)
+        }
+        let assetValueDomain = assetValues.isEmpty
+            ? nil
+            : ChartLayoutSupport.paddedValueDomain(values: assetValues)
+
+        let marketSeriesBySymbol = Dictionary(uniqueKeysWithValues: marketSeries.map { ($0.symbol, $0) })
+        let visibleMarketReturnsBySymbol = Dictionary(uniqueKeysWithValues: marketOptions.compactMap { option -> (String, [(date: Date, value: Double)])? in
+            guard visibleSeriesIDs.contains(option.symbol),
+                  let series = marketSeriesBySymbol[option.symbol] else { return nil }
+            let sampledPoints = evenlySampledItems(series.points.sorted { $0.date < $1.date }, maxCount: 180)
+            let returns = Self.marketReturnPoints(sampledPoints.map { ($0.date, $0.value) })
+            return returns.isEmpty ? nil : (option.symbol, returns)
+        })
+        let marketReturns = visibleMarketReturnsBySymbol.values.flatMap { $0.map(\.value) }
+        let marketReturnDomain = marketReturns.isEmpty
+            ? nil
+            : ChartLayoutSupport.paddedValueDomain(values: marketReturns)
+        let valueDomain = assetValueDomain ?? marketReturnDomain ?? (-0.1...0.1)
+
+        let assetSeries = visibleAssetSeries.map { series in
             TimeMachineUnifiedTrendSeries(
                 id: series.id,
                 title: series.title,
                 color: series.color,
                 strokeStyle: series.strokeStyle,
-                points: Self.indexedPoints(
-                    displayPoints.map { ($0.date, series.value(from: $0)) }
-                )
+                scale: .assetValue,
+                points: displayPoints.compactMap { point in
+                    let value = series.value(from: point)
+                    guard value.isFinite else { return nil }
+                    return TimeMachineUnifiedTrendPoint(
+                        date: point.date,
+                        plotValue: value,
+                        displayValue: value
+                    )
+                }
             )
         }
-        let marketSeriesBySymbol = Dictionary(uniqueKeysWithValues: marketSeries.map { ($0.symbol, $0) })
         let indexedMarketSeries = marketOptions.compactMap { option -> TimeMachineUnifiedTrendSeries? in
-            guard let series = marketSeriesBySymbol[option.symbol] else { return nil }
-            let sampledPoints = evenlySampledItems(series.points.sorted { $0.date < $1.date }, maxCount: 180)
+            guard let returnPoints = visibleMarketReturnsBySymbol[option.symbol],
+                  let marketReturnDomain else { return nil }
             return TimeMachineUnifiedTrendSeries(
                 id: option.symbol,
                 title: option.title,
                 color: option.color,
                 strokeStyle: StrokeStyle(lineWidth: 2.1, lineCap: .round, dash: [7, 5]),
-                points: Self.indexedPoints(sampledPoints.map { ($0.date, $0.value) })
+                scale: .marketReturn,
+                points: returnPoints.map { point in
+                    TimeMachineUnifiedTrendPoint(
+                        date: point.date,
+                        plotValue: Self.mapMarketReturn(
+                            point.value,
+                            marketDomain: marketReturnDomain,
+                            plotDomain: valueDomain
+                        ),
+                        displayValue: point.value
+                    )
+                }
             )
         }
-        let unifiedSeries = assetSeries + indexedMarketSeries
-        self.unifiedSeries = unifiedSeries
-        let visibleValues = unifiedSeries
-            .filter { visibleSeriesIDs.contains($0.id) }
-            .flatMap { $0.points.map(\.indexedValue) }
-        self.valueDomain = visibleValues.isEmpty
-            ? 80...120
-            : ChartLayoutSupport.paddedValueDomain(values: visibleValues)
+        self.unifiedSeries = assetSeries + indexedMarketSeries
+        self.assetValueDomain = assetValueDomain
+        self.marketReturnDomain = marketReturnDomain
+        self.valueDomain = valueDomain
         self.dateDomain = Self.makeDateDomain(from: displayPoints)
         self.axisDates = chartAxisDates(displayPoints.map(\.date))
     }
 
-    private static func indexedPoints(_ rawPoints: [(date: Date, value: Double)]) -> [TimeMachineIndexedTrendPoint] {
+    private static func marketReturnPoints(_ rawPoints: [(date: Date, value: Double)]) -> [(date: Date, value: Double)] {
         guard let base = rawPoints.first(where: { $0.value.isFinite && $0.value > 0.0001 }) else { return [] }
         return rawPoints.compactMap { point in
             guard point.date >= base.date,
                   point.value.isFinite else { return nil }
-            return TimeMachineIndexedTrendPoint(
-                date: point.date,
-                indexedValue: point.value / base.value * 100
-            )
+            return (point.date, point.value / base.value - 1)
         }
     }
 
-    private var activeSeries: [TimeMachineUnifiedTrendSeries] {
-        unifiedSeries.filter { visibleSeriesIDs.contains($0.id) && !$0.points.isEmpty }
+    private static func mapMarketReturn(
+        _ value: Double,
+        marketDomain: ClosedRange<Double>,
+        plotDomain: ClosedRange<Double>
+    ) -> Double {
+        let marketSpan = marketDomain.upperBound - marketDomain.lowerBound
+        guard marketSpan > 0.000_000_1 else { return plotDomain.lowerBound }
+        let progress = (value - marketDomain.lowerBound) / marketSpan
+        return plotDomain.lowerBound + progress * (plotDomain.upperBound - plotDomain.lowerBound)
     }
+
+    private func marketReturn(forPlotValue value: Double) -> Double? {
+        guard let marketReturnDomain else { return nil }
+        let plotSpan = valueDomain.upperBound - valueDomain.lowerBound
+        guard plotSpan > 0.000_000_1 else { return marketReturnDomain.lowerBound }
+        let progress = (value - valueDomain.lowerBound) / plotSpan
+        return marketReturnDomain.lowerBound + progress * (marketReturnDomain.upperBound - marketReturnDomain.lowerBound)
+    }
+
+    private var activeSeries: [TimeMachineUnifiedTrendSeries] {
+        unifiedSeries.filter { !$0.points.isEmpty }
+    }
+
+    private var hasAssetValueAxis: Bool { assetValueDomain != nil }
+    private var hasMarketReturnAxis: Bool { marketReturnDomain != nil }
 
     private var selectedPoint: TimeMachineTrendPoint {
         guard let selectedDate else { return latestPoint }
@@ -629,11 +694,13 @@ struct TimeMachineHeroTrendCard: View {
                         ForEach(series.points) { point in
                             LineMark(
                                 x: .value(dateAxisKey, point.date),
-                                y: .value(series.title, point.indexedValue)
+                                y: .value(series.title, point.plotValue)
                             )
                             .foregroundStyle(by: .value(seriesAxisKey, series.id))
                             .lineStyle(series.strokeStyle)
                             .interpolationMethod(.monotone)
+                            .accessibilityLabel(series.title)
+                            .accessibilityValue(accessibilityValue(for: point, scale: series.scale))
                         }
 
                         if let selectedSeriesPoint = nearestChartPoint(
@@ -643,7 +710,7 @@ struct TimeMachineHeroTrendCard: View {
                         ) {
                             PointMark(
                                 x: .value(dateAxisKey, selectedSeriesPoint.date),
-                                y: .value(series.title, selectedSeriesPoint.indexedValue)
+                                y: .value(series.title, selectedSeriesPoint.plotValue)
                             )
                             .foregroundStyle(series.color)
                             .symbolSize(selectedDate == nil ? 28 : 50)
@@ -677,14 +744,33 @@ struct TimeMachineHeroTrendCard: View {
                     }
                 }
                 .chartYAxis {
-                    AxisMarks(values: .automatic(desiredCount: 4)) { value in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
-                            .foregroundStyle(AssetTheme.chartGrid.opacity(0.72))
-                        AxisValueLabel {
-                            if let y = value.as(Double.self) {
-                                Text(String(format: "%.0f", y))
-                                    .font(.system(size: 9.5, weight: .medium, design: .default))
-                                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                    if hasAssetValueAxis {
+                        AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
+                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
+                                .foregroundStyle(AssetTheme.chartGrid.opacity(0.72))
+                            AxisValueLabel {
+                                if let amount = value.as(Double.self) {
+                                    Text(assetAxisLabel(amount))
+                                        .font(.system(size: 9.5, weight: .medium, design: .default))
+                                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                                }
+                            }
+                        }
+                    }
+
+                    if hasMarketReturnAxis {
+                        AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { value in
+                            if !hasAssetValueAxis {
+                                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
+                                    .foregroundStyle(AssetTheme.chartGrid.opacity(0.72))
+                            }
+                            AxisValueLabel {
+                                if let plotValue = value.as(Double.self),
+                                   let marketReturn = marketReturn(forPlotValue: plotValue) {
+                                    Text(marketReturn.percentString(maxFractionDigits: 0))
+                                        .font(.system(size: 9.5, weight: .medium, design: .default))
+                                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                                }
                             }
                         }
                     }
@@ -764,11 +850,36 @@ struct TimeMachineHeroTrendCard: View {
 
                 Spacer(minLength: 8)
 
-                Text(AppLocalization.string("起点 = 100"))
+                Text(axisContextLabel)
                     .font(AppTypography.chartCaptionStrong)
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.76))
-                    .monospacedDigit()
             }
+        }
+    }
+
+    private var axisContextLabel: String {
+        if hasAssetValueAxis && hasMarketReturnAxis {
+            return AppLocalization.string("资产金额 / 市场涨跌")
+        }
+        if hasMarketReturnAxis {
+            return AppLocalization.string("市场涨跌")
+        }
+        return AppLocalization.string("资产金额")
+    }
+
+    private func assetAxisLabel(_ amount: Double) -> String {
+        "¥\(amount.compactNumberString(maxFractionDigits: 1))"
+    }
+
+    private func accessibilityValue(
+        for point: TimeMachineUnifiedTrendPoint,
+        scale: TimeMachineUnifiedTrendScale
+    ) -> String {
+        switch scale {
+        case .assetValue:
+            return point.displayValue.currencyString(code: "CNY")
+        case .marketReturn:
+            return point.displayValue.percentString(maxFractionDigits: 1)
         }
     }
 

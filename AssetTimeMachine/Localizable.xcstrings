@@ -24976,6 +24976,75 @@
           }
         }
       },
+      "资产金额": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "Asset Value"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "资产金额"
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "資產金額"
+            }
+          }
+        }
+      },
+      "资产金额 / 市场涨跌": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "Asset Value / Market Change"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "资产金额 / 市场涨跌"
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "資產金額 / 市場漲跌"
+            }
+          }
+        }
+      },
+      "市场涨跌": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "Market Change"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "市场涨跌"
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "市場漲跌"
+            }
+          }
+        }
+      },
       "起点 = 100": {
         "extractionState": "manual",
         "localizations": {
