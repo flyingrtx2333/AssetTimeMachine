@@ -123,6 +123,7 @@ struct InteractiveBacktestChart: View, Equatable {
     var valueStyle: BacktestChartValueStyle = .multiple
     var visibleSeriesIDs: Set<String> = []
     var placesViewportControlsAboveChart = false
+    var onVisibleDateDomainChange: ((ClosedRange<Date>) -> Void)? = nil
     @State private var selectedDate: Date?
     @State private var viewportStartRatio: Double = 0
     @State private var visibleSpanRatio: Double = 1
@@ -336,6 +337,11 @@ struct InteractiveBacktestChart: View, Equatable {
         visibleSpanRatio = 1
         viewportStartRatio = 0
         selectedDate = nil
+    }
+
+    private func publishVisibleDateDomain() {
+        guard let visibleDateDomain else { return }
+        onVisibleDateDomainChange?(visibleDateDomain)
     }
 
     private var foregroundStyleDomain: [String] {
@@ -561,6 +567,7 @@ struct InteractiveBacktestChart: View, Equatable {
         }
         .frame(height: 220)
         .chartXScale(domain: xDomain)
+        .chartXScale(range: .plotDimension(startPadding: 4, endPadding: 46))
         .chartYScale(domain: domain)
         .chartForegroundStyleScale(domain: foregroundStyleDomain, range: foregroundStyleRange)
         .animation(.easeInOut(duration: 0.2), value: visibleSeriesIDs)
@@ -571,11 +578,15 @@ struct InteractiveBacktestChart: View, Equatable {
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 4)) {
+            AxisMarks(values: BacktestChartData.dateAxisValues(in: xDomain)) { value in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
                     .foregroundStyle(AssetTheme.border.opacity(0.35))
-                AxisValueLabel(format: .dateTime.year())
-                    .foregroundStyle(AssetTheme.textSecondary)
+                AxisValueLabel {
+                    if let date = value.as(Date.self) {
+                        Text(date, format: .dateTime.year())
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                }
             }
         }
         .chartYAxis {
@@ -613,17 +624,49 @@ struct InteractiveBacktestChart: View, Equatable {
         .overlay(alignment: .topTrailing) {
             viewportControls
         }
-        .onChange(of: points.count) { _ in
+        .onChange(of: points.count) { _, _ in
             clampViewport()
+            publishVisibleDateDomain()
         }
-        .onChange(of: visibleSeriesIDs) { _ in
+        .onChange(of: visibleSeriesIDs) { _, _ in
             clampViewport()
+            publishVisibleDateDomain()
+        }
+        .onChange(of: viewportStartRatio) { _, _ in
+            publishVisibleDateDomain()
+        }
+        .onChange(of: visibleSpanRatio) { _, _ in
+            publishVisibleDateDomain()
+        }
+        .onAppear {
+            publishVisibleDateDomain()
         }
     }
 
 }
 
+private enum BacktestExposureSeriesKey {
+    static let total = "exposure.total"
+
+    static func asset(_ symbol: String) -> String {
+        "exposure.asset.\(symbol)"
+    }
+}
+
 enum BacktestChartData {
+    static func dateAxisValues(in domain: ClosedRange<Date>, desiredCount: Int = 4) -> [Date] {
+        guard desiredCount > 1 else { return [domain.lowerBound] }
+        let interval = domain.upperBound.timeIntervalSince(domain.lowerBound)
+        guard interval > 0 else { return [domain.lowerBound] }
+        let leadingInset = 0.07
+        let trailingInset = 0.12
+        let availableRatio = 1 - leadingInset - trailingInset
+        return (0..<desiredCount).map { index in
+            let progress = leadingInset + availableRatio * Double(index) / Double(desiredCount - 1)
+            return domain.lowerBound.addingTimeInterval(interval * progress)
+        }
+    }
+
     nonisolated static func sampledPoints(from points: [BacktestSeriesPoint], maxCount: Int = 240) -> [BacktestSeriesPoint] {
         guard points.count > maxCount, maxCount > 1 else { return points }
 
@@ -693,7 +736,6 @@ struct BacktestValueChartSection: View {
     var comparisonSeries: [BacktestChartComparisonSeries] = []
     var valueStyle: BacktestChartValueStyle = .multiple
     var title: String = AppLocalization.string("净值走势")
-    var footnote: String? = nil
     @State private var visibleSeriesIDs: Set<String> = []
 
     private var chartPoints: [BacktestSeriesPoint] {
@@ -756,12 +798,6 @@ struct BacktestValueChartSection: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             }
 
-            if let footnote, !footnote.isEmpty {
-                Text(footnote)
-                    .font(AppTypography.chartCaption)
-                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.82))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
         }
     }
 
@@ -820,10 +856,249 @@ struct BacktestValueChartSection: View {
     }
 }
 
+struct AdvancedBacktestCombinedChartSection: View {
+    let points: [BacktestSeriesPoint]
+    let comparisonSeries: [BacktestChartComparisonSeries]
+    let exposurePoints: [BacktestExposurePoint]
+    let assetExposureSeries: [BacktestAssetExposureSeries]
+    let averageExposureRatio: Double
+
+    @State private var visibleValueSeriesIDs: Set<String> = []
+    @State private var visibleExposureSeriesIDs: Set<String> = []
+    @State private var visibleDateDomain: ClosedRange<Date>?
+    @State private var showsLegend = false
+
+    private var chartPoints: [BacktestSeriesPoint] {
+        BacktestChartData.sampledPoints(from: points)
+    }
+
+    private var chartComparisonSeries: [BacktestChartComparisonSeries] {
+        comparisonSeries.compactMap { series in
+            let sampledPoints = BacktestChartData.sampledPoints(from: series.points)
+            guard !sampledPoints.isEmpty else { return nil }
+            return BacktestChartComparisonSeries(
+                id: series.id,
+                title: series.title,
+                points: sampledPoints,
+                color: series.color
+            )
+        }
+    }
+
+    private var valueLegendItems: [BacktestChartLegendItem] {
+        BacktestChartData.legendItems(for: chartComparisonSeries)
+    }
+
+    private var exposureLegendItems: [BacktestChartLegendItem] {
+        let assets = assetExposureSeries.enumerated().map { index, series in
+            BacktestChartLegendItem(
+                id: BacktestExposureSeriesKey.asset(series.symbol),
+                title: series.title,
+                color: BacktestChartPalette.exposureLine(at: index),
+                isDashed: false
+            )
+        }
+        let total = BacktestChartLegendItem(
+            id: BacktestExposureSeriesKey.total,
+            title: AppLocalization.string("总仓位"),
+            color: assetExposureSeries.isEmpty ? BacktestChartPalette.strategyLine : AssetTheme.textSecondary.opacity(0.72),
+            isDashed: !assetExposureSeries.isEmpty
+        )
+        return assets + [total]
+    }
+
+    private var effectiveVisibleValueSeriesIDs: Set<String> {
+        let available = Set(valueLegendItems.map(\.id))
+        let selected = visibleValueSeriesIDs.intersection(available)
+        return selected.isEmpty ? available : selected
+    }
+
+    private var effectiveVisibleExposureSeriesIDs: Set<String> {
+        let available = Set(exposureLegendItems.map(\.id))
+        let selected = visibleExposureSeriesIDs.intersection(available)
+        return selected.isEmpty ? available : selected
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 10) {
+                Text(AppLocalization.string("净值走势"))
+                    .font(AppTypography.rowTitle)
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                Spacer(minLength: 8)
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        showsLegend.toggle()
+                    }
+                } label: {
+                    Label(AppLocalization.string("图例"), systemImage: showsLegend ? "list.bullet.circle.fill" : "list.bullet.circle")
+                        .font(AppTypography.chartCaptionStrong)
+                        .foregroundStyle(showsLegend ? AssetTheme.gold : AssetTheme.textSecondary)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 6)
+                        .background(AssetTheme.overlaySoft, in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+
+            InteractiveBacktestChart(
+                points: chartPoints,
+                comparisonSeries: chartComparisonSeries,
+                valueStyle: .currency(code: "CNY"),
+                visibleSeriesIDs: effectiveVisibleValueSeriesIDs,
+                placesViewportControlsAboveChart: false,
+                onVisibleDateDomainChange: { domain in
+                    visibleDateDomain = domain
+                }
+            )
+
+            Divider()
+                .overlay(AssetTheme.border.opacity(0.55))
+
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(AppLocalization.string(assetExposureSeries.isEmpty ? "持仓比例走势" : "资产持仓走势"))
+                    .font(AppTypography.rowTitle)
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                Spacer(minLength: 8)
+
+                HStack(spacing: 5) {
+                    Text(AppLocalization.string("平均仓位"))
+                    Text(averageExposureRatio.percentString(maxFractionDigits: 0))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                }
+                .font(AppTypography.chartCaptionStrong)
+                .foregroundStyle(AssetTheme.textSecondary)
+                .monospacedDigit()
+            }
+
+            BacktestExposureChartSection(
+                points: exposurePoints,
+                assetSeries: assetExposureSeries,
+                dateDomain: visibleDateDomain,
+                visibleSeriesIDs: effectiveVisibleExposureSeriesIDs
+            )
+
+            if showsLegend {
+                Divider()
+                    .overlay(AssetTheme.border.opacity(0.45))
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(AppLocalization.string("净值走势"))
+                        .font(AppTypography.chartCaptionStrong)
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+
+                    ATMFlowLayout(horizontalSpacing: 8, verticalSpacing: 8, rowAlignment: .center) {
+                        ForEach(valueLegendItems) { item in
+                            combinedLegendToggle(
+                                item,
+                                isVisible: effectiveVisibleValueSeriesIDs.contains(item.id),
+                                canHide: effectiveVisibleValueSeriesIDs.count > 1,
+                                isExposureSeries: false
+                            )
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Text(AppLocalization.string(assetExposureSeries.isEmpty ? "持仓比例走势" : "资产持仓走势"))
+                        .font(AppTypography.chartCaptionStrong)
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                        .padding(.top, 2)
+
+                    ATMFlowLayout(horizontalSpacing: 8, verticalSpacing: 8, rowAlignment: .center) {
+                        ForEach(exposureLegendItems) { item in
+                            combinedLegendToggle(
+                                item,
+                                isVisible: effectiveVisibleExposureSeriesIDs.contains(item.id),
+                                canHide: effectiveVisibleExposureSeriesIDs.count > 1,
+                                isExposureSeries: true
+                            )
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    private func combinedLegendToggle(
+        _ item: BacktestChartLegendItem,
+        isVisible: Bool,
+        canHide: Bool,
+        isExposureSeries: Bool
+    ) -> some View {
+        Button {
+            guard !isVisible || canHide else { return }
+            withAnimation(.easeInOut(duration: 0.18)) {
+                if isExposureSeries {
+                    visibleExposureSeriesIDs = toggledSeries(
+                        item.id,
+                        current: effectiveVisibleExposureSeriesIDs,
+                        available: Set(exposureLegendItems.map(\.id))
+                    )
+                } else {
+                    visibleValueSeriesIDs = toggledSeries(
+                        item.id,
+                        current: effectiveVisibleValueSeriesIDs,
+                        available: Set(valueLegendItems.map(\.id))
+                    )
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                if item.isDashed {
+                    Capsule()
+                        .stroke(item.color, style: StrokeStyle(lineWidth: 2.2, dash: [5, 3]))
+                        .frame(width: 20, height: 6)
+                } else {
+                    Circle()
+                        .fill(item.color)
+                        .frame(width: 8, height: 8)
+                }
+
+                Text(item.title)
+                    .font(AppTypography.chartCaptionStrong)
+                    .foregroundStyle(isVisible ? AssetTheme.textSecondary : AssetTheme.textSecondary.opacity(0.55))
+                    .strikethrough(!isVisible, color: AssetTheme.textSecondary.opacity(0.7))
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(isVisible ? AssetTheme.overlaySoft : AssetTheme.overlayFaint, in: Capsule())
+            .overlay(Capsule().stroke(isVisible ? item.color.opacity(0.42) : AssetTheme.border.opacity(0.4), lineWidth: 1))
+            .opacity(isVisible ? 1 : 0.5)
+        }
+        .buttonStyle(.plain)
+        .disabled(isVisible && !canHide)
+        .accessibilityLabel(item.title)
+        .accessibilityHint(AppLocalization.string(isVisible ? "点击隐藏曲线" : "点击显示曲线"))
+    }
+
+    private func toggledSeries(
+        _ id: String,
+        current: Set<String>,
+        available: Set<String>
+    ) -> Set<String> {
+        var next = current
+        if next.contains(id) {
+            guard next.count > 1 else { return next }
+            next.remove(id)
+        } else {
+            next.insert(id)
+        }
+        return next.intersection(available)
+    }
+}
+
 struct BacktestExposureChartSection: View {
     let points: [BacktestExposurePoint]
     let assetSeries: [BacktestAssetExposureSeries]
-    let averageRatio: Double
+    var dateDomain: ClosedRange<Date>? = nil
+    var visibleSeriesIDs: Set<String> = []
 
     private var chartPoints: [BacktestExposurePoint] {
         BacktestExposureSampling.sampled(points)
@@ -853,27 +1128,29 @@ struct BacktestExposureChartSection: View {
         return (0...4).map { Double($0) * step }
     }
 
+    private var availableSeriesIDs: Set<String> {
+        Set(assetSeries.map { BacktestExposureSeriesKey.asset($0.symbol) } + [BacktestExposureSeriesKey.total])
+    }
+
+    private var effectiveVisibleSeriesIDs: Set<String> {
+        let selected = visibleSeriesIDs.intersection(availableSeriesIDs)
+        return selected.isEmpty ? availableSeriesIDs : selected
+    }
+
+    private var resolvedDateDomain: ClosedRange<Date> {
+        if let dateDomain { return dateDomain }
+        let dates = points.map(\.date) + assetSeries.flatMap { $0.points.map(\.date) }
+        guard let first = dates.min(), let last = dates.max() else {
+            let fallback = Date()
+            return fallback...fallback.addingTimeInterval(24 * 60 * 60)
+        }
+        return first == last ? first...first.addingTimeInterval(24 * 60 * 60) : first...last
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(AppLocalization.string(assetSeries.isEmpty ? "持仓比例走势" : "资产持仓走势"))
-                    .font(AppTypography.rowTitle)
-                    .foregroundStyle(AssetTheme.textPrimary)
-
-                Spacer(minLength: 8)
-
-                HStack(spacing: 5) {
-                    Text(AppLocalization.string("平均仓位"))
-                        .foregroundStyle(AssetTheme.textSecondary)
-                    Text(averageRatio.percentString(maxFractionDigits: 0))
-                        .foregroundStyle(AssetTheme.textPrimary)
-                }
-                .font(AppTypography.chartCaptionStrong)
-                .monospacedDigit()
-            }
-
             Chart {
-                if assetSeries.isEmpty {
+                if assetSeries.isEmpty, effectiveVisibleSeriesIDs.contains(BacktestExposureSeriesKey.total) {
                     ForEach(chartPoints) { point in
                         AreaMark(
                             x: .value(AppLocalization.string("日期"), point.date),
@@ -897,38 +1174,47 @@ struct BacktestExposureChartSection: View {
                     }
                 } else {
                     ForEach(Array(sampledAssetSeries.enumerated()), id: \.element.id) { index, series in
-                        ForEach(series.points) { point in
-                            LineMark(
-                                x: .value(AppLocalization.string("日期"), point.date),
-                                y: .value(AppLocalization.string("持仓比例"), point.ratio),
-                                series: .value(AppLocalization.string("资产"), series.symbol)
-                            )
-                            .foregroundStyle(BacktestChartPalette.exposureLine(at: index))
-                            .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                        if effectiveVisibleSeriesIDs.contains(BacktestExposureSeriesKey.asset(series.symbol)) {
+                            ForEach(series.points) { point in
+                                LineMark(
+                                    x: .value(AppLocalization.string("日期"), point.date),
+                                    y: .value(AppLocalization.string("持仓比例"), point.ratio),
+                                    series: .value(AppLocalization.string("资产"), series.symbol)
+                                )
+                                .foregroundStyle(BacktestChartPalette.exposureLine(at: index))
+                                .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                            }
                         }
                     }
 
-                    ForEach(chartPoints) { point in
-                        LineMark(
-                            x: .value(AppLocalization.string("日期"), point.date),
-                            y: .value(AppLocalization.string("持仓比例"), point.ratio),
-                            series: .value(AppLocalization.string("资产"), "total-exposure")
-                        )
-                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-                        .lineStyle(StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
+                    if effectiveVisibleSeriesIDs.contains(BacktestExposureSeriesKey.total) {
+                        ForEach(chartPoints) { point in
+                            LineMark(
+                                x: .value(AppLocalization.string("日期"), point.date),
+                                y: .value(AppLocalization.string("持仓比例"), point.ratio),
+                                series: .value(AppLocalization.string("资产"), "total-exposure")
+                            )
+                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                            .lineStyle(StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
+                        }
                     }
                 }
             }
             .frame(height: 160)
-            .chartXScale(range: .plotDimension(startPadding: 4, endPadding: 32))
+            .chartXScale(domain: resolvedDateDomain)
+            .chartXScale(range: .plotDimension(startPadding: 4, endPadding: 46))
             .chartYScale(domain: 0...yMaximum)
             .chartXAxis {
-                AxisMarks(values: .automatic(desiredCount: 4)) {
+                AxisMarks(values: BacktestChartData.dateAxisValues(in: resolvedDateDomain)) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
                         .foregroundStyle(AssetTheme.border.opacity(0.35))
-                    AxisValueLabel(format: .dateTime.year())
-                        .font(AppTypography.chartAxisCompact)
-                        .foregroundStyle(AssetTheme.textSecondary)
+                    AxisValueLabel {
+                        if let date = value.as(Date.self) {
+                            Text(date, format: .dateTime.year())
+                                .font(AppTypography.chartAxisCompact)
+                                .foregroundStyle(AssetTheme.textSecondary)
+                        }
+                    }
                 }
             }
             .chartYAxis {
@@ -951,35 +1237,6 @@ struct BacktestExposureChartSection: View {
             .allowsHitTesting(false)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(AppLocalization.string(assetSeries.isEmpty ? "持仓比例走势" : "资产持仓走势"))
-
-            if !assetSeries.isEmpty {
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 96), spacing: 10, alignment: .leading)],
-                    alignment: .leading,
-                    spacing: 7
-                ) {
-                    ForEach(Array(assetSeries.enumerated()), id: \.element.id) { index, series in
-                        HStack(spacing: 6) {
-                            Circle()
-                                .fill(BacktestChartPalette.exposureLine(at: index))
-                                .frame(width: 7, height: 7)
-                            Text(series.title)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.82)
-                        }
-                    }
-
-                    HStack(spacing: 6) {
-                        Capsule()
-                            .fill(AssetTheme.textSecondary.opacity(0.72))
-                            .frame(width: 12, height: 2)
-                        Text(AppLocalization.string("总仓位"))
-                            .lineLimit(1)
-                    }
-                }
-                .font(AppTypography.chartCaption)
-                .foregroundStyle(AssetTheme.textSecondary)
-            }
         }
     }
 }

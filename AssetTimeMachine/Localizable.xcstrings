@@ -1,6 +1,14 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "图例": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Legend" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "图例" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "圖例" } }
+      }
+    },
     "资产持仓走势": {
       "extractionState": "manual",
       "localizations": {
@@ -11184,29 +11192,6 @@
         }
       }
     },
-    "%@ · 等待历史行情后生成今日调仓": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ · Waiting for sufficient market history"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ · 等待历史行情后生成今日调仓"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ · 等待歷史行情後產生今日調倉"
-          }
-        }
-      }
-    },
     "%@ · 费率%.2f%% · 滑点%.2f%%": {
       "extractionState": "manual",
       "localizations": {
@@ -11433,29 +11418,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@；%2$@ 訊號截至 %3$@，建議下一交易日執行。"
-          }
-        }
-      }
-    },
-    "%@；已计入%.2f%%交易费和%.2f%%滑点。": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ Results include a %2$.2f%% trading fee and %3$.2f%% slippage."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@；已计入%.2f%%交易费和%.2f%%滑点。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@；已计入%2$.2f%%交易费和%3$.2f%%滑点。"
           }
         }
       }
@@ -12818,29 +12780,6 @@
         }
       }
     },
-    "今日建议": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Today's suggestion"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "今日建议"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "今日建議"
-          }
-        }
-      }
-    },
     "今日策略": {
       "extractionState": "manual",
       "localizations": {
@@ -12906,29 +12845,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "今日調倉提醒"
-          }
-        }
-      }
-    },
-    "今日调仓攻略": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Today's Rebalance Plan"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "今日调仓攻略"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "今日調倉方案"
           }
         }
       }
@@ -13343,29 +13259,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "使用中"
-          }
-        }
-      }
-    },
-    "使用设置里的提醒策略生成": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Generated using the notification strategy selected in Settings"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "使用设置里的提醒策略生成"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "使用設定裡的提醒策略生成"
           }
         }
       }
@@ -16776,29 +16669,6 @@
         }
       }
     },
-    "按最新记录%@估算；%@": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estimated according to the latest record %1$@; %2$@"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "按最新记录%@估算；%@"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "以最新記錄%1$@估算；%2$@"
-          }
-        }
-      }
-    },
     "按每年最后一条快照，和上一年年末净资产对比": {
       "extractionState": "manual",
       "localizations": {
@@ -17071,29 +16941,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "收起"
-          }
-        }
-      }
-    },
-    "攻略仅用于历史回测口径下的调仓参考，不构成投资建议。": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rebalance guidance is based solely on historical backtests and does not constitute investment advice."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "攻略仅用于历史回测口径下的调仓参考，不构成投资建议。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "攻略僅用於歷史回測口徑的調倉參考，不構成投資建議。"
           }
         }
       }
@@ -17600,29 +17447,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "暫無資產記錄；"
-          }
-        }
-      }
-    },
-    "暂无资产记录；%@": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No asset record yet; %1$@"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂无资产记录；%@"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暫無資產記錄；%1$@"
           }
         }
       }
@@ -18268,29 +18092,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "權益寬度進攻引擎建倉"
-          }
-        }
-      }
-    },
-    "条件信号使用上一交易日收盘确认、下一交易日收盘价成交": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signals are confirmed at the prior trading day's close; trades execute at the next trading day's close."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "条件信号使用上一交易日收盘确认、下一交易日收盘价成交"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "條件訊號使用上一交易日收盤確認、下一交易日收盤價成交"
           }
         }
       }
@@ -21720,29 +21521,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "輪動型"
-          }
-        }
-      }
-    },
-    "轮动策略使用上一交易日信号、下一调仓日收盘价成交": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signals use the prior trading day's data; trades execute at the next scheduled rebalance close."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "轮动策略使用上一交易日信号、下一调仓日收盘价成交"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "輪動策略使用上一交易日訊號、下一調倉日收盤價成交"
           }
         }
       }

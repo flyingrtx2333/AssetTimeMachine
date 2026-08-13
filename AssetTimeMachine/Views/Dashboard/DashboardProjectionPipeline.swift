@@ -166,11 +166,6 @@ nonisolated struct DashboardFreedomProjectionInput: Equatable, Sendable {
     let annualInflationRate: Double
 }
 
-nonisolated struct DashboardSnapshotSummaryValue: Sendable {
-    let totalAssets: Double
-    let totalLiabilities: Double
-}
-
 nonisolated struct DashboardAllocationDetailValue: Sendable {
     let title: String
     let amount: Double
@@ -221,7 +216,7 @@ nonisolated struct DashboardTrendPointValue: Sendable {
 }
 
 nonisolated struct DashboardDataProjectionOutput: Sendable {
-    let summary: DashboardSnapshotSummaryValue?
+    let totalAssets: Double?
     let allocationSlices: [DashboardAllocationSliceValue]
     let trendPoints: [DashboardTrendPointValue]
 }
@@ -327,7 +322,7 @@ nonisolated struct DashboardFreedomProjectionValue: Sendable {
 
 nonisolated enum DashboardProjectionPipeline {
     static func buildData(from input: DashboardDataProjectionInput) -> DashboardDataProjectionOutput? {
-        var latestSummary: DashboardSnapshotSummaryValue?
+        var latestTotalAssets: Double?
         var latestAllocationEntries: [DashboardEntryProjectionInput] = []
         var trendPoints: [DashboardTrendPointValue] = []
         trendPoints.reserveCapacity(input.snapshots.count)
@@ -336,10 +331,7 @@ nonisolated enum DashboardProjectionPipeline {
             guard !Task.isCancelled else { return nil }
 
             if snapshot.isLatest {
-                latestSummary = DashboardSnapshotSummaryValue(
-                    totalAssets: snapshot.totalAssets,
-                    totalLiabilities: snapshot.totalLiabilities
-                )
+                latestTotalAssets = snapshot.totalAssets
                 latestAllocationEntries = snapshot.allocationEntries
             }
 
@@ -358,7 +350,7 @@ nonisolated enum DashboardProjectionPipeline {
         )
         guard !Task.isCancelled else { return nil }
         return DashboardDataProjectionOutput(
-            summary: latestSummary,
+            totalAssets: latestTotalAssets,
             allocationSlices: allocationSlices,
             trendPoints: trendPoints
         )

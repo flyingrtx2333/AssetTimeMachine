@@ -7,45 +7,42 @@ struct BacktestModeEntryPanel: View {
     let onStart: (BacktestRecordKind) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 0) {
-                ForEach(Array(BacktestRecordKind.allCases.enumerated()), id: \.element.rawValue) { index, kind in
-                    Button {
-                        onStart(kind)
-                    } label: {
-                        VStack(spacing: 7) {
-                            Image(systemName: kind.entryIconName)
-                                .font(AppTypography.blockTitle)
-                                .foregroundStyle(AssetTheme.gold)
-                                .frame(height: 20)
+        HStack(spacing: 0) {
+            ForEach(Array(BacktestRecordKind.allCases.enumerated()), id: \.element.rawValue) { index, kind in
+                Button {
+                    onStart(kind)
+                } label: {
+                    VStack(spacing: 6) {
+                        Image(systemName: kind.entryIconName)
+                            .font(AppTypography.rowTitle)
+                            .foregroundStyle(AssetTheme.gold)
+                            .frame(height: 18)
 
-                            Text(kind.title)
-                                .font(AppTypography.captionStrong)
-                                .foregroundStyle(AssetTheme.textPrimary)
-                                .multilineTextAlignment(.center)
-                                .lineLimit(2)
-                                .minimumScaleFactor(0.86)
-                                .frame(height: 30, alignment: .top)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .contentShape(Rectangle())
+                        Text(kind.title)
+                            .font(AppTypography.captionStrong)
+                            .foregroundStyle(AssetTheme.textPrimary)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.76)
                     }
-                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
 
-                    if index < BacktestRecordKind.allCases.count - 1 {
-                        Divider()
-                            .overlay(AssetTheme.border.opacity(0.55))
-                            .frame(height: 54)
-                    }
+                if index < BacktestRecordKind.allCases.count - 1 {
+                    Divider()
+                        .overlay(AssetTheme.border.opacity(0.48))
+                        .frame(height: 32)
                 }
             }
-            .background(AssetTheme.surface.opacity(0.9), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(AssetTheme.border.opacity(0.62), lineWidth: 1)
-            )
         }
+        .background(AssetTheme.surface.opacity(0.9), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.55), lineWidth: 1)
+        )
     }
 }
 
@@ -1062,10 +1059,6 @@ struct BacktestHistoryRow: View {
 }
 
 private struct BacktestRecordDetailCache {
-    var advancedReport: AdvancedBacktestReport?
-    var comparisonSeries: [BacktestChartComparisonSeries] = []
-    var executionAssumptionText: String = ""
-    var strategyMode: AdvancedBacktestStrategyMode = .ruleBased
     var standardPoints: [BacktestSeriesPoint] = []
 }
 
@@ -1101,19 +1094,13 @@ struct BacktestRecordDetailView: View {
                         .foregroundStyle(AssetTheme.textPrimary)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    if kind == .advanced, let report = detailCache.advancedReport {
-                        AdvancedBacktestResultContent(
-                            report: report,
-                            comparisonSeries: detailCache.comparisonSeries,
-                            executionAssumptionText: detailCache.executionAssumptionText,
-                            strategyMode: detailCache.strategyMode,
-                            showsRebalanceAdvice: false,
-                            showsSupplementalRows: true
-                        ) {
-                            EmptyView()
-                        }
-                    } else if kind != .advanced {
+                    if kind != .advanced {
                         standardRecordContent
+                    } else {
+                        ContentUnavailableView(
+                            AppLocalization.string("这条记录没有可展示的曲线快照。"),
+                            systemImage: "chart.xyaxis.line"
+                        )
                     }
 
                     recordActions
@@ -1141,15 +1128,7 @@ struct BacktestRecordDetailView: View {
     @MainActor
     private func loadDetailCache() {
         var cache = BacktestRecordDetailCache()
-        if kind == .advanced, let report = BacktestRecordCodec.advancedReport(from: record) {
-            cache.advancedReport = report
-            cache.comparisonSeries = AdvancedBacktestPresentation.comparisonSeries(from: report)
-            cache.executionAssumptionText = BacktestRecordCodec.executionAssumptionText(from: record)
-            if let config = BacktestRecordCodec.decodeConfig(from: record) {
-                cache.strategyMode = config.strategyModeRawValue
-                    .flatMap(AdvancedBacktestStrategyMode.init(rawValue:)) ?? .ruleBased
-            }
-        } else {
+        if kind != .advanced {
             cache.standardPoints = BacktestRecordCodec.decodePoints(from: record)
         }
         detailCache = cache

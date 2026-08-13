@@ -164,6 +164,7 @@ struct BacktestView: View {
     @State private var pendingBacktestComputationTask: Task<Void, Never>?
     @State private var pendingBacktestRecordSaveTask: Task<Void, Never>?
     @State private var selectedBacktestRecord: BacktestRecord?
+    @State private var activeAdvancedResult: AdvancedBacktestResultPresentation?
     @State private var recentBacktestRecords: [BacktestRecord] = []
     @State private var totalBacktestRecordCount = 0
     @State private var didLoadBacktestRecordCache = false
@@ -394,7 +395,7 @@ struct BacktestView: View {
                                         showsAllBacktestRecords = true
                                     },
                                     onSelect: { record in
-                                        selectedBacktestRecord = record
+                                        presentBacktestRecord(record)
                                     },
                                     onRestore: { record in
                                         restoreBacktestRecord(record)
@@ -489,7 +490,10 @@ struct BacktestView: View {
                                     isActive: isActive && selectedPage == .advanced,
                                     restoreRequest: pendingAdvancedRestoreRequest,
                                     showsStrategyLibrary: $showsAdvancedStrategyLibrary,
-                                    onRecordsChanged: { refreshBacktestRecordCache(force: true) }
+                                    onRecordsChanged: { refreshBacktestRecordCache(force: true) },
+                                    onPresentResult: { presentation in
+                                        activeAdvancedResult = presentation
+                                    }
                                 )
                             }
                         }
@@ -506,7 +510,7 @@ struct BacktestView: View {
             .navigationDestination(isPresented: $showsAllBacktestRecords) {
                 BacktestAllRecordsContainer(
                     onSelect: { record in
-                        selectedBacktestRecord = record
+                        presentBacktestRecord(record)
                     },
                     onRestore: { record in
                         restoreBacktestRecord(record)
@@ -605,6 +609,18 @@ struct BacktestView: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
             }
+            .fullScreenCover(item: $activeAdvancedResult) { presentation in
+                AdvancedBacktestResultPage(
+                    presentation: presentation,
+                    onRestore: { restoredRecord in
+                        showsAllBacktestRecords = false
+                        restoreBacktestRecord(restoredRecord)
+                    },
+                    onDelete: { deletedRecord in
+                        deleteBacktestRecord(deletedRecord)
+                    }
+                )
+            }
         }
         .task(id: isActive) {
             if isActive {
@@ -694,6 +710,31 @@ struct BacktestView: View {
             didLoadBacktestRecordCache = false
             print("[AssetTimeMachine] refresh backtest record cache failed: \(error)")
         }
+    }
+
+    @MainActor
+    private func presentBacktestRecord(_ record: BacktestRecord) {
+        guard BacktestRecordCodec.kind(for: record) == .advanced else {
+            selectedBacktestRecord = record
+            return
+        }
+
+        guard let report = BacktestRecordCodec.advancedReport(from: record) else {
+            selectedBacktestRecord = record
+            return
+        }
+
+        let config = BacktestRecordCodec.decodeConfig(from: record)
+        let strategyMode = config?.strategyModeRawValue
+            .flatMap(AdvancedBacktestStrategyMode.init(rawValue:)) ?? .ruleBased
+        activeAdvancedResult = AdvancedBacktestResultPresentation(
+            title: BacktestRecordCodec.advancedStrategyDisplayTitle(for: record),
+            report: report,
+            comparisonSeries: AdvancedBacktestPresentation.comparisonSeries(from: report),
+            strategyMode: strategyMode,
+            showsRebalanceAdvice: false,
+            record: record
+        )
     }
 
     @MainActor

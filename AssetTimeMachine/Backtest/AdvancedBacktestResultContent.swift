@@ -36,10 +36,129 @@ private struct AdvancedBacktestTradeEvent: Identifiable {
     var trades: [AdvancedBacktestTrade]
 }
 
-struct AdvancedBacktestResultContent<MiddleContent: View>: View {
+struct AdvancedBacktestResultPresentation: Identifiable {
+    let id = UUID()
+    let title: String
     let report: AdvancedBacktestReport
     let comparisonSeries: [BacktestChartComparisonSeries]
-    let executionAssumptionText: String
+    let strategyMode: AdvancedBacktestStrategyMode
+    var rebalanceAdvice: StrategyRebalanceAdvice? = nil
+    var latestSnapshot: AssetSnapshot? = nil
+    var selectedAssetOptions: [BacktestAssetOption]? = nil
+    var showsRebalanceAdvice = true
+    var record: BacktestRecord? = nil
+}
+
+struct AdvancedBacktestResultPage: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let presentation: AdvancedBacktestResultPresentation
+    var onRestore: ((BacktestRecord) -> Void)? = nil
+    var onDelete: ((BacktestRecord) -> Void)? = nil
+
+    @State private var showsCashYieldSheet = false
+    @State private var showsRiskSignalSheet = false
+
+    var body: some View {
+        ZStack {
+            AssetTheme.pageGradient.ignoresSafeArea()
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 18) {
+                    pageHeader
+
+                    AdvancedBacktestResultContent(
+                        report: presentation.report,
+                        comparisonSeries: presentation.comparisonSeries,
+                        strategyMode: presentation.strategyMode,
+                        rebalanceAdvice: presentation.rebalanceAdvice,
+                        latestSnapshot: presentation.latestSnapshot,
+                        selectedAssetOptions: presentation.selectedAssetOptions,
+                        showsRebalanceAdvice: presentation.showsRebalanceAdvice,
+                        showsSupplementalRows: true,
+                        onShowCashYield: { showsCashYieldSheet = true },
+                        onShowRiskSignal: { showsRiskSignalSheet = true }
+                    )
+
+                    if let record = presentation.record {
+                        recordActions(record)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
+                .padding(.bottom, TabScrollLayout.sheetBottomPadding)
+            }
+        }
+        .sheet(isPresented: $showsCashYieldSheet) {
+            CashYieldDetailSheet(summary: presentation.report.cashYieldSummary)
+                .presentationDetents([.fraction(0.58), .large])
+                .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showsRiskSignalSheet) {
+            if let summary = presentation.report.riskSignalSummary {
+                MarketRiskSignalDetailSheet(summary: summary)
+                    .presentationDetents([.fraction(0.62), .large])
+                    .presentationDragIndicator(.visible)
+            }
+        }
+    }
+
+    private var pageHeader: some View {
+        HStack(spacing: 12) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(AppTypography.rowTitle)
+                    .foregroundStyle(AssetTheme.gold)
+                    .frame(width: 36, height: 36)
+                    .background(AssetTheme.gold.opacity(0.1), in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(AppLocalization.string("返回"))
+
+            Text(presentation.title)
+                .font(AppTypography.blockTitle)
+                .foregroundStyle(AssetTheme.textPrimary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.82)
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func recordActions(_ record: BacktestRecord) -> some View {
+        HStack(spacing: 12) {
+            if let onRestore {
+                Button {
+                    onRestore(record)
+                    dismiss()
+                } label: {
+                    Label(AppLocalization.string("恢复参数"), systemImage: "arrow.uturn.backward")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AssetTheme.gold)
+                .disabled(BacktestRecordCodec.decodeConfig(from: record) == nil)
+            }
+
+            if let onDelete {
+                Button(role: .destructive) {
+                    onDelete(record)
+                    dismiss()
+                } label: {
+                    Label(AppLocalization.string("删除"), systemImage: "trash")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+    }
+}
+
+struct AdvancedBacktestResultContent: View {
+    let report: AdvancedBacktestReport
+    let comparisonSeries: [BacktestChartComparisonSeries]
     var strategyMode: AdvancedBacktestStrategyMode = .ruleBased
     var rebalanceAdvice: StrategyRebalanceAdvice? = nil
     var latestSnapshot: AssetSnapshot? = nil
@@ -48,7 +167,6 @@ struct AdvancedBacktestResultContent<MiddleContent: View>: View {
     var showsSupplementalRows: Bool = true
     var onShowCashYield: (() -> Void)? = nil
     var onShowRiskSignal: (() -> Void)? = nil
-    @ViewBuilder var middleContent: () -> MiddleContent
 
     @State private var showsAllRecentTrades = false
 
@@ -59,7 +177,6 @@ struct AdvancedBacktestResultContent<MiddleContent: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             resultSection
-            middleContent()
             tradeSection
         }
     }
@@ -71,22 +188,45 @@ struct AdvancedBacktestResultContent<MiddleContent: View>: View {
 
         return VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 16) {
-                BacktestValueChartSection(
-                    points: report.points,
-                    comparisonSeries: comparisonSeries,
-                    valueStyle: .currency(code: "CNY"),
-                    footnote: executionAssumptionText
-                )
-
                 if !report.exposurePoints.isEmpty {
-                    Divider()
-                        .overlay(AssetTheme.border.opacity(0.6))
-
-                    BacktestExposureChartSection(
-                        points: report.exposurePoints,
-                        assetSeries: report.assetExposureSeries,
-                        averageRatio: report.averageExposureRatio
+                    AdvancedBacktestCombinedChartSection(
+                        points: report.points,
+                        comparisonSeries: comparisonSeries,
+                        exposurePoints: report.exposurePoints,
+                        assetExposureSeries: report.assetExposureSeries,
+                        averageExposureRatio: report.averageExposureRatio
                     )
+                } else {
+                    BacktestValueChartSection(
+                        points: report.points,
+                        comparisonSeries: comparisonSeries,
+                        valueStyle: .currency(code: "CNY")
+                    )
+                }
+
+                Divider()
+                    .overlay(AssetTheme.border.opacity(0.6))
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    compactMetric(title: AppLocalization.string("期末资产"), value: report.finalPortfolioValue.currencyString())
+                    compactMetric(title: AppLocalization.string("盈亏"), value: report.profitLoss.currencyString(), accent: report.profitLoss >= 0 ? AssetTheme.positive : AssetTheme.negative)
+                    compactMetric(title: AppLocalization.string("策略收益"), value: report.totalReturn.percentString(), accent: report.totalReturn >= 0 ? AssetTheme.positive : AssetTheme.negative)
+                    compactMetric(title: benchmarkMetricTitle, value: report.benchmarkTotalReturn?.percentString() ?? "--")
+                    compactMetric(title: AppLocalization.string("超额收益"), value: report.excessReturn?.percentString() ?? "--", accent: (report.excessReturn ?? 0) >= 0 ? AssetTheme.positive : AssetTheme.negative)
+                    compactMetric(title: AppLocalization.string("年化收益"), value: report.annualizedReturn?.percentString() ?? "--")
+                    compactMetric(title: AppLocalization.string("最大回撤"), value: report.maxDrawdown.percentString(), accent: AssetTheme.negative)
+                    compactMetric(title: AppLocalization.string("年化波动"), value: report.annualizedVolatility?.percentString() ?? "--")
+                    compactMetric(title: AppLocalization.string("夏普比率"), value: report.sharpeRatio.map { String(format: "%.2f", $0) } ?? "--")
+                    compactMetric(title: AppLocalization.string("回撤收益比"), subtitle: AppLocalization.string("Calmar"), value: report.calmarRatio.map { String(format: "%.2f", $0) } ?? "--")
+                    compactMetric(title: AppLocalization.string("平均仓位"), value: report.averageExposureRatio.percentString())
+                    compactMetric(title: AppLocalization.string("交易次数"), value: AppLocalization.format("买%d · 卖%d", report.buyCount, report.sellCount))
+                    compactMetric(
+                        title: AppLocalization.string("胜率"),
+                        subtitle: report.completedTradeCount > 0 ? AppLocalization.format("赢%d / 平仓%d", report.winningTradeCount, report.completedTradeCount) : nil,
+                        value: report.winRate?.percentString(maxFractionDigits: 0) ?? "--",
+                        accent: (report.winRate ?? 0) >= 0.5 ? AssetTheme.positive : AssetTheme.textPrimary
+                    )
+                    compactMetric(title: AppLocalization.string("剩余现金"), value: report.finalCash.currencyString())
                 }
 
                 if showsRebalanceAdvice {
@@ -94,31 +234,6 @@ struct AdvancedBacktestResultContent<MiddleContent: View>: View {
                         .overlay(AssetTheme.border.opacity(0.6))
 
                     rebalanceAdviceSection(rebalanceAdvice)
-
-                    Divider()
-                        .overlay(AssetTheme.border.opacity(0.6))
-                }
-
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
-                    BacktestMetricCard(title: AppLocalization.string("期末资产"), value: report.finalPortfolioValue.currencyString())
-                    BacktestMetricCard(title: AppLocalization.string("盈亏"), value: report.profitLoss.currencyString(), accent: report.profitLoss >= 0 ? AssetTheme.positive : AssetTheme.negative)
-                    BacktestMetricCard(title: AppLocalization.string("策略收益"), value: report.totalReturn.percentString(), accent: report.totalReturn >= 0 ? AssetTheme.positive : AssetTheme.negative)
-                    BacktestMetricCard(title: benchmarkMetricTitle, value: report.benchmarkTotalReturn?.percentString() ?? "--")
-                    BacktestMetricCard(title: AppLocalization.string("超额收益"), value: report.excessReturn?.percentString() ?? "--", accent: (report.excessReturn ?? 0) >= 0 ? AssetTheme.positive : AssetTheme.negative)
-                    BacktestMetricCard(title: AppLocalization.string("年化收益"), value: report.annualizedReturn?.percentString() ?? "--")
-                    BacktestMetricCard(title: AppLocalization.string("最大回撤"), value: report.maxDrawdown.percentString(), accent: AssetTheme.negative)
-                    BacktestMetricCard(title: AppLocalization.string("年化波动"), value: report.annualizedVolatility?.percentString() ?? "--")
-                    BacktestMetricCard(title: AppLocalization.string("夏普比率"), value: report.sharpeRatio.map { String(format: "%.2f", $0) } ?? "--")
-                    BacktestMetricCard(title: AppLocalization.string("回撤收益比"), subtitle: AppLocalization.string("Calmar"), value: report.calmarRatio.map { String(format: "%.2f", $0) } ?? "--")
-                    BacktestMetricCard(title: AppLocalization.string("平均仓位"), value: report.averageExposureRatio.percentString())
-                    BacktestMetricCard(title: AppLocalization.string("交易次数"), value: AppLocalization.format("买%d · 卖%d", report.buyCount, report.sellCount))
-                    BacktestMetricCard(
-                        title: AppLocalization.string("胜率"),
-                        subtitle: report.completedTradeCount > 0 ? AppLocalization.format("赢%d / 平仓%d", report.winningTradeCount, report.completedTradeCount) : nil,
-                        value: report.winRate?.percentString(maxFractionDigits: 0) ?? "--",
-                        accent: (report.winRate ?? 0) >= 0.5 ? AssetTheme.positive : AssetTheme.textPrimary
-                    )
-                    BacktestMetricCard(title: AppLocalization.string("剩余现金"), value: report.finalCash.currencyString())
                 }
 
                 if showsSupplementalRows {
@@ -147,6 +262,35 @@ struct AdvancedBacktestResultContent<MiddleContent: View>: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private func compactMetric(
+        title: String,
+        subtitle: String? = nil,
+        value: String,
+        accent: Color = AssetTheme.gold
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 4) {
+                Text(title)
+                    .font(AppTypography.chartCaptionStrong)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(AppTypography.chartCaption)
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.68))
+                }
+            }
+            .lineLimit(1)
+
+            Text(value)
+                .font(AppTypography.metaStrong.monospacedDigit())
+                .foregroundStyle(accent)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 3)
     }
 
     private func cashYieldInfoRow(_ summary: CashYieldSummary) -> some View {

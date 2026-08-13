@@ -10,6 +10,7 @@ struct AdvancedBacktestView: View {
     let restoreRequest: AdvancedBacktestRestoreRequest?
     @Binding var showsStrategyLibrary: Bool
     var onRecordsChanged: () -> Void = {}
+    var onPresentResult: (AdvancedBacktestResultPresentation) -> Void = { _ in }
     @State private var selectedAssetSymbols: Set<String> = [BacktestDefaults.dcaAssetSymbol]
     @State private var initialCash: Double = 100_000
     @State private var tradeAmount: Double = 10_000
@@ -28,8 +29,6 @@ struct AdvancedBacktestView: View {
     @State private var selectedEndDate: Date?
     @State private var showsRangeSheet = false
     @State private var showsAssetSheet = false
-    @State private var showsCashYieldSheet = false
-    @State private var showsRiskSignalSheet = false
     @State private var hasStartedBacktest = false
     @State private var report: AdvancedBacktestReport?
     @State private var cachedComparisonSeries: [BacktestChartComparisonSeries] = []
@@ -60,13 +59,15 @@ struct AdvancedBacktestView: View {
         isActive: Bool,
         restoreRequest: AdvancedBacktestRestoreRequest?,
         showsStrategyLibrary: Binding<Bool>,
-        onRecordsChanged: @escaping () -> Void = {}
+        onRecordsChanged: @escaping () -> Void = {},
+        onPresentResult: @escaping (AdvancedBacktestResultPresentation) -> Void = { _ in }
     ) {
         self.marketStore = marketStore
         self.isActive = isActive
         self.restoreRequest = restoreRequest
         _showsStrategyLibrary = showsStrategyLibrary
         self.onRecordsChanged = onRecordsChanged
+        self.onPresentResult = onPresentResult
 
     }
 
@@ -278,8 +279,12 @@ struct AdvancedBacktestView: View {
         VStack(alignment: .leading, spacing: 18) {
             configSection
 
-            if hasStartedBacktest {
+            if hasStartedBacktest, isBacktestRunning || report == nil {
                 advancedStartedContent
+            }
+
+            if hasStartedBacktest, report != nil, strategyMode == .ruleBased {
+                bestStrategySection()
             }
         }
         .toolbar {
@@ -328,20 +333,6 @@ struct AdvancedBacktestView: View {
             }
             .presentationDetents([.fraction(0.72), .large])
             .presentationDragIndicator(.visible)
-        }
-        .sheet(isPresented: $showsCashYieldSheet) {
-            if let report {
-                CashYieldDetailSheet(summary: report.cashYieldSummary)
-                    .presentationDetents([.fraction(0.58), .large])
-                    .presentationDragIndicator(.visible)
-            }
-        }
-        .sheet(isPresented: $showsRiskSignalSheet) {
-            if let report, let riskSignalSummary = report.riskSignalSummary {
-                MarketRiskSignalDetailSheet(summary: riskSignalSummary)
-                    .presentationDetents([.fraction(0.62), .large])
-                    .presentationDragIndicator(.visible)
-            }
         }
         .onChange(of: refreshToken) { _, _ in
             guard isActive, hasStartedBacktest else { return }
@@ -410,24 +401,6 @@ struct AdvancedBacktestView: View {
     private var advancedStartedContent: some View {
         if isBacktestRunning {
             EmptyView()
-        } else if let report {
-            AdvancedBacktestResultContent(
-                report: report,
-                comparisonSeries: cachedComparisonSeries,
-                executionAssumptionText: advancedBacktestExecutionAssumptionText,
-                strategyMode: strategyMode,
-                rebalanceAdvice: rebalanceAdvice,
-                latestSnapshot: latestSnapshot,
-                selectedAssetOptions: selectedAssetOptions,
-                showsRebalanceAdvice: true,
-                showsSupplementalRows: true,
-                onShowCashYield: { showsCashYieldSheet = true },
-                onShowRiskSignal: { showsRiskSignalSheet = true }
-            ) {
-                if strategyMode == .ruleBased {
-                    bestStrategySection()
-                }
-            }
         } else {
             let state = unavailableResultState
             advancedPanel {
@@ -671,18 +644,6 @@ struct AdvancedBacktestView: View {
             stopLossRatio = template.stopLossRatio
             takeProfitRatio = template.takeProfitRatio
         }
-    }
-
-    private var advancedBacktestExecutionAssumptionText: String {
-        let timingText = strategyMode.isRotation
-            ? AppLocalization.string("轮动策略使用上一交易日信号、下一调仓日收盘价成交")
-            : AppLocalization.string("条件信号使用上一交易日收盘确认、下一交易日收盘价成交")
-        return AppLocalization.format(
-            "%@；已计入%.2f%%交易费和%.2f%%滑点。",
-            timingText,
-            feeRate,
-            slippageRate
-        )
     }
 
     @MainActor
@@ -991,6 +952,21 @@ struct AdvancedBacktestView: View {
                 isOptimizingStrategies = false
                 backtestRunStage = nil
                 pendingRefreshTask = nil
+                if saveRecord, let completedReport = refreshedResult.report {
+                    let strategyTitle = strategyTemplates.first(where: isStrategyTemplateActive)?.title ?? capturedStrategyMode.title
+                    onPresentResult(
+                        AdvancedBacktestResultPresentation(
+                            title: strategyTitle,
+                            report: completedReport,
+                            comparisonSeries: refreshedResult.comparisonSeries,
+                            strategyMode: capturedStrategyMode,
+                            rebalanceAdvice: refreshedResult.rebalanceAdvice,
+                            latestSnapshot: latestSnapshot,
+                            selectedAssetOptions: capturedSelectedAssetOptions,
+                            showsRebalanceAdvice: true
+                        )
+                    )
+                }
             }
         }
     }

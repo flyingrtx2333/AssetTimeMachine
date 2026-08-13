@@ -2875,22 +2875,6 @@ enum BacktestRecordCodec {
         )
     }
 
-    static func executionAssumptionText(from record: BacktestRecord) -> String {
-        guard let config = decodeConfig(from: record) else { return "" }
-        let mode = config.strategyModeRawValue.flatMap(AdvancedBacktestStrategyMode.init(rawValue:)) ?? .ruleBased
-        let feeRate = config.feeRate ?? BacktestDefaults.advancedFeeRatePercent
-        let slippageRate = config.slippageRate ?? BacktestDefaults.advancedSlippageRatePercent
-        let timingText = mode.isRotation
-            ? AppLocalization.string("轮动策略使用上一交易日信号、下一调仓日收盘价成交")
-            : AppLocalization.string("条件信号使用上一交易日收盘确认、下一交易日收盘价成交")
-        return AppLocalization.format(
-            "%@；已计入%.2f%%交易费和%.2f%%滑点。",
-            timingText,
-            feeRate,
-            slippageRate
-        )
-    }
-
     private static func advancedAssetReports(from config: BacktestRecordConfigPayload) -> [AdvancedBacktestAssetReport] {
         (config.advancedAssetCharts ?? []).map { chart in
             let trades = chart.trades.map(\.advancedTrade)
@@ -3209,13 +3193,6 @@ enum StrategyNotificationContentBuilder {
             return AppLocalization.format("%@。信号截至 %@，建议下一交易日执行。", summary, advice.asOfDate.recordDateString)
         }
         return AppLocalization.format("%@；%@ 信号截至 %@，建议下一交易日执行。", summary, suffix, advice.asOfDate.recordDateString)
-    }
-
-    static func preview(template: AdvancedBacktestStrategyTemplate, advice: StrategyRebalanceAdvice?, actions: [StrategyRebalanceAction]) -> String {
-        guard let advice else {
-            return AppLocalization.format("%@ · 等待历史行情后生成今日调仓", template.title)
-        }
-        return body(advice: advice, actions: actions)
     }
 
     private static func actionSummary(_ action: StrategyRebalanceAction) -> String {
