@@ -1,4 +1,6 @@
+#if canImport(AssetTimeMachineBacktestCore)
 import AssetTimeMachineBacktestCore
+#endif
 import Foundation
 #if os(Linux)
 import Glibc
@@ -31,22 +33,36 @@ do {
         datasetHash: invocation.datasetHash,
         dataStale: invocation.dataStale
     )
-    let result: PublicBacktestResult
+    let encoder = PublicBacktestComputeCodec.makeEncoder()
+    encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
     switch invocation.mode {
     case .prewarm:
         guard let strategyID = invocation.strategyID else {
             fail("prewarm invocation is missing strategy_id", code: 65)
         }
-        result = try PublicBacktestCore.prewarm(strategyID: strategyID, dataset: dataset)
+        let result = try PublicBacktestCore.prewarm(strategyID: strategyID, dataset: dataset)
+        try encoder.encode(result).write(to: resultURL, options: .atomic)
     case .run:
         guard let request = invocation.request else {
             fail("run invocation is missing request", code: 65)
         }
-        result = try PublicBacktestCore.run(request: request, dataset: dataset)
+        let result = try PublicBacktestCore.run(request: request, dataset: dataset)
+        try encoder.encode(result).write(to: resultURL, options: .atomic)
+    case .forward:
+        guard let strategyID = invocation.strategyID,
+              let macroPath = invocation.macroPath,
+              let decisionAt = invocation.decisionAt else {
+            fail("forward invocation is missing strategy_id, macro_path, or decision_at", code: 65)
+        }
+        let macroData = try Data(contentsOf: URL(fileURLWithPath: macroPath))
+        let result = try PublicBacktestCore.forwardSnapshot(
+            strategyID: strategyID,
+            dataset: dataset,
+            nfciData: macroData,
+            decisionAt: decisionAt
+        )
+        try encoder.encode(result).write(to: resultURL, options: .atomic)
     }
-    let encoder = PublicBacktestComputeCodec.makeEncoder()
-    encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
-    try encoder.encode(result).write(to: resultURL, options: .atomic)
 } catch {
     fail("computation failed: \(error.localizedDescription)", code: 70)
 }

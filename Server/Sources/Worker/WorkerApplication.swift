@@ -39,6 +39,23 @@ struct AssetTimeMachineBacktestWorker {
             try authorize(request: request, configuration: configuration)
             return try await datasetStore.catalog()
         }
+        router.get("forward-snapshots") { request, _ -> EditedResponse<WorkerForwardSnapshotsResponse> in
+            try authorize(request: request, configuration: configuration)
+            do {
+                let snapshots = try await datasetStore.forwardSnapshots(decisionAt: Date())
+                return EditedResponse(
+                    status: .ok,
+                    headers: [.cacheControl: "no-store"],
+                    response: snapshots
+                )
+            } catch let error as PublicBacktestCoreError {
+                throw mappedHTTPError(error)
+            } catch is WorkerTimeoutError {
+                throw WorkerHTTPError(status: .serviceUnavailable, detail: "Forward strategy computation timed out")
+            } catch {
+                throw WorkerHTTPError(status: .serviceUnavailable, detail: "Forward strategy computation failed")
+            }
+        }
         router.post("runs") { request, context -> EditedResponse<WorkerRunEnvelope> in
             try authorize(request: request, configuration: configuration)
             let input: PublicBacktestRunRequest
@@ -104,7 +121,7 @@ struct AssetTimeMachineBacktestWorker {
             return WorkerHTTPError(status: .badRequest, detail: error.localizedDescription)
         case .invalidRange, .unknownStrategy:
             return WorkerHTTPError(status: .unprocessableContent, detail: error.localizedDescription)
-        case .invalidDataset, .computationFailed:
+        case .invalidDataset, .invalidMacroData, .computationFailed:
             return WorkerHTTPError(status: .serviceUnavailable, detail: "Backtest service is unavailable")
         }
     }

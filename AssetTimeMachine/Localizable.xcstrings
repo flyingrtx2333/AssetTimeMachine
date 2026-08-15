@@ -1,6 +1,78 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "NFCI 双核心·稳健核心": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "NFCI Dual Core · Stable Core" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "NFCI 双核心·稳健核心" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "NFCI 雙核心·穩健核心" } }
+      }
+    },
+    "NFCI 双核心·高收益核心": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "NFCI Dual Core · Higher-Return Core" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "NFCI 双核心·高收益核心" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "NFCI 雙核心·高收益核心" } }
+      }
+    },
+    "NFCI 双核心调仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "NFCI Dual Core Rebalance" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "NFCI 双核心调仓" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "NFCI 雙核心調倉" } }
+      }
+    },
+    "NFCI 双核心（前瞻）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "NFCI Dual Core (Forward Watch)" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "NFCI 双核心（前瞻）" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "NFCI 雙核心（前瞻）" } }
+      }
+    },
+    "NFCI 双核心·简化（前瞻）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "NFCI Dual Core · Simplified (Forward Watch)" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "NFCI 双核心·简化（前瞻）" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "NFCI 雙核心·簡化（前瞻）" } }
+      }
+    },
+    "简化冻结前瞻候选：保持 DualCore 50/50 与 NFCI C3/L3 不变，高收益核心把美股/中国特例倍率折叠为统一1.22，删除A股5%退出哨兵，并把高收益核心交易带从24.4%圆整为25%。稳健核心仍为无融资置信度恢复+C3/L3+1.30×风险预算。总仓位≤100%，不融资、不做空；用户手续费只影响成交，不改变策略目标。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Simplified frozen forward candidate: keep the 50/50 DualCore blend and NFCI C3/L3 unchanged. The higher-return core collapses the U.S./China special multipliers into one 1.22 scale, removes the 5% China-equity exit sentinel, and rounds the higher-return core rebalance band from 24.4% to 25%. The stable core remains Cash Confidence + C3/L3 + 1.30× risk budget. Gross exposure is capped at 100%, with no financing or shorting; user-set fees affect execution only, not target weights." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "简化冻结前瞻候选：保持 DualCore 50/50 与 NFCI C3/L3 不变，高收益核心把美股/中国特例倍率折叠为统一1.22，删除A股5%退出哨兵，并把高收益核心交易带从24.4%圆整为25%。稳健核心仍为无融资置信度恢复+C3/L3+1.30×风险预算。总仓位≤100%，不融资、不做空；用户手续费只影响成交，不改变策略目标。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "簡化凍結前瞻候選：保持 DualCore 50/50 與 NFCI C3/L3 不變，高收益核心把美股/中國特例倍率折疊為統一1.22，刪除A股5%退出哨兵，並把高收益核心交易帶從24.4%圓整為25%。穩健核心仍為無融資置信度恢復+C3/L3+1.30×風險預算。總倉位≤100%，不融資、不做空；使用者手續費只影響成交，不改變策略目標。" } }
+      }
+    },
+    "前瞻策略": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Forward Strategies" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "前瞻策略" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "前瞻策略" } }
+      }
+    },
+    "前瞻观察": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Forward Watch" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "前瞻观察" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "前瞻觀察" } }
+      }
+    },
+    "前瞻观察中的冻结策略 V1：50% 低噪增强+C3/L3 与 50% 无融资置信度恢复+C3/L3+1.30×风险预算在目标仓位层等权融合；NFCI Credit 采用8次发布变化≤-0.03，Leverage采用4次发布变化≤-0.03，仅使用服务器 first-seen/initial-release 点时数据。总仓位≤100%，不融资、不做空，25%偏离带统一成交。用户手续费只影响成交，不改变策略目标。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Frozen forward-watch strategy V1: blend 50% Low Noise + C3/L3 and 50% Cash Confidence + C3/L3 + 1.30× risk budget at the target-weight level. NFCI Credit uses an 8-release change ≤ -0.03 and Leverage a 4-release change ≤ -0.03, using only server first-seen/initial-release point-in-time data. Gross exposure is capped at 100%, with no financing or shorting and a unified 25% rebalance band. User-set fees affect execution only, not target weights." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "前瞻观察中的冻结策略 V1：50% 低噪增强+C3/L3 与 50% 无融资置信度恢复+C3/L3+1.30×风险预算在目标仓位层等权融合；NFCI Credit 采用8次发布变化≤-0.03，Leverage采用4次发布变化≤-0.03，仅使用服务器 first-seen/initial-release 点时数据。总仓位≤100%，不融资、不做空，25%偏离带统一成交。用户手续费只影响成交，不改变策略目标。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "前瞻觀察中的凍結策略 V1：50% 低噪增強+C3/L3 與 50% 無融資置信度恢復+C3/L3+1.30×風險預算在目標倉位層等權融合；NFCI Credit 採用8次發布變化≤-0.03，Leverage採用4次發布變化≤-0.03，僅使用伺服器 first-seen/initial-release 點時資料。總倉位≤100%，不融資、不做空，25%偏離帶統一成交。使用者手續費只影響成交，不改變策略目標。" } }
+      }
+    },
     "图例": {
       "extractionState": "manual",
       "localizations": {

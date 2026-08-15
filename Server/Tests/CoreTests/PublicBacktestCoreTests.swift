@@ -236,6 +236,91 @@ final class PublicBacktestCoreTests: XCTestCase {
         )
     }
 
+    func testForwardSnapshotsUseLatestRealSessionAsSignalAndKeepFrozenVersionsDistinct() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let historyURL = root.appendingPathComponent("tools/fixtures/backtest-history/generalization_public_history.json")
+        let datasetData = try Data(contentsOf: historyURL)
+        let dataset = try PublicBacktestCore.loadDataset(
+            from: datasetData,
+            datasetHash: "forward-test-fixture",
+            dataStale: false
+        )
+
+        func csvPoints(_ name: String) throws -> [[String: Any]] {
+            let url = root.appendingPathComponent("tools/research-results/\(name)_initial_release.csv")
+            let lines = try String(contentsOf: url, encoding: .utf8)
+                .split(whereSeparator: \.isNewline)
+                .dropFirst()
+            return try lines.map { line in
+                let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                guard fields.count >= 3, let value = Double(fields[2]) else {
+                    throw PublicBacktestCoreError.invalidMacroData("invalid CSV fixture")
+                }
+                let releaseDate = String(fields[0])
+                return [
+                    "release_date": releaseDate,
+                    "reference_date": String(fields[1]),
+                    "available_at": releaseDate + "T12:30:00Z",
+                    "value": value,
+                    "source": "test-initial-release",
+                ]
+            }
+        }
+        let macroObject: [String: Any] = [
+            "success": true,
+            "source": "test-initial-release",
+            "series": [
+                ["series_id": "NFCICREDIT", "points": try csvPoints("NFCICREDIT")],
+                ["series_id": "NFCILEVERAGE", "points": try csvPoints("NFCILEVERAGE")],
+            ],
+        ]
+        let macroData = try JSONSerialization.data(withJSONObject: macroObject, options: [.sortedKeys])
+        let decisionAt = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-08-15T01:00:00Z"))
+
+        let v1 = try PublicBacktestCore.forwardSnapshot(
+            strategyID: "nfci-dual-core-v1",
+            dataset: dataset,
+            nfciData: macroData,
+            decisionAt: decisionAt
+        )
+        let v11 = try PublicBacktestCore.forwardSnapshot(
+            strategyID: "nfci-dual-core-v11",
+            dataset: dataset,
+            nfciData: macroData,
+            decisionAt: decisionAt
+        )
+
+        XCTAssertEqual(v1.signalDate, dataset.dataCutoff)
+        XCTAssertEqual(v11.signalDate, v1.signalDate)
+        let cutoffDate = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: dataset.dataCutoff))
+        var expectedExecutionDate = Calendar(identifier: .gregorian).date(byAdding: .day, value: 1, to: cutoffDate)!
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Shanghai")!
+        while [1, 7].contains(calendar.component(.weekday, from: expectedExecutionDate)) {
+            expectedExecutionDate = calendar.date(byAdding: .day, value: 1, to: expectedExecutionDate)!
+        }
+        let expectedExecutionDateText = expectedExecutionDate.recordDateString
+        XCTAssertEqual(v1.executionDateHint, expectedExecutionDateText)
+        XCTAssertEqual(v11.executionDateHint, v1.executionDateHint)
+        XCTAssertEqual(v1.datasetHash, "forward-test-fixture")
+        XCTAssertEqual(v11.datasetHash, v1.datasetHash)
+        XCTAssertFalse(v1.targetFingerprint.isEmpty)
+        XCTAssertFalse(v11.targetFingerprint.isEmpty)
+        XCTAssertNotEqual(v1.targetFingerprint, v11.targetFingerprint)
+        XCTAssertFalse(v1.causalInputFingerprint.isEmpty)
+        XCTAssertEqual(v1.causalInputFingerprint, v11.causalInputFingerprint)
+        XCTAssertLessThanOrEqual(v1.desiredGrossExposure, 1.000001)
+        XCTAssertLessThanOrEqual(v11.desiredGrossExposure, 1.000001)
+        XCTAssertLessThanOrEqual(v1.modelGrossExposure, 1.000001)
+        XCTAssertLessThanOrEqual(v11.modelGrossExposure, 1.000001)
+        XCTAssertEqual(v1.nfci.creditReleaseDate, v11.nfci.creditReleaseDate)
+        XCTAssertEqual(v1.nfci.leverageReleaseDate, v11.nfci.leverageReleaseDate)
+    }
+
     func testStatefulSliceDoesNotAttributePreWindowCostBasisToTheSelectedWindow() throws {
         let day0 = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: "2024-01-02"))
         let day1 = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: "2024-01-03"))

@@ -625,6 +625,22 @@ struct BacktestView: View {
         .task(id: isActive) {
             if isActive {
                 refreshBacktestRecordCache(force: false)
+                #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("-openAdvancedStrategyLibrary") {
+                    selectedPage = .advanced
+                    showsAdvancedStrategyLibrary = true
+                } else if ProcessInfo.processInfo.arguments.contains("-openLatestAdvancedBacktestRecord") {
+                    let advancedRecords = recentBacktestRecords.filter {
+                        BacktestRecordCodec.kind(for: $0) == .advanced
+                    }
+                    let record = advancedRecords.first(where: {
+                        (BacktestRecordCodec.advancedReport(from: $0)?.benchmarkSeries.count ?? 0) > 1
+                    }) ?? advancedRecords.first
+                    if let record {
+                        presentBacktestRecord(record)
+                    }
+                }
+                #endif
                 guard selectedPage == .standard else { return }
                 lastObservedRelevantHistoryToken = relevantHistoryToken
                 await marketStore.refreshAssetCatalogIfNeeded()

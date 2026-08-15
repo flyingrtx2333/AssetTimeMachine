@@ -382,12 +382,41 @@ private enum MarketAssetCatalogDiskCache {
     }
 }
 
+nonisolated extension PublicNFCIAsOfResponse {
+    var backtestNFCIAsOfData: BacktestNFCIAsOfData? {
+        guard success,
+              let credit = series.first(where: { $0.seriesID == "NFCICREDIT" }),
+              let leverage = series.first(where: { $0.seriesID == "NFCILEVERAGE" }) else {
+            return nil
+        }
+        func mapPoints(_ points: [PublicMacroAsOfPoint]) -> [BacktestNFCIPoint] {
+            points.map {
+                BacktestNFCIPoint(
+                    releaseDate: $0.releaseDate,
+                    referenceDate: $0.referenceDate,
+                    availableAt: $0.availableAt,
+                    value: $0.value
+                )
+            }
+        }
+        return BacktestNFCIAsOfData(
+            source: source,
+            credit: mapPoints(credit.points),
+            leverage: mapPoints(leverage.points)
+        )
+    }
+}
+
 @MainActor
 final class RemoteMarketStore: ObservableObject {
     @Published var overview: PublicMarketOverview?
     @Published var exchangeRates: [String: Double] = [:]
     @Published var exchangeRatesFetchedAt: Date?
-    @Published var nfciAsOf: PublicNFCIAsOfResponse?
+    @Published var nfciAsOf: PublicNFCIAsOfResponse? {
+        didSet {
+            BacktestMacroSnapshotStore.shared.updateNFCIAsOf(nfciAsOf?.backtestNFCIAsOfData)
+        }
+    }
     @Published var historySeries: [String: PublicHistorySeries] = [:] {
         didSet { historyRevision &+= 1 }
     }

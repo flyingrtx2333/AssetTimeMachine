@@ -248,6 +248,44 @@ struct AdvancedBacktestRule {
     var days: Int
 }
 
+nonisolated struct BacktestNFCIPoint: Equatable, Sendable {
+    let releaseDate: String
+    let referenceDate: String
+    let availableAt: Date?
+    let value: Double
+}
+
+nonisolated struct BacktestNFCIAsOfData: Equatable, Sendable {
+    let source: String
+    let credit: [BacktestNFCIPoint]
+    let leverage: [BacktestNFCIPoint]
+
+    var isReadyForC3L3: Bool {
+        credit.count >= 9 && leverage.count >= 5
+    }
+}
+
+nonisolated final class BacktestMacroSnapshotStore: @unchecked Sendable {
+    static let shared = BacktestMacroSnapshotStore()
+
+    private let lock = NSLock()
+    private var storedNFCIAsOf: BacktestNFCIAsOfData?
+
+    private init() {}
+
+    func updateNFCIAsOf(_ value: BacktestNFCIAsOfData?) {
+        lock.lock()
+        storedNFCIAsOf = value
+        lock.unlock()
+    }
+
+    func nfciAsOfSnapshot() -> BacktestNFCIAsOfData? {
+        lock.lock()
+        defer { lock.unlock() }
+        return storedNFCIAsOf
+    }
+}
+
 enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
     case ruleBased
     case ultraDefensiveRotation
@@ -301,6 +339,8 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
     case riskContributionRecoveryRouter
     case riskContributionCashConfidenceRouter
     case riskContributionCashConfidenceLowNoise
+    case nfciDualCoreV1
+    case nfciDualCoreSimplifiedV11
     case strongVolControlledRotation
     case momentumRotation
 
@@ -410,6 +450,10 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
             return AppLocalization.string("无融资置信度恢复")
         case .riskContributionCashConfidenceLowNoise:
             return AppLocalization.string("低噪增强")
+        case .nfciDualCoreV1:
+            return AppLocalization.string("NFCI 双核心（前瞻）")
+        case .nfciDualCoreSimplifiedV11:
+            return AppLocalization.string("NFCI 双核心·简化（前瞻）")
         case .strongVolControlledRotation:
             return AppLocalization.string("强势控波轮动")
         case .momentumRotation:
@@ -523,6 +567,10 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
             return AppLocalization.string("当前无融资夏普冠军：保留15%快速桥接和最高20.75%的恢复袖套；高波动时自动收缩至19%，并按95日动量、下行波动与趋势效率在纳指/标普间分配。恢复袖套在双指数3日同时下跌5%时退出，退出后冷却150日。领导资产切换继续使用Beta(2,2)兑现率校准；非清仓减仓且基础净值距252日高点不足4%时，按总仓位下降与总换手冲击保留最多25%的缓冲，广泛减仓时分散到本次卖出资产。全部信号严格使用T−1数据，总仓位封顶100%，现金不得为负，统一计入1%交易费与0.05%滑点。")
         case .riskContributionCashConfidenceLowNoise:
             return AppLocalization.string("严格无杠杆增强策略：沿用置信度恢复底层和20.75%恢复袖套，以100%总仓硬上限运行；关闭历史上冗余的宽度微刹车与成熟纳指刹车，在低波且趋势确认时更充分使用闲置现金。领导资产保持不变且总风险变化不超过2%时，按组合波动采用20%/30%/50%的分级换手过滤；黄金领导且60日组合波动达到12%时恢复更快调仓。近峰减仓执行80%，并保留5%的A股退出哨兵。全部信号严格使用T−1数据，禁止融资和负现金，统一计入1%交易费与0.05%滑点。")
+        case .nfciDualCoreV1:
+            return AppLocalization.string("前瞻观察中的冻结策略 V1：50% 低噪增强+C3/L3 与 50% 无融资置信度恢复+C3/L3+1.30×风险预算在目标仓位层等权融合；NFCI Credit 采用8次发布变化≤-0.03，Leverage采用4次发布变化≤-0.03，仅使用服务器 first-seen/initial-release 点时数据。总仓位≤100%，不融资、不做空，25%偏离带统一成交。用户手续费只影响成交，不改变策略目标。")
+        case .nfciDualCoreSimplifiedV11:
+            return AppLocalization.string("简化冻结前瞻候选：保持 DualCore 50/50 与 NFCI C3/L3 不变，高收益核心把美股/中国特例倍率折叠为统一1.22，删除A股5%退出哨兵，并把高收益核心交易带从24.4%圆整为25%。稳健核心仍为无融资置信度恢复+C3/L3+1.30×风险预算。总仓位≤100%，不融资、不做空；用户手续费只影响成交，不改变策略目标。")
         case .strongVolControlledRotation:
             return AppLocalization.string("20日强弱排序，每20个交易日持有最强资产；目标波动12%，最高投入90%")
         case .momentumRotation:
@@ -582,7 +630,9 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
              .riskContributionRegimeRouter,
              .riskContributionRecoveryRouter,
              .riskContributionCashConfidenceRouter,
-             .riskContributionCashConfidenceLowNoise:
+             .riskContributionCashConfidenceLowNoise,
+             .nfciDualCoreV1,
+             .nfciDualCoreSimplifiedV11:
             return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
         default:
             return []
@@ -595,7 +645,9 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
              .riskContributionRegimeRouter,
              .riskContributionRecoveryRouter,
              .riskContributionCashConfidenceRouter,
-             .riskContributionCashConfidenceLowNoise:
+             .riskContributionCashConfidenceLowNoise,
+             .nfciDualCoreV1,
+             .nfciDualCoreSimplifiedV11:
             return ["gold_cny", "nasdaq"]
         case .convexCrashHedgeComposite,
              .onlineStrategyAllocator,
@@ -609,6 +661,10 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
         default:
             return nil
         }
+    }
+
+    nonisolated var requiresNFCIAsOf: Bool {
+        self == .nfciDualCoreV1 || self == .nfciDualCoreSimplifiedV11
     }
 }
 
@@ -1910,6 +1966,40 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             takeProfitRatio: 0
         ),
         .init(
+            id: "nfci-dual-core-v1",
+            mode: .nfciDualCoreV1,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            categoryLocalizationKey: "前瞻策略",
+            titleLocalizationKey: "NFCI 双核心（前瞻）",
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
+            id: "nfci-dual-core-v11",
+            mode: .nfciDualCoreSimplifiedV11,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            categoryLocalizationKey: "前瞻策略",
+            titleLocalizationKey: "NFCI 双核心·简化（前瞻）",
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
             id: "gold-nasdaq-dual-trend-barbell",
             mode: .goldNasdaqDualTrendBarbell,
             selectedAssetSymbols: ["gold_cny", "nasdaq"],
@@ -2058,6 +2148,11 @@ enum BacktestProductStrategyCatalog {
         "gold-nasdaq-dual-trend-barbell",
     ]
 
+    static let experimentalTemplateIDs = [
+        "nfci-dual-core-v1",
+        "nfci-dual-core-v11",
+    ]
+
     static let basicTemplateIDs = [
         "basic-ma60-trend",
         "basic-ma-golden-cross",
@@ -2065,10 +2160,14 @@ enum BacktestProductStrategyCatalog {
         "basic-boll-mean-reversion",
     ]
 
-    static let templateIDs = curatedTemplateIDs + basicTemplateIDs
+    static let templateIDs = curatedTemplateIDs + experimentalTemplateIDs + basicTemplateIDs
 
     static func isCuratedTemplateID(_ id: String) -> Bool {
         curatedTemplateIDs.contains(id)
+    }
+
+    static func isExperimentalTemplateID(_ id: String) -> Bool {
+        experimentalTemplateIDs.contains(id)
     }
 
     static func isBasicTemplateID(_ id: String) -> Bool {

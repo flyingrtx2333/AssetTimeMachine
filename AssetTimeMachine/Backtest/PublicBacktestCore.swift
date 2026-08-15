@@ -81,6 +81,7 @@ public struct PublicBacktestRunRequest: Codable, Equatable, Sendable {
 public enum PublicBacktestComputeMode: String, Codable, Sendable {
     case prewarm
     case run
+    case forward
 }
 
 public struct PublicBacktestComputeInvocation: Codable, Sendable {
@@ -90,6 +91,8 @@ public struct PublicBacktestComputeInvocation: Codable, Sendable {
     public let dataStale: Bool
     public let strategyID: String?
     public let request: PublicBacktestRunRequest?
+    public let macroPath: String?
+    public let decisionAt: Date?
 
     public init(
         mode: PublicBacktestComputeMode,
@@ -97,7 +100,9 @@ public struct PublicBacktestComputeInvocation: Codable, Sendable {
         datasetHash: String,
         dataStale: Bool,
         strategyID: String? = nil,
-        request: PublicBacktestRunRequest? = nil
+        request: PublicBacktestRunRequest? = nil,
+        macroPath: String? = nil,
+        decisionAt: Date? = nil
     ) {
         self.mode = mode
         self.datasetPath = datasetPath
@@ -105,6 +110,8 @@ public struct PublicBacktestComputeInvocation: Codable, Sendable {
         self.dataStale = dataStale
         self.strategyID = strategyID
         self.request = request
+        self.macroPath = macroPath
+        self.decisionAt = decisionAt
     }
 
     enum CodingKeys: String, CodingKey {
@@ -114,6 +121,8 @@ public struct PublicBacktestComputeInvocation: Codable, Sendable {
         case dataStale = "data_stale"
         case strategyID = "strategy_id"
         case request
+        case macroPath = "macro_path"
+        case decisionAt = "decision_at"
     }
 }
 
@@ -123,12 +132,15 @@ public struct PublicBacktestComputeInvocation: Codable, Sendable {
 public enum PublicBacktestComputeCodec {
     public static func makeEncoder() -> JSONEncoder {
         let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = .sortedKeys
         return encoder
     }
 
     public static func makeDecoder() -> JSONDecoder {
-        JSONDecoder()
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
     }
 }
 
@@ -167,6 +179,80 @@ public struct PublicBacktestCatalogResponse: Codable, Equatable, Sendable {
     public let datasetHash: String
     public let dataStale: Bool
     public let source: [PublicBacktestSourceInfo]
+}
+
+public struct PublicForwardNFCIState: Codable, Equatable, Sendable {
+    public let source: String
+    public let latestAvailableAt: Date?
+    public let creditReleaseDate: String?
+    public let creditValue: Double?
+    public let creditEightReleaseChange: Double?
+    public let creditTriggered: Bool
+    public let leverageReleaseDate: String?
+    public let leverageValue: Double?
+    public let leverageFourReleaseChange: Double?
+    public let leverageTriggered: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case source
+        case latestAvailableAt = "latest_available_at"
+        case creditReleaseDate = "credit_release_date"
+        case creditValue = "credit_value"
+        case creditEightReleaseChange = "credit_eight_release_change"
+        case creditTriggered = "credit_triggered"
+        case leverageReleaseDate = "leverage_release_date"
+        case leverageValue = "leverage_value"
+        case leverageFourReleaseChange = "leverage_four_release_change"
+        case leverageTriggered = "leverage_triggered"
+    }
+}
+
+public struct PublicForwardStrategySnapshot: Codable, Equatable, Sendable {
+    public let strategyID: String
+    public let strategyVersion: String
+    public let strategyName: String
+    public let frozenAt: String
+    public let decisionAt: Date
+    public let signalDate: String
+    public let executionDateHint: String
+    public let dataCutoff: String
+    public let datasetHash: String
+    public let engineVersion: String
+    public let dataStale: Bool
+    public let desiredTargetWeights: [String: Double]
+    public let desiredCashWeight: Double
+    public let desiredGrossExposure: Double
+    public let modelExecutedWeights: [String: Double]
+    public let modelCashWeight: Double
+    public let modelGrossExposure: Double
+    public let rebalanceRecommended: Bool
+    public let targetFingerprint: String
+    public let causalInputFingerprint: String
+    public let nfci: PublicForwardNFCIState
+
+    enum CodingKeys: String, CodingKey {
+        case strategyID = "strategy_id"
+        case strategyVersion = "strategy_version"
+        case strategyName = "strategy_name"
+        case frozenAt = "frozen_at"
+        case decisionAt = "decision_at"
+        case signalDate = "signal_date"
+        case executionDateHint = "execution_date_hint"
+        case dataCutoff = "data_cutoff"
+        case datasetHash = "dataset_hash"
+        case engineVersion = "engine_version"
+        case dataStale = "data_stale"
+        case desiredTargetWeights = "desired_target_weights"
+        case desiredCashWeight = "desired_cash_weight"
+        case desiredGrossExposure = "desired_gross_exposure"
+        case modelExecutedWeights = "model_executed_weights"
+        case modelCashWeight = "model_cash_weight"
+        case modelGrossExposure = "model_gross_exposure"
+        case rebalanceRecommended = "rebalance_recommended"
+        case targetFingerprint = "target_fingerprint"
+        case causalInputFingerprint = "causal_input_fingerprint"
+        case nfci
+    }
 }
 
 public struct PublicBacktestDataset: Sendable {
@@ -212,6 +298,7 @@ public struct PublicBacktestDataset: Sendable {
 
 public enum PublicBacktestCoreError: Error, Equatable, LocalizedError, Sendable {
     case invalidDataset(String)
+    case invalidMacroData(String)
     case unknownStrategy
     case invalidDate
     case invalidRange(String)
@@ -222,6 +309,8 @@ public enum PublicBacktestCoreError: Error, Equatable, LocalizedError, Sendable 
         switch self {
         case .invalidDataset(let detail):
             return "Invalid market dataset: \(detail)"
+        case .invalidMacroData(let detail):
+            return "Invalid point-in-time macro data: \(detail)"
         case .unknownStrategy:
             return "Unknown or unavailable strategy"
         case .invalidDate:
@@ -236,6 +325,38 @@ public enum PublicBacktestCoreError: Error, Equatable, LocalizedError, Sendable 
     }
 }
 
+private struct ForwardMacroPointPayload: Decodable {
+    let releaseDate: String
+    let referenceDate: String
+    let availableAt: String
+    let value: Double
+    let source: String
+
+    enum CodingKeys: String, CodingKey {
+        case releaseDate = "release_date"
+        case referenceDate = "reference_date"
+        case availableAt = "available_at"
+        case value
+        case source
+    }
+}
+
+private struct ForwardMacroSeriesPayload: Decodable {
+    let seriesID: String
+    let points: [ForwardMacroPointPayload]
+
+    enum CodingKeys: String, CodingKey {
+        case seriesID = "series_id"
+        case points
+    }
+}
+
+private struct ForwardMacroResponsePayload: Decodable {
+    let success: Bool
+    let source: String
+    let series: [ForwardMacroSeriesPayload]
+}
+
 public enum PublicBacktestCore {
     public static let engineVersion: String = {
         let configured = ProcessInfo.processInfo.environment["BACKTEST_ENGINE_VERSION"]?
@@ -247,6 +368,15 @@ public enum PublicBacktestCore {
     public static let maximumInitialCash = 10_000_000.0
     public static let minimumRangeYears = 3
     public static let maximumSeriesPointCount = 600
+    public static let forwardStrategyIDs = ["nfci-dual-core-v1", "nfci-dual-core-v11"]
+
+    private struct ForwardStrategyDescriptor: Sendable {
+        let id: String
+        let version: String
+        let name: String
+        let frozenAt: String
+        let mode: AdvancedBacktestStrategyMode
+    }
 
     private struct StrategyDescriptor: Sendable {
         let id: String
@@ -266,6 +396,23 @@ public enum PublicBacktestCore {
         let maxGrossExposure: Double
         let financingRate: Double?
     }
+
+    private static let forwardDescriptorsByID: [String: ForwardStrategyDescriptor] = [
+        "nfci-dual-core-v1": .init(
+            id: "nfci-dual-core-v1",
+            version: "dualcore-v1-2026-08-14",
+            name: "NFCI 双核心（前瞻）",
+            frozenAt: "2026-08-14",
+            mode: .nfciDualCoreV1
+        ),
+        "nfci-dual-core-v11": .init(
+            id: "nfci-dual-core-v11",
+            version: "dualcore-v11-2026-08-15",
+            name: "NFCI 双核心·简化（前瞻）",
+            frozenAt: "2026-08-15",
+            mode: .nfciDualCoreSimplifiedV11
+        ),
+    ]
 
     private static let descriptorProfilesByID: [String: StrategyDescriptorProfile] = [
         "risk-contribution-cash-confidence-low-noise": .init(
@@ -488,6 +635,133 @@ public enum PublicBacktestCore {
             template: template,
             dataset: dataset,
             dateBounds: startDate...endDate
+        )
+    }
+
+    public static func forwardSnapshot(
+        strategyID: String,
+        dataset: PublicBacktestDataset,
+        nfciData: Data,
+        decisionAt: Date = Date()
+    ) throws -> PublicForwardStrategySnapshot {
+        guard let descriptor = forwardDescriptorsByID[strategyID],
+              let template = AdvancedBacktestStrategyTemplate.all.first(where: {
+                  $0.mode == descriptor.mode
+              }) else {
+            throw PublicBacktestCoreError.unknownStrategy
+        }
+
+        let nfci = try loadForwardNFCI(from: nfciData, availableAtOrBefore: decisionAt)
+        let options = StrategyNotificationDefaults.assetOptions(for: template)
+        guard !options.isEmpty else { throw PublicBacktestCoreError.computationFailed }
+
+        guard let commonCutoffDate = parseDate(dataset.dataCutoff) else {
+            throw PublicBacktestCoreError.invalidDataset("forward strategy has an invalid common data cutoff")
+        }
+        let syntheticExecutionDate = nextWeekday(after: commonCutoffDate)
+        let syntheticExecutionDateText = dateString(syntheticExecutionDate)
+
+        var extendedSeriesBySymbol = dataset.seriesBySymbol
+        var causalSeriesBySymbol: [String: PublicHistorySeries] = [:]
+        let neededSymbols = Set(options.flatMap { option in
+            [option.symbol, option.historicalFXSymbol].compactMap { $0 }
+        })
+        for symbol in neededSymbols {
+            let normalized = normalizedHistorySymbol(symbol)
+            guard let series = extendedSeriesBySymbol[normalized] else {
+                throw PublicBacktestCoreError.invalidDataset("forward strategy is missing \(normalized)")
+            }
+            let commonCutoffSeries = truncatingSeries(series, through: dataset.dataCutoff)
+            guard !commonCutoffSeries.dates.isEmpty else {
+                throw PublicBacktestCoreError.invalidDataset("forward strategy has no \(normalized) data by common cutoff")
+            }
+            causalSeriesBySymbol[normalized] = commonCutoffSeries
+            extendedSeriesBySymbol[normalized] = appendingSyntheticSession(
+                to: commonCutoffSeries,
+                dateText: syntheticExecutionDateText
+            )
+        }
+
+        let historyProvider: (String) -> PublicHistorySeries? = { symbol in
+            extendedSeriesBySymbol[normalizedHistorySymbol(symbol)]
+        }
+        let inputs = options.map { option in
+            BacktestEngine.advancedAssetInput(for: option, historyProvider: historyProvider)
+        }
+        let settings = AdvancedBacktestRiskSettings(
+            feeRate: BacktestDefaults.advancedFeeRatePercent,
+            slippageRate: BacktestDefaults.advancedSlippageRatePercent,
+            maxPositionRatio: template.maxPositionRatio,
+            cooldownDays: template.cooldownDays,
+            stopLossRatio: template.stopLossRatio,
+            takeProfitRatio: template.takeProfitRatio
+        )
+        guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+            assetInputs: inputs,
+            initialCash: 100_000,
+            settings: settings,
+            mode: descriptor.mode,
+            nfciAsOf: nfci
+        ), let latestState = run.dailyStates.last,
+           latestState.date.recordDateString == syntheticExecutionDateText,
+           run.dailyStates.count >= 2 else {
+            throw PublicBacktestCoreError.computationFailed
+        }
+
+        let signalState = run.dailyStates[run.dailyStates.count - 2]
+        let signalDate = signalState.date.recordDateString
+        let symbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+        var desiredWeights: [String: Double] = [:]
+        for symbol in symbols {
+            let weight = max(latestState.targetWeights[symbol] ?? 0, 0)
+            guard weight.isFinite else { throw PublicBacktestCoreError.computationFailed }
+            desiredWeights[symbol] = weight
+        }
+        let desiredGross = desiredWeights.values.reduce(0, +)
+        guard desiredGross <= 1.000001 else { throw PublicBacktestCoreError.computationFailed }
+
+        guard latestState.portfolioValue.isFinite, latestState.portfolioValue > 0 else {
+            throw PublicBacktestCoreError.computationFailed
+        }
+        var executedWeights: [String: Double] = [:]
+        for symbol in symbols {
+            let weight = max((latestState.holdingsBySymbol[symbol] ?? 0) / latestState.portfolioValue, 0)
+            guard weight.isFinite else { throw PublicBacktestCoreError.computationFailed }
+            executedWeights[symbol] = weight
+        }
+        let modelGross = executedWeights.values.reduce(0, +)
+        let modelCash = max(latestState.cash / latestState.portfolioValue, 0)
+        let desiredCash = max(1 - desiredGross, 0)
+        let rebalanceRecommended = run.report.trades.contains {
+            $0.date.recordDateString == syntheticExecutionDateText
+        }
+
+        return PublicForwardStrategySnapshot(
+            strategyID: descriptor.id,
+            strategyVersion: descriptor.version,
+            strategyName: descriptor.name,
+            frozenAt: descriptor.frozenAt,
+            decisionAt: decisionAt,
+            signalDate: signalDate,
+            executionDateHint: syntheticExecutionDateText,
+            dataCutoff: dataset.dataCutoff,
+            datasetHash: dataset.datasetHash,
+            engineVersion: engineVersion,
+            dataStale: dataset.dataStale,
+            desiredTargetWeights: desiredWeights,
+            desiredCashWeight: desiredCash,
+            desiredGrossExposure: desiredGross,
+            modelExecutedWeights: executedWeights,
+            modelCashWeight: modelCash,
+            modelGrossExposure: modelGross,
+            rebalanceRecommended: rebalanceRecommended,
+            targetFingerprint: forwardTargetFingerprint(desiredWeights),
+            causalInputFingerprint: forwardCausalInputFingerprint(
+                marketSeriesBySymbol: causalSeriesBySymbol,
+                nfci: nfci,
+                dataCutoff: dataset.dataCutoff
+            ),
+            nfci: forwardNFCIState(nfci, signalDate: signalDate)
         )
     }
 
@@ -740,6 +1014,292 @@ public enum PublicBacktestCore {
             label: "Methodology"
         ))
         return values
+    }
+
+    private static func loadForwardNFCI(
+        from data: Data,
+        availableAtOrBefore decisionAt: Date
+    ) throws -> BacktestNFCIAsOfData {
+        let payload: ForwardMacroResponsePayload
+        do {
+            payload = try JSONDecoder().decode(ForwardMacroResponsePayload.self, from: data)
+        } catch {
+            throw PublicBacktestCoreError.invalidMacroData("JSON decoding failed")
+        }
+        guard payload.success,
+              let creditSeries = payload.series.first(where: { $0.seriesID == "NFCICREDIT" }),
+              let leverageSeries = payload.series.first(where: { $0.seriesID == "NFCILEVERAGE" }) else {
+            throw PublicBacktestCoreError.invalidMacroData("NFCICREDIT/NFCILEVERAGE are unavailable")
+        }
+
+        func map(_ points: [ForwardMacroPointPayload]) throws -> [BacktestNFCIPoint] {
+            var output: [BacktestNFCIPoint] = []
+            for point in points {
+                guard point.value.isFinite,
+                      parseDate(point.releaseDate) != nil,
+                      parseDate(point.referenceDate) != nil,
+                      let availableAt = parseISO8601(point.availableAt) else {
+                    throw PublicBacktestCoreError.invalidMacroData("macro point has invalid date/value fields")
+                }
+                guard availableAt <= decisionAt else { continue }
+                output.append(BacktestNFCIPoint(
+                    releaseDate: point.releaseDate,
+                    referenceDate: point.referenceDate,
+                    availableAt: availableAt,
+                    value: point.value
+                ))
+            }
+            return output.sorted { $0.releaseDate < $1.releaseDate }
+        }
+
+        let credit = try map(creditSeries.points)
+        let leverage = try map(leverageSeries.points)
+        let result = BacktestNFCIAsOfData(source: payload.source, credit: credit, leverage: leverage)
+        guard result.isReadyForC3L3 else {
+            throw PublicBacktestCoreError.invalidMacroData("not enough first-seen NFCI points are available at decision time")
+        }
+        return result
+    }
+
+    private static func forwardNFCIState(
+        _ nfci: BacktestNFCIAsOfData,
+        signalDate: String
+    ) -> PublicForwardNFCIState {
+        func latest(_ points: [BacktestNFCIPoint]) -> (Int, BacktestNFCIPoint)? {
+            var match: (Int, BacktestNFCIPoint)?
+            for (index, point) in points.enumerated() {
+                guard point.releaseDate <= signalDate else { break }
+                match = (index, point)
+            }
+            return match
+        }
+        func change(_ points: [BacktestNFCIPoint], latestIndex: Int?, lookback: Int) -> Double? {
+            guard let latestIndex, latestIndex >= lookback else { return nil }
+            return points[latestIndex].value - points[latestIndex - lookback].value
+        }
+
+        let creditLatest = latest(nfci.credit)
+        let leverageLatest = latest(nfci.leverage)
+        let creditChange = change(nfci.credit, latestIndex: creditLatest?.0, lookback: 8)
+        let leverageChange = change(nfci.leverage, latestIndex: leverageLatest?.0, lookback: 4)
+        let latestAvailableAt = (nfci.credit + nfci.leverage)
+            .compactMap(\.availableAt)
+            .max()
+        return PublicForwardNFCIState(
+            source: nfci.source,
+            latestAvailableAt: latestAvailableAt,
+            creditReleaseDate: creditLatest?.1.releaseDate,
+            creditValue: creditLatest?.1.value,
+            creditEightReleaseChange: creditChange,
+            creditTriggered: creditChange.map { $0 <= -0.03 } ?? false,
+            leverageReleaseDate: leverageLatest?.1.releaseDate,
+            leverageValue: leverageLatest?.1.value,
+            leverageFourReleaseChange: leverageChange,
+            leverageTriggered: leverageChange.map { $0 <= -0.03 } ?? false
+        )
+    }
+
+    private static func truncatingSeries(
+        _ series: PublicHistorySeries,
+        through cutoffDateText: String
+    ) -> PublicHistorySeries {
+        guard let lastIncludedIndex = series.dates.lastIndex(where: { $0 <= cutoffDateText }) else {
+            return PublicHistorySeries(
+                symbol: series.symbol,
+                category: series.category,
+                label: series.label,
+                currency: series.currency,
+                unit: series.unit,
+                source: series.source,
+                dates: [],
+                prices: [],
+                hasOHLC: series.hasOHLC,
+                ohlcSource: series.ohlcSource,
+                ohlcCoverageRatio: series.ohlcCoverageRatio,
+                openPrices: series.openPrices.map { _ in [] },
+                highPrices: series.highPrices.map { _ in [] },
+                lowPrices: series.lowPrices.map { _ in [] },
+                closePrices: series.closePrices.map { _ in [] },
+                volumes: series.volumes.map { _ in [] }
+            )
+        }
+        let count = lastIncludedIndex + 1
+        func prefix(_ values: [Double?]?) -> [Double?]? {
+            values.map { Array($0.prefix(count)) }
+        }
+        return PublicHistorySeries(
+            symbol: series.symbol,
+            category: series.category,
+            label: series.label,
+            currency: series.currency,
+            unit: series.unit,
+            source: series.source,
+            dates: Array(series.dates.prefix(count)),
+            prices: Array(series.prices.prefix(count)),
+            hasOHLC: series.hasOHLC,
+            ohlcSource: series.ohlcSource,
+            ohlcCoverageRatio: series.ohlcCoverageRatio,
+            openPrices: prefix(series.openPrices),
+            highPrices: prefix(series.highPrices),
+            lowPrices: prefix(series.lowPrices),
+            closePrices: prefix(series.closePrices),
+            volumes: prefix(series.volumes)
+        )
+    }
+
+    private static func appendingSyntheticSession(
+        to series: PublicHistorySeries,
+        dateText: String
+    ) -> PublicHistorySeries {
+        guard series.dates.last != dateText,
+              let lastPrice = series.prices.last,
+              lastPrice.isFinite,
+              lastPrice > 0 else { return series }
+
+        func appended(_ values: [Double?]?, value: Double?) -> [Double?]? {
+            guard var values else { return nil }
+            values.append(value)
+            return values
+        }
+        let lastClose = series.closePrices?.last.flatMap { $0 } ?? lastPrice
+        let syntheticPrice = lastClose.isFinite && lastClose > 0 ? lastClose : lastPrice
+        return PublicHistorySeries(
+            symbol: series.symbol,
+            category: series.category,
+            label: series.label,
+            currency: series.currency,
+            unit: series.unit,
+            source: series.source,
+            dates: series.dates + [dateText],
+            prices: series.prices + [lastPrice],
+            hasOHLC: series.hasOHLC,
+            ohlcSource: series.ohlcSource,
+            ohlcCoverageRatio: series.ohlcCoverageRatio,
+            openPrices: appended(series.openPrices, value: syntheticPrice),
+            highPrices: appended(series.highPrices, value: syntheticPrice),
+            lowPrices: appended(series.lowPrices, value: syntheticPrice),
+            closePrices: appended(series.closePrices, value: syntheticPrice),
+            volumes: appended(series.volumes, value: nil)
+        )
+    }
+
+    private static func nextWeekday(after date: Date) -> Date {
+        var candidate = calendar.date(byAdding: .day, value: 1, to: date)
+            ?? date.addingTimeInterval(24 * 60 * 60)
+        while true {
+            let weekday = calendar.component(.weekday, from: candidate)
+            if weekday != 1 && weekday != 7 { return candidate }
+            candidate = calendar.date(byAdding: .day, value: 1, to: candidate)
+                ?? candidate.addingTimeInterval(24 * 60 * 60)
+        }
+    }
+
+    private static func parseISO8601(_ value: String) -> Date? {
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = fractional.date(from: value) { return date }
+        let standard = ISO8601DateFormatter()
+        standard.formatOptions = [.withInternetDateTime]
+        return standard.date(from: value)
+    }
+
+    private static func forwardCausalInputFingerprint(
+        marketSeriesBySymbol: [String: PublicHistorySeries],
+        nfci: BacktestNFCIAsOfData,
+        dataCutoff: String
+    ) -> String {
+        var hash: UInt64 = 1469598103934665603
+        func mixByte(_ byte: UInt8) {
+            hash ^= UInt64(byte)
+            hash &*= 1099511628211
+        }
+        func mixString(_ value: String) {
+            for byte in value.utf8 { mixByte(byte) }
+            mixByte(0xff)
+        }
+        func mixUInt64(_ value: UInt64) {
+            var remaining = value
+            for _ in 0..<8 {
+                mixByte(UInt8(remaining & 0xff))
+                remaining >>= 8
+            }
+        }
+        func mixDouble(_ value: Double) {
+            mixUInt64(value.bitPattern)
+        }
+        func mixOptionalDouble(_ value: Double?) {
+            guard let value, value.isFinite else {
+                mixByte(0)
+                return
+            }
+            mixByte(1)
+            mixDouble(value)
+        }
+        func mixOptionalSeries(_ values: [Double?]?) {
+            guard let values else {
+                mixByte(0)
+                return
+            }
+            mixByte(1)
+            mixUInt64(UInt64(values.count))
+            for value in values { mixOptionalDouble(value) }
+        }
+
+        mixString("market")
+        mixString(dataCutoff)
+        for symbol in marketSeriesBySymbol.keys.sorted() {
+            guard let series = marketSeriesBySymbol[symbol] else { continue }
+            mixString(symbol)
+            mixUInt64(UInt64(series.dates.count))
+            for index in series.dates.indices {
+                mixString(series.dates[index])
+                mixDouble(series.prices[index])
+            }
+            mixOptionalSeries(series.openPrices)
+            mixOptionalSeries(series.highPrices)
+            mixOptionalSeries(series.lowPrices)
+            mixOptionalSeries(series.closePrices)
+        }
+
+        func mixNFCIPoints(_ label: String, _ points: [BacktestNFCIPoint]) {
+            let causalPoints = points.filter { $0.releaseDate <= dataCutoff }
+            mixString(label)
+            mixUInt64(UInt64(causalPoints.count))
+            for point in causalPoints {
+                mixString(point.releaseDate)
+                mixString(point.referenceDate)
+                mixDouble(point.value)
+                if let availableAt = point.availableAt {
+                    mixByte(1)
+                    mixDouble(availableAt.timeIntervalSince1970)
+                } else {
+                    mixByte(0)
+                }
+            }
+        }
+        mixString("nfci")
+        mixString(nfci.source)
+        mixNFCIPoints("credit", nfci.credit)
+        mixNFCIPoints("leverage", nfci.leverage)
+        return String(format: "%016llx", hash)
+    }
+
+    private static func forwardTargetFingerprint(_ weights: [String: Double]) -> String {
+        var hash: UInt64 = 1469598103934665603
+        func mix(_ byte: UInt8) {
+            hash ^= UInt64(byte)
+            hash &*= 1099511628211
+        }
+        for symbol in weights.keys.sorted() {
+            for byte in symbol.utf8 { mix(byte) }
+            mix(0)
+            var quantized = UInt64(bitPattern: Int64(((weights[symbol] ?? 0) * 100_000_000).rounded()))
+            for _ in 0..<8 {
+                mix(UInt8(quantized & 0xff))
+                quantized >>= 8
+            }
+        }
+        return String(format: "%016llx", hash)
     }
 
     private static func normalizedHistorySymbol(_ symbol: String) -> String {

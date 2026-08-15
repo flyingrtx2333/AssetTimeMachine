@@ -24,6 +24,21 @@ nonisolated enum BacktestResearchOverrides {
     nonisolated(unsafe) static var equityCurveLowScale: Double?
     nonisolated(unsafe) static var equityCurveEnterDrawdown: Double?
     nonisolated(unsafe) static var equityCurveExitReturn: Double?
+    nonisolated(unsafe) static var lowNoiseTradeBand: Double?
+    nonisolated(unsafe) static var lowNoiseTradeToBandBoundary: Bool?
+    nonisolated(unsafe) static var lowNoiseNearPeakExecutionFraction: Double?
+    nonisolated(unsafe) static var lowNoiseBroadUnwindTurnoverThreshold: Double?
+    nonisolated(unsafe) static var lowNoiseVolatilityTarget: Double?
+    nonisolated(unsafe) static var lowNoiseVolatilityScaleCap: Double?
+    nonisolated(unsafe) static var lowNoiseActiveReturnScale: Double?
+    nonisolated(unsafe) static var lowNoiseChinaActiveReturnScale: Double?
+    nonisolated(unsafe) static var lowNoiseConfirmedUSActiveReturnScale: Double?
+    nonisolated(unsafe) static var lowNoiseDisableNearPeakBuffer: Bool?
+    nonisolated(unsafe) static var lowNoiseDisableExitSentinel: Bool?
+    nonisolated(unsafe) static var lowNoiseDisableDynamicTurnoverSuppression: Bool?
+    nonisolated(unsafe) static var lowNoiseUseSqrtVolRiskBudget: Bool?
+    nonisolated(unsafe) static var lowNoiseUseGeometricHeadroomRiskBudget: Bool?
+    nonisolated(unsafe) static var nfciDualCoreHighCoreBand: Double?
 }
 
 nonisolated struct MarketDataFrame {
@@ -40,9 +55,30 @@ nonisolated struct BacktestExecutionConfig {
     let feeRate: Double
     let slippageRate: Double
     let rebalanceBand: Double
+    let tradeToBandBoundary: Bool
     let financingAnnualRate: Double
     let allowsFinancedExposure: Bool
     let buyReason: String
+
+    init(
+        initialCash: Double,
+        feeRate: Double,
+        slippageRate: Double,
+        rebalanceBand: Double,
+        tradeToBandBoundary: Bool = false,
+        financingAnnualRate: Double,
+        allowsFinancedExposure: Bool,
+        buyReason: String
+    ) {
+        self.initialCash = initialCash
+        self.feeRate = feeRate
+        self.slippageRate = slippageRate
+        self.rebalanceBand = rebalanceBand
+        self.tradeToBandBoundary = tradeToBandBoundary
+        self.financingAnnualRate = financingAnnualRate
+        self.allowsFinancedExposure = allowsFinancedExposure
+        self.buyReason = buyReason
+    }
 }
 
 nonisolated struct StrategyTargetContext {
@@ -66,6 +102,7 @@ nonisolated struct ResearchTargetStrategyConfig {
     let warmupSessions: Int
     let rebalanceSessions: Int
     let rebalanceBand: Double
+    let tradeToBandBoundary: Bool
     let zeroFillBeforeFirstSymbols: Set<String>
     let maxGrossExposure: Double
     let allowsFinancedExposure: Bool
@@ -78,6 +115,7 @@ nonisolated struct ResearchTargetStrategyConfig {
         warmupSessions: Int,
         rebalanceSessions: Int,
         rebalanceBand: Double = 0,
+        tradeToBandBoundary: Bool = false,
         zeroFillBeforeFirstSymbols: Set<String> = [],
         maxGrossExposure: Double = 1,
         allowsFinancedExposure: Bool = false,
@@ -89,6 +127,7 @@ nonisolated struct ResearchTargetStrategyConfig {
         self.warmupSessions = warmupSessions
         self.rebalanceSessions = rebalanceSessions
         self.rebalanceBand = rebalanceBand
+        self.tradeToBandBoundary = tradeToBandBoundary
         self.zeroFillBeforeFirstSymbols = zeroFillBeforeFirstSymbols
         self.maxGrossExposure = maxGrossExposure
         self.allowsFinancedExposure = allowsFinancedExposure
@@ -279,9 +318,15 @@ nonisolated enum BacktestDailySimulator {
                           let option = frame.optionBySymbol[symbol] else { continue }
                     let currentValue = currentUnits * price
                     let targetValue = preRebalanceValue * targetWeight
-                    let grossValueToSell = currentValue > targetValue * (1 + execution.rebalanceBand)
-                        ? Swift.max(currentValue - targetValue, 0.0)
-                        : 0.0
+                    let upperBoundaryValue = targetValue * (1 + execution.rebalanceBand)
+                    let grossValueToSell: Double
+                    if currentValue > upperBoundaryValue {
+                        grossValueToSell = execution.tradeToBandBoundary
+                            ? Swift.max(currentValue - upperBoundaryValue, 0.0)
+                            : Swift.max(currentValue - targetValue, 0.0)
+                    } else {
+                        grossValueToSell = 0.0
+                    }
                     guard grossValueToSell > 0 else { continue }
                     let unitsToSell = Swift.min(currentUnits, grossValueToSell / price)
                     guard unitsToSell > 0 else { continue }
@@ -325,9 +370,22 @@ nonisolated enum BacktestDailySimulator {
                     let currentValue = (unitsBySymbol[symbol] ?? 0) * price
                     let targetValue = totalValue * targetWeight
                     let targetGap = Swift.max(targetValue - currentValue, 0.0)
-                    let amountToInvest = currentValue < targetValue * (1 - execution.rebalanceBand)
-                        ? (execution.allowsFinancedExposure ? targetGap : Swift.min(cash, targetGap))
-                        : 0.0
+                    let lowerBoundaryValue = targetValue * (1 - execution.rebalanceBand)
+                    let desiredGap: Double
+                    if currentValue <= 0.0001 {
+                        // New positions enter at the requested target. Boundary trading only
+                        // smooths rebalances of an existing position.
+                        desiredGap = targetGap
+                    } else if currentValue < lowerBoundaryValue {
+                        desiredGap = execution.tradeToBandBoundary
+                            ? Swift.max(lowerBoundaryValue - currentValue, 0.0)
+                            : targetGap
+                    } else {
+                        desiredGap = 0.0
+                    }
+                    let amountToInvest = execution.allowsFinancedExposure
+                        ? desiredGap
+                        : Swift.min(cash, desiredGap)
                     if amountToInvest > 0 {
                         let executionPrice = price * (1 + execution.slippageRate)
                         let invested = amountToInvest * (1 - execution.feeRate)
@@ -2578,6 +2636,7 @@ nonisolated enum BacktestEngine {
     private enum CashConfidenceProfile {
         case classic
         case lowNoiseNoLeverage
+        case lowNoiseSimplifiedV11
     }
 
     private static func runRiskContributionCashConfidenceRouterWithTrace(
@@ -2587,10 +2646,27 @@ nonisolated enum BacktestEngine {
         dateBounds: ClosedRange<Date>? = nil,
         profile: CashConfidenceProfile = .classic
     ) -> ResearchTargetStrategyRun? {
+        let isLowNoise = profile == .lowNoiseNoLeverage || profile == .lowNoiseSimplifiedV11
+        let isSimplifiedV11 = profile == .lowNoiseSimplifiedV11
+        let usesLowNoiseResearchOverrides = profile == .lowNoiseNoLeverage
+        // Cash-confidence profiles are frozen strategies. Their internal shadow engines
+        // must keep the calibration costs used during research; user-entered execution
+        // costs belong only to the final simulation and must never change the target path.
+        let frozenDecisionFeeRatePercent = 1.00
+        let frozenDecisionSlippageRatePercent = 0.05
+        let decisionSettings = AdvancedBacktestRiskSettings(
+            feeRate: frozenDecisionFeeRatePercent,
+            slippageRate: frozenDecisionSlippageRatePercent,
+            maxPositionRatio: settings.maxPositionRatio,
+            cooldownDays: settings.cooldownDays,
+            stopLossRatio: settings.stopLossRatio,
+            takeProfitRatio: settings.takeProfitRatio
+        )
+
         guard let baseRun = runRiskContributionRecoveryRouterWithTrace(
             assetInputs: assetInputs,
             initialCash: initialCash,
-            settings: settings,
+            settings: decisionSettings,
             dateBounds: dateBounds,
             growthStateScale: 1.05,
             fastBridgeRatio: 0.15,
@@ -2607,8 +2683,14 @@ nonisolated enum BacktestEngine {
             ($0.date.recordDateString, $0.portfolioValue)
         })
         let equitySymbols = ["nasdaq", "sp500", "csi300", "shanghai_composite"]
-        let isLowNoise = profile == .lowNoiseNoLeverage
-        let tradeBand = isLowNoise ? 0.244 : 0.20
+        let tradeBand: Double
+        if isSimplifiedV11 {
+            tradeBand = 0.25
+        } else if usesLowNoiseResearchOverrides {
+            tradeBand = BacktestResearchOverrides.lowNoiseTradeBand ?? 0.244
+        } else {
+            tradeBand = 0.20
+        }
         let grossCap = 1.0
         let lowConfidenceChinaGrossMaximum = 0.50
         let matureNasdaqGrossMinimum = 0.70
@@ -2621,16 +2703,37 @@ nonisolated enum BacktestEngine {
         let leadershipEvaluationSessions = 10
         let leadershipPriorEvidence = 2.0
         let minimumLeadershipMigration = 0.50
-        let nearPeakDeRiskExecutionFraction = isLowNoise ? 0.80 : 0.875
+        let nearPeakDeRiskExecutionFraction: Double
+        let broadUnwindTurnoverThreshold: Double
+        if isSimplifiedV11 {
+            nearPeakDeRiskExecutionFraction = 0.80
+            broadUnwindTurnoverThreshold = 0.40
+        } else if usesLowNoiseResearchOverrides {
+            nearPeakDeRiskExecutionFraction = BacktestResearchOverrides.lowNoiseNearPeakExecutionFraction ?? 0.80
+            broadUnwindTurnoverThreshold = BacktestResearchOverrides.lowNoiseBroadUnwindTurnoverThreshold ?? 0.40
+        } else {
+            nearPeakDeRiskExecutionFraction = 0.875
+            broadUnwindTurnoverThreshold = 0.60
+        }
         let nearPeakDeRiskDrawdownThreshold = 0.04
         let nearPeakDeRiskMaximumRetention = 0.25
-        let broadUnwindTurnoverThreshold = isLowNoise ? 0.40 : 0.60
+        let disableNearPeakBuffer = usesLowNoiseResearchOverrides
+            && (BacktestResearchOverrides.lowNoiseDisableNearPeakBuffer ?? false)
+        let disableExitSentinel = isSimplifiedV11
+            || (usesLowNoiseResearchOverrides && (BacktestResearchOverrides.lowNoiseDisableExitSentinel ?? false))
+        let disableDynamicTurnoverSuppression = usesLowNoiseResearchOverrides
+            && (BacktestResearchOverrides.lowNoiseDisableDynamicTurnoverSuppression ?? false)
         let config = ResearchTargetStrategyConfig(
-            symbol: isLowNoise ? "risk_contribution_cash_confidence_low_noise" : "risk_contribution_cash_confidence_router",
+            symbol: isSimplifiedV11
+                ? "risk_contribution_cash_confidence_low_noise_simplified_v11"
+                : (isLowNoise ? "risk_contribution_cash_confidence_low_noise" : "risk_contribution_cash_confidence_router"),
             title: AppLocalization.string(isLowNoise ? "低噪增强" : "无融资置信度恢复"),
             warmupSessions: 21,
             rebalanceSessions: 1,
             rebalanceBand: tradeBand,
+            tradeToBandBoundary: usesLowNoiseResearchOverrides
+                ? (BacktestResearchOverrides.lowNoiseTradeToBandBoundary ?? false)
+                : false,
             maxGrossExposure: grossCap,
             allowsFinancedExposure: false,
             financingAnnualRate: 0,
@@ -3054,7 +3157,8 @@ nonisolated enum BacktestEngine {
                     }
                 }
 
-                if !previousWeights.isEmpty {
+                if !previousWeights.isEmpty,
+                   !disableNearPeakBuffer {
                     let priorGross = positiveWeightSum(previousWeights)
                     let targetGross = positiveWeightSum(pendingWeights)
                     if targetGross >= 0.05,
@@ -3157,6 +3261,7 @@ nonisolated enum BacktestEngine {
                 }
 
                 if isLowNoise,
+                   !disableExitSentinel,
                    baseTargetChanged,
                    !previousWeights.isEmpty,
                    positiveWeightSum(pendingWeights) < 0.05 {
@@ -3206,6 +3311,25 @@ nonisolated enum BacktestEngine {
                 }
 
                 if isLowNoise {
+                    let lowNoiseVolatilityTarget = usesLowNoiseResearchOverrides
+                        ? (BacktestResearchOverrides.lowNoiseVolatilityTarget ?? 0.09)
+                        : 0.09
+                    let lowNoiseVolatilityScaleCap = usesLowNoiseResearchOverrides
+                        ? (BacktestResearchOverrides.lowNoiseVolatilityScaleCap ?? 1.15)
+                        : 1.15
+                    let useSqrtVolRiskBudget = usesLowNoiseResearchOverrides
+                        && (BacktestResearchOverrides.lowNoiseUseSqrtVolRiskBudget ?? false)
+                    let useGeometricHeadroomRiskBudget = usesLowNoiseResearchOverrides
+                        && (BacktestResearchOverrides.lowNoiseUseGeometricHeadroomRiskBudget ?? false)
+                    let lowNoiseActiveReturnScale = usesLowNoiseResearchOverrides
+                        ? (BacktestResearchOverrides.lowNoiseActiveReturnScale ?? 1.22)
+                        : 1.22
+                    let lowNoiseChinaActiveReturnScale = isSimplifiedV11
+                        ? 1.22
+                        : (BacktestResearchOverrides.lowNoiseChinaActiveReturnScale ?? 1.30)
+                    let lowNoiseConfirmedUSActiveReturnScale = isSimplifiedV11
+                        ? 1.22
+                        : (BacktestResearchOverrides.lowNoiseConfirmedUSActiveReturnScale ?? 1.24)
                     var lowNoiseGross = positiveWeightSum(pendingWeights)
                     if lowNoiseGross > grossCap, lowNoiseGross > 0 {
                         pendingWeights = pendingWeights.mapValues { $0 * grossCap / lowNoiseGross }
@@ -3270,13 +3394,23 @@ nonisolated enum BacktestEngine {
                                     shortVolatility = sqrt(max(shortVariance, 0)) * sqrt(252)
                                 }
                                 if forecastVolatility > 0,
-                                   forecastVolatility < 0.09,
+                                   forecastVolatility < lowNoiseVolatilityTarget,
                                    shortVolatility <= forecastVolatility {
-                                    let scale = min(
-                                        0.09 / forecastVolatility,
-                                        grossCap / lowNoiseGross,
-                                        1.15
-                                    )
+                                    let scale: Double
+                                    if useGeometricHeadroomRiskBudget {
+                                        scale = sqrt(grossCap / lowNoiseGross)
+                                    } else if useSqrtVolRiskBudget {
+                                        scale = min(
+                                            sqrt(lowNoiseVolatilityTarget / forecastVolatility),
+                                            grossCap / lowNoiseGross
+                                        )
+                                    } else {
+                                        scale = min(
+                                            lowNoiseVolatilityTarget / forecastVolatility,
+                                            grossCap / lowNoiseGross,
+                                            lowNoiseVolatilityScaleCap
+                                        )
+                                    }
                                     let targetGross = lowNoiseGross * scale
                                     let extraGross = max(targetGross - lowNoiseGross, 0)
                                     if extraGross > 0, calmRiskLeader == "nasdaq" {
@@ -3291,8 +3425,14 @@ nonisolated enum BacktestEngine {
                     }
 
                     let activeReturnLeader = leaderName(pendingWeights)
-                    var activeReturnScale = activeReturnLeader == "china" ? 1.30 : 1.22
-                    if ["nasdaq", "sp500"].contains(activeReturnLeader),
+                    let useAlternativeRiskBudget = useSqrtVolRiskBudget || useGeometricHeadroomRiskBudget
+                    var activeReturnScale = useAlternativeRiskBudget
+                        ? 1.0
+                        : (activeReturnLeader == "china"
+                            ? lowNoiseChinaActiveReturnScale
+                            : lowNoiseActiveReturnScale)
+                    if !useAlternativeRiskBudget,
+                       ["nasdaq", "sp500"].contains(activeReturnLeader),
                        let leaderPrices = data.pricesBySymbol[activeReturnLeader],
                        leaderPrices.indices.contains(signalIndex),
                        signalIndex >= 63,
@@ -3301,7 +3441,7 @@ nonisolated enum BacktestEngine {
                        let leaderVolatility63 = annualizedVolatilityAt(values: leaderPrices, at: signalIndex, lookback: 63),
                        leaderMomentum63 > 0,
                        leaderVolatility20 <= leaderVolatility63 {
-                        activeReturnScale = 1.24
+                        activeReturnScale = lowNoiseConfirmedUSActiveReturnScale
                     }
                     if abs(activeReturnScale - 1) > 0.000001 {
                         pendingWeights = pendingWeights.mapValues { max($0 * activeReturnScale, 0) }
@@ -3318,7 +3458,9 @@ nonisolated enum BacktestEngine {
                 }
                 let difference = absoluteWeightDifference(previousWeights, pendingWeights)
                 var suppressLowNoiseReweight = false
-                if isLowNoise, !previousWeights.isEmpty {
+                if isLowNoise,
+                   !disableDynamicTurnoverSuppression,
+                   !previousWeights.isEmpty {
                     let priorGross = positiveWeightSum(previousWeights)
                     let targetGross = positiveWeightSum(pendingWeights)
                     let priorLeader = leaderName(previousWeights)
@@ -3962,13 +4104,338 @@ nonisolated enum BacktestEngine {
         )
     }
 
+    private static func nfciReleaseChange(
+        points: [BacktestNFCIPoint],
+        signalDate: String,
+        lookbackReleases: Int
+    ) -> Double? {
+        guard lookbackReleases > 0 else { return nil }
+        let sorted = points.sorted { $0.releaseDate < $1.releaseDate }
+        var latestIndex: Int?
+        for index in sorted.indices {
+            if sorted[index].releaseDate <= signalDate {
+                latestIndex = index
+            } else {
+                break
+            }
+        }
+        guard let latestIndex, latestIndex >= lookbackReleases else { return nil }
+        return sorted[latestIndex].value - sorted[latestIndex - lookbackReleases].value
+    }
+
+    private static func runNFCIC3L3SleeveWithTrace(
+        baseRun: ResearchTargetStrategyRun,
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings,
+        creditPoints: [BacktestNFCIPoint],
+        leveragePoints: [BacktestNFCIPoint],
+        riskScale: Double,
+        rebalanceBand: Double,
+        symbol: String,
+        title: String,
+        dateBounds: ClosedRange<Date>?,
+        baseDecisionTradeDates: Set<String>? = nil
+    ) -> ResearchTargetStrategyRun? {
+        let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
+            ($0.date.recordDateString, $0.targetWeights)
+        })
+        let eligibleTradeDates = baseDecisionTradeDates
+            ?? Set(baseRun.report.trades.map { $0.date.recordDateString })
+        let usSymbols: Set<String> = ["nasdaq", "sp500"]
+        let config = ResearchTargetStrategyConfig(
+            symbol: symbol,
+            title: title,
+            warmupSessions: 21,
+            rebalanceSessions: 1,
+            rebalanceBand: rebalanceBand,
+            maxGrossExposure: 1,
+            allowsFinancedExposure: false,
+            financingAnnualRate: 0,
+            buyReason: title
+        )
+        var previousBaseTarget: [String: Double] = [:]
+        var pendingTarget: [String: Double] = [:]
+
+        return runResearchTargetProviderStrategyWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            config: config,
+            dateBounds: dateBounds,
+            rebalanceDecision: { index, signalIndex, data in
+                guard data.dates.indices.contains(index),
+                      data.dates.indices.contains(signalIndex) else {
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                }
+                let executionKey = data.dates[index].recordDateString
+                guard eligibleTradeDates.contains(executionKey),
+                      var target = baseTargets[executionKey] else {
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                }
+
+                let prior = previousBaseTarget
+                previousBaseTarget = target
+                if !prior.isEmpty {
+                    let signalKey = data.dates[signalIndex].recordDateString
+                    let creditTriggered = nfciReleaseChange(
+                        points: creditPoints,
+                        signalDate: signalKey,
+                        lookbackReleases: 8
+                    ).map { $0 <= -0.03 } ?? false
+                    let leverageTriggered = nfciReleaseChange(
+                        points: leveragePoints,
+                        signalDate: signalKey,
+                        lookbackReleases: 4
+                    ).map { $0 <= -0.03 } ?? false
+
+                    let priorGross = prior.values.reduce(0, +)
+                    let proposedGross = target.values.reduce(0, +)
+                    let priorUS = prior.reduce(0.0) { partial, item in
+                        partial + (usSymbols.contains(item.key) ? item.value : 0)
+                    }
+                    let proposedUS = target.reduce(0.0) { partial, item in
+                        partial + (usSymbols.contains(item.key) ? item.value : 0)
+                    }
+                    let usDecrease = priorUS - proposedUS
+                    let grossDecrease = priorGross - proposedGross
+                    var extras: [String: Double] = [:]
+
+                    if creditTriggered || leverageTriggered {
+                        if usDecrease >= 0.05, grossDecrease >= 0.03 {
+                            let retention = creditTriggered && leverageTriggered ? 1.0 : 0.5
+                            for assetSymbol in usSymbols {
+                                let reduction = max((prior[assetSymbol] ?? 0) - (target[assetSymbol] ?? 0), 0)
+                                if reduction > 0 {
+                                    extras[assetSymbol] = retention * reduction
+                                }
+                            }
+                        } else if grossDecrease >= 0.05 {
+                            for (assetSymbol, priorWeight) in prior {
+                                let reduction = max(priorWeight - (target[assetSymbol] ?? 0), 0)
+                                if reduction > 0 {
+                                    extras[assetSymbol] = reduction
+                                }
+                            }
+                        }
+                    }
+
+                    let desiredExtra = extras.values.reduce(0, +)
+                    if desiredExtra > 0 {
+                        let availableCash = max(1.0 - proposedGross, 0)
+                        let extraScale = min(1.0, availableCash / desiredExtra)
+                        for (assetSymbol, extra) in extras {
+                            target[assetSymbol, default: 0] += extra * extraScale
+                        }
+                    }
+                }
+
+                target = target.mapValues { max($0, 0) * riskScale }
+                let gross = target.values.reduce(0, +)
+                if gross > 1, gross > 0 {
+                    target = target.mapValues { $0 / gross }
+                }
+                pendingTarget = target
+                return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+            },
+            targetWeights: { _, _ in pendingTarget }
+        )
+    }
+
+    private enum NFCIDualCoreProfile {
+        case v1
+        case simplifiedV11
+    }
+
+    private static func runNFCIDualCoreV1WithTrace(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings,
+        nfciAsOf: BacktestNFCIAsOfData,
+        dateBounds: ClosedRange<Date>? = nil,
+        profile: NFCIDualCoreProfile = .v1
+    ) -> AdvancedRotationStrategyRun? {
+        guard nfciAsOf.isReadyForC3L3 else { return nil }
+        let isSimplifiedV11 = profile == .simplifiedV11
+        let highReturnProfile: CashConfidenceProfile = isSimplifiedV11
+            ? .lowNoiseSimplifiedV11
+            : .lowNoiseNoLeverage
+        let highCoreBand = isSimplifiedV11
+            ? 0.25
+            : (BacktestResearchOverrides.nfciDualCoreHighCoreBand ?? 0.244)
+        let highCoreSymbol = isSimplifiedV11
+            ? "nfci_dual_core_v11_high_return"
+            : "nfci_dual_core_v1_high_return"
+        let finalSymbol = isSimplifiedV11 ? "nfci_dual_core_v11" : "nfci_dual_core_v1"
+        let finalTitle = AppLocalization.string(isSimplifiedV11
+            ? "NFCI 双核心·简化（前瞻）"
+            : "NFCI 双核心（前瞻）")
+
+        guard let lowNoiseBase = runRiskContributionCashConfidenceRouterWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            dateBounds: dateBounds,
+            profile: highReturnProfile
+        ), let cashConfidenceBase = runRiskContributionCashConfidenceRouterWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            dateBounds: dateBounds
+        ) else { return nil }
+
+        let frozenDecisionSettings = AdvancedBacktestRiskSettings(
+            feeRate: 1.00,
+            slippageRate: 0.05,
+            maxPositionRatio: settings.maxPositionRatio,
+            cooldownDays: settings.cooldownDays,
+            stopLossRatio: settings.stopLossRatio,
+            takeProfitRatio: settings.takeProfitRatio
+        )
+        let lowNoiseDecisionRun: ResearchTargetStrategyRun
+        let cashConfidenceDecisionRun: ResearchTargetStrategyRun
+        if abs(settings.feeRate - 1.00) < 0.0000001,
+           abs(settings.slippageRate - 0.05) < 0.0000001 {
+            lowNoiseDecisionRun = lowNoiseBase
+            cashConfidenceDecisionRun = cashConfidenceBase
+        } else {
+            guard let frozenLowNoise = runRiskContributionCashConfidenceRouterWithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: frozenDecisionSettings,
+                dateBounds: dateBounds,
+                profile: highReturnProfile
+            ), let frozenCashConfidence = runRiskContributionCashConfidenceRouterWithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: frozenDecisionSettings,
+                dateBounds: dateBounds
+            ) else { return nil }
+            lowNoiseDecisionRun = frozenLowNoise
+            cashConfidenceDecisionRun = frozenCashConfidence
+        }
+        let lowNoiseDecisionTradeDates = Set(lowNoiseDecisionRun.report.trades.map { $0.date.recordDateString })
+        let cashConfidenceDecisionTradeDates = Set(cashConfidenceDecisionRun.report.trades.map { $0.date.recordDateString })
+
+        guard let highReturnCore = runNFCIC3L3SleeveWithTrace(
+            baseRun: lowNoiseBase,
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            creditPoints: nfciAsOf.credit,
+            leveragePoints: nfciAsOf.leverage,
+            riskScale: 1.0,
+            rebalanceBand: highCoreBand,
+            symbol: highCoreSymbol,
+            title: AppLocalization.string("NFCI 双核心·高收益核心"),
+            dateBounds: dateBounds,
+            baseDecisionTradeDates: lowNoiseDecisionTradeDates
+        ), let balancedCore = runNFCIC3L3SleeveWithTrace(
+            baseRun: cashConfidenceBase,
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            creditPoints: nfciAsOf.credit,
+            leveragePoints: nfciAsOf.leverage,
+            riskScale: 1.30,
+            rebalanceBand: 0.20,
+            symbol: "nfci_dual_core_v1_balanced",
+            title: AppLocalization.string("NFCI 双核心·稳健核心"),
+            dateBounds: dateBounds,
+            baseDecisionTradeDates: cashConfidenceDecisionTradeDates
+        ) else { return nil }
+
+        let highTargets = Dictionary(uniqueKeysWithValues: highReturnCore.dailyStates.map {
+            ($0.date.recordDateString, $0.targetWeights)
+        })
+        let balancedTargets = Dictionary(uniqueKeysWithValues: balancedCore.dailyStates.map {
+            ($0.date.recordDateString, $0.targetWeights)
+        })
+        let commonKeys = Set(highTargets.keys).intersection(balancedTargets.keys)
+        var blendedTargets: [String: [String: Double]] = [:]
+        blendedTargets.reserveCapacity(commonKeys.count)
+        for key in commonKeys {
+            guard let high = highTargets[key], let balanced = balancedTargets[key] else { continue }
+            let symbols = Set(high.keys).union(balanced.keys)
+            var target: [String: Double] = [:]
+            for assetSymbol in symbols {
+                target[assetSymbol] = 0.5 * (high[assetSymbol] ?? 0) + 0.5 * (balanced[assetSymbol] ?? 0)
+            }
+            let gross = target.values.reduce(0, +)
+            if gross > 1, gross > 0 {
+                target = target.mapValues { $0 / gross }
+            }
+            blendedTargets[key] = target
+        }
+        guard !blendedTargets.isEmpty else { return nil }
+
+        let config = ResearchTargetStrategyConfig(
+            symbol: finalSymbol,
+            title: finalTitle,
+            warmupSessions: 21,
+            rebalanceSessions: 1,
+            rebalanceBand: 0.25,
+            maxGrossExposure: 1,
+            allowsFinancedExposure: false,
+            financingAnnualRate: 0,
+            buyReason: AppLocalization.string("NFCI 双核心调仓")
+        )
+        var previousTarget: [String: Double] = [:]
+        var pendingTarget: [String: Double] = [:]
+        func targetDifference(_ lhs: [String: Double], _ rhs: [String: Double]) -> Double {
+            Set(lhs.keys).union(rhs.keys).reduce(0.0) { partial, assetSymbol in
+                partial + abs((lhs[assetSymbol] ?? 0) - (rhs[assetSymbol] ?? 0))
+            }
+        }
+
+        guard let finalRun = runResearchTargetProviderStrategyWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            config: config,
+            dateBounds: dateBounds,
+            rebalanceDecision: { index, _, data in
+                guard data.dates.indices.contains(index) else {
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                }
+                let key = data.dates[index].recordDateString
+                guard let target = blendedTargets[key] else {
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                }
+                let changed = previousTarget.isEmpty || targetDifference(previousTarget, target) > 0.0000001
+                pendingTarget = target
+                if changed {
+                    previousTarget = target
+                }
+                return BacktestRebalanceDecision(shouldRebalance: changed, refreshOverlay: false)
+            },
+            targetWeights: { _, _ in pendingTarget }
+        ) else { return nil }
+
+        return AdvancedRotationStrategyRun(report: finalRun.report, dailyStates: finalRun.dailyStates)
+    }
+
     static func runAdvancedRotationStrategy(
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
         initialCash: Double,
         settings: AdvancedBacktestRiskSettings,
         mode: AdvancedBacktestStrategyMode,
+        nfciAsOf: BacktestNFCIAsOfData? = nil,
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedBacktestReport? {
+        if mode == .nfciDualCoreV1 || mode == .nfciDualCoreSimplifiedV11 {
+            guard let resolvedNFCIAsOf = nfciAsOf ?? BacktestMacroSnapshotStore.shared.nfciAsOfSnapshot() else {
+                return nil
+            }
+            return runNFCIDualCoreV1WithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                nfciAsOf: resolvedNFCIAsOf,
+                dateBounds: dateBounds,
+                profile: mode == .nfciDualCoreSimplifiedV11 ? .simplifiedV11 : .v1
+            )?.report
+        }
         if mode == .riskContributionCashConfidenceLowNoise {
             return runRiskContributionCashConfidenceRouterWithTrace(
                 assetInputs: assetInputs,
@@ -4049,8 +4516,22 @@ nonisolated enum BacktestEngine {
         initialCash: Double,
         settings: AdvancedBacktestRiskSettings,
         mode: AdvancedBacktestStrategyMode,
+        nfciAsOf: BacktestNFCIAsOfData? = nil,
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedRotationStrategyRun? {
+        if mode == .nfciDualCoreV1 || mode == .nfciDualCoreSimplifiedV11 {
+            guard let resolvedNFCIAsOf = nfciAsOf ?? BacktestMacroSnapshotStore.shared.nfciAsOfSnapshot() else {
+                return nil
+            }
+            return runNFCIDualCoreV1WithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                nfciAsOf: resolvedNFCIAsOf,
+                dateBounds: dateBounds,
+                profile: mode == .nfciDualCoreSimplifiedV11 ? .simplifiedV11 : .v1
+            )
+        }
         if mode == .riskContributionCashConfidenceLowNoise {
             guard let run = runRiskContributionCashConfidenceRouterWithTrace(
                 assetInputs: assetInputs,
@@ -4221,6 +4702,7 @@ nonisolated enum BacktestEngine {
             feeRate: normalizedFeeRate,
             slippageRate: normalizedSlippageRate,
             rebalanceBand: max(config.rebalanceBand, 0),
+            tradeToBandBoundary: config.tradeToBandBoundary,
             financingAnnualRate: max(config.financingAnnualRate, 0),
             allowsFinancedExposure: config.allowsFinancedExposure,
             buyReason: config.buyReason
@@ -5471,7 +5953,9 @@ nonisolated enum BacktestEngine {
              .riskContributionRegimeRouter,
              .riskContributionRecoveryRouter,
              .riskContributionCashConfidenceRouter,
-             .riskContributionCashConfidenceLowNoise:
+             .riskContributionCashConfidenceLowNoise,
+             .nfciDualCoreV1,
+             .nfciDualCoreSimplifiedV11:
             return nil
         case .ultraDefensiveRotation:
             return .init(

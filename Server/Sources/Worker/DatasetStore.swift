@@ -125,6 +125,36 @@ actor BacktestDatasetStore {
         )
     }
 
+    func forwardSnapshots(decisionAt: Date = Date()) async throws -> WorkerForwardSnapshotsResponse {
+        guard let active else { throw WorkerStartupError.datasetUnavailable }
+        guard !active.dataset.dataStale else {
+            throw PublicBacktestCoreError.invalidDataset("forward snapshot requires a fresh market dataset")
+        }
+        let macroData = try await fetchNFCIData()
+        let macroHash = sha256Hex(macroData)
+        let macroFileURL = configuration.storageDirectory.appendingPathComponent("nfci-forward-current.json")
+        try macroData.write(to: macroFileURL, options: .atomic)
+
+        var snapshots: [PublicForwardStrategySnapshot] = []
+        snapshots.reserveCapacity(PublicBacktestCore.forwardStrategyIDs.count)
+        for strategyID in PublicBacktestCore.forwardStrategyIDs {
+            let snapshot = try await computeExecutor.forward(
+                strategyID: strategyID,
+                datasetFileURL: active.datasetFileURL,
+                datasetHash: active.dataset.datasetHash,
+                dataStale: active.dataset.dataStale,
+                macroFileURL: macroFileURL,
+                decisionAt: decisionAt
+            )
+            snapshots.append(snapshot)
+        }
+        return WorkerForwardSnapshotsResponse(
+            generatedAt: decisionAt,
+            macroDatasetHash: macroHash,
+            snapshots: snapshots
+        )
+    }
+
     func health() -> (hash: String?, cutoff: String?, stale: Bool, refreshError: String?) {
         (
             active?.dataset.datasetHash,
@@ -182,6 +212,21 @@ actor BacktestDatasetStore {
               !data.isEmpty,
               data.count <= 30 * 1024 * 1024 else {
             throw PublicBacktestCoreError.invalidDataset("upstream response failed size or status checks")
+        }
+        return data
+    }
+
+    private func fetchNFCIData() async throws -> Data {
+        var request = URLRequest(url: configuration.nfciURL)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 30
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200..<300).contains(httpResponse.statusCode),
+              !data.isEmpty,
+              data.count <= 5 * 1024 * 1024 else {
+            throw PublicBacktestCoreError.invalidMacroData("NFCI upstream response failed size or status checks")
         }
         return data
     }

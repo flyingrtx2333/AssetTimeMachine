@@ -104,13 +104,22 @@ struct AdvancedBacktestResultPage: View {
         }
         .sheet(isPresented: $showsSharePoster) {
             BacktestPosterPreviewSheet(
-                title: presentation.title,
+                title: presentation.strategyMode == .ruleBased
+                    ? presentation.title
+                    : presentation.strategyMode.title,
                 report: presentation.report,
                 comparisonSeries: presentation.comparisonSeries
             )
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
+        #if DEBUG
+        .onAppear {
+            if ProcessInfo.processInfo.arguments.contains("-openBacktestSharePoster") {
+                showsSharePoster = true
+            }
+        }
+        #endif
     }
 
     private var pageHeader: some View {

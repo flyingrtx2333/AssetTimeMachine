@@ -10,12 +10,19 @@ private struct BacktestPosterCurvePoint: Identifiable {
     var id: Int { sequence }
 }
 
+private struct BacktestPosterLineSeries: Identifiable {
+    let id: String
+    let title: String
+    let color: Color
+    let isDashed: Bool
+    let points: [BacktestPosterCurvePoint]
+}
+
 private enum BacktestPosterPalette {
     static let background = Color(red: 0.035, green: 0.043, blue: 0.052)
     static let gold = Color(red: 0.94, green: 0.70, blue: 0.30)
     static let green = Color(red: 0.31, green: 0.84, blue: 0.60)
     static let red = Color(red: 0.96, green: 0.42, blue: 0.42)
-    static let benchmark = Color(red: 0.35, green: 0.69, blue: 1.00)
     static let textPrimary = Color.white.opacity(0.96)
     static let textSecondary = Color.white.opacity(0.56)
     static let divider = Color.white.opacity(0.11)
@@ -30,17 +37,53 @@ struct BacktestSharePosterView: View {
         normalizedCurve(report.points)
     }
 
-    private var benchmark: BacktestChartComparisonSeries? {
-        comparisonSeries.first
+    private var assetSymbols: [String] {
+        var symbols = report.assetExposureSeries.map(\.symbol)
+        for series in comparisonSeries {
+            guard let symbol = BacktestChartSeriesKey.assetSymbol(fromBenchmarkID: series.id),
+                  !symbols.contains(symbol) else { continue }
+            symbols.append(symbol)
+        }
+        return symbols
     }
 
-    private var benchmarkCurve: [BacktestPosterCurvePoint] {
-        guard let benchmark else { return [] }
-        return normalizedCurve(benchmark.points)
+    private var assetColors: [String: Color] {
+        Dictionary(uniqueKeysWithValues: assetSymbols.enumerated().map { index, symbol in
+            (symbol, BacktestChartPalette.exposureLine(at: index))
+        })
+    }
+
+    private var assetTitles: [String: String] {
+        Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { option in
+            (option.symbol, option.title)
+        })
+    }
+
+    private var lineSeries: [BacktestPosterLineSeries] {
+        let strategy = BacktestPosterLineSeries(
+            id: BacktestChartSeriesKey.strategy,
+            title: BacktestChartSeriesTitle.strategy,
+            color: BacktestChartPalette.strategyLine,
+            isDashed: false,
+            points: strategyCurve
+        )
+        let comparisons = comparisonSeries.compactMap { series -> BacktestPosterLineSeries? in
+            let points = normalizedCurve(series.points)
+            guard !points.isEmpty else { return nil }
+            let symbol = BacktestChartSeriesKey.assetSymbol(fromBenchmarkID: series.id)
+            return BacktestPosterLineSeries(
+                id: series.id,
+                title: symbol.flatMap { assetTitles[$0] } ?? AppLocalization.string(series.title),
+                color: symbol.flatMap { assetColors[$0] } ?? series.color,
+                isDashed: true,
+                points: points
+            )
+        }
+        return [strategy] + comparisons
     }
 
     private var curveDomain: ClosedRange<Double> {
-        let values = (strategyCurve + benchmarkCurve).map(\.returnRatio)
+        let values = lineSeries.flatMap { $0.points.map(\.returnRatio) }
         let minimum = min(values.min() ?? 0, 0)
         let maximum = max(values.max() ?? 0, 0)
         let span = max(maximum - minimum, 0.1)
@@ -121,20 +164,11 @@ struct BacktestSharePosterView: View {
 
                 Spacer(minLength: 10)
 
-                HStack(alignment: .center, spacing: 8) {
-                    Text(AppLocalization.string("历史回测不代表未来表现"))
-                        .font(.system(size: 8.5, weight: .regular, design: .default))
-                        .foregroundStyle(Color.white.opacity(0.38))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.72)
-
-                    Spacer(minLength: 6)
-
-                    Text("ASSET TIME MACHINE")
-                        .font(.system(size: 8, weight: .semibold, design: .default))
-                        .tracking(1.15)
-                        .foregroundStyle(BacktestPosterPalette.gold.opacity(0.86))
-                }
+                Text(AppLocalization.string("历史回测不代表未来表现"))
+                    .font(.system(size: 8.5, weight: .regular, design: .default))
+                    .foregroundStyle(Color.white.opacity(0.38))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 22)
@@ -156,15 +190,9 @@ struct BacktestSharePosterView: View {
                     .foregroundStyle(BacktestPosterPalette.background)
             }
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text("ASSET TIME MACHINE")
-                    .font(.system(size: 9, weight: .semibold, design: .default))
-                    .tracking(1.05)
-                    .foregroundStyle(BacktestPosterPalette.textPrimary)
-                Text(AppLocalization.string("量化回测"))
-                    .font(.system(size: 9, weight: .medium, design: .default))
-                    .foregroundStyle(BacktestPosterPalette.textSecondary)
-            }
+            Text(AppLocalization.string("资产时光机"))
+                .font(.system(size: 11, weight: .semibold, design: .default))
+                .foregroundStyle(BacktestPosterPalette.textPrimary)
 
             Spacer(minLength: 8)
 
@@ -181,48 +209,49 @@ struct BacktestSharePosterView: View {
 
     private var curveSection: some View {
         VStack(alignment: .leading, spacing: 7) {
-            HStack(alignment: .center, spacing: 11) {
-                Text(AppLocalization.string("净值走势"))
-                    .font(.system(size: 11, weight: .semibold, design: .default))
-                    .foregroundStyle(BacktestPosterPalette.textPrimary)
+            Text(AppLocalization.string("净值走势"))
+                .font(.system(size: 11, weight: .semibold, design: .default))
+                .foregroundStyle(BacktestPosterPalette.textPrimary)
 
-                Spacer(minLength: 6)
-
-                posterLegend(color: returnAccent, title: AppLocalization.string("策略净值"), dashed: false)
-                if let benchmark {
-                    posterLegend(color: BacktestPosterPalette.benchmark, title: benchmark.title, dashed: true)
+            ATMFlowLayout(horizontalSpacing: 9, verticalSpacing: 5, rowAlignment: .leading) {
+                ForEach(lineSeries) { series in
+                    posterLegend(
+                        color: series.color,
+                        title: series.title,
+                        dashed: series.isDashed
+                    )
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             Chart {
                 RuleMark(y: .value("Base", 0))
                     .foregroundStyle(BacktestPosterPalette.divider)
 
-                ForEach(strategyCurve) { point in
-                    LineMark(
-                        x: .value("Date", point.date),
-                        y: .value("Return", point.returnRatio)
-                    )
-                    .foregroundStyle(by: .value("Series", "poster.strategy"))
-                    .lineStyle(StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
-                    .interpolationMethod(.monotone)
-                }
-
-                ForEach(benchmarkCurve) { point in
-                    LineMark(
-                        x: .value("Date", point.date),
-                        y: .value("Benchmark", point.returnRatio)
-                    )
-                    .foregroundStyle(by: .value("Series", "poster.benchmark"))
-                    .lineStyle(StrokeStyle(lineWidth: 1.25, dash: [4, 3]))
-                    .interpolationMethod(.monotone)
+                ForEach(lineSeries) { series in
+                    ForEach(series.points) { point in
+                        LineMark(
+                            x: .value("Date", point.date),
+                            y: .value("Return", point.returnRatio)
+                        )
+                        .foregroundStyle(by: .value("Series", series.id))
+                        .lineStyle(
+                            StrokeStyle(
+                                lineWidth: series.isDashed ? 1.25 : 2.6,
+                                lineCap: .round,
+                                lineJoin: .round,
+                                dash: series.isDashed ? [4, 3] : []
+                            )
+                        )
+                        .interpolationMethod(.monotone)
+                    }
                 }
             }
-            .chartForegroundStyleScale(
-                domain: ["poster.strategy", "poster.benchmark"],
-                range: [returnAccent, BacktestPosterPalette.benchmark.opacity(0.88)]
-            )
             .chartYScale(domain: curveDomain)
+            .chartForegroundStyleScale(
+                domain: lineSeries.map(\.id),
+                range: lineSeries.map(\.color)
+            )
             .chartXAxis(.hidden)
             .chartYAxis {
                 AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { value in
@@ -237,7 +266,8 @@ struct BacktestSharePosterView: View {
                     }
                 }
             }
-            .frame(height: 116)
+            .chartLegend(.hidden)
+            .frame(height: 108)
 
             HStack {
                 Text(report.points.first?.date.recordDateString ?? "--")

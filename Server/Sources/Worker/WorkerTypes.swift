@@ -68,9 +68,16 @@ struct WorkerHealthResponse: Codable, Sendable {
     let cacheEntries: Int
 }
 
+struct WorkerForwardSnapshotsResponse: Codable, Sendable {
+    let generatedAt: Date
+    let macroDatasetHash: String
+    let snapshots: [PublicForwardStrategySnapshot]
+}
+
 extension WorkerHealthResponse: ResponseEncodable {}
 
 extension PublicBacktestCatalogResponse: ResponseEncodable {}
+extension WorkerForwardSnapshotsResponse: ResponseEncodable {}
 
 struct WorkerErrorResponse: Codable, Sendable {
     let detail: String
@@ -97,6 +104,7 @@ struct WorkerConfiguration: Sendable {
     let storageDirectory: URL
     let fixtureURL: URL?
     let historyURL: URL
+    let nfciURL: URL
     let computeExecutableURL: URL
     let queueLimit: Int
     let runTimeoutSeconds: Int
@@ -120,6 +128,10 @@ struct WorkerConfiguration: Sendable {
         guard let historyURL = URL(string: environment["BACKTEST_HISTORY_URL"] ?? defaultHistoryURL) else {
             throw WorkerStartupError.invalidHistoryURL
         }
+        let defaultNFCIURL = "https://api.flyingrtx.com/api/v1/money/public/nfci-asof"
+        guard let nfciURL = URL(string: environment["BACKTEST_NFCI_URL"] ?? defaultNFCIURL) else {
+            throw WorkerStartupError.invalidNFCIURL
+        }
         let defaultComputeURL = URL(fileURLWithPath: CommandLine.arguments[0])
             .standardizedFileURL
             .deletingLastPathComponent()
@@ -137,6 +149,7 @@ struct WorkerConfiguration: Sendable {
             storageDirectory: storageDirectory,
             fixtureURL: fixtureURL,
             historyURL: historyURL,
+            nfciURL: nfciURL,
             computeExecutableURL: computeExecutableURL,
             queueLimit: 20,
             runTimeoutSeconds: 60,
@@ -148,6 +161,7 @@ struct WorkerConfiguration: Sendable {
 enum WorkerStartupError: Error, LocalizedError {
     case missingAuthenticationToken
     case invalidHistoryURL
+    case invalidNFCIURL
     case computeExecutableUnavailable
     case datasetUnavailable
 
@@ -157,6 +171,8 @@ enum WorkerStartupError: Error, LocalizedError {
             return "BACKTEST_WORKER_TOKEN is required unless BACKTEST_ALLOW_INSECURE_LOCAL=1"
         case .invalidHistoryURL:
             return "BACKTEST_HISTORY_URL is invalid"
+        case .invalidNFCIURL:
+            return "BACKTEST_NFCI_URL is invalid"
         case .computeExecutableUnavailable:
             return "AssetTimeMachineBacktestCompute is not executable"
         case .datasetUnavailable:

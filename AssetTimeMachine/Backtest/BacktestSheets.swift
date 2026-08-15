@@ -994,6 +994,8 @@ struct AdvancedStrategyTemplateRow: View {
         switch template.id {
         case "risk-contribution-cash-confidence-low-noise":
             return "waveform.path.ecg"
+        case "nfci-dual-core-v1":
+            return "point.3.connected.trianglepath.dotted"
         case "core-gold-satellite-equity-curve-state-gate-momentum":
             return "scale.3d"
         case "core-gold-satellite-risk-budget-state-gate-momentum":
@@ -1020,6 +1022,8 @@ struct AdvancedStrategyTemplateRow: View {
         case "risk-contribution-cash-confidence-low-noise",
              "basic-ma-golden-cross":
             return AssetTheme.positive
+        case "nfci-dual-core-v1":
+            return AssetTheme.accentOrange
         case "core-gold-satellite-risk-budget-state-gate-momentum",
              "basic-boll-mean-reversion":
             return AssetTheme.accentOrange
@@ -1045,6 +1049,10 @@ struct AdvancedStrategyTemplateRow: View {
         BacktestProductStrategyCatalog.isCuratedTemplateID(template.id)
     }
 
+    private var isExperimentalStrategy: Bool {
+        BacktestProductStrategyCatalog.isExperimentalTemplateID(template.id)
+    }
+
     var body: some View {
         Button(action: onTap) {
             HStack(alignment: .center, spacing: 10) {
@@ -1061,10 +1069,13 @@ struct AdvancedStrategyTemplateRow: View {
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    if isCuratedStrategy || isRecommendedStrategy || isDefaultStrategy || isActive {
+                    if isCuratedStrategy || isExperimentalStrategy || isRecommendedStrategy || isDefaultStrategy || isActive {
                         HStack(spacing: 5) {
                             if isCuratedStrategy {
                                 CuratedStrategyBadge(compact: true)
+                            }
+                            if isExperimentalStrategy {
+                                strategyBadge(AppLocalization.string("前瞻观察"), accent: AssetTheme.accentOrange)
                             }
                             if isRecommendedStrategy {
                                 strategyBadge(AppLocalization.string("推荐"), accent: AssetTheme.positive)
@@ -1332,6 +1343,9 @@ extension AdvancedBacktestStrategyTemplate {
         case .riskContributionCashConfidenceRouter,
              .riskContributionCashConfidenceLowNoise:
             growth = 1.00; stability = 1.00; defense = 1.00; flexibility = 1.00
+        case .nfciDualCoreV1,
+             .nfciDualCoreSimplifiedV11:
+            growth = 0.96; stability = 1.00; defense = 1.00; flexibility = 0.98
         case .strongVolControlledRotation:
             growth = 0.78; stability = 0.66; defense = 0.66; flexibility = 0.78
         case .momentumRotation:

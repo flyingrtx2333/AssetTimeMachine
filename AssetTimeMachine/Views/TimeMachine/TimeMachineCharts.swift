@@ -500,6 +500,13 @@ private struct TimeMachineUnifiedTrendSeries: Identifiable {
     let points: [TimeMachineUnifiedTrendPoint]
 }
 
+private struct TimeMachineUnifiedTrendSelectionItem: Identifiable {
+    let id: String
+    let title: String
+    let value: String
+    let color: Color
+}
+
 struct TimeMachineHeroTrendCard: View {
     let points: [TimeMachineTrendPoint]
     let latestPoint: TimeMachineTrendPoint
@@ -620,6 +627,12 @@ struct TimeMachineHeroTrendCard: View {
         self.valueDomain = valueDomain
         self.dateDomain = Self.makeDateDomain(from: displayPoints)
         self.axisDates = chartAxisDates(displayPoints.map(\.date))
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-timeMachineSelectChartPoint"),
+           !displayPoints.isEmpty {
+            self._selectedDate = State(initialValue: displayPoints[displayPoints.count / 2].date)
+        }
+        #endif
     }
 
     private static func marketReturnPoints(_ rawPoints: [(date: Date, value: Double)]) -> [(date: Date, value: Double)] {
@@ -667,9 +680,33 @@ struct TimeMachineHeroTrendCard: View {
         return nearestChartPoint(points, to: selectedDate, date: \.date)?.date ?? selectedPoint.date
     }
 
+    private var selectedPopoverAlignment: Alignment {
+        let midpoint = dateDomain.lowerBound.addingTimeInterval(
+            dateDomain.upperBound.timeIntervalSince(dateDomain.lowerBound) / 2
+        )
+        return selectedPoint.date >= midpoint ? .topTrailing : .topLeading
+    }
+
     private var canOpenSelectedRecord: Bool {
         guard selectedDate != nil else { return false }
         return hasRecord?(selectedSnapshotDate) ?? false
+    }
+
+    private var selectedSeriesItems: [TimeMachineUnifiedTrendSelectionItem] {
+        guard selectedDate != nil else { return [] }
+        return activeSeries.compactMap { series in
+            guard let point = nearestChartPoint(
+                series.points,
+                to: selectedPoint.date,
+                date: \.date
+            ) else { return nil }
+            return TimeMachineUnifiedTrendSelectionItem(
+                id: series.id,
+                title: series.title,
+                value: selectedValueText(for: point, scale: series.scale),
+                color: series.color
+            )
+        }
     }
 
     private static func makeDateDomain(from points: [TimeMachineTrendPoint]) -> ClosedRange<Date> {
@@ -721,6 +758,9 @@ struct TimeMachineHeroTrendCard: View {
                         RuleMark(x: .value(selectedDateAxisKey, selectedPoint.date))
                             .foregroundStyle(AssetTheme.textSecondary.opacity(0.38))
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 5]))
+                            .annotation(position: .overlay, alignment: selectedPopoverAlignment, spacing: 7) {
+                                selectedValuePopover
+                            }
                     }
                 }
                 .chartForegroundStyleScale(
@@ -875,12 +915,63 @@ struct TimeMachineHeroTrendCard: View {
         for point: TimeMachineUnifiedTrendPoint,
         scale: TimeMachineUnifiedTrendScale
     ) -> String {
+        selectedValueText(for: point, scale: scale)
+    }
+
+    private func selectedValueText(
+        for point: TimeMachineUnifiedTrendPoint,
+        scale: TimeMachineUnifiedTrendScale
+    ) -> String {
         switch scale {
         case .assetValue:
             return point.displayValue.currencyString(code: "CNY")
         case .marketReturn:
             return point.displayValue.percentString(maxFractionDigits: 1)
         }
+    }
+
+    private var selectedValuePopover: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(selectedPoint.date.chartAxisDateString)
+                .font(.system(size: 9.5, weight: .semibold, design: .default))
+                .monospacedDigit()
+                .foregroundStyle(AssetTheme.textSecondary)
+
+            Rectangle()
+                .fill(AssetTheme.border.opacity(0.46))
+                .frame(height: 1)
+
+            ForEach(selectedSeriesItems) { item in
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(item.color)
+                        .frame(width: 5, height: 5)
+
+                    Text(item.title)
+                        .font(.system(size: 9, weight: .medium, design: .default))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 5)
+
+                    Text(item.value)
+                        .font(.system(size: 9.5, weight: .semibold, design: .default))
+                        .monospacedDigit()
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                }
+            }
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 8)
+        .frame(width: 154)
+        .background(AssetTheme.surface.opacity(0.97), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.72), lineWidth: 0.8)
+        )
+        .shadow(color: Color.black.opacity(0.16), radius: 8, y: 3)
     }
 
     private var seriesToggleRow: some View {

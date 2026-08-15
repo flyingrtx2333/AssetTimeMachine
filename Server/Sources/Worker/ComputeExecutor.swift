@@ -40,13 +40,17 @@ actor BacktestComputeExecutor {
         datasetHash: String,
         dataStale: Bool
     ) async throws -> PublicBacktestResult {
-        try await execute(PublicBacktestComputeInvocation(
-            mode: .prewarm,
-            datasetPath: datasetFileURL.path,
-            datasetHash: datasetHash,
-            dataStale: dataStale,
-            strategyID: strategyID
-        ))
+        try await execute(
+            PublicBacktestComputeInvocation(
+                mode: .prewarm,
+                datasetPath: datasetFileURL.path,
+                datasetHash: datasetHash,
+                dataStale: dataStale,
+                strategyID: strategyID
+            ),
+            as: PublicBacktestResult.self,
+            timeoutSeconds: configuration.runTimeoutSeconds
+        )
     }
 
     func run(
@@ -55,16 +59,47 @@ actor BacktestComputeExecutor {
         datasetHash: String,
         dataStale: Bool
     ) async throws -> PublicBacktestResult {
-        try await execute(PublicBacktestComputeInvocation(
-            mode: .run,
-            datasetPath: datasetFileURL.path,
-            datasetHash: datasetHash,
-            dataStale: dataStale,
-            request: request
-        ))
+        try await execute(
+            PublicBacktestComputeInvocation(
+                mode: .run,
+                datasetPath: datasetFileURL.path,
+                datasetHash: datasetHash,
+                dataStale: dataStale,
+                request: request
+            ),
+            as: PublicBacktestResult.self,
+            timeoutSeconds: configuration.runTimeoutSeconds
+        )
     }
 
-    private func execute(_ invocation: PublicBacktestComputeInvocation) async throws -> PublicBacktestResult {
+    func forward(
+        strategyID: String,
+        datasetFileURL: URL,
+        datasetHash: String,
+        dataStale: Bool,
+        macroFileURL: URL,
+        decisionAt: Date
+    ) async throws -> PublicForwardStrategySnapshot {
+        try await execute(
+            PublicBacktestComputeInvocation(
+                mode: .forward,
+                datasetPath: datasetFileURL.path,
+                datasetHash: datasetHash,
+                dataStale: dataStale,
+                strategyID: strategyID,
+                macroPath: macroFileURL.path,
+                decisionAt: decisionAt
+            ),
+            as: PublicForwardStrategySnapshot.self,
+            timeoutSeconds: max(configuration.runTimeoutSeconds, 180)
+        )
+    }
+
+    private func execute<Response: Decodable>(
+        _ invocation: PublicBacktestComputeInvocation,
+        as responseType: Response.Type,
+        timeoutSeconds: Int
+    ) async throws -> Response {
         await acquire()
         defer { release() }
 
@@ -91,7 +126,7 @@ actor BacktestComputeExecutor {
         process.standardError = errorHandle
         try process.run()
 
-        let deadline = Date().addingTimeInterval(Double(configuration.runTimeoutSeconds))
+        let deadline = Date().addingTimeInterval(Double(timeoutSeconds))
         while process.isRunning {
             if Task.isCancelled {
                 terminate(process)
@@ -112,7 +147,7 @@ actor BacktestComputeExecutor {
             throw ComputeExecutorError.processFailed(detail)
         }
         let decoder = PublicBacktestComputeCodec.makeDecoder()
-        guard let result = try? decoder.decode(PublicBacktestResult.self, from: data) else {
+        guard let result = try? decoder.decode(responseType, from: data) else {
             throw ComputeExecutorError.invalidResult
         }
         return result
