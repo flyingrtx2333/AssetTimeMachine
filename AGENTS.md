@@ -492,7 +492,8 @@ Pull requests should describe the user-facing change, list verification commands
 
 ## Current Known Operational Notes
 
-- Latest TestFlight release: version `1.12` build `179`, Delivery UUID `70c150fa-85a0-4ac7-a93f-c2faeddc6bda`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.12-179`.
+- Latest TestFlight release: version `1.12` build `181`, Delivery UUID `f95e7ee0-e4ec-4404-a5bd-ce566c41a1e3`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.12-181`.
+- Build 181 commits and packages the finalized NFCI forward-watch workflow, server forward-snapshot execution path, multi-series backtest share poster, and Time Machine selected-point value popover. The changed screens were recaptured on iPhone 17 Pro Max and archived under OneDrive `Changed-Pages-2026-08-15-build181`.
 - Build 179 restores accounting clarity to the unified Time Machine chart: total assets, net assets, and liabilities use their actual CNY values on the left axis, while enabled gold and market benchmarks use relative change on the right axis. It also adds explicit scale copy, professional compact amount labels, accurate accessibility values, and preserves independent legend toggles without changing the pinned App-engine strategy baseline.
 - Build 178 ships the latest generalized backtest and market-data support changes from `main`, including the expanded remote market parsing path and localization compatibility updates.
 - Build 177 adds a polished Quant backtest share poster with strategy curves and key metrics, and consolidates Time Machine portfolio values plus optional gold and market indices into one indexed trend chart. Total assets, net assets, and liabilities are enabled by default; market benchmarks start disabled, every legend item can be toggled independently, and the obsolete standalone comparison charts are removed.
