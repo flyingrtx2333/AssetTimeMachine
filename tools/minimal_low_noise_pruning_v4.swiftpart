@@ -1,0 +1,283 @@
+        if ProcessInfo.processInfo.environment["ATM_MINIMAL_LOW_NOISE_V4"] == "1" {
+            func loadV4NFCI(_ path: String) -> [(releaseDate: String, value: Double)] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let f = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard f.count >= 3, let v = Double(f[2]), v.isFinite else { return nil }
+                    return (String(f[0]), v)
+                }.sorted { $0.0 < $1.0 }
+            }
+            func v4Change(_ s: [(releaseDate: String, value: Double)], _ d: String, _ n: Int) -> Double? {
+                var latest: Int?
+                for i in s.indices { if s[i].releaseDate <= d { latest = i } else { break } }
+                guard let i = latest, i >= n else { return nil }
+                return s[i].value - s[i - n].value
+            }
+            func resetV4Overrides() {
+                BacktestResearchOverrides.lowNoiseTradeBand = nil
+                BacktestResearchOverrides.lowNoiseTradeToBandBoundary = nil
+                BacktestResearchOverrides.lowNoiseVolatilityScaleCap = nil
+                BacktestResearchOverrides.lowNoiseActiveReturnScale = nil
+                BacktestResearchOverrides.lowNoiseChinaActiveReturnScale = nil
+                BacktestResearchOverrides.lowNoiseConfirmedUSActiveReturnScale = nil
+                BacktestResearchOverrides.lowNoiseDisableNearPeakBuffer = nil
+                BacktestResearchOverrides.lowNoiseDisableExitSentinel = nil
+                BacktestResearchOverrides.lowNoiseDisableDynamicTurnoverSuppression = nil
+                BacktestResearchOverrides.lowNoiseUseSqrtVolRiskBudget = nil
+                BacktestResearchOverrides.lowNoiseUseGeometricHeadroomRiskBudget = nil
+            }
+            func setV4ActiveScale(_ value: Double) {
+                BacktestResearchOverrides.lowNoiseActiveReturnScale = value
+                BacktestResearchOverrides.lowNoiseChinaActiveReturnScale = value
+                BacktestResearchOverrides.lowNoiseConfirmedUSActiveReturnScale = value
+            }
+            func v4Fingerprint(_ run: ResearchTargetStrategyRun) -> String {
+                var h: UInt64 = 1469598103934665603
+                for state in run.dailyStates {
+                    for symbol in ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"] {
+                        var x = UInt64(bitPattern: Int64(((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded()))
+                        for _ in 0..<8 {
+                            h ^= x & UInt64(0xff)
+                            h &*= UInt64(1099511628211)
+                            x >>= 8
+                        }
+                    }
+                }
+                return String(format: "%016llx", h)
+            }
+
+            let variant = Int(ProcessInfo.processInfo.environment["ATM_V4_VARIANT"] ?? "0") ?? 0
+            let fee = Double(ProcessInfo.processInfo.environment["ATM_V4_EXEC_FEE"] ?? "1.0") ?? 1.0
+            let credit = loadV4NFCI("tools/research-results/NFCICREDIT_initial_release.csv")
+            let leverage = loadV4NFCI("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            guard credit.count >= 700, leverage.count >= 700 else { return }
+
+            resetV4Overrides()
+            let name: String
+            let removedClusters: Int
+            switch variant {
+            case 0:
+                name = "V4_0_current"
+                removedClusters = 0
+            case 1:
+                name = "V4_1_round25"
+                removedClusters = 0
+                BacktestResearchOverrides.lowNoiseTradeBand = 0.25
+            case 2:
+                name = "V4_2_no_active"
+                removedClusters = 1
+                BacktestResearchOverrides.lowNoiseTradeBand = 0.25
+                setV4ActiveScale(1.0)
+            case 3:
+                name = "V4_3_no_near_peak"
+                removedClusters = 2
+                BacktestResearchOverrides.lowNoiseTradeBand = 0.25
+                setV4ActiveScale(1.0)
+                BacktestResearchOverrides.lowNoiseDisableNearPeakBuffer = true
+            case 4:
+                name = "V4_4_no_sentinel"
+                removedClusters = 3
+                BacktestResearchOverrides.lowNoiseTradeBand = 0.25
+                setV4ActiveScale(1.0)
+                BacktestResearchOverrides.lowNoiseDisableNearPeakBuffer = true
+                BacktestResearchOverrides.lowNoiseDisableExitSentinel = true
+            case 5:
+                name = "V4_5_minimal"
+                removedClusters = 4
+                BacktestResearchOverrides.lowNoiseTradeBand = 0.25
+                setV4ActiveScale(1.0)
+                BacktestResearchOverrides.lowNoiseDisableNearPeakBuffer = true
+                BacktestResearchOverrides.lowNoiseDisableExitSentinel = true
+                BacktestResearchOverrides.lowNoiseDisableDynamicTurnoverSuppression = true
+            case 10:
+                name = "V5_0_current"
+                removedClusters = 0
+            case 11:
+                name = "V5_1_no_near_peak"
+                removedClusters = 1
+                BacktestResearchOverrides.lowNoiseDisableNearPeakBuffer = true
+            case 12:
+                name = "V5_2_no_sentinel"
+                removedClusters = 1
+                BacktestResearchOverrides.lowNoiseDisableExitSentinel = true
+            case 13:
+                name = "V5_3_no_dynamic_turnover"
+                removedClusters = 1
+                BacktestResearchOverrides.lowNoiseDisableDynamicTurnoverSuppression = true
+            case 14:
+                name = "V5_4_no_near_peak_no_sentinel"
+                removedClusters = 2
+                BacktestResearchOverrides.lowNoiseDisableNearPeakBuffer = true
+                BacktestResearchOverrides.lowNoiseDisableExitSentinel = true
+            case 15:
+                name = "V5_5_structural_prune"
+                removedClusters = 3
+                BacktestResearchOverrides.lowNoiseDisableNearPeakBuffer = true
+                BacktestResearchOverrides.lowNoiseDisableExitSentinel = true
+                BacktestResearchOverrides.lowNoiseDisableDynamicTurnoverSuppression = true
+            case 16:
+                name = "V5_6_structural_prune_round25"
+                removedClusters = 3
+                BacktestResearchOverrides.lowNoiseTradeBand = 0.25
+                BacktestResearchOverrides.lowNoiseDisableNearPeakBuffer = true
+                BacktestResearchOverrides.lowNoiseDisableExitSentinel = true
+                BacktestResearchOverrides.lowNoiseDisableDynamicTurnoverSuppression = true
+            case 20:
+                name = "V6_1_single_vol_budget"
+                removedClusters = 5
+                BacktestResearchOverrides.lowNoiseTradeBand = 0.25
+                BacktestResearchOverrides.lowNoiseVolatilityScaleCap = .infinity
+                setV4ActiveScale(1.0)
+                BacktestResearchOverrides.lowNoiseDisableExitSentinel = true
+            case 30:
+                name = "V7_1_sqrt_vol_budget"
+                removedClusters = 5
+                BacktestResearchOverrides.lowNoiseUseSqrtVolRiskBudget = true
+                BacktestResearchOverrides.lowNoiseDisableExitSentinel = true
+            case 40:
+                name = "V8_1_geometric_headroom"
+                removedClusters = 5
+                BacktestResearchOverrides.lowNoiseUseGeometricHeadroomRiskBudget = true
+                BacktestResearchOverrides.lowNoiseDisableExitSentinel = true
+            case 50:
+                name = "V9_1_unified_122"
+                removedClusters = 3
+                setV4ActiveScale(1.22)
+                BacktestResearchOverrides.lowNoiseDisableExitSentinel = true
+            default:
+                print("APP_MINIMAL_LOW_NOISE_V4\nunknown_variant=\(variant)")
+                resetV4Overrides()
+                return
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+            }
+            let localSettings = AdvancedBacktestRiskSettings(
+                feeRate: fee,
+                slippageRate: 0.05,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            guard let base = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: localSettings,
+                mode: mode
+            ) else { resetV4Overrides(); return }
+            let decisionBase: AdvancedRotationStrategyRun
+            if abs(fee - 1.0) < 0.0000001 {
+                decisionBase = base
+            } else {
+                let frozenSettings = AdvancedBacktestRiskSettings(
+                    feeRate: 1.0,
+                    slippageRate: 0.05,
+                    maxPositionRatio: 100,
+                    cooldownDays: 0,
+                    stopLossRatio: 0,
+                    takeProfitRatio: 0
+                )
+                guard let frozenBase = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: frozenSettings,
+                    mode: mode
+                ) else { resetV4Overrides(); return }
+                decisionBase = frozenBase
+            }
+
+            let baseTargets = Dictionary(uniqueKeysWithValues: base.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let baseTradeDates = Set(decisionBase.report.trades.map { $0.date.recordDateString })
+            let us: Set<String> = ["nasdaq", "sp500"]
+            let overlayBand = (variant == 0 || (10...15).contains(variant)) ? 0.244 : 0.25
+            let config = ResearchTargetStrategyConfig(
+                symbol: name,
+                title: name,
+                warmupSessions: 21,
+                rebalanceSessions: 1,
+                rebalanceBand: overlayBand,
+                maxGrossExposure: 1,
+                allowsFinancedExposure: false,
+                financingAnnualRate: 0,
+                buyReason: name
+            )
+            var priorBase: [String: Double] = [:]
+            var pending: [String: Double] = [:]
+            var events = 0
+            guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: localSettings,
+                config: config,
+                rebalanceDecision: { index, signalIndex, data in
+                    guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    let execution = data.dates[index].recordDateString
+                    guard baseTradeDates.contains(execution), var target = baseTargets[execution] else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    let prior = priorBase
+                    priorBase = target
+                    guard !prior.isEmpty else {
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    }
+                    let signal = data.dates[signalIndex].recordDateString
+                    let c = v4Change(credit, signal, 8).map { $0 <= -0.03 } ?? false
+                    let l = v4Change(leverage, signal, 4).map { $0 <= -0.03 } ?? false
+                    let priorGross = prior.values.reduce(0, +)
+                    let proposedGross = target.values.reduce(0, +)
+                    let priorUS = prior.reduce(0.0) { $0 + (us.contains($1.key) ? $1.value : 0) }
+                    let proposedUS = target.reduce(0.0) { $0 + (us.contains($1.key) ? $1.value : 0) }
+                    let usDrop = priorUS - proposedUS
+                    let grossDrop = priorGross - proposedGross
+                    var extras: [String: Double] = [:]
+                    if c || l {
+                        if usDrop >= 0.05, grossDrop >= 0.03 {
+                            let retention = c && l ? 1.0 : 0.5
+                            for symbol in us {
+                                let reduction = max((prior[symbol] ?? 0) - (target[symbol] ?? 0), 0)
+                                if reduction > 0 { extras[symbol] = retention * reduction }
+                            }
+                        } else if grossDrop >= 0.05 {
+                            for (symbol, weight) in prior {
+                                let reduction = max(weight - (target[symbol] ?? 0), 0)
+                                if reduction > 0 { extras[symbol] = reduction }
+                            }
+                        }
+                    }
+                    let desired = extras.values.reduce(0, +)
+                    if desired > 0 {
+                        let scale = min(1.0, max(1.0 - proposedGross, 0) / desired)
+                        for (symbol, extra) in extras { target[symbol, default: 0] += extra * scale }
+                        events += 1
+                    }
+                    let gross = target.values.reduce(0, +)
+                    if gross > 1, gross > 0 { target = target.mapValues { max($0, 0) / gross } }
+                    pending = target
+                    return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                },
+                targetWeights: { _, _ in pending }
+            ) else { resetV4Overrides(); return }
+
+            let path = ProcessInfo.processInfo.environment["ATM_V4_OUTPUT"] ?? "/private/tmp/\(name).csv"
+            var lines = ["date,portfolio_value"]
+            lines.append(contentsOf: run.report.points.map { point in
+                "\(point.date.recordDateString),\(String(format: "%.10f", point.portfolioValue))"
+            })
+            try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+
+            let cagrText = String(format: "%.6f", (run.report.annualizedReturn ?? 0) * 100)
+            let mddText = String(format: "%.6f", run.report.maxDrawdown * 100)
+            let volText = String(format: "%.6f", (run.report.annualizedVolatility ?? 0) * 100)
+            let sharpeText = String(format: "%.6f", run.report.sharpeRatio ?? 0)
+            print("APP_MINIMAL_LOW_NOISE_V4")
+            print("variant=\(variant),name=\(name),removed=\(removedClusters),fee=\(fee),events=\(events),trades=\(run.report.trades.count),cagr=\(cagrText),mdd=\(mddText),vol=\(volText),sharpe=\(sharpeText),fingerprint=\(v4Fingerprint(run)),path=\(path)")
+            resetV4Overrides()
+            return
+        }

@@ -1,0 +1,145 @@
+        if ProcessInfo.processInfo.environment["ATM_TARGET_MODEL_DUMP_V3"] == "1" {
+            func loadV3Series(_ path: String) -> [(releaseDate: String, value: Double)] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let f = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard f.count >= 3, let v = Double(f[2]), v.isFinite else { return nil }
+                    return (String(f[0]), v)
+                }.sorted { $0.0 < $1.0 }
+            }
+            func v3Change(_ s: [(releaseDate: String, value: Double)], _ d: String, _ n: Int) -> Double? {
+                var latest: Int?
+                for i in s.indices { if s[i].releaseDate <= d { latest = i } else { break } }
+                guard let i = latest, i >= n else { return nil }
+                return s[i].value - s[i-n].value
+            }
+            func resetV3Overrides() {
+                BacktestResearchOverrides.lowNoiseTradeBand = nil
+                BacktestResearchOverrides.lowNoiseTradeToBandBoundary = nil
+                BacktestResearchOverrides.lowNoiseActiveReturnScale = nil
+                BacktestResearchOverrides.lowNoiseChinaActiveReturnScale = nil
+                BacktestResearchOverrides.lowNoiseConfirmedUSActiveReturnScale = nil
+            }
+            func excessScaled(_ base: Double, _ f: Double) -> Double { 1 + (base - 1) * f }
+
+            let kind = ProcessInfo.processInfo.environment["ATM_V3_MODEL_KIND"] ?? "c0"
+            let bandFactor = Double(ProcessInfo.processInfo.environment["ATM_V3_BAND_FACTOR"] ?? "1.0") ?? 1.0
+            let activeFactor = Double(ProcessInfo.processInfo.environment["ATM_V3_ACTIVE_FACTOR"] ?? "1.0") ?? 1.0
+            let output = ProcessInfo.processInfo.environment["ATM_V3_TARGET_OUTPUT"] ?? "/private/tmp/v3_target.csv"
+            let executionFee = Double(ProcessInfo.processInfo.environment["ATM_V3_MODEL_FEE"] ?? "1.0") ?? 1.0
+            let credit = loadV3Series("tools/research-results/NFCICREDIT_initial_release.csv")
+            let leverage = loadV3Series("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            guard credit.count >= 700, leverage.count >= 700 else { return }
+
+            resetV3Overrides()
+            let mode: AdvancedBacktestStrategyMode
+            let riskScale: Double
+            let executionBand: Double
+            switch kind {
+            case "c0":
+                mode = .riskContributionCashConfidenceLowNoise
+                riskScale = 1.0
+                executionBand = 0.244
+            case "c1":
+                mode = .riskContributionCashConfidenceRouter
+                riskScale = 1.0
+                executionBand = 0.20
+            case "c2":
+                mode = .riskContributionCashConfidenceRouter
+                riskScale = 1.30
+                executionBand = 0.20
+            case "expert":
+                mode = .riskContributionCashConfidenceLowNoise
+                riskScale = 1.0
+                executionBand = 0.244 * bandFactor
+                BacktestResearchOverrides.lowNoiseTradeBand = executionBand
+                BacktestResearchOverrides.lowNoiseActiveReturnScale = excessScaled(1.22, activeFactor)
+                BacktestResearchOverrides.lowNoiseChinaActiveReturnScale = excessScaled(1.30, activeFactor)
+                BacktestResearchOverrides.lowNoiseConfirmedUSActiveReturnScale = excessScaled(1.24, activeFactor)
+            default:
+                print("APP_TARGET_MODEL_DUMP_V3\nunknown_kind=\(kind)")
+                resetV3Overrides(); return
+            }
+
+            let settings = AdvancedBacktestRiskSettings(
+                feeRate: executionFee, slippageRate: 0.05, maxPositionRatio: 100,
+                cooldownDays: 0, stopLossRatio: 0, takeProfitRatio: 0
+            )
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+            }
+            guard let base = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs, initialCash: 100_000, settings: settings, mode: mode
+            ) else { resetV3Overrides(); return }
+            let baseTargets = Dictionary(uniqueKeysWithValues: base.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let baseTradeDates = Set(base.report.trades.map { $0.date.recordDateString })
+            let us: Set<String> = ["nasdaq", "sp500"]
+            let config = ResearchTargetStrategyConfig(
+                symbol: "v3_target_dump", title: "v3 target dump",
+                warmupSessions: 21, rebalanceSessions: 1, rebalanceBand: executionBand,
+                maxGrossExposure: 1, allowsFinancedExposure: false, financingAnnualRate: 0,
+                buyReason: "v3 target dump"
+            )
+            var priorBase: [String: Double] = [:]
+            var pending: [String: Double] = [:]
+            guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: inputs, initialCash: 100_000, settings: settings, config: config,
+                rebalanceDecision: { index, signalIndex, data in
+                    guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    let execution = data.dates[index].recordDateString
+                    guard baseTradeDates.contains(execution), var target = baseTargets[execution] else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    let prior = priorBase; priorBase = target
+                    if !prior.isEmpty {
+                        let signal = data.dates[signalIndex].recordDateString
+                        let c = v3Change(credit, signal, 8).map { $0 <= -0.03 } ?? false
+                        let l = v3Change(leverage, signal, 4).map { $0 <= -0.03 } ?? false
+                        let priorGross = prior.values.reduce(0,+), proposedGross = target.values.reduce(0,+)
+                        let priorUS = prior.reduce(0.0) { $0 + (us.contains($1.key) ? $1.value : 0) }
+                        let proposedUS = target.reduce(0.0) { $0 + (us.contains($1.key) ? $1.value : 0) }
+                        let usDrop = priorUS - proposedUS, grossDrop = priorGross - proposedGross
+                        var extras: [String: Double] = [:]
+                        if c || l {
+                            if usDrop >= 0.05, grossDrop >= 0.03 {
+                                let retention = c && l ? 1.0 : 0.5
+                                for symbol in us {
+                                    let reduction = max((prior[symbol] ?? 0) - (target[symbol] ?? 0), 0)
+                                    if reduction > 0 { extras[symbol] = retention * reduction }
+                                }
+                            } else if grossDrop >= 0.05 {
+                                for (symbol, weight) in prior {
+                                    let reduction = max(weight - (target[symbol] ?? 0), 0)
+                                    if reduction > 0 { extras[symbol] = reduction }
+                                }
+                            }
+                        }
+                        let desired = extras.values.reduce(0,+)
+                        if desired > 0 {
+                            let scale = min(1.0, max(1.0-proposedGross,0)/desired)
+                            for (symbol,extra) in extras { target[symbol,default:0] += extra*scale }
+                        }
+                    }
+                    target = target.mapValues { max($0,0) * riskScale }
+                    let gross = target.values.reduce(0,+)
+                    if gross > 1, gross > 0 { target = target.mapValues { $0/gross } }
+                    pending = target
+                    return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                }, targetWeights: { _, _ in pending }
+            ) else { resetV3Overrides(); return }
+
+            let symbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            var lines = ["date," + symbols.joined(separator: ",")]
+            lines.append(contentsOf: run.dailyStates.map { state in
+                let values = symbols.map { String(format: "%.10f", state.targetWeights[$0] ?? 0) }
+                return ([state.date.recordDateString] + values).joined(separator: ",")
+            })
+            try? (lines.joined(separator: "\n") + "\n").write(toFile: output, atomically: true, encoding: .utf8)
+            print("APP_TARGET_MODEL_DUMP_V3")
+            print("kind=\(kind),band_factor=\(bandFactor),active_factor=\(activeFactor),rows=\(run.dailyStates.count),cagr=\(String(format: "%.6f", (run.report.annualizedReturn ?? 0)*100)),mdd=\(String(format: "%.6f", run.report.maxDrawdown*100)),sharpe=\(String(format: "%.6f", run.report.sharpeRatio ?? 0)),path=\(output)")
+            resetV3Overrides()
+            return
+        }

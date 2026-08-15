@@ -1,0 +1,114 @@
+        if ProcessInfo.processInfo.environment["ATM_NFCI_DUAL_CORE_V1_APP_VALIDATION"] == "1" {
+            func loadNFCIPoints(_ path: String) -> [BacktestNFCIPoint] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3,
+                          let value = Double(fields[2]),
+                          value.isFinite else { return nil }
+                    let releaseDate = String(fields[0])
+                    let referenceDate = String(fields[1])
+                    return BacktestNFCIPoint(
+                        releaseDate: releaseDate,
+                        referenceDate: referenceDate,
+                        availableAt: nil,
+                        value: value
+                    )
+                }
+            }
+
+            let nfci = BacktestNFCIAsOfData(
+                source: "ALFRED initial-release fixture",
+                credit: loadNFCIPoints("tools/research-results/NFCICREDIT_initial_release.csv"),
+                leverage: loadNFCIPoints("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            )
+            let formalV11 = ProcessInfo.processInfo.environment["ATM_NFCI_DUAL_CORE_FORMAL_V11"] == "1"
+            let mode: AdvancedBacktestStrategyMode = formalV11 ? .nfciDualCoreSimplifiedV11 : .nfciDualCoreV1
+            let cleanV2 = ProcessInfo.processInfo.environment["ATM_NFCI_DUAL_CORE_V2_CLEAN"] == "1"
+            let unified122V10 = ProcessInfo.processInfo.environment["ATM_NFCI_DUAL_CORE_V10_UNIFIED122"] == "1"
+            let round25V11 = ProcessInfo.processInfo.environment["ATM_NFCI_DUAL_CORE_V11_ROUND25"] == "1"
+            if cleanV2 {
+                BacktestResearchOverrides.lowNoiseTradeBand = 0.25
+                BacktestResearchOverrides.lowNoiseActiveReturnScale = 1.20
+                BacktestResearchOverrides.lowNoiseChinaActiveReturnScale = 1.20
+                BacktestResearchOverrides.lowNoiseConfirmedUSActiveReturnScale = 1.20
+                BacktestResearchOverrides.lowNoiseDisableExitSentinel = true
+                BacktestResearchOverrides.nfciDualCoreHighCoreBand = 0.25
+            } else if round25V11 {
+                BacktestResearchOverrides.lowNoiseTradeBand = 0.25
+                BacktestResearchOverrides.lowNoiseActiveReturnScale = 1.22
+                BacktestResearchOverrides.lowNoiseChinaActiveReturnScale = 1.22
+                BacktestResearchOverrides.lowNoiseConfirmedUSActiveReturnScale = 1.22
+                BacktestResearchOverrides.lowNoiseDisableExitSentinel = true
+                BacktestResearchOverrides.nfciDualCoreHighCoreBand = 0.25
+            } else if unified122V10 {
+                BacktestResearchOverrides.lowNoiseActiveReturnScale = 1.22
+                BacktestResearchOverrides.lowNoiseChinaActiveReturnScale = 1.22
+                BacktestResearchOverrides.lowNoiseConfirmedUSActiveReturnScale = 1.22
+                BacktestResearchOverrides.lowNoiseDisableExitSentinel = true
+            }
+            let validationFee = Double(ProcessInfo.processInfo.environment["ATM_NFCI_DUAL_CORE_V1_FEE"] ?? "1.0") ?? 1.0
+            let validationSettings = AdvancedBacktestRiskSettings(
+                feeRate: validationFee,
+                slippageRate: 0.05,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+            }
+            guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: validationSettings,
+                mode: mode,
+                nfciAsOf: nfci
+            ) else {
+                print("APP_NFCI_DUAL_CORE_V1_VALIDATION_FAILED")
+                return
+            }
+            var h: UInt64 = 1469598103934665603
+            for state in run.dailyStates {
+                for symbol in ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"] {
+                    var value = UInt64(bitPattern: Int64(((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded()))
+                    for _ in 0..<8 {
+                        h ^= value & UInt64(0xff)
+                        h &*= UInt64(1099511628211)
+                        value >>= 8
+                    }
+                }
+            }
+            if let output = ProcessInfo.processInfo.environment["ATM_NFCI_DUAL_CORE_OUTPUT"] {
+                var lines = ["date,portfolio_value"]
+                lines.append(contentsOf: run.report.points.map { point in
+                    "\(point.date.recordDateString),\(String(format: "%.10f", point.portfolioValue))"
+                })
+                try? (lines.joined(separator: "\n") + "\n").write(toFile: output, atomically: true, encoding: .utf8)
+            }
+            print("APP_NFCI_DUAL_CORE_V1_VALIDATION_OK")
+            let variantName = formalV11
+                ? "formal_v11"
+                : (cleanV2
+                    ? "clean_v2"
+                    : (round25V11 ? "round25_v11" : (unified122V10 ? "unified122_v10" : "current_v1")))
+            print("variant=\(variantName)")
+            print("cagr=\(String(format: "%.6f", (run.report.annualizedReturn ?? 0) * 100))")
+            print("mdd=\(String(format: "%.6f", run.report.maxDrawdown * 100))")
+            print("vol=\(String(format: "%.6f", (run.report.annualizedVolatility ?? 0) * 100))")
+            print("sharpe=\(String(format: "%.6f", run.report.sharpeRatio ?? 0))")
+            print("trades=\(run.report.trades.count)")
+            print("fingerprint=\(String(format: "%016llx", h))")
+            if let latest = run.dailyStates.last {
+                let orderedSymbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+                let weights = orderedSymbols.map { symbol in
+                    "\(symbol)=\(String(format: "%.4f", (latest.targetWeights[symbol] ?? 0) * 100))%"
+                }.joined(separator: ",")
+                let gross = latest.targetWeights.values.reduce(0, +)
+                print("latest_date=\(latest.date.recordDateString)")
+                print("latest_targets=\(weights),cash=\(String(format: "%.4f", max(1 - gross, 0) * 100))%")
+            }
+            return
+        }

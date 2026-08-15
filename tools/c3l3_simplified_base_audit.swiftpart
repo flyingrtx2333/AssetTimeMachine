@@ -1,0 +1,107 @@
+        if ProcessInfo.processInfo.environment["ATM_C3L3_SIMPLIFIED_BASE_AUDIT"] == "1" {
+            func loadSimpleC3Series(_ path: String) -> [(releaseDate: String, value: Double)] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let f = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard f.count >= 3, let v = Double(f[2]), v.isFinite else { return nil }
+                    return (String(f[0]), v)
+                }.sorted { $0.0 < $1.0 }
+            }
+            func simpleC3Change(_ s: [(releaseDate: String, value: Double)], _ d: String, _ n: Int) -> Double? {
+                var latest: Int?
+                for i in s.indices { if s[i].releaseDate <= d { latest = i } else { break } }
+                guard let i = latest, i >= n else { return nil }
+                return s[i].value - s[i-n].value
+            }
+            let credit = loadSimpleC3Series("tools/research-results/NFCICREDIT_initial_release.csv")
+            let leverage = loadSimpleC3Series("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            guard credit.count >= 700, leverage.count >= 700 else { return }
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let us: Set<String> = ["nasdaq", "sp500"]
+            let modes: [(String, AdvancedBacktestStrategyMode, Double)] = [
+                ("cash_confidence", .riskContributionCashConfidenceRouter, 0.20),
+                ("low_noise", .riskContributionCashConfidenceLowNoise, 0.244),
+            ]
+            print("APP_C3L3_SIMPLIFIED_BASE_AUDIT")
+            print("base,variant,cagr,mdd,vol,sharpe,trades,average_cash,events,since2020_cagr,since2020_sharpe,since2022_cagr,since2022_sharpe")
+            for entry in modes {
+                let inputs = entry.1.requiredSignalAssetSymbols.compactMap { options[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+                }
+                guard let base = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: inputs, initialCash: 100_000, settings: settings, mode: entry.1
+                ) else { continue }
+                func printRow(_ variant: String, _ report: AdvancedBacktestReport, _ events: Int) {
+                    let m2020 = BacktestMetricsCalculator.performanceMetrics(from: report.points.filter { $0.date.recordDateString >= "2020-01-01" })
+                    let m2022 = BacktestMetricsCalculator.performanceMetrics(from: report.points.filter { $0.date.recordDateString >= "2022-01-01" })
+                    print([
+                        entry.0, variant,
+                        String(format:"%.6f",(report.annualizedReturn ?? 0)*100), String(format:"%.6f",report.maxDrawdown*100),
+                        String(format:"%.6f",(report.annualizedVolatility ?? 0)*100), String(format:"%.6f",report.sharpeRatio ?? 0),
+                        String(report.trades.count), String(format:"%.6f",report.averageCashRatio), String(events),
+                        String(format:"%.6f",(m2020?.annualizedReturn ?? 0)*100), String(format:"%.6f",m2020?.sharpeRatio ?? 0),
+                        String(format:"%.6f",(m2022?.annualizedReturn ?? 0)*100), String(format:"%.6f",m2022?.sharpeRatio ?? 0)
+                    ].joined(separator:","))
+                }
+                printRow("base", base.report, 0)
+                let baseTargets = Dictionary(uniqueKeysWithValues: base.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+                let baseTradeDates = Set(base.report.trades.map { $0.date.recordDateString })
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "simple_c3_\(entry.0)", title: "Simple C3 \(entry.0)",
+                    warmupSessions: 21, rebalanceSessions: 1, rebalanceBand: entry.2,
+                    maxGrossExposure: 1, allowsFinancedExposure: false, financingAnnualRate: 0,
+                    buyReason: "Simple C3"
+                )
+                var priorBase: [String: Double] = [:]
+                var pending: [String: Double] = [:]
+                var events = 0
+                guard let c3 = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs, initialCash: 100_000, settings: settings, config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let execution = data.dates[index].recordDateString
+                        guard baseTradeDates.contains(execution), var target = baseTargets[execution] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let prior = priorBase; priorBase = target
+                        guard !prior.isEmpty else { pending = target; return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false) }
+                        let signal = data.dates[signalIndex].recordDateString
+                        let c = simpleC3Change(credit, signal, 8).map { $0 <= -0.03 } ?? false
+                        let l = simpleC3Change(leverage, signal, 4).map { $0 <= -0.03 } ?? false
+                        let priorGross = prior.values.reduce(0,+), proposedGross = target.values.reduce(0,+)
+                        let priorUS = prior.reduce(0.0) { $0 + (us.contains($1.key) ? $1.value : 0) }
+                        let proposedUS = target.reduce(0.0) { $0 + (us.contains($1.key) ? $1.value : 0) }
+                        let usDrop = priorUS - proposedUS, grossDrop = priorGross - proposedGross
+                        var extras: [String: Double] = [:]
+                        if c || l {
+                            if usDrop >= 0.05, grossDrop >= 0.03 {
+                                let retention = c && l ? 1.0 : 0.5
+                                for symbol in us {
+                                    let reduction = max((prior[symbol] ?? 0) - (target[symbol] ?? 0), 0)
+                                    if reduction > 0 { extras[symbol] = retention * reduction }
+                                }
+                            } else if grossDrop >= 0.05 {
+                                for (symbol, weight) in prior {
+                                    let reduction = max(weight - (target[symbol] ?? 0), 0)
+                                    if reduction > 0 { extras[symbol] = reduction }
+                                }
+                            }
+                        }
+                        let desired = extras.values.reduce(0,+)
+                        if desired > 0 {
+                            let scale = min(1.0, max(1.0 - proposedGross, 0) / desired)
+                            for (symbol, extra) in extras { target[symbol, default: 0] += extra * scale }
+                            events += 1
+                        }
+                        let gross = target.values.reduce(0,+)
+                        if gross > 1, gross > 0 { target = target.mapValues { max($0,0)/gross } }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    }, targetWeights: { _, _ in pending }
+                ) else { continue }
+                printRow("c3l3", c3.report, events)
+            }
+            return
+        }

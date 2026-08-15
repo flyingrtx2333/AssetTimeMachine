@@ -1,0 +1,115 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_NFCI_C3_L3_ONLINE_TYPE_CALIBRATION"] == "1" {
+            struct TypeEvent { let execution: String; let signal: String; let type: String }
+            struct SettledTypeEvent { let settlement: String; let type: String; let success: Bool }
+            struct TypeStats { var wins = 0; var losses = 0 }
+
+            func loadTypeSeries(_ path: String) -> [(String, Double)] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let f = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard f.count >= 3, let v = Double(f[2]), v.isFinite else { return nil }
+                    return (String(f[0]), v)
+                }.sorted { $0.0 < $1.0 }
+            }
+            func typeChange(_ s: [(String, Double)], _ date: String, _ n: Int) -> Double? {
+                var latest: Int?
+                for i in s.indices { if s[i].0 <= date { latest = i } else { break } }
+                guard let i = latest, i >= n else { return nil }
+                return s[i].1 - s[i-n].1
+            }
+            func suffix(_ c: Bool, _ l: Bool) -> String { c && l ? "CL" : (c ? "C" : "L") }
+
+            let credit = loadTypeSeries("tools/research-results/NFCICREDIT_initial_release.csv")
+            let leverage = loadTypeSeries("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            guard credit.count >= 700, leverage.count >= 700 else { print("APP_CC_NFCI_C3_L3_ONLINE_TYPE_CALIBRATION\nseries_missing"); return }
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+            }
+            guard let base = BacktestEngine.runAdvancedRotationStrategyWithTrace(assetInputs: inputs, initialCash: 100_000, settings: settings, mode: mode),
+                  let commonStart = base.report.points.first?.date else { print("APP_CC_NFCI_C3_L3_ONLINE_TYPE_CALIBRATION\nbase_missing"); return }
+            let baseTargets = Dictionary(uniqueKeysWithValues: base.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let baseTrades = Set(base.report.trades.map { $0.date.recordDateString })
+            let dates = base.dailyStates.map(\.date)
+            let dateIndex = Dictionary(uniqueKeysWithValues: dates.enumerated().map { ($0.element.recordDateString, $0.offset) })
+            let us: Set<String> = ["nasdaq", "sp500"]
+
+            func applyC3L3(prior: [String: Double], target input: [String: Double], signal: String) -> (target: [String: Double], type: String?) {
+                var target = input
+                let c = typeChange(credit, signal, 8).map { $0 <= -0.03 } ?? false
+                let l = typeChange(leverage, signal, 4).map { $0 <= -0.03 } ?? false
+                guard c || l, !prior.isEmpty else { return (target, nil) }
+                let priorGross = prior.values.reduce(0,+), proposedGross = target.values.reduce(0,+)
+                let priorUS = prior.reduce(0.0) { $0 + (us.contains($1.key) ? $1.value : 0) }
+                let proposedUS = target.reduce(0.0) { $0 + (us.contains($1.key) ? $1.value : 0) }
+                let usDrop = priorUS - proposedUS, grossDrop = priorGross - proposedGross
+                var extras: [String: Double] = [:]; var family: String?
+                if usDrop >= 0.05, grossDrop >= 0.03 {
+                    family = "US"; let retention = c && l ? 1.0 : 0.5
+                    for symbol in us { let d = max((prior[symbol] ?? 0) - (target[symbol] ?? 0),0); if d>0 { extras[symbol] = retention*d } }
+                } else if grossDrop >= 0.05 {
+                    family = "GEN"
+                    for (symbol,w) in prior { let d=max(w-(target[symbol] ?? 0),0); if d>0 { extras[symbol]=d } }
+                }
+                let desired=extras.values.reduce(0,+)
+                if desired>0, let family {
+                    let scale=min(1.0,max(1.0-proposedGross,0)/desired)
+                    for (symbol,x) in extras { target[symbol,default:0] += x*scale }
+                    let gross=target.values.reduce(0,+); if gross>1 { target=target.mapValues{$0/gross} }
+                    return (target, family+"_"+suffix(c,l))
+                }
+                return (target,nil)
+            }
+
+            let shadowConfig = ResearchTargetStrategyConfig(symbol:"cc_nfci_c3_l3_shadow_online", title:"C3L3 shadow online", warmupSessions:21, rebalanceSessions:1, rebalanceBand:0.244, maxGrossExposure:1, allowsFinancedExposure:false, financingAnnualRate:0, buyReason:"shadow")
+            var shadowPrior:[String:Double]=[:], shadowPending:[String:Double]=[:], drafts:[TypeEvent]=[]
+            guard let shadow = BacktestEngine.runResearchTargetProviderStrategyWithTrace(assetInputs: inputs, initialCash:100_000, settings:settings, config:shadowConfig, rebalanceDecision:{ index,signalIndex,data in
+                guard data.dates.indices.contains(index),data.dates.indices.contains(signalIndex) else { return .init(shouldRebalance:false,refreshOverlay:false) }
+                let e=data.dates[index].recordDateString; guard baseTrades.contains(e), let raw=baseTargets[e] else { return .init(shouldRebalance:false,refreshOverlay:false) }
+                let prior=shadowPrior; shadowPrior=raw; let s=data.dates[signalIndex].recordDateString
+                let applied=applyC3L3(prior:prior,target:raw,signal:s); shadowPending=applied.target
+                if let type=applied.type { drafts.append(.init(execution:e,signal:s,type:type)) }
+                return .init(shouldRebalance:true,refreshOverlay:false)
+            }, targetWeights:{_,_ in shadowPending}) else { print("APP_CC_NFCI_C3_L3_ONLINE_TYPE_CALIBRATION\nshadow_missing"); return }
+
+            let bv=Dictionary(uniqueKeysWithValues:base.report.points.map{($0.date.recordDateString,$0.portfolioValue)})
+            let sv=Dictionary(uniqueKeysWithValues:shadow.report.points.map{($0.date.recordDateString,$0.portfolioValue)})
+            var settled:[SettledTypeEvent]=[]
+            for event in drafts {
+                guard let i=dateIndex[event.execution],i+20<dates.count else { continue }
+                let d=dates[i+20].recordDateString
+                guard let b0=bv[event.execution],let b1=bv[d],let s0=sv[event.execution],let s1=sv[d],b0>0,s0>0 else { continue }
+                let edge=(s1/s0-1)-(b1/b0-1)
+                settled.append(.init(settlement:d,type:event.type,success:edge>0))
+            }
+            settled.sort{$0.settlement<$1.settlement}
+
+            let onlineConfig=ResearchTargetStrategyConfig(symbol:"cc_nfci_c3_l3_online_type",title:"C3L3 online type",warmupSessions:21,rebalanceSessions:1,rebalanceBand:0.244,maxGrossExposure:1,allowsFinancedExposure:false,financingAnnualRate:0,buyReason:"online")
+            var prior:[String:Double]=[:],pending:[String:Double]=[:],stats:[String:TypeStats]=[:],cursor=0,attenuated=0
+            var multiplierLog:[String:[Double]]=[:]
+            guard let online=BacktestEngine.runResearchTargetProviderStrategyWithTrace(assetInputs:inputs,initialCash:100_000,settings:settings,config:onlineConfig,rebalanceDecision:{index,signalIndex,data in
+                guard data.dates.indices.contains(index),data.dates.indices.contains(signalIndex) else { return .init(shouldRebalance:false,refreshOverlay:false) }
+                let e=data.dates[index].recordDateString; guard baseTrades.contains(e),let raw=baseTargets[e] else { return .init(shouldRebalance:false,refreshOverlay:false) }
+                let p=prior; prior=raw; let signal=data.dates[signalIndex].recordDateString
+                while cursor<settled.count,settled[cursor].settlement<=signal { let x=settled[cursor]; var st=stats[x.type] ?? .init(); if x.success {st.wins+=1}else{st.losses+=1}; stats[x.type]=st; cursor+=1 }
+                let applied=applyC3L3(prior:p,target:raw,signal:signal)
+                guard let type=applied.type else { pending=raw; return .init(shouldRebalance:true,refreshOverlay:false) }
+                let st=stats[type] ?? .init(); let post=Double(2+st.wins)/Double(4+st.wins+st.losses); let m=min(1.0,2*post)
+                var calibrated=raw
+                for (symbol,w) in applied.target { calibrated[symbol]=w >= (raw[symbol] ?? 0) ? (raw[symbol] ?? 0)+(w-(raw[symbol] ?? 0))*m : w }
+                let g=calibrated.values.reduce(0,+); if g>1 {calibrated=calibrated.mapValues{$0/g}}
+                if m<0.999999 {attenuated+=1}; multiplierLog[type,default:[]].append(m); pending=calibrated
+                return .init(shouldRebalance:true,refreshOverlay:false)
+            },targetWeights:{_,_ in pending}) else { print("APP_CC_NFCI_C3_L3_ONLINE_TYPE_CALIBRATION\nonline_missing"); return }
+
+            func metrics(_ run:ResearchTargetStrategyRun,_ start:String?=nil)->BacktestPerformanceMetrics? { BacktestMetricsCalculator.performanceMetrics(from:run.report.points.filter{$0.date>=commonStart && (start==nil || $0.date.recordDateString>=start!)}) }
+            guard let sm=metrics(shadow),let om=metrics(online) else{return}
+            print("APP_CC_NFCI_C3_L3_ONLINE_TYPE_CALIBRATION")
+            print(String(format:"shadow,%.6f,%.6f,%.6f,%.6f,%d",(sm.annualizedReturn ?? 0)*100,sm.maxDrawdown*100,(sm.annualizedVolatility ?? 0)*100,sm.sharpeRatio ?? 0,shadow.report.trades.count))
+            print(String(format:"online,%.6f,%.6f,%.6f,%.6f,%d",(om.annualizedReturn ?? 0)*100,om.maxDrawdown*100,(om.annualizedVolatility ?? 0)*100,om.sharpeRatio ?? 0,online.report.trades.count))
+            for start in ["2016-08-10","2020-01-01","2022-01-01"] { if let a=metrics(shadow,start),let b=metrics(online,start){print(String(format:"slice,%@,%.6f,%.6f,%.6f,%.6f",start,(a.annualizedReturn ?? 0)*100,a.sharpeRatio ?? 0,(b.annualizedReturn ?? 0)*100,b.sharpeRatio ?? 0))} }
+            for type in Set(drafts.map(\.type)).sorted(){let st=stats[type] ?? .init();let post=Double(2+st.wins)/Double(4+st.wins+st.losses);let ms=multiplierLog[type] ?? [];print("type,\(type),wins=\(st.wins),losses=\(st.losses),posterior=\(String(format:"%.4f",post)),avgM=\(String(format:"%.4f",ms.isEmpty ? 1:ms.reduce(0,+)/Double(ms.count))),minM=\(String(format:"%.4f",ms.min() ?? 1)),count=\(ms.count)")}
+            print("drafts=\(drafts.count),settled=\(settled.count),attenuated=\(attenuated)")
+            return
+        }

@@ -1,0 +1,86 @@
+        if ProcessInfo.processInfo.environment["ATM_TARGET_ENSEMBLE_REPLAY_V3"] == "1" {
+            let inputPath = ProcessInfo.processInfo.environment["ATM_V3_TARGET_INPUT"] ?? "/private/tmp/v3_bag9_targets.csv"
+            let outputPath = ProcessInfo.processInfo.environment["ATM_V3_REPLAY_OUTPUT"] ?? "/private/tmp/v3_replay.csv"
+            let title = ProcessInfo.processInfo.environment["ATM_V3_REPLAY_NAME"] ?? "v3_replay"
+            let band = Double(ProcessInfo.processInfo.environment["ATM_V3_REPLAY_BAND"] ?? "0.25") ?? 0.25
+            let fee = Double(ProcessInfo.processInfo.environment["ATM_V3_REPLAY_FEE"] ?? "1.0") ?? 1.0
+            guard let text = try? String(contentsOfFile: inputPath, encoding: .utf8) else { return }
+            let lines = text.split(whereSeparator: \.isNewline)
+            guard let headerLine = lines.first else { return }
+            let header = headerLine.split(separator: ",").map(String.init)
+            let symbols = Array(header.dropFirst())
+            guard !symbols.isEmpty else { return }
+            var targetsByDate: [String: [String: Double]] = [:]
+            for line in lines.dropFirst() {
+                let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                guard fields.count == header.count else { continue }
+                var target: [String: Double] = [:]
+                var valid = true
+                for (offset, symbol) in symbols.enumerated() {
+                    guard let value = Double(fields[offset + 1]), value.isFinite else { valid = false; break }
+                    target[symbol] = max(value, 0)
+                }
+                if valid { targetsByDate[String(fields[0])] = target }
+            }
+            guard targetsByDate.count >= 6000 else { return }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+            }
+            let settings = AdvancedBacktestRiskSettings(
+                feeRate: fee, slippageRate: 0.05, maxPositionRatio: 100,
+                cooldownDays: 0, stopLossRatio: 0, takeProfitRatio: 0
+            )
+            let config = ResearchTargetStrategyConfig(
+                symbol: title, title: title, warmupSessions: 21, rebalanceSessions: 1,
+                rebalanceBand: band, maxGrossExposure: 1, allowsFinancedExposure: false,
+                financingAnnualRate: 0, buyReason: title
+            )
+            var previousTarget: [String: Double] = [:]
+            var pending: [String: Double] = [:]
+            func targetDifference(_ lhs: [String: Double], _ rhs: [String: Double]) -> Double {
+                Set(lhs.keys).union(rhs.keys).reduce(0.0) { partial, symbol in
+                    partial + abs((lhs[symbol] ?? 0) - (rhs[symbol] ?? 0))
+                }
+            }
+            guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: inputs, initialCash: 100_000, settings: settings, config: config,
+                rebalanceDecision: { index, _, data in
+                    guard data.dates.indices.contains(index) else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    let key = data.dates[index].recordDateString
+                    guard var target = targetsByDate[key] else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    let gross = target.values.reduce(0, +)
+                    if gross > 1, gross > 0 { target = target.mapValues { $0 / gross } }
+                    let changed = previousTarget.isEmpty || targetDifference(previousTarget, target) > 0.0000001
+                    pending = target
+                    if changed { previousTarget = target }
+                    return BacktestRebalanceDecision(shouldRebalance: changed, refreshOverlay: false)
+                }, targetWeights: { _, _ in pending }
+            ) else { return }
+
+            var out = ["date,portfolio_value"]
+            out.append(contentsOf: run.report.points.map { point in
+                "\(point.date.recordDateString),\(String(format: "%.10f", point.portfolioValue))"
+            })
+            try? (out.joined(separator: "\n") + "\n").write(toFile: outputPath, atomically: true, encoding: .utf8)
+            var h: UInt64 = 1469598103934665603
+            for key in targetsByDate.keys.sorted() {
+                guard let target = targetsByDate[key] else { continue }
+                for symbol in symbols {
+                    var x = UInt64(bitPattern: Int64(((target[symbol] ?? 0) * 1_000_000).rounded()))
+                    for _ in 0..<8 {
+                        h ^= x & UInt64(0xff); h &*= UInt64(1099511628211); x >>= 8
+                    }
+                }
+            }
+            let fp = String(format: "%016llx", h)
+            print("APP_TARGET_ENSEMBLE_REPLAY_V3")
+            print("name=\(title),fee=\(fee),band=\(band),targets=\(targetsByDate.count),trades=\(run.report.trades.count),cagr=\(String(format: "%.6f", (run.report.annualizedReturn ?? 0)*100)),mdd=\(String(format: "%.6f", run.report.maxDrawdown*100)),sharpe=\(String(format: "%.6f", run.report.sharpeRatio ?? 0)),fingerprint=\(fp),path=\(outputPath)")
+            return
+        }

@@ -1,0 +1,141 @@
+        if ProcessInfo.processInfo.environment["ATM_LOW_NOISE_FEE_SENSITIVITY"] == "1" {
+            struct FeeSensitivityRow {
+                let fee: Double
+                let kind: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let trades: Int
+                let averageCash: Double
+                let targetFingerprint: String
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            let fees: [Double] = [1.0, 0.75, 0.50, 0.25, 0.10, 0.03, 0.0]
+            let fixedSlippage = 0.05
+
+            func settings(_ fee: Double) -> AdvancedBacktestRiskSettings {
+                AdvancedBacktestRiskSettings(
+                    feeRate: fee,
+                    slippageRate: fixedSlippage,
+                    maxPositionRatio: 100,
+                    cooldownDays: 0,
+                    stopLossRatio: 0,
+                    takeProfitRatio: 0
+                )
+            }
+
+            func fingerprint(_ run: AdvancedRotationStrategyRun) -> String {
+                var h: UInt64 = 1469598103934665603
+                for state in run.dailyStates {
+                    for symbol in ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"] {
+                        let quantized = Int64(((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded())
+                        var x = UInt64(bitPattern: quantized)
+                        for _ in 0..<8 {
+                            h ^= x & 0xff
+                            h &*= 1099511628211
+                            x >>= 8
+                        }
+                    }
+                }
+                return String(format: "%016llx", h)
+            }
+
+            var endogenous: [Double: AdvancedRotationStrategyRun] = [:]
+            var rows: [FeeSensitivityRow] = []
+            for fee in fees {
+                guard let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings(fee),
+                    mode: mode
+                ) else { continue }
+                endogenous[fee] = run
+                rows.append(.init(
+                    fee: fee,
+                    kind: "endogenous",
+                    annualized: run.report.annualizedReturn ?? -1,
+                    maxDrawdown: run.report.maxDrawdown,
+                    volatility: run.report.annualizedVolatility ?? -1,
+                    sharpe: run.report.sharpeRatio ?? -1,
+                    trades: run.report.trades.count,
+                    averageCash: run.report.averageCashRatio,
+                    targetFingerprint: fingerprint(run)
+                ))
+            }
+
+            if let baseline = endogenous[1.0] {
+                let baselineTargets = Dictionary(uniqueKeysWithValues: baseline.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+                let baselineTradeDates = Set(baseline.report.trades.map { $0.date.recordDateString })
+                for fee in fees {
+                    let config = ResearchTargetStrategyConfig(
+                        symbol: "low_noise_fee_frozen_replay",
+                        title: "Low-noise frozen targets fee replay",
+                        warmupSessions: 21,
+                        rebalanceSessions: 1,
+                        rebalanceBand: 0.244,
+                        maxGrossExposure: 1.0,
+                        allowsFinancedExposure: false,
+                        financingAnnualRate: 0,
+                        buyReason: "Frozen low-noise target replay"
+                    )
+                    var pending: [String: Double] = [:]
+                    guard let replay = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                        assetInputs: inputs,
+                        initialCash: 100_000,
+                        settings: settings(fee),
+                        config: config,
+                        rebalanceDecision: { index, _, data in
+                            guard data.dates.indices.contains(index) else {
+                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                            }
+                            let key = data.dates[index].recordDateString
+                            guard baselineTradeDates.contains(key), let target = baselineTargets[key] else {
+                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                            }
+                            pending = target
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        },
+                        targetWeights: { _, _ in pending }
+                    ) else { continue }
+                    rows.append(.init(
+                        fee: fee,
+                        kind: "frozen_1pct_targets",
+                        annualized: replay.report.annualizedReturn ?? -1,
+                        maxDrawdown: replay.report.maxDrawdown,
+                        volatility: replay.report.annualizedVolatility ?? -1,
+                        sharpe: replay.report.sharpeRatio ?? -1,
+                        trades: replay.report.trades.count,
+                        averageCash: replay.report.averageCashRatio,
+                        targetFingerprint: rows.first(where: { $0.kind == "endogenous" && abs($0.fee - 1.0) < 1e-9 })?.targetFingerprint ?? ""
+                    ))
+                }
+            }
+
+            print("APP_LOW_NOISE_FEE_SENSITIVITY")
+            print("kind,fee_percent,annualized,max_drawdown,volatility,sharpe,trades,average_cash,target_fingerprint")
+            for row in rows.sorted(by: { lhs, rhs in
+                if lhs.kind == rhs.kind { return lhs.fee > rhs.fee }
+                return lhs.kind < rhs.kind
+            }) {
+                print([
+                    row.kind,
+                    String(format: "%.4f", row.fee),
+                    String(format: "%.6f", row.annualized * 100),
+                    String(format: "%.6f", row.maxDrawdown * 100),
+                    String(format: "%.6f", row.volatility * 100),
+                    String(format: "%.6f", row.sharpe),
+                    String(row.trades),
+                    String(format: "%.6f", row.averageCash),
+                    row.targetFingerprint
+                ].joined(separator: ","))
+            }
+            return
+        }

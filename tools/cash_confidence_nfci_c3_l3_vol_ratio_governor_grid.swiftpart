@@ -1,0 +1,745 @@
+        if ProcessInfo.processInfo.environment["ATM_CC_NFCI_C3_L3_VOL_RATIO_GOVERNOR_GRID"] == "1" {
+            struct C3L3VolGovernorCandidate {
+                let title: String
+                let percentileThreshold: Double
+                let highVolScale: Double
+                let rule: String
+                let annualized: Double
+                let maxDrawdown: Double
+                let volatility: Double
+                let sharpe: Double
+                let trades: Int
+                let averageCash: Double
+                let governedDecisions: Int
+                let sliceRows: [SliceMetricRow]
+                let maxTargetGross: Double
+                let maxActualGross: Double
+                let minCash: Double
+                let financedDays: Int
+            }
+
+            func loadC3L3VolSeries(_ path: String) -> [(releaseDate: String, value: Double)] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3, let value = Double(fields[2]), value.isFinite else { return nil }
+                    return (String(fields[0]), value)
+                }.sorted { $0.0 < $1.0 }
+            }
+            func c3L3VolChange(_ series: [(releaseDate: String, value: Double)], on date: String, lookback: Int) -> Double? {
+                var latest: Int?
+                for index in series.indices {
+                    if series[index].releaseDate <= date { latest = index } else { break }
+                }
+                guard let latest, latest >= lookback else { return nil }
+                return series[latest].value - series[latest - lookback].value
+            }
+            func c3L3DailyReturns(_ values: [Double]) -> [Double?] {
+                var output = Array<Double?>(repeating: nil, count: values.count)
+                guard values.count > 1 else { return output }
+                for index in 1..<values.count where values[index - 1] > 0 {
+                    output[index] = values[index] / values[index - 1] - 1
+                }
+                return output
+            }
+            func c3L3RollingVol(_ returns: [Double?], window: Int) -> [Double?] {
+                var output = Array<Double?>(repeating: nil, count: returns.count)
+                guard returns.count > window else { return output }
+                for index in window..<returns.count {
+                    let sample = returns[(index - window + 1)...index].compactMap { $0 }
+                    guard sample.count == window else { continue }
+                    let mean = sample.reduce(0, +) / Double(sample.count)
+                    let variance = sample.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) } / Double(max(sample.count - 1, 1))
+                    output[index] = sqrt(max(variance, 0)) * sqrt(252.0)
+                }
+                return output
+            }
+            func c3L3Ratio(_ lhs: [Double?], _ rhs: [Double?]) -> [Double?] {
+                zip(lhs, rhs).map { a, b in
+                    guard let a, let b, b > 1e-12 else { return nil }
+                    return a / b
+                }
+            }
+            func c3L3RollingPercentile(_ values: [Double?], window: Int = 756, minimumCount: Int = 252) -> [Double?] {
+                var output = Array<Double?>(repeating: nil, count: values.count)
+                for index in values.indices {
+                    guard let current = values[index], current.isFinite else { continue }
+                    let start = max(0, index - window + 1)
+                    let sample = values[start...index].compactMap { value -> Double? in
+                        guard let value, value.isFinite else { return nil }
+                        return value
+                    }
+                    guard sample.count >= minimumCount else { continue }
+                    let less = sample.reduce(0) { $0 + ($1 < current ? 1 : 0) }
+                    let equal = sample.reduce(0) { $0 + ($1 == current ? 1 : 0) }
+                    output[index] = (Double(less) + 0.5 * Double(equal)) / Double(sample.count)
+                }
+                return output
+            }
+
+            let creditSeries = loadC3L3VolSeries("tools/research-results/NFCICREDIT_initial_release.csv")
+            let leverageSeries = loadC3L3VolSeries("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            guard creditSeries.count >= 700, leverageSeries.count >= 700 else {
+                print("APP_CC_NFCI_C3_L3_VOL_RATIO_GOVERNOR_GRID\nseries_missing")
+                return
+            }
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard let productionRun = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode
+            ), let commonStart = productionRun.report.points.first?.date else {
+                print("APP_CC_NFCI_C3_L3_VOL_RATIO_GOVERNOR_GRID\nproduction_missing")
+                return
+            }
+            let productionTargets = Dictionary(uniqueKeysWithValues: productionRun.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let productionTradeDates = Set(productionRun.report.trades.map { $0.date.recordDateString })
+            let usSymbols: Set<String> = ["nasdaq", "sp500"]
+
+            // First run the exact frozen C3/L3 champion. This unscaled shadow path is
+            // the only state source used by the meta governor, avoiding feedback.
+            let championConfig = ResearchTargetStrategyConfig(
+                symbol: "cc_nfci_c3_l3_shadow",
+                title: "C3L3 frozen shadow",
+                warmupSessions: 21,
+                rebalanceSessions: 1,
+                rebalanceBand: 0.244,
+                maxGrossExposure: 1.0,
+                allowsFinancedExposure: false,
+                financingAnnualRate: 0,
+                buyReason: "C3L3 frozen shadow"
+            )
+            var priorProductionTarget: [String: Double] = [:]
+            var championPending: [String: Double] = [:]
+            guard let championRun = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                config: championConfig,
+                rebalanceDecision: { index, signalIndex, data in
+                    guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    let executionKey = data.dates[index].recordDateString
+                    guard productionTradeDates.contains(executionKey), var target = productionTargets[executionKey] else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    let prior = priorProductionTarget
+                    priorProductionTarget = target
+                    guard !prior.isEmpty else {
+                        championPending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    }
+                    let signalKey = data.dates[signalIndex].recordDateString
+                    let credit = c3L3VolChange(creditSeries, on: signalKey, lookback: 8).map { $0 <= -0.03 } ?? false
+                    let leverage = c3L3VolChange(leverageSeries, on: signalKey, lookback: 4).map { $0 <= -0.03 } ?? false
+                    let priorGross = prior.values.reduce(0, +)
+                    let proposedGross = target.values.reduce(0, +)
+                    let priorUS = prior.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                    let proposedUS = target.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                    let usDecrease = priorUS - proposedUS
+                    let grossDecrease = priorGross - proposedGross
+                    var extras: [String: Double] = [:]
+                    if credit || leverage {
+                        if usDecrease >= 0.05, grossDecrease >= 0.03 {
+                            let retention = credit && leverage ? 1.00 : 0.50
+                            for symbol in usSymbols {
+                                let reduction = max((prior[symbol] ?? 0) - (target[symbol] ?? 0), 0)
+                                if reduction > 0 { extras[symbol] = retention * reduction }
+                            }
+                        } else if grossDecrease >= 0.05 {
+                            for (symbol, priorWeight) in prior {
+                                let reduction = max(priorWeight - (target[symbol] ?? 0), 0)
+                                if reduction > 0 { extras[symbol] = reduction }
+                            }
+                        }
+                    }
+                    let desired = extras.values.reduce(0, +)
+                    if desired > 0 {
+                        let cash = max(1.0 - proposedGross, 0)
+                        let scale = min(1.0, cash / desired)
+                        for (symbol, extra) in extras { target[symbol, default: 0] += extra * scale }
+                    }
+                    let gross = target.values.reduce(0, +)
+                    if gross > 1, gross > 0 { target = target.mapValues { max($0, 0) / gross } }
+                    championPending = target
+                    return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                },
+                targetWeights: { _, _ in championPending }
+            ) else {
+                print("APP_CC_NFCI_C3_L3_VOL_RATIO_GOVERNOR_GRID\nchampion_missing")
+                return
+            }
+
+            let championTargets = Dictionary(uniqueKeysWithValues: championRun.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let championValueMap = Dictionary(uniqueKeysWithValues: championRun.report.points.map { ($0.date.recordDateString, $0.portfolioValue) })
+            let dates = productionRun.dailyStates.map(\.date)
+            var alignedChampionValues: [Double] = []
+            alignedChampionValues.reserveCapacity(dates.count)
+            var lastChampionValue: Double?
+            for date in dates {
+                if let value = championValueMap[date.recordDateString], value.isFinite, value > 0 { lastChampionValue = value }
+                guard let value = lastChampionValue else {
+                    print("APP_CC_NFCI_C3_L3_VOL_RATIO_GOVERNOR_GRID\nchampion_alignment_failed")
+                    return
+                }
+                alignedChampionValues.append(value)
+            }
+            let championReturns = c3L3DailyReturns(alignedChampionValues)
+            let vol20 = c3L3RollingVol(championReturns, window: 20)
+            let vol252 = c3L3RollingVol(championReturns, window: 252)
+            let volRatio = c3L3Ratio(vol20, vol252)
+            let volRatioPct = c3L3RollingPercentile(volRatio)
+            var championDrawdown = Array(repeating: 0.0, count: alignedChampionValues.count)
+            var championPeak = 0.0
+            for index in alignedChampionValues.indices {
+                championPeak = max(championPeak, alignedChampionValues[index])
+                championDrawdown[index] = championPeak > 0 ? max(1.0 - alignedChampionValues[index] / championPeak, 0) : 0
+            }
+
+            let riskAssets = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            func vrBlankMA(_ values: [Double], _ period: Int) -> [Double?] { Array(repeating: nil, count: values.count) }
+            func vrBlankBoll(_ values: [Double], _ period: Int, _ multiplier: Double) -> [(middle: Double, lower: Double, upper: Double)?] {
+                Array(repeating: nil, count: values.count)
+            }
+            var alignedRiskPrices: [String: [Double]] = [:]
+            for symbol in riskAssets {
+                guard let input = inputs.first(where: { $0.assetOption.symbol == symbol }),
+                      let prepared = BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+                        assetSeries: input.assetSeries,
+                        assetOption: input.assetOption,
+                        fxSeries: input.fxSeries,
+                        movingAverage: vrBlankMA,
+                        bollingerBands: vrBlankBoll
+                      ) else { continue }
+                let priceMap = Dictionary(uniqueKeysWithValues: prepared.pricePoints.map { ($0.date.recordDateString, $0.cnyPrice) })
+                var aligned: [Double] = []
+                var last: Double?
+                for date in dates {
+                    if let value = priceMap[date.recordDateString], value > 0, value.isFinite { last = value }
+                    aligned.append(last ?? Double.nan)
+                }
+                alignedRiskPrices[symbol] = aligned
+            }
+            func vrRiskContributionOrder(weights: [String: Double], signalIndex: Int, window: Int = 60) -> [String]? {
+                guard signalIndex >= window, riskAssets.allSatisfy({ alignedRiskPrices[$0]?.indices.contains(signalIndex) == true }) else { return nil }
+                var returnsBySymbol: [String: [Double]] = [:]
+                for symbol in riskAssets {
+                    guard let prices = alignedRiskPrices[symbol] else { return nil }
+                    var returns: [Double] = []
+                    for index in (signalIndex - window + 1)...signalIndex {
+                        guard prices[index - 1].isFinite, prices[index].isFinite, prices[index - 1] > 0 else { return nil }
+                        returns.append(prices[index] / prices[index - 1] - 1)
+                    }
+                    returnsBySymbol[symbol] = returns
+                }
+                let means = Dictionary(uniqueKeysWithValues: riskAssets.compactMap { symbol -> (String, Double)? in
+                    guard let values = returnsBySymbol[symbol], !values.isEmpty else { return nil }
+                    return (symbol, values.reduce(0, +) / Double(values.count))
+                })
+                func covariance(_ lhs: String, _ rhs: String) -> Double {
+                    guard let a = returnsBySymbol[lhs], let b = returnsBySymbol[rhs],
+                          let ma = means[lhs], let mb = means[rhs], a.count == b.count, a.count > 1 else { return 0 }
+                    return zip(a, b).reduce(0.0) { $0 + ($1.0 - ma) * ($1.1 - mb) } / Double(a.count - 1)
+                }
+                var contribution: [String: Double] = [:]
+                for symbol in riskAssets {
+                    let marginal = riskAssets.reduce(0.0) { partial, other in
+                        partial + covariance(symbol, other) * max(weights[other] ?? 0, 0)
+                    }
+                    contribution[symbol] = max(weights[symbol] ?? 0, 0) * marginal
+                }
+                return riskAssets.sorted { lhs, rhs in
+                    let a = contribution[lhs] ?? 0
+                    let b = contribution[rhs] ?? 0
+                    if a == b { return lhs < rhs }
+                    return a > b
+                }
+            }
+
+            let parameterSets: [(title: String, threshold: Double, value: Double, rule: String)] = [
+                ("C3L3控制", 2.0, 1.00, "scale"),
+                ("VR分位80%-scale90%", 0.80, 0.90, "scale"),
+                ("VR分位80%-scale80%", 0.80, 0.80, "scale"),
+                ("VR分位90%-scale90%", 0.90, 0.90, "scale"),
+                ("VR分位90%-scale80%", 0.90, 0.80, "scale"),
+                ("VR分位80%-cap90%", 0.80, 0.90, "cap"),
+                ("VR分位80%-cap80%", 0.80, 0.80, "cap"),
+                ("VR分位90%-cap90%", 0.90, 0.90, "cap"),
+                ("VR分位90%-cap80%", 0.90, 0.80, "cap"),
+                ("VR80-cap80-nearPeak4%", 0.80, 0.80, "cap_nearpeak4"),
+                ("VR80-cap90-nearPeak4%", 0.80, 0.90, "cap_nearpeak4"),
+                ("VR90-cap80-nearPeak4%", 0.90, 0.80, "cap_nearpeak4"),
+                ("VR90-cap90-nearPeak4%", 0.90, 0.90, "cap_nearpeak4"),
+                ("VR80-scale80-nearPeak4%", 0.80, 0.80, "scale_nearpeak4"),
+                ("VR80-riskTrim-cap80-nearPeak4%", 0.80, 0.80, "risktrim_nearpeak4"),
+                ("VRratio1-cap80-nearPeak4%", 1.00, 0.80, "ratio1_cap_nearpeak4"),
+                ("VR80-cap80-nearPeak4%-statefulRecovery", 0.80, 0.80, "stateful_recovery"),
+            ]
+            var candidates: [C3L3VolGovernorCandidate] = []
+
+            for parameters in parameterSets {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cc_nfci_c3_l3_vol_ratio_governor",
+                    title: parameters.title,
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "C3L3 vol-ratio governor"
+                )
+                var pending: [String: Double] = [:]
+                var governedDecisions = 0
+                var governorActive = false
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let executionKey = data.dates[index].recordDateString
+                        guard var target = championTargets[executionKey] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let isProductionTrade = productionTradeDates.contains(executionKey)
+
+                        if parameters.rule == "stateful_recovery" {
+                            let percentile = volRatioPct.indices.contains(signalIndex) ? volRatioPct[signalIndex] : nil
+                            let drawdown = championDrawdown.indices.contains(signalIndex) ? championDrawdown[signalIndex] : 0
+                            if governorActive {
+                                let shouldRecover = drawdown >= 0.04 || (percentile ?? 1) < 0.50
+                                if shouldRecover {
+                                    governorActive = false
+                                    governedDecisions += 1
+                                    pending = target
+                                    return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                                }
+                                guard isProductionTrade else {
+                                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                                }
+                                let gross = target.values.reduce(0, +)
+                                if gross > parameters.value, gross > 0 {
+                                    let scale = parameters.value / gross
+                                    target = target.mapValues { max($0, 0) * scale }
+                                }
+                                pending = target
+                                return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                            }
+                            guard isProductionTrade else {
+                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                            }
+                            let gross = target.values.reduce(0, +)
+                            if drawdown < 0.04, (percentile ?? -1) >= 0.80, gross > parameters.value, gross > 0 {
+                                let scale = parameters.value / gross
+                                target = target.mapValues { max($0, 0) * scale }
+                                governorActive = true
+                                governedDecisions += 1
+                            }
+                            pending = target
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+
+                        guard isProductionTrade else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let nearPeakAllowed = !parameters.rule.contains("nearpeak4")
+                            || (championDrawdown.indices.contains(signalIndex) && championDrawdown[signalIndex] < 0.04)
+                        let volatilityState: Bool
+                        if parameters.rule.hasPrefix("ratio1") {
+                            volatilityState = volRatio.indices.contains(signalIndex) && (volRatio[signalIndex] ?? 0) >= 1.0
+                        } else {
+                            volatilityState = volRatioPct.indices.contains(signalIndex) && (volRatioPct[signalIndex] ?? -1) >= parameters.threshold
+                        }
+                        if parameters.threshold <= 1.0, nearPeakAllowed, volatilityState {
+                            let gross = target.values.reduce(0, +)
+                            if parameters.rule.hasPrefix("risktrim"), gross > parameters.value, gross > 0 {
+                                var remaining = gross - parameters.value
+                                if let order = vrRiskContributionOrder(weights: target, signalIndex: signalIndex) {
+                                    for symbol in order where remaining > 0.0000001 {
+                                        let current = max(target[symbol] ?? 0, 0)
+                                        let reduction = min(current, remaining)
+                                        target[symbol] = current - reduction
+                                        remaining -= reduction
+                                    }
+                                }
+                                if remaining > 0.0000001 {
+                                    let residualGross = target.values.reduce(0, +)
+                                    if residualGross > parameters.value, residualGross > 0 {
+                                        let scale = parameters.value / residualGross
+                                        target = target.mapValues { max($0, 0) * scale }
+                                    }
+                                }
+                                governedDecisions += 1
+                            } else if parameters.rule.hasPrefix("cap") || parameters.rule.hasPrefix("ratio1") {
+                                if gross > parameters.value, gross > 0 {
+                                    let scale = parameters.value / gross
+                                    target = target.mapValues { max($0, 0) * scale }
+                                    governedDecisions += 1
+                                }
+                            } else {
+                                target = target.mapValues { max($0, 0) * parameters.value }
+                                governedDecisions += 1
+                            }
+                        }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { continue }
+
+                let points = run.report.points.filter { $0.date >= commonStart }
+                guard let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { continue }
+                let fullRow = MetricRow(
+                    title: parameters.title,
+                    id: "cc_nfci_c3_l3_vol_ratio_governor",
+                    annualized: metrics.annualizedReturn,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility,
+                    sharpe: metrics.sharpeRatio,
+                    start: points.first?.date.recordDateString ?? "n/a",
+                    end: points.last?.date.recordDateString ?? "n/a",
+                    pointCount: points.count
+                )
+                var maxTargetGross = 0.0
+                var maxActualGross = 0.0
+                var minCash = Double.greatestFiniteMagnitude
+                var financedDays = 0
+                for state in run.dailyStates where state.portfolioValue > 0 && state.date >= commonStart {
+                    maxTargetGross = max(maxTargetGross, state.targetWeights.values.reduce(0, +))
+                    maxActualGross = max(maxActualGross, state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue)
+                    minCash = min(minCash, state.cash / state.portfolioValue)
+                    if state.cash < -0.0001 { financedDays += 1 }
+                }
+                candidates.append(.init(
+                    title: parameters.title,
+                    percentileThreshold: parameters.threshold,
+                    highVolScale: parameters.value,
+                    rule: parameters.rule,
+                    annualized: metrics.annualizedReturn ?? -1,
+                    maxDrawdown: metrics.maxDrawdown,
+                    volatility: metrics.annualizedVolatility ?? -1,
+                    sharpe: metrics.sharpeRatio ?? -1,
+                    trades: run.report.trades.filter { $0.date >= commonStart }.count,
+                    averageCash: run.report.averageCashRatio,
+                    governedDecisions: governedDecisions,
+                    sliceRows: metricRowsForSlices(
+                        title: parameters.title,
+                        id: "cc_nfci_c3_l3_vol_ratio_governor",
+                        points: points,
+                        fullRow: fullRow
+                    ),
+                    maxTargetGross: maxTargetGross,
+                    maxActualGross: maxActualGross,
+                    minCash: minCash == Double.greatestFiniteMagnitude ? 0 : minCash,
+                    financedDays: financedDays
+                ))
+            }
+
+            print("APP_CC_NFCI_C3_L3_VOL_RATIO_GOVERNOR_REFERENCE")
+            print(String(format: "champion_annualized=%.6f,champion_mdd=%.6f,champion_sharpe=%.6f,trades=%d", (championRun.report.annualizedReturn ?? 0) * 100, championRun.report.maxDrawdown * 100, championRun.report.sharpeRatio ?? 0, championRun.report.trades.count))
+            candidates.sort { lhs, rhs in
+                if lhs.sharpe == rhs.sharpe { return lhs.annualized > rhs.annualized }
+                return lhs.sharpe > rhs.sharpe
+            }
+            printSliceRows(candidates.flatMap(\.sliceRows), header: "APP_CC_NFCI_C3_L3_VOL_RATIO_GOVERNOR_GRID")
+            print("APP_CC_NFCI_C3_L3_VOL_RATIO_GOVERNOR_DIAGNOSTICS")
+            print("title,threshold,value,rule,annualized,mdd,vol,sharpe,trades,avg_cash,governed,max_target_gross,max_actual_gross,min_cash,financed_days")
+            for candidate in candidates {
+                print([
+                    candidate.title,
+                    String(format: "%.2f", candidate.percentileThreshold),
+                    String(format: "%.2f", candidate.highVolScale),
+                    candidate.rule,
+                    String(format: "%.6f", candidate.annualized * 100),
+                    String(format: "%.6f", candidate.maxDrawdown * 100),
+                    String(format: "%.6f", candidate.volatility * 100),
+                    String(format: "%.6f", candidate.sharpe),
+                    String(candidate.trades),
+                    String(format: "%.6f", candidate.averageCash),
+                    String(candidate.governedDecisions),
+                    String(format: "%.9f", candidate.maxTargetGross),
+                    String(format: "%.9f", candidate.maxActualGross),
+                    String(format: "%.9f", candidate.minCash),
+                    String(candidate.financedDays)
+                ].joined(separator: ","))
+            }
+
+            func runFixedVRGovernor(excludedExecutionDate: String?, activationSignalDate: String) -> (ResearchTargetStrategyRun, [String])? {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cc_nfci_c3_l3_vr80_g80_validation",
+                    title: "C3L3 VR80 gross80 validation",
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "C3L3 VR80 gross80 validation"
+                )
+                var pending: [String: Double] = [:]
+                var events: [String] = []
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let executionKey = data.dates[index].recordDateString
+                        guard productionTradeDates.contains(executionKey), var target = championTargets[executionKey] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let signalKey = data.dates[signalIndex].recordDateString
+                        if signalKey >= activationSignalDate,
+                           executionKey != excludedExecutionDate,
+                           volRatioPct.indices.contains(signalIndex),
+                           let percentile = volRatioPct[signalIndex],
+                           percentile >= 0.80 {
+                            target = target.mapValues { max($0, 0) * 0.80 }
+                            events.append(executionKey)
+                        }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { return nil }
+                return (run, Array(Set(events)).sorted())
+            }
+            func runFixedVRCap80Governor(excludedExecutionDate: String?, activationSignalDate: String) -> (ResearchTargetStrategyRun, [String])? {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cc_nfci_c3_l3_vr80_cap80_validation",
+                    title: "C3L3 VR80 cap80 validation",
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "C3L3 VR80 cap80 validation"
+                )
+                var pending: [String: Double] = [:]
+                var events: [String] = []
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let executionKey = data.dates[index].recordDateString
+                        guard productionTradeDates.contains(executionKey), var target = championTargets[executionKey] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let signalKey = data.dates[signalIndex].recordDateString
+                        if signalKey >= activationSignalDate,
+                           executionKey != excludedExecutionDate,
+                           volRatioPct.indices.contains(signalIndex),
+                           let percentile = volRatioPct[signalIndex],
+                           percentile >= 0.80 {
+                            let gross = target.values.reduce(0, +)
+                            if gross > 0.80, gross > 0 {
+                                let scale = 0.80 / gross
+                                target = target.mapValues { max($0, 0) * scale }
+                                events.append(executionKey)
+                            }
+                        }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { return nil }
+                return (run, Array(Set(events)).sorted())
+            }
+
+            func runFixedVRNearPeakCap80Governor(excludedExecutionDate: String?, activationSignalDate: String) -> (ResearchTargetStrategyRun, [String])? {
+                let config = ResearchTargetStrategyConfig(
+                    symbol: "cc_nfci_c3_l3_vr80_cap80_nearpeak4_validation",
+                    title: "C3L3 VR80 cap80 nearPeak4 validation",
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.244,
+                    maxGrossExposure: 1.0,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "C3L3 VR80 cap80 nearPeak4 validation"
+                )
+                var pending: [String: Double] = [:]
+                var events: [String] = []
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let executionKey = data.dates[index].recordDateString
+                        guard productionTradeDates.contains(executionKey), var target = championTargets[executionKey] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let signalKey = data.dates[signalIndex].recordDateString
+                        if signalKey >= activationSignalDate,
+                           executionKey != excludedExecutionDate,
+                           championDrawdown.indices.contains(signalIndex),
+                           championDrawdown[signalIndex] < 0.04,
+                           volRatioPct.indices.contains(signalIndex),
+                           let percentile = volRatioPct[signalIndex],
+                           percentile >= 0.80 {
+                            let gross = target.values.reduce(0, +)
+                            if gross > 0.80, gross > 0 {
+                                let scale = 0.80 / gross
+                                target = target.mapValues { max($0, 0) * scale }
+                                events.append(executionKey)
+                            }
+                        }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { return nil }
+                return (run, Array(Set(events)).sorted())
+            }
+
+            func fixedVRMetrics(_ run: ResearchTargetStrategyRun) -> (BacktestPerformanceMetrics, BacktestPerformanceMetrics?, BacktestPerformanceMetrics?, BacktestPerformanceMetrics?)? {
+                let points = run.report.points.filter { $0.date >= commonStart }
+                guard let full = BacktestMetricsCalculator.performanceMetrics(from: points) else { return nil }
+                return (
+                    full,
+                    BacktestMetricsCalculator.performanceMetrics(from: points.filter { $0.date.recordDateString >= "2020-01-01" }),
+                    BacktestMetricsCalculator.performanceMetrics(from: points.filter { $0.date.recordDateString >= "2016-08-10" }),
+                    BacktestMetricsCalculator.performanceMetrics(from: points.filter { $0.date.recordDateString >= "2022-01-01" })
+                )
+            }
+            func fixedVRMetricColumns(_ metrics: BacktestPerformanceMetrics) -> [String] {
+                [
+                    metrics.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    String(format: "%.6f", metrics.maxDrawdown * 100),
+                    metrics.annualizedVolatility.map { String(format: "%.6f", $0 * 100) } ?? "n/a",
+                    metrics.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a"
+                ]
+            }
+
+            if let baselineValidation = runFixedVRGovernor(excludedExecutionDate: nil, activationSignalDate: "0000-01-01"),
+               let baselineMetrics = fixedVRMetrics(baselineValidation.0) {
+                let eventDates = baselineValidation.1
+                print("APP_CC_NFCI_C3_L3_VR80_G80_JACKKNIFE")
+                print("excluded,annualized,mdd,vol,sharpe,trades,events")
+                print((["none"] + fixedVRMetricColumns(baselineMetrics.0) + [String(baselineValidation.0.report.trades.filter { $0.date >= commonStart }.count), String(eventDates.count)]).joined(separator: ","))
+                for excluded in eventDates {
+                    guard let result = runFixedVRGovernor(excludedExecutionDate: excluded, activationSignalDate: "0000-01-01"),
+                          let metrics = fixedVRMetrics(result.0) else { continue }
+                    print(([excluded] + fixedVRMetricColumns(metrics.0) + [String(result.0.report.trades.filter { $0.date >= commonStart }.count), String(result.1.count)]).joined(separator: ","))
+                }
+
+                print("APP_CC_NFCI_C3_L3_VR80_G80_ACTIVATION")
+                print("activation,annualized,mdd,vol,sharpe,since2020_annualized,since2020_sharpe,last10_annualized,last10_sharpe,since2022_annualized,since2022_sharpe,trades,events")
+                for activation in ["2015-01-01", "2017-01-01", "2019-01-01", "2020-01-01", "2021-01-01", "2022-01-01"] {
+                    guard let result = runFixedVRGovernor(excludedExecutionDate: nil, activationSignalDate: activation),
+                          let metrics = fixedVRMetrics(result.0) else { continue }
+                    let m2020 = metrics.1
+                    let m10 = metrics.2
+                    let m2022 = metrics.3
+                    let fullColumns = fixedVRMetricColumns(metrics.0)
+                    let a2020 = m2020?.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let s2020 = m2020?.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a"
+                    let a10 = m10?.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let s10 = m10?.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a"
+                    let a2022 = m2022?.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let s2022 = m2022?.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a"
+                    let tradeCount = String(result.0.report.trades.filter { $0.date >= commonStart }.count)
+                    let eventCount = String(result.1.count)
+                    var row: [String] = [activation]
+                    row.append(contentsOf: fullColumns)
+                    row.append(contentsOf: [a2020, s2020, a10, s10, a2022, s2022, tradeCount, eventCount])
+                    print(row.joined(separator: ","))
+                }
+                print("vr_event_dates," + eventDates.joined(separator: "|"))
+            }
+
+            if let capValidation = runFixedVRCap80Governor(excludedExecutionDate: nil, activationSignalDate: "0000-01-01"),
+               let capMetrics = fixedVRMetrics(capValidation.0) {
+                let eventDates = capValidation.1
+                print("APP_CC_NFCI_C3_L3_VR80_CAP80_JACKKNIFE")
+                print("excluded,annualized,mdd,vol,sharpe,trades,events")
+                print((["none"] + fixedVRMetricColumns(capMetrics.0) + [String(capValidation.0.report.trades.filter { $0.date >= commonStart }.count), String(eventDates.count)]).joined(separator: ","))
+                for excluded in eventDates {
+                    guard let result = runFixedVRCap80Governor(excludedExecutionDate: excluded, activationSignalDate: "0000-01-01"),
+                          let metrics = fixedVRMetrics(result.0) else { continue }
+                    print(([excluded] + fixedVRMetricColumns(metrics.0) + [String(result.0.report.trades.filter { $0.date >= commonStart }.count), String(result.1.count)]).joined(separator: ","))
+                }
+
+                print("APP_CC_NFCI_C3_L3_VR80_CAP80_ACTIVATION")
+                print("activation,annualized,mdd,vol,sharpe,since2020_annualized,since2020_sharpe,last10_annualized,last10_sharpe,since2022_annualized,since2022_sharpe,trades,events")
+                for activation in ["2015-01-01", "2017-01-01", "2019-01-01", "2020-01-01", "2021-01-01", "2022-01-01"] {
+                    guard let result = runFixedVRCap80Governor(excludedExecutionDate: nil, activationSignalDate: activation),
+                          let metrics = fixedVRMetrics(result.0) else { continue }
+                    let fullColumns = fixedVRMetricColumns(metrics.0)
+                    let a2020 = metrics.1?.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let s2020 = metrics.1?.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a"
+                    let a10 = metrics.2?.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let s10 = metrics.2?.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a"
+                    let a2022 = metrics.3?.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let s2022 = metrics.3?.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a"
+                    let tradeCount = String(result.0.report.trades.filter { $0.date >= commonStart }.count)
+                    let eventCount = String(result.1.count)
+                    var row: [String] = [activation]
+                    row.append(contentsOf: fullColumns)
+                    row.append(contentsOf: [a2020, s2020, a10, s10, a2022, s2022, tradeCount, eventCount])
+                    print(row.joined(separator: ","))
+                }
+                print("vr_cap80_event_dates," + eventDates.joined(separator: "|"))
+            }
+
+            if let nearPeakValidation = runFixedVRNearPeakCap80Governor(excludedExecutionDate: nil, activationSignalDate: "0000-01-01"),
+               let nearPeakMetrics = fixedVRMetrics(nearPeakValidation.0) {
+                let eventDates = nearPeakValidation.1
+                print("APP_CC_NFCI_C3_L3_VR80_CAP80_NEARPEAK4_JACKKNIFE")
+                print("excluded,annualized,mdd,vol,sharpe,trades,events")
+                print((["none"] + fixedVRMetricColumns(nearPeakMetrics.0) + [String(nearPeakValidation.0.report.trades.filter { $0.date >= commonStart }.count), String(eventDates.count)]).joined(separator: ","))
+                for excluded in eventDates {
+                    guard let result = runFixedVRNearPeakCap80Governor(excludedExecutionDate: excluded, activationSignalDate: "0000-01-01"),
+                          let metrics = fixedVRMetrics(result.0) else { continue }
+                    print(([excluded] + fixedVRMetricColumns(metrics.0) + [String(result.0.report.trades.filter { $0.date >= commonStart }.count), String(result.1.count)]).joined(separator: ","))
+                }
+
+                print("APP_CC_NFCI_C3_L3_VR80_CAP80_NEARPEAK4_ACTIVATION")
+                print("activation,annualized,mdd,vol,sharpe,since2020_annualized,since2020_sharpe,last10_annualized,last10_sharpe,since2022_annualized,since2022_sharpe,trades,events")
+                for activation in ["2015-01-01", "2017-01-01", "2019-01-01", "2020-01-01", "2021-01-01", "2022-01-01"] {
+                    guard let result = runFixedVRNearPeakCap80Governor(excludedExecutionDate: nil, activationSignalDate: activation),
+                          let metrics = fixedVRMetrics(result.0) else { continue }
+                    let fullColumns = fixedVRMetricColumns(metrics.0)
+                    let a2020 = metrics.1?.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let s2020 = metrics.1?.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a"
+                    let a10 = metrics.2?.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let s10 = metrics.2?.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a"
+                    let a2022 = metrics.3?.annualizedReturn.map { String(format: "%.6f", $0 * 100) } ?? "n/a"
+                    let s2022 = metrics.3?.sharpeRatio.map { String(format: "%.6f", $0) } ?? "n/a"
+                    let tradeCount = String(result.0.report.trades.filter { $0.date >= commonStart }.count)
+                    let eventCount = String(result.1.count)
+                    var row: [String] = [activation]
+                    row.append(contentsOf: fullColumns)
+                    row.append(contentsOf: [a2020, s2020, a10, s10, a2022, s2022, tradeCount, eventCount])
+                    print(row.joined(separator: ","))
+                }
+                print("vr_cap80_nearpeak4_event_dates," + eventDates.joined(separator: "|"))
+            }
+            return
+        }

@@ -1,0 +1,264 @@
+        if ProcessInfo.processInfo.environment["ATM_AUDITED_CANDIDATE_FAMILY_PANEL"] == "1" {
+            func loadAuditNFCISeries(_ path: String) -> [(releaseDate: String, value: Double)] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3, let value = Double(fields[2]), value.isFinite else { return nil }
+                    return (String(fields[0]), value)
+                }.sorted { $0.0 < $1.0 }
+            }
+            func auditNFCIChange(_ series: [(releaseDate: String, value: Double)], on date: String, lookback: Int) -> Double? {
+                var latest: Int?
+                for index in series.indices {
+                    if series[index].releaseDate <= date { latest = index } else { break }
+                }
+                guard let latest, latest >= lookback else { return nil }
+                return series[latest].value - series[latest - lookback].value
+            }
+            func resetLowNoiseAuditOverrides() {
+                BacktestResearchOverrides.lowNoiseTradeBand = nil
+                BacktestResearchOverrides.lowNoiseNearPeakExecutionFraction = nil
+                BacktestResearchOverrides.lowNoiseBroadUnwindTurnoverThreshold = nil
+                BacktestResearchOverrides.lowNoiseVolatilityTarget = nil
+                BacktestResearchOverrides.lowNoiseActiveReturnScale = nil
+                BacktestResearchOverrides.lowNoiseChinaActiveReturnScale = nil
+                BacktestResearchOverrides.lowNoiseConfirmedUSActiveReturnScale = nil
+            }
+            func scaledExcess(_ base: Double, factor: Double) -> Double {
+                1 + (base - 1) * factor
+            }
+            func valuesByDate(_ run: ResearchTargetStrategyRun) -> [String: Double] {
+                Dictionary(uniqueKeysWithValues: run.report.points.map { ($0.date.recordDateString, $0.portfolioValue) })
+            }
+            func averageMaps(_ maps: [[String: Double]]) -> [String: Double] {
+                guard let first = maps.first else { return [:] }
+                let dates = first.keys.filter { date in maps.allSatisfy { $0[date] != nil } }
+                var out: [String: Double] = [:]
+                for date in dates {
+                    out[date] = maps.reduce(0.0) { $0 + ($1[date] ?? 0) } / Double(maps.count)
+                }
+                return out
+            }
+            func averageTwo(_ lhs: [String: Double], _ rhs: [String: Double]) -> [String: Double] {
+                let dates = lhs.keys.filter { rhs[$0] != nil }
+                return Dictionary(uniqueKeysWithValues: dates.map { ($0, 0.5 * (lhs[$0] ?? 0) + 0.5 * (rhs[$0] ?? 0)) })
+            }
+
+            let creditSeries = loadAuditNFCISeries("tools/research-results/NFCICREDIT_initial_release.csv")
+            let leverageSeries = loadAuditNFCISeries("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            guard creditSeries.count >= 700, leverageSeries.count >= 700 else { return }
+            let settingsFrozen = AdvancedBacktestRiskSettings(
+                feeRate: 1.00,
+                slippageRate: 0.05,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let usSymbols: Set<String> = ["nasdaq", "sp500"]
+
+            func makeInputs(_ mode: AdvancedBacktestStrategyMode) -> [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)] {
+                mode.requiredSignalAssetSymbols.compactMap { optionsBySymbol[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+                }
+            }
+
+            func runC3L3(
+                base: AdvancedRotationStrategyRun,
+                inputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+                riskScale: Double,
+                rebalanceBand: Double,
+                symbol: String
+            ) -> ResearchTargetStrategyRun? {
+                let baseTargets = Dictionary(uniqueKeysWithValues: base.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+                let baseTradeDates = Set(base.report.trades.map { $0.date.recordDateString })
+                let config = ResearchTargetStrategyConfig(
+                    symbol: symbol,
+                    title: symbol,
+                    warmupSessions: 21,
+                    rebalanceSessions: 1,
+                    rebalanceBand: rebalanceBand,
+                    maxGrossExposure: 1,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: symbol
+                )
+                var priorBase: [String: Double] = [:]
+                var pending: [String: Double] = [:]
+                return BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settingsFrozen,
+                    config: config,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let executionKey = data.dates[index].recordDateString
+                        guard baseTradeDates.contains(executionKey), var target = baseTargets[executionKey] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let prior = priorBase
+                        priorBase = target
+                        if !prior.isEmpty {
+                            let signalKey = data.dates[signalIndex].recordDateString
+                            let credit = auditNFCIChange(creditSeries, on: signalKey, lookback: 8).map { $0 <= -0.03 } ?? false
+                            let leverage = auditNFCIChange(leverageSeries, on: signalKey, lookback: 4).map { $0 <= -0.03 } ?? false
+                            let priorGross = prior.values.reduce(0, +)
+                            let proposedGross = target.values.reduce(0, +)
+                            let priorUS = prior.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                            let proposedUS = target.reduce(0.0) { $0 + (usSymbols.contains($1.key) ? $1.value : 0) }
+                            let usDecrease = priorUS - proposedUS
+                            let grossDecrease = priorGross - proposedGross
+                            var extras: [String: Double] = [:]
+                            if credit || leverage {
+                                if usDecrease >= 0.05, grossDecrease >= 0.03 {
+                                    let retention = credit && leverage ? 1.0 : 0.5
+                                    for symbol in usSymbols {
+                                        let reduction = max((prior[symbol] ?? 0) - (target[symbol] ?? 0), 0)
+                                        if reduction > 0 { extras[symbol] = retention * reduction }
+                                    }
+                                } else if grossDecrease >= 0.05 {
+                                    for (symbol, priorWeight) in prior {
+                                        let reduction = max(priorWeight - (target[symbol] ?? 0), 0)
+                                        if reduction > 0 { extras[symbol] = reduction }
+                                    }
+                                }
+                            }
+                            let desired = extras.values.reduce(0, +)
+                            if desired > 0 {
+                                let cash = max(1.0 - proposedGross, 0)
+                                let scale = min(1.0, cash / desired)
+                                for (symbol, extra) in extras {
+                                    target[symbol, default: 0] += extra * scale
+                                }
+                            }
+                        }
+                        target = target.mapValues { max($0, 0) * riskScale }
+                        let gross = target.values.reduce(0, +)
+                        if gross > 1, gross > 0 {
+                            target = target.mapValues { $0 / gross }
+                        }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                )
+            }
+
+            resetLowNoiseAuditOverrides()
+            let lowNoiseMode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let lowNoiseInputs = makeInputs(lowNoiseMode)
+            guard let lowNoiseBase = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: lowNoiseInputs,
+                initialCash: 100_000,
+                settings: settingsFrozen,
+                mode: lowNoiseMode
+            ), let c0Run = runC3L3(
+                base: lowNoiseBase,
+                inputs: lowNoiseInputs,
+                riskScale: 1.0,
+                rebalanceBand: 0.244,
+                symbol: "C0_low_noise_c3l3"
+            ) else { return }
+            let c0 = valuesByDate(c0Run)
+
+            let cashMode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceRouter
+            let cashInputs = makeInputs(cashMode)
+            guard let cashBase = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: cashInputs,
+                initialCash: 100_000,
+                settings: settingsFrozen,
+                mode: cashMode
+            ), let c1Run = runC3L3(
+                base: cashBase,
+                inputs: cashInputs,
+                riskScale: 1.0,
+                rebalanceBand: 0.20,
+                symbol: "C1_cash_c3l3"
+            ), let c2Run = runC3L3(
+                base: cashBase,
+                inputs: cashInputs,
+                riskScale: 1.30,
+                rebalanceBand: 0.20,
+                symbol: "C2_cash_c3l3_scale130"
+            ) else { return }
+            let c1 = valuesByDate(c1Run)
+            let c2 = valuesByDate(c2Run)
+
+            var simpleScaleMaps: [[String: Double]] = []
+            for scale in [1.00, 1.20, 1.40] {
+                guard let run = runC3L3(
+                    base: cashBase,
+                    inputs: cashInputs,
+                    riskScale: scale,
+                    rebalanceBand: 0.20,
+                    symbol: String(format: "simple_scale_%.2f", scale)
+                ) else { return }
+                simpleScaleMaps.append(valuesByDate(run))
+            }
+            let c3 = averageMaps(simpleScaleMaps)
+
+            let skipC4 = ProcessInfo.processInfo.environment["ATM_AUDITED_SKIP_C4"] == "1"
+            let requestedExpertBand = ProcessInfo.processInfo.environment["ATM_AUDITED_EXPERT_BAND"].flatMap(Double.init)
+            let expertBandFactors = requestedExpertBand.map { [$0] } ?? [0.90, 1.00, 1.10]
+            var lowNoiseExpertMaps: [[String: Double]] = []
+            if !skipC4 {
+                for bandFactor in expertBandFactors {
+                    for scaleFactor in [0.90, 1.00, 1.10] {
+                        resetLowNoiseAuditOverrides()
+                        BacktestResearchOverrides.lowNoiseTradeBand = 0.244 * bandFactor
+                        BacktestResearchOverrides.lowNoiseActiveReturnScale = scaledExcess(1.22, factor: scaleFactor)
+                        BacktestResearchOverrides.lowNoiseChinaActiveReturnScale = scaledExcess(1.30, factor: scaleFactor)
+                        BacktestResearchOverrides.lowNoiseConfirmedUSActiveReturnScale = scaledExcess(1.24, factor: scaleFactor)
+                        guard let base = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                            assetInputs: lowNoiseInputs,
+                            initialCash: 100_000,
+                            settings: settingsFrozen,
+                            mode: lowNoiseMode
+                        ), let run = runC3L3(
+                            base: base,
+                            inputs: lowNoiseInputs,
+                            riskScale: 1.0,
+                            rebalanceBand: 0.244 * bandFactor,
+                            symbol: String(format: "ln_b%.2f_s%.2f", bandFactor, scaleFactor)
+                        ) else { return }
+                        lowNoiseExpertMaps.append(valuesByDate(run))
+                    }
+                }
+            }
+            resetLowNoiseAuditOverrides()
+            let c4 = averageMaps(lowNoiseExpertMaps)
+            let c5 = averageTwo(c0, c2)
+
+            var candidates: [(String, [String: Double])] = [
+                ("C0_low_noise_c3l3", c0),
+                ("C1_cash_c3l3", c1),
+                ("C2_cash_c3l3_scale130", c2),
+                ("C3_simple_scale_ensemble", c3),
+                ("C5_dual_core_5050", c5),
+            ]
+            if !skipC4 {
+                candidates.insert(("C4_low_noise_param_ensemble", c4), at: 4)
+            }
+            guard let first = candidates.first else { return }
+            let dates = first.1.keys.sorted().filter { date in candidates.allSatisfy { $0.1[date] != nil } }
+            var lines: [String] = []
+            lines.reserveCapacity(dates.count + 1)
+            lines.append((["date"] + candidates.map { $0.0 }).joined(separator: ","))
+            for date in dates {
+                let values = candidates.map { String(format: "%.10f", $0.1[date] ?? 0) }
+                lines.append(([date] + values).joined(separator: ","))
+            }
+            let outputPath = ProcessInfo.processInfo.environment["ATM_AUDITED_CANDIDATE_FAMILY_PANEL_PATH"]
+                ?? "/private/tmp/audited_candidate_family_panel.csv"
+            do {
+                try (lines.joined(separator: "\n") + "\n").write(toFile: outputPath, atomically: true, encoding: .utf8)
+                print("APP_AUDITED_CANDIDATE_FAMILY_PANEL")
+                print("path=\(outputPath),rows=\(dates.count),candidates=\(candidates.count),low_noise_experts=\(lowNoiseExpertMaps.count)")
+            } catch {
+                print("APP_AUDITED_CANDIDATE_FAMILY_PANEL\nwrite_failed=\(error)")
+            }
+            return
+        }

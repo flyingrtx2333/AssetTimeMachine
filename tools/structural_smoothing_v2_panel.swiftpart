@@ -1,0 +1,203 @@
+        if ProcessInfo.processInfo.environment["ATM_STRUCTURAL_SMOOTHING_V2"] == "1" {
+            func loadV2NFCI(_ path: String) -> [(releaseDate: String, value: Double)] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let f = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard f.count >= 3, let v = Double(f[2]), v.isFinite else { return nil }
+                    return (String(f[0]), v)
+                }.sorted { $0.0 < $1.0 }
+            }
+            func v2Change(_ s: [(releaseDate: String, value: Double)], _ d: String, _ n: Int) -> Double? {
+                var latest: Int?
+                for i in s.indices { if s[i].releaseDate <= d { latest = i } else { break } }
+                guard let i = latest, i >= n else { return nil }
+                return s[i].value - s[i-n].value
+            }
+            func resetV2Overrides() {
+                BacktestResearchOverrides.lowNoiseTradeBand = nil
+                BacktestResearchOverrides.lowNoiseTradeToBandBoundary = nil
+                BacktestResearchOverrides.lowNoiseActiveReturnScale = nil
+                BacktestResearchOverrides.lowNoiseChinaActiveReturnScale = nil
+                BacktestResearchOverrides.lowNoiseConfirmedUSActiveReturnScale = nil
+            }
+            func setUnifiedActiveScale(_ value: Double) {
+                BacktestResearchOverrides.lowNoiseActiveReturnScale = value
+                BacktestResearchOverrides.lowNoiseChinaActiveReturnScale = value
+                BacktestResearchOverrides.lowNoiseConfirmedUSActiveReturnScale = value
+            }
+            func fingerprint(_ run: ResearchTargetStrategyRun) -> String {
+                var h: UInt64 = 1469598103934665603
+                for state in run.dailyStates {
+                    for symbol in ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"] {
+                        var x = UInt64(bitPattern: Int64(((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded()))
+                        for _ in 0..<8 {
+                            h ^= x & UInt64(0xff)
+                            h &*= UInt64(1099511628211)
+                            x >>= 8
+                        }
+                    }
+                }
+                return String(format: "%016llx", h)
+            }
+
+            let variant = Int(ProcessInfo.processInfo.environment["ATM_V2_VARIANT"] ?? "0") ?? 0
+            let fee = Double(ProcessInfo.processInfo.environment["ATM_V2_EXEC_FEE"] ?? "1.0") ?? 1.0
+            let credit = loadV2NFCI("tools/research-results/NFCICREDIT_initial_release.csv")
+            let leverage = loadV2NFCI("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            guard credit.count >= 700, leverage.count >= 700 else { return }
+
+            let name: String
+            let band: Double
+            let softBoundary: Bool
+            resetV2Overrides()
+            switch variant {
+            case 0:
+                name = "V2_0_hard_current"
+                band = 0.244
+                softBoundary = false
+            case 1:
+                name = "V2_1_soft25_current_scale"
+                band = 0.25
+                softBoundary = true
+            case 2:
+                name = "V2_2_soft20_current_scale"
+                band = 0.20
+                softBoundary = true
+            case 3:
+                name = "V2_3_hard25_unified120"
+                band = 0.25
+                softBoundary = false
+                setUnifiedActiveScale(1.20)
+            case 4:
+                name = "V2_4_soft25_unified120"
+                band = 0.25
+                softBoundary = true
+                setUnifiedActiveScale(1.20)
+            case 5:
+                name = "V2_5_soft25_no_active_scale"
+                band = 0.25
+                softBoundary = true
+                setUnifiedActiveScale(1.00)
+            default:
+                print("APP_STRUCTURAL_SMOOTHING_V2\nunknown_variant=\(variant)")
+                resetV2Overrides()
+                return
+            }
+            BacktestResearchOverrides.lowNoiseTradeBand = band
+            BacktestResearchOverrides.lowNoiseTradeToBandBoundary = softBoundary
+
+            let mode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+            }
+            let localSettings = AdvancedBacktestRiskSettings(
+                feeRate: fee,
+                slippageRate: 0.05,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            guard let base = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: localSettings,
+                mode: mode
+            ) else {
+                resetV2Overrides(); return
+            }
+            let baseTargets = Dictionary(uniqueKeysWithValues: base.dailyStates.map { ($0.date.recordDateString, $0.targetWeights) })
+            let baseTradeDates = Set(base.report.trades.map { $0.date.recordDateString })
+            let us: Set<String> = ["nasdaq", "sp500"]
+            let config = ResearchTargetStrategyConfig(
+                symbol: name,
+                title: name,
+                warmupSessions: 21,
+                rebalanceSessions: 1,
+                rebalanceBand: band,
+                tradeToBandBoundary: softBoundary,
+                maxGrossExposure: 1,
+                allowsFinancedExposure: false,
+                financingAnnualRate: 0,
+                buyReason: name
+            )
+            var priorBase: [String: Double] = [:]
+            var pending: [String: Double] = [:]
+            var events = 0
+            guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: localSettings,
+                config: config,
+                rebalanceDecision: { index, signalIndex, data in
+                    guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    let execution = data.dates[index].recordDateString
+                    guard baseTradeDates.contains(execution), var target = baseTargets[execution] else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    let prior = priorBase
+                    priorBase = target
+                    guard !prior.isEmpty else {
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    }
+                    let signal = data.dates[signalIndex].recordDateString
+                    let c = v2Change(credit, signal, 8).map { $0 <= -0.03 } ?? false
+                    let l = v2Change(leverage, signal, 4).map { $0 <= -0.03 } ?? false
+                    let priorGross = prior.values.reduce(0, +)
+                    let proposedGross = target.values.reduce(0, +)
+                    let priorUS = prior.reduce(0.0) { $0 + (us.contains($1.key) ? $1.value : 0) }
+                    let proposedUS = target.reduce(0.0) { $0 + (us.contains($1.key) ? $1.value : 0) }
+                    let usDrop = priorUS - proposedUS
+                    let grossDrop = priorGross - proposedGross
+                    var extras: [String: Double] = [:]
+                    if c || l {
+                        if usDrop >= 0.05, grossDrop >= 0.03 {
+                            let retention = c && l ? 1.0 : 0.5
+                            for symbol in us {
+                                let reduction = max((prior[symbol] ?? 0) - (target[symbol] ?? 0), 0)
+                                if reduction > 0 { extras[symbol] = retention * reduction }
+                            }
+                        } else if grossDrop >= 0.05 {
+                            for (symbol, weight) in prior {
+                                let reduction = max(weight - (target[symbol] ?? 0), 0)
+                                if reduction > 0 { extras[symbol] = reduction }
+                            }
+                        }
+                    }
+                    let desired = extras.values.reduce(0, +)
+                    if desired > 0 {
+                        let scale = min(1.0, max(1.0 - proposedGross, 0) / desired)
+                        for (symbol, extra) in extras { target[symbol, default: 0] += extra * scale }
+                        events += 1
+                    }
+                    let gross = target.values.reduce(0, +)
+                    if gross > 1, gross > 0 { target = target.mapValues { max($0, 0) / gross } }
+                    pending = target
+                    return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                },
+                targetWeights: { _, _ in pending }
+            ) else {
+                resetV2Overrides(); return
+            }
+
+            let path = ProcessInfo.processInfo.environment["ATM_V2_OUTPUT"] ?? "/private/tmp/\(name).csv"
+            var lines = ["date,portfolio_value"]
+            lines.append(contentsOf: run.report.points.map { point in
+                let value = String(format: "%.10f", point.portfolioValue)
+                return "\(point.date.recordDateString),\(value)"
+            })
+            try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            print("APP_STRUCTURAL_SMOOTHING_V2")
+            let cagrText = String(format: "%.6f", (run.report.annualizedReturn ?? 0) * 100)
+            let mddText = String(format: "%.6f", run.report.maxDrawdown * 100)
+            let sharpeText = String(format: "%.6f", run.report.sharpeRatio ?? 0)
+            let softText = softBoundary ? 1 : 0
+            let fp = fingerprint(run)
+            print("variant=\(variant),name=\(name),fee=\(fee),band=\(band),soft=\(softText),events=\(events),trades=\(run.report.trades.count),cagr=\(cagrText),mdd=\(mddText),sharpe=\(sharpeText),fingerprint=\(fp),path=\(path)")
+            resetV2Overrides()
+            return
+        }

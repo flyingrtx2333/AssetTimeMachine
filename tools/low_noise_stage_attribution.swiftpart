@@ -1,0 +1,46 @@
+        if ProcessInfo.processInfo.environment["ATM_LOW_NOISE_STAGE_ATTRIBUTION"] == "1" {
+            struct StageAuditRow {
+                let mode: AdvancedBacktestStrategyMode
+                let report: AdvancedBacktestReport
+            }
+            let modes: [AdvancedBacktestStrategyMode] = [
+                .riskContributionReallocation,
+                .riskContributionRegimeRouter,
+                .riskContributionRecoveryRouter,
+                .riskContributionCashConfidenceRouter,
+                .riskContributionCashConfidenceLowNoise,
+            ]
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            var rows: [StageAuditRow] = []
+            for mode in modes {
+                let inputs = mode.requiredSignalAssetSymbols.compactMap { options[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+                }
+                guard let report = BacktestEngine.runAdvancedRotationStrategy(
+                    assetInputs: inputs, initialCash: 100_000, settings: settings, mode: mode
+                ) else { continue }
+                rows.append(.init(mode: mode, report: report))
+            }
+            print("APP_LOW_NOISE_STAGE_ATTRIBUTION")
+            print("mode,cagr,mdd,vol,sharpe,trades,average_cash,since2020_cagr,since2020_sharpe,since2022_cagr,since2022_sharpe")
+            for row in rows {
+                let p2020 = row.report.points.filter { $0.date.recordDateString >= "2020-01-01" }
+                let p2022 = row.report.points.filter { $0.date.recordDateString >= "2022-01-01" }
+                let m2020 = BacktestMetricsCalculator.performanceMetrics(from: p2020)
+                let m2022 = BacktestMetricsCalculator.performanceMetrics(from: p2022)
+                print([
+                    row.mode.rawValue,
+                    String(format:"%.6f",(row.report.annualizedReturn ?? 0)*100),
+                    String(format:"%.6f",row.report.maxDrawdown*100),
+                    String(format:"%.6f",(row.report.annualizedVolatility ?? 0)*100),
+                    String(format:"%.6f",row.report.sharpeRatio ?? 0),
+                    String(row.report.trades.count),
+                    String(format:"%.6f",row.report.averageCashRatio),
+                    String(format:"%.6f",(m2020?.annualizedReturn ?? 0)*100),
+                    String(format:"%.6f",m2020?.sharpeRatio ?? 0),
+                    String(format:"%.6f",(m2022?.annualizedReturn ?? 0)*100),
+                    String(format:"%.6f",m2022?.sharpeRatio ?? 0),
+                ].joined(separator:","))
+            }
+            return
+        }
