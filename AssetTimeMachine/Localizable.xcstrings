@@ -25162,7 +25162,343 @@
             }
           }
         }
+      },
+    "+1.15%/年": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "+1.15%/yr" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "+1.15%/年" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "+1.15%/年" } }
       }
+    },
+    "252 个新交易日才进行第一次主要前瞻判定。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "The first primary prospective decision is only after 252 new sessions." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "252 个新交易日才进行第一次主要前瞻判定。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "252 個新交易日才進行第一次主要前瞻判定。" } }
+      }
+    },
+    "5/7 时间折 Sharpe > 1；Block63 Sharpe P2.5=1.221，MDD P97.5=13.93%。已删除 1.24、1.30、A股 5% 哨兵与 24.4% 交易带。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "5/7 time folds have Sharpe > 1; Block63 Sharpe P2.5=1.221 and MDD P97.5=13.93%. Removed 1.24, 1.30, the 5% A-share sentinel and the 24.4% trading band." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "5/7 时间折 Sharpe > 1；Block63 Sharpe P2.5=1.221，MDD P97.5=13.93%。已删除 1.24、1.30、A股 5% 哨兵与 24.4% 交易带。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "5/7 時間折 Sharpe > 1；Block63 Sharpe P2.5=1.221，MDD P97.5=13.93%。已刪除 1.24、1.30、A股 5% 哨兵與 24.4% 交易帶。" } }
+      }
+    },
+    "5/7 时间折 Sharpe > 1；相对高收益核心，7/7 时间折最大回撤更低；Block63 Sharpe P2.5=1.231。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "5/7 time folds have Sharpe > 1; max drawdown is lower in all 7/7 folds versus the high-return core; Block63 Sharpe P2.5=1.231." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "5/7 时间折 Sharpe > 1；相对高收益核心，7/7 时间折最大回撤更低；Block63 Sharpe P2.5=1.231。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "5/7 時間折 Sharpe > 1；相對高收益核心，7/7 時間折最大回撤更低；Block63 Sharpe P2.5=1.231。" } }
+      }
+    },
+    "HAC t值": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "HAC t-stat" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "HAC t值" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "HAC t值" } }
+      }
+    },
+    "MDD 门槛": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "MDD threshold" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "MDD 门槛" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "MDD 門檻" } }
+      }
+    },
+    "NFCI 不直接预测上涨，只在基础趋势模型准备明显减仓而金融条件改善时缓冲过快退出；它不会凭 NFCI 新开仓，也不允许总仓超过 100%。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "NFCI does not directly predict gains. It only slows an aggressive exit when the base trend model wants to reduce exposure while financial conditions improve. It never opens positions by itself and total exposure cannot exceed 100%." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "NFCI 不直接预测上涨，只在基础趋势模型准备明显减仓而金融条件改善时缓冲过快退出；它不会凭 NFCI 新开仓，也不允许总仓超过 100%。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "NFCI 不直接預測上漲，只在基礎趨勢模型準備明顯減倉而金融條件改善時緩衝過快退出；它不會憑 NFCI 新開倉，也不允許總倉超過 100%。" } }
+      }
+    },
+    "NFCI主动增量": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "NFCI active uplift" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "NFCI主动增量" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "NFCI 主動增量" } }
+      }
+    },
+    "Sharpe 门槛": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Sharpe threshold" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "Sharpe 门槛" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "Sharpe 門檻" } }
+      }
+    },
+    "不可变记录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Immutable records" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "不可变记录" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "不可變記錄" } }
+      }
+    },
+    "买入持有 MDD": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Buy-and-hold MDD" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "买入持有 MDD" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "買入持有 MDD" } }
+      }
+    },
+    "交易数": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Trades" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "交易数" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "交易數" } }
+      }
+    },
+    "冻结后新增交易日": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "New sessions after freeze" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "冻结后新增交易日" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "凍結後新增交易日" } }
+      }
+    },
+    "冻结策略的参数不得根据后续表现回写修改。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Frozen strategy parameters must not be rewritten based on later performance." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "冻结策略的参数不得根据后续表现回写修改。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "凍結策略的參數不得根據後續表現回寫修改。" } }
+      }
+    },
+    "前瞻": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Forward" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "前瞻" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "前瞻" } }
+      }
+    },
+    "回顾性稳健性": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Retrospective robustness" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "回顾性稳健性" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "回顧性穩健性" } }
+      }
+    },
+    "因子解释与增量证据": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Factor rationale & incremental evidence" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "因子解释与增量证据" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "因子解釋與增量證據" } }
+      }
+    },
+    "尚无冻结后的新增交易日，因此不展示前瞻收益、Sharpe 或回撤。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "There are no new sessions after the freeze yet, so prospective return, Sharpe or drawdown are not shown." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "尚无冻结后的新增交易日，因此不展示前瞻收益、Sharpe 或回撤。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "尚無凍結後的新增交易日，因此不展示前瞻收益、Sharpe 或回撤。" } }
+      }
+    },
+    "底座扰动": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Base perturbations" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "底座扰动" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "底座擾動" } }
+      }
+    },
+    "方法级换资产泛化": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Method-level cross-asset generalization" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "方法级换资产泛化" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "方法級換資產泛化" } }
+      }
+    },
+    "最新 Signal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Latest signal" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "最新 Signal" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "最新 Signal" } }
+      }
+    },
+    "最新目标现金": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Latest target cash" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "最新目标现金" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "最新目標現金" } }
+      }
+    },
+    "未通过": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Not passed" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "未通过" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "未通過" } }
+      }
+    },
+    "未通过门槛": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Below threshold" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "未通过门槛" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "未通過門檻" } }
+      }
+    },
+    "查看验证档案": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "View validation record" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "查看验证档案" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "查看驗證檔案" } }
+      }
+    },
+    "正 Sharpe": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Positive Sharpe" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正 Sharpe" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正 Sharpe" } }
+      }
+    },
+    "正在读取不可变前瞻账本…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Loading immutable prospective ledger…" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在读取不可变前瞻账本…" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在讀取不可變前瞻帳本…" } }
+      }
+    },
+    "独立国家市场": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Independent country markets" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "独立国家市场" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "獨立國家市場" } }
+      }
+    },
+    "目标指纹": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Target fingerprint" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "目标指纹" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "目標指紋" } }
+      }
+    },
+    "真实 OOS 观察": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Live OOS watch" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "真实 OOS 观察" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "真實 OOS 觀察" } }
+      }
+    },
+    "真实前瞻 OOS": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Live prospective OOS" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "真实前瞻 OOS" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "真實前瞻 OOS" } }
+      }
+    },
+    "真实未来 OOS": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "True future OOS" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "真实未来 OOS" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "真實未來 OOS" } }
+      }
+    },
+    "组合 MDD": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Portfolio MDD" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "组合 MDD" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "組合 MDD" } }
+      }
+    },
+    "组合 Sharpe": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Portfolio Sharpe" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "组合 Sharpe" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "組合 Sharpe" } }
+      }
+    },
+    "证据边界": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Evidence boundaries" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "证据边界" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "證據邊界" } }
+      }
+    },
+    "起始 Signal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Starting signal" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "起始 Signal" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "起始 Signal" } }
+      }
+    },
+    "跨资产泛化": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Cross-asset generalization" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "跨资产泛化" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "跨資產泛化" } }
+      }
+    },
+    "这是对相关底层资产配置方法进行换国家、换市场验证，并非把 DualCore 原样搬到 8 个国家。结果有迁移性，但未达到预注册门槛，因此不能称为跨资产泛化通过。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "This changes countries and markets for the related underlying allocation method; it is not the exact DualCore copied into eight countries. The result shows some transferability but misses preregistered thresholds, so cross-asset generalization cannot be called passed." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "这是对相关底层资产配置方法进行换国家、换市场验证，并非把 DualCore 原样搬到 8 个国家。结果有迁移性，但未达到预注册门槛，因此不能称为跨资产泛化通过。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "這是對相關底層資產配置方法進行換國家、換市場驗證，並非把 DualCore 原樣搬到 8 個國家。結果有遷移性，但未達到預註冊門檻，因此不能稱為跨資產泛化通過。" } }
+      }
+    },
+    "进行中": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "In progress" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "进行中" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "進行中" } }
+      }
+    },
+    "通过": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Passed" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "通过" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "通過" } }
+      }
+    },
+    "预注册结论": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Preregistered result" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "预注册结论" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "預註冊結論" } }
+      }
+    },
+    "验证档案": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Validation record" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "验证档案" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "驗證檔案" } }
+      }
+    }
   },
   "version": "1.1"
 }

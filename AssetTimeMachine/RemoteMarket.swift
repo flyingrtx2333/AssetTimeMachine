@@ -112,6 +112,70 @@ nonisolated struct PublicNFCIAsOfResponse: Codable, Equatable, Sendable {
     }
 }
 
+nonisolated struct PublicForwardValidationStrategy: Codable, Equatable, Identifiable, Sendable {
+    let strategyID: String
+    let strategyVersion: String
+    let strategyName: String
+    let frozenAt: String
+    let signalCount: Int
+    let newSessions: Int
+    let firstSignalDate: String
+    let latestSignalDate: String
+    let latestExecutionDateHint: String
+    let latestTargetFingerprint: String
+    let latestPayloadSHA256: String
+    let latestDesiredCashWeight: Double
+    let latestModelCashWeight: Double
+    let latestRebalanceRecommended: Bool
+
+    var id: String { strategyVersion }
+
+    enum CodingKeys: String, CodingKey {
+        case strategyID = "strategy_id"
+        case strategyVersion = "strategy_version"
+        case strategyName = "strategy_name"
+        case frozenAt = "frozen_at"
+        case signalCount = "signal_count"
+        case newSessions = "new_sessions"
+        case firstSignalDate = "first_signal_date"
+        case latestSignalDate = "latest_signal_date"
+        case latestExecutionDateHint = "latest_execution_date_hint"
+        case latestTargetFingerprint = "latest_target_fingerprint"
+        case latestPayloadSHA256 = "latest_payload_sha256"
+        case latestDesiredCashWeight = "latest_desired_cash_weight"
+        case latestModelCashWeight = "latest_model_cash_weight"
+        case latestRebalanceRecommended = "latest_rebalance_recommended"
+    }
+}
+
+nonisolated struct PublicForwardValidationMilestone: Codable, Equatable, Identifiable, Sendable {
+    let sessions: Int
+    let label: String
+    let reached: Bool
+
+    var id: Int { sessions }
+}
+
+nonisolated struct PublicForwardValidationResponse: Codable, Equatable, Sendable {
+    let success: Bool
+    let startSignalDate: String?
+    let latestSignalDate: String?
+    let newSessions: Int
+    let primaryDecisionSessions: Int
+    let strategies: [PublicForwardValidationStrategy]
+    let milestones: [PublicForwardValidationMilestone]
+
+    enum CodingKeys: String, CodingKey {
+        case success
+        case startSignalDate = "start_signal_date"
+        case latestSignalDate = "latest_signal_date"
+        case newSessions = "new_sessions"
+        case primaryDecisionSessions = "primary_decision_sessions"
+        case strategies
+        case milestones
+    }
+}
+
 nonisolated struct MarketEndpointDoc: Identifiable, Sendable {
     let title: String
     let path: String
@@ -211,6 +275,13 @@ enum RemoteMarketClient {
         let (data, response) = try await URLSession.shared.data(from: components.url!)
         try validate(response: response, data: data)
         return try await decode(PublicNFCIAsOfResponse.self, from: data)
+    }
+
+    static func fetchForwardValidation() async throws -> PublicForwardValidationResponse {
+        let url = url(for: "/api/v1/money/public/strategy-forward-validation")
+        let (data, response) = try await URLSession.shared.data(from: url)
+        try validate(response: response, data: data)
+        return try await decode(PublicForwardValidationResponse.self, from: data)
     }
 
     static func fetchAssetCatalog() async throws -> [MarketAssetDescriptor] {
