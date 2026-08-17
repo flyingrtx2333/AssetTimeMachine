@@ -62,12 +62,20 @@ public struct PublicBacktestRunRequest: Codable, Equatable, Sendable {
     public let startDate: String
     public let endDate: String
     public let initialCash: Double
+    public let strategyConfig: PublicBasicStrategyConfig?
 
-    public init(strategyID: String, startDate: String, endDate: String, initialCash: Double) {
+    public init(
+        strategyID: String,
+        startDate: String,
+        endDate: String,
+        initialCash: Double,
+        strategyConfig: PublicBasicStrategyConfig? = nil
+    ) {
         self.strategyID = strategyID
         self.startDate = startDate
         self.endDate = endDate
         self.initialCash = initialCash
+        self.strategyConfig = strategyConfig
     }
 
     enum CodingKeys: String, CodingKey {
@@ -75,6 +83,72 @@ public struct PublicBacktestRunRequest: Codable, Equatable, Sendable {
         case startDate = "start_date"
         case endDate = "end_date"
         case initialCash = "initial_cash"
+        case strategyConfig = "strategy_config"
+    }
+}
+
+public enum PublicBasicStrategyKind: String, Codable, Equatable, Sendable {
+    case fixedAllocation = "fixed_allocation"
+    case momentumRotation = "momentum_rotation"
+    case trendFollowing = "trend_following"
+}
+
+public enum PublicBasicRebalanceFrequency: String, Codable, Equatable, Sendable {
+    case monthly
+    case quarterly
+    case yearly
+
+    fileprivate var sessions: Int {
+        switch self {
+        case .monthly: return 21
+        case .quarterly: return 63
+        case .yearly: return 252
+        }
+    }
+}
+
+public struct PublicBasicAllocation: Codable, Equatable, Sendable {
+    public let symbol: String
+    public let weight: Double
+
+    public init(symbol: String, weight: Double) {
+        self.symbol = symbol
+        self.weight = weight
+    }
+}
+
+public struct PublicBasicStrategyConfig: Codable, Equatable, Sendable {
+    public let name: String
+    public let kind: PublicBasicStrategyKind
+    public let allocations: [PublicBasicAllocation]
+    public let rebalance: PublicBasicRebalanceFrequency
+    public let lookbackMonths: Int?
+    public let topN: Int?
+    public let movingAverageDays: Int?
+
+    public init(
+        name: String,
+        kind: PublicBasicStrategyKind,
+        allocations: [PublicBasicAllocation],
+        rebalance: PublicBasicRebalanceFrequency,
+        lookbackMonths: Int? = nil,
+        topN: Int? = nil,
+        movingAverageDays: Int? = nil
+    ) {
+        self.name = name
+        self.kind = kind
+        self.allocations = allocations
+        self.rebalance = rebalance
+        self.lookbackMonths = lookbackMonths
+        self.topN = topN
+        self.movingAverageDays = movingAverageDays
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case name, kind, allocations, rebalance
+        case lookbackMonths = "lookback_months"
+        case topN = "top_n"
+        case movingAverageDays = "moving_average_days"
     }
 }
 
@@ -303,6 +377,7 @@ public enum PublicBacktestCoreError: Error, Equatable, LocalizedError, Sendable 
     case invalidDate
     case invalidRange(String)
     case invalidInitialCash
+    case invalidStrategyConfig(String)
     case computationFailed
 
     public var errorDescription: String? {
@@ -319,6 +394,8 @@ public enum PublicBacktestCoreError: Error, Equatable, LocalizedError, Sendable 
             return "Invalid backtest range: \(detail)"
         case .invalidInitialCash:
             return "Initial cash must be between CNY 10,000 and CNY 10,000,000"
+        case .invalidStrategyConfig(let detail):
+            return "Invalid basic strategy: \(detail)"
         case .computationFailed:
             return "The Swift backtest engine could not produce a result"
         }
@@ -368,6 +445,8 @@ public enum PublicBacktestCore {
     public static let maximumInitialCash = 10_000_000.0
     public static let minimumRangeYears = 3
     public static let maximumSeriesPointCount = 600
+    public static let customStrategyID = "custom-basic-v1"
+    public static let basicAssetSymbols = ["gold_cny", "sp500", "nasdaq", "csi300", "shanghai_composite"]
     public static let forwardStrategyIDs = ["nfci-dual-core-v1", "nfci-dual-core-v11"]
 
     private struct ForwardStrategyDescriptor: Sendable {
@@ -619,7 +698,27 @@ public enum PublicBacktestCore {
             throw PublicBacktestCoreError.invalidRange("at least three Gregorian calendar years are required")
         }
 
-        guard let descriptor = strategyDescriptors.first(where: { $0.id == request.strategyID }) else {
+        if request.strategyID == customStrategyID {
+            guard let strategyConfig = request.strategyConfig else {
+                throw PublicBacktestCoreError.invalidStrategyConfig("strategy_config is required")
+            }
+            let available = try availableBounds(for: strategyConfig, dataset: dataset)
+            guard startDate >= available.lowerBound, endDate <= available.upperBound else {
+                throw PublicBacktestCoreError.invalidRange(
+                    "requested dates must be within \(dateString(available.lowerBound))...\(dateString(available.upperBound))"
+                )
+            }
+            return try runBasicValidated(
+                request: request,
+                config: strategyConfig,
+                dataset: dataset,
+                dateBounds: startDate...endDate,
+                availableBounds: available
+            )
+        }
+
+        guard request.strategyConfig == nil,
+              let descriptor = strategyDescriptors.first(where: { $0.id == request.strategyID }) else {
             throw PublicBacktestCoreError.unknownStrategy
         }
         let template = try template(for: descriptor.id)
@@ -826,10 +925,123 @@ public enum PublicBacktestCore {
         } else {
             report = strategyRun.report
         }
+        return try makeResult(report: report, request: request, dataset: dataset)
+    }
+
+    private static func runBasicValidated(
+        request: PublicBacktestRunRequest,
+        config: PublicBasicStrategyConfig,
+        dataset: PublicBacktestDataset,
+        dateBounds: ClosedRange<Date>,
+        availableBounds: ClosedRange<Date>
+    ) throws -> PublicBacktestResult {
+        try validate(config: config)
+        let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+        let options = try config.allocations.map { allocation -> BacktestAssetOption in
+            guard let option = optionsBySymbol[allocation.symbol] else {
+                throw PublicBacktestCoreError.invalidStrategyConfig("unsupported asset \(allocation.symbol)")
+            }
+            return option
+        }
+        let historyProvider: (String) -> PublicHistorySeries? = { symbol in
+            dataset.seriesBySymbol[normalizedHistorySymbol(symbol)]
+        }
+        let inputs = options.map { option in
+            BacktestEngine.advancedAssetInput(for: option, historyProvider: historyProvider)
+        }
+        let settings = AdvancedBacktestRiskSettings(
+            feeRate: BacktestDefaults.advancedFeeRatePercent,
+            slippageRate: BacktestDefaults.advancedSlippageRatePercent,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        )
+        let baseWeights = Dictionary(uniqueKeysWithValues: config.allocations.map { ($0.symbol, $0.weight) })
+        let lookbackSessions = max((config.lookbackMonths ?? 12) * 21, 1)
+        let movingAverageDays = max(config.movingAverageDays ?? 200, 1)
+        let warmupSessions: Int
+        switch config.kind {
+        case .fixedAllocation: warmupSessions = 1
+        case .momentumRotation: warmupSessions = lookbackSessions
+        case .trendFollowing: warmupSessions = movingAverageDays
+        }
+
+        let runConfig = ResearchTargetStrategyConfig(
+            symbol: customStrategyID,
+            title: config.name,
+            warmupSessions: warmupSessions,
+            rebalanceSessions: config.rebalance.sessions,
+            maxGrossExposure: 1,
+            allowsFinancedExposure: false,
+            financingAnnualRate: 0,
+            buyReason: "基础策略调仓"
+        )
+        guard let strategyRun = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+            assetInputs: inputs,
+            initialCash: request.initialCash,
+            settings: settings,
+            config: runConfig,
+            dateBounds: availableBounds.lowerBound...dateBounds.upperBound,
+            targetWeights: { context, data in
+                switch config.kind {
+                case .fixedAllocation:
+                    return baseWeights
+                case .momentumRotation:
+                    let candidates = data.tradableSymbols.compactMap { symbol -> (String, Double)? in
+                        guard let prices = data.pricesBySymbol[symbol],
+                              prices.indices.contains(context.signalIndex),
+                              prices.indices.contains(context.signalIndex - lookbackSessions),
+                              prices[context.signalIndex - lookbackSessions] > 0 else { return nil }
+                        let momentum = prices[context.signalIndex] / prices[context.signalIndex - lookbackSessions] - 1
+                        guard momentum.isFinite, momentum > 0 else { return nil }
+                        return (symbol, momentum)
+                    }
+                    .sorted { lhs, rhs in lhs.1 == rhs.1 ? lhs.0 < rhs.0 : lhs.1 > rhs.1 }
+                    let selected = candidates.prefix(max(config.topN ?? 1, 1)).map(\.0)
+                    let selectedTotal = selected.reduce(0) { $0 + (baseWeights[$1] ?? 0) }
+                    guard selectedTotal > 0 else { return [:] }
+                    return Dictionary(uniqueKeysWithValues: selected.map { symbol in
+                        (symbol, (baseWeights[symbol] ?? 0) / selectedTotal)
+                    })
+                case .trendFollowing:
+                    var weights: [String: Double] = [:]
+                    for symbol in data.tradableSymbols {
+                        guard let prices = data.pricesBySymbol[symbol],
+                              prices.indices.contains(context.signalIndex),
+                              context.signalIndex - movingAverageDays + 1 >= 0 else { continue }
+                        let window = prices[(context.signalIndex - movingAverageDays + 1)...context.signalIndex]
+                        let average = window.reduce(0, +) / Double(window.count)
+                        if average.isFinite, prices[context.signalIndex] > average {
+                            weights[symbol] = baseWeights[symbol] ?? 0
+                        }
+                    }
+                    return weights
+                }
+            }
+        ) else {
+            if Task.isCancelled { throw CancellationError() }
+            throw PublicBacktestCoreError.computationFailed
+        }
+        guard let report = BacktestEngine.statefulAdvancedReport(
+            from: strategyRun.report,
+            dailyStates: strategyRun.dailyStates,
+            within: dateBounds,
+            rebasedTo: request.initialCash
+        ) else {
+            throw PublicBacktestCoreError.computationFailed
+        }
+        return try makeResult(report: report, request: request, dataset: dataset)
+    }
+
+    private static func makeResult(
+        report: AdvancedBacktestReport,
+        request: PublicBacktestRunRequest,
+        dataset: PublicBacktestDataset
+    ) throws -> PublicBacktestResult {
         guard let first = report.points.first, let last = report.points.last else {
             throw PublicBacktestCoreError.computationFailed
         }
-
         let metrics = PublicBacktestMetrics(
             endingValue: report.finalPortfolioValue,
             totalReturn: report.totalReturn,
@@ -867,6 +1079,69 @@ public enum PublicBacktestCore {
             dataCutoff: dataset.dataCutoff,
             dataStale: dataset.dataStale
         )
+    }
+
+    private static func validate(config: PublicBasicStrategyConfig) throws {
+        let trimmedName = config.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty, trimmedName.count <= 40 else {
+            throw PublicBacktestCoreError.invalidStrategyConfig("name must contain 1...40 characters")
+        }
+        guard !config.allocations.isEmpty, config.allocations.count <= basicAssetSymbols.count else {
+            throw PublicBacktestCoreError.invalidStrategyConfig("select between 1 and 5 assets")
+        }
+        let symbols = config.allocations.map(\.symbol)
+        guard Set(symbols).count == symbols.count,
+              Set(symbols).isSubset(of: Set(basicAssetSymbols)) else {
+            throw PublicBacktestCoreError.invalidStrategyConfig("assets must be unique and publicly supported")
+        }
+        guard config.allocations.allSatisfy({ $0.weight.isFinite && $0.weight > 0 && $0.weight <= 1 }) else {
+            throw PublicBacktestCoreError.invalidStrategyConfig("weights must be within (0, 1]")
+        }
+        let totalWeight = config.allocations.reduce(0) { $0 + $1.weight }
+        guard totalWeight <= 1.000_000_1 else {
+            throw PublicBacktestCoreError.invalidStrategyConfig("gross allocation must not exceed 100%")
+        }
+        switch config.kind {
+        case .fixedAllocation:
+            guard config.lookbackMonths == nil, config.topN == nil, config.movingAverageDays == nil else {
+                throw PublicBacktestCoreError.invalidStrategyConfig("fixed allocation has no signal parameters")
+            }
+        case .momentumRotation:
+            guard let lookback = config.lookbackMonths, [3, 6, 12].contains(lookback),
+                  let topN = config.topN, topN >= 1, topN <= min(3, config.allocations.count),
+                  config.movingAverageDays == nil else {
+                throw PublicBacktestCoreError.invalidStrategyConfig("momentum requires a 3/6/12 month lookback and valid top_n")
+            }
+        case .trendFollowing:
+            guard let movingAverageDays = config.movingAverageDays, [50, 100, 200].contains(movingAverageDays),
+                  config.lookbackMonths == nil, config.topN == nil else {
+                throw PublicBacktestCoreError.invalidStrategyConfig("trend following requires a 50/100/200 day moving average")
+            }
+        }
+    }
+
+    private static func availableBounds(
+        for config: PublicBasicStrategyConfig,
+        dataset: PublicBacktestDataset
+    ) throws -> ClosedRange<Date> {
+        try validate(config: config)
+        let optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.dcaAssetOptions.map { ($0.symbol, $0) })
+        var series: [PublicHistorySeries] = []
+        for allocation in config.allocations {
+            guard let option = optionsBySymbol[allocation.symbol],
+                  let asset = dataset.seriesBySymbol[allocation.symbol] else {
+                throw PublicBacktestCoreError.invalidStrategyConfig("unsupported asset \(allocation.symbol)")
+            }
+            series.append(asset)
+            if let fxSymbol = option.historicalFXSymbol,
+               let fx = dataset.seriesBySymbol[normalizedHistorySymbol(fxSymbol)] {
+                series.append(fx)
+            }
+        }
+        guard let bounds = BacktestEngine.availableDateBounds(for: series) else {
+            throw PublicBacktestCoreError.invalidDataset("basic strategy has no common date range")
+        }
+        return bounds
     }
 
     private static func preparedInputs(

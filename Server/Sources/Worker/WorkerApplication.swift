@@ -119,7 +119,7 @@ struct AssetTimeMachineBacktestWorker {
         switch error {
         case .invalidDate, .invalidInitialCash:
             return WorkerHTTPError(status: .badRequest, detail: error.localizedDescription)
-        case .invalidRange, .unknownStrategy:
+        case .invalidRange, .invalidStrategyConfig, .unknownStrategy:
             return WorkerHTTPError(status: .unprocessableContent, detail: error.localizedDescription)
         case .invalidDataset, .invalidMacroData, .computationFailed:
             return WorkerHTTPError(status: .serviceUnavailable, detail: "Backtest service is unavailable")

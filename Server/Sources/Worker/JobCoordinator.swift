@@ -229,13 +229,11 @@ actor BacktestJobCoordinator {
     }
 
     private func cacheKey(request: PublicBacktestRunRequest, datasetHash: String) -> String {
+        let requestData = (try? PublicBacktestComputeCodec.makeEncoder().encode(request)) ?? Data()
         let canonical = [
             PublicBacktestCore.engineVersion,
             datasetHash,
-            request.strategyID,
-            request.startDate,
-            request.endDate,
-            String(request.initialCash.bitPattern, radix: 16)
+            requestData.base64EncodedString()
         ].joined(separator: "|")
         return SHA256.hash(data: Data(canonical.utf8)).map { String(format: "%02x", $0) }.joined()
     }

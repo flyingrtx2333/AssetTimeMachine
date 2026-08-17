@@ -32,6 +32,70 @@ final class PublicBacktestCoreTests: XCTestCase {
         XCTAssertTrue(String(decoding: data, as: UTF8.self).contains("\"strategy_id\""))
     }
 
+    func testBasicStrategyRequestRoundTripsWithoutLosingParameters() throws {
+        let config = PublicBasicStrategyConfig(
+            name: "黄金美股月度趋势",
+            kind: .trendFollowing,
+            allocations: [
+                .init(symbol: "gold_cny", weight: 0.4),
+                .init(symbol: "sp500", weight: 0.6),
+            ],
+            rebalance: .monthly,
+            movingAverageDays: 200
+        )
+        let request = PublicBacktestRunRequest(
+            strategyID: PublicBacktestCore.customStrategyID,
+            startDate: "2016-08-08",
+            endDate: "2026-08-07",
+            initialCash: 100_000,
+            strategyConfig: config
+        )
+
+        let data = try PublicBacktestComputeCodec.makeEncoder().encode(request)
+        let decoded = try PublicBacktestComputeCodec.makeDecoder().decode(PublicBacktestRunRequest.self, from: data)
+
+        XCTAssertEqual(decoded, request)
+        let json = String(decoding: data, as: UTF8.self)
+        XCTAssertTrue(json.contains("\"strategy_config\""))
+        XCTAssertTrue(json.contains("\"moving_average_days\":200"))
+    }
+
+    func testFixedAllocationBasicStrategyRunsInsidePublicConstraints() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let historyURL = root.appendingPathComponent("tools/fixtures/backtest-history/generalization_public_history.json")
+        let dataset = try PublicBacktestCore.loadDataset(
+            from: Data(contentsOf: historyURL),
+            datasetHash: "basic-strategy-fixture",
+            dataStale: false
+        )
+        let request = PublicBacktestRunRequest(
+            strategyID: PublicBacktestCore.customStrategyID,
+            startDate: "2016-01-04",
+            endDate: "2025-12-31",
+            initialCash: 100_000,
+            strategyConfig: .init(
+                name: "黄金标普季度配置",
+                kind: .fixedAllocation,
+                allocations: [
+                    .init(symbol: "gold_cny", weight: 0.4),
+                    .init(symbol: "sp500", weight: 0.6),
+                ],
+                rebalance: .quarterly
+            )
+        )
+
+        let result = try PublicBacktestCore.run(request: request, dataset: dataset)
+
+        XCTAssertFalse(result.series.portfolio.isEmpty)
+        XCTAssertTrue(result.metrics.endingValue.isFinite)
+        XCTAssertLessThanOrEqual(result.metrics.averageGrossExposure, 1.000_001)
+        XCTAssertEqual(result.requestedRange.startDate, "2016-01-04")
+    }
+
     func testPrewarmInvocationRoundTripsStrategyID() throws {
         let invocation = PublicBacktestComputeInvocation(
             mode: .prewarm,
