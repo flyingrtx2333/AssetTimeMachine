@@ -552,7 +552,6 @@ private struct BacktestDateEndpointButton: View {
 struct AdvancedStrategyLibrarySheet: View {
     private enum LibraryGroup: String, CaseIterable, Identifiable {
         case selected
-        case forward
         case basic
 
         var id: String { rawValue }
@@ -560,7 +559,6 @@ struct AdvancedStrategyLibrarySheet: View {
         var title: String {
             switch self {
             case .selected: return AppLocalization.string("精选")
-            case .forward: return AppLocalization.string("前瞻")
             case .basic: return AppLocalization.string("基础")
             }
         }
@@ -568,7 +566,6 @@ struct AdvancedStrategyLibrarySheet: View {
         var icon: String {
             switch self {
             case .selected: return "sparkles"
-            case .forward: return "clock.arrow.trianglehead.counterclockwise.rotate.90"
             case .basic: return "function"
             }
         }
@@ -576,7 +573,6 @@ struct AdvancedStrategyLibrarySheet: View {
         var accent: Color {
             switch self {
             case .selected: return AssetTheme.gold
-            case .forward: return AssetTheme.accentOrange
             case .basic: return AssetTheme.accentBlue
             }
         }
@@ -674,8 +670,6 @@ struct AdvancedStrategyLibrarySheet: View {
         let initialGroup: LibraryGroup
         if activeTemplateID?.hasPrefix("basic-") == true {
             initialGroup = .basic
-        } else if activeTemplateID?.hasPrefix("nfci-dual-core-") == true {
-            initialGroup = .forward
         } else {
             initialGroup = .selected
         }
@@ -720,15 +714,6 @@ struct AdvancedStrategyLibrarySheet: View {
                     templates: sectionTemplates
                 )
             }
-        case .forward:
-            guard !matchingTemplates.isEmpty else { return [] }
-            return [StrategySection(
-                id: "forward-oos",
-                title: AppLocalization.string("真实 OOS 观察"),
-                icon: "checkmark.seal.fill",
-                accent: AssetTheme.accentOrange,
-                templates: matchingTemplates
-            )]
         case .basic:
             return BasicStrategyFamily.allCases.compactMap { family in
                 let sectionTemplates = matchingTemplates.filter {
@@ -902,7 +887,7 @@ struct AdvancedStrategyLibrarySheet: View {
                         template: template,
                         isActive: template.id == activeTemplateID,
                         isFeatured: template.id == activeTemplateID,
-                        onInfo: group(for: template) == .forward ? {
+                        onInfo: template.id == "nfci-dual-core-v11" ? {
                             validationSelection = ValidationSheetSelection(template: template)
                         } : nil
                     ) {
@@ -952,13 +937,7 @@ struct AdvancedStrategyLibrarySheet: View {
     }
 
     private func group(for template: AdvancedBacktestStrategyTemplate) -> LibraryGroup {
-        if BacktestProductStrategyCatalog.isBasicTemplateID(template.id) {
-            return .basic
-        }
-        if BacktestProductStrategyCatalog.isExperimentalTemplateID(template.id) {
-            return .forward
-        }
-        return .selected
+        BacktestProductStrategyCatalog.isBasicTemplateID(template.id) ? .basic : .selected
     }
 
     private func tier(for template: AdvancedBacktestStrategyTemplate) -> StrategyTier {

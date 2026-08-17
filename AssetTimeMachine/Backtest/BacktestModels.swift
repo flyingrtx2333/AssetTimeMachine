@@ -1986,7 +1986,7 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
             id: "nfci-dual-core-v11",
             mode: .nfciDualCoreSimplifiedV11,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            categoryLocalizationKey: "前瞻策略",
+            categoryLocalizationKey: "精选策略",
             titleLocalizationKey: "NFCI 双核心·简化（前瞻）",
             annualizedReturn: 0,
             maxDrawdown: 0,
@@ -2142,16 +2142,14 @@ struct AdvancedBacktestStrategyTemplate: Identifiable {
 enum BacktestProductStrategyCatalog {
     static let curatedTemplateIDs = [
         "risk-contribution-cash-confidence-low-noise",
+        "nfci-dual-core-v11",
         "core-gold-satellite-equity-curve-state-gate-momentum",
         "core-gold-satellite-risk-budget-state-gate-momentum",
         "core-gold-satellite-profit-lock-momentum",
         "gold-nasdaq-dual-trend-barbell",
     ]
 
-    static let experimentalTemplateIDs = [
-        "nfci-dual-core-v1",
-        "nfci-dual-core-v11",
-    ]
+    static let experimentalTemplateIDs: [String] = []
 
     static let basicTemplateIDs = [
         "basic-ma60-trend",
