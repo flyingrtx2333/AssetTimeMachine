@@ -492,7 +492,8 @@ Pull requests should describe the user-facing change, list verification commands
 
 ## Current Known Operational Notes
 
-- Latest TestFlight release: version `1.12` build `181`, Delivery UUID `f95e7ee0-e4ec-4404-a5bd-ce566c41a1e3`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.12-181`.
+- Latest TestFlight release: version `1.12` build `182`, Delivery UUID `f8c52358-5c21-4db1-8f79-0ceec6804bbc`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.12-182`.
+- Build 182 ships the refined NFCI prospective-validation record in Quant: each frozen forward strategy opens its own validation evidence, shows retrospective robustness, factor evidence, preregistered cross-asset results, and server-backed append-only OOS progress. OOS milestones are scoped to the selected frozen strategy, and freeze date is distinguished from the ledger baseline signal date.
 - Build 181 commits and packages the finalized NFCI forward-watch workflow, server forward-snapshot execution path, multi-series backtest share poster, and Time Machine selected-point value popover. The changed screens were recaptured on iPhone 17 Pro Max and archived under OneDrive `Changed-Pages-2026-08-15-build181`.
 - Build 179 restores accounting clarity to the unified Time Machine chart: total assets, net assets, and liabilities use their actual CNY values on the left axis, while enabled gold and market benchmarks use relative change on the right axis. It also adds explicit scale copy, professional compact amount labels, accurate accessibility values, and preserves independent legend toggles without changing the pinned App-engine strategy baseline.
 - Build 178 ships the latest generalized backtest and market-data support changes from `main`, including the expanded remote market parsing path and localization compatibility updates.
