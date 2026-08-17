@@ -25307,6 +25307,22 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "凍結後新增交易日" } }
       }
     },
+    "冻结日期": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Freeze date" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "冻结日期" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "凍結日期" } }
+      }
+    },
+    "账本首条 Signal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "First ledger signal" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "账本首条 Signal" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "帳本首條 Signal" } }
+      }
+    },
     "冻结策略 · 参数不得因后续表现回写修改": {
       "extractionState": "manual",
       "localizations": {

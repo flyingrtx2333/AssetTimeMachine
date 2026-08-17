@@ -1198,9 +1198,12 @@ struct ForwardStrategyValidationSheet: View {
         template.id == "nfci-dual-core-v11"
     }
 
+    private var prospectiveSessions: Int {
+        liveStrategy?.newSessions ?? validation?.newSessions ?? 0
+    }
+
     private var nextMilestone: Int {
-        let sessions = validation?.newSessions ?? 0
-        return [63, 126, 252, 504].first(where: { sessions < $0 }) ?? 504
+        [63, 126, 252, 504].first(where: { prospectiveSessions < $0 }) ?? 504
     }
 
     var body: some View {
@@ -1302,7 +1305,7 @@ struct ForwardStrategyValidationSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             } else if let validation {
-                let sessions = validation.newSessions
+                let sessions = prospectiveSessions
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(alignment: .firstTextBaseline) {
                         Text(AppLocalization.string("冻结后新增交易日"))
@@ -1328,15 +1331,19 @@ struct ForwardStrategyValidationSheet: View {
 
                     Divider().overlay(AssetTheme.border.opacity(0.55))
 
-                    validationValueRow(
-                        AppLocalization.string("起始 Signal"),
-                        validation.startSignalDate ?? AppLocalization.string("等待首条记录")
-                    )
-                    validationValueRow(
-                        AppLocalization.string("最新 Signal"),
-                        validation.latestSignalDate ?? AppLocalization.string("等待首条记录")
-                    )
                     if let liveStrategy {
+                        validationValueRow(
+                            AppLocalization.string("冻结日期"),
+                            liveStrategy.frozenAt
+                        )
+                        validationValueRow(
+                            AppLocalization.string("账本首条 Signal"),
+                            liveStrategy.firstSignalDate
+                        )
+                        validationValueRow(
+                            AppLocalization.string("最新 Signal"),
+                            liveStrategy.latestSignalDate
+                        )
                         validationValueRow(
                             AppLocalization.string("不可变记录"),
                             "\(liveStrategy.signalCount)"
@@ -1464,9 +1471,10 @@ struct ForwardStrategyValidationSheet: View {
     }
 
     private func milestoneChip(_ milestone: PublicForwardValidationMilestone) -> some View {
-        let accent = milestone.reached ? AssetTheme.positive : AssetTheme.textSecondary
+        let reached = prospectiveSessions >= milestone.sessions
+        let accent = reached ? AssetTheme.positive : AssetTheme.textSecondary
         return HStack(spacing: 3) {
-            Image(systemName: milestone.reached ? "checkmark.circle.fill" : "circle")
+            Image(systemName: reached ? "checkmark.circle.fill" : "circle")
                 .font(.caption2.weight(.bold))
             Text("\(milestone.sessions)")
                 .font(.caption2.monospacedDigit().weight(.bold))
