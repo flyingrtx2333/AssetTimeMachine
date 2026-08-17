@@ -124,7 +124,11 @@ struct WorkerConfiguration: Sendable {
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
             return trimmed.isEmpty ? nil : URL(fileURLWithPath: trimmed)
         }
-        let defaultHistoryURL = "https://api.flyingrtx.com/api/v1/money/public/history?symbols=gold,nasdaq,sp500,dowjones,hsi,nikkei,oil_wti_cny,csi300,shanghai_composite,shenzhen_component,chinext,usd_per_cny&period=all&include_ohlc=true"
+        // Keep this list limited to the series the public strategy engine actually
+        // consumes. Every identifier is part of the backend's stable public-history
+        // contract; one unsupported optional symbol would otherwise reject the whole
+        // bootstrap request.
+        let defaultHistoryURL = "https://api.flyingrtx.com/api/v1/money/public/history?symbols=gold_cny,nasdaq_composite,sp500,csi300,shanghai_composite,usd_per_cny&period=all&include_ohlc=true"
         guard let historyURL = URL(string: environment["BACKTEST_HISTORY_URL"] ?? defaultHistoryURL) else {
             throw WorkerStartupError.invalidHistoryURL
         }
