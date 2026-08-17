@@ -568,7 +568,7 @@ struct AdvancedStrategyLibrarySheet: View {
         var icon: String {
             switch self {
             case .selected: return "sparkles"
-            case .forward: return "clock.badge.checkmark"
+            case .forward: return "clock.arrow.trianglehead.counterclockwise.rotate.90"
             case .basic: return "function"
             }
         }
@@ -650,7 +650,7 @@ struct AdvancedStrategyLibrarySheet: View {
         let templates: [AdvancedBacktestStrategyTemplate]
     }
 
-    private struct ValidationSelection: Identifiable {
+    private struct ValidationSheetSelection: Identifiable {
         let template: AdvancedBacktestStrategyTemplate
         var id: String { template.id }
     }
@@ -661,7 +661,7 @@ struct AdvancedStrategyLibrarySheet: View {
     let onSelect: (AdvancedBacktestStrategyTemplate) -> Void
     @State private var searchText = ""
     @State private var selectedGroup: LibraryGroup
-    @State private var validationSelection: ValidationSelection?
+    @State private var validationSelection: ValidationSheetSelection?
 
     init(
         templates: [AdvancedBacktestStrategyTemplate],
@@ -896,33 +896,15 @@ struct AdvancedStrategyLibrarySheet: View {
                 count: section.templates.count
             )
 
-            if section.id == "forward-oos",
-               let validationTemplate = section.templates.first(where: { $0.id == "nfci-dual-core-v11" }) ?? section.templates.first {
-                Button {
-                    validationSelection = ValidationSelection(template: validationTemplate)
-                } label: {
-                    HStack(spacing: 7) {
-                        Image(systemName: "checkmark.seal.fill")
-                        Text(AppLocalization.string("查看验证档案"))
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.bold))
-                    }
-                    .font(AppTypography.captionStrong)
-                    .foregroundStyle(AssetTheme.accentOrange)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(AssetTheme.accentOrange.opacity(0.09), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                .buttonStyle(.plain)
-            }
-
             LazyVStack(spacing: 0) {
                 ForEach(Array(section.templates.enumerated()), id: \.element.id) { index, template in
                     AdvancedStrategyTemplateRow(
                         template: template,
                         isActive: template.id == activeTemplateID,
-                        isFeatured: template.id == activeTemplateID
+                        isFeatured: template.id == activeTemplateID,
+                        onInfo: group(for: template) == .forward ? {
+                            validationSelection = ValidationSheetSelection(template: template)
+                        } : nil
                     ) {
                         onSelect(template)
                         dismiss()
@@ -970,8 +952,12 @@ struct AdvancedStrategyLibrarySheet: View {
     }
 
     private func group(for template: AdvancedBacktestStrategyTemplate) -> LibraryGroup {
-        if BacktestProductStrategyCatalog.isBasicTemplateID(template.id) { return .basic }
-        if BacktestProductStrategyCatalog.isExperimentalTemplateID(template.id) { return .forward }
+        if BacktestProductStrategyCatalog.isBasicTemplateID(template.id) {
+            return .basic
+        }
+        if BacktestProductStrategyCatalog.isExperimentalTemplateID(template.id) {
+            return .forward
+        }
         return .selected
     }
 
@@ -1037,6 +1023,7 @@ struct AdvancedStrategyTemplateRow: View {
     let template: AdvancedBacktestStrategyTemplate
     let isActive: Bool
     var isFeatured = false
+    var onInfo: (() -> Void)? = nil
     let onTap: () -> Void
 
     private var strategyIcon: String {
@@ -1073,7 +1060,8 @@ struct AdvancedStrategyTemplateRow: View {
         case "risk-contribution-cash-confidence-low-noise",
              "basic-ma-golden-cross":
             return AssetTheme.positive
-        case "nfci-dual-core-v1":
+        case "nfci-dual-core-v1",
+             "nfci-dual-core-v11":
             return AssetTheme.accentOrange
         case "core-gold-satellite-risk-budget-state-gate-momentum",
              "basic-boll-mean-reversion":
@@ -1105,65 +1093,81 @@ struct AdvancedStrategyTemplateRow: View {
     }
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(alignment: .center, spacing: 10) {
-                Image(systemName: strategyIcon)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(strategyAccent)
-                    .frame(width: 36, height: 36)
-                    .background(strategyAccent.opacity(0.1), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        HStack(spacing: 0) {
+            Button(action: onTap) {
+                HStack(alignment: .center, spacing: 10) {
+                    Image(systemName: strategyIcon)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(strategyAccent)
+                        .frame(width: 36, height: 36)
+                        .background(strategyAccent.opacity(0.1), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(template.title)
-                        .font(isFeatured ? .headline.weight(.bold) : AppTypography.rowTitle)
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(template.title)
+                            .font(isFeatured ? .headline.weight(.bold) : AppTypography.rowTitle)
+                            .foregroundStyle(AssetTheme.textPrimary)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                    if isCuratedStrategy || isExperimentalStrategy || isRecommendedStrategy || isDefaultStrategy || isActive {
-                        HStack(spacing: 5) {
-                            if isCuratedStrategy {
-                                CuratedStrategyBadge(compact: true)
-                            }
-                            if isExperimentalStrategy {
-                                strategyBadge(AppLocalization.string("前瞻观察"), accent: AssetTheme.accentOrange)
-                            }
-                            if isRecommendedStrategy {
-                                strategyBadge(AppLocalization.string("推荐"), accent: AssetTheme.positive)
-                            } else if isDefaultStrategy {
-                                strategyBadge(AppLocalization.string("默认"), accent: AssetTheme.gold)
-                            }
-                            if isActive {
-                                strategyBadge(AppLocalization.string("使用中"), accent: AssetTheme.positive)
+                        if isCuratedStrategy || isExperimentalStrategy || isRecommendedStrategy || isDefaultStrategy || isActive {
+                            HStack(spacing: 5) {
+                                if isCuratedStrategy {
+                                    CuratedStrategyBadge(compact: true)
+                                }
+                                if isExperimentalStrategy {
+                                    strategyBadge(AppLocalization.string("前瞻观察"), accent: AssetTheme.accentOrange)
+                                }
+                                if isRecommendedStrategy {
+                                    strategyBadge(AppLocalization.string("推荐"), accent: AssetTheme.positive)
+                                } else if isDefaultStrategy {
+                                    strategyBadge(AppLocalization.string("默认"), accent: AssetTheme.gold)
+                                }
+                                if isActive {
+                                    strategyBadge(AppLocalization.string("使用中"), accent: AssetTheme.positive)
+                                }
                             }
                         }
                     }
+
+                    Spacer(minLength: 6)
+
+                    Image(systemName: isActive ? "checkmark.circle.fill" : "chevron.right")
+                        .font(isActive ? .headline.weight(.semibold) : .caption.weight(.bold))
+                        .foregroundStyle(isActive ? AssetTheme.positive : AssetTheme.textSecondary.opacity(0.62))
                 }
-
-                Spacer(minLength: 6)
-
-                Image(systemName: isActive ? "checkmark.circle.fill" : "chevron.right")
-                    .font(isActive ? .headline.weight(.semibold) : .caption.weight(.bold))
-                    .foregroundStyle(isActive ? AssetTheme.positive : AssetTheme.textSecondary.opacity(0.62))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 13)
+                .padding(.trailing, onInfo == nil ? 13 : 7)
+                .padding(.vertical, isFeatured ? 13 : 11)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 13)
-            .padding(.vertical, isFeatured ? 13 : 11)
-            .background(
-                isFeatured || isActive ? strategyAccent.opacity(0.075) : Color.clear,
-                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-            )
-            .overlay(alignment: .leading) {
-                if isActive {
-                    Capsule()
-                        .fill(strategyAccent.opacity(0.78))
-                        .frame(width: 3)
-                        .padding(.vertical, 10)
-                        .padding(.leading, 1)
+            .buttonStyle(.plain)
+
+            if let onInfo {
+                Button(action: onInfo) {
+                    Image(systemName: "checkmark.seal")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AssetTheme.accentOrange)
+                        .frame(width: 34, height: 34)
+                        .background(AssetTheme.accentOrange.opacity(0.1), in: Circle())
+                        .accessibilityLabel(AppLocalization.string("查看验证档案"))
                 }
+                .buttonStyle(.plain)
+                .padding(.trailing, 12)
             }
         }
-        .buttonStyle(.plain)
+        .background(
+            isFeatured || isActive ? strategyAccent.opacity(0.075) : Color.clear,
+            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+        )
+        .overlay(alignment: .leading) {
+            if isActive {
+                Capsule()
+                    .fill(strategyAccent.opacity(0.78))
+                    .frame(width: 3)
+                    .padding(.vertical, 10)
+                    .padding(.leading, 1)
+            }
+        }
     }
 
     private func strategyBadge(_ title: String, accent: Color) -> some View {
@@ -1179,36 +1183,47 @@ struct AdvancedStrategyTemplateRow: View {
 
 struct ForwardStrategyValidationSheet: View {
     @Environment(\.dismiss) private var dismiss
+
     let template: AdvancedBacktestStrategyTemplate
 
     @State private var validation: PublicForwardValidationResponse?
-    @State private var loadError: String?
+    @State private var isLoading = true
+    @State private var errorMessage: String?
 
-    private var isV11: Bool { template.id == "nfci-dual-core-v11" }
-    private var live: PublicForwardValidationStrategy? {
+    private var liveStrategy: PublicForwardValidationStrategy? {
         validation?.strategies.first { $0.strategyID == template.id }
     }
-    private var sessions: Int { validation?.newSessions ?? 0 }
+
+    private var isSimplifiedV11: Bool {
+        template.id == "nfci-dual-core-v11"
+    }
+
     private var nextMilestone: Int {
-        [63, 126, 252, 504].first(where: { sessions < $0 }) ?? 504
+        let sessions = validation?.newSessions ?? 0
+        return [63, 126, 252, 504].first(where: { sessions < $0 }) ?? 504
     }
 
     var body: some View {
         NavigationStack {
             ZStack {
                 AssetTheme.pageGradient.ignoresSafeArea()
+
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 12) {
-                        summaryCard
-                        oosCard
-                        retrospectiveCard
-                        factorCard
+                    VStack(alignment: .leading, spacing: 14) {
+                        validationHeader
+                        evidenceBoundaryCard
+                        prospectiveOOSCard
+                        retrospectiveRobustnessCard
+                        factorExplanationCard
                         crossAssetCard
                     }
-                    .padding(16)
-                    .padding(.bottom, 18)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
+                    .padding(.bottom, 28)
                 }
-                .refreshable { await load() }
+                .refreshable {
+                    await loadValidation()
+                }
             }
             .navigationTitle(AppLocalization.string("验证档案"))
             .navigationBarTitleDisplayMode(.inline)
@@ -1218,107 +1233,175 @@ struct ForwardStrategyValidationSheet: View {
                         .foregroundStyle(AssetTheme.gold)
                 }
             }
-            .task { await load() }
-        }
-    }
-
-    private var summaryCard: some View {
-        card(AppLocalization.string("证据边界"), icon: "checkmark.seal.fill") {
-            VStack(spacing: 9) {
-                status(AppLocalization.string("回顾性稳健性"), AppLocalization.string("通过"), AssetTheme.positive)
-                status(AppLocalization.string("跨资产泛化"), AppLocalization.string("未通过门槛"), AssetTheme.accentOrange)
-                status(AppLocalization.string("真实未来 OOS"), AppLocalization.string("进行中"), AssetTheme.accentBlue)
-                Text(AppLocalization.string("冻结策略的参数不得根据后续表现回写修改。"))
-                    .font(AppTypography.caption)
-                    .foregroundStyle(AssetTheme.textSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            .task {
+                await loadValidation()
             }
         }
     }
 
-    private var oosCard: some View {
-        card(AppLocalization.string("真实前瞻 OOS"), icon: "clock.badge.checkmark") {
-            if let validation {
-                VStack(alignment: .leading, spacing: 11) {
-                    HStack {
+    private var validationHeader: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: isSimplifiedV11 ? "slider.horizontal.3" : "point.3.connected.trianglepath.dotted")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(AssetTheme.accentOrange)
+                .frame(width: 44, height: 44)
+                .background(AssetTheme.accentOrange.opacity(0.11), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(template.title)
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+                Text(AppLocalization.string("冻结策略 · 参数不得因后续表现回写修改"))
+                    .font(AppTypography.caption)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var evidenceBoundaryCard: some View {
+        validationCard(title: AppLocalization.string("证据边界"), icon: "checkmark.seal.fill") {
+            VStack(spacing: 9) {
+                statusRow(
+                    title: AppLocalization.string("回顾性稳健性"),
+                    status: AppLocalization.string("通过"),
+                    accent: AssetTheme.positive
+                )
+                statusRow(
+                    title: AppLocalization.string("跨资产泛化"),
+                    status: AppLocalization.string("未通过门槛"),
+                    accent: AssetTheme.accentOrange
+                )
+                statusRow(
+                    title: AppLocalization.string("真实未来 OOS"),
+                    status: AppLocalization.string("进行中"),
+                    accent: AssetTheme.accentBlue
+                )
+            }
+        }
+    }
+
+    private var prospectiveOOSCard: some View {
+        validationCard(title: AppLocalization.string("真实前瞻 OOS"), icon: "clock.badge.checkmark") {
+            if isLoading && validation == nil {
+                HStack(spacing: 9) {
+                    ProgressView()
+                    Text(AppLocalization.string("正在读取服务器不可变账本…"))
+                        .font(AppTypography.caption)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
+            } else if let errorMessage, validation == nil {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(AppLocalization.string("暂时无法读取前瞻账本"))
+                        .font(AppTypography.metaStrong)
+                        .foregroundStyle(AssetTheme.accentRed)
+                    Text(errorMessage)
+                        .font(AppTypography.caption)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } else if let validation {
+                let sessions = validation.newSessions
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .firstTextBaseline) {
                         Text(AppLocalization.string("冻结后新增交易日"))
                             .font(AppTypography.metaStrong)
+                            .foregroundStyle(AssetTheme.textPrimary)
                         Spacer()
                         Text("\(sessions) / \(nextMilestone)")
                             .font(.headline.monospacedDigit().weight(.bold))
                             .foregroundStyle(AssetTheme.accentOrange)
                     }
-                    ProgressView(value: Double(min(sessions, nextMilestone)), total: Double(nextMilestone))
-                        .tint(AssetTheme.accentOrange)
-                    HStack(spacing: 6) {
+
+                    ProgressView(
+                        value: Double(min(sessions, nextMilestone)),
+                        total: Double(max(nextMilestone, 1))
+                    )
+                    .tint(AssetTheme.accentOrange)
+
+                    HStack(spacing: 7) {
                         ForEach(validation.milestones) { milestone in
-                            HStack(spacing: 3) {
-                                Image(systemName: milestone.reached ? "checkmark.circle.fill" : "circle")
-                                Text("\(milestone.sessions)")
-                            }
-                            .font(.caption2.monospacedDigit().weight(.bold))
-                            .foregroundStyle(milestone.reached ? AssetTheme.positive : AssetTheme.textSecondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
-                            .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 8))
+                            milestoneChip(milestone)
                         }
                     }
-                    valueRow(AppLocalization.string("起始 Signal"), validation.startSignalDate ?? "—")
-                    valueRow(AppLocalization.string("最新 Signal"), validation.latestSignalDate ?? "—")
-                    if let live {
-                        valueRow(AppLocalization.string("不可变记录"), "\(live.signalCount)")
-                        valueRow(AppLocalization.string("目标指纹"), live.latestTargetFingerprint)
-                        valueRow(AppLocalization.string("最新目标现金"), String(format: "%.1f%%", live.latestDesiredCashWeight * 100))
-                    }
-                    Text(sessions == 0
-                         ? AppLocalization.string("尚无冻结后的新增交易日，因此不展示前瞻收益、Sharpe 或回撤。")
-                         : AppLocalization.string("252 个新交易日才进行第一次主要前瞻判定。"))
-                        .font(AppTypography.caption)
-                        .foregroundStyle(AssetTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            } else if let loadError {
-                Text(loadError)
-                    .font(AppTypography.caption)
-                    .foregroundStyle(AssetTheme.accentRed)
-            } else {
-                HStack(spacing: 8) {
-                    ProgressView()
-                    Text(AppLocalization.string("正在读取不可变前瞻账本…"))
-                        .font(AppTypography.caption)
-                        .foregroundStyle(AssetTheme.textSecondary)
-                }
-            }
-        }
-    }
 
-    private var retrospectiveCard: some View {
-        card(AppLocalization.string("回顾性稳健性"), icon: "chart.xyaxis.line") {
-            VStack(alignment: .leading, spacing: 10) {
-                metricGrid(isV11
-                    ? [("CAGR", "14.35%"), ("MDD", "7.69%"), ("Sharpe", "1.522"), (AppLocalization.string("交易数"), "451")]
-                    : [("CAGR", "14.58%"), ("MDD", "7.69%"), ("Sharpe", "1.534"), (AppLocalization.string("交易数"), "460")]
-                )
-                Text(isV11
-                     ? AppLocalization.string("5/7 时间折 Sharpe > 1；Block63 Sharpe P2.5=1.221，MDD P97.5=13.93%。已删除 1.24、1.30、A股 5% 哨兵与 24.4% 交易带。")
-                     : AppLocalization.string("5/7 时间折 Sharpe > 1；相对高收益核心，7/7 时间折最大回撤更低；Block63 Sharpe P2.5=1.231。"))
+                    Divider().overlay(AssetTheme.border.opacity(0.55))
+
+                    validationValueRow(
+                        AppLocalization.string("起始 Signal"),
+                        validation.startSignalDate ?? AppLocalization.string("等待首条记录")
+                    )
+                    validationValueRow(
+                        AppLocalization.string("最新 Signal"),
+                        validation.latestSignalDate ?? AppLocalization.string("等待首条记录")
+                    )
+                    if let liveStrategy {
+                        validationValueRow(
+                            AppLocalization.string("不可变记录"),
+                            "\(liveStrategy.signalCount)"
+                        )
+                        validationValueRow(
+                            AppLocalization.string("目标指纹"),
+                            liveStrategy.latestTargetFingerprint
+                        )
+                        validationValueRow(
+                            AppLocalization.string("最新目标现金"),
+                            String(format: "%.1f%%", liveStrategy.latestDesiredCashWeight * 100)
+                        )
+                    }
+
+                    Text(
+                        sessions == 0
+                            ? AppLocalization.string("当前尚无冻结后的新增交易日，因此不应计算或宣传前瞻收益、Sharpe 或回撤。")
+                            : AppLocalization.string("前瞻样本正在累积；252 个新交易日才进行第一次主要判定，期间不得因短期表现修改冻结策略。")
+                    )
                     .font(AppTypography.caption)
                     .foregroundStyle(AssetTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }
 
-    private var factorCard: some View {
-        card(AppLocalization.string("因子解释与增量证据"), icon: "waveform.path.ecg") {
+    private var retrospectiveRobustnessCard: some View {
+        validationCard(title: AppLocalization.string("回顾性稳健性"), icon: "chart.xyaxis.line") {
+            VStack(alignment: .leading, spacing: 11) {
+                if isSimplifiedV11 {
+                    metricGrid([
+                        (AppLocalization.string("历史 CAGR"), "14.35%"),
+                        (AppLocalization.string("最大回撤"), "7.69%"),
+                        (AppLocalization.string("Sharpe"), "1.522"),
+                        (AppLocalization.string("交易数"), "451"),
+                    ])
+                    validationBullet(AppLocalization.string("5/7 时间折 Sharpe > 1；6/7 时间折最大回撤不高于前一简化版本。"))
+                    validationBullet(AppLocalization.string("Block63 Bootstrap：Sharpe P2.5 = 1.221，MDD P97.5 = 13.93%。"))
+                    validationBullet(AppLocalization.string("删除 1.24、1.30、A股 5% 哨兵与 24.4% 交易带，保留统一 1.22 与自然 25% 交易带。"))
+                } else {
+                    metricGrid([
+                        (AppLocalization.string("历史 CAGR"), "14.58%"),
+                        (AppLocalization.string("最大回撤"), "7.69%"),
+                        (AppLocalization.string("Sharpe"), "1.534"),
+                        (AppLocalization.string("交易数"), "460"),
+                    ])
+                    validationBullet(AppLocalization.string("5/7 时间折 Sharpe > 1；相对高收益核心，7/7 时间折最大回撤更低。"))
+                    validationBullet(AppLocalization.string("Block63 Bootstrap：Sharpe P2.5 = 1.231，MDD P97.5 = 14.09%。"))
+                    validationBullet(AppLocalization.string("50/50 双核心权重与 25% 最终交易带在验证前固定，不做事后权重搜索。"))
+                }
+            }
+        }
+    }
+
+    private var factorExplanationCard: some View {
+        validationCard(title: AppLocalization.string("因子解释与增量证据"), icon: "waveform.path.ecg") {
             VStack(alignment: .leading, spacing: 10) {
                 metricGrid([
                     (AppLocalization.string("NFCI主动增量"), "+1.15%/年"),
-                    ("Active Sharpe", "0.785"),
+                    (AppLocalization.string("Active Sharpe"), "0.785"),
                     (AppLocalization.string("HAC t值"), "3.16–3.53"),
-                    (AppLocalization.string("底座扰动"), "6/6")
+                    (AppLocalization.string("底座扰动"), "6/6 正增量"),
                 ])
-                Text(AppLocalization.string("NFCI 不直接预测上涨，只在基础趋势模型准备明显减仓而金融条件改善时缓冲过快退出；它不会凭 NFCI 新开仓，也不允许总仓超过 100%。"))
+                Text(AppLocalization.string("NFCI 并不直接预测上涨。它只在基础趋势模型准备明显减仓、但信用或杠杆金融条件正在改善时，缓冲过快的风险退出。它不会凭 NFCI 新开仓，也不允许总仓超过 100%。"))
                     .font(AppTypography.caption)
                     .foregroundStyle(AssetTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1327,19 +1410,33 @@ struct ForwardStrategyValidationSheet: View {
     }
 
     private var crossAssetCard: some View {
-        card(AppLocalization.string("方法级换资产泛化"), icon: "globe.asia.australia.fill") {
-            VStack(alignment: .leading, spacing: 10) {
-                status(AppLocalization.string("预注册结论"), AppLocalization.string("未通过"), AssetTheme.accentOrange)
+        validationCard(title: AppLocalization.string("方法级换资产泛化"), icon: "globe.asia.australia.fill") {
+            VStack(alignment: .leading, spacing: 11) {
+                HStack {
+                    Text(AppLocalization.string("预注册结论"))
+                        .font(AppTypography.metaStrong)
+                        .foregroundStyle(AssetTheme.textPrimary)
+                    Spacer()
+                    Text(AppLocalization.string("未通过"))
+                        .font(AppTypography.captionStrong)
+                        .foregroundStyle(AssetTheme.accentOrange)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(AssetTheme.accentOrange.opacity(0.11), in: Capsule())
+                }
+
                 metricGrid([
                     (AppLocalization.string("独立国家市场"), "8"),
                     (AppLocalization.string("正 Sharpe"), "8 / 8"),
                     (AppLocalization.string("组合 Sharpe"), "0.417"),
-                    (AppLocalization.string("组合 MDD"), "26.70%")
+                    (AppLocalization.string("组合 MDD"), "26.70%"),
                 ])
-                valueRow(AppLocalization.string("Sharpe 门槛"), "≥ 0.45  →  FAIL")
-                valueRow(AppLocalization.string("MDD 门槛"), "≤ 25%  →  FAIL")
-                valueRow(AppLocalization.string("买入持有 MDD"), "69.03%")
-                Text(AppLocalization.string("这是对相关底层资产配置方法进行换国家、换市场验证，并非把 DualCore 原样搬到 8 个国家。结果有迁移性，但未达到预注册门槛，因此不能称为跨资产泛化通过。"))
+
+                validationValueRow(AppLocalization.string("Sharpe 门槛"), "≥ 0.45  →  FAIL")
+                validationValueRow(AppLocalization.string("MDD 门槛"), "≤ 25%  →  FAIL")
+                validationValueRow(AppLocalization.string("买入持有 MDD"), "69.03%")
+
+                Text(AppLocalization.string("这项测试是对相关底层资产配置方法进行换国家、换市场验证，不是把 DualCore 原样搬到 8 个国家。结果说明存在一定迁移性，但没有达到预注册门槛，所以不能标记为“跨资产泛化通过”。"))
                     .font(AppTypography.caption)
                     .foregroundStyle(AssetTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1347,62 +1444,125 @@ struct ForwardStrategyValidationSheet: View {
         }
     }
 
-    private func load() async {
+    private func loadValidation() async {
+        await MainActor.run {
+            isLoading = true
+            errorMessage = nil
+        }
         do {
             let response = try await RemoteMarketClient.fetchForwardValidation()
             await MainActor.run {
                 validation = response
-                loadError = nil
+                isLoading = false
             }
         } catch {
-            await MainActor.run { loadError = error.localizedDescription }
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+                isLoading = false
+            }
         }
     }
 
-    private func status(_ label: String, _ result: String, _ color: Color) -> some View {
+    private func milestoneChip(_ milestone: PublicForwardValidationMilestone) -> some View {
+        let accent = milestone.reached ? AssetTheme.positive : AssetTheme.textSecondary
+        return HStack(spacing: 3) {
+            Image(systemName: milestone.reached ? "checkmark.circle.fill" : "circle")
+                .font(.caption2.weight(.bold))
+            Text("\(milestone.sessions)")
+                .font(.caption2.monospacedDigit().weight(.bold))
+        }
+        .foregroundStyle(accent)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
+        .background(accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private func statusRow(title: String, status: String, accent: Color) -> some View {
         HStack(spacing: 8) {
-            Circle().fill(color).frame(width: 7, height: 7)
-            Text(label).font(AppTypography.meta)
+            Circle()
+                .fill(accent)
+                .frame(width: 7, height: 7)
+            Text(title)
+                .font(AppTypography.meta)
+                .foregroundStyle(AssetTheme.textPrimary)
             Spacer()
-            Text(result).font(AppTypography.captionStrong).foregroundStyle(color)
-        }
-        .foregroundStyle(AssetTheme.textPrimary)
-    }
-
-    private func valueRow(_ label: String, _ value: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(label).font(AppTypography.caption).foregroundStyle(AssetTheme.textSecondary)
-            Spacer()
-            Text(value).font(AppTypography.captionStrong.monospacedDigit()).foregroundStyle(AssetTheme.textPrimary)
+            Text(status)
+                .font(AppTypography.captionStrong)
+                .foregroundStyle(accent)
         }
     }
 
-    private func metricGrid(_ values: [(String, String)]) -> some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(Array(values.enumerated()), id: \.offset) { _, item in
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(item.0).font(.caption2).foregroundStyle(AssetTheme.textSecondary)
-                    Text(item.1).font(.subheadline.monospacedDigit().weight(.semibold)).foregroundStyle(AssetTheme.textPrimary)
+    private func validationValueRow(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(label)
+                .font(AppTypography.caption)
+                .foregroundStyle(AssetTheme.textSecondary)
+            Spacer(minLength: 8)
+            Text(value)
+                .font(AppTypography.captionStrong.monospacedDigit())
+                .foregroundStyle(AssetTheme.textPrimary)
+                .multilineTextAlignment(.trailing)
+        }
+    }
+
+    private func validationBullet(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 7) {
+            Circle()
+                .fill(AssetTheme.accentOrange.opacity(0.72))
+                .frame(width: 5, height: 5)
+                .padding(.top, 6)
+            Text(text)
+                .font(AppTypography.caption)
+                .foregroundStyle(AssetTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder
+    private func metricGrid(_ metrics: [(String, String)]) -> some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 9) {
+            ForEach(Array(metrics.enumerated()), id: \.offset) { _, metric in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(metric.0)
+                        .font(.caption2)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                    Text(metric.1)
+                        .font(.subheadline.monospacedDigit().weight(.semibold))
+                        .foregroundStyle(AssetTheme.textPrimary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(10)
-                .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 10))
+                .background(AssetTheme.overlaySoft.opacity(0.72), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
             }
         }
     }
 
-    private func card<Content: View>(_ title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 11) {
-            HStack(spacing: 7) {
-                Image(systemName: icon).foregroundStyle(AssetTheme.accentOrange)
-                Text(title).font(AppTypography.rowTitle).foregroundStyle(AssetTheme.textPrimary)
+    @ViewBuilder
+    private func validationCard<Content: View>(
+        title: String,
+        icon: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(AssetTheme.accentOrange)
+                    .frame(width: 28, height: 28)
+                    .background(AssetTheme.accentOrange.opacity(0.1), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                Text(title)
+                    .font(AppTypography.rowTitle)
+                    .foregroundStyle(AssetTheme.textPrimary)
                 Spacer()
             }
             content()
         }
         .padding(14)
         .background(AssetTheme.overlaySoft.opacity(0.62), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18).stroke(AssetTheme.border.opacity(0.55), lineWidth: 1))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.55), lineWidth: 1)
+        )
     }
 }
 

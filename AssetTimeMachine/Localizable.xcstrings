@@ -25171,28 +25171,60 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "+1.15%/年" } }
       }
     },
-    "252 个新交易日才进行第一次主要前瞻判定。": {
+    "5/7 时间折 Sharpe > 1；6/7 时间折最大回撤不高于前一简化版本。": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "The first primary prospective decision is only after 252 new sessions." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "252 个新交易日才进行第一次主要前瞻判定。" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "252 個新交易日才進行第一次主要前瞻判定。" } }
+        "en": { "stringUnit": { "state": "translated", "value": "5/7 time folds have Sharpe > 1; max drawdown is no higher than the prior simplified version in 6/7 folds." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "5/7 时间折 Sharpe > 1；6/7 时间折最大回撤不高于前一简化版本。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "5/7 時間折 Sharpe > 1；6/7 時間折最大回撤不高於前一簡化版本。" } }
       }
     },
-    "5/7 时间折 Sharpe > 1；Block63 Sharpe P2.5=1.221，MDD P97.5=13.93%。已删除 1.24、1.30、A股 5% 哨兵与 24.4% 交易带。": {
+    "5/7 时间折 Sharpe > 1；相对高收益核心，7/7 时间折最大回撤更低。": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "5/7 time folds have Sharpe > 1; Block63 Sharpe P2.5=1.221 and MDD P97.5=13.93%. Removed 1.24, 1.30, the 5% A-share sentinel and the 24.4% trading band." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "5/7 时间折 Sharpe > 1；Block63 Sharpe P2.5=1.221，MDD P97.5=13.93%。已删除 1.24、1.30、A股 5% 哨兵与 24.4% 交易带。" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "5/7 時間折 Sharpe > 1；Block63 Sharpe P2.5=1.221，MDD P97.5=13.93%。已刪除 1.24、1.30、A股 5% 哨兵與 24.4% 交易帶。" } }
+        "en": { "stringUnit": { "state": "translated", "value": "5/7 time folds have Sharpe > 1; versus the high-return core, max drawdown is lower in all 7/7 folds." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "5/7 时间折 Sharpe > 1；相对高收益核心，7/7 时间折最大回撤更低。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "5/7 時間折 Sharpe > 1；相對高收益核心，7/7 時間折最大回撤更低。" } }
       }
     },
-    "5/7 时间折 Sharpe > 1；相对高收益核心，7/7 时间折最大回撤更低；Block63 Sharpe P2.5=1.231。": {
+    "50/50 双核心权重与 25% 最终交易带在验证前固定，不做事后权重搜索。": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "5/7 time folds have Sharpe > 1; max drawdown is lower in all 7/7 folds versus the high-return core; Block63 Sharpe P2.5=1.231." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "5/7 时间折 Sharpe > 1；相对高收益核心，7/7 时间折最大回撤更低；Block63 Sharpe P2.5=1.231。" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "5/7 時間折 Sharpe > 1；相對高收益核心，7/7 時間折最大回撤更低；Block63 Sharpe P2.5=1.231。" } }
+        "en": { "stringUnit": { "state": "translated", "value": "The 50/50 dual-core weight and final 25% trading band were fixed before validation, with no post-hoc weight search." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "50/50 双核心权重与 25% 最终交易带在验证前固定，不做事后权重搜索。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "50/50 雙核心權重與 25% 最終交易帶在驗證前固定，不做事後權重搜尋。" } }
+      }
+    },
+    "6/6 正增量": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "6/6 positive uplift" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "6/6 正增量" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "6/6 正增量" } }
+      }
+    },
+    "Active Sharpe": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Active Sharpe" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "Active Sharpe" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "Active Sharpe" } }
+      }
+    },
+    "Block63 Bootstrap：Sharpe P2.5 = 1.221，MDD P97.5 = 13.93%。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Block63 bootstrap: Sharpe P2.5 = 1.221, MDD P97.5 = 13.93%." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "Block63 Bootstrap：Sharpe P2.5 = 1.221，MDD P97.5 = 13.93%。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "Block63 Bootstrap：Sharpe P2.5 = 1.221，MDD P97.5 = 13.93%。" } }
+      }
+    },
+    "Block63 Bootstrap：Sharpe P2.5 = 1.231，MDD P97.5 = 14.09%。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Block63 bootstrap: Sharpe P2.5 = 1.231, MDD P97.5 = 14.09%." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "Block63 Bootstrap：Sharpe P2.5 = 1.231，MDD P97.5 = 14.09%。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "Block63 Bootstrap：Sharpe P2.5 = 1.231，MDD P97.5 = 14.09%。" } }
       }
     },
     "HAC t值": {
@@ -25211,12 +25243,12 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "MDD 門檻" } }
       }
     },
-    "NFCI 不直接预测上涨，只在基础趋势模型准备明显减仓而金融条件改善时缓冲过快退出；它不会凭 NFCI 新开仓，也不允许总仓超过 100%。": {
+    "NFCI 并不直接预测上涨。它只在基础趋势模型准备明显减仓、但信用或杠杆金融条件正在改善时，缓冲过快的风险退出。它不会凭 NFCI 新开仓，也不允许总仓超过 100%。": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "NFCI does not directly predict gains. It only slows an aggressive exit when the base trend model wants to reduce exposure while financial conditions improve. It never opens positions by itself and total exposure cannot exceed 100%." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "NFCI 不直接预测上涨，只在基础趋势模型准备明显减仓而金融条件改善时缓冲过快退出；它不会凭 NFCI 新开仓，也不允许总仓超过 100%。" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "NFCI 不直接預測上漲，只在基礎趨勢模型準備明顯減倉而金融條件改善時緩衝過快退出；它不會憑 NFCI 新開倉，也不允許總倉超過 100%。" } }
+        "en": { "stringUnit": { "state": "translated", "value": "NFCI does not directly predict gains. It only slows an aggressive risk exit when the base trend model wants to cut exposure while credit or leverage conditions are improving. NFCI never opens a new position by itself, and total exposure cannot exceed 100%." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "NFCI 并不直接预测上涨。它只在基础趋势模型准备明显减仓、但信用或杠杆金融条件正在改善时，缓冲过快的风险退出。它不会凭 NFCI 新开仓，也不允许总仓超过 100%。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "NFCI 並不直接預測上漲。它只在基礎趨勢模型準備明顯減倉、但信用或槓桿金融條件正在改善時，緩衝過快的風險退出。它不會憑 NFCI 新開倉，也不允許總倉超過 100%。" } }
       }
     },
     "NFCI主动增量": {
@@ -25225,6 +25257,14 @@
         "en": { "stringUnit": { "state": "translated", "value": "NFCI active uplift" } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "NFCI主动增量" } },
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "NFCI 主動增量" } }
+      }
+    },
+    "Sharpe": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Sharpe" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "Sharpe" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "Sharpe" } }
       }
     },
     "Sharpe 门槛": {
@@ -25267,12 +25307,20 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "凍結後新增交易日" } }
       }
     },
-    "冻结策略的参数不得根据后续表现回写修改。": {
+    "冻结策略 · 参数不得因后续表现回写修改": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Frozen strategy parameters must not be rewritten based on later performance." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "冻结策略的参数不得根据后续表现回写修改。" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "凍結策略的參數不得根據後續表現回寫修改。" } }
+        "en": { "stringUnit": { "state": "translated", "value": "Frozen strategy · parameters cannot be rewritten based on later performance" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "冻结策略 · 参数不得因后续表现回写修改" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "凍結策略 · 參數不得因後續表現回寫修改" } }
+      }
+    },
+    "删除 1.24、1.30、A股 5% 哨兵与 24.4% 交易带，保留统一 1.22 与自然 25% 交易带。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Removed 1.24, 1.30, the 5% A-share sentinel, and the 24.4% trading band; retained one 1.22 scale and a natural 25% band." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "删除 1.24、1.30、A股 5% 哨兵与 24.4% 交易带，保留统一 1.22 与自然 25% 交易带。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "刪除 1.24、1.30、A 股 5% 哨兵與 24.4% 交易帶，保留統一 1.22 與自然 25% 交易帶。" } }
       }
     },
     "前瞻": {
@@ -25281,6 +25329,22 @@
         "en": { "stringUnit": { "state": "translated", "value": "Forward" } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "前瞻" } },
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "前瞻" } }
+      }
+    },
+    "前瞻样本正在累积；252 个新交易日才进行第一次主要判定，期间不得因短期表现修改冻结策略。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Prospective samples are accumulating. The first primary decision is only after 252 new sessions; the frozen strategy must not be changed because of short-term performance." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "前瞻样本正在累积；252 个新交易日才进行第一次主要判定，期间不得因短期表现修改冻结策略。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "前瞻樣本正在累積；252 個新交易日才進行第一次主要判定，期間不得因短期表現修改凍結策略。" } }
+      }
+    },
+    "历史 CAGR": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Historical CAGR" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "历史 CAGR" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "歷史 CAGR" } }
       }
     },
     "回顾性稳健性": {
@@ -25299,14 +25363,6 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "因子解釋與增量證據" } }
       }
     },
-    "尚无冻结后的新增交易日，因此不展示前瞻收益、Sharpe 或回撤。": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "There are no new sessions after the freeze yet, so prospective return, Sharpe or drawdown are not shown." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "尚无冻结后的新增交易日，因此不展示前瞻收益、Sharpe 或回撤。" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "尚無凍結後的新增交易日，因此不展示前瞻收益、Sharpe 或回撤。" } }
-      }
-    },
     "底座扰动": {
       "extractionState": "manual",
       "localizations": {
@@ -25315,12 +25371,28 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "底座擾動" } }
       }
     },
+    "当前尚无冻结后的新增交易日，因此不应计算或宣传前瞻收益、Sharpe 或回撤。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "There are no new sessions after the freeze yet, so prospective return, Sharpe, or drawdown should not be calculated or promoted." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "当前尚无冻结后的新增交易日，因此不应计算或宣传前瞻收益、Sharpe 或回撤。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "目前尚無凍結後的新增交易日，因此不應計算或宣傳前瞻收益、Sharpe 或回撤。" } }
+      }
+    },
     "方法级换资产泛化": {
       "extractionState": "manual",
       "localizations": {
         "en": { "stringUnit": { "state": "translated", "value": "Method-level cross-asset generalization" } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "方法级换资产泛化" } },
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "方法級換資產泛化" } }
+      }
+    },
+    "暂时无法读取前瞻账本": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Unable to load the prospective ledger right now" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "暂时无法读取前瞻账本" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "暫時無法讀取前瞻帳本" } }
       }
     },
     "最新 Signal": {
@@ -25371,12 +25443,12 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "正 Sharpe" } }
       }
     },
-    "正在读取不可变前瞻账本…": {
+    "正在读取服务器不可变账本…": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Loading immutable prospective ledger…" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在读取不可变前瞻账本…" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在讀取不可變前瞻帳本…" } }
+        "en": { "stringUnit": { "state": "translated", "value": "Loading the server immutable ledger…" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在读取服务器不可变账本…" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在讀取伺服器不可變帳本…" } }
       }
     },
     "独立国家市场": {
@@ -25419,6 +25491,22 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "真實未來 OOS" } }
       }
     },
+    "等待首条记录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Waiting for first record" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "等待首条记录" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "等待首條記錄" } }
+      }
+    },
+    "策略前瞻验证进度": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Strategy prospective validation progress" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "策略前瞻验证进度" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "策略前瞻驗證進度" } }
+      }
+    },
     "组合 MDD": {
       "extractionState": "manual",
       "localizations": {
@@ -25459,12 +25547,20 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "跨資產泛化" } }
       }
     },
-    "这是对相关底层资产配置方法进行换国家、换市场验证，并非把 DualCore 原样搬到 8 个国家。结果有迁移性，但未达到预注册门槛，因此不能称为跨资产泛化通过。": {
+    "返回冻结策略的 append-only 前瞻账本进度，不包含用户资产数据。": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "This changes countries and markets for the related underlying allocation method; it is not the exact DualCore copied into eight countries. The result shows some transferability but misses preregistered thresholds, so cross-asset generalization cannot be called passed." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "这是对相关底层资产配置方法进行换国家、换市场验证，并非把 DualCore 原样搬到 8 个国家。结果有迁移性，但未达到预注册门槛，因此不能称为跨资产泛化通过。" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "這是對相關底層資產配置方法進行換國家、換市場驗證，並非把 DualCore 原樣搬到 8 個國家。結果有遷移性，但未達到預註冊門檻，因此不能稱為跨資產泛化通過。" } }
+        "en": { "stringUnit": { "state": "translated", "value": "Returns append-only prospective-ledger progress for frozen strategies; contains no user asset data." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "返回冻结策略的 append-only 前瞻账本进度，不包含用户资产数据。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "返回凍結策略的 append-only 前瞻帳本進度，不包含使用者資產資料。" } }
+      }
+    },
+    "这项测试是对相关底层资产配置方法进行换国家、换市场验证，不是把 DualCore 原样搬到 8 个国家。结果说明存在一定迁移性，但没有达到预注册门槛，所以不能标记为“跨资产泛化通过”。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "This test changes countries and markets for the related underlying allocation method; it is not the exact DualCore strategy copied into eight countries. The result shows some transferability but misses the preregistered thresholds, so it cannot be labeled “cross-asset generalization passed.”" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "这项测试是对相关底层资产配置方法进行换国家、换市场验证，不是把 DualCore 原样搬到 8 个国家。结果说明存在一定迁移性，但没有达到预注册门槛，所以不能标记为“跨资产泛化通过”。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "這項測試是對相關底層資產配置方法進行換國家、換市場驗證，不是把 DualCore 原樣搬到 8 個國家。結果顯示存在一定遷移性，但沒有達到預註冊門檻，因此不能標記為「跨資產泛化通過」。" } }
       }
     },
     "进行中": {

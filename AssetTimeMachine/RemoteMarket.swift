@@ -219,6 +219,12 @@ enum RemoteMarketClient {
             description: "返回 NFCI Credit / Leverage 首次可用值；历史值不可被后续修订覆盖。",
             symbol: nil
         ),
+        .init(
+            title: "策略前瞻验证进度",
+            path: "/api/v1/money/public/strategy-forward-validation",
+            description: "返回冻结策略的 append-only 前瞻账本进度，不包含用户资产数据。",
+            symbol: nil
+        ),
     ]
 
     static func fetchOverview() async throws -> PublicMarketOverview {
