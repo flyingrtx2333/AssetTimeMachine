@@ -449,6 +449,9 @@ Use this order when looking for a new strategy candidate:
 
 ### Strategy acceptance rules
 
+- Formal strategy research from 2026-08-18 onward must follow `docs/strategies/validation/strategy-validation-protocol-v1.md` (`ATM-SVP-1`). Before executing any formal candidate family, parameter grid, factor screen, ablation, pristine holdout, or execution-stress test, append a `PREREGISTER` record to `tools/research-results/strategy-validation/trial-ledger.jsonl` with `scripts/strategy_validation_ledger.py` and commit that preregistration before looking at the formal result. A result without prior ledger registration is exploratory evidence only and cannot be used to claim an ATM-SVP-1 PASS.
+- Validate protocol bookkeeping with `python3 scripts/validate_strategy_protocol.py`. Never shrink the historical trial count to manufacture a retrospective DSR for V11; its pre-protocol total trial count is incomplete and must remain `NOT_CERTIFIED_LEGACY_TRIAL_COUNT` unless a genuinely complete census is reconstructed.
+- Pristine holdout data may be used only once. After its first formal result is seen, it becomes exposed development data; a failed holdout may not be replaced by another holdout for the same frozen strategy version. Any target-path-changing logic or parameter change requires a new strategy version and a new prospective clock.
 - Do not trust one-off `/tmp` research scripts for App-facing strategy metrics.
 - New strategy candidates must be implemented as Swift target providers and replayed through the current unified App/backtest simulator before being presented as product results. Prefer `tools/strategy_metric_dump.swift` for current product metrics.
 - Do not copy high-return/high-Sharpe values from non-App scripts into README, AGENTS, App cards, App subtitles, release notes, or user-facing answers unless a Swift App-engine run produces the same values.

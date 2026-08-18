@@ -1,0 +1,77 @@
+{
+  "holdout_id": "ATM-SVP1-G4-ROLE-HOLDOUT-001",
+  "protocol_id": "ATM-SVP-1",
+  "strategy_id": "nfci-dual-core-v11",
+  "strategy_version": "dualcore-v11-2026-08-15",
+  "status": "DRAFT_NOT_FROZEN",
+  "metadata_only_selection": true,
+  "full_return_history_viewed_before_freeze": false,
+  "freeze_git_ref": null,
+  "frozen_at": null,
+  "role_slots": [
+    {
+      "role": "gold_safe_haven",
+      "current_symbol": "gold_cny",
+      "alternate_source": null,
+      "alternate_symbol": null,
+      "metadata_checked": false,
+      "metadata_coverage_start": null,
+      "metadata_coverage_end": null,
+      "selection_reason_without_return_performance": null
+    },
+    {
+      "role": "us_growth_equity",
+      "current_symbol": "nasdaq",
+      "alternate_source": null,
+      "alternate_symbol": null,
+      "metadata_checked": false,
+      "metadata_coverage_start": null,
+      "metadata_coverage_end": null,
+      "selection_reason_without_return_performance": null
+    },
+    {
+      "role": "us_broad_equity",
+      "current_symbol": "sp500",
+      "alternate_source": null,
+      "alternate_symbol": null,
+      "metadata_checked": false,
+      "metadata_coverage_start": null,
+      "metadata_coverage_end": null,
+      "selection_reason_without_return_performance": null
+    },
+    {
+      "role": "china_large_equity",
+      "current_symbol": "csi300",
+      "alternate_source": null,
+      "alternate_symbol": null,
+      "metadata_checked": false,
+      "metadata_coverage_start": null,
+      "metadata_coverage_end": null,
+      "selection_reason_without_return_performance": null
+    },
+    {
+      "role": "china_broad_equity",
+      "current_symbol": "shanghai_composite",
+      "alternate_source": null,
+      "alternate_symbol": null,
+      "metadata_checked": false,
+      "metadata_coverage_start": null,
+      "metadata_coverage_end": null,
+      "selection_reason_without_return_performance": null
+    }
+  ],
+  "formal_run_budget": {
+    "one_slot_substitutions": 5,
+    "all_alternate_basket": 1,
+    "total": 6,
+    "additional_runs_after_results": 0
+  },
+  "pass_formulas": {
+    "positive_one_slot_sharpe_count_min": 4,
+    "one_slot_median_sharpe_min": "0.50 * frozen_baseline_sharpe",
+    "all_alternate_cagr": "> 0",
+    "all_alternate_sharpe_min": "0.50 * frozen_baseline_sharpe",
+    "all_alternate_mdd_max": "2.00 * frozen_baseline_mdd"
+  },
+  "failure_rule": "After the first formal run, every selected alternate becomes exposed development data. A FAIL is permanent for this strategy version; do not select a second holdout set for the same version."
+}

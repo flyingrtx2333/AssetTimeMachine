@@ -1,0 +1,29 @@
+{
+  "trial_id": "ATM-SVP1-YYYYMMDD-XXXX",
+  "protocol_id": "ATM-SVP-1",
+  "strategy_lineage": "nfci-dual-core-v11",
+  "hypothesis": "State the economic/market mechanism before running the experiment.",
+  "evidence_class": "D0_EXPOSED",
+  "dataset_manifest": null,
+  "allowed_changes": [],
+  "forbidden_changes": [
+    "unregistered parameter search",
+    "year-specific rules",
+    "post-result candidate additions",
+    "holdout reuse after exposure"
+  ],
+  "candidate_ids": [],
+  "candidate_count": 0,
+  "selection_metric": null,
+  "pass_fail_gates": [],
+  "formal_run_budget": 1,
+  "follow_up_policy": "Specify before execution whether any follow-up is allowed. Default: none on the same holdout.",
+  "swift_engine_entrypoint": null,
+  "expected_outputs": [
+    "all candidate metrics",
+    "portfolio value/return series",
+    "target fingerprints",
+    "dataset hashes",
+    "PASS/FAIL decision"
+  ]
+}
