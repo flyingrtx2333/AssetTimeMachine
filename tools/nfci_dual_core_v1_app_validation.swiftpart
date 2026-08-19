@@ -48,9 +48,10 @@
                 BacktestResearchOverrides.lowNoiseDisableExitSentinel = true
             }
             let validationFee = Double(ProcessInfo.processInfo.environment["ATM_NFCI_DUAL_CORE_V1_FEE"] ?? "1.0") ?? 1.0
+            let validationSlippage = Double(ProcessInfo.processInfo.environment["ATM_NFCI_DUAL_CORE_V1_SLIPPAGE"] ?? "0.05") ?? 0.05
             let validationSettings = AdvancedBacktestRiskSettings(
                 feeRate: validationFee,
-                slippageRate: 0.05,
+                slippageRate: validationSlippage,
                 maxPositionRatio: 100,
                 cooldownDays: 0,
                 stopLossRatio: 0,
