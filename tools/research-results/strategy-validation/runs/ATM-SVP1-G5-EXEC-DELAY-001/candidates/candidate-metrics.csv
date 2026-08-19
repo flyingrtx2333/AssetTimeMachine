@@ -1,0 +1,3 @@
+candidate_id,cagr_percent,mdd_percent,vol_percent,sharpe,trades,daily_state_fingerprint,source_trade_count,scheduled_shift_count
+adverse_cost_replay_delay0,13.051718,7.911928,8.825383,1.387135,451,13cc49fafdeef0bf,451,166
+adverse_cost_plus_delay1,12.648191,8.369464,8.83144,1.347129,447,a296dd089451a62d,451,166

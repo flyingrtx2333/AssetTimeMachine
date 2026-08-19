@@ -1,0 +1,63 @@
+{
+  "candidate_results": [
+    {
+      "candidate_id": "adverse_cost_replay_delay0",
+      "daily_state_fingerprint": "13cc49fafdeef0bf",
+      "first_shift": "2002-09-06->2002-09-06",
+      "last_shift": "2026-07-13->2026-07-13",
+      "metrics": {
+        "cagr_percent": 13.051718,
+        "mdd_percent": 7.911928,
+        "sharpe": 1.387135,
+        "trades": 451,
+        "vol_percent": 8.825383
+      },
+      "scheduled_shift_count": 166,
+      "source_trade_count": 451
+    },
+    {
+      "candidate_id": "adverse_cost_plus_delay1",
+      "daily_state_fingerprint": "a296dd089451a62d",
+      "first_shift": "2002-09-06->2002-09-09",
+      "last_shift": "2026-07-13->2026-07-14",
+      "metrics": {
+        "cagr_percent": 12.648191,
+        "mdd_percent": 8.369464,
+        "sharpe": 1.347129,
+        "trades": 447,
+        "vol_percent": 8.83144
+      },
+      "scheduled_shift_count": 166,
+      "source_trade_count": 451
+    }
+  ],
+  "component": "G5_EXECUTION_DELAY",
+  "control_checks": {
+    "control_cagr_matches_g5_001_within_0_01pp": true,
+    "control_mdd_matches_g5_001_within_0_01pp": true,
+    "control_sharpe_matches_g5_001_within_0_001": true,
+    "control_trade_records_match_g5_001": true,
+    "delay0_schedule_declares_zero_sessions": true,
+    "delay0_schedule_is_identity": true,
+    "scheduled_event_count_matches_control": true,
+    "source_target_fingerprint_matches_frozen_v11": true
+  },
+  "control_reference_trial": "ATM-SVP1-G5-EXEC-COST-001",
+  "control_status": "PASS",
+  "delay_checks": {
+    "all_delay1_execution_dates_differ_from_source": true,
+    "control_equivalence_pass": true,
+    "delay1_schedule_count_matches_control": true,
+    "delay1_schedule_declares_one_session": true,
+    "delayed_cagr_gt_0": true,
+    "delayed_mdd_le_2x_frozen_base": true,
+    "delayed_sharpe_gt_0": true,
+    "same_source_rebalance_dates": true,
+    "scheduled_event_count_matches_candidate": true,
+    "source_target_fingerprint_matches_frozen_v11": true
+  },
+  "formal": true,
+  "full_g5_status": "PASS",
+  "protocol_id": "ATM-SVP-1",
+  "source_target_fingerprint": "ba67c8aa24bc7168"
+}
