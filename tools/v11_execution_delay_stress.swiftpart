@@ -119,10 +119,10 @@
                 try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
             }
 
-            func writeShiftSchedule(_ shiftedTrades: [(String, String)], path: String?) {
+            func writeShiftSchedule(_ shiftedTrades: [(String, String)], delaySessions: Int, path: String?) {
                 guard let path else { return }
-                var lines = ["source_execution_date,stressed_execution_date"]
-                lines.append(contentsOf: shiftedTrades.map { "\($0.0),\($0.1)" })
+                var lines = ["source_execution_date,stressed_execution_date,configured_delay_sessions"]
+                lines.append(contentsOf: shiftedTrades.map { "\($0.0),\($0.1),\(delaySessions)" })
                 try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
             }
 
@@ -149,7 +149,7 @@
             print("source_target_fingerprint=\(targetFingerprint(source.dailyStates))")
             printMetrics("adverse_cost_replay_delay0", control.run, control.shiftedTrades)
             writePortfolio(control.run, path: ProcessInfo.processInfo.environment["ATM_V11_DELAY_CONTROL_OUTPUT"])
-            writeShiftSchedule(control.shiftedTrades, path: ProcessInfo.processInfo.environment["ATM_V11_DELAY_CONTROL_SCHEDULE"])
+            writeShiftSchedule(control.shiftedTrades, delaySessions: 0, path: ProcessInfo.processInfo.environment["ATM_V11_DELAY_CONTROL_SCHEDULE"])
 
             if ProcessInfo.processInfo.environment["ATM_V11_DELAY_FORMAL"] == "1" {
                 guard let delayed = runReplay(delaySessions: 1) else {
@@ -158,7 +158,7 @@
                 }
                 printMetrics("adverse_cost_plus_delay1", delayed.run, delayed.shiftedTrades)
                 writePortfolio(delayed.run, path: ProcessInfo.processInfo.environment["ATM_V11_DELAY_FORMAL_OUTPUT"])
-                writeShiftSchedule(delayed.shiftedTrades, path: ProcessInfo.processInfo.environment["ATM_V11_DELAY_FORMAL_SCHEDULE"])
+                writeShiftSchedule(delayed.shiftedTrades, delaySessions: 1, path: ProcessInfo.processInfo.environment["ATM_V11_DELAY_FORMAL_SCHEDULE"])
             } else {
                 print("DEVELOPMENT_CONTROL_ONLY")
             }

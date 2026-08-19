@@ -115,12 +115,16 @@ def parse_candidate_blocks(stdout: str) -> tuple[str, dict[str, dict]]:
     return source_match.group(1), candidates
 
 
-def read_schedule(path: Path) -> list[tuple[str, str]]:
-    rows: list[tuple[str, str]] = []
+def read_schedule(path: Path) -> list[tuple[str, str, int]]:
+    rows: list[tuple[str, str, int]] = []
     with path.open(encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
         for row in reader:
-            rows.append((row["source_execution_date"], row["stressed_execution_date"]))
+            rows.append((
+                row["source_execution_date"],
+                row["stressed_execution_date"],
+                int(row["configured_delay_sessions"]),
+            ))
     if not rows:
         raise RuntimeError(f"empty shift schedule: {path}")
     return rows
@@ -185,7 +189,8 @@ def main() -> int:
         "control_trade_records_match_g5_001": control_metrics["trades"] == int(prior["trades"]),
     }
     control_mapping = read_schedule(control_schedule)
-    control_checks["delay0_schedule_is_identity"] = all(source == execution for source, execution in control_mapping)
+    control_checks["delay0_schedule_is_identity"] = all(source == execution for source, execution, _ in control_mapping)
+    control_checks["delay0_schedule_declares_zero_sessions"] = all(delay == 0 for _, _, delay in control_mapping)
     control_checks["scheduled_event_count_matches_control"] = len(control_mapping) == control["scheduled_shift_count"]
     control_pass = all(control_checks.values())
 
@@ -214,8 +219,9 @@ def main() -> int:
             "delayed_sharpe_gt_0": delayed_metrics["sharpe"] > 0,
             "delayed_mdd_le_2x_frozen_base": delayed_metrics["mdd_percent"] <= 2.0 * base_mdd_percent,
             "delay1_schedule_count_matches_control": len(delayed_mapping) == len(control_mapping),
-            "all_delay1_execution_dates_differ_from_source": all(source != execution for source, execution in delayed_mapping),
-            "same_source_rebalance_dates": [source for source, _ in delayed_mapping] == [source for source, _ in control_mapping],
+            "all_delay1_execution_dates_differ_from_source": all(source != execution for source, execution, _ in delayed_mapping),
+            "delay1_schedule_declares_one_session": all(delay == 1 for _, _, delay in delayed_mapping),
+            "same_source_rebalance_dates": [source for source, _, _ in delayed_mapping] == [source for source, _, _ in control_mapping],
             "scheduled_event_count_matches_candidate": len(delayed_mapping) == delayed["scheduled_shift_count"],
         }
         full_pass = all(delay_checks.values())
