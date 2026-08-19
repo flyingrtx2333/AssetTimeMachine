@@ -12,6 +12,7 @@ struct DashboardView: View {
     @AppStorage("dashboard.monthlySalary") private var monthlySalary: Double = 10000
     @AppStorage("dashboard.monthlySalarySeedVersion") private var monthlySalarySeedVersion: Int = 0
     @AppStorage("dashboard.annualReturnRate") private var annualReturnRate: Double = 0.03
+    @AppStorage("dashboard.freedomUsesCurrentAssets") private var freedomUsesCurrentAssets = true
     @AppStorage("dashboard.amountsVisible") private var amountsVisible = true
     let marketStore: RemoteMarketStore
     let cloudStore: AssetTimeMachineCloudStore
@@ -65,7 +66,8 @@ struct DashboardView: View {
             monthlySalary: monthlySalary,
             annualReturnRate: annualReturnRate,
             monthlyExpense: monthlyExpense,
-            annualInflationRate: inflationRate
+            annualInflationRate: inflationRate,
+            usesCurrentAssets: freedomUsesCurrentAssets
         )
     }
 
@@ -487,6 +489,7 @@ struct DashboardView: View {
             annualReturnRate: $annualReturnRate,
             monthlyExpense: $monthlyExpense,
             inflationRate: $inflationRate,
+            usesCurrentAssets: $freedomUsesCurrentAssets,
             keyboardDismissSignal: $freedomKeyboardDismissSignal,
             amountsVisible: amountsVisible
         )

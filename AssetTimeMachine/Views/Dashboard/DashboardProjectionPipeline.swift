@@ -164,6 +164,7 @@ nonisolated struct DashboardFreedomProjectionInput: Equatable, Sendable {
     let annualReturnRate: Double
     let monthlyExpense: Double
     let annualInflationRate: Double
+    let usesCurrentAssets: Bool
 }
 
 nonisolated struct DashboardAllocationDetailValue: Sendable {
@@ -388,7 +389,8 @@ nonisolated enum DashboardProjectionPipeline {
             monthlySalary: input.monthlySalary,
             annualReturnRate: input.annualReturnRate,
             monthlyExpense: input.monthlyExpense,
-            annualInflationRate: input.annualInflationRate
+            annualInflationRate: input.annualInflationRate,
+            usesCurrentAssets: input.usesCurrentAssets
         )
         guard !Task.isCancelled, let projection else { return nil }
         return DashboardFreedomProjectionValue(projection)

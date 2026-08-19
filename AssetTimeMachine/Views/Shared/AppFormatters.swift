@@ -109,7 +109,18 @@ extension Double {
             return "\(sign)\(number)\(suffix)"
         }
 
-        if currencyCode?.uppercased() == "CNY" {
+        let usesChineseLargeNumberUnits: Bool = {
+            switch AppLocalization.currentLanguage {
+            case .simplifiedChinese, .traditionalChinese:
+                return true
+            case .english:
+                return false
+            case .system:
+                return AppLocalization.currentLocale.language.languageCode?.identifier == "zh"
+            }
+        }()
+
+        if currencyCode?.uppercased() == "CNY", usesChineseLargeNumberUnits {
             switch absValue {
             case 100_000_000...:
                 return formattedUnit(absValue / 100_000_000, suffix: AppLocalization.string("亿"))

@@ -12,6 +12,7 @@ private struct TrendVideoPreviewRequest: Identifiable {
 
 struct TimeMachineView: View {
     @Environment(\.modelContext) private var modelContext
+    @AppStorage("dashboard.amountsVisible") private var amountsVisible = true
     let marketStore: RemoteMarketStore
     let isActive: Bool
     @State private var selectedRange: TimeMachineRange = .sixMonths
@@ -690,29 +691,40 @@ struct TimeMachineView: View {
         }
     }
 
-    private var trendVideoExportBar: some View {
-        Button {
-            openTrendVideoPreview()
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "video.badge.waveform")
-                    .font(AppTypography.metaStrong)
+    private var pageHeader: some View {
+        HStack(alignment: .center, spacing: 14) {
+            Spacer(minLength: 0)
 
-                Text(AppLocalization.string("生成走势视频"))
-                    .font(AppTypography.metaStrong)
-                    .lineLimit(1)
-
-                Spacer(minLength: 8)
-
-                Image(systemName: "chevron.right")
-                    .font(AppTypography.chipIcon)
+            Button {
+                amountsVisible.toggle()
+            } label: {
+                Image(systemName: amountsVisible ? "eye" : "eye.slash")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .frame(width: 34, height: 34)
+                    .contentShape(Circle())
             }
-            .foregroundStyle(AssetTheme.goldSoft)
-            .padding(.vertical, 10)
+            .buttonStyle(.plain)
+            .accessibilityLabel(AppLocalization.string(amountsVisible ? "隐藏资产金额" : "显示资产金额"))
+
+            Button {
+                openTrendVideoPreview()
+            } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "play.rectangle")
+                        .font(.system(size: 18, weight: .medium))
+                    Text(AppLocalization.string("生成走势视频"))
+                        .font(.system(size: 12.5, weight: .medium))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+                }
+                .foregroundStyle(AssetTheme.textSecondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(trendVideoPreviewRequest != nil || filteredTrendPoints.count < 2)
+            .opacity(trendVideoPreviewRequest != nil || filteredTrendPoints.count < 2 ? 0.42 : 1)
+            .accessibilityLabel(AppLocalization.string("生成走势视频"))
         }
-        .buttonStyle(.plain)
-        .disabled(trendVideoPreviewRequest != nil || filteredTrendPoints.count < 2)
-        .opacity(trendVideoPreviewRequest != nil || filteredTrendPoints.count < 2 ? 0.48 : 1)
     }
 
     @MainActor
@@ -739,6 +751,7 @@ struct TimeMachineView: View {
                     marketSeries: unifiedMarketSeries,
                     visibleSeriesIDs: visibleTrendSeriesIDs,
                     selectedRange: $selectedRange,
+                    amountsVisible: amountsVisible,
                     onToggleSeries: toggleTrendSeries,
                     hasRecord: hasSnapshotRecord(on:),
                     onOpenRecord: openRecord(for:)
@@ -754,23 +767,22 @@ struct TimeMachineView: View {
 
                 ScrollView(showsIndicators: false) {
                         LazyVStack(alignment: .leading, spacing: 0) {
+                            pageHeader
+                                .padding(.bottom, 8)
+
                             if lastVisualizationCacheToken == nil {
                                 LoadingStateCard(title: AppLocalization.string("时光机加载中"))
                             } else if !filteredTrendPoints.isEmpty {
                                 heroTrendSection
 
-                                TimeMachineSectionDivider()
-                                    .padding(.vertical, 14)
-
-                                trendVideoExportBar
-
                                 if !monthlySurplusPoints.isEmpty || !annualSurplusPoints.isEmpty {
                                     TimeMachineSectionDivider()
-                                        .padding(.vertical, 14)
+                                        .padding(.vertical, 16)
 
                                     TimeMachineMonthlySurplusCard(
                                         points: monthlySurplusPoints,
-                                        annualPoints: annualSurplusPoints
+                                        annualPoints: annualSurplusPoints,
+                                        amountsVisible: amountsVisible
                                     )
                                 }
 

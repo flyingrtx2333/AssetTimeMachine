@@ -162,6 +162,7 @@ struct SnapshotListView: View {
     @State private var isPreparingInitialSnapshot = false
     @State private var showsAddAssetItemSheet = false
     @State private var editingAssetItem: AssetItem?
+    @State private var pendingDeletionAssetItem: AssetItem?
     @State private var assetEditorDraftID: UUID?
     @State private var quickEditingAssetItem: AssetItem?
     @State private var quickEditDraftID: UUID?
@@ -177,6 +178,7 @@ struct SnapshotListView: View {
     @State private var cachedItemsByID: [UUID: AssetItem] = [:]
     @State private var itemsByIDCacheToken: String = ""
     @State private var persistenceErrorMessage: String?
+    @State private var assetDeletionErrorMessage: String?
     @AppStorage("app.records.showsZeroBalanceAssets") private var showsZeroBalanceAssets = true
 
     private var currentSnapshot: AssetSnapshot? {
@@ -247,68 +249,75 @@ struct SnapshotListView: View {
             ZStack {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
-                ScrollView(showsIndicators: false) {
-                    LazyVStack(alignment: .leading, spacing: 20) {
-                        if let currentSnapshot = currentSnapshotValue, let layout {
-                            RecordPageHero(
-                                snapshot: currentSnapshot,
-                                totalAssets: layout.displayedTotalAssets,
-                                netAssets: layout.displayedNetAssets,
-                                totalLiabilities: layout.displayedTotalLiabilities,
-                                showsZeroBalanceAssets: showsZeroBalanceAssets,
-                                onToggleZeroBalanceAssets: {
-                                    dismissKeyboard()
-                                    withAnimation(.easeInOut(duration: 0.18)) {
-                                        showsZeroBalanceAssets.toggle()
-                                    }
-                                },
-                                onAddAsset: {
-                                    dismissKeyboard()
-                                    presentAddAssetItemEditor()
-                                }
-                            )
-                            .padding(.bottom, 2)
-
-                            RecordSnapshotSections(
-                                layout: layout,
-                                onboardingActiveAnchorID: onboardingActiveAnchorID,
-                                amountInputs: $amountInputs,
-                                quantityInputs: $quantityInputs,
-                                unitPriceInputs: $unitPriceInputs,
-                                focusedField: $focusedField,
-                                inlineEditingField: inlineEditingField,
-                                onBeginInlineEdit: beginInlineEditing,
-                                onEdit: { item in
-                                    dismissKeyboard()
-                                    presentAssetItemEditor(item)
-                                },
-                                onEditValue: { item in
-                                    presentQuickEdit(for: item)
-                                },
-                                showsZeroBalanceAssets: showsZeroBalanceAssets
-                            )
-
-                        } else if isPreparingInitialSnapshot || !didPrepare || currentSnapshotValue != nil {
-                            LoadingStateCard(title: AppLocalization.string("记录加载中"))
-                        } else {
-                            EmptyStateCard(
-                                title: AppLocalization.string("暂无记录"),
-                                systemImage: "calendar.badge.plus"
-                            )
-                        }
-
-                        Color.clear
-                            .frame(height: TabScrollLayout.keyboardDismissSpacer)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
+                List {
+                    if let currentSnapshot = currentSnapshotValue, let layout {
+                        RecordPageHero(
+                            snapshot: currentSnapshot,
+                            totalAssets: layout.displayedTotalAssets,
+                            netAssets: layout.displayedNetAssets,
+                            totalLiabilities: layout.displayedTotalLiabilities,
+                            showsZeroBalanceAssets: showsZeroBalanceAssets,
+                            onToggleZeroBalanceAssets: {
                                 dismissKeyboard()
+                                withAnimation(.easeInOut(duration: 0.18)) {
+                                    showsZeroBalanceAssets.toggle()
+                                }
+                            },
+                            onAddAsset: {
+                                dismissKeyboard()
+                                presentAddAssetItemEditor()
                             }
+                        )
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 14, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+
+                        RecordSnapshotSections(
+                            layout: layout,
+                            onboardingActiveAnchorID: onboardingActiveAnchorID,
+                            amountInputs: $amountInputs,
+                            quantityInputs: $quantityInputs,
+                            unitPriceInputs: $unitPriceInputs,
+                            focusedField: $focusedField,
+                            inlineEditingField: inlineEditingField,
+                            onBeginInlineEdit: beginInlineEditing,
+                            onEdit: { item in
+                                dismissKeyboard()
+                                presentAssetItemEditor(item)
+                            },
+                            onEditValue: { item in
+                                presentQuickEdit(for: item)
+                            },
+                            onDelete: requestAssetItemDeletion,
+                            showsZeroBalanceAssets: showsZeroBalanceAssets
+                        )
+                    } else if isPreparingInitialSnapshot || !didPrepare || currentSnapshotValue != nil {
+                        LoadingStateCard(title: AppLocalization.string("记录加载中"))
+                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    } else {
+                        EmptyStateCard(
+                            title: AppLocalization.string("暂无记录"),
+                            systemImage: "calendar.badge.plus"
+                        )
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    .padding(.bottom, TabScrollLayout.bottomPadding)
+
+                    Color.clear
+                        .frame(height: TabScrollLayout.keyboardDismissSpacer)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            dismissKeyboard()
+                        }
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
                 .scrollDismissesKeyboard(.never)
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -463,6 +472,34 @@ struct SnapshotListView: View {
         } message: {
             Text(persistenceErrorMessage ?? AppLocalization.string("请稍后再试"))
         }
+        .alert(
+            AppLocalization.string("确认删除资产？"),
+            isPresented: Binding(
+                get: { pendingDeletionAssetItem != nil },
+                set: { if !$0 { pendingDeletionAssetItem = nil } }
+            ),
+            presenting: pendingDeletionAssetItem
+        ) { item in
+            Button(AppLocalization.string("取消"), role: .cancel) {
+                pendingDeletionAssetItem = nil
+            }
+            Button(AppLocalization.string("删除"), role: .destructive) {
+                deleteAssetItem(item)
+            }
+        } message: { item in
+            Text(AppLocalization.format(
+                "将删除“%@”及其所有历史记录，此操作无法撤销。",
+                item.name
+            ))
+        }
+        .alert(AppLocalization.string("删除失败"), isPresented: Binding(
+            get: { assetDeletionErrorMessage != nil },
+            set: { if !$0 { assetDeletionErrorMessage = nil } }
+        )) {
+            Button(AppLocalization.string("知道了"), role: .cancel) {}
+        } message: {
+            Text(assetDeletionErrorMessage ?? AppLocalization.string("请稍后再试"))
+        }
     }
 
     @MainActor
@@ -546,6 +583,53 @@ struct SnapshotListView: View {
     private func presentAssetItemEditor(_ item: AssetItem) {
         guard beginAssetEditorDraft() else { return }
         editingAssetItem = item
+    }
+
+    @MainActor
+    private func requestAssetItemDeletion(_ item: AssetItem) {
+        dismissKeyboard()
+        pendingDeletionAssetItem = item
+    }
+
+    @MainActor
+    private func deleteAssetItem(_ item: AssetItem) {
+        let itemID = item.id
+        pendingDeletionAssetItem = nil
+        pendingPersistTasks[itemID]?.cancel()
+        pendingPersistTasks[itemID] = nil
+        pendingPersistDrafts[itemID] = nil
+        persistGenerationByItemID[itemID] = nil
+
+        let writeID = ModelContextMutationBarrier.shared.beginDeferredWrite()
+        Task { @MainActor in
+            defer { ModelContextMutationBarrier.shared.finishDeferredWrite(writeID) }
+            do {
+                try await ModelContextMutationBarrier.shared.waitUntilWriteIsAllowed(writeID)
+
+                var descriptor = FetchDescriptor<AssetItem>(
+                    predicate: #Predicate<AssetItem> { candidate in
+                        candidate.id == itemID
+                    }
+                )
+                descriptor.fetchLimit = 1
+                guard let storedItem = try modelContext.fetch(descriptor).first else { return }
+
+                try AssetItemService.deleteItem(storedItem, in: modelContext)
+
+                amountInputs[itemID] = nil
+                quantityInputs[itemID] = nil
+                unitPriceInputs[itemID] = nil
+                cachedItemsByID[itemID] = nil
+                itemsByIDCacheToken = ""
+                refreshCachedListLayout()
+            } catch is CancellationError {
+                return
+            } catch {
+                modelContext.rollback()
+                assetDeletionErrorMessage = AppLocalization.string("请稍后再试")
+                print("[AssetTimeMachine] delete item from record row failed: \(error)")
+            }
+        }
     }
 
     @MainActor
@@ -932,6 +1016,7 @@ struct RecordSnapshotSections: View {
     let onBeginInlineEdit: (RecordInputField) -> Void
     let onEdit: (AssetItem) -> Void
     let onEditValue: (AssetItem) -> Void
+    var onDelete: ((AssetItem) -> Void)? = nil
     var showsZeroBalanceAssets: Bool = true
     var isReadOnly: Bool = false
     var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
@@ -961,6 +1046,7 @@ struct RecordSnapshotSections: View {
                     onBeginInlineEdit: onBeginInlineEdit,
                     onEdit: onEdit,
                     onEditValue: onEditValue,
+                    onDelete: onDelete,
                     isReadOnly: isReadOnly,
                     onReadOnlyEdit: onReadOnlyEdit
                 )
@@ -984,6 +1070,7 @@ struct RecordSnapshotSections: View {
                     onBeginInlineEdit: onBeginInlineEdit,
                     onEdit: onEdit,
                     onEditValue: onEditValue,
+                    onDelete: onDelete,
                     isReadOnly: isReadOnly,
                     onReadOnlyEdit: onReadOnlyEdit
                 )
@@ -1220,6 +1307,7 @@ struct RecordLedgerSection: View {
     let onBeginInlineEdit: (RecordInputField) -> Void
     let onEdit: (AssetItem) -> Void
     let onEditValue: (AssetItem) -> Void
+    var onDelete: ((AssetItem) -> Void)? = nil
     var isReadOnly: Bool = false
     var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
     @State private var draggedItemID: UUID?
@@ -1239,60 +1327,74 @@ struct RecordLedgerSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        Section {
+            ForEach(items) { item in
+                ReorderableRecordCell(
+                    category: category,
+                    item: item,
+                    draggedItemID: $draggedItemID,
+                    allowsReorder: !isReadOnly
+                ) {
+                    RecordLedgerRow(
+                        item: item,
+                        snapshotEntry: snapshotEntriesByItemID[item.id],
+                        amountText: Binding(
+                            get: { amountInputs[item.id] ?? "" },
+                            set: { amountInputs[item.id] = $0 }
+                        ),
+                        quantityText: Binding(
+                            get: { quantityInputs[item.id] ?? "" },
+                            set: { quantityInputs[item.id] = $0 }
+                        ),
+                        unitPriceText: Binding(
+                            get: { unitPriceInputs[item.id] ?? "" },
+                            set: { unitPriceInputs[item.id] = $0 }
+                        ),
+                        focusedField: $focusedField,
+                        inlineEditingField: inlineEditingField,
+                        onBeginInlineEdit: onBeginInlineEdit,
+                        accent: accent,
+                        isOnboardingTarget: item.id == onboardingInputItemID,
+                        showsOnboardingInputPreview: onboardingActiveAnchorID == .recordsFirstInput
+                            && item.id == onboardingInputItemID,
+                        onEdit: { onEdit(item) },
+                        onEditValue: { onEditValue(item) },
+                        isReadOnly: isReadOnly,
+                        onReadOnlyEdit: onReadOnlyEdit
+                    )
+                }
+                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                .listRowBackground(Color.clear)
+                .listRowSeparatorTint(AssetTheme.border.opacity(0.38))
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    if !isReadOnly, let onDelete {
+                        Button(role: .destructive) {
+                            onDelete(item)
+                        } label: {
+                            Label(AppLocalization.string("删除"), systemImage: "trash")
+                        }
+
+                        Button {
+                            onEdit(item)
+                        } label: {
+                            Label(AppLocalization.string("编辑"), systemImage: "pencil")
+                        }
+                        .tint(AssetTheme.accentBlue)
+                    }
+                }
+            }
+        } header: {
             RecordSectionHeader(
                 title: category.name,
                 amount: categoryTotal.currencyString(),
                 amountColor: category.group == .liability ? AssetTheme.negative : AssetTheme.textPrimary,
                 accent: accent
             )
-
-            VStack(spacing: 0) {
-                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                    ReorderableRecordCell(
-                        category: category,
-                        item: item,
-                        draggedItemID: $draggedItemID,
-                        allowsReorder: !isReadOnly
-                    ) {
-                        RecordLedgerRow(
-                            item: item,
-                            snapshotEntry: snapshotEntriesByItemID[item.id],
-                            amountText: Binding(
-                                get: { amountInputs[item.id] ?? "" },
-                                set: { amountInputs[item.id] = $0 }
-                            ),
-                            quantityText: Binding(
-                                get: { quantityInputs[item.id] ?? "" },
-                                set: { quantityInputs[item.id] = $0 }
-                            ),
-                            unitPriceText: Binding(
-                                get: { unitPriceInputs[item.id] ?? "" },
-                                set: { unitPriceInputs[item.id] = $0 }
-                            ),
-                            focusedField: $focusedField,
-                            inlineEditingField: inlineEditingField,
-                            onBeginInlineEdit: onBeginInlineEdit,
-                            accent: accent,
-                            isOnboardingTarget: item.id == onboardingInputItemID,
-                            showsOnboardingInputPreview: onboardingActiveAnchorID == .recordsFirstInput
-                                && item.id == onboardingInputItemID,
-                            onEdit: { onEdit(item) },
-                            onEditValue: { onEditValue(item) },
-                            isReadOnly: isReadOnly,
-                            onReadOnlyEdit: onReadOnlyEdit
-                        )
-                    }
-
-                    if index < items.count - 1 {
-                        Rectangle()
-                            .fill(AssetTheme.border.opacity(0.38))
-                            .frame(height: 1)
-                            .padding(.leading, 42)
-                    }
-                }
-            }
+            .textCase(nil)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
         }
+        .listSectionSpacing(8)
     }
 }
 
@@ -2407,15 +2509,10 @@ struct AssetItemEditorSheet: View {
     private func deleteEditingItem() {
         guard let editingItem else { return }
         do {
-            try SyncDeletionService.record(
-                entityID: editingItem.id,
-                kind: .item,
-                in: modelContext
-            )
-            modelContext.delete(editingItem)
-            try modelContext.save()
+            try AssetItemService.deleteItem(editingItem, in: modelContext)
             dismiss()
         } catch {
+            modelContext.rollback()
             errorMessage = AppLocalization.string("删除失败")
             print("[AssetTimeMachine] delete item failed: \(error)")
         }

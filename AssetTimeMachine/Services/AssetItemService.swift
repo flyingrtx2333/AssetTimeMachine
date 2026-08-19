@@ -185,6 +185,13 @@ enum AssetItemService {
     }
 
     @MainActor
+    static func deleteItem(_ item: AssetItem, in context: ModelContext) throws {
+        try SyncDeletionService.record(entityID: item.id, kind: .item, in: context)
+        context.delete(item)
+        try context.save()
+    }
+
+    @MainActor
     static func activeItems(in category: AssetCategory, context: ModelContext) throws -> [AssetItem] {
         let allItems = try context.fetch(FetchDescriptor<AssetItem>())
         return allItems

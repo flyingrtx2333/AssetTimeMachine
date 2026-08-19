@@ -1,6 +1,54 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "当日净资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Net Assets on Date" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "当日净资产" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "當日淨資產" } }
+      }
+    },
+    "本月": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "This Month" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "本月" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "本月" } }
+      }
+    },
+    "月": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Month" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "月" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "月" } }
+      }
+    },
+    "年": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Year" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "年" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "年" } }
+      }
+    },
+    "M月": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "MMM" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "M月" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "M月" } }
+      }
+    },
+    "yyyy年M月": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "MMM yyyy" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "yyyy年M月" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "yyyy年M月" } }
+      }
+    },
     "早上好": {
       "extractionState": "manual",
       "localizations": {
@@ -2083,7 +2131,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "yyyy MMM d"
+            "value": "MMM d, yyyy"
           }
         },
         "zh-Hans": {
@@ -7546,6 +7594,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "結束日期"
+          }
+        }
+      }
+    },
+    "编辑": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "编辑"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "編輯"
           }
         }
       }
@@ -18667,7 +18738,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "View the record of the day"
+            "value": "View Record"
           }
         },
         "zh-Hans": {
@@ -19817,7 +19888,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Generate trend video"
+            "value": "Trend Video"
           }
         },
         "zh-Hans": {
@@ -21566,7 +21637,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wealth Freedom Algorithm"
+            "value": "Financial Independence Model"
           }
         },
         "zh-Hans": {
@@ -26129,6 +26200,158 @@
         "en": { "stringUnit": { "state": "translated", "value": "Surplus is calculated as the change in net assets over the recorded period. It includes contributions, withdrawals, investment gains and losses, and changes in liabilities, so it is not the same as income minus expenses." } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "结余按记录区间内的净资产变化计算，包含资产投入、取出、投资盈亏和负债变化，并不等同于收入减去支出。" } },
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "結餘按記錄區間內的淨資產變化計算，包含資產投入、取出、投資盈虧和負債變化，並不等同於收入減去支出。" } }
+      }
+    },
+    "负债差额": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Liability Gap" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "负债差额" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "負債差額" } }
+      }
+    },
+    "较期初 %@ · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%@ · %@ since start" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "较期初 %@ · %@" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "較期初 %@ · %@" } }
+      }
+    },
+    "选择历史日期": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Select a historical date" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "选择历史日期" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "選擇歷史日期" } }
+      }
+    },
+    "用当前资产与四项参数，逐月推演被动收入覆盖生活开销的时间。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Projects when passive income can cover living expenses, using current assets and four inputs." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "用当前资产与四项参数，逐月推演被动收入覆盖生活开销的时间。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "以目前資產與四項參數，逐月推演被動收入覆蓋生活開支的時間。" } }
+      }
+    },
+    "确定起点": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Set the baseline" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "确定起点" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "確定起點" } }
+      }
+    },
+    "以当前净资产作为本金，并读取月薪、月开销、通胀率和年化收益。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Uses current net assets as the starting principal, together with salary, expenses, inflation, and annual return." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "以当前净资产作为本金，并读取月薪、月开销、通胀率和年化收益。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "以目前淨資產作為本金，並讀取月薪、月開支、通脹率與年化收益。" } }
+      }
+    },
+    "逐月复利": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Project month by month" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "逐月复利" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "逐月複利" } }
+      }
+    },
+    "每月先计算资产收益，再加入月薪减去通胀后月开销形成的结余。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Each month compounds investment returns, then adds salary less inflation-adjusted expenses." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "每月先计算资产收益，再加入月薪减去通胀后月开销形成的结余。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "每月先計算資產收益，再加入月薪減去通脹後月開支形成的結餘。" } }
+      }
+    },
+    "判断追平": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Detect coverage" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "判断追平" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "判斷追平" } }
+      }
+    },
+    "当每月被动收入覆盖通胀后的月开销，即视为实现财务自由。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Financial freedom is reached when monthly passive income covers inflation-adjusted expenses." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "当每月被动收入覆盖通胀后的月开销，即视为实现财务自由。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "當每月被動收入覆蓋通脹後的月開支，即視為實現財務自由。" } }
+      }
+    },
+    "核心公式": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Core formulas" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "核心公式" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "核心公式" } }
+      }
+    },
+    "净资产 × 年化收益 ÷ 12": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Net assets × annual return ÷ 12" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "净资产 × 年化收益 ÷ 12" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "淨資產 × 年化收益 ÷ 12" } }
+      }
+    },
+    "根据当前资产计算": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Include Current Assets" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "根据当前资产计算" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "根據目前資產計算" } }
+      }
+    },
+    "已开启": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "On" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "已开启" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "已開啟" } }
+      }
+    },
+    "已关闭": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Off" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "已关闭" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "已關閉" } }
+      }
+    },
+    "用起始本金与四项参数，逐月推演被动收入覆盖生活开销的时间。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Projects when passive income can cover living expenses, using a selectable starting balance and four inputs." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "用起始本金与四项参数，逐月推演被动收入覆盖生活开销的时间。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "以起始本金與四項參數，逐月推演被動收入覆蓋生活開支的時間。" } }
+      }
+    },
+    "起始本金可选择当前净资产或零，并读取月薪、月开销、通胀率和年化收益。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "The starting balance can be current net assets or zero, together with salary, expenses, inflation, and annual return." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "起始本金可选择当前净资产或零，并读取月薪、月开销、通胀率和年化收益。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "起始本金可選擇目前淨資產或零，並讀取月薪、月開支、通脹率與年化收益。" } }
+      }
+    },
+    "起始本金 × 年化收益 ÷ 12": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Starting balance × annual return ÷ 12" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "起始本金 × 年化收益 ÷ 12" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "起始本金 × 年化收益 ÷ 12" } }
+      }
+    },
+    "月薪 − 通胀后月开销": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Salary − inflation-adjusted expenses" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "月薪 − 通胀后月开销" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "月薪 − 通脹後月開支" } }
       }
     }
   },
