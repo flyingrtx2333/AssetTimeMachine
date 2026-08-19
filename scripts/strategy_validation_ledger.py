@@ -50,6 +50,18 @@ RESULT_REQUIRED_FIELDS = {
     "decision",
     "artifacts",
 }
+HOLDOUT_BURN_REQUIRED_FIELDS = {
+    "protocol_id",
+    "holdout_id",
+    "strategy_id",
+    "strategy_version",
+    "manifest_path",
+    "manifest_sha256",
+    "selection_payload_sha256",
+    "frozen_manifest_git_commit",
+    "permanent",
+    "rule",
+}
 
 
 def canonical_json(value: Any) -> str:
@@ -162,6 +174,7 @@ def verify_records(records: list[dict[str, Any]]) -> None:
     seen_hashes: set[str] = set()
     preregistrations: dict[str, dict[str, Any]] = {}
     result_trials: set[str] = set()
+    burned_holdout_by_strategy_version: dict[str, str] = {}
 
     for index, record in enumerate(records, start=1):
         required = {"sequence", "timestamp", "event", "payload", "previous_hash", "record_hash"}
@@ -223,6 +236,25 @@ def verify_records(records: list[dict[str, Any]]) -> None:
                 raise SystemExit(f"Duplicate RESULT for trial_id={trial_id}")
             validate_result_payload(payload, preregistration)
             result_trials.add(trial_id)
+        elif event == "HOLDOUT_BURNED":
+            require_payload_fields(payload, HOLDOUT_BURN_REQUIRED_FIELDS, "HOLDOUT_BURNED")
+            if payload["protocol_id"] != "ATM-SVP-1":
+                raise SystemExit("HOLDOUT_BURNED protocol_id must be ATM-SVP-1")
+            if payload["permanent"] is not True:
+                raise SystemExit("HOLDOUT_BURNED permanent must be true")
+            strategy_version = payload["strategy_version"]
+            holdout_id = payload["holdout_id"]
+            if not isinstance(strategy_version, str) or not strategy_version:
+                raise SystemExit("HOLDOUT_BURNED strategy_version must be non-empty")
+            if not isinstance(holdout_id, str) or not holdout_id:
+                raise SystemExit("HOLDOUT_BURNED holdout_id must be non-empty")
+            existing_holdout = burned_holdout_by_strategy_version.get(strategy_version)
+            if existing_holdout is not None:
+                raise SystemExit(
+                    f"Second pristine holdout burn forbidden for strategy_version={strategy_version}: "
+                    f"existing={existing_holdout}, attempted={holdout_id}"
+                )
+            burned_holdout_by_strategy_version[strategy_version] = holdout_id
 
 
 def now_iso() -> str:

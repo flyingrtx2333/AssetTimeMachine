@@ -88,3 +88,32 @@ V11 的 pre-ATM-SVP-1 历史 trial family 不完整，因此不得用该命令�
 ## G4 pristine role holdout
 
 `role-holdout-manifest-template.json` 只能先做 metadata-only 填写。exact alternate symbols/source 冻结并提交 Git 之前，不得下载/查看完整收益历史。冻结后只允许 5 次单角色替换 + 1 次全替换，共 6 次正式运行；看过结果后不得为同一 V11 另找第二套 holdout。
+
+G4 的不可逆流程固定为：
+
+1. **Metadata only**：只查看 series 名称、角色定义、频率、首尾可用日期等 metadata，不看价格曲线、收益、Sharpe、MDD。
+2. 用 `strategy_validation_exposure_scan.py` 对五个 exact alternate symbol 做大小写不敏感的当前 Git + `git log -S` 历史扫描；任何已有研究暴露都拒绝。
+3. 将 scan 路径和 metadata evidence 写入 holdout manifest，然后：
+
+```bash
+python3 scripts/strategy_validation_holdout.py freeze --manifest <holdout.json>
+```
+
+4. commit frozen manifest + exposure scan。
+5. **在任何完整历史下载之前先永久烧掉这组 holdout**：
+
+```bash
+python3 scripts/strategy_validation_holdout.py burn --manifest <holdout.json>
+git add tools/research-results/strategy-validation/trial-ledger.jsonl
+git commit -m "research(validation): burn G4 role holdout"
+```
+
+6. 只有 burn 已存在于当前 Git HEAD 且工作树干净时，才允许：
+
+```bash
+python3 scripts/strategy_validation_holdout.py authorize-open \
+  --manifest <holdout.json> \
+  --receipt <holdout-open-authorization.json>
+```
+
+`HOLDOUT_BURNED` 是故意在取数**之前**提交的：即使数据源故障、下载失败或正式 G4 FAIL，这五个替代资产也已经永久失去 pristine 身份，同一 V11 不得再换第二套。

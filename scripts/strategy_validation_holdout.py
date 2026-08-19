@@ -1,0 +1,372 @@
+#!/usr/bin/env python3
+"""One-shot pristine-holdout firewall for ATM-SVP-1 G4.
+
+Lifecycle:
+  1. Fill a metadata-only draft manifest and produce a local Git exposure scan.
+  2. `freeze` turns the draft into FROZEN_UNOPENED and records the parent Git commit.
+  3. Commit the frozen manifest and exposure scan.
+  4. `burn` permanently reserves this exact holdout in the hash-chained trial ledger BEFORE any
+     full return history may be fetched. Commit the burn event.
+  5. `authorize-open` only succeeds when the frozen manifest and burn event are both present in the
+     current Git HEAD and the worktree is clean.
+
+This deliberately makes a reserved holdout non-reusable even if the later data fetch fails.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import subprocess
+from datetime import date, datetime, timezone
+from pathlib import Path
+from typing import Any
+
+from strategy_validation_ledger import (
+    DEFAULT_LEDGER,
+    append_record,
+    canonical_json,
+    read_records,
+    verify_records,
+)
+
+PROTOCOL_ID = "ATM-SVP-1"
+STRATEGY_ID = "nfci-dual-core-v11"
+STRATEGY_VERSION = "dualcore-v11-2026-08-15"
+EXPECTED_ROLES = [
+    ("gold_safe_haven", "gold_cny"),
+    ("us_growth_equity", "nasdaq"),
+    ("us_broad_equity", "sp500"),
+    ("china_large_equity", "csi300"),
+    ("china_broad_equity", "shanghai_composite"),
+]
+
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+
+
+def sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    return sha256_bytes(path.read_bytes())
+
+
+def read_json(path: Path) -> dict[str, Any]:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise SystemExit(f"Expected JSON object: {path}")
+    return value
+
+
+def git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+    result = subprocess.run(
+        ["git", *args],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if check and result.returncode != 0:
+        raise SystemExit(f"git {' '.join(args)} failed: {result.stderr.strip()}")
+    return result
+
+
+def current_head() -> str:
+    return git("rev-parse", "HEAD").stdout.strip()
+
+
+def require_clean_worktree() -> None:
+    status = git("status", "--porcelain").stdout.strip()
+    if status:
+        raise SystemExit(
+            "Holdout operation refused: worktree is not clean. Commit all governance/manifests "
+            "before crossing an irreversible holdout boundary."
+        )
+
+
+def parse_iso_date(raw: Any, label: str) -> date:
+    if not isinstance(raw, str):
+        raise SystemExit(f"{label} must be YYYY-MM-DD")
+    try:
+        return date.fromisoformat(raw)
+    except ValueError as error:
+        raise SystemExit(f"{label} must be YYYY-MM-DD: {raw}") from error
+
+
+def validate_exposure_scan(manifest: dict[str, Any], manifest_path: Path) -> dict[str, Any]:
+    raw_path = manifest.get("local_exposure_scan")
+    if not isinstance(raw_path, str) or not raw_path:
+        raise SystemExit("Manifest local_exposure_scan must be a non-empty path")
+    scan_path = Path(raw_path)
+    if not scan_path.exists():
+        raise SystemExit(f"Exposure scan missing: {scan_path}")
+    scan = read_json(scan_path)
+    if scan.get("protocol_id") != PROTOCOL_ID:
+        raise SystemExit("Exposure scan protocol mismatch")
+    if scan.get("scan_type") != "LOCAL_GIT_EXPOSURE_LOWER_BOUND":
+        raise SystemExit("Unexpected exposure scan type")
+    if scan.get("all_locally_unexposed") is not True:
+        raise SystemExit("At least one holdout candidate is already locally exposed")
+    scan_rows = scan.get("candidates")
+    if not isinstance(scan_rows, list):
+        raise SystemExit("Exposure scan candidates missing")
+    scan_by_role = {row.get("role"): row for row in scan_rows if isinstance(row, dict)}
+    for slot in manifest["role_slots"]:
+        row = scan_by_role.get(slot["role"])
+        if row is None:
+            raise SystemExit(f"Exposure scan missing role={slot['role']}")
+        if row.get("source") != slot["alternate_source"] or row.get("symbol") != slot["alternate_symbol"]:
+            raise SystemExit(f"Exposure scan candidate mismatch for role={slot['role']}")
+        if row.get("locally_unexposed") is not True:
+            raise SystemExit(f"Exposure scan marks role={slot['role']} as exposed")
+    # The draft/frozen manifest may be excluded from current grep, but it did not exist in the
+    # scan's parent Git history. Preserve the explicit path for auditability.
+    if manifest_path.as_posix() not in set(scan.get("excludes", [])):
+        raise SystemExit("Exposure scan must explicitly exclude the holdout manifest itself")
+    return scan
+
+
+def validate_manifest(manifest: dict[str, Any], manifest_path: Path, allowed_statuses: set[str]) -> None:
+    if manifest.get("protocol_id") != PROTOCOL_ID:
+        raise SystemExit("Holdout protocol_id mismatch")
+    if manifest.get("strategy_id") != STRATEGY_ID or manifest.get("strategy_version") != STRATEGY_VERSION:
+        raise SystemExit("Holdout strategy identity mismatch")
+    if manifest.get("status") not in allowed_statuses:
+        raise SystemExit(f"Unexpected holdout status: {manifest.get('status')}")
+    if manifest.get("metadata_only_selection") is not True:
+        raise SystemExit("Holdout selection must be metadata-only")
+    if manifest.get("full_return_history_viewed_before_freeze") is not False:
+        raise SystemExit("Holdout is not pristine: full_return_history_viewed_before_freeze must be false")
+
+    slots = manifest.get("role_slots")
+    if not isinstance(slots, list) or len(slots) != len(EXPECTED_ROLES):
+        raise SystemExit("Holdout must contain exactly five role slots")
+    expected = dict(EXPECTED_ROLES)
+    seen_roles: set[str] = set()
+    seen_alternates: set[tuple[str, str]] = set()
+    for slot in slots:
+        if not isinstance(slot, dict):
+            raise SystemExit("Holdout role slot must be an object")
+        role = slot.get("role")
+        if role not in expected or role in seen_roles:
+            raise SystemExit(f"Unexpected/duplicate holdout role: {role}")
+        seen_roles.add(str(role))
+        if slot.get("current_symbol") != expected[role]:
+            raise SystemExit(f"Current role symbol drift for {role}")
+        source = slot.get("alternate_source")
+        symbol = slot.get("alternate_symbol")
+        if not isinstance(source, str) or not source.strip() or not isinstance(symbol, str) or not symbol.strip():
+            raise SystemExit(f"Alternate source/symbol missing for role={role}")
+        if symbol.casefold() == str(slot["current_symbol"]).casefold():
+            raise SystemExit(f"Alternate symbol equals current symbol for role={role}")
+        key = (source.casefold(), symbol.casefold())
+        if key in seen_alternates:
+            raise SystemExit(f"Duplicate alternate series: {source}:{symbol}")
+        seen_alternates.add(key)
+        if slot.get("metadata_checked") is not True:
+            raise SystemExit(f"metadata_checked must be true for role={role}")
+        start = parse_iso_date(slot.get("metadata_coverage_start"), f"{role}.metadata_coverage_start")
+        end = parse_iso_date(slot.get("metadata_coverage_end"), f"{role}.metadata_coverage_end")
+        if start >= end:
+            raise SystemExit(f"Invalid metadata coverage for role={role}")
+        reason = slot.get("selection_reason_without_return_performance")
+        if not isinstance(reason, str) or len(reason.strip()) < 20:
+            raise SystemExit(f"Selection reason is too weak/missing for role={role}")
+        evidence = slot.get("metadata_evidence")
+        if not isinstance(evidence, list) or not evidence or not all(isinstance(x, str) and x.strip() for x in evidence):
+            raise SystemExit(f"metadata_evidence must be a non-empty string list for role={role}")
+        forbidden = {"sharpe", "cagr", "mdd", "return", "returns", "performance", "drawdown"}
+        illegal = forbidden.intersection(slot.keys())
+        if illegal:
+            raise SystemExit(f"Performance field(s) forbidden in metadata-only role={role}: {sorted(illegal)}")
+
+    if set(seen_roles) != set(expected):
+        raise SystemExit("Holdout role set mismatch")
+    budget = manifest.get("formal_run_budget")
+    if budget != {
+        "one_slot_substitutions": 5,
+        "all_alternate_basket": 1,
+        "total": 6,
+        "additional_runs_after_results": 0,
+    }:
+        raise SystemExit("Formal G4 run budget drifted")
+    validate_exposure_scan(manifest, manifest_path)
+
+
+def selection_payload(manifest: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "holdout_id": manifest["holdout_id"],
+        "protocol_id": manifest["protocol_id"],
+        "strategy_id": manifest["strategy_id"],
+        "strategy_version": manifest["strategy_version"],
+        "role_slots": manifest["role_slots"],
+        "formal_run_budget": manifest["formal_run_budget"],
+        "pass_formulas": manifest["pass_formulas"],
+        "failure_rule": manifest["failure_rule"],
+        "local_exposure_scan": manifest["local_exposure_scan"],
+    }
+
+
+def cmd_validate(args: argparse.Namespace) -> None:
+    path = Path(args.manifest)
+    manifest = read_json(path)
+    validate_manifest(manifest, path, {"DRAFT_NOT_FROZEN", "FROZEN_UNOPENED"})
+    print(f"HOLDOUT_MANIFEST_VALID status={manifest['status']} holdout_id={manifest['holdout_id']}")
+
+
+def cmd_freeze(args: argparse.Namespace) -> None:
+    path = Path(args.manifest)
+    manifest = read_json(path)
+    validate_manifest(manifest, path, {"DRAFT_NOT_FROZEN"})
+    if manifest.get("freeze_git_ref") is not None or manifest.get("frozen_at") is not None:
+        raise SystemExit("Draft already contains freeze metadata")
+    manifest["status"] = "FROZEN_UNOPENED"
+    manifest["freeze_git_ref"] = current_head()
+    manifest["frozen_at"] = now_iso()
+    manifest["selection_payload_sha256"] = sha256_bytes(canonical_json(selection_payload(manifest)).encode("utf-8"))
+    path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(
+        f"HOLDOUT_FROZEN holdout_id={manifest['holdout_id']} parent_git_ref={manifest['freeze_git_ref']} "
+        f"selection_payload_sha256={manifest['selection_payload_sha256']}"
+    )
+    print("Commit the frozen manifest and exposure scan before burning/opening the holdout.")
+
+
+def manifest_committed_in_head(path: Path) -> dict[str, Any]:
+    local_bytes = path.read_bytes()
+    result = git("show", f"HEAD:{path.as_posix()}", check=False)
+    if result.returncode != 0:
+        raise SystemExit(f"Frozen holdout manifest is not committed in HEAD: {path}")
+    committed_bytes = result.stdout.encode("utf-8")
+    if committed_bytes != local_bytes:
+        raise SystemExit("Frozen holdout manifest differs from the exact version committed in HEAD")
+    return read_json(path)
+
+
+def burn_records(records: list[dict[str, Any]], holdout_id: str) -> list[dict[str, Any]]:
+    return [
+        row for row in records
+        if row.get("event") == "HOLDOUT_BURNED"
+        and isinstance(row.get("payload"), dict)
+        and row["payload"].get("holdout_id") == holdout_id
+    ]
+
+
+def cmd_burn(args: argparse.Namespace) -> None:
+    require_clean_worktree()
+    path = Path(args.manifest)
+    manifest = manifest_committed_in_head(path)
+    validate_manifest(manifest, path, {"FROZEN_UNOPENED"})
+    records = read_records(Path(args.ledger))
+    verify_records(records)
+    existing = burn_records(records, str(manifest["holdout_id"]))
+    if existing:
+        raise SystemExit(f"Holdout is already permanently burned: {manifest['holdout_id']}")
+    selection_hash = manifest.get("selection_payload_sha256")
+    expected_hash = sha256_bytes(canonical_json(selection_payload(manifest)).encode("utf-8"))
+    if selection_hash != expected_hash:
+        raise SystemExit("Frozen holdout selection payload hash mismatch")
+    payload = {
+        "protocol_id": PROTOCOL_ID,
+        "holdout_id": manifest["holdout_id"],
+        "strategy_id": STRATEGY_ID,
+        "strategy_version": STRATEGY_VERSION,
+        "manifest_path": path.as_posix(),
+        "manifest_sha256": sha256_file(path),
+        "selection_payload_sha256": selection_hash,
+        "frozen_manifest_git_commit": current_head(),
+        "permanent": True,
+        "rule": "This exact role-holdout set is permanently reserved before any full return history is opened. It may not be replaced for V11 after burn, regardless of fetch/run success.",
+    }
+    record = append_record(Path(args.ledger), "HOLDOUT_BURNED", payload, None)
+    print(
+        f"HOLDOUT_BURNED_APPEND holdout_id={manifest['holdout_id']} record_hash={record['record_hash']}"
+    )
+    print("Commit the HOLDOUT_BURNED ledger event before any full-history fetch is authorized.")
+
+
+def committed_ledger_records(path: Path) -> list[dict[str, Any]]:
+    result = git("show", f"HEAD:{path.as_posix()}", check=False)
+    if result.returncode != 0:
+        raise SystemExit(f"Ledger is not committed in HEAD: {path}")
+    records = []
+    for line in result.stdout.splitlines():
+        if line.strip():
+            value = json.loads(line)
+            if not isinstance(value, dict):
+                raise SystemExit("Committed ledger contains a non-object record")
+            records.append(value)
+    verify_records(records)
+    return records
+
+
+def cmd_authorize_open(args: argparse.Namespace) -> None:
+    require_clean_worktree()
+    path = Path(args.manifest)
+    manifest = manifest_committed_in_head(path)
+    validate_manifest(manifest, path, {"FROZEN_UNOPENED"})
+    ledger_path = Path(args.ledger)
+    local_records = read_records(ledger_path)
+    verify_records(local_records)
+    committed_records = committed_ledger_records(ledger_path)
+    local_burn = burn_records(local_records, str(manifest["holdout_id"]))
+    committed_burn = burn_records(committed_records, str(manifest["holdout_id"]))
+    if len(local_burn) != 1 or len(committed_burn) != 1:
+        raise SystemExit("Full-history opening refused: exactly one HOLDOUT_BURNED event must be committed in HEAD")
+    if local_burn[0]["record_hash"] != committed_burn[0]["record_hash"]:
+        raise SystemExit("Local and committed HOLDOUT_BURNED records differ")
+    payload = committed_burn[0]["payload"]
+    if payload.get("manifest_sha256") != sha256_file(path):
+        raise SystemExit("Committed burn event does not bind to the current frozen manifest")
+    subprocess.run(["python3", "scripts/validate_strategy_protocol.py"], check=True)
+    receipt = {
+        "protocol_id": PROTOCOL_ID,
+        "holdout_id": manifest["holdout_id"],
+        "strategy_version": STRATEGY_VERSION,
+        "authorization_git_commit": current_head(),
+        "frozen_manifest_path": path.as_posix(),
+        "frozen_manifest_sha256": sha256_file(path),
+        "holdout_burn_record_hash": committed_burn[0]["record_hash"],
+        "selection_payload_sha256": manifest["selection_payload_sha256"],
+        "authorized_at": now_iso(),
+        "scope": "One-time full-history opening for the six preregistered ATM-SVP-1 G4 role-preserving runs only.",
+    }
+    output = Path(args.receipt)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(
+        f"HOLDOUT_OPEN_AUTHORIZED holdout_id={manifest['holdout_id']} "
+        f"burn_record_hash={committed_burn[0]['record_hash']} receipt={output}"
+    )
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ledger", default=str(DEFAULT_LEDGER))
+    sub = parser.add_subparsers(dest="command", required=True)
+    validate = sub.add_parser("validate")
+    validate.add_argument("--manifest", required=True)
+    validate.set_defaults(func=cmd_validate)
+    freeze = sub.add_parser("freeze")
+    freeze.add_argument("--manifest", required=True)
+    freeze.set_defaults(func=cmd_freeze)
+    burn = sub.add_parser("burn")
+    burn.add_argument("--manifest", required=True)
+    burn.set_defaults(func=cmd_burn)
+    authorize = sub.add_parser("authorize-open")
+    authorize.add_argument("--manifest", required=True)
+    authorize.add_argument("--receipt", required=True)
+    authorize.set_defaults(func=cmd_authorize_open)
+    return parser
+
+
+def main() -> None:
+    args = build_parser().parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

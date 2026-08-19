@@ -8,6 +8,8 @@
   "full_return_history_viewed_before_freeze": false,
   "freeze_git_ref": null,
   "frozen_at": null,
+  "selection_payload_sha256": null,
+  "local_exposure_scan": "tools/research-results/strategy-validation/holdouts/<holdout-id>-exposure-scan.json",
   "role_slots": [
     {
       "role": "gold_safe_haven",
@@ -17,7 +19,8 @@
       "metadata_checked": false,
       "metadata_coverage_start": null,
       "metadata_coverage_end": null,
-      "selection_reason_without_return_performance": null
+      "selection_reason_without_return_performance": null,
+      "metadata_evidence": []
     },
     {
       "role": "us_growth_equity",
@@ -27,7 +30,8 @@
       "metadata_checked": false,
       "metadata_coverage_start": null,
       "metadata_coverage_end": null,
-      "selection_reason_without_return_performance": null
+      "selection_reason_without_return_performance": null,
+      "metadata_evidence": []
     },
     {
       "role": "us_broad_equity",
@@ -37,7 +41,8 @@
       "metadata_checked": false,
       "metadata_coverage_start": null,
       "metadata_coverage_end": null,
-      "selection_reason_without_return_performance": null
+      "selection_reason_without_return_performance": null,
+      "metadata_evidence": []
     },
     {
       "role": "china_large_equity",
@@ -47,7 +52,8 @@
       "metadata_checked": false,
       "metadata_coverage_start": null,
       "metadata_coverage_end": null,
-      "selection_reason_without_return_performance": null
+      "selection_reason_without_return_performance": null,
+      "metadata_evidence": []
     },
     {
       "role": "china_broad_equity",
@@ -57,7 +63,8 @@
       "metadata_checked": false,
       "metadata_coverage_start": null,
       "metadata_coverage_end": null,
-      "selection_reason_without_return_performance": null
+      "selection_reason_without_return_performance": null,
+      "metadata_evidence": []
     }
   ],
   "formal_run_budget": {
