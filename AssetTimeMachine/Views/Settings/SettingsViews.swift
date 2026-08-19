@@ -13,7 +13,7 @@ struct SettingsView: View {
     @AppStorage("app.notifications.enabled") private var notificationEnabled = false
     @AppStorage("app.notifications.intervalHours") private var notificationIntervalHours: Double = 1
     @AppStorage("app.strategyNotifications.enabled") private var strategyNotificationEnabled = false
-    @AppStorage("app.strategyNotifications.templateID") private var strategyNotificationTemplateID = StrategyNotificationDefaults.defaultTemplateID
+    @AppStorage("app.strategyNotifications.templateID") private var strategyNotificationTemplateID = StrategyRebalanceDefaults.defaultTemplateID
     @AppStorage("app.strategyNotifications.hour") private var strategyNotificationHour: Int = StrategyNotificationDefaults.defaultHour
     @ObservedObject var cloudStore: AssetTimeMachineCloudStore
     let isActive: Bool
@@ -44,7 +44,7 @@ struct SettingsView: View {
     }
 
     private var selectedStrategyTemplate: AdvancedBacktestStrategyTemplate? {
-        StrategyNotificationDefaults.template(for: strategyNotificationTemplateID)
+        StrategyRebalanceDefaults.template(for: strategyNotificationTemplateID)
     }
 
     private var strategyNotificationPreview: String {
@@ -60,10 +60,7 @@ struct SettingsView: View {
     }
 
     private var strategyNotificationFooter: String {
-        if strategyNotificationEnabled {
-            return AppLocalization.string("根据最新行情和资产记录生成调仓提醒。")
-        }
-        return AppLocalization.string("选择一个策略后，可每天收到目标仓位和买卖金额提醒。")
+        AppLocalization.string("提醒将跟随量化页当前调仓策略。")
     }
 
     private var canLogout: Bool {
@@ -211,38 +208,28 @@ struct SettingsView: View {
                             )
                         }
                         .tint(AssetTheme.gold)
-                        .disabled(StrategyNotificationDefaults.eligibleTemplates.isEmpty)
+                        .disabled(StrategyRebalanceDefaults.eligibleTemplates.isEmpty)
                         .listRowBackground(AssetTheme.surface)
 
-                        if !StrategyNotificationDefaults.eligibleTemplates.isEmpty {
-                            Menu {
-                                Picker(AppLocalization.string("提醒策略"), selection: $strategyNotificationTemplateID) {
-                                    ForEach(StrategyNotificationDefaults.eligibleTemplates) { template in
-                                        Text(StrategyNotificationDefaults.pickerTitle(for: template))
-                                            .tag(template.id)
+                        if !StrategyRebalanceDefaults.eligibleTemplates.isEmpty {
+                            LabeledContent {
+                                HStack(spacing: 6) {
+                                    SettingsValueText(selectedStrategyTemplate?.title ?? AppLocalization.string("未选择"))
+                                    if let selectedStrategyTemplate,
+                                       BacktestProductStrategyCatalog.isCuratedTemplateID(selectedStrategyTemplate.id) {
+                                        CuratedStrategyBadge(compact: true)
                                     }
                                 }
                             } label: {
-                                LabeledContent {
-                                    HStack(spacing: 6) {
-                                        SettingsValueText(selectedStrategyTemplate?.title ?? AppLocalization.string("未选择"))
-                                        if let selectedStrategyTemplate,
-                                           BacktestProductStrategyCatalog.isCuratedTemplateID(selectedStrategyTemplate.id) {
-                                            CuratedStrategyBadge(compact: true)
-                                        }
-                                    }
-                                } label: {
-                                    Text(AppLocalization.string("提醒策略"))
-                                        .foregroundStyle(AssetTheme.textPrimary)
-                                }
+                                Text(AppLocalization.string("调仓策略"))
+                                    .foregroundStyle(AssetTheme.textPrimary)
                             }
-                            .foregroundStyle(AssetTheme.textPrimary)
                             .listRowBackground(AssetTheme.surface)
                         } else {
                             LabeledContent {
                                 SettingsValueText(AppLocalization.string("暂无策略"))
                             } label: {
-                                Text(AppLocalization.string("提醒策略"))
+                                Text(AppLocalization.string("调仓策略"))
                                     .foregroundStyle(AssetTheme.textPrimary)
                             }
                             .listRowBackground(AssetTheme.surface)
@@ -265,7 +252,7 @@ struct SettingsView: View {
                         .foregroundStyle(AssetTheme.textPrimary)
                         .listRowBackground(AssetTheme.surface)
 
-                        if !StrategyNotificationDefaults.eligibleTemplates.isEmpty {
+                        if !StrategyRebalanceDefaults.eligibleTemplates.isEmpty {
                             Button {
                                 sendStrategyTestNotification()
                             } label: {
@@ -523,8 +510,8 @@ struct SettingsView: View {
     }
 
     private func normalizeStrategyNotificationTemplateIfNeeded() {
-        guard StrategyNotificationDefaults.template(for: strategyNotificationTemplateID)?.id != strategyNotificationTemplateID else { return }
-        strategyNotificationTemplateID = StrategyNotificationDefaults.defaultTemplateID
+        guard StrategyRebalanceDefaults.template(for: strategyNotificationTemplateID)?.id != strategyNotificationTemplateID else { return }
+        strategyNotificationTemplateID = StrategyRebalanceDefaults.defaultTemplateID
     }
 
     private func sendStrategyTestNotification() {

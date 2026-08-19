@@ -125,6 +125,7 @@ extension RemoteMarketStore {
         var hasher = Hasher()
         hasher.combine(exchangeRateCacheToken())
         hasher.combine(overviewCacheToken())
+        hasher.combine(recordMarketRevision)
         return hasher.finalize()
     }
 }

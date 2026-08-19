@@ -654,6 +654,7 @@ struct AdvancedStrategyLibrarySheet: View {
     @Environment(\.dismiss) private var dismiss
     let templates: [AdvancedBacktestStrategyTemplate]
     let activeTemplateID: String?
+    let titleLocalizationKey: String
     let onSelect: (AdvancedBacktestStrategyTemplate) -> Void
     @State private var searchText = ""
     @State private var selectedGroup: LibraryGroup
@@ -662,10 +663,12 @@ struct AdvancedStrategyLibrarySheet: View {
     init(
         templates: [AdvancedBacktestStrategyTemplate],
         activeTemplateID: String?,
+        titleLocalizationKey: String = "策略大全",
         onSelect: @escaping (AdvancedBacktestStrategyTemplate) -> Void
     ) {
         self.templates = templates
         self.activeTemplateID = activeTemplateID
+        self.titleLocalizationKey = titleLocalizationKey
         self.onSelect = onSelect
         let initialGroup: LibraryGroup
         if activeTemplateID?.hasPrefix("basic-") == true {
@@ -784,7 +787,7 @@ struct AdvancedStrategyLibrarySheet: View {
                         .stroke(AssetTheme.gold.opacity(0.2), lineWidth: 1)
                 )
 
-            Text(AppLocalization.string("策略大全"))
+            Text(AppLocalization.string(titleLocalizationKey))
                 .font(.title2.weight(.bold))
                 .foregroundStyle(AssetTheme.textPrimary)
 
@@ -1056,11 +1059,11 @@ struct AdvancedStrategyTemplateRow: View {
     }
 
     private var isDefaultStrategy: Bool {
-        template.id == StrategyNotificationDefaults.defaultTemplateID
+        template.id == StrategyRebalanceDefaults.defaultTemplateID
     }
 
     private var isRecommendedStrategy: Bool {
-        template.id == StrategyNotificationDefaults.recommendedTemplateID
+        template.id == StrategyRebalanceDefaults.recommendedTemplateID
     }
 
     private var isCuratedStrategy: Bool {

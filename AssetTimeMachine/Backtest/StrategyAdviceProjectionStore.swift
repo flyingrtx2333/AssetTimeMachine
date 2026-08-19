@@ -32,12 +32,12 @@ final class StrategyAdviceProjectionStore: ObservableObject {
         let generation = calculationGeneration
         activeCalculationToken = nil
 
-        guard let template = StrategyNotificationDefaults.template(for: templateID) else {
+        guard let template = StrategyRebalanceDefaults.template(for: templateID) else {
             advice = nil
             actions = []
             historySourceNames = []
             snapshotDate = snapshot?.date
-            statusMessage = AppLocalization.string("设置里还没有可用的提醒策略。")
+            statusMessage = AppLocalization.string("还没有可用的调仓策略。")
             isRefreshing = false
             resetProgress()
             return
@@ -61,7 +61,7 @@ final class StrategyAdviceProjectionStore: ObservableObject {
             }
         }
 
-        let assetOptions = StrategyNotificationDefaults.assetOptions(for: template)
+        let assetOptions = StrategyRebalanceDefaults.assetOptions(for: template)
         let shouldForceHistoryRefresh = force || isMissingRequiredHistory(
             for: assetOptions,
             marketStore: marketStore
@@ -118,7 +118,7 @@ final class StrategyAdviceProjectionStore: ObservableObject {
         )
         let nextAdvice = await adviceService.advice(
             calculationToken: calculationToken,
-            mode: template.mode,
+            template: template,
             assetOptions: assetOptions,
             historyBySymbol: historyBySymbol,
             force: force
@@ -127,7 +127,7 @@ final class StrategyAdviceProjectionStore: ObservableObject {
         guard !Task.isCancelled,
               calculationGeneration == generation,
               activeCalculationToken == calculationToken,
-              StrategyNotificationDefaults.template(for: templateID)?.id == template.id,
+              StrategyRebalanceDefaults.template(for: templateID)?.id == template.id,
               marketStore.historyRelevanceToken(for: historySymbols) == historyToken else { return }
 
         guard let nextAdvice else {
@@ -169,8 +169,8 @@ final class StrategyAdviceProjectionStore: ObservableObject {
     }
 
     func refreshLocalization(templateID: String, snapshot: AssetSnapshot?) {
-        guard let template = StrategyNotificationDefaults.template(for: templateID) else { return }
-        let assetOptions = StrategyNotificationDefaults.assetOptions(for: template)
+        guard let template = StrategyRebalanceDefaults.template(for: templateID) else { return }
+        let assetOptions = StrategyRebalanceDefaults.assetOptions(for: template)
         selectedAssetOptions = assetOptions
 
         if let currentAdvice = advice {

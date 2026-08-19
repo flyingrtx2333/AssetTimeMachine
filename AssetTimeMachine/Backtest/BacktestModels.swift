@@ -57,7 +57,7 @@ enum BacktestTopTab: String, CaseIterable, Identifiable {
     }
 }
 
-enum AdvancedBacktestSignalDirection: String, CaseIterable, Identifiable {
+enum AdvancedBacktestSignalDirection: String, CaseIterable, Identifiable, Sendable {
     case alwaysBuy
     case neverSell
     case consecutiveDown
@@ -243,7 +243,7 @@ enum AdvancedBacktestTradeAction: String {
     }
 }
 
-struct AdvancedBacktestRule {
+struct AdvancedBacktestRule: Sendable {
     var direction: AdvancedBacktestSignalDirection
     var days: Int
 }
@@ -1626,7 +1626,7 @@ struct AdvancedBacktestCandidate: Identifiable {
     }
 }
 
-struct AdvancedBacktestStrategyTemplate: Identifiable {
+struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
     let id: String
     var mode: AdvancedBacktestStrategyMode = .ruleBased
     var selectedAssetSymbols: [String]? = nil
@@ -3203,15 +3203,12 @@ enum BacktestDefaults {
     }
 }
 
-enum StrategyNotificationDefaults {
+enum StrategyRebalanceDefaults {
     static let defaultTemplateID = "core-gold-satellite-equity-curve-state-gate-momentum"
     static let recommendedTemplateID = "risk-contribution-cash-confidence-low-noise"
-    static let defaultHour = 9
 
     static var eligibleTemplates: [AdvancedBacktestStrategyTemplate] {
-        AdvancedBacktestStrategyTemplate.productCatalog.filter {
-            BacktestProductStrategyCatalog.isCuratedTemplateID($0.id)
-        }
+        AdvancedBacktestStrategyTemplate.productCatalog
     }
 
     static func migratedTemplateID(_ id: String) -> String {
@@ -3254,6 +3251,10 @@ enum StrategyNotificationDefaults {
         let options = BacktestDefaults.strategyAssetOptions.filter { selectedSymbols.contains($0.symbol) }
         return options.isEmpty ? BacktestDefaults.dcaAssetOptions : options
     }
+}
+
+enum StrategyNotificationDefaults {
+    static let defaultHour = 9
 }
 
 @MainActor

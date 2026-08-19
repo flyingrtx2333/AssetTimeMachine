@@ -475,6 +475,15 @@ Use this order when looking for a new strategy candidate:
 - Do not add images if the asset folder lacks real matching material.
 - For visible UI changes, verify with a real simulator/device screenshot, not just a mental mockup.
 
+### UI Redesign Workflow
+
+- For any non-trivial UI optimization or redesign, capture the current screen in the simulator first, then use ImageGen with that real screen as the reference to produce at least three materially different, polished concepts before changing SwiftUI code.
+- Concepts must explore different information hierarchy, density, and interaction structure—not merely different colors. Prefer flat, concise, native iOS layouts; avoid nested cards, repeated borders, excessive explanatory copy, and ornamental whitespace.
+- Present the numbered concepts with a short explanation of each direction and wait for the user to select or combine a direction before implementation, unless the user explicitly asks to implement immediately.
+- Treat generated images as design references only. Implement the selected direction with native SwiftUI components, SF Symbols or existing code-native assets, localization, Dynamic Type, and accessibility; do not ship the raster concept as app UI.
+- After implementation, capture the same screen again on a real simulator/device and compare it against the selected concept for hierarchy, spacing, truncation, dark/light appearance, and interaction clarity.
+- Skip the concept round only for trivial copy, spacing, or bug fixes, or when the user has already provided an exact target design.
+
 ## Coding Style & Naming Conventions
 
 Use Swift 5 conventions with 4-space indentation. Prefer small SwiftUI views and explicit domain names such as `AssetSnapshot`, `AssetEntry`, `PortfolioCalculator`, and `TrendAnalysisService`. Keep model fields stable and migration-aware because SwiftData persistence is user-facing.

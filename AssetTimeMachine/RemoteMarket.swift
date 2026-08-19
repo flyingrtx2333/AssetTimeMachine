@@ -64,6 +64,88 @@ nonisolated struct PublicExchangeRates: Codable, Equatable, Sendable {
     }
 }
 
+nonisolated struct AssetTimeMachineETFCatalogItem: Codable, Equatable, Identifiable, Sendable {
+    let symbol: String
+    let name: String
+    let exchange: String
+    let category: String
+    let latestDate: String?
+    let latestClose: Double?
+    let source: String
+
+    var id: String { symbol }
+
+    enum CodingKeys: String, CodingKey {
+        case symbol
+        case name
+        case exchange
+        case category
+        case latestDate = "latest_date"
+        case latestClose = "latest_close"
+        case source
+    }
+}
+
+nonisolated struct AssetTimeMachineETFCatalogResponse: Codable, Equatable, Sendable {
+    let success: Bool
+    let total: Int
+    let page: Int
+    let pageSize: Int
+    let categories: [String: Int]?
+    let items: [AssetTimeMachineETFCatalogItem]?
+
+    enum CodingKeys: String, CodingKey {
+        case success
+        case total
+        case page
+        case pageSize = "page_size"
+        case categories
+        case items
+    }
+}
+
+nonisolated struct AssetTimeMachineAShareCatalogItem: Codable, Equatable, Identifiable, Sendable {
+    let symbol: String
+    let code: String
+    let name: String
+    let market: String
+    let exchange: String
+    let latestDate: String?
+    let latestClose: Double?
+    let source: String
+
+    var id: String { symbol }
+
+    enum CodingKeys: String, CodingKey {
+        case symbol
+        case code
+        case name
+        case market
+        case exchange
+        case latestDate = "latest_date"
+        case latestClose = "latest_close"
+        case source
+    }
+}
+
+nonisolated struct AssetTimeMachineAShareCatalogResponse: Codable, Equatable, Sendable {
+    let success: Bool
+    let total: Int
+    let page: Int
+    let pageSize: Int
+    let markets: [String: Int]?
+    let items: [AssetTimeMachineAShareCatalogItem]?
+
+    enum CodingKeys: String, CodingKey {
+        case success
+        case total
+        case page
+        case pageSize = "page_size"
+        case markets
+        case items
+    }
+}
+
 nonisolated struct PublicMacroAsOfPoint: Codable, Equatable, Sendable {
     let releaseDate: String
     let referenceDate: String
@@ -297,6 +379,73 @@ enum RemoteMarketClient {
         return try await decode(MarketAssetCatalogResponse.self, from: data).assets
     }
 
+    static func fetchRecordETFCatalog(
+        keyword: String?,
+        page: Int = 1,
+        pageSize: Int = 60
+    ) async throws -> AssetTimeMachineETFCatalogResponse {
+        let url = securityCatalogURL(
+            path: "/api/v1/money/public/etfs",
+            keyword: keyword,
+            page: page,
+            pageSize: pageSize
+        )
+        let (data, response) = try await URLSession.shared.data(from: url)
+        try validate(response: response, data: data)
+        return try await decode(AssetTimeMachineETFCatalogResponse.self, from: data)
+    }
+
+    static func fetchRecordAShareCatalog(
+        keyword: String?,
+        page: Int = 1,
+        pageSize: Int = 60
+    ) async throws -> AssetTimeMachineAShareCatalogResponse {
+        let url = securityCatalogURL(
+            path: "/api/v1/money/public/a-shares",
+            keyword: keyword,
+            page: page,
+            pageSize: pageSize
+        )
+        let (data, response) = try await URLSession.shared.data(from: url)
+        try validate(response: response, data: data)
+        return try await decode(AssetTimeMachineAShareCatalogResponse.self, from: data)
+    }
+
+    static func fetchRecordETFHistory(symbol: String) async throws -> PublicHistoryResponse {
+        try await fetchRecordSecurityHistory(
+            path: "/api/v1/money/public/etfs",
+            symbol: MarketAssetDescriptor.recordETFServerSymbol(from: symbol)
+        )
+    }
+
+    static func fetchRecordAShareHistory(symbol: String) async throws -> PublicHistoryResponse {
+        try await fetchRecordSecurityHistory(
+            path: "/api/v1/money/public/a-shares",
+            symbol: MarketAssetDescriptor.recordAShareServerSymbol(from: symbol)
+        )
+    }
+
+    private static func securityCatalogURL(path: String, keyword: String?, page: Int, pageSize: Int) -> URL {
+        var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
+        var queryItems = [
+            URLQueryItem(name: "page", value: String(max(1, page))),
+            URLQueryItem(name: "page_size", value: String(min(max(1, pageSize), 100)))
+        ]
+        if let keyword = keyword?.trimmingCharacters(in: .whitespacesAndNewlines), !keyword.isEmpty {
+            queryItems.append(URLQueryItem(name: "keyword", value: keyword))
+        }
+        components.queryItems = queryItems
+        return components.url!
+    }
+
+    private static func fetchRecordSecurityHistory(path: String, symbol: String) async throws -> PublicHistoryResponse {
+        let encodedSymbol = symbol.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? symbol
+        let url = url(for: "\(path)/\(encodedSymbol)/history?period=6months")
+        let (data, response) = try await URLSession.shared.data(from: url)
+        try validate(response: response, data: data)
+        return try await decode(PublicHistoryResponse.self, from: data)
+    }
+
     static func url(for path: String) -> URL {
         URL(string: path, relativeTo: baseURL)!.absoluteURL
     }
@@ -459,6 +608,188 @@ private enum MarketAssetCatalogDiskCache {
     }
 }
 
+nonisolated private struct RecordETFAssetCatalogCacheEntry: Codable, Sendable {
+    let savedAt: Date
+    let assets: [MarketAssetDescriptor]
+}
+
+private enum RecordETFAssetCatalogDiskCache {
+    nonisolated private static var fileURL: URL? {
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("AssetTimeMachine", isDirectory: true)
+            .appendingPathComponent("record-etf-catalog-v1.json", isDirectory: false)
+    }
+
+    nonisolated static func load() -> RecordETFAssetCatalogCacheEntry? {
+        guard let fileURL, let data = try? Data(contentsOf: fileURL) else { return nil }
+        return try? JSONDecoder().decode(RecordETFAssetCatalogCacheEntry.self, from: data)
+    }
+
+    nonisolated static func save(_ entry: RecordETFAssetCatalogCacheEntry) {
+        guard let fileURL else { return }
+        do {
+            try FileManager.default.createDirectory(
+                at: fileURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try JSONEncoder().encode(entry).write(to: fileURL, options: .atomic)
+        } catch {
+            // ETF catalog caching is an offline convenience and must never block recording.
+        }
+    }
+}
+
+nonisolated private struct RecordAShareAssetCatalogCacheEntry: Codable, Sendable {
+    let savedAt: Date
+    let assets: [MarketAssetDescriptor]
+}
+
+private enum RecordAShareAssetCatalogDiskCache {
+    nonisolated private static var fileURL: URL? {
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("AssetTimeMachine", isDirectory: true)
+            .appendingPathComponent("record-a-share-catalog-v1.json", isDirectory: false)
+    }
+
+    nonisolated static func load() -> RecordAShareAssetCatalogCacheEntry? {
+        guard let fileURL, let data = try? Data(contentsOf: fileURL) else { return nil }
+        return try? JSONDecoder().decode(RecordAShareAssetCatalogCacheEntry.self, from: data)
+    }
+
+    nonisolated static func save(_ entry: RecordAShareAssetCatalogCacheEntry) {
+        guard let fileURL else { return }
+        do {
+            try FileManager.default.createDirectory(
+                at: fileURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try JSONEncoder().encode(entry).write(to: fileURL, options: .atomic)
+        } catch {
+            // A-share catalog caching is an offline convenience and must never block recording.
+        }
+    }
+}
+
+nonisolated private extension AssetTimeMachineETFCatalogItem {
+    var recordMarketDescriptor: MarketAssetDescriptor {
+        MarketAssetDescriptor(
+            symbol: MarketAssetDescriptor.recordETFSymbol(from: symbol),
+            category: "etf",
+            label: name,
+            currency: "CNY",
+            unit: "share",
+            source: source
+        )
+    }
+
+    var latestRecordHistorySeries: PublicHistorySeries? {
+        guard let latestDate,
+              let latestClose,
+              latestClose.isFinite,
+              latestClose > 0 else { return nil }
+        return PublicHistorySeries(
+            symbol: MarketAssetDescriptor.recordETFSymbol(from: symbol),
+            category: "etf",
+            label: name,
+            currency: "CNY",
+            unit: "share",
+            source: source,
+            dates: [latestDate],
+            prices: [latestClose],
+            hasOHLC: false,
+            ohlcSource: nil,
+            ohlcCoverageRatio: nil,
+            openPrices: nil,
+            highPrices: nil,
+            lowPrices: nil,
+            closePrices: nil,
+            volumes: nil
+        )
+    }
+}
+
+nonisolated private extension AssetTimeMachineAShareCatalogItem {
+    var recordMarketDescriptor: MarketAssetDescriptor {
+        MarketAssetDescriptor(
+            symbol: MarketAssetDescriptor.recordAShareSymbol(from: symbol),
+            category: "a_share",
+            label: name,
+            currency: "CNY",
+            unit: "share",
+            source: source
+        )
+    }
+
+    var latestRecordHistorySeries: PublicHistorySeries? {
+        guard let latestDate,
+              let latestClose,
+              latestClose.isFinite,
+              latestClose > 0 else { return nil }
+        return PublicHistorySeries(
+            symbol: MarketAssetDescriptor.recordAShareSymbol(from: symbol),
+            category: "a_share",
+            label: name,
+            currency: "CNY",
+            unit: "share",
+            source: source,
+            dates: [latestDate],
+            prices: [latestClose],
+            hasOHLC: false,
+            ohlcSource: nil,
+            ohlcCoverageRatio: nil,
+            openPrices: nil,
+            highPrices: nil,
+            lowPrices: nil,
+            closePrices: nil,
+            volumes: nil
+        )
+    }
+}
+
+nonisolated private extension PublicHistorySeries {
+    var asRecordETFSeries: PublicHistorySeries {
+        PublicHistorySeries(
+            symbol: MarketAssetDescriptor.recordETFSymbol(from: symbol),
+            category: "etf",
+            label: label,
+            currency: currency,
+            unit: unit.isEmpty ? "share" : unit,
+            source: source,
+            dates: dates,
+            prices: prices,
+            hasOHLC: hasOHLC,
+            ohlcSource: ohlcSource,
+            ohlcCoverageRatio: ohlcCoverageRatio,
+            openPrices: openPrices,
+            highPrices: highPrices,
+            lowPrices: lowPrices,
+            closePrices: closePrices,
+            volumes: volumes
+        )
+    }
+
+    var asRecordAShareSeries: PublicHistorySeries {
+        PublicHistorySeries(
+            symbol: MarketAssetDescriptor.recordAShareSymbol(from: symbol),
+            category: "a_share",
+            label: label,
+            currency: currency,
+            unit: unit.isEmpty ? "share" : unit,
+            source: source,
+            dates: dates,
+            prices: prices,
+            hasOHLC: hasOHLC,
+            ohlcSource: ohlcSource,
+            ohlcCoverageRatio: ohlcCoverageRatio,
+            openPrices: openPrices,
+            highPrices: highPrices,
+            lowPrices: lowPrices,
+            closePrices: closePrices,
+            volumes: volumes
+        )
+    }
+}
+
 nonisolated extension PublicNFCIAsOfResponse {
     var backtestNFCIAsOfData: BacktestNFCIAsOfData? {
         guard success,
@@ -499,6 +830,9 @@ final class RemoteMarketStore: ObservableObject {
     }
     @Published private(set) var historyRevision = 0
     @Published private(set) var assetCatalog: [MarketAssetDescriptor] = []
+    @Published private(set) var recordETFAssetCatalog: [MarketAssetDescriptor] = []
+    @Published private(set) var recordAShareAssetCatalog: [MarketAssetDescriptor] = []
+    @Published private(set) var recordMarketRevision = 0
     @Published var isLoading = false
     @Published var errorMessage: String?
 
@@ -521,6 +855,8 @@ final class RemoteMarketStore: ObservableObject {
     private var assetCatalogRefreshTask: Task<Void, Never>?
     private var didLoadAssetCatalogDiskCache = false
     private var assetCatalogSavedAt: Date?
+    private var didLoadRecordETFAssetCatalogDiskCache = false
+    private var didLoadRecordAShareAssetCatalogDiskCache = false
     private var liveDataErrorMessage: String?
     private var historyErrorMessage: String?
     private var lastLiveDataRefreshSucceeded = false
@@ -600,9 +936,238 @@ final class RemoteMarketStore: ObservableObject {
         assetCatalog.isEmpty ? MarketAssetCatalog.offlineFallback : assetCatalog
     }
 
+    var recordSelectableAssetCatalog: [MarketAssetDescriptor] {
+        MarketAssetCatalog.normalized(
+            selectableAssetCatalog
+                + recordETFAssetCatalog
+                + recordAShareAssetCatalog
+                + MarketAssetCatalog.recordCurrencyAssets
+        )
+    }
+
     func assetDescriptor(for symbol: String) -> MarketAssetDescriptor? {
         let normalized = Self.normalizedHistorySymbol(symbol)
-        return selectableAssetCatalog.first { Self.normalizedHistorySymbol($0.symbol) == normalized }
+        if let descriptor = recordETFAssetCatalog.first(where: {
+            Self.normalizedHistorySymbol($0.symbol) == normalized
+        }) {
+            return descriptor
+        }
+        if let descriptor = recordAShareAssetCatalog.first(where: {
+            Self.normalizedHistorySymbol($0.symbol) == normalized
+        }) {
+            return descriptor
+        }
+        if let descriptor = selectableAssetCatalog.first(where: {
+            Self.normalizedHistorySymbol($0.symbol) == normalized
+        }) {
+            return descriptor
+        }
+        if let descriptor = MarketAssetCatalog.recordCurrencyAssets.first(where: {
+            Self.normalizedHistorySymbol($0.symbol) == normalized
+        }) {
+            return descriptor
+        }
+        if normalized.hasPrefix(MarketAssetDescriptor.recordETFPrefix),
+           let series = history(for: normalized) {
+            return MarketAssetDescriptor(series: series)
+        }
+        if normalized.hasPrefix(MarketAssetDescriptor.recordASharePrefix),
+           let series = history(for: normalized) {
+            return MarketAssetDescriptor(series: series)
+        }
+        return nil
+    }
+
+    func loadRecordETFAssetCatalogIfNeeded() async {
+        guard !didLoadRecordETFAssetCatalogDiskCache else { return }
+        didLoadRecordETFAssetCatalogDiskCache = true
+        let cached = await Task.detached(priority: .utility) {
+            RecordETFAssetCatalogDiskCache.load()
+        }.value
+        guard recordETFAssetCatalog.isEmpty, let cached else { return }
+        recordETFAssetCatalog = cached.assets.filter(\.isRecordETF)
+    }
+
+    func loadRecordAShareAssetCatalogIfNeeded() async {
+        guard !didLoadRecordAShareAssetCatalogDiskCache else { return }
+        didLoadRecordAShareAssetCatalogDiskCache = true
+        let cached = await Task.detached(priority: .utility) {
+            RecordAShareAssetCatalogDiskCache.load()
+        }.value
+        guard recordAShareAssetCatalog.isEmpty, let cached else { return }
+        recordAShareAssetCatalog = cached.assets.filter(\.isRecordAShare)
+    }
+
+    func registerRecordETFs(_ items: [AssetTimeMachineETFCatalogItem]) {
+        guard !items.isEmpty else { return }
+
+        let descriptors = items.map(\.recordMarketDescriptor)
+        let mergedCatalog = MarketAssetCatalog.normalized(recordETFAssetCatalog + descriptors)
+            .filter(\.isRecordETF)
+        var didChange = false
+        if mergedCatalog != recordETFAssetCatalog {
+            recordETFAssetCatalog = mergedCatalog
+            didChange = true
+        }
+
+        let latestSeries = items.compactMap(\.latestRecordHistorySeries)
+        if let mergeResult = try? MarketHistoryMergeProcessor.merge(
+            existing: historySeries,
+            incoming: latestSeries
+        ), mergeResult.didChange {
+            historySeries = mergeResult.seriesBySymbol
+            didChange = true
+            persistHistoryCache()
+        }
+
+        if didChange {
+            recordMarketRevision &+= 1
+        }
+        persistRecordETFCatalog()
+    }
+
+    func registerRecordAShares(_ items: [AssetTimeMachineAShareCatalogItem]) {
+        guard !items.isEmpty else { return }
+
+        let descriptors = items.map(\.recordMarketDescriptor)
+        let mergedCatalog = MarketAssetCatalog.normalized(recordAShareAssetCatalog + descriptors)
+            .filter(\.isRecordAShare)
+        var didChange = false
+        if mergedCatalog != recordAShareAssetCatalog {
+            recordAShareAssetCatalog = mergedCatalog
+            didChange = true
+        }
+
+        let latestSeries = items.compactMap(\.latestRecordHistorySeries)
+        if let mergeResult = try? MarketHistoryMergeProcessor.merge(
+            existing: historySeries,
+            incoming: latestSeries
+        ), mergeResult.didChange {
+            historySeries = mergeResult.seriesBySymbol
+            didChange = true
+            persistHistoryCache()
+        }
+
+        if didChange {
+            recordMarketRevision &+= 1
+        }
+        persistRecordAShareCatalog()
+    }
+
+    func registerRecordETFHistory(_ response: PublicHistoryResponse) {
+        let incomingSeries = response.series.map(\.asRecordETFSeries)
+        guard !incomingSeries.isEmpty else { return }
+
+        let descriptors = incomingSeries.map(MarketAssetDescriptor.init(series:))
+        let mergedCatalog = MarketAssetCatalog.normalized(recordETFAssetCatalog + descriptors)
+            .filter(\.isRecordETF)
+        if mergedCatalog != recordETFAssetCatalog {
+            recordETFAssetCatalog = mergedCatalog
+            persistRecordETFCatalog()
+        }
+
+        guard let mergeResult = try? MarketHistoryMergeProcessor.merge(
+            existing: historySeries,
+            incoming: incomingSeries
+        ), mergeResult.didChange else { return }
+        historySeries = mergeResult.seriesBySymbol
+        recordMarketRevision &+= 1
+        persistHistoryCache()
+    }
+
+    func registerRecordAShareHistory(_ response: PublicHistoryResponse) {
+        let incomingSeries = response.series.map(\.asRecordAShareSeries)
+        guard !incomingSeries.isEmpty else { return }
+
+        let descriptors = incomingSeries.map(MarketAssetDescriptor.init(series:))
+        let mergedCatalog = MarketAssetCatalog.normalized(recordAShareAssetCatalog + descriptors)
+            .filter(\.isRecordAShare)
+        if mergedCatalog != recordAShareAssetCatalog {
+            recordAShareAssetCatalog = mergedCatalog
+            persistRecordAShareCatalog()
+        }
+
+        guard let mergeResult = try? MarketHistoryMergeProcessor.merge(
+            existing: historySeries,
+            incoming: incomingSeries
+        ), mergeResult.didChange else { return }
+        historySeries = mergeResult.seriesBySymbol
+        recordMarketRevision &+= 1
+        persistHistoryCache()
+    }
+
+    func refreshRecordSecurityCatalog(keyword: String?, pageSize: Int) async throws -> [String: Bool] {
+        async let etfResponse = RemoteMarketClient.fetchRecordETFCatalog(keyword: keyword, page: 1, pageSize: pageSize)
+        async let aShareResponse = RemoteMarketClient.fetchRecordAShareCatalog(keyword: keyword, page: 1, pageSize: pageSize)
+        let etfs = try? await etfResponse
+        let aShares = try? await aShareResponse
+        guard etfs != nil || aShares != nil else {
+            throw URLError(.badServerResponse)
+        }
+        registerRecordETFs(etfs?.items ?? [])
+        registerRecordAShares(aShares?.items ?? [])
+        return [
+            "etf": etfs.map { $0.page * $0.pageSize < $0.total } ?? false,
+            "a_share": aShares.map { $0.page * $0.pageSize < $0.total } ?? false
+        ]
+    }
+
+    func loadRecordSecurityCatalogPage(
+        sectionID: String,
+        page: Int,
+        pageSize: Int
+    ) async throws -> Bool {
+        switch sectionID {
+        case "etf":
+            let response = try await RemoteMarketClient.fetchRecordETFCatalog(
+                keyword: nil,
+                page: page,
+                pageSize: pageSize
+            )
+            registerRecordETFs(response.items ?? [])
+            return response.page * response.pageSize < response.total
+        case "a_share":
+            let response = try await RemoteMarketClient.fetchRecordAShareCatalog(
+                keyword: nil,
+                page: page,
+                pageSize: pageSize
+            )
+            registerRecordAShares(response.items ?? [])
+            return response.page * response.pageSize < response.total
+        default:
+            return false
+        }
+    }
+
+    func refreshRecordSecurityHistory(symbol: String) async throws {
+        if symbol.hasPrefix(MarketAssetDescriptor.recordETFPrefix) {
+            let response = try await RemoteMarketClient.fetchRecordETFHistory(symbol: symbol)
+            registerRecordETFHistory(response)
+        } else if symbol.hasPrefix(MarketAssetDescriptor.recordASharePrefix) {
+            let response = try await RemoteMarketClient.fetchRecordAShareHistory(symbol: symbol)
+            registerRecordAShareHistory(response)
+        }
+    }
+
+    private func persistRecordETFCatalog() {
+        let entry = RecordETFAssetCatalogCacheEntry(savedAt: .now, assets: recordETFAssetCatalog)
+        _ = Task.detached(priority: .utility) {
+            RecordETFAssetCatalogDiskCache.save(entry)
+        }
+    }
+
+    private func persistRecordAShareCatalog() {
+        let entry = RecordAShareAssetCatalogCacheEntry(savedAt: .now, assets: recordAShareAssetCatalog)
+        _ = Task.detached(priority: .utility) {
+            RecordAShareAssetCatalogDiskCache.save(entry)
+        }
+    }
+
+    private func persistHistoryCache() {
+        let cachedSeries = historySeries
+        _ = Task.detached(priority: .utility) {
+            MarketHistoryDiskCache.save(seriesBySymbol: cachedSeries, at: .now)
+        }
     }
 
     @discardableResult

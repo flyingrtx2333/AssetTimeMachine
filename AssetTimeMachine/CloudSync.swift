@@ -226,6 +226,21 @@ enum AssetTimeMachineCloudAPI {
         try await request(path: path, method: method, token: token, bodyData: nil)
     }
 
+    private static func request<T: Decodable & Sendable>(url: URL, token: String? = nil) async throws -> T {
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let token, !token.isEmpty {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response: response, data: data)
+        return try await SyncPayloadWork.detached {
+            try decoder().decode(T.self, from: data)
+        }
+    }
+
     private static func request<T: Decodable & Sendable, Body: Encodable & Sendable>(path: String, method: String, token: String? = nil, body: Body) async throws -> T {
         let bodyData = try await SyncPayloadWork.detached {
             try encoder().encode(body)

@@ -10,7 +10,7 @@ actor StrategyAdviceService {
 
     func advice(
         calculationToken: String,
-        mode: AdvancedBacktestStrategyMode,
+        template: AdvancedBacktestStrategyTemplate,
         assetOptions: [BacktestAssetOption],
         historyBySymbol: [String: PublicHistorySeries],
         force: Bool
@@ -32,9 +32,15 @@ actor StrategyAdviceService {
                             historyBySymbol[symbol]
                         }
                     }
-                    return BacktestEngine.advancedRotationRebalanceAdvice(
+                    if template.mode.isRotation {
+                        return BacktestEngine.advancedRotationRebalanceAdvice(
+                            assetInputs: assetInputs,
+                            mode: template.mode
+                        )
+                    }
+                    return BacktestEngine.advancedRuleBasedRebalanceAdvice(
                         assetInputs: assetInputs,
-                        mode: mode
+                        template: template
                     )
                 }
             } catch {

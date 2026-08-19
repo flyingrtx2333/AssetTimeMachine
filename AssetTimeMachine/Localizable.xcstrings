@@ -1,6 +1,142 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "选择资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Select Asset" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "选择资产" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "選擇資產" } }
+      }
+    },
+    "资产详情": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Asset Details" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "资产详情" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "資產詳情" } }
+      }
+    },
+    "步骤 %d：%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Step %d: %@" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "步骤 %d：%@" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "步驟 %d：%@" } }
+      }
+    },
+    "单位": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Unit" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "单位" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "單位" } }
+      }
+    },
+    "当前市场价": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Current Market Price" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "当前市场价" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "目前市價" } }
+      }
+    },
+    "当前市值": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Current Market Value" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "当前市值" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "目前市值" } }
+      }
+    },
+    "更换": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Change" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "更换" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "更換" } }
+      }
+    },
+    "自动": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Automatic" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "自动" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "自動" } }
+      }
+    },
+    "点": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "pts" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "点" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "點" } }
+      }
+    },
+    "A股": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "A-Shares" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "A股" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "A股" } }
+      }
+    },
+    "股票或 ETF 行情暂时不可用": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Stock and ETF market data is temporarily unavailable" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "股票或 ETF 行情暂时不可用" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "股票或 ETF 行情暫時無法使用" } }
+      }
+    },
+    "未找到匹配的资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No matching assets" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "未找到匹配的资产" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "找不到相符資產" } }
+      }
+    },
+    "搜索股票、ETF 或资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Search stocks, ETFs, or assets" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "搜索股票、ETF 或资产" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "搜尋股票、ETF 或資產" } }
+      }
+    },
+    "数量（%@）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Quantity (%@)" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "数量（%@）" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "數量（%@）" } }
+      }
+    },
+    "输入数量（%@）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Enter quantity (%@)" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "输入数量（%@）" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "輸入數量（%@）" } }
+      }
+    },
+    "自定义名称": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Custom name" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "自定义名称" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "自訂名稱" } }
+      }
+    },
+    "基础策略调仓": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Core Strategy Rebalance" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "基础策略调仓" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "基礎策略調倉" } }
+      }
+    },
     "NFCI 双核心·稳健核心": {
       "extractionState": "manual",
       "localizations": {
@@ -3285,6 +3421,28 @@
         }
       }
     },
+    "加载更多": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Load More"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加载更多"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "載入更多"
+          }
+        }
+      }
+    },
     "区间": {
       "extractionState": "stale",
       "localizations": {
@@ -6350,19 +6508,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add Asset Type"
+            "value": "Add Asset"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "添加资产类型"
+            "value": "添加资产"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "添加資產類型"
+            "value": "添加資產"
           }
         }
       }
@@ -25601,6 +25759,38 @@
         "en": { "stringUnit": { "state": "translated", "value": "Preregistered result" } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "预注册结论" } },
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "預註冊結論" } }
+      }
+    },
+    "调仓策略": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Rebalancing Strategy" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "调仓策略" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "調倉策略" } }
+      }
+    },
+    "选择调仓策略": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Choose a Rebalancing Strategy" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "选择调仓策略" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "選擇調倉策略" } }
+      }
+    },
+    "提醒将跟随量化页当前调仓策略。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Notifications follow the active rebalancing strategy in Quant." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "提醒将跟随量化页当前调仓策略。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "提醒將跟隨量化頁目前的調倉策略。" } }
+      }
+    },
+    "还没有可用的调仓策略。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No rebalancing strategy is available." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "还没有可用的调仓策略。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "尚無可用的調倉策略。" } }
       }
     },
     "验证档案": {

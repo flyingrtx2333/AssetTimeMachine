@@ -51,9 +51,17 @@ struct TimeMachineView: View {
         self.isActive = isActive
         var initialVisibleSeries = Set(TimeMachineAssetSeries.allCases.map(\.id))
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("-timeMachineHideAllSeries") {
+        let arguments = ProcessInfo.processInfo.arguments
+        if let rangeIndex = arguments.firstIndex(of: "-timeMachineRange"),
+           arguments.indices.contains(rangeIndex + 1),
+           let range = TimeMachineRange(rawValue: arguments[rangeIndex + 1]) {
+            _selectedRange = State(initialValue: range)
+        }
+        if arguments.contains("-timeMachineNetAssetsOnly") {
+            initialVisibleSeries = [TimeMachineAssetSeries.netAssets.id]
+        } else if arguments.contains("-timeMachineHideAllSeries") {
             initialVisibleSeries = []
-        } else if ProcessInfo.processInfo.arguments.contains("-timeMachineShowGoldSeries") {
+        } else if arguments.contains("-timeMachineShowGoldSeries") {
             initialVisibleSeries.insert("gold_cny")
         }
         #endif

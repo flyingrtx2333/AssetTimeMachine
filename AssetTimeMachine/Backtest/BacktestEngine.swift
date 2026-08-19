@@ -7770,6 +7770,60 @@ nonisolated enum BacktestEngine {
         )
     }
 
+    static func advancedRuleBasedRebalanceAdvice(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        template: AdvancedBacktestStrategyTemplate,
+        initialCash: Double = 100_000
+    ) -> StrategyRebalanceAdvice? {
+        guard template.mode == .ruleBased else { return nil }
+        let normalizedInitialCash = max(initialCash, 0)
+        guard normalizedInitialCash > 0 else { return nil }
+
+        let settings = AdvancedBacktestRiskSettings(
+            feeRate: BacktestDefaults.advancedFeeRatePercent,
+            slippageRate: BacktestDefaults.advancedSlippageRatePercent,
+            maxPositionRatio: template.maxPositionRatio,
+            cooldownDays: template.cooldownDays,
+            stopLossRatio: template.stopLossRatio,
+            takeProfitRatio: template.takeProfitRatio
+        )
+        guard let report = runAdvancedStrategies(
+            assetInputs: assetInputs,
+            initialCash: normalizedInitialCash,
+            tradeAmount: max(normalizedInitialCash * template.tradeAmountRatio, 1),
+            buyRule: template.buyRule,
+            sellRule: template.sellRule,
+            settings: settings
+        ), let asOfDate = report.points.last?.date,
+           report.finalPortfolioValue > 0 else { return nil }
+
+        let allocations = report.assetReports.compactMap { assetReport -> StrategyRebalanceAllocation? in
+            let investedValue = max(assetReport.finalPortfolioValue * assetReport.exposureRatio, 0)
+            let targetWeight = investedValue / report.finalPortfolioValue
+            guard targetWeight > 0.0001 else { return nil }
+            return StrategyRebalanceAllocation(
+                symbol: assetReport.symbol,
+                title: assetReport.title,
+                targetWeight: targetWeight,
+                momentum: nil,
+                annualizedVolatility: nil
+            )
+        }
+        .sorted { lhs, rhs in
+            if lhs.targetWeight == rhs.targetWeight { return lhs.title < rhs.title }
+            return lhs.targetWeight > rhs.targetWeight
+        }
+
+        return StrategyRebalanceAdvice(
+            strategyTitle: template.title,
+            asOfDate: asOfDate,
+            lookbackSessions: 0,
+            rebalanceSessions: 0,
+            targetAnnualVolatility: nil,
+            allocations: allocations
+        )
+    }
+
     static func advancedRotationRebalanceAdvice(
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
         mode: AdvancedBacktestStrategyMode,

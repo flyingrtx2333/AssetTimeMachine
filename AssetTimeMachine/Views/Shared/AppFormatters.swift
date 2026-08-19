@@ -199,12 +199,8 @@ extension AssetItem {
 
     var compactRecordPlaceholder: String {
         if valuationMethod == .quantityAndUnitPrice {
-            if let currencyCode = autoExchangeRateCurrencyCode {
-                return AppLocalization.format("输入%@ 数量", currencyCode)
-            }
-
-            if let autoKind = resolvedAutoPricedAssetKind {
-                return AppLocalization.format("输入%@ 数量", AppLocalization.string(autoKind.defaultName))
+            if let unit = persistedQuantityUnitTitle, !unit.isEmpty {
+                return AppLocalization.format("输入数量（%@）", unit)
             }
 
             return AppLocalization.string("输入数量")
@@ -213,29 +209,46 @@ extension AssetItem {
         return AppLocalization.string("输入金额")
     }
 
+    var persistedQuantityUnitTitle: String? {
+        guard valuationMethod == .quantityAndUnitPrice else { return nil }
+        if let currencyCode = autoExchangeRateCurrencyCode {
+            return currencyCode
+        }
+        guard let symbol = autoPricedMarketSymbol else { return nil }
+        if symbol.hasPrefix(MarketAssetDescriptor.recordETFPrefix)
+            || symbol.hasPrefix(MarketAssetDescriptor.recordASharePrefix) {
+            return AppLocalization.string("份")
+        }
+        switch BacktestAssetSymbol.normalized(symbol) {
+        case "gold_cny", "gold_usd", "gold":
+            return "g"
+        case "btc", "eth", "bnb", "sol", "xrp", "doge":
+            return BacktestAssetSymbol.normalized(symbol).uppercased()
+        default:
+            return nil
+        }
+    }
+
+    @MainActor
+    func quantityUnitTitle(using marketStore: RemoteMarketStore) -> String? {
+        if let persistedQuantityUnitTitle { return persistedQuantityUnitTitle }
+        guard let symbol = autoPricedMarketSymbol else { return nil }
+        let unit = marketStore.assetDescriptor(for: symbol)?.recordUnitTitle ?? ""
+        return unit.isEmpty ? nil : unit
+    }
+
+    @MainActor
+    func quantityFieldTitle(using marketStore: RemoteMarketStore) -> String {
+        guard let unit = quantityUnitTitle(using: marketStore), !unit.isEmpty else {
+            return AppLocalization.string("数量")
+        }
+        return AppLocalization.format("数量（%@）", unit)
+    }
+
     @MainActor
     func resolvedAutoUnitPrice(using marketStore: RemoteMarketStore) -> Double? {
-        if let currencyCode = autoExchangeRateCurrencyCode,
-           let rate = marketStore.exchangeRate(for: currencyCode),
-           rate > 0 {
-            return 1 / rate
-        }
-
-        if let symbol = autoPricedMarketSymbol {
-            let rawPrice = marketStore.market(for: symbol)?.price
-                ?? marketStore.history(for: symbol)?.prices.last
-            guard let rawPrice, rawPrice.isFinite, rawPrice > 0 else { return nil }
-            let currency = marketStore.assetDescriptor(for: symbol)?.currency
-                ?? marketStore.market(for: symbol)?.currency
-                ?? "CNY"
-            let rawCurrencyCode = currency.uppercased()
-            let currencyCode = rawCurrencyCode == "USDT" ? "USD" : rawCurrencyCode
-            guard currencyCode != "CNY" else { return rawPrice }
-            guard let rate = marketStore.exchangeRate(for: currencyCode), rate > 0 else { return nil }
-            return rawPrice / rate
-        }
-
-        return nil
+        guard let symbol = autoPricedMarketSymbol else { return nil }
+        return marketStore.recordUnitPriceInCNY(for: symbol)
     }
 
     @MainActor
@@ -254,7 +267,8 @@ extension AssetItem {
         let priceText = cnyPrice.currencyString()
         let unit = (descriptor?.unit ?? marketStore.market(for: symbol)?.unit ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        let unitSuffix = unit.isEmpty ? "" : "/\(unit)"
+        let displayUnit = descriptor?.recordUnitTitle ?? unit
+        let unitSuffix = displayUnit.isEmpty ? "" : "/\(displayUnit)"
         return AppLocalization.format("现价 %@%@", priceText, unitSuffix)
     }
 
@@ -280,6 +294,35 @@ extension AssetGroup {
         case .physical: return 1
         case .liability: return 2
         }
+    }
+}
+
+extension RemoteMarketStore {
+    /// Resolves one record unit to CNY so quote previews, saved entries and
+    /// portfolio market values all use the same currency convention.
+    @MainActor
+    func recordUnitPriceInCNY(for symbol: String) -> Double? {
+        let normalizedSymbol = BacktestAssetSymbol.normalized(symbol)
+        if let kind = AutoPricedAssetKind(rawValue: normalizedSymbol),
+           kind.isCurrency,
+           let rate = exchangeRate(for: kind.rawValue.uppercased()),
+           rate.isFinite,
+           rate > 0 {
+            return 1 / rate
+        }
+
+        let rawPrice = market(for: normalizedSymbol)?.price
+            ?? history(for: normalizedSymbol)?.prices.last
+        guard let rawPrice, rawPrice.isFinite, rawPrice > 0 else { return nil }
+
+        let rawCurrency = assetDescriptor(for: normalizedSymbol)?.currency
+            ?? market(for: normalizedSymbol)?.currency
+            ?? "CNY"
+        let normalizedCurrency = rawCurrency.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let currencyCode = normalizedCurrency == "USDT" ? "USD" : normalizedCurrency
+        guard !currencyCode.isEmpty, currencyCode != "CNY" else { return rawPrice }
+        guard let rate = exchangeRate(for: currencyCode), rate.isFinite, rate > 0 else { return nil }
+        return rawPrice / rate
     }
 }
 
