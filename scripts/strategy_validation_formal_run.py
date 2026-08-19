@@ -52,8 +52,10 @@ def main() -> None:
         raise SystemExit(guard.returncode)
 
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-    stdout_path = output_dir / "stdout.log"
-    stderr_path = output_dir / "stderr.log"
+    # Use tracked-friendly extensions: repository .gitignore excludes *.log, but formal evidence
+    # must survive a fresh Git checkout for SHA verification.
+    stdout_path = output_dir / "stdout.txt"
+    stderr_path = output_dir / "stderr.txt"
     execution_path = output_dir / "execution.json"
 
     env = os.environ.copy()

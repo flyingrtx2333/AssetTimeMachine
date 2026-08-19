@@ -53,7 +53,8 @@ python3 scripts/strategy_validation_artifact_manifest.py \
   --trial-id <trial-id> --kind result \
   --output <artifact-manifest.json> \
   --file <run-authorization.json> --file <execution.json> \
-  --file <stdout.log> --file <swift-output.csv> --file <statistics.json>
+  --file <stdout.txt> --file <stderr.txt> \
+  --file <swift-output.csv> --file <statistics.json>
 ```
 
 6. 从 `result-template.json` 创建 RESULT；必须绑定 `preregistration_record_hash`、`execution_git_commit`、run receipt、dataset manifest、artifact manifest，而且正常 PASS/FAIL/INCONCLUSIVE 必须报告**全部 preregistered candidate**。
