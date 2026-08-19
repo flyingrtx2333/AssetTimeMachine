@@ -4,7 +4,7 @@
   "strategy_lineage": "nfci-dual-core-v11",
   "hypothesis": "State the economic/market mechanism before running the experiment.",
   "evidence_class": "D0_EXPOSED",
-  "dataset_manifest": null,
+  "dataset_manifest": "tools/research-results/strategy-validation/runs/<trial-id>/dataset-manifest.json",
   "allowed_changes": [],
   "forbidden_changes": [
     "unregistered parameter search",
@@ -12,13 +12,17 @@
     "post-result candidate additions",
     "holdout reuse after exposure"
   ],
-  "candidate_ids": [],
-  "candidate_count": 0,
-  "selection_metric": null,
-  "pass_fail_gates": [],
+  "candidate_ids": [
+    "candidate-1"
+  ],
+  "candidate_count": 1,
+  "selection_metric": "Specify the fixed metric or deterministic decision rule before execution.",
+  "pass_fail_gates": [
+    "Specify at least one numerical or invariant gate before execution."
+  ],
   "formal_run_budget": 1,
-  "follow_up_policy": "Specify before execution whether any follow-up is allowed. Default: none on the same holdout.",
-  "swift_engine_entrypoint": null,
+  "follow_up_policy": "Default: no post-result candidate additions on the same formal holdout.",
+  "swift_engine_entrypoint": "Specify the committed Swift StrategyTargetProvider / CLI path.",
   "expected_outputs": [
     "all candidate metrics",
     "portfolio value/return series",
