@@ -76,6 +76,9 @@ struct ContentView: View {
                         isActive: workActiveTab == .dashboard,
                         onOpenQuant: {
                             selectTab(.backtest)
+                        },
+                        onOpenRecords: {
+                            selectTab(.snapshots)
                         }
                     )
                 }

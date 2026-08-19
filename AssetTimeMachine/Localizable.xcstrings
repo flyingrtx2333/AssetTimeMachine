@@ -1,6 +1,134 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "早上好": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Good morning" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "早上好" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "早上好" } }
+      }
+    },
+    "下午好": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Good afternoon" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "下午好" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "下午好" } }
+      }
+    },
+    "晚上好": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Good evening" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "晚上好" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "晚上好" } }
+      }
+    },
+    "记一笔": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Add Entry" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "记一笔" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "記一筆" } }
+      }
+    },
+    "近30日": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "30D" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "近30日" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "近30日" } }
+      }
+    },
+    "隐藏资产金额": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Hide asset values" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "隐藏资产金额" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "隱藏資產金額" } }
+      }
+    },
+    "显示资产金额": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Show asset values" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "显示资产金额" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "顯示資產金額" } }
+      }
+    },
+    "财务自由进度": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Financial Independence" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "财务自由进度" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "財務自由進度" } }
+      }
+    },
+    "距离实现财务自由的进度": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Progress toward financial independence" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "距离实现财务自由的进度" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "距離實現財務自由的進度" } }
+      }
+    },
+    "等待估算": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Calculating" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "等待估算" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "等待估算" } }
+      }
+    },
+    "已实现": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Achieved" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "已实现" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "已實現" } }
+      }
+    },
+    "当前参数不可达": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Not currently reachable" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "当前参数不可达" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "目前參數不可達" } }
+      }
+    },
+    "预计还需 %d 年 %d 月": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Est. %1$d yr %2$d mo remaining" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "预计还需 %1$d 年 %2$d 月" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "預計還需 %1$d 年 %2$d 個月" } }
+      }
+    },
+    "预计还需 %d 年": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Est. %d yr remaining" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "预计还需 %d 年" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "預計還需 %d 年" } }
+      }
+    },
+    "预计还需 %d 月": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Est. %d mo remaining" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "预计还需 %d 月" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "預計還需 %d 個月" } }
+      }
+    },
+    "年初至今结余": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Year-to-Date Surplus" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "年初至今结余" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "年初至今結餘" } }
+      }
+    },
     "选择资产": {
       "extractionState": "manual",
       "localizations": {
@@ -14206,6 +14334,144 @@
         }
       }
     },
+    "删除资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Asset"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除资产"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除資產"
+          }
+        }
+      }
+    },
+    "确认删除资产？": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete This Asset?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认删除资产？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確認刪除資產？"
+          }
+        }
+      }
+    },
+    "将删除“%@”及其所有历史记录，此操作无法撤销。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This will delete “%1$@” and all of its historical records. This action cannot be undone."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将删除“%@”及其所有历史记录，此操作无法撤销。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這將刪除「%1$@」及其所有歷史記錄。此操作無法復原。"
+          }
+        }
+      }
+    },
+    "更换市场标的？": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change Linked Market Asset?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更换市场标的？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更換連結的市場標的？"
+          }
+        }
+      }
+    },
+    "已有历史记录会保留原金额，但今后将按新的市场标的更新。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Existing records will retain their recorded values. Future updates will use the newly linked market asset."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已有历史记录会保留原金额，但今后将按新的市场标的更新。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現有歷史記錄會保留原金額，之後將按新的市場標的更新。"
+          }
+        }
+      }
+    },
+    "继续保存": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save Anyway"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续保存"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "繼續儲存"
+          }
+        }
+      }
+    },
     "删除匹配记录": {
       "extractionState": "manual",
       "localizations": {
@@ -22313,7 +22579,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Inflation-Adjusted Spending"
+            "value": "Expenses"
           }
         },
         "zh-Hans": {
@@ -25799,6 +26065,70 @@
         "en": { "stringUnit": { "state": "translated", "value": "Validation record" } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "验证档案" } },
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "驗證檔案" } }
+      }
+    },
+    "查看结余计算详情": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "View surplus calculation details" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "查看结余计算详情" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "查看結餘計算詳情" } }
+      }
+    },
+    "暂无本年度结余数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No year-to-date surplus data" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "暂无本年度结余数据" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "暫無本年度結餘資料" } }
+      }
+    },
+    "添加今年的资产记录后即可查看": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Add a portfolio record for this year to view it." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "添加今年的资产记录后即可查看" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增今年的資產記錄後即可查看" } }
+      }
+    },
+    "结余详情": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Surplus Details" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "结余详情" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "結餘詳情" } }
+      }
+    },
+    "起点净资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Starting Net Assets" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "起点净资产" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "起點淨資產" } }
+      }
+    },
+    "当前净资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Current Net Assets" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "当前净资产" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "目前淨資產" } }
+      }
+    },
+    "按 %d 个月记录计算": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Calculated from %d months of records" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "按 %d 个月记录计算" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "按 %d 個月記錄計算" } }
+      }
+    },
+    "结余按记录区间内的净资产变化计算，包含资产投入、取出、投资盈亏和负债变化，并不等同于收入减去支出。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Surplus is calculated as the change in net assets over the recorded period. It includes contributions, withdrawals, investment gains and losses, and changes in liabilities, so it is not the same as income minus expenses." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "结余按记录区间内的净资产变化计算，包含资产投入、取出、投资盈亏和负债变化，并不等同于收入减去支出。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "結餘按記錄區間內的淨資產變化計算，包含資產投入、取出、投資盈虧和負債變化，並不等同於收入減去支出。" } }
       }
     }
   },

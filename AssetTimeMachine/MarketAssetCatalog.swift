@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import UIKit
 
 extension MarketAssetDescriptor {
     nonisolated init(series: PublicHistorySeries) {
@@ -66,24 +67,48 @@ struct MarketAssetLogoView: View {
     let symbol: String
     let sectionID: String
     let title: String
+    let logoURL: String?
     var size: CGFloat = 30
+    @State private var remoteImage: UIImage?
 
     init(asset: MarketAssetDescriptor, size: CGFloat = 30) {
         symbol = asset.canonicalSymbol
         sectionID = asset.sectionID
         title = asset.displayTitle
+        logoURL = asset.logoURL
         self.size = size
     }
 
-    init(symbol: String, sectionID: String, title: String, size: CGFloat = 30) {
+    init(symbol: String, sectionID: String, title: String, logoURL: String? = nil, size: CGFloat = 30) {
         self.symbol = BacktestAssetSymbol.normalized(symbol)
         self.sectionID = sectionID
         self.title = title
+        self.logoURL = logoURL
         self.size = size
     }
 
     private var style: MarketAssetLogoStyle {
         Self.logoStyle(symbol: symbol, sectionID: sectionID, title: title)
+    }
+
+    private var remoteLogoURL: URL? {
+        if let logoURL = logoURL?.trimmingCharacters(in: .whitespacesAndNewlines), !logoURL.isEmpty {
+            return URL(string: logoURL, relativeTo: RemoteMarketClient.baseURL)?.absoluteURL
+        }
+
+        let serverSymbol: String
+        let assetType: String
+        if symbol.hasPrefix(MarketAssetDescriptor.recordETFPrefix) {
+            serverSymbol = MarketAssetDescriptor.recordETFServerSymbol(from: symbol)
+            assetType = "etf"
+        } else if symbol.hasPrefix(MarketAssetDescriptor.recordASharePrefix) {
+            serverSymbol = MarketAssetDescriptor.recordAShareServerSymbol(from: symbol)
+            assetType = "a_share"
+        } else {
+            return nil
+        }
+        let encodedSymbol = serverSymbol.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? serverSymbol
+        return RemoteMarketClient.url(for: "/api/v1/money/public/asset-logos/\(assetType)/\(encodedSymbol).svg")
     }
 
     var body: some View {
@@ -101,11 +126,29 @@ struct MarketAssetLogoView: View {
                     .lineLimit(1)
                     .padding(.horizontal, size * 0.08)
             }
+
+            if let remoteImage {
+                Image(uiImage: remoteImage)
+                    .resizable()
+                    .scaledToFit()
+                    .transition(.opacity)
+            }
         }
         .foregroundStyle(style.foreground)
         .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.3, style: .continuous))
         .shadow(color: style.colors.last?.opacity(0.18) ?? .clear, radius: size * 0.1, y: size * 0.04)
         .accessibilityHidden(true)
+        .task(id: remoteLogoURL?.absoluteString) {
+            guard let remoteLogoURL else {
+                remoteImage = nil
+                return
+            }
+            remoteImage = await MarketAssetLogoImageLoader.image(
+                for: remoteLogoURL,
+                pointSize: max(48, size * UIScreen.main.scale)
+            )
+        }
     }
 
     @ViewBuilder
@@ -480,24 +523,30 @@ enum MarketAssetCatalog {
     }
 
     static func normalized(_ assets: [MarketAssetDescriptor]) -> [MarketAssetDescriptor] {
-        var seen = Set<String>()
-        return assets
-            .filter(\.isUserSelectable)
+        var assetsBySymbol: [String: MarketAssetDescriptor] = [:]
+        for asset in assets where asset.isUserSelectable {
+            let symbol = asset.canonicalSymbol
+            if let existing = assetsBySymbol[symbol],
+               existing.logoURL?.isEmpty == false,
+               asset.logoURL?.isEmpty != false {
+                continue
+            }
+            assetsBySymbol[symbol] = MarketAssetDescriptor(
+                symbol: symbol,
+                category: asset.category,
+                label: asset.label,
+                currency: asset.currency,
+                unit: asset.unit,
+                source: asset.source,
+                logoURL: asset.logoURL,
+                logoSource: asset.logoSource
+            )
+        }
+
+        return assetsBySymbol.values
             .sorted { lhs, rhs in
                 if lhs.sectionID != rhs.sectionID { return sectionPriority(lhs.sectionID) < sectionPriority(rhs.sectionID) }
                 return lhs.displayTitle.localizedStandardCompare(rhs.displayTitle) == .orderedAscending
-            }
-            .compactMap { asset in
-                let symbol = asset.canonicalSymbol
-                guard seen.insert(symbol).inserted else { return nil }
-                return MarketAssetDescriptor(
-                    symbol: symbol,
-                    category: asset.category,
-                    label: asset.label,
-                    currency: asset.currency,
-                    unit: asset.unit,
-                    source: asset.source
-                )
             }
     }
 
@@ -748,7 +797,7 @@ struct MarketAssetCatalogSelector: View {
 
     @ViewBuilder
     private var assetList: some View {
-        let content = VStack(spacing: 0) {
+        let content = LazyVStack(spacing: 0) {
             if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Button {
                     guard !isLocked else { return }

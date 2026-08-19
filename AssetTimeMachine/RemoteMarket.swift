@@ -72,6 +72,8 @@ nonisolated struct AssetTimeMachineETFCatalogItem: Codable, Equatable, Identifia
     let latestDate: String?
     let latestClose: Double?
     let source: String
+    let logoURL: String?
+    let logoSource: String?
 
     var id: String { symbol }
 
@@ -83,6 +85,8 @@ nonisolated struct AssetTimeMachineETFCatalogItem: Codable, Equatable, Identifia
         case latestDate = "latest_date"
         case latestClose = "latest_close"
         case source
+        case logoURL = "logo_url"
+        case logoSource = "logo_source"
     }
 }
 
@@ -113,6 +117,8 @@ nonisolated struct AssetTimeMachineAShareCatalogItem: Codable, Equatable, Identi
     let latestDate: String?
     let latestClose: Double?
     let source: String
+    let logoURL: String?
+    let logoSource: String?
 
     var id: String { symbol }
 
@@ -125,6 +131,8 @@ nonisolated struct AssetTimeMachineAShareCatalogItem: Codable, Equatable, Identi
         case latestDate = "latest_date"
         case latestClose = "latest_close"
         case source
+        case logoURL = "logo_url"
+        case logoSource = "logo_source"
     }
 }
 
@@ -678,7 +686,9 @@ nonisolated private extension AssetTimeMachineETFCatalogItem {
             label: name,
             currency: "CNY",
             unit: "share",
-            source: source
+            source: source,
+            logoURL: logoURL,
+            logoSource: logoSource
         )
     }
 
@@ -716,7 +726,9 @@ nonisolated private extension AssetTimeMachineAShareCatalogItem {
             label: name,
             currency: "CNY",
             unit: "share",
-            source: source
+            source: source,
+            logoURL: logoURL,
+            logoSource: logoSource
         )
     }
 
