@@ -1,0 +1,44 @@
+{
+  "trial_id": "ATM-SVP1-G5-EXEC-COST-001",
+  "preregistration_record_hash": "b542d25bc895d80a8154060e901254aca6b476ca05f867b5b94bbd561282d0f3",
+  "execution_git_commit": "dccb08e19634099fb1d5bc22f0b8391fd479ee9b",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/run-authorization.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP1-G5-EXEC-COST-001.json",
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/artifact-manifest.json",
+  "status": "PASS",
+  "candidate_results": [
+    {
+      "candidate_id": "base_execution",
+      "metrics": {
+        "cagr_percent": 14.345615,
+        "mdd_percent": 7.689054,
+        "vol_percent": 8.760667,
+        "sharpe": 1.522263,
+        "trades": 451,
+        "target_fingerprint": "ba67c8aa24bc7168"
+      }
+    },
+    {
+      "candidate_id": "adverse_cost",
+      "metrics": {
+        "cagr_percent": 13.051596,
+        "mdd_percent": 7.911928,
+        "vol_percent": 8.826308,
+        "sharpe": 1.386987,
+        "trades": 451,
+        "target_fingerprint": "ba67c8aa24bc7168"
+      }
+    }
+  ],
+  "decision": "PASS for the preregistered G5 execution-cost component: adverse-cost CAGR and Sharpe remain positive, adverse MDD remains below 2x base MDD, and the target fingerprint is unchanged. Full G5 remains PENDING/PARTIAL until the separately frozen +1 execution-session delay stress is executed in the same Swift engine; this result alone must not be described as full G5 PASS.",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/stdout.log",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/stderr.log",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/candidates/base_execution-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/candidates/adverse_cost-portfolio.csv"
+  ]
+}

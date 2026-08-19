@@ -105,7 +105,7 @@
       }
     },
     "G5_execution_robustness": {
-      "status": "PENDING",
+      "status": "PARTIAL",
       "base": {
         "fee": 0.01,
         "slippage": 0.0005,
@@ -120,6 +120,27 @@
         "stress_cagr_min_exclusive": 0.0,
         "stress_sharpe_min_exclusive": 0.0,
         "stress_mdd_multiple_max": 2.0
+      },
+      "execution_cost_component": {
+        "trial_id": "ATM-SVP1-G5-EXEC-COST-001",
+        "status": "PASS",
+        "result_record_hash": "827e49e7a7800b4e89a8064c24e792e8258ff8805bf47e368c707817853c543a",
+        "execution_git_commit": "dccb08e19634099fb1d5bc22f0b8391fd479ee9b",
+        "base": {
+          "cagr": 0.14345615,
+          "sharpe": 1.522263,
+          "mdd": 0.07689054,
+          "trades": 451,
+          "target_fingerprint": "ba67c8aa24bc7168"
+        },
+        "adverse_cost_without_delay": {
+          "cagr": 0.13051596,
+          "sharpe": 1.386987,
+          "mdd": 0.07911928,
+          "trades": 451,
+          "target_fingerprint": "ba67c8aa24bc7168"
+        },
+        "full_gate_effect": "Full G5 remains incomplete until the frozen +1 execution-session delay is evaluated with the same Swift engine."
       }
     },
     "G6_prospective_oos": {

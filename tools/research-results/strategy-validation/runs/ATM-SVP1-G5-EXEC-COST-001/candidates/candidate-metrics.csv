@@ -1,0 +1,3 @@
+candidate_id,fee_percent,slippage_percent,cagr,mdd,vol,sharpe,trades,fingerprint
+base_execution,1.0,0.05,14.345615,7.689054,8.760667,1.522263,451,ba67c8aa24bc7168
+adverse_cost,1.5,0.1,13.051596,7.911928,8.826308,1.386987,451,ba67c8aa24bc7168
