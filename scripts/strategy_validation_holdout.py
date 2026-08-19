@@ -40,6 +40,13 @@ EXPECTED_ROLES = [
     ("china_large_equity", "csi300"),
     ("china_broad_equity", "shanghai_composite"),
 ]
+ROLE_ENGINE_REQUIREMENTS = {
+    "gold_safe_haven": ("atm_g4_gold_safe_haven", "CNY", "gram"),
+    "us_growth_equity": ("atm_g4_us_growth_equity", "USD", "index"),
+    "us_broad_equity": ("atm_g4_us_broad_equity", "USD", "index"),
+    "china_large_equity": ("atm_g4_china_large_equity", "CNY", "index"),
+    "china_broad_equity": ("atm_g4_china_broad_equity", "CNY", "index"),
+}
 
 
 def now_iso() -> str:
@@ -147,6 +154,7 @@ def validate_manifest(manifest: dict[str, Any], manifest_path: Path, allowed_sta
     expected = dict(EXPECTED_ROLES)
     seen_roles: set[str] = set()
     seen_alternates: set[tuple[str, str]] = set()
+    seen_normalized_symbols: set[str] = set()
     for slot in slots:
         if not isinstance(slot, dict):
             raise SystemExit("Holdout role slot must be an object")
@@ -166,6 +174,37 @@ def validate_manifest(manifest: dict[str, Any], manifest_path: Path, allowed_sta
         if key in seen_alternates:
             raise SystemExit(f"Duplicate alternate series: {source}:{symbol}")
         seen_alternates.add(key)
+
+        expected_normalized, expected_currency, expected_unit = ROLE_ENGINE_REQUIREMENTS[str(role)]
+        normalized_symbol = slot.get("normalized_fixture_symbol")
+        if normalized_symbol != expected_normalized:
+            raise SystemExit(
+                f"normalized_fixture_symbol drift for role={role}: expected={expected_normalized}, got={normalized_symbol}"
+            )
+        if normalized_symbol in seen_normalized_symbols:
+            raise SystemExit(f"Duplicate normalized_fixture_symbol: {normalized_symbol}")
+        seen_normalized_symbols.add(str(normalized_symbol))
+        if slot.get("engine_input_currency") != expected_currency or slot.get("engine_input_unit") != expected_unit:
+            raise SystemExit(
+                f"Engine input unit/currency drift for role={role}: expected={expected_currency}/{expected_unit}"
+            )
+        for key_name in ["source_currency", "source_unit", "source_frequency", "normalization_rule"]:
+            value = slot.get(key_name)
+            if not isinstance(value, str) or not value.strip():
+                raise SystemExit(f"{key_name} must be non-empty for role={role}")
+        if slot["source_frequency"].casefold() != "daily":
+            raise SystemExit(f"G4 alternate must be daily for role={role}")
+        normalization_inputs = slot.get("normalization_inputs")
+        if not isinstance(normalization_inputs, list) or not all(isinstance(x, str) and x.strip() for x in normalization_inputs):
+            raise SystemExit(f"normalization_inputs must be a string list for role={role}")
+        if slot["normalization_rule"].casefold() == "identity":
+            if slot["source_currency"] != expected_currency or slot["source_unit"] != expected_unit:
+                raise SystemExit(
+                    f"identity normalization is invalid for role={role}: source units do not match engine input"
+                )
+        elif not normalization_inputs:
+            raise SystemExit(f"Non-identity normalization must declare inputs for role={role}")
+
         if slot.get("metadata_checked") is not True:
             raise SystemExit(f"metadata_checked must be true for role={role}")
         start = parse_iso_date(slot.get("metadata_coverage_start"), f"{role}.metadata_coverage_start")

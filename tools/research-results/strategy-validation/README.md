@@ -117,3 +117,11 @@ python3 scripts/strategy_validation_holdout.py authorize-open \
 ```
 
 `HOLDOUT_BURNED` 是故意在取数**之前**提交的：即使数据源故障、下载失败或正式 G4 FAIL，这五个替代资产也已经永久失去 pristine 身份，同一 V11 不得再换第二套。
+
+### G4 role normalization / runner
+
+外部 source symbol 不允许直接进入 V11 逻辑。holdout manifest 必须同时冻结 source currency/unit/frequency、normalization rule 和固定中性 symbol：`atm_g4_gold_safe_haven`、`atm_g4_us_growth_equity`、`atm_g4_us_broad_equity`、`atm_g4_china_large_equity`、`atm_g4_china_broad_equity`。
+
+`build_g4_role_fixture.py` 只负责把 immutable raw source series 归一化/改名并与现有 V11 base fixture 合并，不实现策略。ATM-SVP-1 当前只实现 `identity` normalization；任何新的换算公式必须在 holdout freeze/burn 前实现、测试并提交，开封后不得补公式。
+
+正式 G4 使用 `run_v11_role_generalization.py` + `tools/v11_role_generalization.swiftpart`。Swift 仍调用 `.nfciDualCoreSimplifiedV11` 和原 `BacktestEngine`，固定运行 1 个 baseline identity control + 5 个 one-slot substitution + 1 个 all-alternate。只有 6 个 substitution 是正式 run budget；baseline 只是实现一致性 control。正式模式必须带 `strategy_validation_holdout.py authorize-open` 产生的 receipt，并且 receipt 必须绑定 frozen manifest 的精确 SHA。

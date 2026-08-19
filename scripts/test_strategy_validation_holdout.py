@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from strategy_validation_holdout import EXPECTED_ROLES, burn_records, selection_payload, validate_manifest
+from strategy_validation_holdout import EXPECTED_ROLES, ROLE_ENGINE_REQUIREMENTS, burn_records, selection_payload, validate_manifest
 from strategy_validation_ledger import append_record, read_records, verify_records
 
 
@@ -26,11 +26,20 @@ class StrategyValidationHoldoutTests(unittest.TestCase):
         for index, (role, current) in enumerate(EXPECTED_ROLES, start=1):
             source = f"metadata-source-{index}"
             symbol = f"PRISTINE_ALT_{index}"
+            normalized_symbol, engine_currency, engine_unit = ROLE_ENGINE_REQUIREMENTS[role]
             roles.append({
                 "role": role,
                 "current_symbol": current,
                 "alternate_source": source,
                 "alternate_symbol": symbol,
+                "source_currency": engine_currency,
+                "source_unit": engine_unit,
+                "source_frequency": "daily",
+                "normalized_fixture_symbol": normalized_symbol,
+                "engine_input_currency": engine_currency,
+                "engine_input_unit": engine_unit,
+                "normalization_rule": "identity",
+                "normalization_inputs": [],
                 "metadata_checked": True,
                 "metadata_coverage_start": "2000-01-01",
                 "metadata_coverage_end": "2026-08-01",
