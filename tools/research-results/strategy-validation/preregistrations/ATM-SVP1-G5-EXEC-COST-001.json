@@ -1,0 +1,50 @@
+{
+  "trial_id": "ATM-SVP1-G5-EXEC-COST-001",
+  "protocol_id": "ATM-SVP-1",
+  "strategy_lineage": "nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "hypothesis": "The frozen V11 target path is invariant to user execution-cost settings, and its realized performance remains economically positive when fixed execution friction is stressed from 1.00% fee + 0.05% slippage to 1.50% fee + 0.10% slippage.",
+  "evidence_class": "D0_EXPOSED",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP1-G5-EXEC-COST-001.json",
+  "allowed_changes": [
+    "execution fee: 1.00% -> 1.50%",
+    "execution slippage: 0.05% -> 0.10%"
+  ],
+  "forbidden_changes": [
+    "strategy parameters or target-path logic",
+    "1.22 active scale",
+    "25% high-core/final bands",
+    "50/50 dual-core weight",
+    "NFCI C3/L3 thresholds",
+    "asset roles or universe",
+    "adding a third fee/slippage level after seeing results",
+    "claiming full G5 PASS without the separately frozen +1 session delay stress"
+  ],
+  "candidate_ids": [
+    "base_execution",
+    "adverse_cost"
+  ],
+  "candidate_count": 2,
+  "selection_metric": "No winner selection. Mechanically evaluate the preregistered component gates on adverse_cost relative to base_execution.",
+  "pass_fail_gates": [
+    "adverse_cost CAGR > 0",
+    "adverse_cost Sharpe > 0",
+    "adverse_cost MDD <= 2.0 * base_execution MDD",
+    "adverse_cost target fingerprint == base_execution target fingerprint",
+    "all two preregistered candidate outputs are reported",
+    "even on component PASS, full G5 remains PENDING until the frozen +1 session execution-delay stress is run in the same Swift engine"
+  ],
+  "formal_run_budget": 2,
+  "follow_up_policy": "Do not add or tune cost levels on this history. The only permitted follow-up for full G5 is the already-frozen +1 execution-session delay stress; it must not alter the 1.50%/0.10% adverse cost assumptions.",
+  "swift_engine_entrypoint": "scripts/run_v11_execution_cost_stress.py -> tools/nfci_dual_core_v1_app_validation.swiftpart -> BacktestEngine.runAdvancedRotationStrategyWithTrace",
+  "expected_outputs": [
+    "base_execution and adverse_cost metrics",
+    "portfolio series for both candidates",
+    "target fingerprints for both candidates",
+    "run authorization receipt and exact Git commit",
+    "candidate-metrics.json and candidate-metrics.csv",
+    "SHA-256 result artifact manifest",
+    "mechanical component PASS/FAIL decision"
+  ],
+  "protocol_component": "G5_EXECUTION_COST_ONLY",
+  "full_gate_effect": "Component evidence only; full G5 status may not become PASS from this trial alone."
+}
