@@ -1,0 +1,166 @@
+        if ProcessInfo.processInfo.environment["ATM_V11_EXECUTION_DELAY_STRESS"] == "1" {
+            func loadV11DelayNFCIPoints(_ path: String) -> [BacktestNFCIPoint] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3,
+                          let value = Double(fields[2]),
+                          value.isFinite else { return nil }
+                    return BacktestNFCIPoint(
+                        releaseDate: String(fields[0]),
+                        referenceDate: String(fields[1]),
+                        availableAt: nil,
+                        value: value
+                    )
+                }
+            }
+
+            let nfci = BacktestNFCIAsOfData(
+                source: "ALFRED initial-release fixture",
+                credit: loadV11DelayNFCIPoints("tools/research-results/NFCICREDIT_initial_release.csv"),
+                leverage: loadV11DelayNFCIPoints("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            )
+            let mode: AdvancedBacktestStrategyMode = .nfciDualCoreSimplifiedV11
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+            }
+            let sourceSettings = AdvancedBacktestRiskSettings(
+                feeRate: 1.00,
+                slippageRate: 0.05,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            guard let source = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: sourceSettings,
+                mode: mode,
+                nfciAsOf: nfci
+            ) else {
+                print("V11_EXECUTION_DELAY_SOURCE_FAILED")
+                return
+            }
+
+            let sourceTargets = Dictionary(uniqueKeysWithValues: source.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            let sourceTradeDates = Set(source.report.trades.map { $0.date.recordDateString })
+            let sourceTradeOrder = source.report.trades.map { $0.date.recordDateString }
+            let config = ResearchTargetStrategyConfig(
+                symbol: "v11_execution_delay_stress",
+                title: "V11 Execution Delay Stress",
+                warmupSessions: 21,
+                rebalanceSessions: 1,
+                rebalanceBand: 0.25,
+                maxGrossExposure: 1,
+                allowsFinancedExposure: false,
+                financingAnnualRate: 0,
+                buyReason: "V11 execution delay stress"
+            )
+            let adverseSettings = AdvancedBacktestRiskSettings(
+                feeRate: 1.50,
+                slippageRate: 0.10,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+
+            func targetFingerprint(_ states: [BacktestDailyState]) -> String {
+                var h: UInt64 = 1469598103934665603
+                for state in states {
+                    for symbol in ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"] {
+                        var value = UInt64(bitPattern: Int64(((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded()))
+                        for _ in 0..<8 {
+                            h ^= value & UInt64(0xff)
+                            h &*= UInt64(1099511628211)
+                            value >>= 8
+                        }
+                    }
+                }
+                return String(format: "%016llx", h)
+            }
+
+            func runReplay(delaySessions: Int) -> (run: ResearchTargetStrategyRun, shiftedTrades: [(String, String)])? {
+                var pending: [String: Double] = [:]
+                var shiftedTrades: [(String, String)] = []
+                guard let replay = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: adverseSettings,
+                    config: config,
+                    rebalanceDecision: { index, _, data in
+                        let sourceIndex = index - delaySessions
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(sourceIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let sourceDate = data.dates[sourceIndex].recordDateString
+                        guard sourceTradeDates.contains(sourceDate), let target = sourceTargets[sourceDate] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        pending = target
+                        shiftedTrades.append((sourceDate, data.dates[index].recordDateString))
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { return nil }
+                return (replay, shiftedTrades)
+            }
+
+            func writePortfolio(_ run: ResearchTargetStrategyRun, path: String?) {
+                guard let path else { return }
+                var lines = ["date,portfolio_value"]
+                lines.append(contentsOf: run.report.points.map {
+                    "\($0.date.recordDateString),\(String(format: "%.10f", $0.portfolioValue))"
+                })
+                try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            }
+
+            func writeShiftSchedule(_ shiftedTrades: [(String, String)], path: String?) {
+                guard let path else { return }
+                var lines = ["source_execution_date,stressed_execution_date"]
+                lines.append(contentsOf: shiftedTrades.map { "\($0.0),\($0.1)" })
+                try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            }
+
+            func printMetrics(_ id: String, _ run: ResearchTargetStrategyRun, _ shiftedTrades: [(String, String)]) {
+                print("candidate_id=\(id)")
+                print("cagr=\(String(format: "%.6f", (run.report.annualizedReturn ?? 0) * 100))")
+                print("mdd=\(String(format: "%.6f", run.report.maxDrawdown * 100))")
+                print("vol=\(String(format: "%.6f", (run.report.annualizedVolatility ?? 0) * 100))")
+                print("sharpe=\(String(format: "%.6f", run.report.sharpeRatio ?? 0))")
+                print("trades=\(run.report.trades.count)")
+                print("daily_state_fingerprint=\(targetFingerprint(run.dailyStates))")
+                print("source_trade_count=\(sourceTradeOrder.count)")
+                print("scheduled_shift_count=\(shiftedTrades.count)")
+                if let first = shiftedTrades.first { print("first_shift=\(first.0)->\(first.1)") }
+                if let last = shiftedTrades.last { print("last_shift=\(last.0)->\(last.1)") }
+                print("END_CANDIDATE")
+            }
+
+            guard let control = runReplay(delaySessions: 0) else {
+                print("V11_EXECUTION_DELAY_CONTROL_FAILED")
+                return
+            }
+            print("V11_EXECUTION_DELAY_STRESS")
+            print("source_target_fingerprint=\(targetFingerprint(source.dailyStates))")
+            printMetrics("adverse_cost_replay_delay0", control.run, control.shiftedTrades)
+            writePortfolio(control.run, path: ProcessInfo.processInfo.environment["ATM_V11_DELAY_CONTROL_OUTPUT"])
+            writeShiftSchedule(control.shiftedTrades, path: ProcessInfo.processInfo.environment["ATM_V11_DELAY_CONTROL_SCHEDULE"])
+
+            if ProcessInfo.processInfo.environment["ATM_V11_DELAY_FORMAL"] == "1" {
+                guard let delayed = runReplay(delaySessions: 1) else {
+                    print("V11_EXECUTION_DELAY_FORMAL_FAILED")
+                    return
+                }
+                printMetrics("adverse_cost_plus_delay1", delayed.run, delayed.shiftedTrades)
+                writePortfolio(delayed.run, path: ProcessInfo.processInfo.environment["ATM_V11_DELAY_FORMAL_OUTPUT"])
+                writeShiftSchedule(delayed.shiftedTrades, path: ProcessInfo.processInfo.environment["ATM_V11_DELAY_FORMAL_SCHEDULE"])
+            } else {
+                print("DEVELOPMENT_CONTROL_ONLY")
+            }
+            return
+        }
