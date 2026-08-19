@@ -4,7 +4,7 @@
   "strategy_lineage": "nfci-dual-core-v11",
   "hypothesis": "State the economic/market mechanism before running the experiment.",
   "evidence_class": "D0_EXPOSED",
-  "dataset_manifest": "tools/research-results/strategy-validation/runs/<trial-id>/dataset-manifest.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/<trial-id>.json",
   "allowed_changes": [],
   "forbidden_changes": [
     "unregistered parameter search",
