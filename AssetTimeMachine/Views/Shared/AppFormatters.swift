@@ -285,12 +285,8 @@ extension AssetItem {
 
     @MainActor
     func autoPriceFetchedAt(using marketStore: RemoteMarketStore) -> Date? {
-        if autoExchangeRateCurrencyCode != nil {
-            return marketStore.exchangeRatesFetchedAt
-        }
-
         if let symbol = autoPricedMarketSymbol {
-            return marketStore.market(for: symbol)?.fetchedAt
+            return marketStore.recordQuoteFetchedAt(for: symbol)
         }
 
         return nil

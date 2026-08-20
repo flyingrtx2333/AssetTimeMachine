@@ -191,9 +191,11 @@ struct InteractiveBacktestChart: View, Equatable {
     var valueStyle: BacktestChartValueStyle = .multiple
     var visibleSeriesIDs: Set<String> = []
     var onVisibleDateDomainChange: ((ClosedRange<Date>) -> Void)? = nil
-    var selection: Binding<Date?>? = nil
+    var selectionDate: Date? = nil
+    var onSelectionChange: ((Date?) -> Void)? = nil
     var selectionItems: [BacktestChartSelectionItem] = []
     var showsDateRuler = false
+    var showsXAxis = true
     var keepsSelectionAfterInteraction = false
     @State private var localSelectedDate: Date?
     @State private var viewportStartRatio: Double = 0
@@ -204,7 +206,9 @@ struct InteractiveBacktestChart: View, Equatable {
         lhs.valueStyle == rhs.valueStyle
             && lhs.visibleSeriesIDs == rhs.visibleSeriesIDs
             && lhs.showsDateRuler == rhs.showsDateRuler
+            && lhs.showsXAxis == rhs.showsXAxis
             && lhs.keepsSelectionAfterInteraction == rhs.keepsSelectionAfterInteraction
+            && lhs.selectionDate == rhs.selectionDate
             && seriesIdentityMatches(lhs.points, rhs.points)
             && seriesIdentityMatches(lhs.comparisonPoints, rhs.comparisonPoints)
             && comparisonIdentityMatches(lhs.comparisonSeries, rhs.comparisonSeries)
@@ -280,7 +284,7 @@ struct InteractiveBacktestChart: View, Equatable {
     }
 
     private var activeSelectedDate: Date? {
-        selection?.wrappedValue ?? localSelectedDate
+        onSelectionChange == nil ? localSelectedDate : selectionDate
     }
 
     private var activeSelectionBinding: Binding<Date?> {
@@ -462,11 +466,18 @@ struct InteractiveBacktestChart: View, Equatable {
     }
 
     private func updateSelection(_ date: Date?) {
-        if let selection {
-            selection.wrappedValue = date
+        if let onSelectionChange {
+            onSelectionChange(date)
         } else {
             localSelectedDate = date
         }
+    }
+
+    private func initializePersistentSelectionIfNeeded() {
+        guard keepsSelectionAfterInteraction,
+              activeSelectedDate == nil,
+              let latestDate = interactionPoints.last?.date else { return }
+        updateSelection(latestDate)
     }
 
     private func publishVisibleDateDomain() {
@@ -745,6 +756,7 @@ struct InteractiveBacktestChart: View, Equatable {
             .frame(height: 220)
             .chartXScale(domain: xDomain)
             .chartXScale(range: .plotDimension(startPadding: 4, endPadding: 46))
+            .chartXAxis(showsXAxis ? .visible : .hidden)
             .chartYScale(domain: domain)
             .chartForegroundStyleScale(domain: foregroundStyleDomain, range: foregroundStyleRange)
             .animation(.easeInOut(duration: 0.2), value: visibleSeriesIDs)
@@ -810,6 +822,7 @@ struct InteractiveBacktestChart: View, Equatable {
         }
         .onChange(of: points.count) { _, _ in
             clampViewport()
+            initializePersistentSelectionIfNeeded()
             publishVisibleDateDomain()
         }
         .onChange(of: visibleSeriesIDs) { _, _ in
@@ -826,6 +839,7 @@ struct InteractiveBacktestChart: View, Equatable {
             publishVisibleDateDomain()
         }
         .onAppear {
+            initializePersistentSelectionIfNeeded()
             publishVisibleDateDomain()
         }
     }
@@ -1198,7 +1212,6 @@ struct BacktestValueChartSection: View {
                 showsDateRuler: true,
                 keepsSelectionAfterInteraction: true
             )
-            .equatable()
 
             if legendItems.count > 1 {
                 ATMFlowLayout(horizontalSpacing: 8, verticalSpacing: 8, rowAlignment: .center) {
@@ -1493,22 +1506,32 @@ struct AdvancedBacktestCombinedChartSection: View {
                 .buttonStyle(.plain)
             }
 
-            InteractiveBacktestChart(
-                points: chartPoints,
-                comparisonSeries: chartComparisonSeries,
-                valueStyle: .currency(code: "CNY"),
-                visibleSeriesIDs: effectiveVisibleValueSeriesIDs,
-                onVisibleDateDomainChange: { domain in
-                    visibleDateDomain = domain
-                },
-                selection: $selectedDate,
-                selectionItems: selectedAmountItems,
-                showsDateRuler: true,
-                keepsSelectionAfterInteraction: true
-            )
+            VStack(alignment: .leading, spacing: 0) {
+                InteractiveBacktestChart(
+                    points: chartPoints,
+                    comparisonSeries: chartComparisonSeries,
+                    valueStyle: .currency(code: "CNY"),
+                    visibleSeriesIDs: effectiveVisibleValueSeriesIDs,
+                    onVisibleDateDomainChange: { domain in
+                        visibleDateDomain = domain
+                    },
+                    selectionDate: selectedDate,
+                    onSelectionChange: { selectedDate = $0 },
+                    selectionItems: selectedAmountItems,
+                    showsDateRuler: true,
+                    showsXAxis: false,
+                    keepsSelectionAfterInteraction: true
+                )
 
-            Divider()
-                .overlay(AssetTheme.border.opacity(0.55))
+                BacktestExposureChartSection(
+                    points: exposurePoints,
+                    assetSeries: chartAssetExposureSeries,
+                    dateDomain: visibleDateDomain,
+                    visibleSeriesIDs: effectiveVisibleExposureSeriesIDs,
+                    assetColors: assetColors,
+                    selectedDate: $selectedDate
+                )
+            }
 
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(AppLocalization.string(chartAssetExposureSeries.isEmpty ? "持仓比例走势" : "资产持仓走势"))
@@ -1526,15 +1549,6 @@ struct AdvancedBacktestCombinedChartSection: View {
                 .foregroundStyle(AssetTheme.textSecondary)
                 .monospacedDigit()
             }
-
-            BacktestExposureChartSection(
-                points: exposurePoints,
-                assetSeries: chartAssetExposureSeries,
-                dateDomain: visibleDateDomain,
-                visibleSeriesIDs: effectiveVisibleExposureSeriesIDs,
-                assetColors: assetColors,
-                selectedDate: $selectedDate
-            )
 
             if showsLegend {
                 Divider()
@@ -1555,9 +1569,12 @@ struct AdvancedBacktestCombinedChartSection: View {
         #if DEBUG
         .onAppear {
             if ProcessInfo.processInfo.arguments.contains("-backtestSelectChartPoint"),
-               selectedDate == nil,
                !points.isEmpty {
-                selectedDate = points[points.count / 2].date
+                let testDate = points[points.count / 2].date
+                Task { @MainActor in
+                    await Task.yield()
+                    selectedDate = testDate
+                }
             }
         }
         #endif
@@ -1770,6 +1787,7 @@ struct BacktestExposureChartSection: View {
             .frame(height: 160)
             .chartXScale(domain: resolvedDateDomain)
             .chartXScale(range: .plotDimension(startPadding: 4, endPadding: 46))
+            .chartXAxis(.hidden)
             .chartYScale(domain: 0...yMaximum)
             .chartXAxis {
                 AxisMarks(values: BacktestChartData.dateAxisValues(in: resolvedDateDomain)) { value in

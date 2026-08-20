@@ -106,6 +106,7 @@ enum SnapshotService {
         quantity: Double? = nil,
         unitPrice: Double? = nil,
         note: String = "",
+        saveChanges: Bool = true,
         in context: ModelContext
     ) throws {
         func valuesDiffer(_ lhs: Double?, _ rhs: Double?, tolerance: Double = 0.000_000_1) -> Bool {
@@ -150,6 +151,8 @@ enum SnapshotService {
 
         snapshot.updatedAt = .now
         item.updatedAt = .now
-        try context.save()
+        if saveChanges {
+            try context.save()
+        }
     }
 }

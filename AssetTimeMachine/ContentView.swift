@@ -34,9 +34,7 @@ struct ContentView: View {
     @State var workActivationTask: Task<Void, Never>?
     @State var didRunStartup = false
     @State var lastMarketRefreshAt: Date?
-    @State var showsOnboarding = false
-    @State var onboardingReturnTab: AppTab = .dashboard
-    @State var activeOnboardingAnchorID: OnboardingAnchorID?
+    @State var onboardingSessionID: UUID?
     @State var pendingSnapshotNotificationRefreshTask: Task<Void, Never>?
     @State var notificationRefreshTaskID: UUID?
     @State var notificationRefreshGeneration = 0
@@ -87,7 +85,9 @@ struct ContentView: View {
                     SnapshotListView(
                         marketStore: marketStore,
                         isActive: workActiveTab == .snapshots,
-                        onboardingActiveAnchorID: activeOnboardingAnchorID
+                        onboardingSessionID: onboardingSessionID,
+                        onOnboardingCompleted: finishOnboarding,
+                        onSkipOnboarding: finishOnboarding
                     )
                 }
             }
@@ -143,21 +143,6 @@ struct ContentView: View {
                 }
                 .id(cloudDataRevision)
                 .animation(nil, value: selectedTab)
-                .overlayPreferenceValue(OnboardingAnchorPreferenceKey.self) { anchors in
-                    if showsOnboarding {
-                        OnboardingTutorialView(
-                            selectedTab: tabSelection,
-                            activeAnchorID: $activeOnboardingAnchorID,
-                            anchors: anchors
-                        ) {
-                            finishOnboarding()
-                        } onSkip: {
-                            finishOnboarding()
-                        }
-                        .transition(.opacity)
-                        .zIndex(1)
-                    }
-                }
             }
         }
         .tint(AssetTheme.gold)

@@ -133,16 +133,22 @@ struct SnapshotListView: View {
     @Environment(\.modelContext) private var modelContext
     let marketStore: RemoteMarketStore
     let isActive: Bool
-    let onboardingActiveAnchorID: OnboardingAnchorID?
+    let onboardingSessionID: UUID?
+    let onOnboardingCompleted: () -> Void
+    let onSkipOnboarding: () -> Void
 
     init(
         marketStore: RemoteMarketStore,
         isActive: Bool,
-        onboardingActiveAnchorID: OnboardingAnchorID?
+        onboardingSessionID: UUID?,
+        onOnboardingCompleted: @escaping () -> Void,
+        onSkipOnboarding: @escaping () -> Void
     ) {
         self.marketStore = marketStore
         self.isActive = isActive
-        self.onboardingActiveAnchorID = onboardingActiveAnchorID
+        self.onboardingSessionID = onboardingSessionID
+        self.onOnboardingCompleted = onOnboardingCompleted
+        self.onSkipOnboarding = onSkipOnboarding
 
         var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
             sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
@@ -180,6 +186,8 @@ struct SnapshotListView: View {
     @State private var persistenceErrorMessage: String?
     @State private var assetDeletionErrorMessage: String?
     @State private var marketLogoRevision = 0
+    @State private var lastPresentedOnboardingSessionID: UUID?
+    @State private var onboardingSavedItemID: UUID?
     @AppStorage("app.records.showsZeroBalanceAssets") private var showsZeroBalanceAssets = true
 
     private var currentSnapshot: AssetSnapshot? {
@@ -251,6 +259,28 @@ struct SnapshotListView: View {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
                 List {
+                    if let onboardingSavedItemID {
+                        AssetRecordingOnboardingSuccessBanner {
+                            withAnimation(.easeInOut(duration: 0.18)) {
+                                self.onboardingSavedItemID = nil
+                            }
+                        }
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 10, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                        .accessibilityIdentifier("asset-recording-onboarding-success-\(onboardingSavedItemID.uuidString)")
+                    } else if let onboardingSessionID,
+                              lastPresentedOnboardingSessionID == onboardingSessionID,
+                              !showsAddAssetItemSheet {
+                        AssetRecordingOnboardingResumeBanner(
+                            onContinue: presentAddAssetItemEditor,
+                            onSkip: onSkipOnboarding
+                        )
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 10, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                    }
+
                     if let currentSnapshot = currentSnapshotValue, let layout {
                         RecordPageHero(
                             snapshot: currentSnapshot,
@@ -275,7 +305,8 @@ struct SnapshotListView: View {
 
                         RecordSnapshotSections(
                             layout: layout,
-                            onboardingActiveAnchorID: onboardingActiveAnchorID,
+                            onboardingActiveAnchorID: nil,
+                            highlightedItemID: onboardingSavedItemID,
                             amountInputs: $amountInputs,
                             quantityInputs: $quantityInputs,
                             unitPriceInputs: $unitPriceInputs,
@@ -335,8 +366,13 @@ struct SnapshotListView: View {
             }
         }
         .toolbar(quickEditingAssetItem == nil ? .visible : .hidden, for: .tabBar)
-        .sheet(isPresented: $showsAddAssetItemSheet, onDismiss: finishAssetEditorDraft) {
-            AssetItemEditorSheet(snapshot: currentSnapshot, marketStore: marketStore)
+        .sheet(isPresented: $showsAddAssetItemSheet, onDismiss: handleAddAssetEditorDismissed) {
+            AssetItemEditorSheet(
+                snapshot: currentSnapshot,
+                marketStore: marketStore,
+                onboardingSessionID: onboardingSessionID,
+                onSaved: handleOnboardingAssetSaved
+            )
         }
         .sheet(item: $editingAssetItem, onDismiss: finishAssetEditorDraft) { item in
             AssetItemEditorSheet(snapshot: currentSnapshot, marketStore: marketStore, editingItem: item)
@@ -400,7 +436,7 @@ struct SnapshotListView: View {
                 refreshCachedListLayout()
             }
         }
-        .task(id: isActive) {
+        .task(id: "\(isActive)|\(onboardingSessionID?.uuidString ?? "none")") {
             guard isActive else {
                 pendingAutoRateSyncTask?.cancel()
                 pendingAutoRateSyncTask = nil
@@ -416,6 +452,11 @@ struct SnapshotListView: View {
             await prepareSnapshotIfNeeded()
             guard !Task.isCancelled, isActive else { return }
             refreshCachedListLayout()
+            if let onboardingSessionID,
+               lastPresentedOnboardingSessionID != onboardingSessionID {
+                lastPresentedOnboardingSessionID = onboardingSessionID
+                presentAddAssetItemEditor()
+            }
             await marketStore.refreshAssetCatalogIfNeeded()
             guard !Task.isCancelled, isActive else { return }
             marketLogoRevision &+= 1
@@ -655,6 +696,23 @@ struct SnapshotListView: View {
         guard let assetEditorDraftID else { return }
         ModelContextMutationBarrier.shared.finishEditorDraft(assetEditorDraftID)
         self.assetEditorDraftID = nil
+    }
+
+    @MainActor
+    private func handleAddAssetEditorDismissed() {
+        finishAssetEditorDraft()
+        refreshCachedListLayout()
+    }
+
+    @MainActor
+    private func handleOnboardingAssetSaved(_ item: AssetItem) {
+        guard onboardingSessionID != nil else { return }
+        onboardingSavedItemID = item.id
+        if let snapshot = currentSnapshot {
+            hydrateInputs(for: item, from: snapshot)
+        }
+        refreshCachedListLayout()
+        onOnboardingCompleted()
     }
 
     @MainActor
@@ -1018,6 +1076,7 @@ struct RecordHeroMetric: View {
 struct RecordSnapshotSections: View {
     let layout: SnapshotListLayout
     let onboardingActiveAnchorID: OnboardingAnchorID?
+    var highlightedItemID: UUID? = nil
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
     @Binding var unitPriceInputs: [UUID: String]
@@ -1033,9 +1092,12 @@ struct RecordSnapshotSections: View {
     var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
 
     private func visibleItems(in items: [AssetItem]) -> [AssetItem] {
-        guard !showsZeroBalanceAssets else { return items }
         return items.filter { item in
-            abs(layout.displayEntriesByItemID[item.id]?.resolvedAmount ?? 0) > 0.000_001
+            AssetRecordingOnboardingGate.shouldShowRecordItem(
+                showsZeroBalanceAssets: showsZeroBalanceAssets,
+                resolvedAmount: layout.displayEntriesByItemID[item.id]?.resolvedAmount ?? 0,
+                isHighlighted: item.id == highlightedItemID
+            )
         }
     }
 
@@ -1050,6 +1112,7 @@ struct RecordSnapshotSections: View {
                     snapshotEntriesByItemID: layout.displayEntriesByItemID,
                     onboardingInputItemID: categoryItems.id == layout.onboardingInputTargetCategoryID ? items.first?.id : nil,
                     onboardingActiveAnchorID: onboardingActiveAnchorID,
+                    highlightedItemID: highlightedItemID,
                     amountInputs: $amountInputs,
                     quantityInputs: $quantityInputs,
                     unitPriceInputs: $unitPriceInputs,
@@ -1074,6 +1137,7 @@ struct RecordSnapshotSections: View {
                     snapshotEntriesByItemID: layout.displayEntriesByItemID,
                     onboardingInputItemID: nil,
                     onboardingActiveAnchorID: onboardingActiveAnchorID,
+                    highlightedItemID: highlightedItemID,
                     amountInputs: $amountInputs,
                     quantityInputs: $quantityInputs,
                     unitPriceInputs: $unitPriceInputs,
@@ -1311,6 +1375,7 @@ struct RecordLedgerSection: View {
     let snapshotEntriesByItemID: [UUID: AssetEntry]
     let onboardingInputItemID: UUID?
     let onboardingActiveAnchorID: OnboardingAnchorID?
+    let highlightedItemID: UUID?
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
     @Binding var unitPriceInputs: [UUID: String]
@@ -1369,6 +1434,7 @@ struct RecordLedgerSection: View {
                         isOnboardingTarget: item.id == onboardingInputItemID,
                         showsOnboardingInputPreview: onboardingActiveAnchorID == .recordsFirstInput
                             && item.id == onboardingInputItemID,
+                        isHighlighted: item.id == highlightedItemID,
                         onEdit: { onEdit(item) },
                         onEditValue: { onEditValue(item) },
                         isReadOnly: isReadOnly,
@@ -1422,6 +1488,7 @@ struct RecordLedgerRow: View {
     let accent: Color
     let isOnboardingTarget: Bool
     let showsOnboardingInputPreview: Bool
+    let isHighlighted: Bool
     let onEdit: () -> Void
     let onEditValue: () -> Void
     var isReadOnly: Bool = false
@@ -1492,7 +1559,18 @@ struct RecordLedgerRow: View {
                 .onboardingAnchorIf(isOnboardingTarget, .recordsFirstInput)
         }
         .padding(.vertical, 9)
+        .padding(.horizontal, isHighlighted ? 10 : 0)
         .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+        .background(
+            isHighlighted ? AssetTheme.gold.opacity(0.10) : Color.clear,
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
+        .overlay {
+            if isHighlighted {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(AssetTheme.gold.opacity(0.42), lineWidth: 1)
+            }
+        }
         .animation(nil, value: isEditing)
     }
 
@@ -1848,6 +1926,8 @@ struct AssetItemEditorSheet: View {
     let snapshot: AssetSnapshot?
     @ObservedObject var marketStore: RemoteMarketStore
     let editingItem: AssetItem?
+    let onboardingSessionID: UUID?
+    let onSaved: ((AssetItem) -> Void)?
 
     @State private var name = ""
     @State private var selectedCategoryID: UUID?
@@ -1861,8 +1941,11 @@ struct AssetItemEditorSheet: View {
     @State private var loadingMoreSecuritySectionID: String?
     @State private var errorMessage: String?
     @State private var step: AddAssetItemStep = .asset
+    @State private var selectedOnboardingQuickChoice: AssetRecordingQuickChoice?
+    @State private var showsOnboardingFullCatalog = false
     @State private var nameWasAutofilled = false
     @State private var hasCustomizedIcon = false
+    @State private var recordAmountText = ""
     @State private var recordQuantityText = ""
     @State private var recordUnitPriceText = ""
     @State private var showsDeleteConfirmation = false
@@ -1871,11 +1954,15 @@ struct AssetItemEditorSheet: View {
     init(
         snapshot: AssetSnapshot? = nil,
         marketStore: RemoteMarketStore,
-        editingItem: AssetItem? = nil
+        editingItem: AssetItem? = nil,
+        onboardingSessionID: UUID? = nil,
+        onSaved: ((AssetItem) -> Void)? = nil
     ) {
         self.snapshot = snapshot
         self.marketStore = marketStore
         self.editingItem = editingItem
+        self.onboardingSessionID = onboardingSessionID
+        self.onSaved = onSaved
 
         guard let editingItem else { return }
         let storedIconName = (editingItem.iconName ?? "")
@@ -1888,11 +1975,13 @@ struct AssetItemEditorSheet: View {
         _selectedIconName = State(initialValue: storedIconName)
         _step = State(initialValue: .details)
         _hasCustomizedIcon = State(initialValue: !storedIconName.isEmpty && !storedIconName.hasPrefix("market_asset|"))
+        _recordAmountText = State(initialValue: currentEntry?.amount?.plainNumberString() ?? "")
         _recordQuantityText = State(initialValue: currentEntry?.quantity?.plainNumberString() ?? "")
         _recordUnitPriceText = State(initialValue: currentEntry?.unitPrice?.plainNumberString() ?? "")
     }
 
     private var isEditing: Bool { editingItem != nil }
+    private var isOnboarding: Bool { onboardingSessionID != nil && !isEditing }
 
     private var sortedCategories: [AssetCategory] {
         categories.sorted {
@@ -1907,9 +1996,54 @@ struct AssetItemEditorSheet: View {
         !resolvedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedCategory != nil
     }
 
+    private var recordDraft: AssetEditorRecordDraft? {
+        AssetEditorRecordDraftBuilder.make(
+            usesQuantityAndUnitPrice: valuationMethod == .quantityAndUnitPrice,
+            amountText: recordAmountText,
+            quantityText: recordQuantityText,
+            unitPrice: selectedUnitPrice,
+            forcePositiveAmount: selectedCategory?.group == .liability
+        )
+    }
+
+    private var canSaveOnboardingRecord: Bool {
+        AssetRecordingOnboardingGate.canSave(
+            resolvedName: resolvedName,
+            hasCategory: selectedCategory != nil,
+            hasSnapshot: snapshot != nil,
+            recordDraft: recordDraft
+        )
+    }
+
     private var selectedCategory: AssetCategory? {
         guard let selectedCategoryID else { return sortedCategories.first }
         return sortedCategories.first(where: { $0.id == selectedCategoryID })
+    }
+
+    private var onboardingReusableItem: AssetItem? {
+        guard isOnboarding,
+              let preferredName = selectedOnboardingQuickChoice?.preferredExistingItemName else {
+            return nil
+        }
+        return sortedCategories
+            .flatMap(\.items)
+            .first(where: { item in
+                AssetRecordingOnboardingGate.canReuseSeededItem(
+                    candidateName: item.name,
+                    preferredName: preferredName,
+                    isInSelectedCategory: item.category?.id == selectedCategory?.id,
+                    hasRecordedEntries: item.entries.contains { entry in
+                        !AssetRecordingOnboardingGate.isBlankRecord(
+                            amount: entry.amount,
+                            quantity: entry.quantity,
+                            unitPrice: entry.unitPrice,
+                            note: entry.note
+                        )
+                    },
+                    usesDirectAmount: item.valuationMethod == .directAmount,
+                    hasMarketSymbol: item.marketAssetSymbol != nil
+                )
+            })
     }
 
     private var selectedMarketAsset: MarketAssetDescriptor? {
@@ -1995,7 +2129,15 @@ struct AssetItemEditorSheet: View {
     }
 
     private var primaryActionEnabled: Bool {
-        step == .asset || canSave
+        switch step {
+        case .asset:
+            if isOnboarding && !showsOnboardingFullCatalog {
+                return selectedOnboardingQuickChoice != nil
+            }
+            return true
+        case .details:
+            return isOnboarding ? canSaveOnboardingRecord : canSave
+        }
     }
 
     var body: some View {
@@ -2047,7 +2189,9 @@ struct AssetItemEditorSheet: View {
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
-            .navigationTitle(AppLocalization.string(isEditing ? "编辑资产类型" : "添加资产类型"))
+            .navigationTitle(AppLocalization.string(
+                isEditing ? "编辑资产类型" : (isOnboarding ? "添加第一项资产" : "添加资产类型")
+            ))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -2121,22 +2265,59 @@ struct AssetItemEditorSheet: View {
         }
     }
 
+    @ViewBuilder
     private var assetSelectionStep: some View {
-        MarketAssetCatalogSelector(
-            assets: marketStore.recordSelectableAssetCatalog,
-            selectedSymbol: $selectedMarketAssetSymbol,
-            searchText: $marketAssetSearchText,
-            isLocked: false,
-            isSearching: isSearchingMarketAssets,
-            searchMessage: marketAssetSearchMessage,
-            presentationStyle: .flat,
-            canLoadMore: { recordSecurityPaging.canLoadMore($0) },
-            isLoadingMore: { loadingMoreSecuritySectionID == $0 },
-            onLoadMore: { sectionID in
-                Task { await loadMoreRecordSecurities(sectionID: sectionID) }
-            },
-            onSelect: handleMarketAssetSelection
-        )
+        if isOnboarding && !showsOnboardingFullCatalog {
+            AssetRecordingQuickStartView(
+                selectedChoice: selectedOnboardingQuickChoice,
+                onSelect: { choice in
+                    selectedOnboardingQuickChoice = choice
+                    selectedMarketAssetSymbol = nil
+                    valuationMethod = .directAmount
+                    name = AppLocalization.string(choice.defaultNameLocalizationKey)
+                    nameWasAutofilled = true
+                    hasCustomizedIcon = false
+                    selectedIconName = AssetItemService.suggestedIconName(
+                        for: choice.defaultNameLocalizationKey,
+                        autoPricedAssetKind: nil
+                    )
+                    selectedCategoryID = sortedCategories.first(where: {
+                        $0.group.rawValue == choice.categoryGroupRawValue
+                    })?.id
+                    if recordAmountText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        recordAmountText = "0"
+                    }
+                },
+                onSearchOtherAssets: {
+                    selectedOnboardingQuickChoice = nil
+                    if nameWasAutofilled {
+                        name = ""
+                        nameWasAutofilled = false
+                    }
+                    selectedIconName = ""
+                    selectedMarketAssetSymbol = nil
+                    valuationMethod = .directAmount
+                    recordAmountText = ""
+                    showsOnboardingFullCatalog = true
+                }
+            )
+        } else {
+            MarketAssetCatalogSelector(
+                assets: marketStore.recordSelectableAssetCatalog,
+                selectedSymbol: $selectedMarketAssetSymbol,
+                searchText: $marketAssetSearchText,
+                isLocked: false,
+                isSearching: isSearchingMarketAssets,
+                searchMessage: marketAssetSearchMessage,
+                presentationStyle: .flat,
+                canLoadMore: { recordSecurityPaging.canLoadMore($0) },
+                isLoadingMore: { loadingMoreSecuritySectionID == $0 },
+                onLoadMore: { sectionID in
+                    Task { await loadMoreRecordSecurities(sectionID: sectionID) }
+                },
+                onSelect: handleMarketAssetSelection
+            )
+        }
     }
 
     private var assetDetailsStep: some View {
@@ -2189,7 +2370,35 @@ struct AssetItemEditorSheet: View {
                     )
                 }
 
-                if valuationMethod == .quantityAndUnitPrice {
+                if valuationMethod == .directAmount {
+                    Divider().overlay(AssetTheme.border.opacity(0.32))
+
+                    HStack(alignment: .firstTextBaseline, spacing: 16) {
+                        Text(AppLocalization.string(selectedCategory?.group == .liability ? "负债数额" : "资产数额"))
+                            .font(AppTypography.rowTitle)
+                            .foregroundStyle(AssetTheme.textSecondary)
+
+                        Spacer(minLength: 10)
+
+                        TextField(AppLocalization.string("输入金额"), text: $recordAmountText)
+                            .keyboardType(.decimalPad)
+                            .textFieldStyle(.plain)
+                            .font(AppTypography.rowTitle)
+                            .monospacedDigit()
+                            .foregroundStyle(AssetTheme.textPrimary)
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: 160)
+                    }
+                    .padding(.vertical, 14)
+
+                    if isOnboarding {
+                        Text(AppLocalization.string("暂不确定可填 0，之后随时修改"))
+                            .font(AppTypography.caption)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .padding(.bottom, 12)
+                    }
+                } else {
                     Divider().overlay(AssetTheme.border.opacity(0.32))
 
                     if selectedMarketAsset != nil {
@@ -2223,6 +2432,14 @@ struct AssetItemEditorSheet: View {
                     }
                     .padding(.vertical, 14)
 
+                    if isOnboarding {
+                        Text(AppLocalization.string("暂不确定可填 0，之后随时修改"))
+                            .font(AppTypography.caption)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .padding(.bottom, 12)
+                    }
+
                     if selectedMarketAsset == nil {
                         Divider().overlay(AssetTheme.border.opacity(0.32))
 
@@ -2255,12 +2472,13 @@ struct AssetItemEditorSheet: View {
                     }
                 }
 
-                Divider().overlay(AssetTheme.border.opacity(0.32))
-
-                iconMenu
+                if !isOnboarding {
+                    Divider().overlay(AssetTheme.border.opacity(0.32))
+                    iconMenu
+                }
             }
 
-            if selectedMarketAsset == nil {
+            if selectedMarketAsset == nil && !isOnboarding {
                 VStack(alignment: .leading, spacing: 9) {
                     Text(AppLocalization.string("记录方式"))
                         .font(AppTypography.captionStrong)
@@ -2304,7 +2522,7 @@ struct AssetItemEditorSheet: View {
                     .background(displayedIconColor.opacity(0.12), in: Circle())
             }
 
-            Text(selectedMarketAsset?.displayTitle ?? AppLocalization.string("不关联市场标的"))
+            Text(selectedAssetSummaryTitle)
                 .font(AppTypography.blockTitleBold)
                 .foregroundStyle(AssetTheme.textPrimary)
                 .lineLimit(2)
@@ -2331,6 +2549,13 @@ struct AssetItemEditorSheet: View {
         .overlay(alignment: .bottom) {
             Divider().overlay(AssetTheme.border.opacity(0.32))
         }
+    }
+
+    private var selectedAssetSummaryTitle: String {
+        if let selectedOnboardingQuickChoice {
+            return AppLocalization.string(selectedOnboardingQuickChoice.titleLocalizationKey)
+        }
+        return selectedMarketAsset?.displayTitle ?? AppLocalization.string("不关联市场标的")
     }
 
     private var iconMenu: some View {
@@ -2417,7 +2642,9 @@ struct AssetItemEditorSheet: View {
                     attemptSave()
                 }
             } label: {
-                Text(AppLocalization.string(step == .asset ? "下一步" : "保存"))
+                Text(AppLocalization.string(
+                    step == .asset ? "下一步" : (isOnboarding ? "保存第一项资产" : "保存")
+                ))
                     .font(AppTypography.rowTitle)
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)
@@ -2475,41 +2702,85 @@ struct AssetItemEditorSheet: View {
     @MainActor
     private func save() {
         guard let selectedCategory else { return }
+        guard !isOnboarding || canSaveOnboardingRecord else { return }
 
         do {
-            let item: AssetItem
-            if let editingItem {
-                try AssetItemService.updateItem(
-                    editingItem,
-                    name: resolvedName,
-                    iconName: resolvedIconName,
-                    valuationMethod: valuationMethod,
-                    marketAssetSymbol: .some(selectedMarketAssetSymbol),
-                    category: selectedCategory,
-                    in: modelContext
-                )
-                item = editingItem
-            } else {
-                item = try AssetItemService.createItem(
-                    name: resolvedName,
-                    category: selectedCategory,
-                    valuationMethod: valuationMethod,
-                    marketAssetSymbol: selectedMarketAssetSymbol,
-                    iconName: resolvedIconName,
-                    in: modelContext
-                )
-            }
-            if valuationMethod == .quantityAndUnitPrice,
-               let snapshot,
-               let quantity = normalizedNumber(from: recordQuantityText) {
-                try SnapshotService.upsertEntry(
-                    snapshot: snapshot,
-                    item: item,
-                    quantity: quantity,
-                    unitPrice: selectedUnitPrice,
-                    in: modelContext
-                )
-            }
+            let item = try AssetRecordingOnboardingTransaction.perform(
+                mutation: {
+                    let item: AssetItem
+                    if let editingItem {
+                        try AssetItemService.updateItem(
+                            editingItem,
+                            name: resolvedName,
+                            iconName: resolvedIconName,
+                            valuationMethod: valuationMethod,
+                            marketAssetSymbol: .some(selectedMarketAssetSymbol),
+                            category: selectedCategory,
+                            saveChanges: !isOnboarding,
+                            in: modelContext
+                        )
+                        item = editingItem
+                    } else if let onboardingReusableItem {
+                        if !nameWasAutofilled {
+                            try AssetItemService.updateItem(
+                                onboardingReusableItem,
+                                name: resolvedName,
+                                iconName: resolvedIconName,
+                                valuationMethod: valuationMethod,
+                                marketAssetSymbol: .some(selectedMarketAssetSymbol),
+                                category: selectedCategory,
+                                saveChanges: false,
+                                in: modelContext
+                            )
+                        }
+                        item = onboardingReusableItem
+                    } else {
+                        item = try AssetItemService.createItem(
+                            name: resolvedName,
+                            category: selectedCategory,
+                            valuationMethod: valuationMethod,
+                            marketAssetSymbol: selectedMarketAssetSymbol,
+                            iconName: resolvedIconName,
+                            saveChanges: !isOnboarding,
+                            in: modelContext
+                        )
+                    }
+                    if let snapshot,
+                       let recordDraft {
+                        switch recordDraft {
+                        case let .directAmount(amount):
+                            try SnapshotService.upsertEntry(
+                                snapshot: snapshot,
+                                item: item,
+                                amount: amount,
+                                saveChanges: !isOnboarding,
+                                in: modelContext
+                            )
+                        case let .quantityAndUnitPrice(quantity, unitPrice):
+                            try SnapshotService.upsertEntry(
+                                snapshot: snapshot,
+                                item: item,
+                                quantity: quantity,
+                                unitPrice: unitPrice,
+                                saveChanges: !isOnboarding,
+                                in: modelContext
+                            )
+                        }
+                    }
+                    return item
+                },
+                save: {
+                    if isOnboarding {
+                        try modelContext.save()
+                    }
+                },
+                rollback: {
+                    if isOnboarding {
+                        modelContext.rollback()
+                    }
+                }
+            )
+            onSaved?(item)
             dismiss()
         } catch {
             errorMessage = AppLocalization.string("保存失败，请稍后再试")
@@ -2635,7 +2906,6 @@ struct QuickRecordValueSheet: View {
     @State private var unitPriceText: String
     @State private var errorMessage: String?
     @State private var isRefreshingAutoPrice = false
-    @State private var lastManualPriceRefreshAt: Date?
     @State private var manualAutoPriceRefreshTask: Task<Void, Never>?
     @FocusState private var focusedField: QuickRecordValueField?
 
@@ -2696,9 +2966,7 @@ struct QuickRecordValueSheet: View {
               item.marketAssetSymbol != nil else {
             return nil
         }
-        let fetchedAt = lastManualPriceRefreshAt
-            ?? item.autoPriceFetchedAt(using: marketStore)
-        guard let fetchedAt else { return nil }
+        guard let fetchedAt = item.autoPriceFetchedAt(using: marketStore) else { return nil }
         return AppLocalization.format("%@更新", fetchedAt.recordTimeString)
     }
 
@@ -3107,7 +3375,6 @@ struct QuickRecordValueSheet: View {
         }
 
         unitPriceText = latestRate.plainNumberString()
-        lastManualPriceRefreshAt = .now
 
         guard let snapshot else { return }
         guard !Task.isCancelled else { return }

@@ -317,21 +317,28 @@ enum RemoteMarketClient {
         ),
     ]
 
-    static func fetchOverview() async throws -> PublicMarketOverview {
+    static func fetchOverview(forceRemote: Bool = false) async throws -> PublicMarketOverview {
         let url = url(for: "/api/v1/money/public/market-overview")
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await data(from: url, forceRemote: forceRemote)
         try validate(response: response, data: data)
         return try await decode(PublicMarketOverview.self, from: data)
     }
 
-    static func fetchExchangeRates() async throws -> PublicExchangeRates {
+    static func fetchExchangeRates(forceRemote: Bool = false) async throws -> PublicExchangeRates {
         let url = url(for: "/api/v1/money/public/rmb-exchange-rates")
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await data(from: url, forceRemote: forceRemote)
         try validate(response: response, data: data)
         return try await decode(PublicExchangeRates.self, from: data)
     }
 
-    static func fetchHistory(symbols: [String], period: String? = nil, startDate: String? = nil, endDate: String? = nil, includeOHLC: Bool = false) async throws -> PublicHistoryResponse {
+    static func fetchHistory(
+        symbols: [String],
+        period: String? = nil,
+        startDate: String? = nil,
+        endDate: String? = nil,
+        includeOHLC: Bool = false,
+        forceRemote: Bool = false
+    ) async throws -> PublicHistoryResponse {
         var components = URLComponents(url: baseURL.appendingPathComponent("/api/v1/money/public/history"), resolvingAgainstBaseURL: false)!
         var queryItems: [URLQueryItem] = []
 
@@ -352,12 +359,16 @@ enum RemoteMarketClient {
         }
         components.queryItems = queryItems.isEmpty ? nil : queryItems
 
-        let (data, response) = try await URLSession.shared.data(from: components.url!)
+        let (data, response) = try await data(from: components.url!, forceRemote: forceRemote)
         try validate(response: response, data: data)
         return try await decode(PublicHistoryResponse.self, from: data)
     }
 
-    static func fetchNFCIAsOf(startDate: String? = nil, endDate: String? = nil) async throws -> PublicNFCIAsOfResponse {
+    static func fetchNFCIAsOf(
+        startDate: String? = nil,
+        endDate: String? = nil,
+        forceRemote: Bool = false
+    ) async throws -> PublicNFCIAsOfResponse {
         var components = URLComponents(url: baseURL.appendingPathComponent("/api/v1/money/public/nfci-asof"), resolvingAgainstBaseURL: false)!
         var queryItems: [URLQueryItem] = []
         if let startDate, !startDate.isEmpty {
@@ -368,7 +379,7 @@ enum RemoteMarketClient {
         }
         components.queryItems = queryItems.isEmpty ? nil : queryItems
 
-        let (data, response) = try await URLSession.shared.data(from: components.url!)
+        let (data, response) = try await data(from: components.url!, forceRemote: forceRemote)
         try validate(response: response, data: data)
         return try await decode(PublicNFCIAsOfResponse.self, from: data)
     }
@@ -419,17 +430,25 @@ enum RemoteMarketClient {
         return try await decode(AssetTimeMachineAShareCatalogResponse.self, from: data)
     }
 
-    static func fetchRecordETFHistory(symbol: String) async throws -> PublicHistoryResponse {
+    static func fetchRecordETFHistory(
+        symbol: String,
+        forceRemote: Bool = false
+    ) async throws -> PublicHistoryResponse {
         try await fetchRecordSecurityHistory(
             path: "/api/v1/money/public/etfs",
-            symbol: MarketAssetDescriptor.recordETFServerSymbol(from: symbol)
+            symbol: MarketAssetDescriptor.recordETFServerSymbol(from: symbol),
+            forceRemote: forceRemote
         )
     }
 
-    static func fetchRecordAShareHistory(symbol: String) async throws -> PublicHistoryResponse {
+    static func fetchRecordAShareHistory(
+        symbol: String,
+        forceRemote: Bool = false
+    ) async throws -> PublicHistoryResponse {
         try await fetchRecordSecurityHistory(
             path: "/api/v1/money/public/a-shares",
-            symbol: MarketAssetDescriptor.recordAShareServerSymbol(from: symbol)
+            symbol: MarketAssetDescriptor.recordAShareServerSymbol(from: symbol),
+            forceRemote: forceRemote
         )
     }
 
@@ -446,12 +465,34 @@ enum RemoteMarketClient {
         return components.url!
     }
 
-    private static func fetchRecordSecurityHistory(path: String, symbol: String) async throws -> PublicHistoryResponse {
+    private static func fetchRecordSecurityHistory(
+        path: String,
+        symbol: String,
+        forceRemote: Bool
+    ) async throws -> PublicHistoryResponse {
         let encodedSymbol = symbol.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? symbol
         let url = url(for: "\(path)/\(encodedSymbol)/history?period=6months")
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await data(from: url, forceRemote: forceRemote)
         try validate(response: response, data: data)
         return try await decode(PublicHistoryResponse.self, from: data)
+    }
+
+    private static func data(
+        from url: URL,
+        forceRemote: Bool
+    ) async throws -> (Data, URLResponse) {
+        guard forceRemote else {
+            return try await URLSession.shared.data(from: url)
+        }
+
+        var request = URLRequest(
+            url: url,
+            cachePolicy: .reloadIgnoringLocalCacheData,
+            timeoutInterval: 30
+        )
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        request.setValue("no-cache", forHTTPHeaderField: "Pragma")
+        return try await URLSession.shared.data(for: request)
     }
 
     static func url(for path: String) -> URL {
@@ -1158,12 +1199,21 @@ final class RemoteMarketStore: ObservableObject {
         }
     }
 
-    func refreshRecordSecurityHistory(symbol: String) async throws {
+    func refreshRecordSecurityHistory(
+        symbol: String,
+        forceRemote: Bool = false
+    ) async throws {
         if symbol.hasPrefix(MarketAssetDescriptor.recordETFPrefix) {
-            let response = try await RemoteMarketClient.fetchRecordETFHistory(symbol: symbol)
+            let response = try await RemoteMarketClient.fetchRecordETFHistory(
+                symbol: symbol,
+                forceRemote: forceRemote
+            )
             registerRecordETFHistory(response)
         } else if symbol.hasPrefix(MarketAssetDescriptor.recordASharePrefix) {
-            let response = try await RemoteMarketClient.fetchRecordAShareHistory(symbol: symbol)
+            let response = try await RemoteMarketClient.fetchRecordAShareHistory(
+                symbol: symbol,
+                forceRemote: forceRemote
+            )
             registerRecordAShareHistory(response)
         }
     }
@@ -1191,12 +1241,16 @@ final class RemoteMarketStore: ObservableObject {
 
     @discardableResult
     func refreshLiveData(
+        forceRemote: Bool = false,
         commitIf shouldCommit: @MainActor () -> Bool = { true }
     ) async -> Bool {
         guard shouldCommit() else { return false }
         if isRefreshingLiveData {
             await waitForLiveDataRefreshToFinish()
-            return shouldCommit() && lastLiveDataRefreshSucceeded
+            guard shouldCommit(), !Task.isCancelled else { return false }
+            if !forceRemote {
+                return lastLiveDataRefreshSucceeded
+            }
         }
 
         isRefreshingLiveData = true
@@ -1214,9 +1268,9 @@ final class RemoteMarketStore: ObservableObject {
         var refreshedOverview: PublicMarketOverview?
         var refreshedNFCIAsOf: PublicNFCIAsOfResponse?
 
-        async let exchangeRatesRequest = RemoteMarketClient.fetchExchangeRates()
-        async let overviewRequest = RemoteMarketClient.fetchOverview()
-        async let nfciRequest = RemoteMarketClient.fetchNFCIAsOf()
+        async let exchangeRatesRequest = RemoteMarketClient.fetchExchangeRates(forceRemote: forceRemote)
+        async let overviewRequest = RemoteMarketClient.fetchOverview(forceRemote: forceRemote)
+        async let nfciRequest = RemoteMarketClient.fetchNFCIAsOf(forceRemote: forceRemote)
 
         do {
             let exchangeRates = try await exchangeRatesRequest
@@ -1277,14 +1331,17 @@ final class RemoteMarketStore: ObservableObject {
         if normalizedSymbol.hasPrefix(MarketAssetDescriptor.recordETFPrefix)
             || normalizedSymbol.hasPrefix(MarketAssetDescriptor.recordASharePrefix) {
             do {
-                try await refreshRecordSecurityHistory(symbol: normalizedSymbol)
+                try await refreshRecordSecurityHistory(
+                    symbol: normalizedSymbol,
+                    forceRemote: true
+                )
                 return recordUnitPriceInCNY(for: normalizedSymbol) != nil
             } catch {
                 return false
             }
         }
 
-        let didRefreshLiveData = await refreshLiveData()
+        let didRefreshLiveData = await refreshLiveData(forceRemote: true)
         guard !Task.isCancelled else { return false }
 
         if let kind = AutoPricedAssetKind(rawValue: normalizedSymbol), kind.isCurrency {
@@ -1348,7 +1405,10 @@ final class RemoteMarketStore: ObservableObject {
 
         let task = Task<Bool, Never> { @MainActor [weak self] in
             guard let self else { return false }
-            return await self.refreshTargetedHistory(symbols: symbols)
+            return await self.refreshTargetedHistory(
+                symbols: symbols,
+                forceRemote: force
+            )
         }
         targetedHistoryRefreshTask = task
         let didRefresh = await task.value
@@ -1526,7 +1586,10 @@ final class RemoteMarketStore: ObservableObject {
         updateErrorMessage()
     }
 
-    private func refreshTargetedHistory(symbols: [String]) async -> Bool {
+    private func refreshTargetedHistory(
+        symbols: [String],
+        forceRemote: Bool = false
+    ) async -> Bool {
         guard !symbols.isEmpty else { return false }
         if isRefreshingHistory {
             await waitForHistoryRefreshToFinish()
@@ -1545,7 +1608,8 @@ final class RemoteMarketStore: ObservableObject {
                 symbols: symbols,
                 startDate: "2000-01-01",
                 endDate: MarketDay.string(from: .now),
-                includeOHLC: true
+                includeOHLC: true,
+                forceRemote: forceRemote
             )
             let existingSeries = historySeries
             let incomingSeries = response.series
@@ -1643,6 +1707,18 @@ final class RemoteMarketStore: ObservableObject {
 
     func exchangeRate(for currency: String) -> Double? {
         exchangeRates[currency.uppercased()]
+    }
+
+    func recordQuoteFetchedAt(for symbol: String) -> Date? {
+        let normalizedSymbol = Self.normalizedHistorySymbol(symbol)
+        if let kind = AutoPricedAssetKind(rawValue: normalizedSymbol), kind.isCurrency {
+            return exchangeRatesFetchedAt
+        }
+        if let fetchedAt = market(for: normalizedSymbol)?.fetchedAt {
+            return fetchedAt
+        }
+        guard let dateText = history(for: normalizedSymbol)?.dates.last else { return nil }
+        return MarketDay.parse(dateText)
     }
 
     func history(for symbol: String) -> PublicHistorySeries? {

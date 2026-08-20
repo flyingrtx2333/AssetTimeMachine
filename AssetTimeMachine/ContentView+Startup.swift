@@ -65,8 +65,8 @@ extension ContentView {
 
     @MainActor
     func presentOnboarding() {
-        onboardingReturnTab = selectedTab
-        showsOnboarding = true
+        onboardingSessionID = UUID()
+        selectTab(.snapshots)
     }
 
     @MainActor
@@ -97,9 +97,7 @@ extension ContentView {
     @MainActor
     func finishOnboarding() {
         hasCompletedOnboarding = true
-        showsOnboarding = false
-        activeOnboardingAnchorID = nil
-        selectTab(onboardingReturnTab)
+        onboardingSessionID = nil
     }
 
     #if DEBUG

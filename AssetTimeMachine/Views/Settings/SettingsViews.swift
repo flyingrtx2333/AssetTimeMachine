@@ -1,13 +1,9 @@
 import SwiftUI
-import SwiftData
-import Charts
 import UIKit
 import UserNotifications
-import Combine
 
 struct SettingsView: View {
     @Environment(\.openURL) private var openURL
-    @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var appLanguageStore: AppLanguageStore
     @AppStorage("app.appearanceMode") private var appearanceModeRawValue: String = AppAppearanceMode.system.rawValue
     @AppStorage("app.notifications.enabled") private var notificationEnabled = false
@@ -19,12 +15,14 @@ struct SettingsView: View {
     let isActive: Bool
     let onSendStrategyTestNotification: () async -> StrategyTestNotificationResult
     let onReplayOnboarding: () -> Void
+
     @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
     @State private var showsLogoutConfirmation = false
+    @State private var showsCloudSyncModal = false
     @State private var isSendingStrategyTestNotification = false
     @State private var strategyTestNotificationMessage: String?
-    @State private var cachedNotificationPreview = AppLocalization.string("暂无资产记录")
     @State private var showsLanguageSelection = false
+    @State private var showsStrategyLibrary = false
     @State private var pendingAppLanguage: AppLanguage?
 
     init(
@@ -39,28 +37,8 @@ struct SettingsView: View {
         self.onReplayOnboarding = onReplayOnboarding
     }
 
-    private var notificationPreview: String {
-        cachedNotificationPreview
-    }
-
     private var selectedStrategyTemplate: AdvancedBacktestStrategyTemplate? {
         StrategyRebalanceDefaults.template(for: strategyNotificationTemplateID)
-    }
-
-    private var strategyNotificationPreview: String {
-        guard let selectedStrategyTemplate else {
-            return AppLocalization.string("请选择一个策略")
-        }
-
-        return AppLocalization.format(
-            "%@ · 每天%@",
-            selectedStrategyTemplate.title,
-            strategyHourLabel(strategyNotificationHour)
-        )
-    }
-
-    private var strategyNotificationFooter: String {
-        AppLocalization.string("提醒将跟随量化页当前调仓策略。")
     }
 
     private var canLogout: Bool {
@@ -73,6 +51,51 @@ struct SettingsView: View {
 
     private var currentAppLanguage: AppLanguage {
         appLanguageStore.language
+    }
+
+    private var cloudOverviewKey: String {
+        SettingsOverviewStatus.cloudKey(
+            hasAccount: canLogout,
+            isWorking: cloudStore.isWorking || cloudStore.isSessionPending,
+            completedInitialSync: cloudStore.hasCompletedInitialSync,
+            hasError: !(cloudStore.errorMessage?.isEmpty ?? true)
+        )
+    }
+
+    private var notificationOverviewKey: String {
+        SettingsOverviewStatus.notificationKey(
+            assetBriefingEnabled: notificationEnabled,
+            rebalanceReminderEnabled: strategyNotificationEnabled,
+            authorizationDenied: notificationStatus == .denied
+        )
+    }
+
+    private var cloudOverviewColor: Color {
+        switch cloudStore.indicatorState {
+        case .healthy:
+            return AssetTheme.positive
+        case .warning:
+            return AssetTheme.negative
+        case .idle, .checking:
+            return AssetTheme.gold
+        }
+    }
+
+    private var notificationOverviewColor: Color {
+        if notificationStatus == .denied {
+            return AssetTheme.negative
+        }
+        return notificationEnabled || strategyNotificationEnabled ? AssetTheme.gold : AssetTheme.textSecondary
+    }
+
+    private var cloudAccountSubtitle: String? {
+        if let currentUser = cloudStore.currentUser {
+            return currentUser.displayName
+        }
+        if cloudStore.isSessionPending {
+            return AppLocalization.string("正在恢复登录")
+        }
+        return nil
     }
 
     private var appVersionText: String {
@@ -101,364 +124,63 @@ struct SettingsView: View {
                 AssetTheme.background.ignoresSafeArea()
 
                 List {
-                    Section {
-                            Menu {
-                                Picker(AppLocalization.string("外观"), selection: $appearanceModeRawValue) {
-                                    ForEach(AppAppearanceMode.allCases) { mode in
-                                        Text(mode.title).tag(mode.rawValue)
-                                    }
-                            }
-                        } label: {
-                            LabeledContent {
-                                SettingsValueText(currentAppearanceMode.title)
-                            } label: {
-                                SettingsRowLabel(
-                                    title: AppLocalization.string("外观"),
-                                    systemImage: "circle.lefthalf.filled",
-                                    color: AssetTheme.accentBlue
-                                )
-                            }
-                        }
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .listRowBackground(AssetTheme.surface)
-                        .onboardingAnchor(.settingsAppearance)
-
-                        Button {
-                            pendingAppLanguage = nil
-                            showsLanguageSelection = true
-                        } label: {
-                            LabeledContent {
-                                HStack(spacing: 6) {
-                                    SettingsValueText(currentAppLanguage.title)
-
-                                    Image(systemName: "chevron.right")
-                                        .font(AppTypography.microLabel)
-                                        .foregroundStyle(AssetTheme.textSecondary)
-                                }
-                            } label: {
-                                SettingsRowLabel(
-                                    title: AppLocalization.string("语言"),
-                                    systemImage: "globe",
-                                    color: AssetTheme.accentOrange
-                                )
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .listRowBackground(AssetTheme.surface)
-
-                        Button(action: onReplayOnboarding) {
-                            HStack(spacing: 12) {
-                                SettingsRowLabel(
-                                    title: AppLocalization.string("重新查看新手引导"),
-                                    systemImage: "sparkles.rectangle.stack",
-                                    color: AssetTheme.gold
-                                )
-
-                                Spacer()
-
-                                Image(systemName: "chevron.right")
-                                    .font(AppTypography.metaStrong)
-                                    .foregroundStyle(AssetTheme.textSecondary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .listRowBackground(AssetTheme.surface)
-                        .onboardingAnchor(.settingsReplay)
-                    } header: {
-                        Text(AppLocalization.string("通用"))
-                    }
-
-                    Section {
-                        Toggle(isOn: $notificationEnabled) {
-                            SettingsRowLabel(
-                                title: AppLocalization.string("定时资产播报"),
-                                systemImage: "bell.badge.fill",
-                                color: AssetTheme.accentRed
-                            )
-                        }
-                        .tint(AssetTheme.gold)
-                        .listRowBackground(AssetTheme.surface)
-                        .onboardingAnchor(.settingsNotifications)
-
-                        if notificationEnabled {
-                            Menu {
-                                Picker(AppLocalization.string("播报频率"), selection: $notificationIntervalHours) {
-                                    ForEach(AssetNotificationService.intervalOptions, id: \.self) { hours in
-                                        Text(intervalLabel(hours)).tag(hours)
-                                    }
-                                }
-                            } label: {
-                                LabeledContent {
-                                    SettingsValueText(intervalLabel(notificationIntervalHours))
-                                } label: {
-                                    Text(AppLocalization.string("播报频率"))
-                                        .foregroundStyle(AssetTheme.textPrimary)
-                                }
-                            }
-                            .foregroundStyle(AssetTheme.textPrimary)
-                            .listRowBackground(AssetTheme.surface)
-                        }
-
-                        Toggle(isOn: $strategyNotificationEnabled) {
-                            SettingsRowLabel(
-                                title: AppLocalization.string("每日调仓提醒"),
-                                systemImage: "chart.line.uptrend.xyaxis",
-                                color: AssetTheme.gold
-                            )
-                        }
-                        .tint(AssetTheme.gold)
-                        .disabled(StrategyRebalanceDefaults.eligibleTemplates.isEmpty)
-                        .listRowBackground(AssetTheme.surface)
-
-                        if !StrategyRebalanceDefaults.eligibleTemplates.isEmpty {
-                            LabeledContent {
-                                HStack(spacing: 6) {
-                                    SettingsValueText(selectedStrategyTemplate?.title ?? AppLocalization.string("未选择"))
-                                    if let selectedStrategyTemplate,
-                                       BacktestProductStrategyCatalog.isCuratedTemplateID(selectedStrategyTemplate.id) {
-                                        CuratedStrategyBadge(compact: true)
-                                    }
-                                }
-                            } label: {
-                                Text(AppLocalization.string("调仓策略"))
-                                    .foregroundStyle(AssetTheme.textPrimary)
-                            }
-                            .listRowBackground(AssetTheme.surface)
-                        } else {
-                            LabeledContent {
-                                SettingsValueText(AppLocalization.string("暂无策略"))
-                            } label: {
-                                Text(AppLocalization.string("调仓策略"))
-                                    .foregroundStyle(AssetTheme.textPrimary)
-                            }
-                            .listRowBackground(AssetTheme.surface)
-                        }
-
-                        Menu {
-                            Picker(AppLocalization.string("提醒时间"), selection: $strategyNotificationHour) {
-                                ForEach(AssetNotificationService.strategyHourOptions, id: \.self) { hour in
-                                    Text(strategyHourLabel(hour)).tag(hour)
-                                }
-                            }
-                        } label: {
-                            LabeledContent {
-                                SettingsValueText(strategyHourLabel(strategyNotificationHour))
-                            } label: {
-                                Text(AppLocalization.string("提醒时间"))
-                                    .foregroundStyle(AssetTheme.textPrimary)
-                            }
-                        }
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .listRowBackground(AssetTheme.surface)
-
-                        if !StrategyRebalanceDefaults.eligibleTemplates.isEmpty {
-                            Button {
-                                sendStrategyTestNotification()
-                            } label: {
-                                HStack(spacing: 12) {
-                                    SettingsRowLabel(
-                                        title: AppLocalization.string("发送测试提醒"),
-                                        systemImage: "paperplane.fill",
-                                        color: AssetTheme.accentBlue
-                                    )
-
-                                    Spacer()
-
-                                    if isSendingStrategyTestNotification {
-                                        ProgressView()
-                                    }
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(isSendingStrategyTestNotification)
-                            .listRowBackground(AssetTheme.surface)
-                        }
-
-                        if notificationStatus == .denied {
-                            Button {
-                                guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-                                openURL(url)
-                            } label: {
-                                HStack(spacing: 12) {
-                                    SettingsRowLabel(
-                                        title: AppLocalization.string("打开系统通知设置"),
-                                        systemImage: "gearshape.fill",
-                                        color: .gray
-                                    )
-
-                                    Spacer()
-
-                                    Image(systemName: "arrow.up.right.square")
-                                        .font(AppTypography.metaStrong)
-                                        .foregroundStyle(AssetTheme.textSecondary)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .listRowBackground(AssetTheme.surface)
-                        }
-                    } header: {
-                        Text(AppLocalization.string("通知"))
-                    } footer: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            if notificationStatus == .denied {
-                                Text(AppLocalization.string("通知权限已关闭，请前往系统设置开启。"))
-                                    .foregroundStyle(AssetTheme.textSecondary)
-                            } else {
-                                if notificationEnabled {
-                                    Text(notificationPreview)
-                                        .foregroundStyle(AssetTheme.textSecondary)
-                                        .monospacedDigit()
-                                }
-
-                                if strategyNotificationEnabled {
-                                    Text(strategyNotificationPreview)
-                                        .foregroundStyle(AssetTheme.textSecondary)
-                                }
-
-                                Text(strategyNotificationFooter)
-                                    .foregroundStyle(AssetTheme.textSecondary)
-                            }
-
-                            if let strategyTestNotificationMessage {
-                                Text(strategyTestNotificationMessage)
-                                    .foregroundStyle(AssetTheme.textSecondary)
-                            }
-                        }
-                    }
-
-                    if canLogout {
-                        Section {
-                            LabeledContent {
-                                if let currentUser = cloudStore.currentUser {
-                                    VStack(alignment: .trailing, spacing: 2) {
-                                        Text(currentUser.displayName)
-                                            .foregroundStyle(AssetTheme.textPrimary)
-                                        if cloudStore.hasCompletedInitialSync {
-                                            if let email = currentUser.userEmail, !email.isEmpty {
-                                                Text(email)
-                                                    .font(AppTypography.caption)
-                                                    .foregroundStyle(AssetTheme.textSecondary)
-                                            } else {
-                                                Text(AppLocalization.string("云同步已完成"))
-                                                    .font(AppTypography.caption)
-                                                    .foregroundStyle(AssetTheme.textSecondary)
-                                            }
-                                        } else {
-                                            Text(AppLocalization.string("等待首次云同步"))
-                                                .font(AppTypography.caption)
-                                                .foregroundStyle(AssetTheme.goldSoft)
-                                        }
-                                    }
-                                } else {
-                                    VStack(alignment: .trailing, spacing: 2) {
-                                        Text(cloudStore.isSessionPending ? AppLocalization.string("正在恢复登录") : AppLocalization.string("登录凭证已保存"))
-                                            .foregroundStyle(AssetTheme.textPrimary)
-                                        Text(AppLocalization.string("正在验证云同步状态"))
-                                            .font(AppTypography.caption)
-                                            .foregroundStyle(AssetTheme.textSecondary)
-                                    }
-                                }
-                            } label: {
-                                SettingsRowLabel(
-                                    title: AppLocalization.string("云同步"),
-                                    systemImage: "icloud.fill",
-                                    color: AssetTheme.accentBlue
-                                )
-                            }
-                            .listRowBackground(AssetTheme.surface)
-
-                            Button(role: .destructive) {
-                                showsLogoutConfirmation = true
-                            } label: {
-                                SettingsRowLabel(
-                                    title: AppLocalization.string("退出云同步"),
-                                    systemImage: "rectangle.portrait.and.arrow.right",
-                                    color: AssetTheme.negative
-                                )
-                            }
-                            .foregroundStyle(AssetTheme.negative)
-                            .listRowBackground(AssetTheme.surface)
-                            .disabled(cloudStore.isWorking)
-                        } header: {
-                            Text(AppLocalization.string("账户"))
-                        }
-                    }
-
-                    Section {
-                        Button {
-                            guard let appStoreReviewURL else { return }
-                            openURL(appStoreReviewURL)
-                        } label: {
-                            HStack(spacing: 12) {
-                                SettingsRowLabel(
-                                    title: AppLocalization.string("在 App Store 评分"),
-                                    systemImage: "star.fill",
-                                    color: AssetTheme.gold
-                                )
-
-                                Spacer()
-
-                                Image(systemName: "arrow.up.right.square")
-                                    .font(AppTypography.metaStrong)
-                                    .foregroundStyle(AssetTheme.textSecondary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .listRowBackground(AssetTheme.surface)
-
-                        LabeledContent {
-                            SettingsValueText(appVersionText)
-                                .monospacedDigit()
-                        } label: {
-                            SettingsRowLabel(
-                                title: AppLocalization.string("版本"),
-                                systemImage: "number.circle.fill",
-                                color: AssetTheme.gold
-                            )
-                        }
-                        .listRowBackground(AssetTheme.surface)
-                    } header: {
-                        Text(AppLocalization.string("关于"))
-                    }
+                    pageOverviewSection
+                    preferencesSection
+                    automationSection
+                    dataSection
+                    supportSection
                 }
                 .id(appLanguageStore.language.rawValue)
-                .listStyle(.insetGrouped)
+                .listStyle(.plain)
+                .listSectionSpacing(.custom(18))
                 .scrollContentBackground(.hidden)
-                .environment(\.defaultMinListRowHeight, 54)
+                .contentMargins(.top, 0, for: .scrollContent)
+                .contentMargins(.bottom, 88, for: .scrollContent)
+                .environment(\.defaultMinListRowHeight, 58)
             }
-            .navigationTitle(AppLocalization.string("设置"))
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             .task(id: isActive) {
                 guard isActive else { return }
                 normalizeStrategyNotificationTemplateIfNeeded()
-                refreshNotificationPreview()
                 await reloadNotificationStatus()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { notification in
-                guard isActive, PortfolioSaveNotificationFilter.affectsPortfolio(notification) else { return }
-                refreshNotificationPreview()
             }
             .onChange(of: notificationEnabled) { _, _ in
                 Task {
-                    try? await Task.sleep(nanoseconds: 300_000_000)
+                    try? await Task.sleep(for: .milliseconds(300))
                     await reloadNotificationStatus()
                 }
             }
             .onChange(of: strategyNotificationEnabled) { _, _ in
                 Task {
-                    try? await Task.sleep(nanoseconds: 300_000_000)
+                    try? await Task.sleep(for: .milliseconds(300))
                     await reloadNotificationStatus()
                 }
             }
             .sheet(isPresented: $showsLanguageSelection, onDismiss: applyPendingAppLanguage) {
-                AppLanguageSelectionSheet(
-                    currentLanguage: currentAppLanguage
-                ) { language in
+                AppLanguageSelectionSheet(currentLanguage: currentAppLanguage) { language in
                     pendingAppLanguage = language
                     showsLanguageSelection = false
                 }
                 .presentationDetents([.height(330)])
+                .presentationDragIndicator(.visible)
+            }
+            .sheet(isPresented: $showsCloudSyncModal) {
+                NavigationStack {
+                    AssetTimeMachineCloudPage(store: cloudStore)
+                }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
+            .sheet(isPresented: $showsStrategyLibrary) {
+                AdvancedStrategyLibrarySheet(
+                    templates: StrategyRebalanceDefaults.eligibleTemplates,
+                    activeTemplateID: selectedStrategyTemplate?.id,
+                    titleLocalizationKey: "选择调仓策略"
+                ) { template in
+                    strategyNotificationTemplateID = template.id
+                    showsStrategyLibrary = false
+                }
+                .presentationDetents([.fraction(0.72), .large])
                 .presentationDragIndicator(.visible)
             }
             .alert(AppLocalization.string("退出云同步"), isPresented: $showsLogoutConfirmation) {
@@ -470,14 +192,251 @@ struct SettingsView: View {
         }
     }
 
+    private var pageOverviewSection: some View {
+        Section {
+            SettingsPageHeader(
+                cloudState: cloudStore.indicatorState,
+                cloudAccessibilityLabel: AppLocalization.format(
+                    "%@ · %@",
+                    AppLocalization.string("云同步"),
+                    AppLocalization.string(cloudOverviewKey)
+                ),
+                onOpenCloud: { showsCloudSyncModal = true }
+            )
+            .settingsHeaderRow()
+
+            SettingsOverviewRail(
+                cloudValue: AppLocalization.string(cloudOverviewKey),
+                cloudColor: cloudOverviewColor,
+                notificationValue: AppLocalization.string(notificationOverviewKey),
+                notificationColor: notificationOverviewColor,
+                strategyValue: selectedStrategyTemplate?.title ?? AppLocalization.string("未选择"),
+                strategyAccessibilityValue: selectedStrategyTemplate.map(StrategyRebalanceDefaults.pickerTitle)
+                    ?? AppLocalization.string("未选择策略"),
+                onSelectStrategy: { showsStrategyLibrary = true }
+            )
+            .settingsHeaderRow()
+        }
+    }
+
+    private var preferencesSection: some View {
+        Section {
+            Menu {
+                Picker(AppLocalization.string("外观"), selection: $appearanceModeRawValue) {
+                    ForEach(AppAppearanceMode.allCases) { mode in
+                        Text(mode.title).tag(mode.rawValue)
+                    }
+                }
+            } label: {
+                SettingsNavigationRow(
+                    title: AppLocalization.string("外观"),
+                    systemImage: "circle.lefthalf.filled",
+                    value: currentAppearanceMode.title
+                )
+            }
+            .foregroundStyle(AssetTheme.textPrimary)
+            .settingsSurfaceRow()
+            .onboardingAnchor(.settingsAppearance)
+
+            Button {
+                pendingAppLanguage = nil
+                showsLanguageSelection = true
+            } label: {
+                SettingsNavigationRow(
+                    title: AppLocalization.string("语言"),
+                    systemImage: "globe",
+                    value: currentAppLanguage.title
+                )
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(AssetTheme.textPrimary)
+            .settingsSurfaceRow()
+
+            Button(action: onReplayOnboarding) {
+                SettingsNavigationRow(
+                    title: AppLocalization.string("新手引导"),
+                    systemImage: "book.closed"
+                )
+            }
+            .buttonStyle(.plain)
+            .settingsSurfaceRow()
+            .onboardingAnchor(.settingsReplay)
+        } header: {
+            SettingsSectionHeader(title: AppLocalization.string("偏好"))
+        }
+    }
+
+    private var automationSection: some View {
+        Section {
+            HStack(spacing: 12) {
+                SettingsRowLabel(
+                    title: AppLocalization.string("资产播报"),
+                    systemImage: "megaphone",
+                    subtitle: notificationEnabled ? intervalLabel(notificationIntervalHours) : nil
+                )
+
+                Spacer(minLength: 8)
+
+                Toggle("", isOn: $notificationEnabled)
+                    .labelsHidden()
+                    .tint(AssetTheme.gold)
+                    .accessibilityLabel(AppLocalization.string("资产播报"))
+
+                Menu {
+                    Picker(AppLocalization.string("播报频率"), selection: $notificationIntervalHours) {
+                        ForEach(AssetNotificationService.intervalOptions, id: \.self) { hours in
+                            Text(intervalLabel(hours)).tag(hours)
+                        }
+                    }
+                } label: {
+                    SettingsDisclosureIcon()
+                        .accessibilityLabel(AppLocalization.string("播报频率"))
+                        .accessibilityValue(intervalLabel(notificationIntervalHours))
+                }
+            }
+            .settingsSurfaceRow()
+            .onboardingAnchor(.settingsNotifications)
+
+            HStack(spacing: 12) {
+                SettingsRowLabel(
+                    title: AppLocalization.string("每日调仓提醒"),
+                    systemImage: "clock",
+                    subtitle: strategyNotificationEnabled ? strategyHourLabel(strategyNotificationHour) : nil
+                )
+
+                Spacer(minLength: 8)
+
+                Toggle("", isOn: $strategyNotificationEnabled)
+                    .labelsHidden()
+                    .tint(AssetTheme.gold)
+                    .disabled(StrategyRebalanceDefaults.eligibleTemplates.isEmpty)
+                    .accessibilityLabel(AppLocalization.string("每日调仓提醒"))
+
+                Menu {
+                    Picker(AppLocalization.string("提醒时间"), selection: $strategyNotificationHour) {
+                        ForEach(AssetNotificationService.strategyHourOptions, id: \.self) { hour in
+                            Text(strategyHourLabel(hour)).tag(hour)
+                        }
+                    }
+                } label: {
+                    SettingsDisclosureIcon()
+                        .accessibilityLabel(AppLocalization.string("提醒时间"))
+                        .accessibilityValue(strategyHourLabel(strategyNotificationHour))
+                }
+            }
+            .settingsSurfaceRow()
+
+            SettingsStrategySummaryRow(template: selectedStrategyTemplate)
+                .settingsSurfaceRow()
+
+            if !StrategyRebalanceDefaults.eligibleTemplates.isEmpty {
+                Button {
+                    sendStrategyTestNotification()
+                } label: {
+                    SettingsNavigationRow(
+                        title: AppLocalization.string("发送测试提醒"),
+                        systemImage: "paperplane",
+                        showsChevron: false,
+                        isLoading: isSendingStrategyTestNotification
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(isSendingStrategyTestNotification)
+                .settingsSurfaceRow()
+            }
+
+            if notificationStatus == .denied {
+                Button {
+                    guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+                    openURL(url)
+                } label: {
+                    SettingsNavigationRow(
+                        title: AppLocalization.string("打开系统通知设置"),
+                        systemImage: "gearshape",
+                        trailingSystemImage: "arrow.up.right.square"
+                    )
+                }
+                .buttonStyle(.plain)
+                .settingsSurfaceRow()
+            }
+
+            if let strategyTestNotificationMessage {
+                SettingsInlineMessage(text: strategyTestNotificationMessage)
+                    .settingsSurfaceRow()
+            }
+        } header: {
+            SettingsSectionHeader(title: AppLocalization.string("自动化"))
+        }
+    }
+
+    private var dataSection: some View {
+        Section {
+            Button {
+                showsCloudSyncModal = true
+            } label: {
+                SettingsNavigationRow(
+                    title: AppLocalization.string("云同步"),
+                    systemImage: "icloud",
+                    subtitle: cloudAccountSubtitle,
+                    value: AppLocalization.string(cloudOverviewKey)
+                )
+            }
+            .buttonStyle(.plain)
+            .settingsSurfaceRow()
+
+            if canLogout {
+                Button(role: .destructive) {
+                    showsLogoutConfirmation = true
+                } label: {
+                    SettingsNavigationRow(
+                        title: AppLocalization.string("退出云同步"),
+                        systemImage: "rectangle.portrait.and.arrow.right",
+                        tint: AssetTheme.negative,
+                        showsChevron: false
+                    )
+                }
+                .foregroundStyle(AssetTheme.negative)
+                .disabled(cloudStore.isWorking)
+                .settingsSurfaceRow()
+            }
+        } header: {
+            SettingsSectionHeader(title: AppLocalization.string("数据"))
+        }
+    }
+
+    private var supportSection: some View {
+        Section {
+            Button {
+                guard let appStoreReviewURL else { return }
+                openURL(appStoreReviewURL)
+            } label: {
+                SettingsNavigationRow(
+                    title: AppLocalization.string("在 App Store 评分"),
+                    systemImage: "star",
+                    trailingSystemImage: "arrow.up.right.square"
+                )
+            }
+            .buttonStyle(.plain)
+            .settingsSurfaceRow()
+
+            SettingsNavigationRow(
+                title: AppLocalization.string("版本"),
+                systemImage: "info.circle",
+                value: appVersionText,
+                showsChevron: false
+            )
+            .settingsSurfaceRow()
+        } header: {
+            SettingsSectionHeader(title: AppLocalization.string("支持"))
+        }
+    }
+
     @MainActor
     private func applyPendingAppLanguage() {
         guard let pendingAppLanguage else { return }
         self.pendingAppLanguage = nil
         guard pendingAppLanguage != appLanguageStore.language else { return }
-
         appLanguageStore.select(pendingAppLanguage)
-        refreshNotificationPreview()
     }
 
     private func intervalLabel(_ hours: Double) -> String {
@@ -485,24 +444,7 @@ struct SettingsView: View {
         if integer == 24 {
             return AppLocalization.string("每天一次")
         }
-
         return AppLocalization.format("每 %d 小时", integer)
-    }
-
-    @MainActor
-    private func refreshNotificationPreview() {
-        let latestSnapshot = try? SnapshotService.latestSnapshot(in: modelContext)
-        guard let latestSnapshot else {
-            cachedNotificationPreview = AppLocalization.string("暂无资产记录")
-            return
-        }
-        let metrics = PortfolioCalculator.metrics(for: latestSnapshot)
-        cachedNotificationPreview = AppLocalization.format(
-            "总资产 %@ · 净资产 %@ · 负债 %@",
-            metrics.totalAssets.currencyString(),
-            metrics.netAssets.currencyString(),
-            metrics.totalLiabilities.currencyString()
-        )
     }
 
     private func strategyHourLabel(_ hour: Int) -> String {
@@ -539,38 +481,348 @@ struct SettingsView: View {
     }
 }
 
-struct SettingsRowLabel: View {
+private struct SettingsPageHeader: View {
+    let cloudState: AssetTimeMachineCloudIndicatorState
+    let cloudAccessibilityLabel: String
+    let onOpenCloud: () -> Void
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 16) {
+            Text(AppLocalization.string("设置"))
+                .font(.largeTitle.weight(.semibold))
+                .foregroundStyle(AssetTheme.textPrimary)
+
+            Spacer(minLength: 12)
+
+            Button(action: onOpenCloud) {
+                ZStack {
+                    Circle()
+                        .fill(AssetTheme.surfaceRaised.opacity(0.62))
+                        .overlay(
+                            Circle()
+                                .stroke(AssetTheme.gold.opacity(0.28), lineWidth: 1)
+                        )
+
+                    Image(systemName: cloudState.cloudSymbolName)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(cloudState.symbolColor)
+                }
+                .overlay(alignment: .topTrailing) {
+                    Circle()
+                        .fill(cloudState.symbolColor)
+                        .frame(width: 8, height: 8)
+                        .overlay(Circle().stroke(AssetTheme.background, lineWidth: 1.5))
+                        .offset(x: -1, y: 1)
+                }
+                .frame(width: 44, height: 44)
+                .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(cloudAccessibilityLabel)
+        }
+        .padding(.top, 16)
+        .padding(.bottom, 8)
+    }
+}
+
+private struct SettingsOverviewRail: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    let cloudValue: String
+    let cloudColor: Color
+    let notificationValue: String
+    let notificationColor: Color
+    let strategyValue: String
+    let strategyAccessibilityValue: String
+    let onSelectStrategy: () -> Void
+
+    var body: some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 0) {
+                    cloudItem
+                    SettingsOverviewHorizontalDivider()
+                    notificationItem
+                    SettingsOverviewHorizontalDivider()
+                    strategyItem
+                }
+            } else {
+                HStack(spacing: 0) {
+                    cloudItem
+                    SettingsOverviewDivider()
+                    notificationItem
+                    SettingsOverviewDivider()
+                    strategyItem
+                }
+            }
+        }
+        .padding(.vertical, 14)
+        .overlay(alignment: .top) {
+            Rectangle().fill(AssetTheme.border.opacity(0.78)).frame(height: 0.5)
+        }
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(AssetTheme.border.opacity(0.78)).frame(height: 0.5)
+        }
+    }
+
+    private var cloudItem: some View {
+        SettingsOverviewItem(
+            title: AppLocalization.string("云同步"),
+            value: cloudValue,
+            systemImage: "icloud",
+            tint: cloudColor
+        )
+    }
+
+    private var notificationItem: some View {
+        SettingsOverviewItem(
+            title: AppLocalization.string("通知"),
+            value: notificationValue,
+            systemImage: "bell",
+            tint: notificationColor
+        )
+    }
+
+    private var strategyItem: some View {
+        Button(action: onSelectStrategy) {
+            SettingsOverviewItem(
+                title: AppLocalization.string("策略"),
+                value: strategyValue,
+                systemImage: "waveform.path.ecg",
+                tint: AssetTheme.gold,
+                accessorySystemImage: "chevron.down"
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(StrategyRebalanceDefaults.eligibleTemplates.isEmpty)
+        .accessibilityLabel(AppLocalization.string("调仓策略"))
+        .accessibilityValue(strategyAccessibilityValue)
+    }
+}
+
+private struct SettingsOverviewItem: View {
+    let title: String
+    let value: String
+    let systemImage: String
+    let tint: Color
+    var accessorySystemImage: String? = nil
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 6) {
+            Image(systemName: systemImage)
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(AssetTheme.textPrimary)
+                .frame(width: 24, height: 38, alignment: .top)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.62)
+
+                Text(value)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(tint)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.78)
+            }
+
+            if let accessorySystemImage {
+                Image(systemName: accessorySystemImage)
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                    .frame(height: 38, alignment: .center)
+                    .accessibilityHidden(true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(minHeight: 36, alignment: .top)
+        .padding(.horizontal, 6)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct SettingsOverviewDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(AssetTheme.border.opacity(0.8))
+            .frame(width: 0.5, height: 44)
+    }
+}
+
+private struct SettingsOverviewHorizontalDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(AssetTheme.border.opacity(0.8))
+            .frame(height: 0.5)
+            .padding(.horizontal, 6)
+    }
+}
+
+private struct SettingsSectionHeader: View {
+    let title: String
+
+    var body: some View {
+        Text(title)
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(AssetTheme.textSecondary)
+            .textCase(nil)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 22)
+            .padding(.bottom, 5)
+    }
+}
+
+private struct SettingsNavigationRow: View {
     let title: String
     let systemImage: String
-    let color: Color
+    var subtitle: String? = nil
+    var value: String? = nil
+    var tint: Color = AssetTheme.textPrimary
+    var showsChevron = true
+    var trailingSystemImage: String? = nil
+    var isLoading = false
 
     var body: some View {
         HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(color)
-                .frame(width: 28, height: 28)
-                .overlay(
-                    Image(systemName: systemImage)
-                        .font(AppTypography.metaStrong)
-                        .foregroundStyle(.white)
-                )
+            SettingsRowLabel(
+                title: title,
+                systemImage: systemImage,
+                tint: tint,
+                subtitle: subtitle
+            )
 
-            Text(title)
+            Spacer(minLength: 10)
+
+            if isLoading {
+                ProgressView()
+                    .controlSize(.small)
+                    .tint(AssetTheme.gold)
+            } else if let value {
+                Text(value)
+                    .font(.subheadline)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+
+            if let trailingSystemImage {
+                Image(systemName: trailingSystemImage)
+                    .font(AppTypography.metaStrong)
+                    .foregroundStyle(AssetTheme.textSecondary)
+            } else if showsChevron {
+                SettingsDisclosureIcon()
+            }
+        }
+        .frame(minHeight: 58)
+        .contentShape(Rectangle())
+    }
+}
+
+private struct SettingsStrategySummaryRow: View {
+    let template: AdvancedBacktestStrategyTemplate?
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "waveform.path.ecg")
+                .font(.system(size: 17, weight: .medium))
                 .foregroundStyle(AssetTheme.textPrimary)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(AppLocalization.string("当前策略"))
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                HStack(spacing: 6) {
+                    Text(template?.title ?? AppLocalization.string("暂无策略"))
+                        .font(.subheadline)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .lineLimit(2)
+
+                    if let template,
+                       BacktestProductStrategyCatalog.isCuratedTemplateID(template.id) {
+                        CuratedStrategyBadge(compact: true)
+                    }
+                }
+            }
+
+            Spacer(minLength: 8)
+        }
+        .frame(minHeight: 68)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+struct SettingsRowLabel: View {
+    let title: String
+    let systemImage: String
+    var tint: Color = AssetTheme.textPrimary
+    var subtitle: String? = nil
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(tint)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(tint)
+                    .lineLimit(2)
+
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .lineLimit(1)
+                }
+            }
         }
     }
 }
 
-struct SettingsValueText: View {
+private struct SettingsDisclosureIcon: View {
+    var body: some View {
+        Image(systemName: "chevron.right")
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(AssetTheme.textSecondary)
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+    }
+}
+
+private struct SettingsInlineMessage: View {
     let text: String
 
-    init(_ text: String) {
-        self.text = text
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Image(systemName: "info.circle")
+                .font(AppTypography.metaStrong)
+                .foregroundStyle(AssetTheme.gold)
+
+            Text(text)
+                .font(AppTypography.caption)
+                .foregroundStyle(AssetTheme.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.vertical, 12)
+    }
+}
+
+private extension View {
+    func settingsHeaderRow() -> some View {
+        listRowInsets(EdgeInsets(top: 0, leading: 22, bottom: 0, trailing: 22))
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
     }
 
-    var body: some View {
-        Text(text)
-            .foregroundStyle(AssetTheme.textSecondary)
+    func settingsSurfaceRow() -> some View {
+        listRowInsets(EdgeInsets(top: 0, leading: 22, bottom: 0, trailing: 22))
+            .listRowBackground(AssetTheme.surface.opacity(0.48))
+            .listRowSeparatorTint(AssetTheme.border.opacity(0.82))
     }
 }
 

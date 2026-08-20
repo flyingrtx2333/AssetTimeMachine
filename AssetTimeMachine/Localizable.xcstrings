@@ -1,6 +1,118 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "添加第一项资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Add Your First Asset" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "添加第一项资产" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增第一項資產" } }
+      }
+    },
+    "先录入一项资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Record Your First Asset" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "先录入一项资产" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "先記錄一項資產" } }
+      }
+    },
+    "从常见类型中选择，快速开始": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Choose a common type to get started." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "从常见类型中选择，快速开始" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "從常見類型中選擇，快速開始" } }
+      }
+    },
+    "投资": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Investments" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "投资" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "投資" } }
+      }
+    },
+    "其他资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Other Asset" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "其他资产" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "其他資產" } }
+      }
+    },
+    "搜索其他资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Search Other Assets" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "搜索其他资产" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "搜尋其他資產" } }
+      }
+    },
+    "暂不确定可填 0，之后随时修改": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Not sure yet? Enter 0 and update it anytime." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "暂不确定可填 0，之后随时修改" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "暫不確定可填 0，之後隨時修改" } }
+      }
+    },
+    "保存第一项资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Save First Asset" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "保存第一项资产" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "儲存第一項資產" } }
+      }
+    },
+    "完成第一笔录入": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Complete Your First Entry" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "完成第一笔录入" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "完成第一筆記錄" } }
+      }
+    },
+    "添加一项资产并记录当前金额，之后就能持续更新。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Add an asset and its current value. You can keep it updated afterward." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "添加一项资产并记录当前金额，之后就能持续更新。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增一項資產並記錄目前金額，之後就能持續更新。" } }
+      }
+    },
+    "继续录入": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Continue" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "继续录入" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "繼續記錄" } }
+      }
+    },
+    "暂时跳过": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Skip for Now" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "暂时跳过" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "暫時略過" } }
+      }
+    },
+    "第一项资产已录入": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "First Asset Recorded" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "第一项资产已录入" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "第一項資產已記錄" } }
+      }
+    },
+    "以后点击金额或数量，就能更新今天的记录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Tap its amount or quantity anytime to update today's record." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "以后点击金额或数量，就能更新今天的记录" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "之後點擊金額或數量，即可更新今天的記錄" } }
+      }
+    },
     "当日净资产": {
       "extractionState": "manual",
       "localizations": {
@@ -26336,6 +26448,102 @@
         "en": { "stringUnit": { "state": "translated", "value": "Off" } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "已关闭" } },
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "已關閉" } }
+      }
+    },
+    "偏好": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Preferences" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "偏好" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "偏好設定" } }
+      }
+    },
+    "同步中": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Syncing" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "同步中" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "同步中" } }
+      }
+    },
+    "待同步": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Pending" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "待同步" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "待同步" } }
+      }
+    },
+    "支持": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Support" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "支持" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "支援" } }
+      }
+    },
+    "数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Data" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "数据" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "資料" } }
+      }
+    },
+    "新手引导": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Onboarding" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "新手引导" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新手導覽" } }
+      }
+    },
+    "未开启": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Off" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "未开启" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "未開啟" } }
+      }
+    },
+    "正常": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Normal" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正常" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正常" } }
+      }
+    },
+    "策略": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Strategy" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "策略" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "策略" } }
+      }
+    },
+    "自动化": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Automation" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "自动化" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "自動化" } }
+      }
+    },
+    "需处理": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Action Needed" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "需处理" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "需要處理" } }
+      }
+    },
+    "需授权": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Permission Needed" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "需授权" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "需要授權" } }
       }
     },
     "用起始本金与四项参数，逐月推演被动收入覆盖生活开销的时间。": {

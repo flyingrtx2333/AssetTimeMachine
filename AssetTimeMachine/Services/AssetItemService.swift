@@ -11,6 +11,7 @@ enum AssetItemService {
         marketAssetSymbol: String? = nil,
         note: String = "",
         iconName: String? = nil,
+        saveChanges: Bool = true,
         in context: ModelContext
     ) throws -> AssetItem {
         let nextSortOrder = (category.items.map(\AssetItem.sortOrder).max() ?? -1) + 1
@@ -27,7 +28,9 @@ enum AssetItemService {
             item.marketAssetSymbol = marketAssetSymbol
         }
         context.insert(item)
-        try context.save()
+        if saveChanges {
+            try context.save()
+        }
         return item
     }
 
@@ -42,6 +45,7 @@ enum AssetItemService {
         marketAssetSymbol: String?? = nil,
         isActive: Bool? = nil,
         category: AssetCategory? = nil,
+        saveChanges: Bool = true,
         in context: ModelContext
     ) throws {
         if let name { item.name = name }
@@ -53,7 +57,9 @@ enum AssetItemService {
         if let isActive { item.isActive = isActive }
         if let category { item.category = category }
         item.updatedAt = .now
-        try context.save()
+        if saveChanges {
+            try context.save()
+        }
     }
 
     @MainActor
