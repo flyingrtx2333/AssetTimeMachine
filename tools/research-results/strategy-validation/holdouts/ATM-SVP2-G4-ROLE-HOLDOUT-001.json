@@ -1,0 +1,149 @@
+{
+  "evaluation_window": {
+    "end": "2026-08-12",
+    "rule": "intersection_of_all_role_metadata_coverage",
+    "start": "2009-07-03"
+  },
+  "failure_rule": "After the first formal run, every selected alternate becomes exposed development data. A FAIL is permanent for this strategy version; do not select a second holdout set for the same version.",
+  "formal_run_budget": {
+    "additional_runs_after_results": 0,
+    "all_alternate_basket": 1,
+    "one_slot_substitutions": 5,
+    "total": 6
+  },
+  "freeze_git_ref": "416432de39056d60eb17cc36d85106527b60ad02",
+  "frozen_at": "2026-08-21T01:48:09+08:00",
+  "full_return_history_viewed_before_freeze": false,
+  "holdout_id": "ATM-SVP2-G4-ROLE-HOLDOUT-001",
+  "local_exposure_scan": "tools/research-results/strategy-validation/holdouts/ATM-SVP2-G4-ROLE-HOLDOUT-001-exposure-scan-r4.json",
+  "metadata_only_selection": true,
+  "pass_formulas": {
+    "all_alternate_cagr": "> 0",
+    "all_alternate_mdd_max": "min(25%, 1.25 * common_window_identity_mdd)",
+    "all_alternate_sharpe_min": "0.50 * common_window_identity_sharpe",
+    "common_reference_cagr": "> 0",
+    "common_reference_mdd_max": "25%",
+    "common_reference_sharpe": "> 0",
+    "one_slot_median_sharpe_min": "0.50 * common_window_identity_sharpe",
+    "positive_one_slot_sharpe_count_min": 4,
+    "reference": "same common evaluation window identity baseline frozen before HOLDOUT_BURNED"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "role_slots": [
+    {
+      "alternate_source": "SGE",
+      "alternate_symbol": "g4_raw_gold_safe_haven",
+      "current_symbol": "gold_cny",
+      "engine_input_currency": "CNY",
+      "engine_input_unit": "gram",
+      "metadata_checked": true,
+      "metadata_coverage_end": "2026-08-12",
+      "metadata_coverage_start": "2006-12-25",
+      "metadata_evidence": [
+        "Shanghai Gold Exchange official Au100g contract metadata: physical spot gold, CNY/gram, 100g trading unit, physical T+0 delivery, listed 2006-12-25."
+      ],
+      "normalization_inputs": [],
+      "normalization_rule": "identity",
+      "normalized_fixture_symbol": "atm_g4_gold_safe_haven",
+      "role": "gold_safe_haven",
+      "selection_reason_without_return_performance": "Shanghai Gold Exchange Au100g is a physical spot gold contract quoted in CNY per gram with physical T+0 delivery, matching the frozen gold safe-haven economic role and engine units without conversion.",
+      "source_currency": "CNY",
+      "source_frequency": "daily",
+      "source_series_id": "Au100g",
+      "source_unit": "gram"
+    },
+    {
+      "alternate_source": "FRED_NASDAQ",
+      "alternate_symbol": "g4_raw_us_growth_equity",
+      "current_symbol": "nasdaq",
+      "engine_input_currency": "USD",
+      "engine_input_unit": "index",
+      "metadata_checked": true,
+      "metadata_coverage_end": "2026-08-12",
+      "metadata_coverage_start": "1986-01-02",
+      "metadata_evidence": [
+        "FRED NASDAQ100 metadata: NASDAQ-100 daily close, source Nasdaq, coverage begins 1986-01-02; metadata verified through 2026-08-12."
+      ],
+      "normalization_inputs": [],
+      "normalization_rule": "identity",
+      "normalized_fixture_symbol": "atm_g4_us_growth_equity",
+      "role": "us_growth_equity",
+      "selection_reason_without_return_performance": "NASDAQ-100 is a large non-financial Nasdaq-listed growth-oriented equity index and preserves the frozen US growth equity role while remaining an independent source series.",
+      "source_currency": "USD",
+      "source_frequency": "daily",
+      "source_series_id": "NASDAQ100",
+      "source_unit": "index"
+    },
+    {
+      "alternate_source": "YAHOO_WILSHIRE",
+      "alternate_symbol": "g4_raw_us_broad_equity",
+      "current_symbol": "sp500",
+      "engine_input_currency": "USD",
+      "engine_input_unit": "index",
+      "metadata_checked": true,
+      "metadata_coverage_end": "2026-08-12",
+      "metadata_coverage_start": "1989-01-03",
+      "metadata_evidence": [
+        "Yahoo metadata-only check for ^W5000: USD INDEX, firstTradeDate 1989-01-03.",
+        "FT Wilshire official index description identifies the Wilshire 5000 family as a comprehensive benchmark of the investable US equity market."
+      ],
+      "normalization_inputs": [],
+      "normalization_rule": "identity",
+      "normalized_fixture_symbol": "atm_g4_us_broad_equity",
+      "role": "us_broad_equity",
+      "selection_reason_without_return_performance": "FT Wilshire 5000 is designed as a comprehensive US total-equity-market index, making it a domain-preserving alternate for the frozen US broad equity role without selecting on historical returns.",
+      "source_currency": "USD",
+      "source_frequency": "daily",
+      "source_series_id": "^W5000",
+      "source_unit": "index"
+    },
+    {
+      "alternate_source": "YAHOO_SSE",
+      "alternate_symbol": "g4_raw_china_large_equity",
+      "current_symbol": "csi300",
+      "engine_input_currency": "CNY",
+      "engine_input_unit": "index",
+      "metadata_checked": true,
+      "metadata_coverage_end": "2026-08-12",
+      "metadata_coverage_start": "2004-01-02",
+      "metadata_evidence": [
+        "Shanghai Stock Exchange official SSE 50 metadata: index code 000016, formally published 2004-01-02, 50 large/liquid representative Shanghai stocks."
+      ],
+      "normalization_inputs": [],
+      "normalization_rule": "identity",
+      "normalized_fixture_symbol": "atm_g4_china_large_equity",
+      "role": "china_large_equity",
+      "selection_reason_without_return_performance": "SSE 50 contains 50 large, liquid and representative Shanghai-listed companies and therefore preserves the China large-equity economic role independently of CSI 300.",
+      "source_currency": "CNY",
+      "source_frequency": "daily",
+      "source_series_id": "000016.SS",
+      "source_unit": "index"
+    },
+    {
+      "alternate_source": "YAHOO_SSE",
+      "alternate_symbol": "g4_raw_china_broad_equity",
+      "current_symbol": "shanghai_composite",
+      "engine_input_currency": "CNY",
+      "engine_input_unit": "index",
+      "metadata_checked": true,
+      "metadata_coverage_end": "2026-08-12",
+      "metadata_coverage_start": "2009-07-03",
+      "metadata_evidence": [
+        "Shanghai Stock Exchange official broad-market metadata: index code 000047, formally published 2009-07-03, designed to represent the broad Shanghai market."
+      ],
+      "normalization_inputs": [],
+      "normalization_rule": "identity",
+      "normalized_fixture_symbol": "atm_g4_china_broad_equity",
+      "role": "china_broad_equity",
+      "selection_reason_without_return_performance": "SSE Large&Mid&SmallCap / broad-market index represents the broad Shanghai equity market and preserves the China broad-equity role independently of the current Shanghai Composite series.",
+      "source_currency": "CNY",
+      "source_frequency": "daily",
+      "source_series_id": "000047.SS",
+      "source_unit": "index"
+    }
+  ],
+  "selection_payload_sha256": "65ea8054cb79a32f7be3522088a3d167679431cf548f304a86d080af70bed298",
+  "status": "FROZEN_UNOPENED",
+  "strategy_id": "nfci-dual-core-v11",
+  "strategy_version": "dualcore-v11-2026-08-15"
+}
