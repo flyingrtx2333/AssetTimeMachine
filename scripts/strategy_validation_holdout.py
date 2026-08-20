@@ -31,6 +31,7 @@ from strategy_validation_ledger import (
 )
 
 PROTOCOL_ID = "ATM-SVP-2"
+CURRENT_PROTOCOL_MANIFEST = "tools/research-results/strategy-validation/v11-protocol-manifest-v2.json"
 STRATEGY_ID = "nfci-dual-core-v11"
 STRATEGY_VERSION = "dualcore-v11-2026-08-15"
 EXPECTED_ROLES = [
@@ -410,7 +411,15 @@ def cmd_authorize_open(args: argparse.Namespace) -> None:
     payload = committed_burn[0]["payload"]
     if payload.get("manifest_sha256") != sha256_file(path):
         raise SystemExit("Committed burn event does not bind to the current frozen manifest")
-    subprocess.run(["python3", "scripts/validate_strategy_protocol.py"], check=True)
+    subprocess.run(
+        [
+            "python3",
+            "scripts/validate_strategy_protocol.py",
+            "--manifest",
+            CURRENT_PROTOCOL_MANIFEST,
+        ],
+        check=True,
+    )
     receipt = {
         "protocol_id": PROTOCOL_ID,
         "holdout_id": manifest["holdout_id"],

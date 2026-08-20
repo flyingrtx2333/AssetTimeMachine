@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from strategy_validation_holdout import EXPECTED_PASS_FORMULAS, EXPECTED_ROLES, ROLE_ENGINE_REQUIREMENTS, burn_records, selection_payload, validate_manifest
+from strategy_validation_holdout import CURRENT_PROTOCOL_MANIFEST, EXPECTED_PASS_FORMULAS, EXPECTED_ROLES, ROLE_ENGINE_REQUIREMENTS, burn_records, selection_payload, validate_manifest
 from strategy_validation_ledger import append_record, read_records, verify_records
 
 
@@ -94,6 +94,12 @@ class StrategyValidationHoldoutTests(unittest.TestCase):
 
     def write_manifest(self, manifest: dict) -> None:
         self.manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    def test_authorize_open_uses_current_v2_protocol_manifest(self) -> None:
+        self.assertEqual(
+            CURRENT_PROTOCOL_MANIFEST,
+            "tools/research-results/strategy-validation/v11-protocol-manifest-v2.json",
+        )
 
     def test_valid_metadata_only_manifest(self) -> None:
         manifest = self.make_manifest()
