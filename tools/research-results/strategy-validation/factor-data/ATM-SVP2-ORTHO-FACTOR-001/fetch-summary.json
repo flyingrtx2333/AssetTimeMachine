@@ -1,0 +1,76 @@
+{
+  "end": "2026-08-13",
+  "protocol_id": "ATM-SVP-2",
+  "series": {
+    "DXY": {
+      "first_date": "2001-01-02",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-001/DXY.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "NYB",
+        "instrument_type": "INDEX",
+        "series_id": "DX-Y.NYB",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d"
+      },
+      "rows": 6466,
+      "series_id": "DX-Y.NYB",
+      "sha256": "582a40b602b188c8acde0faa91339d093caf5f16f9dcbec8d5b10e2011e22228",
+      "source": "YAHOO"
+    },
+    "RUI": {
+      "first_date": "2001-01-02",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-001/RUI.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "WCB",
+        "instrument_type": "INDEX",
+        "series_id": "^RUI",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d"
+      },
+      "rows": 6440,
+      "series_id": "^RUI",
+      "sha256": "3b4cfd2497a3a4bd8e58ff86bc6d3ea31abff95e918b2df7bd415397e000943f",
+      "source": "YAHOO"
+    },
+    "RUT": {
+      "first_date": "2001-01-02",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-001/RUT.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "WCB",
+        "instrument_type": "INDEX",
+        "series_id": "^RUT",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d"
+      },
+      "rows": 6441,
+      "series_id": "^RUT",
+      "sha256": "edfbac890567c8c72c04518e5e916fdea5cc1eb7210e3002c367cc7bb4e19b92",
+      "source": "YAHOO"
+    },
+    "T10Y3M": {
+      "first_date": "2001-01-02",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-001/T10Y3M.csv",
+      "provenance": {
+        "series_id": "T10Y3M",
+        "source": "FRED",
+        "url_template": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=<series>&cosd=<start>&coed=<end>"
+      },
+      "rows": 6406,
+      "series_id": "T10Y3M",
+      "sha256": "30b25e55f93a6785aef5bda530b0d5c5723a5789fd828614f9e5e37185cf0df8",
+      "source": "FRED"
+    }
+  },
+  "start": "2001-01-01",
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-001"
+}
