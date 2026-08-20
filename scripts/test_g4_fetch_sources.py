@@ -13,6 +13,9 @@ class G4FetchSourceTests(unittest.TestCase):
     def test_sse_yahoo_source_is_supported_before_holdout_freeze(self) -> None:
         self.assertIn("YAHOO_SSE", SUPPORTED_SOURCES)
 
+    def test_wilshire_yahoo_source_is_supported_before_holdout_freeze(self) -> None:
+        self.assertIn("YAHOO_WILSHIRE", SUPPORTED_SOURCES)
+
 
 if __name__ == "__main__":
     unittest.main()

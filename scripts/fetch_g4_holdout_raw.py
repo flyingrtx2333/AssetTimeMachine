@@ -7,6 +7,7 @@ series and short ranges to test source adapters.
 
 Supported frozen source families:
 - FRED_NASDAQ: FRED graph CSV (daily close)
+- YAHOO_FTSE_RUSSELL / YAHOO_WILSHIRE / YAHOO_SSE: Yahoo chart API (daily OHLC)
 - CSINDEX: China Securities Index official index-perf API (daily OHLC)
 - SGE: Shanghai Gold Exchange official daily pages/archive articles (daily OHLC)
 
@@ -38,7 +39,7 @@ from strategy_validation_holdout import validate_manifest
 
 ROOT = Path(__file__).resolve().parents[1]
 USER_AGENT = "AssetTimeMachine-ATM-SVP-G4/1.0"
-SUPPORTED_SOURCES = {"FRED_NASDAQ", "YAHOO_FTSE_RUSSELL", "YAHOO_SSE", "CSINDEX", "SGE"}
+SUPPORTED_SOURCES = {"FRED_NASDAQ", "YAHOO_FTSE_RUSSELL", "YAHOO_WILSHIRE", "YAHOO_SSE", "CSINDEX", "SGE"}
 DEVELOPMENT_ALLOWLIST = {
     "FRED_NASDAQ": {"VIXCLS"},
     "CSINDEX": {"000300"},
@@ -598,7 +599,7 @@ def fetch_slot(
         raise SystemExit(f"Unsupported frozen source={source} for role={slot['role']}")
     if source == "FRED_NASDAQ":
         rows, provenance = fetch_fred(source_series_id, start, end)
-    elif source in {"YAHOO_FTSE_RUSSELL", "YAHOO_SSE"}:
+    elif source in {"YAHOO_FTSE_RUSSELL", "YAHOO_WILSHIRE", "YAHOO_SSE"}:
         rows, provenance = fetch_yahoo(source_series_id, start, end)
     elif source == "CSINDEX":
         rows, provenance = fetch_csindex(source_series_id, start, end)
