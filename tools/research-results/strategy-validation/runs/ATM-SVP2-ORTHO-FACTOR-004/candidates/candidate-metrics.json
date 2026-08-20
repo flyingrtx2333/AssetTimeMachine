@@ -1,0 +1,456 @@
+{
+  "admitted_candidates": [
+    "F-HIGHBETA"
+  ],
+  "candidate_results": [
+    {
+      "admission_checks": {
+        "cagr_gt_v11": true,
+        "constraints_pass": true,
+        "folds_sharpe_ge_matched_ge_4": true,
+        "mdd_le_12pct": true,
+        "sharpe_gt_matched_control": true,
+        "worst_fold_sharpe_gt_0": true
+      },
+      "admit_for_robustness": true,
+      "candidate_id": "F-HIGHBETA",
+      "constraints_pass": true,
+      "folds_sharpe_ge_matched": 4,
+      "matched_control_id": "C-HIGHBETA-ALWAYS",
+      "metrics": {
+        "available_derisk_events": 86,
+        "average_cash_ratio": 0.407979,
+        "cagr_percent": 14.392126,
+        "candidate_id": "F-HIGHBETA",
+        "derisk_events": 134,
+        "fingerprint": "e62c644dabd37c03",
+        "fold_cagrs_percent": [
+          10.240471,
+          6.463141,
+          5.097182,
+          14.265852,
+          2.55046,
+          21.37392,
+          35.154624
+        ],
+        "fold_mdds_percent": [
+          5.009617,
+          5.601034,
+          6.418559,
+          8.521421,
+          6.318185,
+          6.232346,
+          8.138978
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.503261,
+          1.024654,
+          0.797712,
+          1.598605,
+          0.454167,
+          1.699017,
+          2.203975
+        ],
+        "max_gross": 1.0,
+        "mdd_percent": 8.521421,
+        "min_weight": 0.0,
+        "retained_events": 48,
+        "sharpe": 1.494292,
+        "since2020_cagr_percent": 17.281042,
+        "since2020_sharpe": 1.518051,
+        "since2022_cagr_percent": 20.624793,
+        "since2022_sharpe": 1.666014,
+        "source_events": 166,
+        "trades": 441,
+        "vol_percent": 8.963005
+      },
+      "strong_incremental": false,
+      "worst_fold_sharpe": 0.454167
+    },
+    {
+      "admission_checks": {
+        "cagr_gt_v11": false,
+        "constraints_pass": true,
+        "folds_sharpe_ge_matched_ge_4": true,
+        "mdd_le_12pct": true,
+        "sharpe_gt_matched_control": true,
+        "worst_fold_sharpe_gt_0": true
+      },
+      "admit_for_robustness": false,
+      "candidate_id": "F-INDUTIL",
+      "constraints_pass": true,
+      "folds_sharpe_ge_matched": 5,
+      "matched_control_id": "C-INDUTIL-ALWAYS",
+      "metrics": {
+        "available_derisk_events": 134,
+        "average_cash_ratio": 0.393083,
+        "cagr_percent": 14.321473,
+        "candidate_id": "F-INDUTIL",
+        "derisk_events": 134,
+        "fingerprint": "ee8c3e82e154bc47",
+        "fold_cagrs_percent": [
+          11.427826,
+          5.676234,
+          4.96709,
+          14.424035,
+          2.547526,
+          21.37392,
+          35.130281
+        ],
+        "fold_mdds_percent": [
+          5.009617,
+          7.397502,
+          6.418834,
+          8.521421,
+          6.315445,
+          6.232346,
+          8.138978
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.64525,
+          0.799872,
+          0.778028,
+          1.61793,
+          0.453717,
+          1.699017,
+          2.202511
+        ],
+        "max_gross": 1.0,
+        "mdd_percent": 8.521421,
+        "min_weight": 0.0,
+        "retained_events": 75,
+        "sharpe": 1.464691,
+        "since2020_cagr_percent": 17.323791,
+        "since2020_sharpe": 1.521921,
+        "since2022_cagr_percent": 20.617285,
+        "since2022_sharpe": 1.665417,
+        "source_events": 166,
+        "trades": 438,
+        "vol_percent": 9.112646
+      },
+      "strong_incremental": false,
+      "worst_fold_sharpe": 0.453717
+    },
+    {
+      "admission_checks": {
+        "cagr_gt_v11": false,
+        "constraints_pass": true,
+        "folds_sharpe_ge_matched_ge_4": true,
+        "mdd_le_12pct": true,
+        "sharpe_gt_matched_control": true,
+        "worst_fold_sharpe_gt_0": true
+      },
+      "admit_for_robustness": false,
+      "candidate_id": "F-BANKS",
+      "constraints_pass": true,
+      "folds_sharpe_ge_matched": 4,
+      "matched_control_id": "C-BANKS-ALWAYS",
+      "metrics": {
+        "available_derisk_events": 115,
+        "average_cash_ratio": 0.409197,
+        "cagr_percent": 14.324614,
+        "candidate_id": "F-BANKS",
+        "derisk_events": 134,
+        "fingerprint": "fd0e6525febb2f76",
+        "fold_cagrs_percent": [
+          10.728298,
+          5.655988,
+          4.740328,
+          14.265857,
+          4.725095,
+          21.373553,
+          34.753244
+        ],
+        "fold_mdds_percent": [
+          4.16002,
+          7.405951,
+          6.419609,
+          8.52142,
+          3.857252,
+          6.232346,
+          8.138989
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.570613,
+          0.842938,
+          0.737503,
+          1.598605,
+          1.004659,
+          1.698989,
+          2.180838
+        ],
+        "max_gross": 1.0,
+        "mdd_percent": 8.52142,
+        "min_weight": 0.0,
+        "retained_events": 53,
+        "sharpe": 1.485361,
+        "since2020_cagr_percent": 17.936619,
+        "since2020_sharpe": 1.593922,
+        "since2022_cagr_percent": 21.675833,
+        "since2022_sharpe": 1.771514,
+        "source_events": 166,
+        "trades": 449,
+        "vol_percent": 8.979491
+      },
+      "strong_incremental": false,
+      "worst_fold_sharpe": 0.737503
+    }
+  ],
+  "matched_controls": {
+    "C-BANKS-ALWAYS": {
+      "available_derisk_events": 115,
+      "average_cash_ratio": 0.378935,
+      "cagr_percent": 14.262256,
+      "candidate_id": "C-BANKS-ALWAYS",
+      "derisk_events": 134,
+      "fingerprint": "a66f5037896c7d0e",
+      "fold_cagrs_percent": [
+        11.505548,
+        5.737739,
+        4.433574,
+        16.503017,
+        2.7605,
+        21.37392,
+        34.445049
+      ],
+      "fold_mdds_percent": [
+        5.016638,
+        7.3975,
+        8.060161,
+        8.612735,
+        6.318407,
+        6.232346,
+        8.138969
+      ],
+      "fold_names": [
+        "2012-2014",
+        "2015-2016",
+        "2017-2018",
+        "2019-2020",
+        "2021-2022",
+        "2023-2024",
+        "2025-latest"
+      ],
+      "fold_sharpes": [
+        1.603352,
+        0.798675,
+        0.656068,
+        1.700606,
+        0.48673,
+        1.699017,
+        2.1684
+      ],
+      "max_gross": 1.0,
+      "mdd_percent": 8.612735,
+      "min_weight": 0.0,
+      "retained_events": 115,
+      "sharpe": 1.432046,
+      "since2020_cagr_percent": 17.590396,
+      "since2020_sharpe": 1.523775,
+      "since2022_cagr_percent": 20.403156,
+      "since2022_sharpe": 1.650982,
+      "source_events": 166,
+      "trades": 460,
+      "vol_percent": 9.297318
+    },
+    "C-HIGHBETA-ALWAYS": {
+      "available_derisk_events": 86,
+      "average_cash_ratio": 0.390048,
+      "cagr_percent": 14.438601,
+      "candidate_id": "C-HIGHBETA-ALWAYS",
+      "derisk_events": 134,
+      "fingerprint": "ffcd9b1f66cbe34c",
+      "fold_cagrs_percent": [
+        11.505548,
+        5.737739,
+        4.433574,
+        16.503017,
+        2.7605,
+        21.37392,
+        34.445049
+      ],
+      "fold_mdds_percent": [
+        5.016638,
+        7.3975,
+        8.060161,
+        8.612735,
+        6.318407,
+        6.232346,
+        8.138969
+      ],
+      "fold_names": [
+        "2012-2014",
+        "2015-2016",
+        "2017-2018",
+        "2019-2020",
+        "2021-2022",
+        "2023-2024",
+        "2025-latest"
+      ],
+      "fold_sharpes": [
+        1.603352,
+        0.798675,
+        0.656068,
+        1.700606,
+        0.48673,
+        1.699017,
+        2.1684
+      ],
+      "max_gross": 1.0,
+      "mdd_percent": 8.612735,
+      "min_weight": 0.0,
+      "retained_events": 86,
+      "sharpe": 1.464578,
+      "since2020_cagr_percent": 17.590396,
+      "since2020_sharpe": 1.523775,
+      "since2022_cagr_percent": 20.403156,
+      "since2022_sharpe": 1.650982,
+      "source_events": 166,
+      "trades": 448,
+      "vol_percent": 9.185484
+    },
+    "C-INDUTIL-ALWAYS": {
+      "available_derisk_events": 134,
+      "average_cash_ratio": 0.36683,
+      "cagr_percent": 14.274797,
+      "candidate_id": "C-INDUTIL-ALWAYS",
+      "derisk_events": 134,
+      "fingerprint": "01f486ad8a253696",
+      "fold_cagrs_percent": [
+        11.505548,
+        5.737739,
+        4.433574,
+        16.503017,
+        2.7605,
+        21.37392,
+        34.445049
+      ],
+      "fold_mdds_percent": [
+        5.016638,
+        7.3975,
+        8.060161,
+        8.612735,
+        6.318407,
+        6.232346,
+        8.138969
+      ],
+      "fold_names": [
+        "2012-2014",
+        "2015-2016",
+        "2017-2018",
+        "2019-2020",
+        "2021-2022",
+        "2023-2024",
+        "2025-latest"
+      ],
+      "fold_sharpes": [
+        1.603352,
+        0.798675,
+        0.656068,
+        1.700606,
+        0.48673,
+        1.699017,
+        2.1684
+      ],
+      "max_gross": 1.0,
+      "mdd_percent": 8.612735,
+      "min_weight": 0.0,
+      "retained_events": 134,
+      "sharpe": 1.423046,
+      "since2020_cagr_percent": 17.590396,
+      "since2020_sharpe": 1.523775,
+      "since2022_cagr_percent": 20.403156,
+      "since2022_sharpe": 1.650982,
+      "source_events": 166,
+      "trades": 454,
+      "vol_percent": 9.368227
+    }
+  },
+  "protocol_id": "ATM-SVP-2",
+  "strategy_lineage": "orthogonal-event-factor-family-v4",
+  "strong_incremental_candidates": [],
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-004",
+  "v11_control": {
+    "available_derisk_events": 0,
+    "average_cash_ratio": 0.425368,
+    "cagr_percent": 14.345615,
+    "candidate_id": "V11-CONTROL",
+    "derisk_events": 0,
+    "fingerprint": "ba67c8aa24bc7168",
+    "fold_cagrs_percent": [
+      9.993886,
+      5.484334,
+      4.768754,
+      14.593713,
+      4.769875,
+      21.373553,
+      32.868242
+    ],
+    "fold_mdds_percent": [
+      4.16002,
+      5.646819,
+      6.418819,
+      7.386487,
+      3.319346,
+      6.232346,
+      6.077911
+    ],
+    "fold_names": [
+      "2012-2014",
+      "2015-2016",
+      "2017-2018",
+      "2019-2020",
+      "2021-2022",
+      "2023-2024",
+      "2025-latest"
+    ],
+    "fold_sharpes": [
+      1.524126,
+      0.886092,
+      0.740905,
+      1.687674,
+      1.187752,
+      1.698989,
+      2.220143
+    ],
+    "max_gross": 1.0,
+    "mdd_percent": 7.689054,
+    "min_weight": 0.0,
+    "retained_events": 0,
+    "sharpe": 1.522263,
+    "since2020_cagr_percent": 17.621393,
+    "since2020_sharpe": 1.632712,
+    "since2022_cagr_percent": 21.078444,
+    "since2022_sharpe": 1.785248,
+    "source_events": 166,
+    "trades": 451,
+    "vol_percent": 8.760667
+  }
+}

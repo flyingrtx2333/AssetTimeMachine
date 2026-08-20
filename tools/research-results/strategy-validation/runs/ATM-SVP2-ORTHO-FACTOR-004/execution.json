@@ -1,0 +1,23 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_orthogonal_event_factor_v4.py",
+    "--formal",
+    "--fixture",
+    "tools/fixtures/backtest-history/generalization_public_history.json",
+    "--factor-dir",
+    "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-004",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates"
+  ],
+  "execution_git_commit": "942a0c24c5de14677cee1ded4e4224c4a4befeae",
+  "finished_at": "2026-08-20T22:56:24+08:00",
+  "preregistration_record_hash": "215cd45023f819e9f1c91e5bf5d188413c84d8f8d3343e3f4713d953fc9afc57",
+  "protocol_id": "ATM-SVP-2",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/run-authorization.json",
+  "started_at": "2026-08-20T22:55:06+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/stdout.txt",
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-004"
+}

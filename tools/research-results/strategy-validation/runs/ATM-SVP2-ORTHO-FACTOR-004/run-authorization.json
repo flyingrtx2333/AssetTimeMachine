@@ -1,0 +1,10 @@
+{
+  "candidate_count": 3,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "942a0c24c5de14677cee1ded4e4224c4a4befeae",
+  "formal_run_budget": 3,
+  "ledger_head_at_authorization": "215cd45023f819e9f1c91e5bf5d188413c84d8f8d3343e3f4713d953fc9afc57",
+  "preregistration_record_hash": "215cd45023f819e9f1c91e5bf5d188413c84d8f8d3343e3f4713d953fc9afc57",
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-004"
+}

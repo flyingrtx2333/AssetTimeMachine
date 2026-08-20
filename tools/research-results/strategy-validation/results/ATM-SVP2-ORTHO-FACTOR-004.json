@@ -1,0 +1,243 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/C-HIGHBETA-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/F-HIGHBETA-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/C-INDUTIL-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/F-INDUTIL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/C-BANKS-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/F-BANKS-portfolio.csv"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "F-HIGHBETA",
+      "metrics": {
+        "admission_checks": {
+          "cagr_gt_v11": true,
+          "constraints_pass": true,
+          "folds_sharpe_ge_matched_ge_4": true,
+          "mdd_le_12pct": true,
+          "sharpe_gt_matched_control": true,
+          "worst_fold_sharpe_gt_0": true
+        },
+        "admit_for_robustness": true,
+        "available_derisk_events": 86,
+        "average_cash_ratio": 0.407979,
+        "cagr_percent": 14.392126,
+        "candidate_id": "F-HIGHBETA",
+        "derisk_events": 134,
+        "fingerprint": "e62c644dabd37c03",
+        "fold_cagrs_percent": [
+          10.240471,
+          6.463141,
+          5.097182,
+          14.265852,
+          2.55046,
+          21.37392,
+          35.154624
+        ],
+        "fold_mdds_percent": [
+          5.009617,
+          5.601034,
+          6.418559,
+          8.521421,
+          6.318185,
+          6.232346,
+          8.138978
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.503261,
+          1.024654,
+          0.797712,
+          1.598605,
+          0.454167,
+          1.699017,
+          2.203975
+        ],
+        "folds_sharpe_ge_matched": 4,
+        "matched_control_id": "C-HIGHBETA-ALWAYS",
+        "max_gross": 1.0,
+        "mdd_percent": 8.521421,
+        "min_weight": 0.0,
+        "retained_events": 48,
+        "sharpe": 1.494292,
+        "since2020_cagr_percent": 17.281042,
+        "since2020_sharpe": 1.518051,
+        "since2022_cagr_percent": 20.624793,
+        "since2022_sharpe": 1.666014,
+        "source_events": 166,
+        "strong_incremental": false,
+        "trades": 441,
+        "vol_percent": 8.963005,
+        "worst_fold_sharpe": 0.454167
+      }
+    },
+    {
+      "candidate_id": "F-INDUTIL",
+      "metrics": {
+        "admission_checks": {
+          "cagr_gt_v11": false,
+          "constraints_pass": true,
+          "folds_sharpe_ge_matched_ge_4": true,
+          "mdd_le_12pct": true,
+          "sharpe_gt_matched_control": true,
+          "worst_fold_sharpe_gt_0": true
+        },
+        "admit_for_robustness": false,
+        "available_derisk_events": 134,
+        "average_cash_ratio": 0.393083,
+        "cagr_percent": 14.321473,
+        "candidate_id": "F-INDUTIL",
+        "derisk_events": 134,
+        "fingerprint": "ee8c3e82e154bc47",
+        "fold_cagrs_percent": [
+          11.427826,
+          5.676234,
+          4.96709,
+          14.424035,
+          2.547526,
+          21.37392,
+          35.130281
+        ],
+        "fold_mdds_percent": [
+          5.009617,
+          7.397502,
+          6.418834,
+          8.521421,
+          6.315445,
+          6.232346,
+          8.138978
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.64525,
+          0.799872,
+          0.778028,
+          1.61793,
+          0.453717,
+          1.699017,
+          2.202511
+        ],
+        "folds_sharpe_ge_matched": 5,
+        "matched_control_id": "C-INDUTIL-ALWAYS",
+        "max_gross": 1.0,
+        "mdd_percent": 8.521421,
+        "min_weight": 0.0,
+        "retained_events": 75,
+        "sharpe": 1.464691,
+        "since2020_cagr_percent": 17.323791,
+        "since2020_sharpe": 1.521921,
+        "since2022_cagr_percent": 20.617285,
+        "since2022_sharpe": 1.665417,
+        "source_events": 166,
+        "strong_incremental": false,
+        "trades": 438,
+        "vol_percent": 9.112646,
+        "worst_fold_sharpe": 0.453717
+      }
+    },
+    {
+      "candidate_id": "F-BANKS",
+      "metrics": {
+        "admission_checks": {
+          "cagr_gt_v11": false,
+          "constraints_pass": true,
+          "folds_sharpe_ge_matched_ge_4": true,
+          "mdd_le_12pct": true,
+          "sharpe_gt_matched_control": true,
+          "worst_fold_sharpe_gt_0": true
+        },
+        "admit_for_robustness": false,
+        "available_derisk_events": 115,
+        "average_cash_ratio": 0.409197,
+        "cagr_percent": 14.324614,
+        "candidate_id": "F-BANKS",
+        "derisk_events": 134,
+        "fingerprint": "fd0e6525febb2f76",
+        "fold_cagrs_percent": [
+          10.728298,
+          5.655988,
+          4.740328,
+          14.265857,
+          4.725095,
+          21.373553,
+          34.753244
+        ],
+        "fold_mdds_percent": [
+          4.16002,
+          7.405951,
+          6.419609,
+          8.52142,
+          3.857252,
+          6.232346,
+          8.138989
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.570613,
+          0.842938,
+          0.737503,
+          1.598605,
+          1.004659,
+          1.698989,
+          2.180838
+        ],
+        "folds_sharpe_ge_matched": 4,
+        "matched_control_id": "C-BANKS-ALWAYS",
+        "max_gross": 1.0,
+        "mdd_percent": 8.52142,
+        "min_weight": 0.0,
+        "retained_events": 53,
+        "sharpe": 1.485361,
+        "since2020_cagr_percent": 17.936619,
+        "since2020_sharpe": 1.593922,
+        "since2022_cagr_percent": 21.675833,
+        "since2022_sharpe": 1.771514,
+        "source_events": 166,
+        "strong_incremental": false,
+        "trades": 449,
+        "vol_percent": 8.979491,
+        "worst_fold_sharpe": 0.737503
+      }
+    }
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-004.json",
+  "decision": "PASS at factor-screening level because F-HIGHBETA satisfied every preregistered ADMIT_FOR_ROBUSTNESS gate. F-HIGHBETA CAGR 14.392126% exceeded V11 14.345615%, Sharpe 1.494292 exceeded matched control 1.464578, MDD 8.521421% <=12%, 4/7 folds matched or beat the matched control, worst-fold Sharpe 0.454167 >0, and constraints held. It did NOT satisfy STRONG_INCREMENTAL because CAGR improvement was <1.0 percentage point and Sharpe remained below V11. F-INDUTIL and F-BANKS failed only the CAGR>V11 gate despite beating matched controls on several dimensions. No horizon, retention fraction, stale rule, band, factor direction, or combination may be changed within this family.",
+  "execution_git_commit": "942a0c24c5de14677cee1ded4e4224c4a4befeae",
+  "preregistration_record_hash": "215cd45023f819e9f1c91e5bf5d188413c84d8f8d3343e3f4713d953fc9afc57",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/run-authorization.json",
+  "status": "PASS",
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-004"
+}
