@@ -1,0 +1,3 @@
+candidate_id,probability_cagr_gt_v11,probability_sharpe_gt_matched_control,median_candidate_minus_v11_cagr,median_candidate_minus_matched_sharpe,candidate_mdd_p975,bootstrap_robust_pass
+F-BREADTH,0.61395,0.97195,0.0008366264226564307,0.047901458782726,0.15469818629496243,False
+F-HIGHBETA,0.5962,0.91245,0.0005016464822059641,0.02901958089542711,0.14631133467802057,False

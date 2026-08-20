@@ -1,0 +1,16 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_screening_factor_bootstrap_robustness.py"
+  ],
+  "execution_git_commit": "1ddf27d2082829994ea85c2e982a83772c7d050d",
+  "finished_at": "2026-08-21T00:43:18+08:00",
+  "preregistration_record_hash": "b7c964d738de33fcef823dd01f749f322098cdcfd453267f13afdb26f214349f",
+  "protocol_id": "ATM-SVP-2",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-FACTOR-ROBUST-001/run-authorization.json",
+  "started_at": "2026-08-21T00:43:05+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP2-FACTOR-ROBUST-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP2-FACTOR-ROBUST-001/stdout.txt",
+  "trial_id": "ATM-SVP2-FACTOR-ROBUST-001"
+}
