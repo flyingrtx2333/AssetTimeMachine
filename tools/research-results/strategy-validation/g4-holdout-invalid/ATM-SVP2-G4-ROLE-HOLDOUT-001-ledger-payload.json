@@ -1,0 +1,27 @@
+{
+  "authorization_receipt_path": "tools/research-results/strategy-validation/holdouts/ATM-SVP2-G4-ROLE-HOLDOUT-001-open-authorization.json",
+  "authorization_receipt_sha256": "09767c351e6b1a4e12c308c8eadac3df5d3a9e4945a2c562203543868dfa08e4",
+  "diagnostic_artifact_path": "tools/research-results/strategy-validation/g4-holdout-invalid/ATM-SVP2-G4-ROLE-HOLDOUT-001-source-invalid.json",
+  "diagnostic_artifact_sha256": "fd312508796ed2d117640b34eb72b0dc5159c2dec26b41069dc03ce8e5d9f358",
+  "formal_substitution_run_started": false,
+  "holdout_id": "ATM-SVP2-G4-ROLE-HOLDOUT-001",
+  "invalid_reason": "The exact burned Yahoo SSE sources 000016.SS and 000047.SS expose quote metadata/current values but no reproducible historical daily series through Yahoo query1/query2 chart or spark; Yahoo history pages return HTTP 404 and CSV download is unavailable without authenticated access. The other three frozen roles were fetched successfully. No formal substitution strategy run was started and no substitution performance metrics were viewed.",
+  "invalid_stage": "FULL_HISTORY_SOURCE_FETCH",
+  "manifest_path": "tools/research-results/strategy-validation/holdouts/ATM-SVP2-G4-ROLE-HOLDOUT-001.json",
+  "manifest_sha256": "50922abff9ccc628fc23ae1735a9899009b37ce5e94420a88a22131cd9b04ce6",
+  "opened_full_history": true,
+  "permanent_no_replacement": true,
+  "protocol_id": "ATM-SVP-2",
+  "strategy_id": "nfci-dual-core-v11",
+  "strategy_version": "dualcore-v11-2026-08-15",
+  "substitution_performance_metrics_viewed": false,
+  "successful_raw_roles": [
+    "gold_safe_haven",
+    "us_growth_equity",
+    "us_broad_equity"
+  ],
+  "unavailable_roles": [
+    "china_large_equity",
+    "china_broad_equity"
+  ]
+}
