@@ -507,6 +507,67 @@ private struct TimeMachineUnifiedTrendSelectionItem: Identifiable {
     let color: Color
 }
 
+private enum TimeMachineSelectionGuideLayout {
+    static let plotLeadingInset: CGFloat = 54
+    static let plotTrailingInset: CGFloat = 16
+}
+
+private struct TimeMachineSelectionGuideAnchors {
+    var rulerBounds: Anchor<CGRect>?
+    var chartBounds: Anchor<CGRect>?
+}
+
+private struct TimeMachineSelectionGuideAnchorKey: PreferenceKey {
+    static var defaultValue = TimeMachineSelectionGuideAnchors()
+
+    static func reduce(
+        value: inout TimeMachineSelectionGuideAnchors,
+        nextValue: () -> TimeMachineSelectionGuideAnchors
+    ) {
+        let next = nextValue()
+        if let rulerBounds = next.rulerBounds {
+            value.rulerBounds = rulerBounds
+        }
+        if let chartBounds = next.chartBounds {
+            value.chartBounds = chartBounds
+        }
+    }
+}
+
+private struct TimeMachineChartSelectionGuideReporter: View {
+    let proxy: ChartProxy
+    let date: Date
+    @Binding var selectionX: CGFloat?
+
+    var body: some View {
+        GeometryReader { geometry in
+            let resolvedX = resolvedSelectionX(in: geometry)
+            Color.clear
+                .onAppear {
+                    report(resolvedX)
+                }
+                .onChange(of: resolvedX) { _, newValue in
+                    report(newValue)
+                }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func resolvedSelectionX(in geometry: GeometryProxy) -> CGFloat? {
+        guard let plotFrame = proxy.plotFrame,
+              let plotX = proxy.position(forX: date) else {
+            return nil
+        }
+        let value = geometry[plotFrame].minX + plotX
+        return value.isFinite ? value : nil
+    }
+
+    private func report(_ value: CGFloat?) {
+        guard selectionX != value else { return }
+        selectionX = value
+    }
+}
+
 struct TimeMachineHeroTrendCard: View {
     let points: [TimeMachineTrendPoint]
     let latestPoint: TimeMachineTrendPoint
@@ -519,6 +580,7 @@ struct TimeMachineHeroTrendCard: View {
     let hasRecord: ((Date) -> Bool)?
     let onOpenRecord: ((Date) -> Void)?
     @State private var selectedDate: Date?
+    @State private var chartSelectionX: CGFloat?
     private let displayPoints: [TimeMachineTrendPoint]
     private let unifiedSeries: [TimeMachineUnifiedTrendSeries]
     private let valueDomain: ClosedRange<Double>
@@ -633,6 +695,7 @@ struct TimeMachineHeroTrendCard: View {
         self.dateDomain = Self.makeDateDomain(from: displayPoints)
         self.axisDates = chartAxisDates(displayPoints.map(\.date))
         self._selectedDate = State(initialValue: displayPoints.last?.date)
+        self._chartSelectionX = State(initialValue: nil)
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-timeMachineSelectChartPoint"),
            !displayPoints.isEmpty {
@@ -866,12 +929,20 @@ struct TimeMachineHeroTrendCard: View {
                 }
                 .chartLegend(.hidden)
                 .chartOverlay { proxy in
-                    TimeMachineDragOverlay(
-                        proxy: proxy,
-                        selectableValues: displayPoints,
-                        selectionDate: \.date
-                    ) { date in
-                        selectedDate = date
+                    ZStack {
+                        TimeMachineDragOverlay(
+                            proxy: proxy,
+                            selectableValues: displayPoints,
+                            selectionDate: \.date
+                        ) { date in
+                            selectedDate = date
+                        }
+
+                        TimeMachineChartSelectionGuideReporter(
+                            proxy: proxy,
+                            date: selectedPoint.date,
+                            selectionX: $chartSelectionX
+                        )
                     }
                 }
                 .padding(.bottom, 4)
@@ -888,10 +959,83 @@ struct TimeMachineHeroTrendCard: View {
                     .allowsHitTesting(false)
                 }
             }
+            .anchorPreference(key: TimeMachineSelectionGuideAnchorKey.self, value: .bounds) { anchor in
+                TimeMachineSelectionGuideAnchors(chartBounds: anchor)
+            }
 
             seriesToggleRow
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .backgroundPreferenceValue(TimeMachineSelectionGuideAnchorKey.self) { anchors in
+            GeometryReader { geometry in
+                if let rulerBounds = anchors.rulerBounds,
+                   let chartBounds = anchors.chartBounds {
+                    let rulerFrame = geometry[rulerBounds]
+                    let chartFrame = geometry[chartBounds]
+                    let markerY = rulerFrame.minY + 33
+                    let guideEndY = chartFrame.midY
+                    let guideX = chartFrame.minX
+                        + (chartSelectionX ?? selectionGuideXPosition(width: chartFrame.width))
+                    Rectangle()
+                        .fill(AssetTheme.gold.opacity(0.76))
+                        .frame(width: 1, height: max(guideEndY - markerY, 0))
+                        .position(
+                            x: guideX,
+                            y: markerY + max(guideEndY - markerY, 0) / 2
+                        )
+                }
+            }
+        }
+        .overlayPreferenceValue(TimeMachineSelectionGuideAnchorKey.self) { anchors in
+            GeometryReader { geometry in
+                if let rulerBounds = anchors.rulerBounds,
+                   let chartBounds = anchors.chartBounds {
+                    let rulerFrame = geometry[rulerBounds]
+                    let chartFrame = geometry[chartBounds]
+                    let guideX = chartFrame.minX
+                        + (chartSelectionX ?? selectionGuideXPosition(width: chartFrame.width))
+                    selectionGuideMarker
+                        .position(x: guideX, y: rulerFrame.minY + 33)
+                }
+            }
+            .allowsHitTesting(false)
+        }
+    }
+
+    private var selectionGuideMarker: some View {
+        Circle()
+            .fill(AssetTheme.gold.opacity(0.18))
+            .frame(width: 23, height: 23)
+            .overlay(Circle().stroke(AssetTheme.goldSoft.opacity(0.42), lineWidth: 1))
+            .overlay {
+                Circle()
+                    .fill(AssetTheme.goldSoft)
+                    .frame(width: 13, height: 13)
+                    .overlay(Circle().stroke(AssetTheme.textPrimary.opacity(0.92), lineWidth: 1.2))
+            }
+            .shadow(color: AssetTheme.gold.opacity(0.32), radius: 8)
+    }
+
+    private func selectionGuideXPosition(width: CGFloat) -> CGFloat {
+        guard let firstDate = displayPoints.first?.date,
+              let lastDate = displayPoints.last?.date else {
+            return width - TimeMachineSelectionGuideLayout.plotTrailingInset
+        }
+        let duration = max(lastDate.timeIntervalSince(firstDate), 1)
+        let progress = min(max(selectedPoint.date.timeIntervalSince(firstDate) / duration, 0), 1)
+        let availableWidth = max(
+            width
+                - TimeMachineSelectionGuideLayout.plotLeadingInset
+                - TimeMachineSelectionGuideLayout.plotTrailingInset,
+            1
+        )
+        return min(
+            max(
+                TimeMachineSelectionGuideLayout.plotLeadingInset + availableWidth * progress,
+                TimeMachineSelectionGuideLayout.plotLeadingInset
+            ),
+            width - TimeMachineSelectionGuideLayout.plotTrailingInset
+        )
     }
 
     private var dateNavigator: some View {
@@ -1186,12 +1330,8 @@ private struct TimeMachineDateRuler: View {
     let points: [TimeMachineTrendPoint]
     @Binding var selectedDate: Date?
 
-    private let plotLeadingInset: CGFloat = 54
-    private let plotTrailingInset: CGFloat = 16
-
     private var firstDate: Date { points.first?.date ?? Date() }
     private var lastDate: Date { points.last?.date ?? firstDate }
-    private var resolvedSelectedDate: Date { selectedDate ?? lastDate }
 
     private var labelDates: [Date] {
         guard points.count > 1 else { return points.map(\.date) }
@@ -1206,7 +1346,6 @@ private struct TimeMachineDateRuler: View {
     var body: some View {
         GeometryReader { geometry in
             let width = max(geometry.size.width, 1)
-            let markerX = selectionXPosition(for: resolvedSelectedDate, width: width)
 
             ZStack(alignment: .topLeading) {
                 Canvas { context, size in
@@ -1254,29 +1393,15 @@ private struct TimeMachineDateRuler: View {
                         )
                 }
 
-                Rectangle()
-                    .fill(AssetTheme.gold.opacity(0.76))
-                    .frame(width: 1, height: 154)
-                    .position(x: markerX, y: 109)
-
-                Circle()
-                    .fill(AssetTheme.gold.opacity(0.18))
-                    .frame(width: 23, height: 23)
-                    .overlay(Circle().stroke(AssetTheme.goldSoft.opacity(0.42), lineWidth: 1))
-                    .overlay {
-                        Circle()
-                            .fill(AssetTheme.goldSoft)
-                            .frame(width: 13, height: 13)
-                            .overlay(Circle().stroke(AssetTheme.textPrimary.opacity(0.92), lineWidth: 1.2))
-                    }
-                    .shadow(color: AssetTheme.gold.opacity(0.32), radius: 8)
-                    .position(x: markerX, y: 33)
             }
             .contentShape(Rectangle())
             .overlay {
                 TimeMachineHorizontalPanGestureView { location in
                     updateSelection(at: location.x, width: width)
                 } onEnded: {}
+            }
+            .anchorPreference(key: TimeMachineSelectionGuideAnchorKey.self, value: .bounds) { anchor in
+                TimeMachineSelectionGuideAnchors(rulerBounds: anchor)
             }
         }
         .frame(height: 66)
@@ -1289,24 +1414,22 @@ private struct TimeMachineDateRuler: View {
         return width * progress
     }
 
-    private func selectionXPosition(for date: Date, width: CGFloat) -> CGFloat {
-        let duration = max(lastDate.timeIntervalSince(firstDate), 1)
-        let progress = min(max(date.timeIntervalSince(firstDate) / duration, 0), 1)
-        let availableWidth = max(width - plotLeadingInset - plotTrailingInset, 1)
-        return min(
-            max(plotLeadingInset + availableWidth * progress, plotLeadingInset),
-            width - plotTrailingInset
-        )
-    }
-
     private func clampedLabelX(for date: Date, width: CGFloat) -> CGFloat {
         min(max(xPosition(for: date, width: width), 27), width - 27)
     }
 
     private func updateSelection(at x: CGFloat, width: CGFloat) {
         guard !points.isEmpty else { return }
-        let availableWidth = max(width - plotLeadingInset - plotTrailingInset, 1)
-        let progress = min(max((x - plotLeadingInset) / availableWidth, 0), 1)
+        let availableWidth = max(
+            width
+                - TimeMachineSelectionGuideLayout.plotLeadingInset
+                - TimeMachineSelectionGuideLayout.plotTrailingInset,
+            1
+        )
+        let progress = min(
+            max((x - TimeMachineSelectionGuideLayout.plotLeadingInset) / availableWidth, 0),
+            1
+        )
         let index = min(max(Int((Double(points.count - 1) * Double(progress)).rounded()), 0), points.count - 1)
         selectedDate = points[index].date
     }
@@ -1433,6 +1556,7 @@ struct TimeMachineMonthlySurplusCard: View {
     let annualPoints: [TimeMachineAnnualSurplusPoint]
     let amountsVisible: Bool
     @State private var selectedDate: Date?
+    @State private var selectedAnnualDate: Date?
     @State private var selectedGranularity: SurplusGranularity = .monthly
     private let displayPoints: [TimeMachineMonthlySurplusPoint]
     private let latestPoint: TimeMachineMonthlySurplusPoint?
@@ -1456,6 +1580,7 @@ struct TimeMachineMonthlySurplusCard: View {
         )
         self.axisDates = chartAxisDates(displayPoints.map(\.monthStart))
         self._selectedDate = State(initialValue: displayPoints.last?.monthStart)
+        self._selectedAnnualDate = State(initialValue: annualPoints.last?.yearStart)
     }
 
     private enum SurplusGranularity: String, CaseIterable, Identifiable {
@@ -1487,6 +1612,12 @@ struct TimeMachineMonthlySurplusCard: View {
         return nearestChartPoint(displayPoints, to: selectedDate, date: \.monthStart) ?? latestPoint
     }
 
+    private var selectedAnnualPoint: TimeMachineAnnualSurplusPoint? {
+        guard let latestPoint = annualPoints.last else { return nil }
+        guard let selectedAnnualDate else { return latestPoint }
+        return nearestChartPoint(annualPoints, to: selectedAnnualDate, date: \.yearStart) ?? latestPoint
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             header
@@ -1496,7 +1627,8 @@ struct TimeMachineMonthlySurplusCard: View {
             } else if activeGranularity == .annual, !annualPoints.isEmpty {
                 TimeMachineAnnualSurplusCard(
                     points: annualPoints,
-                    amountsVisible: amountsVisible
+                    amountsVisible: amountsVisible,
+                    selectedDate: $selectedAnnualDate
                 )
             }
         }
@@ -1515,7 +1647,7 @@ struct TimeMachineMonthlySurplusCard: View {
                 Spacer(minLength: 8)
 
                 HStack(spacing: 6) {
-                    Text(activeGranularity == .monthly ? AppLocalization.string("本月") : AppLocalization.string("今年至今"))
+                    Text(currentSurplusPeriodText)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(AssetTheme.textSecondary)
 
@@ -1542,7 +1674,22 @@ struct TimeMachineMonthlySurplusCard: View {
         case .monthly:
             return selectedPoint?.surplus ?? 0
         case .annual:
-            return annualPoints.last?.surplus ?? 0
+            return selectedAnnualPoint?.surplus ?? 0
+        }
+    }
+
+    private var currentSurplusPeriodText: String {
+        switch activeGranularity {
+        case .monthly:
+            guard let date = selectedPoint?.monthStart else { return "—" }
+            return AppFormatterCache.dateFormatter(
+                format: AppLocalization.string("yyyy年M月")
+            ).string(from: date)
+        case .annual:
+            guard let date = selectedAnnualPoint?.yearStart else { return "—" }
+            return AppFormatterCache.dateFormatter(
+                format: AppLocalization.string("yyyy年")
+            ).string(from: date)
         }
     }
 
@@ -1652,12 +1799,16 @@ struct TimeMachineMonthlySurplusCard: View {
 struct TimeMachineAnnualSurplusCard: View {
     let points: [TimeMachineAnnualSurplusPoint]
     let amountsVisible: Bool
-    @State private var selectedDate: Date?
+    @Binding private var selectedDate: Date?
 
-    init(points: [TimeMachineAnnualSurplusPoint], amountsVisible: Bool = true) {
+    init(
+        points: [TimeMachineAnnualSurplusPoint],
+        amountsVisible: Bool = true,
+        selectedDate: Binding<Date?>
+    ) {
         self.points = points
         self.amountsVisible = amountsVisible
-        self._selectedDate = State(initialValue: points.last?.yearStart)
+        self._selectedDate = selectedDate
     }
 
     private var latestPoint: TimeMachineAnnualSurplusPoint? {
@@ -2768,7 +2919,7 @@ private final class TimeMachineDragInteractionState {
     }
 }
 
-private struct TimeMachineHorizontalPanGestureView: UIViewRepresentable {
+struct TimeMachineHorizontalPanGestureView: UIViewRepresentable {
     let onChanged: (CGPoint) -> Void
     let onEnded: () -> Void
 

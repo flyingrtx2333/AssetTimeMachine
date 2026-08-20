@@ -34,7 +34,9 @@ extension BacktestAssetOption {
             category: asset.sectionID,
             iconName: asset.assetIconName,
             currency: currency,
-            unit: asset.unit
+            unit: asset.unit,
+            logoURL: asset.logoURL,
+            logoSource: asset.logoSource
         )
     }
 
@@ -45,7 +47,9 @@ extension BacktestAssetOption {
             label: title,
             currency: currency,
             unit: unit,
-            source: nil
+            source: nil,
+            logoURL: logoURL,
+            logoSource: logoSource
         )
     }
 }
@@ -61,6 +65,37 @@ private struct MarketAssetLogoStyle {
     let systemImage: String?
     let colors: [Color]
     let foreground: Color
+}
+
+@MainActor
+enum MarketAssetLogoRegistry {
+    private static var logoURLsBySymbol: [String: String] = [:]
+
+    static func register(_ assets: [MarketAssetDescriptor]) {
+        for asset in assets {
+            guard let logoURL = asset.logoURL?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !logoURL.isEmpty else { continue }
+            logoURLsBySymbol[asset.canonicalSymbol] = logoURL
+
+            guard asset.category.caseInsensitiveCompare("fx") == .orderedSame else { continue }
+            let rawSymbol = asset.symbol.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if let currencyKind = AutoPricedAssetKind(rawValue: asset.currency.lowercased()),
+               currencyKind.isCurrency {
+                logoURLsBySymbol[currencyKind.marketSymbol] = logoURL
+            }
+            if rawSymbol.hasSuffix("_per_cny") {
+                let currencyCode = String(rawSymbol.dropLast("_per_cny".count))
+                if let currencyKind = AutoPricedAssetKind(rawValue: currencyCode),
+                   currencyKind.isCurrency {
+                    logoURLsBySymbol[currencyKind.marketSymbol] = logoURL
+                }
+            }
+        }
+    }
+
+    static func logoURL(for symbol: String) -> String? {
+        logoURLsBySymbol[BacktestAssetSymbol.normalized(symbol)]
+    }
 }
 
 struct MarketAssetLogoView: View {
@@ -92,7 +127,11 @@ struct MarketAssetLogoView: View {
     }
 
     private var remoteLogoURL: URL? {
-        if let logoURL = logoURL?.trimmingCharacters(in: .whitespacesAndNewlines), !logoURL.isEmpty {
+        let explicitLogoURL = logoURL?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedLogoURL = explicitLogoURL?.isEmpty == false
+            ? explicitLogoURL
+            : MarketAssetLogoRegistry.logoURL(for: symbol)
+        if let logoURL = resolvedLogoURL {
             return URL(string: logoURL, relativeTo: RemoteMarketClient.baseURL)?.absoluteURL
         }
 
@@ -639,16 +678,19 @@ struct MarketAssetOptionTile: View {
     let asset: MarketAssetDescriptor
     let isSelected: Bool
     var showsCheckbox = false
+    var isDeemphasized = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 11) {
                 MarketAssetLogoView(asset: asset, size: 30)
+                    .saturation(isDeemphasized ? 0 : 1)
+                    .opacity(isDeemphasized ? 0.46 : 1)
 
                 Text(asset.displayTitle)
                     .font(AppTypography.rowTitle)
-                    .foregroundStyle(AssetTheme.textPrimary)
+                    .foregroundStyle(isDeemphasized ? AssetTheme.textSecondary.opacity(0.58) : AssetTheme.textPrimary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
@@ -832,7 +874,8 @@ struct MarketAssetCatalogSelector: View {
             ForEach(Array(visibleAssets.enumerated()), id: \.element.id) { index, asset in
                 MarketAssetOptionTile(
                     asset: asset,
-                    isSelected: selectedSymbol.map(BacktestAssetSymbol.normalized) == asset.canonicalSymbol
+                    isSelected: selectedSymbol.map(BacktestAssetSymbol.normalized) == asset.canonicalSymbol,
+                    isDeemphasized: selectedSymbol == nil
                 ) {
                     guard !isLocked else { return }
                     selectedSymbol = asset.canonicalSymbol

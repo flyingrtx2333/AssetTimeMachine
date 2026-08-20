@@ -179,6 +179,7 @@ struct SnapshotListView: View {
     @State private var itemsByIDCacheToken: String = ""
     @State private var persistenceErrorMessage: String?
     @State private var assetDeletionErrorMessage: String?
+    @State private var marketLogoRevision = 0
     @AppStorage("app.records.showsZeroBalanceAssets") private var showsZeroBalanceAssets = true
 
     private var currentSnapshot: AssetSnapshot? {
@@ -289,7 +290,8 @@ struct SnapshotListView: View {
                                 presentQuickEdit(for: item)
                             },
                             onDelete: requestAssetItemDeletion,
-                            showsZeroBalanceAssets: showsZeroBalanceAssets
+                            showsZeroBalanceAssets: showsZeroBalanceAssets,
+                            marketLogoRevision: marketLogoRevision
                         )
                     } else if isPreparingInitialSnapshot || !didPrepare || currentSnapshotValue != nil {
                         LoadingStateCard(title: AppLocalization.string("记录加载中"))
@@ -332,6 +334,7 @@ struct SnapshotListView: View {
                 }
             }
         }
+        .toolbar(quickEditingAssetItem == nil ? .visible : .hidden, for: .tabBar)
         .sheet(isPresented: $showsAddAssetItemSheet, onDismiss: finishAssetEditorDraft) {
             AssetItemEditorSheet(snapshot: currentSnapshot, marketStore: marketStore)
         }
@@ -357,26 +360,30 @@ struct SnapshotListView: View {
                             quickEditingAssetItem = nil
                         }
 
-                    QuickRecordValueSheet(
-                        item: item,
-                        snapshot: currentSnapshot,
-                        marketStore: marketStore,
-                        onCancel: {
-                            dismissKeyboard()
-                            finishQuickEditDraft()
-                            quickEditingAssetItem = nil
-                        },
-                        onSaved: {
-                            if let snapshot = currentSnapshot {
-                                hydrateInputs(for: item, from: snapshot)
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 0)
+
+                        QuickRecordValueSheet(
+                            item: item,
+                            snapshot: currentSnapshot,
+                            marketStore: marketStore,
+                            onCancel: {
+                                dismissKeyboard()
+                                finishQuickEditDraft()
+                                quickEditingAssetItem = nil
+                            },
+                            onSaved: {
+                                if let snapshot = currentSnapshot {
+                                    hydrateInputs(for: item, from: snapshot)
+                                }
+                                dismissKeyboard()
+                                finishQuickEditDraft()
+                                quickEditingAssetItem = nil
                             }
-                            dismissKeyboard()
-                            finishQuickEditDraft()
-                            quickEditingAssetItem = nil
-                        }
-                    )
-                    .padding(.horizontal, 24)
-                    .transition(.scale(scale: 0.94).combined(with: .opacity))
+                        )
+                    }
+                    .ignoresSafeArea(edges: .bottom)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 .zIndex(10)
             }
@@ -409,6 +416,9 @@ struct SnapshotListView: View {
             await prepareSnapshotIfNeeded()
             guard !Task.isCancelled, isActive else { return }
             refreshCachedListLayout()
+            await marketStore.refreshAssetCatalogIfNeeded()
+            guard !Task.isCancelled, isActive else { return }
+            marketLogoRevision &+= 1
             #if DEBUG
             await ensureDebugAutoPricedItemIfNeeded()
             if ProcessInfo.processInfo.arguments.contains("-openFirstAutoPricedQuickEdit"),
@@ -1018,6 +1028,7 @@ struct RecordSnapshotSections: View {
     let onEditValue: (AssetItem) -> Void
     var onDelete: ((AssetItem) -> Void)? = nil
     var showsZeroBalanceAssets: Bool = true
+    var marketLogoRevision: Int = 0
     var isReadOnly: Bool = false
     var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
 
@@ -1029,6 +1040,7 @@ struct RecordSnapshotSections: View {
     }
 
     var body: some View {
+        let _ = marketLogoRevision
         ForEach(layout.nonLiabilityCategoryItems) { categoryItems in
             let items = visibleItems(in: categoryItems.items)
             if !items.isEmpty {
@@ -2583,7 +2595,7 @@ struct AssetItemEditorSheet: View {
             return
         }
         async let liveRefresh: Bool = marketStore.refreshLiveData()
-        async let historyRefresh: Void = marketStore.refreshHistory(for: Set([symbol]))
+        async let historyRefresh: Bool = marketStore.refreshHistory(for: Set([symbol]))
         _ = await (liveRefresh, historyRefresh)
     }
 }
@@ -2623,6 +2635,7 @@ struct QuickRecordValueSheet: View {
     @State private var unitPriceText: String
     @State private var errorMessage: String?
     @State private var isRefreshingAutoPrice = false
+    @State private var lastManualPriceRefreshAt: Date?
     @State private var manualAutoPriceRefreshTask: Task<Void, Never>?
     @FocusState private var focusedField: QuickRecordValueField?
 
@@ -2680,160 +2693,117 @@ struct QuickRecordValueSheet: View {
 
     private var trailingUnitPriceTimestamp: String? {
         guard item.valuationMethod == .quantityAndUnitPrice,
-              item.marketAssetSymbol != nil,
-              let fetchedAt = item.autoPriceFetchedAt(using: marketStore) else {
+              item.marketAssetSymbol != nil else {
             return nil
         }
+        let fetchedAt = lastManualPriceRefreshAt
+            ?? item.autoPriceFetchedAt(using: marketStore)
+        guard let fetchedAt else { return nil }
         return AppLocalization.format("%@更新", fetchedAt.recordTimeString)
     }
 
-    private var currentMarketValue: Double? {
-        guard item.valuationMethod == .quantityAndUnitPrice,
-              let quantity = normalizedReadonlyNumber(from: quantityText),
-              let unitPrice = item.marketAssetSymbol == nil
-                ? normalizedReadonlyNumber(from: unitPriceText)
-                : item.resolvedAutoUnitPrice(using: marketStore),
-              quantity.isFinite,
-              unitPrice.isFinite else {
-            return nil
+    private var quantityUnitTitle: String? {
+        guard item.valuationMethod == .quantityAndUnitPrice else { return nil }
+        return item.quantityUnitTitle(using: marketStore)
+    }
+
+    private var inlinePrimaryTextFieldWidth: CGFloat {
+        let text: String
+        switch item.valuationMethod {
+        case .directAmount:
+            text = amountText
+        case .quantityAndUnitPrice:
+            text = quantityText
         }
-        return quantity * unitPrice
+        return min(170, max(34, CGFloat(max(text.count, 1)) * 21))
+    }
+
+    private var currentMarketValue: Double? {
+        switch item.valuationMethod {
+        case .directAmount:
+            guard let amount = normalizedReadonlyNumber(from: amountText), amount.isFinite else {
+                return nil
+            }
+            return isLiability ? abs(amount) : amount
+        case .quantityAndUnitPrice:
+            guard let quantity = normalizedReadonlyNumber(from: quantityText),
+                  let unitPrice = item.marketAssetSymbol == nil
+                    ? normalizedReadonlyNumber(from: unitPriceText)
+                    : item.resolvedAutoUnitPrice(using: marketStore),
+                  quantity.isFinite,
+                  unitPrice.isFinite else {
+                return nil
+            }
+            return quantity * unitPrice
+        }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 12) {
-                chromeButton(title: AppLocalization.string("取消"), tint: AssetTheme.textSecondary, action: onCancel)
+        VStack(spacing: 0) {
+            sheetHeader
 
-                Spacer(minLength: 8)
-
-                Text(AppLocalization.string("修改本次记录"))
-                    .font(AppTypography.blockTitleBold)
-                    .foregroundStyle(AssetTheme.textPrimary)
-                    .lineLimit(1)
-
-                Spacer(minLength: 8)
-
-                chromeButton(title: AppLocalization.string("保存"), tint: AssetTheme.gold, action: save)
-            }
-
-            HStack(alignment: .center, spacing: 12) {
-                AssetItemGlyph(item: item, accent: isLiability ? AssetTheme.negative : AssetTheme.gold, size: 18)
-
-                Text(AppLocalization.string(item.name))
-                    .font(AppTypography.blockTitle)
-                    .foregroundStyle(AssetTheme.textPrimary)
-
-                Spacer(minLength: 8)
-
-                if let trailingUnitPriceTitle,
-                   let trailingUnitPriceValue {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(trailingUnitPriceTitle)
-                            .font(AppTypography.caption)
-                            .foregroundStyle(AssetTheme.textSecondary)
-                        Text(trailingUnitPriceValue)
-                            .font(AppTypography.rowTitle)
-                            .monospacedDigit()
-                            .foregroundStyle(AssetTheme.textPrimary)
-                        if let trailingUnitPriceTimestamp {
-                            Text(trailingUnitPriceTimestamp)
-                                .font(AppTypography.chartCaption)
-                                .monospacedDigit()
-                                .foregroundStyle(AssetTheme.textSecondary)
-                        }
-                    }
-                }
-            }
-
-            if item.marketAssetSymbol != nil {
-                HStack(spacing: 8) {
-                    Button {
-                        manualAutoPriceRefreshTask?.cancel()
-                        let writeID = ModelContextMutationBarrier.shared.beginDeferredWrite()
-                        manualAutoPriceRefreshTask = Task {
-                            defer { ModelContextMutationBarrier.shared.finishDeferredWrite(writeID) }
-                            do {
-                                try await ModelContextMutationBarrier.shared.waitUntilWriteIsAllowed(writeID)
-                            } catch {
-                                return
-                            }
-                            await refreshAutoPriceManually()
-                            guard !Task.isCancelled else { return }
-                            manualAutoPriceRefreshTask = nil
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            if isRefreshingAutoPrice {
-                                ProgressView()
-                                    .controlSize(.small)
-                                    .tint(AssetTheme.gold)
-                            } else {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(AppTypography.captionStrong)
-                            }
-                            Text(AppLocalization.string(isRefreshingAutoPrice ? "刷新中" : "手动刷新最新价格"))
-                                .font(AppTypography.captionStrong)
-                        }
-                        .foregroundStyle(AssetTheme.goldSoft)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(AssetTheme.overlayMedium.opacity(0.85), in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isRefreshingAutoPrice)
-
-                    Spacer(minLength: 0)
-                }
-            }
-
-            quickEditField(
-                title: primaryFieldTitle,
-                text: bindingForPrimaryField(),
-                placeholder: AppLocalization.format("输入%@", primaryFieldTitle),
-                focus: .primary
-            )
-
-            if let currentMarketValue {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(AppLocalization.string("当前市值"))
-                        .font(AppTypography.caption)
-                        .foregroundStyle(AssetTheme.textSecondary)
-                    Spacer(minLength: 12)
-                    Text(currentMarketValue.currencyString())
-                        .font(AppTypography.rowTitle)
-                        .monospacedDigit()
-                        .foregroundStyle(AssetTheme.goldSoft)
-                }
-            }
+            editorRow
+                .padding(.horizontal, 26)
+                .padding(.top, 63)
+                .padding(.bottom, errorMessage == nil ? 44 : 16)
 
             if let errorMessage {
                 Text(errorMessage)
                     .font(AppTypography.meta)
                     .foregroundStyle(AssetTheme.negative)
-                    .padding(.horizontal, 2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 26)
+                    .padding(.bottom, 14)
             }
+
+            Rectangle()
+                .fill(Color.white.opacity(0.12))
+                .frame(height: 1)
+                .padding(.horizontal, 20)
+
+            marketValueRow
+                .padding(.horizontal, 26)
+                .padding(.top, 24)
+                .padding(.bottom, 30)
         }
-        .frame(maxWidth: 360)
-        .padding(.horizontal, 18)
-        .padding(.vertical, 18)
+        .frame(maxWidth: 540, minHeight: 435, alignment: .top)
         .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            UnevenRoundedRectangle(
+                topLeadingRadius: 28,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 28,
+                style: .continuous
+            )
                 .fill(.ultraThinMaterial)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            UnevenRoundedRectangle(
+                topLeadingRadius: 28,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 28,
+                style: .continuous
+            )
                 .stroke(
                     LinearGradient(
-                        colors: [Color.white.opacity(0.18), AssetTheme.gold.opacity(0.14)],
+                        colors: [Color.white.opacity(0.16), AssetTheme.gold.opacity(0.08)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
                     lineWidth: 1
                 )
         }
-        .shadow(color: .black.opacity(0.28), radius: 30, x: 0, y: 18)
-        .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .shadow(color: .black.opacity(0.36), radius: 34, x: 0, y: -8)
+        .contentShape(
+            UnevenRoundedRectangle(
+                topLeadingRadius: 28,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 28,
+                style: .continuous
+            )
+        )
         .modifier(QuickRecordAutoFocusModifier(focusedField: $focusedField))
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -2852,38 +2822,216 @@ struct QuickRecordValueSheet: View {
         }
     }
 
-    @ViewBuilder
-    private func quickEditField(title: String, text: Binding<String>, placeholder: String, focus: QuickRecordValueField) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(AppLocalization.string(title))
-                .font(AppTypography.caption)
-                .foregroundStyle(AssetTheme.textSecondary)
-            TextField(placeholder, text: text)
-                .keyboardType(.decimalPad)
-                .textFieldStyle(.plain)
-                .font(.body.weight(.medium))
+    private var sheetHeader: some View {
+        HStack(spacing: 12) {
+            Button(action: onCancel) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 19, weight: .medium))
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(AppLocalization.string("取消"))
+
+            Spacer(minLength: 4)
+
+            Text(AppLocalization.string(item.name))
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(AssetTheme.textPrimary)
-                .focused($focusedField, equals: focus)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(AssetTheme.overlayMedium.opacity(0.9))
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                }
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+
+            Spacer(minLength: 4)
+
+            Button(AppLocalization.string("完成"), action: save)
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(AssetTheme.goldSoft)
+                .frame(minWidth: 44, minHeight: 44, alignment: .trailing)
+                .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 14)
+    }
+
+    private var editorRow: some View {
+        HStack(alignment: .center, spacing: 16) {
+            AssetItemGlyph(
+                item: item,
+                accent: isLiability ? AssetTheme.negative : AssetTheme.goldSoft,
+                size: 34
+            )
+            .frame(width: 46, height: 46)
+
+            inlinePrimaryField
+
+            if item.valuationMethod == .quantityAndUnitPrice {
+                inlineUnitPrice
+                    .frame(minWidth: 116, alignment: .trailing)
+            }
         }
     }
 
-    private func chromeButton(title: String, tint: Color, action: @escaping () -> Void) -> some View {
-        Button(AppLocalization.string(title), action: action)
-            .font(AppTypography.rowTitle)
-            .foregroundStyle(tint)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(Color.white.opacity(0.06), in: Capsule())
+    private var inlinePrimaryField: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            if item.valuationMethod == .directAmount {
+                Text("¥")
+                    .font(.system(size: 25, weight: .medium))
+                    .foregroundStyle(AssetTheme.textSecondary)
+            }
+
+            TextField(
+                AppLocalization.format("输入%@", primaryFieldTitle),
+                text: bindingForPrimaryField()
+            )
+            .keyboardType(.decimalPad)
+            .textFieldStyle(.plain)
+            .font(.system(size: 34, weight: .medium, design: .rounded))
+            .monospacedDigit()
+            .foregroundStyle(AssetTheme.textPrimary)
+            .focused($focusedField, equals: .primary)
+            .minimumScaleFactor(0.65)
+            .frame(width: inlinePrimaryTextFieldWidth, alignment: .leading)
+
+            if let quantityUnitTitle {
+                Text(quantityUnitTitle)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.bottom, 9)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(AssetTheme.goldSoft)
+                .frame(height: 1)
+        }
+        .accessibilityLabel(primaryFieldTitle)
+    }
+
+    @ViewBuilder
+    private var inlineUnitPrice: some View {
+        if item.marketAssetSymbol != nil {
+            VStack(alignment: .trailing, spacing: 8) {
+                if let trailingUnitPriceValue {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(trailingUnitPriceValue)
+                            .font(.system(size: 16, weight: .medium))
+                            .monospacedDigit()
+                            .foregroundStyle(AssetTheme.textPrimary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.76)
+
+                        if let quantityUnitTitle {
+                            Text("/ \(quantityUnitTitle)")
+                                .font(AppTypography.meta)
+                                .foregroundStyle(AssetTheme.textSecondary)
+                                .lineLimit(1)
+                        }
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    Text(isRefreshingAutoPrice
+                        ? AppLocalization.string("刷新中")
+                        : trailingUnitPriceTimestamp ?? "—")
+                        .font(AppTypography.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .lineLimit(1)
+
+                    refreshPriceButton
+                }
+            }
+        } else {
+            VStack(alignment: .trailing, spacing: 7) {
+                Text(trailingUnitPriceTitle ?? AppLocalization.string("单价"))
+                    .font(AppTypography.caption)
+                    .foregroundStyle(AssetTheme.textSecondary)
+
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("¥")
+                        .font(AppTypography.meta)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                    TextField(AppLocalization.string("单价"), text: $unitPriceText)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 16, weight: .medium))
+                        .monospacedDigit()
+                        .multilineTextAlignment(.trailing)
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .focused($focusedField, equals: .unitPrice)
+                        .frame(maxWidth: 82)
+                    if let quantityUnitTitle {
+                        Text("/ \(quantityUnitTitle)")
+                            .font(AppTypography.meta)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                }
+                .padding(.bottom, 5)
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.14))
+                        .frame(height: 1)
+                }
+            }
+        }
+    }
+
+    private var marketValueRow: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(AppLocalization.string("本次市值"))
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(AssetTheme.textSecondary)
+
+            Spacer(minLength: 16)
+
+            Text(currentMarketValue?.currencyString() ?? "—")
+                .font(.system(size: 27, weight: .medium, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(AssetTheme.goldSoft)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+        }
+    }
+
+    private var refreshPriceButton: some View {
+        Button(action: beginManualPriceRefresh) {
+            Group {
+                if isRefreshingAutoPrice {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(AssetTheme.goldSoft)
+                } else {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 15, weight: .medium))
+                }
+            }
+            .foregroundStyle(AssetTheme.textSecondary)
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isRefreshingAutoPrice)
+        .accessibilityLabel(AppLocalization.string("手动刷新最新价格"))
+    }
+
+    private func beginManualPriceRefresh() {
+        manualAutoPriceRefreshTask?.cancel()
+        let writeID = ModelContextMutationBarrier.shared.beginDeferredWrite()
+        manualAutoPriceRefreshTask = Task {
+            defer { ModelContextMutationBarrier.shared.finishDeferredWrite(writeID) }
+            do {
+                try await ModelContextMutationBarrier.shared.waitUntilWriteIsAllowed(writeID)
+            } catch {
+                return
+            }
+            await refreshAutoPriceManually()
+            guard !Task.isCancelled else { return }
+            manualAutoPriceRefreshTask = nil
+        }
     }
 
     private func bindingForPrimaryField() -> Binding<String> {
@@ -2945,20 +3093,8 @@ struct QuickRecordValueSheet: View {
             }
         }
 
-        let didRefreshLiveData: Bool
-        if let symbol = item.marketAssetSymbol,
-           symbol.hasPrefix(MarketAssetDescriptor.recordETFPrefix)
-            || symbol.hasPrefix(MarketAssetDescriptor.recordASharePrefix) {
-            do {
-                try await marketStore.refreshRecordSecurityHistory(symbol: symbol)
-                guard !Task.isCancelled else { return }
-                didRefreshLiveData = marketStore.history(for: symbol)?.prices.isEmpty == false
-            } catch {
-                didRefreshLiveData = false
-            }
-        } else {
-            didRefreshLiveData = await marketStore.refreshLiveData()
-        }
+        guard let symbol = item.marketAssetSymbol else { return }
+        let didRefreshLiveData = await marketStore.refreshRecordPrice(for: symbol)
         guard !Task.isCancelled else { return }
         guard didRefreshLiveData else {
             errorMessage = marketStore.errorMessage ?? AppLocalization.string("暂时没拿到最新价格，稍后再试")
@@ -2971,6 +3107,7 @@ struct QuickRecordValueSheet: View {
         }
 
         unitPriceText = latestRate.plainNumberString()
+        lastManualPriceRefreshAt = .now
 
         guard let snapshot else { return }
         guard !Task.isCancelled else { return }

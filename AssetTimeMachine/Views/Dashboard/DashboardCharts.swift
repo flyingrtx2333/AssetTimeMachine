@@ -1490,6 +1490,13 @@ struct DashboardFreedomProjectionChart: View {
         firstCrossingMarker(in: displayPoints)
     }
 
+    private var isUnreachable: Bool {
+        if case .unreachable = projection.status {
+            return true
+        }
+        return false
+    }
+
     private var valueDomain: ClosedRange<Double> {
         ChartLayoutSupport.paddedValueDomain(values: displayPoints.flatMap { [$0.projectedPassiveIncome, $0.projectedMonthlyExpense] })
     }
@@ -1511,8 +1518,8 @@ struct DashboardFreedomProjectionChart: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 12) {
-                projectionLegendChip(title: AppLocalization.string("被动收入"), color: AssetTheme.goldSoft)
-                projectionLegendChip(title: AppLocalization.string("通胀开销"), color: AssetTheme.accentOrange, dashed: true)
+                projectionLegendChip(title: AppLocalization.string("被动收入"), color: AssetTheme.positive)
+                projectionLegendChip(title: AppLocalization.string("通胀开销"), color: AssetTheme.negative, dashed: true)
 
                 Spacer(minLength: 8)
 
@@ -1555,106 +1562,137 @@ struct DashboardFreedomProjectionChart: View {
     }
 
     private var freedomProjectionChart: some View {
-        Chart {
-            ForEach(displayPoints) { point in
-                AreaMark(
-                    x: .value(AppLocalization.string("日期"), point.date),
-                    yStart: .value(AppLocalization.string("预计被动收入"), valueDomain.lowerBound),
-                    yEnd: .value(AppLocalization.string("预计被动收入"), point.projectedPassiveIncome)
-                )
-                .interpolationMethod(.monotone)
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [
-                            AssetTheme.goldSoft.opacity(0.22),
-                            AssetTheme.goldSoft.opacity(0.015)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
+        ZStack {
+            Chart {
+                ForEach(displayPoints) { point in
+                    AreaMark(
+                        x: .value(AppLocalization.string("日期"), point.date),
+                        yStart: .value(AppLocalization.string("预计被动收入"), valueDomain.lowerBound),
+                        yEnd: .value(AppLocalization.string("预计被动收入"), point.projectedPassiveIncome)
                     )
-                )
-            }
+                    .interpolationMethod(.monotone)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [
+                                AssetTheme.positive.opacity(0.20),
+                                AssetTheme.positive.opacity(0.012)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                }
 
-            ForEach(displayPoints) { point in
-                LineMark(
-                    x: .value(AppLocalization.string("日期"), point.date),
-                    y: .value(AppLocalization.string("预计被动收入"), point.projectedPassiveIncome)
-                )
-                .interpolationMethod(.monotone)
-                .lineStyle(StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
-                .foregroundStyle(AssetTheme.goldSoft)
-            }
+                ForEach(displayPoints) { point in
+                    LineMark(
+                        x: .value(AppLocalization.string("日期"), point.date),
+                        y: .value(AppLocalization.string("预计被动收入"), point.projectedPassiveIncome)
+                    )
+                    .interpolationMethod(.monotone)
+                    .lineStyle(StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                    .foregroundStyle(AssetTheme.positive)
+                }
 
-            ForEach(displayPoints) { point in
-                LineMark(
-                    x: .value(AppLocalization.string("日期"), point.date),
-                    y: .value(AppLocalization.string("通胀后月开销"), point.projectedMonthlyExpense),
-                    series: .value(AppLocalization.string("系列"), AppLocalization.string("通胀后月开销"))
-                )
-                .interpolationMethod(.monotone)
-                .lineStyle(StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round, dash: [6, 4]))
-                .foregroundStyle(AssetTheme.accentOrange.opacity(0.9))
-            }
+                ForEach(displayPoints) { point in
+                    LineMark(
+                        x: .value(AppLocalization.string("日期"), point.date),
+                        y: .value(AppLocalization.string("通胀后月开销"), point.projectedMonthlyExpense),
+                        series: .value(AppLocalization.string("系列"), AppLocalization.string("通胀后月开销"))
+                    )
+                    .interpolationMethod(.monotone)
+                    .lineStyle(StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round, dash: [6, 4]))
+                    .foregroundStyle(AssetTheme.negative.opacity(0.92))
+                }
 
-            if let crossingMarker {
-                RuleMark(x: .value(AppLocalization.string("追平时间"), crossingMarker.date))
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 4]))
-                    .foregroundStyle(AssetTheme.positive.opacity(0.8))
+                if let crossingMarker {
+                    RuleMark(x: .value(AppLocalization.string("追平时间"), crossingMarker.date))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                        .foregroundStyle(AssetTheme.positive.opacity(0.8))
 
-                PointMark(
-                    x: .value(AppLocalization.string("追平时间"), crossingMarker.date),
-                    y: .value(AppLocalization.string("追平值"), crossingMarker.passiveIncome)
-                )
-                .foregroundStyle(AssetTheme.positive)
-                .symbolSize(40)
-                .annotation(position: .top, spacing: 7) {
-                    crossingBadge(for: crossingMarker.monthOffset)
+                    PointMark(
+                        x: .value(AppLocalization.string("追平时间"), crossingMarker.date),
+                        y: .value(AppLocalization.string("追平值"), crossingMarker.passiveIncome)
+                    )
+                    .foregroundStyle(AssetTheme.positive)
+                    .symbolSize(40)
+                    .annotation(position: .top, spacing: 7) {
+                        crossingBadge(for: crossingMarker.monthOffset)
+                    }
+                }
+
+                if let latestPoint = displayPoints.last {
+                    PointMark(
+                        x: .value(AppLocalization.string("日期"), latestPoint.date),
+                        y: .value(AppLocalization.string("预计被动收入"), latestPoint.projectedPassiveIncome)
+                    )
+                    .foregroundStyle(AssetTheme.positive)
+                    .symbolSize(30)
                 }
             }
+            .chartXScale(domain: xDomain)
+            .chartYScale(domain: valueDomain)
+            .chartXAxis {
+                AxisMarks(values: xAxisDates) { _ in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
+                        .foregroundStyle(AssetTheme.chartGrid.opacity(0.68))
+                    AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
+                        .foregroundStyle(AssetTheme.chartTick.opacity(0.7))
+                    AxisValueLabel {
+                        EmptyView()
+                    }
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading, values: ChartLayoutSupport.threeTickValues(for: valueDomain)) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
+                        .foregroundStyle(AssetTheme.chartGrid.opacity(0.52))
+                    AxisValueLabel {
+                        if amountsVisible, let amount = value.as(Double.self) {
+                            Text(amount.dashboardCompactCurrencyString())
+                                .font(.system(size: 8.5, weight: .medium, design: .rounded))
+                                .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                        }
+                    }
+                }
+            }
+            .chartLegend(.hidden)
+            .chartPlotStyle { plotArea in
+                plotArea
+                    .background(AssetTheme.overlayFaint.opacity(0.08))
+            }
+            .accessibilityHidden(!amountsVisible)
 
-            if let latestPoint = displayPoints.last {
-                PointMark(
-                    x: .value(AppLocalization.string("日期"), latestPoint.date),
-                    y: .value(AppLocalization.string("预计被动收入"), latestPoint.projectedPassiveIncome)
-                )
-                .foregroundStyle(AssetTheme.goldSoft)
-                .symbolSize(30)
+            if isUnreachable {
+                unreachableWarning
             }
         }
         .frame(maxWidth: .infinity)
         .frame(height: 174)
-        .chartXScale(domain: xDomain)
-        .chartYScale(domain: valueDomain)
-        .chartXAxis {
-            AxisMarks(values: xAxisDates) { _ in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
-                    .foregroundStyle(AssetTheme.chartGrid.opacity(0.68))
-                AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
-                    .foregroundStyle(AssetTheme.chartTick.opacity(0.7))
-                AxisValueLabel {
-                    EmptyView()
-                }
-            }
+    }
+
+    private var unreachableWarning: some View {
+        VStack(spacing: 7) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(AssetTheme.negative)
+
+            Text(AppLocalization.string("按当前参数无法达到财富自由"))
+                .font(.system(size: 11, weight: .semibold, design: .default))
+                .foregroundStyle(AssetTheme.textPrimary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .chartYAxis {
-            AxisMarks(position: .leading, values: ChartLayoutSupport.threeTickValues(for: valueDomain)) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
-                    .foregroundStyle(AssetTheme.chartGrid.opacity(0.52))
-                AxisValueLabel {
-                    if amountsVisible, let amount = value.as(Double.self) {
-                        Text(amount.dashboardCompactCurrencyString())
-                            .font(.system(size: 8.5, weight: .medium, design: .rounded))
-                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-                    }
-                }
-            }
-        }
-        .chartLegend(.hidden)
-        .chartPlotStyle { plotArea in
-            plotArea
-                .background(AssetTheme.overlayFaint.opacity(0.08))
-        }
-        .accessibilityHidden(!amountsVisible)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AssetTheme.negative.opacity(0.24), lineWidth: 1)
+        )
+        .padding(.horizontal, 48)
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .combine)
     }
 
     private var horizonPicker: some View {

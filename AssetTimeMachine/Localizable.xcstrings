@@ -49,6 +49,14 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "yyyy年M月" } }
       }
     },
+    "yyyy年": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "yyyy" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "yyyy年" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "yyyy年" } }
+      }
+    },
     "早上好": {
       "extractionState": "manual",
       "localizations": {
@@ -215,6 +223,14 @@
         "en": { "stringUnit": { "state": "translated", "value": "Current Market Price" } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "当前市场价" } },
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "目前市價" } }
+      }
+    },
+    "本次市值": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Recorded Value" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "本次市值" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "本次市值" } }
       }
     },
     "当前市值": {
@@ -11765,19 +11781,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ update"
+            "value": "Updated %1$@"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@更新"
+            "value": "%@ 更新"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@更新"
+            "value": "%1$@ 更新"
           }
         }
       }

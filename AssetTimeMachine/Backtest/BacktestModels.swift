@@ -3122,6 +3122,8 @@ struct BacktestAssetOption: Identifiable, Sendable {
     let iconName: String
     let currency: String
     let unit: String
+    let logoURL: String?
+    let logoSource: String?
 
     var id: String { symbol }
 
@@ -3134,7 +3136,9 @@ struct BacktestAssetOption: Identifiable, Sendable {
         category: String = "other",
         iconName: String = "chart.line.uptrend.xyaxis",
         currency: String = "CNY",
-        unit: String = ""
+        unit: String = "",
+        logoURL: String? = nil,
+        logoSource: String? = nil
     ) {
         self.symbol = symbol
         self.title = title
@@ -3145,6 +3149,8 @@ struct BacktestAssetOption: Identifiable, Sendable {
         self.iconName = iconName
         self.currency = currency
         self.unit = unit
+        self.logoURL = logoURL
+        self.logoSource = logoSource
     }
 
 }

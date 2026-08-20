@@ -594,7 +594,7 @@ private enum MarketAssetCatalogDiskCache {
     nonisolated private static var fileURL: URL? {
         FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
             .appendingPathComponent("AssetTimeMachine", isDirectory: true)
-            .appendingPathComponent("market-asset-catalog-v1.json", isDirectory: false)
+            .appendingPathComponent("market-asset-catalog-v2.json", isDirectory: false)
     }
 
     nonisolated static func load() -> MarketAssetCatalogCacheEntry? {
@@ -841,9 +841,15 @@ final class RemoteMarketStore: ObservableObject {
         didSet { historyRevision &+= 1 }
     }
     @Published private(set) var historyRevision = 0
-    @Published private(set) var assetCatalog: [MarketAssetDescriptor] = []
-    @Published private(set) var recordETFAssetCatalog: [MarketAssetDescriptor] = []
-    @Published private(set) var recordAShareAssetCatalog: [MarketAssetDescriptor] = []
+    @Published private(set) var assetCatalog: [MarketAssetDescriptor] = [] {
+        didSet { MarketAssetLogoRegistry.register(assetCatalog) }
+    }
+    @Published private(set) var recordETFAssetCatalog: [MarketAssetDescriptor] = [] {
+        didSet { MarketAssetLogoRegistry.register(recordETFAssetCatalog) }
+    }
+    @Published private(set) var recordAShareAssetCatalog: [MarketAssetDescriptor] = [] {
+        didSet { MarketAssetLogoRegistry.register(recordAShareAssetCatalog) }
+    }
     @Published private(set) var recordMarketRevision = 0
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -863,7 +869,7 @@ final class RemoteMarketStore: ObservableObject {
     private var didLoadHistoryDiskCache = false
     private var historyDiskCacheLoadTask: Task<MarketHistoryCacheEntry?, Never>?
     private var historyRefreshTask: Task<Void, Never>?
-    private var targetedHistoryRefreshTask: Task<Void, Never>?
+    private var targetedHistoryRefreshTask: Task<Bool, Never>?
     private var assetCatalogRefreshTask: Task<Void, Never>?
     private var didLoadAssetCatalogDiskCache = false
     private var assetCatalogSavedAt: Date?
@@ -930,11 +936,12 @@ final class RemoteMarketStore: ObservableObject {
                 await mergeCatalogHistory(response.series)
             }
 
+            MarketAssetLogoRegistry.register(assets)
             let normalized = MarketAssetCatalog.normalized(assets)
             guard !normalized.isEmpty else { return }
             assetCatalog = normalized
             assetCatalogSavedAt = .now
-            let entry = MarketAssetCatalogCacheEntry(savedAt: .now, assets: normalized)
+            let entry = MarketAssetCatalogCacheEntry(savedAt: .now, assets: assets)
             _ = Task.detached(priority: .utility) {
                 MarketAssetCatalogDiskCache.save(entry)
             }
@@ -1264,6 +1271,38 @@ final class RemoteMarketStore: ObservableObject {
         return didRefreshAllLiveData
     }
 
+    @discardableResult
+    func refreshRecordPrice(for symbol: String) async -> Bool {
+        let normalizedSymbol = Self.normalizedHistorySymbol(symbol)
+        if normalizedSymbol.hasPrefix(MarketAssetDescriptor.recordETFPrefix)
+            || normalizedSymbol.hasPrefix(MarketAssetDescriptor.recordASharePrefix) {
+            do {
+                try await refreshRecordSecurityHistory(symbol: normalizedSymbol)
+                return recordUnitPriceInCNY(for: normalizedSymbol) != nil
+            } catch {
+                return false
+            }
+        }
+
+        let didRefreshLiveData = await refreshLiveData()
+        guard !Task.isCancelled else { return false }
+
+        if let kind = AutoPricedAssetKind(rawValue: normalizedSymbol), kind.isCurrency {
+            return didRefreshLiveData && recordUnitPriceInCNY(for: normalizedSymbol) != nil
+        }
+
+        if market(for: normalizedSymbol) != nil {
+            return didRefreshLiveData && recordUnitPriceInCNY(for: normalizedSymbol) != nil
+        }
+
+        let didRefreshHistory = await refreshHistory(
+            for: Set([normalizedSymbol]),
+            force: true
+        )
+        guard !Task.isCancelled else { return false }
+        return didRefreshHistory && recordUnitPriceInCNY(for: normalizedSymbol) != nil
+    }
+
     func refreshHistoryIfNeeded(force: Bool = false) async {
         await loadHistoryDiskCacheIfNeeded()
 
@@ -1285,29 +1324,36 @@ final class RemoteMarketStore: ObservableObject {
         }
     }
 
-    func refreshHistory(for requestedSymbols: Set<String>, force: Bool = false) async {
+    @discardableResult
+    func refreshHistory(for requestedSymbols: Set<String>, force: Bool = false) async -> Bool {
         await loadHistoryDiskCacheIfNeeded()
 
         if let historyRefreshTask {
             await historyRefreshTask.value
         }
         if let targetedHistoryRefreshTask {
-            await targetedHistoryRefreshTask.value
+            _ = await targetedHistoryRefreshTask.value
             self.targetedHistoryRefreshTask = nil
         }
 
-        let symbols = Set(requestedSymbols.map(Self.normalizedHistorySymbol))
+        let normalizedRequestedSymbols = Set(requestedSymbols.map(Self.normalizedHistorySymbol))
+        let symbols = normalizedRequestedSymbols
             .filter { $0 != "usd_cash" && (force || needsFullHistory(for: $0)) }
             .sorted()
-        guard !symbols.isEmpty else { return }
+        guard !symbols.isEmpty else {
+            return normalizedRequestedSymbols.allSatisfy { symbol in
+                symbol == "usd_cash" || history(for: symbol)?.prices.isEmpty == false
+            }
+        }
 
-        let task = Task { @MainActor [weak self] in
-            guard let self else { return }
-            await self.refreshTargetedHistory(symbols: symbols)
+        let task = Task<Bool, Never> { @MainActor [weak self] in
+            guard let self else { return false }
+            return await self.refreshTargetedHistory(symbols: symbols)
         }
         targetedHistoryRefreshTask = task
-        await task.value
+        let didRefresh = await task.value
         targetedHistoryRefreshTask = nil
+        return didRefresh
     }
 
     private func needsFullHistory(for symbol: String) -> Bool {
@@ -1345,6 +1391,7 @@ final class RemoteMarketStore: ObservableObject {
         guard let cached = await Task.detached(priority: .utility, operation: {
             MarketAssetCatalogDiskCache.load()
         }).value else { return }
+        MarketAssetLogoRegistry.register(cached.assets)
         let normalized = MarketAssetCatalog.normalized(cached.assets)
         if !normalized.isEmpty {
             assetCatalog = normalized
@@ -1479,11 +1526,11 @@ final class RemoteMarketStore: ObservableObject {
         updateErrorMessage()
     }
 
-    private func refreshTargetedHistory(symbols: [String]) async {
-        guard !symbols.isEmpty else { return }
-        guard !isRefreshingHistory else {
+    private func refreshTargetedHistory(symbols: [String]) async -> Bool {
+        guard !symbols.isEmpty else { return false }
+        if isRefreshingHistory {
             await waitForHistoryRefreshToFinish()
-            return
+            guard !Task.isCancelled else { return false }
         }
 
         isRefreshingHistory = true
@@ -1508,7 +1555,7 @@ final class RemoteMarketStore: ObservableObject {
                     incoming: incomingSeries
                 )
             }
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled else { return false }
 
             if mergeResult.didChange {
                 historySeries = mergeResult.seriesBySymbol
@@ -1533,11 +1580,13 @@ final class RemoteMarketStore: ObservableObject {
             _ = Task.detached(priority: .utility) {
                 MarketHistoryDiskCache.save(seriesBySymbol: cachedSeries, at: .now)
             }
+            return symbols.allSatisfy { history(for: $0)?.prices.isEmpty == false }
         } catch is CancellationError {
-            return
+            return false
         } catch {
             historyErrorMessage = error.localizedDescription
             updateErrorMessage()
+            return false
         }
     }
 
@@ -1586,7 +1635,10 @@ final class RemoteMarketStore: ObservableObject {
     }
 
     func market(for symbol: String) -> PublicMarketPrice? {
-        overview?.markets.first(where: { $0.symbol == symbol })
+        let normalizedSymbol = Self.normalizedHistorySymbol(symbol)
+        return overview?.markets.first(where: {
+            Self.normalizedHistorySymbol($0.symbol) == normalizedSymbol
+        })
     }
 
     func exchangeRate(for currency: String) -> Double? {
