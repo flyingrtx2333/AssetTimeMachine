@@ -1,0 +1,10 @@
+{
+  "protocol_id": "ATM-SVP-1",
+  "protocol_version": 1,
+  "frozen_from_git_parent": "98baf235",
+  "files": {
+    "docs/strategies/validation/strategy-validation-protocol-v1.md": "838d7b1282201a35802aa6a9125d23d65cc5b4818d70a14c3b8a17e663dbbdd6",
+    "tools/research-results/strategy-validation/strategy-validation-policy-v1.json": "509db5bd3a620841c677ba29ed3c411c3f3252a428da1023bdb5701475011a89"
+  },
+  "change_rule": "Any content change to a frozen file invalidates ATM-SVP-1. Governance changes require a new protocol version and a new freeze record; do not edit V1 in place."
+}

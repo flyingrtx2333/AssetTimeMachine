@@ -1,0 +1,10 @@
+{
+  "candidate_count": 2,
+  "evidence_class": "D0_EXPOSED",
+  "execution_git_commit": "52542785920aee3ca0021b8c4f9cdf0416f3fdda",
+  "formal_run_budget": 2,
+  "ledger_head_at_authorization": "e7d23fc1a397a8685b383db0850837f966e3360efc748e1428e056fd3e76d344",
+  "preregistration_record_hash": "e7d23fc1a397a8685b383db0850837f966e3360efc748e1428e056fd3e76d344",
+  "protocol_id": "ATM-SVP-1",
+  "trial_id": "ATM-SVP1-G5-EXEC-DELAY-001"
+}

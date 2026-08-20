@@ -1,0 +1,19 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_v11_execution_delay_stress.py",
+    "--formal",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/candidates"
+  ],
+  "execution_git_commit": "52542785920aee3ca0021b8c4f9cdf0416f3fdda",
+  "finished_at": "2026-08-19T22:27:35+08:00",
+  "preregistration_record_hash": "e7d23fc1a397a8685b383db0850837f966e3360efc748e1428e056fd3e76d344",
+  "protocol_id": "ATM-SVP-1",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/run-authorization.json",
+  "started_at": "2026-08-19T22:26:30+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/stdout.txt",
+  "trial_id": "ATM-SVP1-G5-EXEC-DELAY-001"
+}

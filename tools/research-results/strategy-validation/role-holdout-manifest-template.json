@@ -1,6 +1,6 @@
 {
-  "holdout_id": "ATM-SVP1-G4-ROLE-HOLDOUT-001",
-  "protocol_id": "ATM-SVP-1",
+  "holdout_id": "ATM-SVP2-G4-ROLE-HOLDOUT-001",
+  "protocol_id": "ATM-SVP-2",
   "strategy_id": "nfci-dual-core-v11",
   "strategy_version": "dualcore-v11-2026-08-15",
   "status": "DRAFT_NOT_FROZEN",
@@ -8,56 +8,113 @@
   "full_return_history_viewed_before_freeze": false,
   "freeze_git_ref": null,
   "frozen_at": null,
+  "selection_payload_sha256": null,
+  "local_exposure_scan": "tools/research-results/strategy-validation/holdouts/<holdout-id>-exposure-scan.json",
+  "evaluation_window": {
+    "rule": "intersection_of_all_role_metadata_coverage",
+    "start": null,
+    "end": null
+  },
   "role_slots": [
     {
       "role": "gold_safe_haven",
       "current_symbol": "gold_cny",
       "alternate_source": null,
-      "alternate_symbol": null,
+      "source_series_id": null,
+      "alternate_symbol": "g4_raw_gold_safe_haven",
+      "source_currency": null,
+      "source_unit": null,
+      "source_frequency": "daily",
+      "normalized_fixture_symbol": "atm_g4_gold_safe_haven",
+      "engine_input_currency": "CNY",
+      "engine_input_unit": "gram",
+      "normalization_rule": null,
+      "normalization_inputs": [],
       "metadata_checked": false,
       "metadata_coverage_start": null,
       "metadata_coverage_end": null,
-      "selection_reason_without_return_performance": null
+      "selection_reason_without_return_performance": null,
+      "metadata_evidence": []
     },
     {
       "role": "us_growth_equity",
       "current_symbol": "nasdaq",
       "alternate_source": null,
-      "alternate_symbol": null,
+      "source_series_id": null,
+      "alternate_symbol": "g4_raw_us_growth_equity",
+      "source_currency": null,
+      "source_unit": null,
+      "source_frequency": "daily",
+      "normalized_fixture_symbol": "atm_g4_us_growth_equity",
+      "engine_input_currency": "USD",
+      "engine_input_unit": "index",
+      "normalization_rule": null,
+      "normalization_inputs": [],
       "metadata_checked": false,
       "metadata_coverage_start": null,
       "metadata_coverage_end": null,
-      "selection_reason_without_return_performance": null
+      "selection_reason_without_return_performance": null,
+      "metadata_evidence": []
     },
     {
       "role": "us_broad_equity",
       "current_symbol": "sp500",
       "alternate_source": null,
-      "alternate_symbol": null,
+      "source_series_id": null,
+      "alternate_symbol": "g4_raw_us_broad_equity",
+      "source_currency": null,
+      "source_unit": null,
+      "source_frequency": "daily",
+      "normalized_fixture_symbol": "atm_g4_us_broad_equity",
+      "engine_input_currency": "USD",
+      "engine_input_unit": "index",
+      "normalization_rule": null,
+      "normalization_inputs": [],
       "metadata_checked": false,
       "metadata_coverage_start": null,
       "metadata_coverage_end": null,
-      "selection_reason_without_return_performance": null
+      "selection_reason_without_return_performance": null,
+      "metadata_evidence": []
     },
     {
       "role": "china_large_equity",
       "current_symbol": "csi300",
       "alternate_source": null,
-      "alternate_symbol": null,
+      "source_series_id": null,
+      "alternate_symbol": "g4_raw_china_large_equity",
+      "source_currency": null,
+      "source_unit": null,
+      "source_frequency": "daily",
+      "normalized_fixture_symbol": "atm_g4_china_large_equity",
+      "engine_input_currency": "CNY",
+      "engine_input_unit": "index",
+      "normalization_rule": null,
+      "normalization_inputs": [],
       "metadata_checked": false,
       "metadata_coverage_start": null,
       "metadata_coverage_end": null,
-      "selection_reason_without_return_performance": null
+      "selection_reason_without_return_performance": null,
+      "metadata_evidence": []
     },
     {
       "role": "china_broad_equity",
       "current_symbol": "shanghai_composite",
       "alternate_source": null,
-      "alternate_symbol": null,
+      "source_series_id": null,
+      "alternate_symbol": "g4_raw_china_broad_equity",
+      "source_currency": null,
+      "source_unit": null,
+      "source_frequency": "daily",
+      "normalized_fixture_symbol": "atm_g4_china_broad_equity",
+      "engine_input_currency": "CNY",
+      "engine_input_unit": "index",
+      "normalization_rule": null,
+      "normalization_inputs": [],
       "metadata_checked": false,
       "metadata_coverage_start": null,
       "metadata_coverage_end": null,
-      "selection_reason_without_return_performance": null
+      "selection_reason_without_return_performance": null,
+      "metadata_evidence": []
     }
   ],
   "formal_run_budget": {
@@ -67,11 +124,15 @@
     "additional_runs_after_results": 0
   },
   "pass_formulas": {
+    "reference": "same common evaluation window identity baseline frozen before HOLDOUT_BURNED",
+    "common_reference_cagr": "> 0",
+    "common_reference_sharpe": "> 0",
+    "common_reference_mdd_max": "25%",
     "positive_one_slot_sharpe_count_min": 4,
-    "one_slot_median_sharpe_min": "0.50 * frozen_baseline_sharpe",
+    "one_slot_median_sharpe_min": "0.50 * common_window_identity_sharpe",
     "all_alternate_cagr": "> 0",
-    "all_alternate_sharpe_min": "0.50 * frozen_baseline_sharpe",
-    "all_alternate_mdd_max": "2.00 * frozen_baseline_mdd"
+    "all_alternate_sharpe_min": "0.50 * common_window_identity_sharpe",
+    "all_alternate_mdd_max": "min(25%, 1.25 * common_window_identity_mdd)"
   },
   "failure_rule": "After the first formal run, every selected alternate becomes exposed development data. A FAIL is permanent for this strategy version; do not select a second holdout set for the same version."
 }

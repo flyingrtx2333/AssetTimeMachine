@@ -1,0 +1,51 @@
+{
+  "files": [
+    {
+      "bytes": 5271408,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/generalization_public_history.json",
+      "sha256": "ab534219b08cdf417ee041be4322d512b29505439c8d0f2a469438d01730ac88"
+    },
+    {
+      "bytes": 24847,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCICREDIT_initial_release.csv",
+      "row_count": 732,
+      "sha256": "953198633f2f19cd42450c631bda3cc1d25bd23b40afc8bf58fa45ada0c4fc8c"
+    },
+    {
+      "bytes": 24762,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCILEVERAGE_initial_release.csv",
+      "row_count": 732,
+      "sha256": "d198027125ca6b317258c2fb4725ed3e5b217356a6b8c549b68dbb18d237b486"
+    }
+  ],
+  "generated_at": "2026-08-19T21:41:25+08:00",
+  "git_commit": "965627b31dd14db6aa51e2a492df995178c7bb2c",
+  "kind": "dataset",
+  "metadata": {
+    "evidence_class": "D0_EXPOSED",
+    "nfci": "first-seen initial-release credit/leverage",
+    "price_fixture": "generalization_public_history.json",
+    "purpose": "V11 fixed execution-cost component stress"
+  },
+  "protocol_id": "ATM-SVP-1",
+  "trial_id": "ATM-SVP1-G5-EXEC-COST-001"
+}

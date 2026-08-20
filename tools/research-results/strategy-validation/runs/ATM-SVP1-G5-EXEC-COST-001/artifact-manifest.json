@@ -1,0 +1,93 @@
+{
+  "files": [
+    {
+      "bytes": 186214,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/candidates/adverse_cost-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "1a50514754fe83572eab11c43d93807ebac72f17d839be855db399304b861fc0"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/candidates/base_execution-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "a376c0745347e6b78c73376570157004c79a21a27bb8b75ec8560e83bd4cae07"
+    },
+    {
+      "bytes": 245,
+      "columns": [
+        "candidate_id",
+        "fee_percent",
+        "slippage_percent",
+        "cagr",
+        "mdd",
+        "vol",
+        "sharpe",
+        "trades",
+        "fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/candidates/candidate-metrics.csv",
+      "row_count": 2,
+      "sha256": "be8828e3574c7958d0283fbf0d211747583d25612ed3e75ae13100d6f66c7cff"
+    },
+    {
+      "bytes": 1527,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/candidates/candidate-metrics.json",
+      "sha256": "ce8848af5fb00456b70f87c7b4c5a5a701b6581de8bc52504e64a226d1505b94"
+    },
+    {
+      "bytes": 875,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/execution.json",
+      "sha256": "6869752f4e2f23035e8cd02ac18dd17aedf19213375f93866e929327a821900c"
+    },
+    {
+      "bytes": 433,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/run-authorization.json",
+      "sha256": "daac09121dce901814b4b2e87cd454073051ef967de0838b62b16d5381ae7adc"
+    },
+    {
+      "bytes": 0,
+      "format": "log",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1514,
+      "format": "log",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/stdout.log",
+      "sha256": "d5b7e31704a27dcd11f08f8641fe29c3b33b9879c6fba29549717775a31a595b"
+    }
+  ],
+  "generated_at": "2026-08-19T21:46:17+08:00",
+  "git_commit": "dccb08e19634099fb1d5bc22f0b8391fd479ee9b",
+  "kind": "result",
+  "metadata": {
+    "component": "G5_EXECUTION_COST_ONLY",
+    "component_status": "PASS",
+    "full_g5_status": "PENDING_DELAY_STRESS"
+  },
+  "protocol_id": "ATM-SVP-1",
+  "trial_id": "ATM-SVP1-G5-EXEC-COST-001"
+}

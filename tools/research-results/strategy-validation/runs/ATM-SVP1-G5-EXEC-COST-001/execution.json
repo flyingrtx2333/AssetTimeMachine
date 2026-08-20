@@ -1,0 +1,18 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_v11_execution_cost_stress.py",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/candidates"
+  ],
+  "execution_git_commit": "dccb08e19634099fb1d5bc22f0b8391fd479ee9b",
+  "finished_at": "2026-08-19T21:45:35+08:00",
+  "preregistration_record_hash": "b542d25bc895d80a8154060e901254aca6b476ca05f867b5b94bbd561282d0f3",
+  "protocol_id": "ATM-SVP-1",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/run-authorization.json",
+  "started_at": "2026-08-19T21:43:13+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/stderr.log",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/stdout.log",
+  "trial_id": "ATM-SVP1-G5-EXEC-COST-001"
+}

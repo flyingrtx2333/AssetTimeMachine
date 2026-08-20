@@ -1,0 +1,10 @@
+{
+  "candidate_count": 2,
+  "evidence_class": "D0_EXPOSED",
+  "execution_git_commit": "dccb08e19634099fb1d5bc22f0b8391fd479ee9b",
+  "formal_run_budget": 2,
+  "ledger_head_at_authorization": "b542d25bc895d80a8154060e901254aca6b476ca05f867b5b94bbd561282d0f3",
+  "preregistration_record_hash": "b542d25bc895d80a8154060e901254aca6b476ca05f867b5b94bbd561282d0f3",
+  "protocol_id": "ATM-SVP-1",
+  "trial_id": "ATM-SVP1-G5-EXEC-COST-001"
+}

@@ -1,0 +1,102 @@
+{
+  "protocol_id": "ATM-SVP-1",
+  "protocol_version": 1,
+  "strategy_id": "nfci-dual-core-v11",
+  "strategy_version": "dualcore-v11-2026-08-15",
+  "frozen_retrospective_baseline": {
+    "cagr": 0.14345,
+    "sharpe": 1.522,
+    "mdd": 0.07689,
+    "trades": 451,
+    "folds_total": 7,
+    "folds_sharpe_gt_1": 5,
+    "worst_fold_sharpe": 0.741,
+    "block63_sharpe_p025": 1.221,
+    "block63_mdd_p975": 0.1393
+  },
+  "G2_retrospective_robustness": {
+    "cagr_min": 0.14,
+    "sharpe_min": 1.50,
+    "mdd_max": 0.085,
+    "folds_sharpe_gt_1_min": 5,
+    "worst_fold_sharpe_min_exclusive": 0.0,
+    "block63_sharpe_p025_min": 1.15,
+    "block63_mdd_p975_max": 0.15
+  },
+  "G3_model_selection_risk": {
+    "dsr_probability_pass_min": 0.95,
+    "dsr_probability_weak_min": 0.90,
+    "pbo_pass_max": 0.20,
+    "pbo_strong_max": 0.10,
+    "legacy_v11_dsr_status": "NOT_CERTIFIED_LEGACY_TRIAL_COUNT"
+  },
+  "G4_domain_preserving_generalization": {
+    "role_slots": [
+      "gold_safe_haven",
+      "us_growth_equity",
+      "us_broad_equity",
+      "china_large_equity",
+      "china_broad_equity"
+    ],
+    "one_slot_runs": 5,
+    "all_alternate_runs": 1,
+    "formal_runs_allowed": 6,
+    "positive_one_slot_sharpe_count_min": 4,
+    "one_slot_median_sharpe_retention_min": 0.50,
+    "all_alternate_cagr_min_exclusive": 0.0,
+    "all_alternate_sharpe_retention_min": 0.50,
+    "all_alternate_mdd_multiple_max": 2.0,
+    "additional_holdout_sets_after_result": 0
+  },
+  "G5_execution_robustness": {
+    "base": {
+      "fee": 0.01,
+      "slippage": 0.0005,
+      "extra_execution_delay_sessions": 0
+    },
+    "adverse_stress": {
+      "fee": 0.015,
+      "slippage": 0.001,
+      "extra_execution_delay_sessions": 1
+    },
+    "stress_cagr_min_exclusive": 0.0,
+    "stress_sharpe_min_exclusive": 0.0,
+    "stress_mdd_multiple_max": 2.0
+  },
+  "G6_prospective_oos": {
+    "threshold_freeze": {
+      "frozen_at": "2026-08-18T16:28:08+08:00",
+      "new_sessions_at_freeze": 1,
+      "latest_signal_date_at_freeze": "2026-08-17",
+      "prospective_performance_metrics_viewed_or_used": false
+    },
+    "milestones": [63, 126, 252, 504],
+    "primary_decision_sessions": 252,
+    "strong_validation_sessions": 504,
+    "primary": {
+      "cagr_min_exclusive": 0.0,
+      "sharpe_min_exclusive": 0.0,
+      "mdd_multiple_max": 2.5
+    },
+    "strong": {
+      "sharpe_retention_min": 0.50,
+      "cagr_retention_min": 0.40,
+      "mdd_multiple_max": 2.0,
+      "must_beat_cash_yield_cny": true
+    }
+  },
+  "version_reset_triggers": [
+    "active_scale_change",
+    "rebalance_band_change",
+    "dual_core_weight_change",
+    "nfci_threshold_change",
+    "factor_add_remove",
+    "asset_role_change",
+    "point_in_time_definition_change",
+    "target_path_changing_bug_fix",
+    "trade_trigger_change",
+    "risk_budget_change",
+    "gross_cap_change",
+    "cash_model_change"
+  ]
+}

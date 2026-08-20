@@ -1,0 +1,50 @@
+{
+  "trial_id": "ATM-SVP1-G5-EXEC-DELAY-001",
+  "preregistration_record_hash": "e7d23fc1a397a8685b383db0850837f966e3360efc748e1428e056fd3e76d344",
+  "execution_git_commit": "52542785920aee3ca0021b8c4f9cdf0416f3fdda",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/run-authorization.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP1-G5-EXEC-DELAY-001.json",
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/artifact-manifest.json",
+  "status": "PASS",
+  "candidate_results": [
+    {
+      "candidate_id": "adverse_cost_replay_delay0",
+      "metrics": {
+        "cagr_percent": 13.051718,
+        "mdd_percent": 7.911928,
+        "vol_percent": 8.825383,
+        "sharpe": 1.387135,
+        "trades": 451,
+        "source_target_fingerprint": "ba67c8aa24bc7168",
+        "scheduled_rebalance_events": 166,
+        "configured_delay_sessions": 0
+      }
+    },
+    {
+      "candidate_id": "adverse_cost_plus_delay1",
+      "metrics": {
+        "cagr_percent": 12.648191,
+        "mdd_percent": 8.369464,
+        "vol_percent": 8.831440,
+        "sharpe": 1.347129,
+        "trades": 447,
+        "source_target_fingerprint": "ba67c8aa24bc7168",
+        "scheduled_rebalance_events": 166,
+        "configured_delay_sessions": 1
+      }
+    }
+  ],
+  "decision": "PASS. The delay=0 replay control matched the locked G5-001 adverse-cost result within every preregistered tolerance. Under 1.50% fee + 0.10% slippage plus one additional common BacktestDailySimulator session of execution delay, CAGR remained positive at 12.648191%, Sharpe remained positive at 1.347129, and MDD was 8.369464%, below the frozen 15.378108% limit. All 166 source rebalance events were replayed with configured_delay_sessions=1, with the same source rebalance-date sequence. Together with the already locked G5-001 cost-component PASS, this mechanically sets full G5 execution robustness to PASS. No delay2/3 or alternative cost level may be searched for V11 on this dataset.",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/candidates/adverse_cost_replay_delay0-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/candidates/adverse_cost_replay_delay0-schedule.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/candidates/adverse_cost_plus_delay1-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/candidates/adverse_cost_plus_delay1-schedule.csv"
+  ]
+}

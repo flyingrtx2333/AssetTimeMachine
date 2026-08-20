@@ -1,8 +1,9 @@
 {
-  "protocol_id": "ATM-SVP-1",
-  "protocol_version": 1,
-  "effective_at": "2026-08-18T16:28:08+08:00",
-  "source_git_ref": "5562bf18",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_version": 2,
+  "inherits_protocol_id": "ATM-SVP-1",
+  "effective_at": "2026-08-20T06:36:00+08:00",
+  "source_git_ref": "1381a038",
   "strategy": {
     "strategy_id": "nfci-dual-core-v11",
     "strategy_version": "dualcore-v11-2026-08-15",
@@ -10,6 +11,15 @@
     "frozen_at": "2026-08-15",
     "validation_state": "SHADOW",
     "research_target_fingerprint": "ba67c8aa24bc7168"
+  },
+  "governance_upgrade": {
+    "from_protocol": "ATM-SVP-1",
+    "scope": "G4_REFERENCE_FRAME_ONLY",
+    "strategy_target_path_changed": false,
+    "prospective_clock_restarted": false,
+    "holdout_burned_before_upgrade": false,
+    "holdout_full_history_opened_before_upgrade": false,
+    "reason": "V1 G4 full-history thresholds fail the original-asset identity control when the six substitutions are correctly placed on a common metadata-derived evaluation window. V2 changes only G4 to a same-window identity reference."
   },
   "legacy_research_exposure": {
     "complete_trial_count_known": false,
@@ -59,9 +69,9 @@
       "status": "PARTIAL",
       "future_trial_ledger_required": true,
       "dsr_probability_pass_min": 0.95,
-      "dsr_probability_weak_min": 0.90,
-      "pbo_pass_max": 0.20,
-      "pbo_strong_max": 0.10,
+      "dsr_probability_weak_min": 0.9,
+      "pbo_pass_max": 0.2,
+      "pbo_strong_max": 0.1,
       "existing_c3l3_pbo_scope_only": {
         "min": 0.057,
         "max": 0.111,
@@ -71,6 +81,8 @@
     },
     "G4_domain_preserving_generalization": {
       "status": "PENDING",
+      "reference_frame": "COMMON_EVALUATION_WINDOW_IDENTITY",
+      "evaluation_window_rule": "intersection_of_all_role_metadata_coverage",
       "role_slots": [
         "gold_safe_haven",
         "us_growth_equity",
@@ -82,17 +94,23 @@
       "formal_runs_allowed": 6,
       "one_slot_runs": 5,
       "all_alternate_runs": 1,
+      "full_history_identity_control_required": true,
+      "common_window_identity_control_required": true,
+      "common_reference_freeze_before_holdout_burn": true,
+      "common_reference_event": "G4_REFERENCE_BASELINE_FROZEN",
+      "common_reference": null,
       "thresholds": {
+        "common_reference_cagr_min_exclusive": 0.0,
+        "common_reference_sharpe_min_exclusive": 0.0,
+        "common_reference_mdd_absolute_max": 0.25,
         "positive_one_slot_sharpe_count_min": 4,
-        "one_slot_median_sharpe_retention_min": 0.50,
+        "one_slot_median_sharpe_retention_min": 0.5,
         "all_alternate_cagr_min_exclusive": 0.0,
-        "all_alternate_sharpe_retention_min": 0.50,
-        "all_alternate_mdd_multiple_max": 2.0
+        "all_alternate_sharpe_retention_min": 0.5,
+        "all_alternate_mdd_relative_multiple_max": 1.25,
+        "all_alternate_mdd_absolute_max": 0.25
       },
-      "derived_v11_thresholds": {
-        "all_alternate_sharpe_min": 0.761,
-        "all_alternate_mdd_max": 0.15378
-      },
+      "derived_thresholds": null,
       "legacy_country_equity_test": {
         "status": "FAIL",
         "markets": 8,
@@ -139,8 +157,7 @@
           "mdd": 0.07911928,
           "trades": 451,
           "target_fingerprint": "ba67c8aa24bc7168"
-        },
-        "full_gate_effect": "Cost-only component PASS; full gate required the separately frozen +1 execution-session delay trial."
+        }
       },
       "execution_delay_component": {
         "trial_id": "ATM-SVP1-G5-EXEC-DELAY-001",
@@ -162,10 +179,9 @@
           "mdd": 0.08369464,
           "trades": 447,
           "configured_delay_sessions": 1
-        },
-        "decision": "All preregistered delay-control and delay1 stress gates passed. Delay2/3 or alternate cost searches are forbidden for this V11 gate."
+        }
       },
-      "full_gate_decision": "PASS: fixed adverse costs and +1 common-session execution delay both satisfy ATM-SVP-1 G5."
+      "full_gate_decision": "PASS: fixed adverse costs and +1 common-session execution delay satisfy the inherited V1 G5."
     },
     "G6_prospective_oos": {
       "status": "RUNNING",
@@ -186,8 +202,8 @@
         "derived_v11_mdd_max": 0.192225
       },
       "strong_thresholds": {
-        "sharpe_retention_min": 0.50,
-        "cagr_retention_min": 0.40,
+        "sharpe_retention_min": 0.5,
+        "cagr_retention_min": 0.4,
         "mdd_multiple_max": 2.0,
         "must_beat_cash_yield_cny": true,
         "derived_v11_sharpe_min": 0.761,

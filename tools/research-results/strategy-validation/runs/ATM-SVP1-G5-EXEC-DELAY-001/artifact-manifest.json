@@ -1,0 +1,125 @@
+{
+  "files": [
+    {
+      "bytes": 186159,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/candidates/adverse_cost_plus_delay1-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "261e0491ec4604de368e59ab311d068c548db586b84fac0ffce9f1fc6ef7ea71"
+    },
+    {
+      "bytes": 4056,
+      "columns": [
+        "source_execution_date",
+        "stressed_execution_date",
+        "configured_delay_sessions"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/candidates/adverse_cost_plus_delay1-schedule.csv",
+      "row_count": 166,
+      "sha256": "8e2b0efdb545e9e36ef82a40c9f717ff6c07c7f65521b9bdc73f6cf43ba8b23e"
+    },
+    {
+      "bytes": 186214,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/candidates/adverse_cost_replay_delay0-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "fa21575f3701dec22394873a6390844bc841953aac3881793101f357e29a2fee"
+    },
+    {
+      "bytes": 4056,
+      "columns": [
+        "source_execution_date",
+        "stressed_execution_date",
+        "configured_delay_sessions"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/candidates/adverse_cost_replay_delay0-schedule.csv",
+      "row_count": 166,
+      "sha256": "9ebbde6415e838a71f7e2deb550b7956f2e8f1501aa70328a4a2721adc7fdaff"
+    },
+    {
+      "bytes": 315,
+      "columns": [
+        "candidate_id",
+        "cagr_percent",
+        "mdd_percent",
+        "vol_percent",
+        "sharpe",
+        "trades",
+        "daily_state_fingerprint",
+        "source_trade_count",
+        "scheduled_shift_count"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/candidates/candidate-metrics.csv",
+      "row_count": 2,
+      "sha256": "56d5a47cea2bbc054cc14e5de3e760266e639c46c1e55c6cc2cb8fc5e5bfcc66"
+    },
+    {
+      "bytes": 2117,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/candidates/candidate-metrics.json",
+      "sha256": "b49e11e25f79c9a834624053e16b7f1608581e947da27e68f75b76fd8b34694f"
+    },
+    {
+      "bytes": 897,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/execution.json",
+      "sha256": "218d22d28d334acfb6c50ada4c21585b47933d629cbc6e873c85084e10d2add7"
+    },
+    {
+      "bytes": 434,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/run-authorization.json",
+      "sha256": "28c3ac5522d30d2f77d4e6d41d8c01765f6ed1c7922f6283482f2482555d3d2b"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 2065,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-DELAY-001/stdout.txt",
+      "sha256": "5f833311aa63f8d389fe89b84e1516faf31db5678c804b30b03afd42c0e337bc"
+    }
+  ],
+  "generated_at": "2026-08-19T22:28:11+08:00",
+  "git_commit": "52542785920aee3ca0021b8c4f9cdf0416f3fdda",
+  "kind": "result",
+  "metadata": {
+    "adverse_fee_percent": 1.5,
+    "adverse_slippage_percent": 0.1,
+    "formal_delay_sessions": 1,
+    "full_g5_status": "PASS",
+    "gate": "G5"
+  },
+  "protocol_id": "ATM-SVP-1",
+  "trial_id": "ATM-SVP1-G5-EXEC-DELAY-001"
+}

@@ -1,0 +1,68 @@
+{
+  "trial_id": "ATM-SVP1-G5-EXEC-DELAY-001",
+  "protocol_id": "ATM-SVP-1",
+  "strategy_lineage": "nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "hypothesis": "If the frozen V11 target path is executed one additional common simulator session later under the already-frozen adverse execution assumptions (1.50% fee + 0.10% slippage), the strategy should remain economically positive and within the frozen drawdown stress bound. The delay changes only execution timing; it must not change the source V11 target path or introduce a new strategy rule.",
+  "evidence_class": "D0_EXPOSED",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP1-G5-EXEC-DELAY-001.json",
+  "allowed_changes": [
+    "execution timing only: each distinct source V11 rebalance event is replayed one common BacktestDailySimulator session later",
+    "the formal delayed replay keeps the already-frozen adverse execution assumptions: 1.50% fee and 0.10% slippage"
+  ],
+  "forbidden_changes": [
+    "any V11 target-path logic or parameter change",
+    "1.22 active scale change",
+    "25% high-core/final band change",
+    "50/50 dual-core weight change",
+    "NFCI C3/L3 threshold change",
+    "asset role or universe change",
+    "delay 2/3/etc. search after seeing delay1",
+    "any fee or slippage retuning after seeing delay1",
+    "using Python to simulate portfolio returns or strategy targets",
+    "replacing the same-engine research-provider replay after seeing the formal result"
+  ],
+  "candidate_ids": [
+    "adverse_cost_replay_delay0",
+    "adverse_cost_plus_delay1"
+  ],
+  "candidate_count": 2,
+  "selection_metric": "No winner selection. First require the delay=0 same-engine replay control to match the locked G5-001 adverse-cost result within preregistered tolerances, then mechanically evaluate the delay=1 candidate against the frozen G5 gates.",
+  "pass_fail_gates": [
+    "source V11 target fingerprint must equal ba67c8aa24bc7168",
+    "delay0 control CAGR must match G5-001 adverse_cost within 0.01 percentage points",
+    "delay0 control MDD must match G5-001 adverse_cost within 0.01 percentage points",
+    "delay0 control Sharpe must match G5-001 adverse_cost within 0.001",
+    "delay0 control trade-record count must equal G5-001 adverse_cost trade-record count",
+    "every delay0 schedule row must declare configured_delay_sessions=0 and execution date equal source date",
+    "delay1 CAGR > 0",
+    "delay1 Sharpe > 0",
+    "delay1 MDD <= 2.0 * frozen V11 base MDD = 15.378108%",
+    "delay1 schedule must contain the same source rebalance-date sequence and count as delay0",
+    "every delay1 schedule row must declare configured_delay_sessions=1 and stressed execution date must differ from source date",
+    "all two preregistered candidate outputs, portfolio series and schedule mappings must be reported",
+    "full G5 PASS requires both the previously locked G5-001 execution-cost component PASS and every gate in this delay trial PASS"
+  ],
+  "formal_run_budget": 2,
+  "follow_up_policy": "No additional execution-delay horizon or alternative cost setting may be tried on this historical dataset for V11 after the formal delay1 result is observed. A FAIL is permanent for V11 G5. Fixing a demonstrated implementation bug is allowed only with an INVALID result for this trial and a newly preregistered trial; the failed/invalid evidence must remain in the ledger.",
+  "swift_engine_entrypoint": "scripts/run_v11_execution_delay_stress.py -> tools/v11_execution_delay_stress.swiftpart -> BacktestEngine.runAdvancedRotationStrategyWithTrace (source V11) + BacktestEngine.runResearchTargetProviderStrategyWithTrace (fixed target replay) -> shared BacktestDailySimulator",
+  "expected_outputs": [
+    "delay0 same-engine replay metrics",
+    "delay1 formal metrics",
+    "portfolio value series for delay0 and delay1",
+    "source-to-execution schedule CSV for delay0 and delay1 with configured_delay_sessions",
+    "frozen V11 source target fingerprint",
+    "run authorization receipt and exact Git execution commit",
+    "candidate-metrics.json and candidate-metrics.csv",
+    "SHA-256 result artifact manifest",
+    "mechanical full G5 PASS/FAIL decision"
+  ],
+  "protocol_component": "G5_EXECUTION_DELAY",
+  "prior_locked_evidence": {
+    "trial_id": "ATM-SVP1-G5-EXEC-COST-001",
+    "result_record_hash": "827e49e7a7800b4e89a8064c24e792e8258ff8805bf47e368c707817853c543a",
+    "adverse_cost_cagr_percent": 13.051596,
+    "adverse_cost_mdd_percent": 7.911928,
+    "adverse_cost_sharpe": 1.386987,
+    "adverse_cost_trades": 451
+  }
+}

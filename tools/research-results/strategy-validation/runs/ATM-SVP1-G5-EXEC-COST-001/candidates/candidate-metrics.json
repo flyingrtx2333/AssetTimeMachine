@@ -1,0 +1,49 @@
+{
+  "candidate_results": [
+    {
+      "candidate_id": "base_execution",
+      "execution": {
+        "extra_execution_delay_sessions": 0,
+        "fee_percent": 1.0,
+        "slippage_percent": 0.05
+      },
+      "metrics": {
+        "cagr": 14.345615,
+        "fingerprint": "ba67c8aa24bc7168",
+        "mdd": 7.689054,
+        "sharpe": 1.522263,
+        "trades": 451,
+        "vol": 8.760667
+      },
+      "portfolio_series": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/candidates/base_execution-portfolio.csv"
+    },
+    {
+      "candidate_id": "adverse_cost",
+      "execution": {
+        "extra_execution_delay_sessions": 0,
+        "fee_percent": 1.5,
+        "slippage_percent": 0.1
+      },
+      "metrics": {
+        "cagr": 13.051596,
+        "fingerprint": "ba67c8aa24bc7168",
+        "mdd": 7.911928,
+        "sharpe": 1.386987,
+        "trades": 451,
+        "vol": 8.826308
+      },
+      "portfolio_series": "tools/research-results/strategy-validation/runs/ATM-SVP1-G5-EXEC-COST-001/candidates/adverse_cost-portfolio.csv"
+    }
+  ],
+  "checks": {
+    "adverse_cagr_gt_0": true,
+    "adverse_mdd_le_2x_base": true,
+    "adverse_sharpe_gt_0": true,
+    "target_fingerprint_unchanged": true
+  },
+  "component": "G5_EXECUTION_COST_ONLY",
+  "component_status": "PASS",
+  "full_g5_status": "PENDING_DELAY_STRESS",
+  "protocol_id": "ATM-SVP-1",
+  "scope_note": "This result does not include the frozen +1 session execution-delay stress and therefore cannot by itself set G5=PASS."
+}
