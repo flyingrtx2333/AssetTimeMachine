@@ -1,0 +1,73 @@
+{
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-001",
+  "preregistration_record_hash": "82694abbc8d4b5748c63d88d7f1e0daa5c5c36202cf53f4239d48cc09ab5003f",
+  "execution_git_commit": "9ab4fa78d2bb660f084fa796b14e14515c076aff",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-001/run-authorization.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-001.json",
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-001/artifact-manifest.json",
+  "status": "FAIL",
+  "candidate_results": [
+    {
+      "candidate_id": "F-CURVE",
+      "metrics": {
+        "cagr_percent": 16.153293,
+        "sharpe": 1.232041,
+        "mdd_percent": 18.778858,
+        "vol_percent": 12.364151,
+        "trades": 508,
+        "average_cash_ratio": 0.140809,
+        "target_fingerprint": "cf1631e66ffed07d",
+        "folds_sharpe_ge_always_fill": 3,
+        "worst_fold_sharpe": 0.370657,
+        "admit_for_robustness": false,
+        "strong_incremental": false
+      }
+    },
+    {
+      "candidate_id": "F-USD",
+      "metrics": {
+        "cagr_percent": 6.476118,
+        "sharpe": 0.604369,
+        "mdd_percent": 45.872745,
+        "vol_percent": 11.040047,
+        "trades": 1533,
+        "average_cash_ratio": 0.268788,
+        "target_fingerprint": "07564edbbc91a338",
+        "folds_sharpe_ge_always_fill": 1,
+        "worst_fold_sharpe": -1.070643,
+        "admit_for_robustness": false,
+        "strong_incremental": false
+      }
+    },
+    {
+      "candidate_id": "F-SIZE",
+      "metrics": {
+        "cagr_percent": 8.059363,
+        "sharpe": 0.739585,
+        "mdd_percent": 25.837376,
+        "vol_percent": 10.933586,
+        "trades": 1517,
+        "average_cash_ratio": 0.253837,
+        "target_fingerprint": "a2749b159ff2e5a5",
+        "folds_sharpe_ge_always_fill": 1,
+        "worst_fold_sharpe": -0.545281,
+        "admit_for_robustness": false,
+        "strong_incremental": false
+      }
+    }
+  ],
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED. The ungated ALWAYS-FILL control raised CAGR from V11 14.345615% to 17.695785% but increased MDD from 7.689054% to 18.778858% and reduced Sharpe from 1.522263 to 1.311050, showing that unused risk budget can raise return but at materially worse risk-adjusted performance. F-CURVE increased CAGR to 16.153293% but failed the preregistered incremental-timing gates: Sharpe 1.232041 did not beat ALWAYS-FILL 1.311050, MDD was 18.778858% >12%, and only 3/7 folds matched or beat ALWAYS-FILL Sharpe. F-USD and F-SIZE failed more strongly. No threshold, 20-observation horizon, stale tolerance, sign rule, 25% band, or overlay-semantic rescue search is allowed within this family.",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-001/candidates/ALWAYS-FILL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-001/candidates/F-CURVE-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-001/candidates/F-USD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-001/candidates/F-SIZE-portfolio.csv"
+  ]
+}
