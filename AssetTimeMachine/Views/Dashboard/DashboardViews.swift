@@ -17,8 +17,6 @@ struct DashboardView: View {
     let marketStore: RemoteMarketStore
     let cloudStore: AssetTimeMachineCloudStore
     let isActive: Bool
-    let onOpenQuant: () -> Void
-    let onOpenRecords: () -> Void
     @State private var cachedAllocationSlices: [DashboardAllocationSlice] = []
     @State private var cachedTrendPoints: [TimeMachineTrendPoint] = []
     @State private var cachedRecentTrendPoints: [TimeMachineTrendPoint] = []
@@ -38,15 +36,11 @@ struct DashboardView: View {
     init(
         marketStore: RemoteMarketStore,
         cloudStore: AssetTimeMachineCloudStore,
-        isActive: Bool,
-        onOpenQuant: @escaping () -> Void,
-        onOpenRecords: @escaping () -> Void
+        isActive: Bool
     ) {
         self.marketStore = marketStore
         self.cloudStore = cloudStore
         self.isActive = isActive
-        self.onOpenQuant = onOpenQuant
-        self.onOpenRecords = onOpenRecords
     }
 
     private var totalAssets: Double {
@@ -395,27 +389,6 @@ struct DashboardView: View {
             dashboardGreeting
                 .padding(.bottom, 16)
 
-            HStack(alignment: .center, spacing: 10) {
-                Button {
-                    freedomKeyboardDismissSignal += 1
-                    onOpenQuant()
-                } label: {
-                    DashboardTodayStrategyButton()
-                }
-                .buttonStyle(.plain)
-
-                Spacer(minLength: 0)
-
-                Button {
-                    freedomKeyboardDismissSignal += 1
-                    onOpenRecords()
-                } label: {
-                    DashboardQuickRecordButton()
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.bottom, 20)
-
             DashboardAssetHero(
                 totalAmount: totalAssets,
                 recentPoints: cachedRecentTrendPoints,
@@ -498,29 +471,6 @@ struct DashboardView: View {
 
 }
 
-struct DashboardTodayStrategyButton: View {
-    var body: some View {
-        HStack(spacing: 7) {
-            Image(systemName: "scope")
-                .font(.system(size: 14, weight: .semibold))
-
-            Text(AppLocalization.string("今日策略"))
-                .font(.system(size: 14, weight: .semibold))
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 10, weight: .bold))
-        }
-        .foregroundStyle(AssetTheme.goldSoft)
-        .padding(.horizontal, 14)
-        .frame(height: 42)
-        .background(AssetTheme.overlaySubtle.opacity(0.34), in: Capsule())
-        .overlay(
-            Capsule()
-                .stroke(AssetTheme.gold.opacity(0.3), lineWidth: 1)
-        )
-    }
-}
-
 struct DashboardCloudStatusButton: View {
     @ObservedObject var store: AssetTimeMachineCloudStore
 
@@ -537,23 +487,5 @@ struct DashboardCloudStatusButton: View {
         .foregroundStyle(store.indicatorState.symbolColor)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-    }
-}
-
-struct DashboardQuickRecordButton: View {
-    var body: some View {
-        VStack(spacing: 4) {
-            Image(systemName: "plus")
-                .font(.system(size: 22, weight: .medium))
-                .foregroundStyle(Color.black.opacity(0.82))
-                .frame(width: 42, height: 42)
-                .background(AssetTheme.gold, in: Circle())
-
-            Text(AppLocalization.string("记一笔"))
-                .font(.system(size: 10.5, weight: .semibold))
-                .foregroundStyle(AssetTheme.goldSoft)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(AppLocalization.string("记一笔"))
     }
 }

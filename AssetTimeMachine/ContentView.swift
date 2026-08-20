@@ -73,13 +73,7 @@ struct ContentView: View {
                     DashboardView(
                         marketStore: marketStore,
                         cloudStore: cloudStore,
-                        isActive: workActiveTab == .dashboard,
-                        onOpenQuant: {
-                            selectTab(.backtest)
-                        },
-                        onOpenRecords: {
-                            selectTab(.snapshots)
-                        }
+                        isActive: workActiveTab == .dashboard
                     )
                 }
             }

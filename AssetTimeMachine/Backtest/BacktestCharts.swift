@@ -1533,7 +1533,7 @@ struct AdvancedBacktestCombinedChartSection: View {
                 dateDomain: visibleDateDomain,
                 visibleSeriesIDs: effectiveVisibleExposureSeriesIDs,
                 assetColors: assetColors,
-                selectedDate: selectedDate
+                selectedDate: $selectedDate
             )
 
             if showsLegend {
@@ -1626,7 +1626,7 @@ struct BacktestExposureChartSection: View {
     var dateDomain: ClosedRange<Date>? = nil
     var visibleSeriesIDs: Set<String> = []
     var assetColors: [String: Color] = [:]
-    var selectedDate: Date? = nil
+    @Binding var selectedDate: Date?
 
     private var chartPoints: [BacktestExposurePoint] {
         BacktestExposureSampling.sampled(points)
@@ -1802,7 +1802,15 @@ struct BacktestExposureChartSection: View {
             .chartPlotStyle { plotArea in
                 plotArea.clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
-            .allowsHitTesting(false)
+            .chartOverlay { proxy in
+                TimeMachineDragOverlay(
+                    proxy: proxy,
+                    selectableValues: chartPoints,
+                    selectionDate: \.date
+                ) { date in
+                    selectedDate = date
+                }
+            }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(AppLocalization.string(assetSeries.isEmpty ? "持仓比例走势" : "资产持仓走势"))
         }
