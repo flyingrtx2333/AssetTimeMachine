@@ -99,6 +99,26 @@ G4_REFERENCE_REQUIRED_FIELDS = {
     "reference_artifact_path",
     "reference_artifact_sha256",
 }
+G4_HOLDOUT_INVALID_REQUIRED_FIELDS = {
+    "protocol_id",
+    "holdout_id",
+    "strategy_id",
+    "strategy_version",
+    "manifest_path",
+    "manifest_sha256",
+    "authorization_receipt_path",
+    "authorization_receipt_sha256",
+    "invalid_stage",
+    "invalid_reason",
+    "opened_full_history",
+    "formal_substitution_run_started",
+    "substitution_performance_metrics_viewed",
+    "permanent_no_replacement",
+    "successful_raw_roles",
+    "unavailable_roles",
+    "diagnostic_artifact_path",
+    "diagnostic_artifact_sha256",
+}
 
 
 def canonical_json(value: Any) -> str:
@@ -214,6 +234,7 @@ def verify_records(records: list[dict[str, Any]]) -> None:
     burned_holdout_by_strategy_version: dict[str, str] = {}
     upgraded_protocols: set[tuple[str, str]] = set()
     g4_reference_by_holdout: dict[str, dict[str, Any]] = {}
+    g4_invalid_by_holdout: set[str] = set()
 
     for index, record in enumerate(records, start=1):
         required = {"sequence", "timestamp", "event", "payload", "previous_hash", "record_hash"}
@@ -307,6 +328,32 @@ def verify_records(records: list[dict[str, Any]]) -> None:
             if float(payload["max_gross"]) > 1.000000001 or float(payload["min_weight"]) < -1e-10:
                 raise SystemExit("G4 common-window identity reference violates portfolio constraints")
             g4_reference_by_holdout[holdout_id] = record
+        elif event == "G4_HOLDOUT_INVALID":
+            require_payload_fields(payload, G4_HOLDOUT_INVALID_REQUIRED_FIELDS, "G4_HOLDOUT_INVALID")
+            if payload["protocol_id"] != "ATM-SVP-2":
+                raise SystemExit("G4_HOLDOUT_INVALID must use ATM-SVP-2")
+            holdout_id = str(payload["holdout_id"])
+            if holdout_id in g4_invalid_by_holdout:
+                raise SystemExit(f"Duplicate G4_HOLDOUT_INVALID for holdout_id={holdout_id}")
+            if payload.get("opened_full_history") is not True:
+                raise SystemExit("G4_HOLDOUT_INVALID must acknowledge that full history was opened")
+            if payload.get("formal_substitution_run_started") is not False:
+                raise SystemExit("G4 source-invalid state must precede any formal substitution run")
+            if payload.get("substitution_performance_metrics_viewed") is not False:
+                raise SystemExit("G4 source-invalid state must not be performance-driven")
+            if payload.get("permanent_no_replacement") is not True:
+                raise SystemExit("G4 invalid holdout must preserve the permanent no-replacement rule")
+            if holdout_id not in set(burned_holdout_by_strategy_version.values()):
+                raise SystemExit(f"G4_HOLDOUT_INVALID requires an earlier burned holdout: {holdout_id}")
+            successful = payload.get("successful_raw_roles")
+            unavailable = payload.get("unavailable_roles")
+            if not isinstance(successful, list) or not all(isinstance(x, str) and x for x in successful):
+                raise SystemExit("G4_HOLDOUT_INVALID successful_raw_roles must be a string list")
+            if not isinstance(unavailable, list) or not unavailable or not all(isinstance(x, str) and x for x in unavailable):
+                raise SystemExit("G4_HOLDOUT_INVALID unavailable_roles must be a non-empty string list")
+            if not isinstance(payload.get("invalid_reason"), str) or len(payload["invalid_reason"].strip()) < 20:
+                raise SystemExit("G4_HOLDOUT_INVALID invalid_reason is too weak")
+            g4_invalid_by_holdout.add(holdout_id)
         elif event == "HOLDOUT_BURNED":
             require_payload_fields(payload, HOLDOUT_BURN_REQUIRED_FIELDS, "HOLDOUT_BURNED")
             if payload["protocol_id"] not in SUPPORTED_PROTOCOL_IDS:
