@@ -1,6 +1,6 @@
-# ATM-SVP-1 操作入口
+# ATM-SVP 策略验证操作入口
 
-正式协议：`docs/strategies/validation/strategy-validation-protocol-v1.md`
+当前治理协议：`docs/strategies/validation/strategy-validation-protocol-v2.md`（`ATM-SVP-2`）；`ATM-SVP-1` 仍独立冻结并作为继承基线保留。
 
 ## 当前状态
 
@@ -84,6 +84,14 @@ python3 scripts/strategy_validation_stats.py dsr \
 ```
 
 V11 的 pre-ATM-SVP-1 历史 trial family 不完整，因此不得用该命令人为挑选少量历史候选来生成 retrospective DSR。
+
+## G3 / 模型选择纪律
+
+- **所有正式尝试都计入 trial accounting**：成功、失败、INCONCLUSIVE、INVALID、被放弃的参数点、ablation、factor screen、数据变换和 follow-up variant 都不能因为“最后没选它”而消失。
+- **禁止只保存赢家**：PREREGISTER 必须先冻结完整 candidate family / search budget / selection rule；RESULT 必须报告全部 preregistered candidates。
+- **禁止追着结果继续搜索直到过线**：前一次 formal result 较弱，不构成新增 grid、因子、资产集或参数邻域的许可。只有 preregistration 明确允许的 follow-up 才能继续；否则必须作为新的 trial family 重新事前注册。
+- **历史 trial count 不完整就不能认证 G3 PASS**：PBO 较低、参数邻域平滑、Bootstrap 好看只能作为局部证据，不能替代完整 multiple-testing accounting，也不能把 `NOT_CERTIFIED_LEGACY_TRIAL_COUNT` 改成 PASS。
+- **产品文案必须保留失败和不确定性**：G0–G6 是本项目的治理 Gate，不是行业认证。`PARTIAL / PENDING / RUNNING / FAIL` 不能被压缩成“完全验证”“机构级验证通过”或“泛化通过”。
 
 ## G4 pristine role holdout
 
