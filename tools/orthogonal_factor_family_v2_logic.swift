@@ -71,38 +71,7 @@ nonisolated enum OrthogonalFactorFamilyV2Logic {
         }
     }
 
-    static func fundingRiskOn(
-        commercialPaper: [Point],
-        fedFunds: [Point],
-        signalDate: String,
-        lookbackObservations: Int = 20
-    ) -> Bool? {
-        guard lookbackObservations > 0 else { return nil }
-        let spread = commonDerived(left: commercialPaper, right: fedFunds) { cp, ff in
-            cp - ff
-        }
-        guard let index = latestUsableIndex(points: spread, signalDate: signalDate),
-              index >= lookbackObservations else { return nil }
-        return spread[index].value <= spread[index - lookbackObservations].value
-    }
-
-    static func copperGoldRiskOn(
-        copper: [Point],
-        gold: [Point],
-        signalDate: String,
-        lookbackObservations: Int = 20
-    ) -> Bool? {
-        guard lookbackObservations > 0 else { return nil }
-        let ratio = commonDerived(left: copper, right: gold) { copperPrice, goldPrice in
-            guard copperPrice > 0, goldPrice > 0 else { return nil }
-            return copperPrice / goldPrice
-        }
-        guard let index = latestUsableIndex(points: ratio, signalDate: signalDate),
-              index >= lookbackObservations else { return nil }
-        return ratio[index].value >= ratio[index - lookbackObservations].value
-    }
-
-    static func skewRiskOn(
+    static func fallingRiskOn(
         points: [Point],
         signalDate: String,
         lookbackObservations: Int = 20
@@ -111,6 +80,62 @@ nonisolated enum OrthogonalFactorFamilyV2Logic {
               let index = latestUsableIndex(points: points, signalDate: signalDate),
               index >= lookbackObservations else { return nil }
         return points[index].value <= points[index - lookbackObservations].value
+    }
+
+    static func risingRiskOn(
+        points: [Point],
+        signalDate: String,
+        lookbackObservations: Int = 20
+    ) -> Bool? {
+        guard lookbackObservations > 0,
+              let index = latestUsableIndex(points: points, signalDate: signalDate),
+              index >= lookbackObservations else { return nil }
+        return points[index].value >= points[index - lookbackObservations].value
+    }
+
+    static func fundingRiskOn(
+        commercialPaper: [Point],
+        fedFunds: [Point],
+        signalDate: String,
+        lookbackObservations: Int = 20
+    ) -> Bool? {
+        let spread = commonDerived(left: commercialPaper, right: fedFunds) { cp, ff in
+            cp - ff
+        }
+        return fallingRiskOn(
+            points: spread,
+            signalDate: signalDate,
+            lookbackObservations: lookbackObservations
+        )
+    }
+
+    static func copperGoldRiskOn(
+        copper: [Point],
+        gold: [Point],
+        signalDate: String,
+        lookbackObservations: Int = 20
+    ) -> Bool? {
+        let ratio = commonDerived(left: copper, right: gold) { copperPrice, goldPrice in
+            guard copperPrice > 0, goldPrice > 0 else { return nil }
+            return copperPrice / goldPrice
+        }
+        return risingRiskOn(
+            points: ratio,
+            signalDate: signalDate,
+            lookbackObservations: lookbackObservations
+        )
+    }
+
+    static func skewRiskOn(
+        points: [Point],
+        signalDate: String,
+        lookbackObservations: Int = 20
+    ) -> Bool? {
+        fallingRiskOn(
+            points: points,
+            signalDate: signalDate,
+            lookbackObservations: lookbackObservations
+        )
     }
 
     static func completedRiskBudget(

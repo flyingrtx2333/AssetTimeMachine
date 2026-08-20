@@ -39,6 +39,21 @@ struct OrthogonalFactorFamilyV2LogicTest {
                 signalDate: day(24)
             ) == false
         )
+        let precomputedFunding = OrthogonalFactorFamilyV2Logic.commonDerived(
+            left: cpEasing,
+            right: fedFundsFlat,
+            transform: { $0 - $1 }
+        )
+        precondition(
+            OrthogonalFactorFamilyV2Logic.fallingRiskOn(
+                points: precomputedFunding,
+                signalDate: day(24)
+            ) == OrthogonalFactorFamilyV2Logic.fundingRiskOn(
+                commercialPaper: cpEasing,
+                fedFunds: fedFundsFlat,
+                signalDate: day(24)
+            )
+        )
 
         let copperStrong = (0...24).map {
             OrthogonalFactorFamilyV2Logic.Point(date: day($0), value: 3.0 + Double($0) * 0.03)
@@ -59,6 +74,24 @@ struct OrthogonalFactorFamilyV2LogicTest {
                 gold: copperStrong,
                 signalDate: day(24)
             ) == false
+        )
+        let precomputedCopperGold = OrthogonalFactorFamilyV2Logic.commonDerived(
+            left: copperStrong,
+            right: goldSlow,
+            transform: { copperPrice, goldPrice in
+                guard copperPrice > 0, goldPrice > 0 else { return nil }
+                return copperPrice / goldPrice
+            }
+        )
+        precondition(
+            OrthogonalFactorFamilyV2Logic.risingRiskOn(
+                points: precomputedCopperGold,
+                signalDate: day(24)
+            ) == OrthogonalFactorFamilyV2Logic.copperGoldRiskOn(
+                copper: copperStrong,
+                gold: goldSlow,
+                signalDate: day(24)
+            )
         )
 
         let skewFalling = (0...24).map {
