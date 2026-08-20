@@ -6,8 +6,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from build_g4_role_fixture import build_fixture
-from strategy_validation_holdout import EXPECTED_ROLES, ROLE_ENGINE_REQUIREMENTS, validate_manifest
+from build_g4_role_fixture import G4_BASE_REQUIRED_SYMBOLS, build_fixture
+from strategy_validation_holdout import EXPECTED_PASS_FORMULAS, EXPECTED_ROLES, ROLE_ENGINE_REQUIREMENTS, validate_manifest
 
 
 class G4RoleFixtureTests(unittest.TestCase):
@@ -25,11 +25,13 @@ class G4RoleFixtureTests(unittest.TestCase):
         scan_rows = []
         for index, (role, current_symbol) in enumerate(EXPECTED_ROLES, start=1):
             normalized_symbol, currency, unit = ROLE_ENGINE_REQUIREMENTS[role]
-            raw_symbol = f"RAW_ALT_{index}"
+            source_series_id = f"SOURCE_ALT_{index}"
+            raw_symbol = f"g4_raw_fixture_{index}"
             roles.append({
                 "role": role,
                 "current_symbol": current_symbol,
                 "alternate_source": f"source-{index}",
+                "source_series_id": source_series_id,
                 "alternate_symbol": raw_symbol,
                 "source_currency": currency,
                 "source_unit": unit,
@@ -48,13 +50,13 @@ class G4RoleFixtureTests(unittest.TestCase):
             scan_rows.append({
                 "role": role,
                 "source": f"source-{index}",
-                "symbol": raw_symbol,
+                "source_series_id": source_series_id,
                 "current_tracked_matches": [],
                 "historical_match_commits": [],
                 "locally_unexposed": True,
             })
         self.scan_path.write_text(json.dumps({
-            "protocol_id": "ATM-SVP-1",
+            "protocol_id": "ATM-SVP-2",
             "scan_type": "LOCAL_GIT_EXPOSURE_LOWER_BOUND",
             "all_locally_unexposed": True,
             "candidates": scan_rows,
@@ -62,7 +64,7 @@ class G4RoleFixtureTests(unittest.TestCase):
         }), encoding="utf-8")
         manifest = {
             "holdout_id": "TEST-HOLDOUT",
-            "protocol_id": "ATM-SVP-1",
+            "protocol_id": "ATM-SVP-2",
             "strategy_id": "nfci-dual-core-v11",
             "strategy_version": "dualcore-v11-2026-08-15",
             "status": "DRAFT_NOT_FROZEN",
@@ -72,6 +74,11 @@ class G4RoleFixtureTests(unittest.TestCase):
             "frozen_at": None,
             "selection_payload_sha256": None,
             "local_exposure_scan": self.scan_path.as_posix(),
+            "evaluation_window": {
+                "rule": "intersection_of_all_role_metadata_coverage",
+                "start": None,
+                "end": None,
+            },
             "role_slots": roles,
             "formal_run_budget": {
                 "one_slot_substitutions": 5,
@@ -79,13 +86,7 @@ class G4RoleFixtureTests(unittest.TestCase):
                 "total": 6,
                 "additional_runs_after_results": 0,
             },
-            "pass_formulas": {
-                "positive_one_slot_sharpe_count_min": 4,
-                "one_slot_median_sharpe_min": "0.50 * frozen_baseline_sharpe",
-                "all_alternate_cagr": "> 0",
-                "all_alternate_sharpe_min": "0.50 * frozen_baseline_sharpe",
-                "all_alternate_mdd_max": "2.00 * frozen_baseline_mdd",
-            },
+            "pass_formulas": dict(EXPECTED_PASS_FORMULAS),
             "failure_rule": "Permanent one-shot holdout.",
         }
         self.manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
@@ -118,6 +119,18 @@ class G4RoleFixtureTests(unittest.TestCase):
             rows.append(self.series(slot["alternate_symbol"], slot["source_currency"], slot["source_unit"]))
         return {"success": True, "symbols": [row["symbol"] for row in rows], "series": rows}
 
+    def make_base_document(self) -> dict:
+        rows = []
+        for symbol in sorted(G4_BASE_REQUIRED_SYMBOLS):
+            if symbol == "gold_cny":
+                currency, unit = "CNY", "gram"
+            elif symbol in {"nasdaq_composite", "sp500"}:
+                currency, unit = "USD", "index"
+            else:
+                currency, unit = "CNY", "index"
+            rows.append(self.series(symbol, currency, unit))
+        return {"success": True, "symbols": [row["symbol"] for row in rows], "series": rows}
+
     def test_identity_normalization_uses_neutral_role_symbols(self) -> None:
         manifest = self.make_manifest()
         validate_manifest(manifest, self.manifest_path, {"DRAFT_NOT_FROZEN"})
@@ -125,7 +138,7 @@ class G4RoleFixtureTests(unittest.TestCase):
         raw_document = self.make_raw_document(manifest)
         raw_path.write_text(json.dumps(raw_document), encoding="utf-8")
         output = build_fixture(
-            {"success": True, "symbols": ["base"], "series": [self.series("base", "CNY", "index")]},
+            self.make_base_document(),
             manifest,
             [(raw_path, raw_document)],
         )
@@ -144,7 +157,7 @@ class G4RoleFixtureTests(unittest.TestCase):
         raw_document["series"][0]["currency"] = "USD"
         raw_path.write_text(json.dumps(raw_document), encoding="utf-8")
         with self.assertRaises(SystemExit):
-            build_fixture({"success": True, "symbols": [], "series": []}, manifest, [(raw_path, raw_document)])
+            build_fixture(self.make_base_document(), manifest, [(raw_path, raw_document)])
 
     def test_unimplemented_normalization_rule_is_rejected(self) -> None:
         manifest = self.make_manifest()
@@ -154,7 +167,7 @@ class G4RoleFixtureTests(unittest.TestCase):
         raw_document = self.make_raw_document(manifest)
         raw_path.write_text(json.dumps(raw_document), encoding="utf-8")
         with self.assertRaises(SystemExit):
-            build_fixture({"success": True, "symbols": [], "series": []}, manifest, [(raw_path, raw_document)])
+            build_fixture(self.make_base_document(), manifest, [(raw_path, raw_document)])
 
 
 if __name__ == "__main__":

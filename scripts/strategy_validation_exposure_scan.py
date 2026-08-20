@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Conservative local-repository exposure scan for ATM-SVP-1 pristine holdout candidates.
+"""Conservative local-repository exposure scan for ATM-SVP-2 pristine holdout candidates.
 
 This scanner cannot prove that a series was never viewed outside Git. It establishes a reproducible
 lower-bound check: a proposed alternate symbol must not already appear in tracked strategy/research
@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -34,30 +35,44 @@ def git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     return result
 
 
-def current_matches(symbol: str, scopes: list[str], excludes: set[str]) -> list[str]:
-    result = git("grep", "-I", "-i", "-l", "-F", symbol, "HEAD", "--", *scopes, check=False)
+def exposure_pattern(series_id: str) -> str:
+    # POSIX-ERE-compatible token boundary. This avoids false positives for numeric index IDs such
+    # as 000016 appearing as a substring of a longer decimal/identifier while still matching IDs
+    # containing punctuation such as ^RUA or Au99.99.
+    escaped = re.escape(series_id)
+    return rf"(^|[^[:alnum:]_]){escaped}([^[:alnum:]_]|$)"
+
+
+def current_matches(series_id: str, scopes: list[str], excludes: set[str]) -> list[str]:
+    pattern = exposure_pattern(series_id)
+    result = git("grep", "-I", "-i", "-E", "-l", "-e", pattern, "HEAD", "--", *scopes, check=False)
     if result.returncode not in {0, 1}:
-        raise SystemExit(f"git grep failed for {symbol}: {result.stderr.strip()}")
-    return sorted(
-        line.strip()
-        for line in result.stdout.splitlines()
-        if line.strip() and line.strip() not in excludes
-    )
+        raise SystemExit(f"git grep failed for {series_id}: {result.stderr.strip()}")
+    matches: list[str] = []
+    for line in result.stdout.splitlines():
+        raw = line.strip()
+        if not raw:
+            continue
+        path = raw.split(":", 1)[1] if raw.startswith("HEAD:") else raw
+        if path not in excludes:
+            matches.append(path)
+    return sorted(set(matches))
 
 
-def historical_matches(symbol: str, scopes: list[str], max_commits: int) -> list[str]:
+def historical_matches(series_id: str, scopes: list[str], max_commits: int) -> list[str]:
+    pattern = exposure_pattern(series_id)
     result = git(
         "log",
         "--all",
         "-i",
-        f"-S{symbol}",
+        f"-G{pattern}",
         "--format=%H",
         "--",
         *scopes,
         check=False,
     )
     if result.returncode != 0:
-        raise SystemExit(f"git log -S failed for {symbol}: {result.stderr.strip()}")
+        raise SystemExit(f"git log -G failed for {series_id}: {result.stderr.strip()}")
     commits: list[str] = []
     for line in result.stdout.splitlines():
         sha = line.strip()
@@ -70,7 +85,7 @@ def historical_matches(symbol: str, scopes: list[str], max_commits: int) -> list
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--candidate", action="append", required=True, help="role=source:symbol")
+    parser.add_argument("--candidate", action="append", required=True, help="role=source:source_series_id")
     parser.add_argument("--scope", action="append", dest="scopes")
     parser.add_argument("--exclude", action="append", default=[])
     parser.add_argument("--output", required=True)
@@ -81,34 +96,34 @@ def main() -> None:
     excludes = set(args.exclude)
     rows = []
     seen_roles: set[str] = set()
-    seen_symbols: set[str] = set()
+    seen_series_ids: set[str] = set()
     for raw in args.candidate:
         if "=" not in raw or ":" not in raw.split("=", 1)[1]:
-            raise SystemExit(f"Invalid --candidate {raw!r}; expected role=source:symbol")
-        role, source_symbol = raw.split("=", 1)
-        source, symbol = source_symbol.split(":", 1)
-        role, source, symbol = role.strip(), source.strip(), symbol.strip()
-        if not role or not source or not symbol:
+            raise SystemExit(f"Invalid --candidate {raw!r}; expected role=source:source_series_id")
+        role, source_series = raw.split("=", 1)
+        source, series_id = source_series.split(":", 1)
+        role, source, series_id = role.strip(), source.strip(), series_id.strip()
+        if not role or not source or not series_id:
             raise SystemExit(f"Invalid --candidate {raw!r}; values must be non-empty")
         if role in seen_roles:
             raise SystemExit(f"Duplicate role: {role}")
-        if symbol.casefold() in seen_symbols:
-            raise SystemExit(f"Duplicate alternate symbol: {symbol}")
+        if series_id.casefold() in seen_series_ids:
+            raise SystemExit(f"Duplicate source series id: {series_id}")
         seen_roles.add(role)
-        seen_symbols.add(symbol.casefold())
-        current = current_matches(symbol, scopes, excludes)
-        history = historical_matches(symbol, scopes, args.max_history_commits)
+        seen_series_ids.add(series_id.casefold())
+        current = current_matches(series_id, scopes, excludes)
+        history = historical_matches(series_id, scopes, args.max_history_commits)
         rows.append({
             "role": role,
             "source": source,
-            "symbol": symbol,
+            "source_series_id": series_id,
             "current_tracked_matches": current,
             "historical_match_commits": history,
             "locally_unexposed": not current and not history,
         })
 
     output = {
-        "protocol_id": "ATM-SVP-1",
+        "protocol_id": "ATM-SVP-2",
         "scan_type": "LOCAL_GIT_EXPOSURE_LOWER_BOUND",
         "generated_at": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
         "git_head": git("rev-parse", "HEAD").stdout.strip(),

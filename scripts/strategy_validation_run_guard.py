@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Authorize a formal ATM-SVP-1 experiment only after its preregistration is committed.
+"""Authorize a formal ATM-SVP experiment only after its preregistration is committed.
 
 This guard does not execute a strategy. It proves that the requested trial exists in the durable
 hash-chained ledger, that the exact preregistration record is present in the current Git HEAD, that
@@ -94,8 +94,9 @@ def main() -> None:
             "Formal run refused: working-ledger preregistration differs from the version committed in HEAD"
         )
 
+    protocol_id = preregistration["payload"]["protocol_id"]
     receipt = {
-        "protocol_id": "ATM-SVP-1",
+        "protocol_id": protocol_id,
         "trial_id": args.trial_id,
         "preregistration_record_hash": preregistration["record_hash"],
         "execution_git_commit": head,

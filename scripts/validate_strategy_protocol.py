@@ -20,17 +20,22 @@ DEFAULT_MANIFEST = Path(
 DEFAULT_LEDGER = Path(
     "tools/research-results/strategy-validation/trial-ledger.jsonl"
 )
-POLICY = Path(
-    "tools/research-results/strategy-validation/strategy-validation-policy-v1.json"
-)
-FREEZE = Path(
-    "tools/research-results/strategy-validation/protocol-freeze-v1.json"
-)
+PROTOCOL_FILES = {
+    "ATM-SVP-1": {
+        "version": 1,
+        "policy": Path("tools/research-results/strategy-validation/strategy-validation-policy-v1.json"),
+        "freeze": Path("tools/research-results/strategy-validation/protocol-freeze-v1.json"),
+        "document": Path("docs/strategies/validation/strategy-validation-protocol-v1.md"),
+    },
+    "ATM-SVP-2": {
+        "version": 2,
+        "policy": Path("tools/research-results/strategy-validation/strategy-validation-policy-v2.json"),
+        "freeze": Path("tools/research-results/strategy-validation/protocol-freeze-v2.json"),
+        "document": Path("docs/strategies/validation/strategy-validation-protocol-v2.md"),
+    },
+}
 PUBLIC_CORE = Path("AssetTimeMachine/Backtest/PublicBacktestCore.swift")
 BACKTEST_MODELS = Path("AssetTimeMachine/Backtest/BacktestModels.swift")
-PROTOCOL_DOC = Path(
-    "docs/strategies/validation/strategy-validation-protocol-v1.md"
-)
 AGENTS = Path("AGENTS.md")
 
 
@@ -57,12 +62,24 @@ def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def validate_policy_freeze() -> dict[str, Any]:
-    require(POLICY.exists(), f"Frozen policy missing: {POLICY}")
-    require(FREEZE.exists(), f"Protocol freeze record missing: {FREEZE}")
-    freeze = read_json(FREEZE)
-    require(freeze["protocol_id"] == "ATM-SVP-1", "Unexpected freeze protocol_id")
-    require(freeze["protocol_version"] == 1, "Unexpected freeze protocol_version")
+def protocol_files(protocol_id: str) -> dict[str, Any]:
+    config = PROTOCOL_FILES.get(protocol_id)
+    require(config is not None, f"Unsupported protocol_id: {protocol_id}")
+    return config
+
+
+def validate_policy_freeze(protocol_id: str) -> dict[str, Any]:
+    config = protocol_files(protocol_id)
+    policy_path = config["policy"]
+    freeze_path = config["freeze"]
+    document_path = config["document"]
+    version = config["version"]
+    require(policy_path.exists(), f"Frozen policy missing: {policy_path}")
+    require(freeze_path.exists(), f"Protocol freeze record missing: {freeze_path}")
+    require(document_path.exists(), f"Protocol document missing: {document_path}")
+    freeze = read_json(freeze_path)
+    require(freeze["protocol_id"] == protocol_id, "Unexpected freeze protocol_id")
+    require(freeze["protocol_version"] == version, "Unexpected freeze protocol_version")
     frozen_files = freeze.get("files")
     require(isinstance(frozen_files, dict) and frozen_files, "Freeze record has no files")
     for raw_path, expected_hash in frozen_files.items():
@@ -71,15 +88,16 @@ def validate_policy_freeze() -> dict[str, Any]:
         actual_hash = file_sha256(path)
         require(
             actual_hash == expected_hash,
-            f"Frozen governance file changed in place: {path}; expected={expected_hash}, actual={actual_hash}. Create ATM-SVP-2 instead.",
+            f"Frozen governance file changed in place: {path}; expected={expected_hash}, actual={actual_hash}. Create the next protocol version instead.",
         )
-    policy = read_json(POLICY)
-    require(policy["protocol_id"] == "ATM-SVP-1", "Unexpected policy protocol_id")
-    require(policy["protocol_version"] == 1, "Unexpected policy protocol_version")
+    policy = read_json(policy_path)
+    require(policy["protocol_id"] == protocol_id, "Unexpected policy protocol_id")
+    require(policy["protocol_version"] == version, "Unexpected policy protocol_version")
     return policy
 
 
 def validate_policy_consistency(manifest: dict[str, Any], policy: dict[str, Any]) -> None:
+    protocol_version = int(manifest["protocol_version"])
     strategy = manifest["strategy"]
     require(strategy["strategy_id"] == policy["strategy_id"], "Strategy ID drifted from frozen policy")
     require(strategy["strategy_version"] == policy["strategy_version"], "Strategy version drifted from frozen policy")
@@ -104,14 +122,41 @@ def validate_policy_consistency(manifest: dict[str, Any], policy: dict[str, Any]
     p4 = policy["G4_domain_preserving_generalization"]
     for key in ["role_slots", "one_slot_runs", "all_alternate_runs", "formal_runs_allowed"]:
         require(g4[key] == p4[key], f"G4 policy drift: {key}")
-    for key in [
-        "positive_one_slot_sharpe_count_min",
-        "one_slot_median_sharpe_retention_min",
-        "all_alternate_cagr_min_exclusive",
-        "all_alternate_sharpe_retention_min",
-        "all_alternate_mdd_multiple_max",
-    ]:
-        require(g4["thresholds"][key] == p4[key], f"G4 threshold drift: {key}")
+    if protocol_version == 1:
+        for key in [
+            "positive_one_slot_sharpe_count_min",
+            "one_slot_median_sharpe_retention_min",
+            "all_alternate_cagr_min_exclusive",
+            "all_alternate_sharpe_retention_min",
+            "all_alternate_mdd_multiple_max",
+        ]:
+            require(g4["thresholds"][key] == p4[key], f"G4 threshold drift: {key}")
+    else:
+        for key in [
+            "reference_frame",
+            "evaluation_window_rule",
+            "full_history_identity_control_required",
+            "common_window_identity_control_required",
+            "common_reference_freeze_before_holdout_burn",
+            "common_reference_event",
+        ]:
+            require(g4[key] == p4[key], f"G4 V2 policy drift: {key}")
+        threshold_mapping = {
+            "common_reference_cagr_min_exclusive": "cagr_min_exclusive",
+            "common_reference_sharpe_min_exclusive": "sharpe_min_exclusive",
+            "common_reference_mdd_absolute_max": "mdd_absolute_max",
+            "positive_one_slot_sharpe_count_min": "positive_one_slot_sharpe_count_min",
+            "one_slot_median_sharpe_retention_min": "one_slot_median_sharpe_retention_min",
+            "all_alternate_cagr_min_exclusive": "all_alternate_cagr_min_exclusive",
+            "all_alternate_sharpe_retention_min": "all_alternate_sharpe_retention_min",
+            "all_alternate_mdd_relative_multiple_max": "all_alternate_mdd_relative_multiple_max",
+            "all_alternate_mdd_absolute_max": "all_alternate_mdd_absolute_max",
+        }
+        for manifest_key, policy_key in threshold_mapping.items():
+            policy_value = p4.get(policy_key)
+            if policy_value is None and policy_key in {"cagr_min_exclusive", "sharpe_min_exclusive", "mdd_absolute_max"}:
+                policy_value = p4["common_reference_preconditions"][policy_key]
+            require(g4["thresholds"][manifest_key] == policy_value, f"G4 V2 threshold drift: {manifest_key}")
 
     g5 = gates["G5_execution_robustness"]
     p5 = policy["G5_execution_robustness"]
@@ -176,17 +221,48 @@ def validate_g3(manifest: dict[str, Any]) -> None:
 
 
 def validate_g4(manifest: dict[str, Any]) -> None:
+    protocol_version = int(manifest["protocol_version"])
     baseline = manifest["frozen_retrospective_baseline"]
     gate = manifest["gates"]["G4_domain_preserving_generalization"]
     thresholds = gate["thresholds"]
-    derived = gate["derived_v11_thresholds"]
 
-    expected_sharpe = baseline["sharpe"] * thresholds["all_alternate_sharpe_retention_min"]
-    expected_mdd = baseline["mdd"] * thresholds["all_alternate_mdd_multiple_max"]
-    require(close(derived["all_alternate_sharpe_min"], expected_sharpe, 1e-6), "G4 derived Sharpe threshold drifted")
-    require(close(derived["all_alternate_mdd_max"], expected_mdd, 1e-6), "G4 derived MDD threshold drifted")
     require(gate["formal_runs_allowed"] == gate["one_slot_runs"] + gate["all_alternate_runs"], "G4 run budget mismatch")
     require(len(gate["role_slots"]) == gate["one_slot_runs"], "G4 role-slot count mismatch")
+
+    if protocol_version == 1:
+        derived = gate["derived_v11_thresholds"]
+        expected_sharpe = baseline["sharpe"] * thresholds["all_alternate_sharpe_retention_min"]
+        expected_mdd = baseline["mdd"] * thresholds["all_alternate_mdd_multiple_max"]
+        require(close(derived["all_alternate_sharpe_min"], expected_sharpe, 1e-6), "G4 derived Sharpe threshold drifted")
+        require(close(derived["all_alternate_mdd_max"], expected_mdd, 1e-6), "G4 derived MDD threshold drifted")
+    else:
+        require(gate["reference_frame"] == "COMMON_EVALUATION_WINDOW_IDENTITY", "G4 V2 reference frame drifted")
+        require(
+            gate["evaluation_window_rule"] == "intersection_of_all_role_metadata_coverage",
+            "G4 V2 evaluation-window rule drifted",
+        )
+        common_reference = gate.get("common_reference")
+        derived = gate.get("derived_thresholds")
+        if common_reference is None:
+            require(derived is None, "G4 V2 cannot have derived thresholds before the common reference is frozen")
+            require(gate["status"] == "PENDING", "G4 V2 without a common reference must remain PENDING")
+        else:
+            require(isinstance(common_reference, dict), "G4 V2 common_reference must be an object")
+            for key in ["cagr", "sharpe", "mdd"]:
+                require(isinstance(common_reference.get(key), (int, float)), f"G4 V2 common reference missing {key}")
+            require(common_reference["cagr"] > thresholds["common_reference_cagr_min_exclusive"], "G4 V2 common reference CAGR precondition failed")
+            require(common_reference["sharpe"] > thresholds["common_reference_sharpe_min_exclusive"], "G4 V2 common reference Sharpe precondition failed")
+            require(common_reference["mdd"] <= thresholds["common_reference_mdd_absolute_max"], "G4 V2 common reference MDD precondition failed")
+            require(isinstance(derived, dict), "G4 V2 derived thresholds missing after common reference freeze")
+            expected_sharpe = common_reference["sharpe"] * thresholds["all_alternate_sharpe_retention_min"]
+            expected_median = common_reference["sharpe"] * thresholds["one_slot_median_sharpe_retention_min"]
+            expected_mdd = min(
+                thresholds["all_alternate_mdd_absolute_max"],
+                common_reference["mdd"] * thresholds["all_alternate_mdd_relative_multiple_max"],
+            )
+            require(close(derived["all_alternate_sharpe_min"], expected_sharpe, 1e-6), "G4 V2 derived all-alternate Sharpe drifted")
+            require(close(derived["one_slot_median_sharpe_min"], expected_median, 1e-6), "G4 V2 derived one-slot median Sharpe drifted")
+            require(close(derived["all_alternate_mdd_max"], expected_mdd, 1e-6), "G4 V2 derived MDD drifted")
 
     legacy = gate["legacy_country_equity_test"]
     legacy_pass = (
@@ -233,10 +309,15 @@ def validate_g6(manifest: dict[str, Any]) -> None:
     )
 
 
-def verify_artifact_manifest(path: Path, trial_id: str, expected_kind: str) -> dict[str, Any]:
+def verify_artifact_manifest(
+    path: Path,
+    trial_id: str,
+    expected_kind: str,
+    expected_protocol_id: str,
+) -> dict[str, Any]:
     require(path.exists(), f"Evidence manifest missing: {path}")
     manifest = read_json(path)
-    require(manifest.get("protocol_id") == "ATM-SVP-1", f"Evidence manifest protocol mismatch: {path}")
+    require(manifest.get("protocol_id") == expected_protocol_id, f"Evidence manifest protocol mismatch: {path}")
     require(manifest.get("trial_id") == trial_id, f"Evidence manifest trial mismatch: {path}")
     require(manifest.get("kind") == expected_kind, f"Evidence manifest kind mismatch: {path}")
     files = manifest.get("files")
@@ -252,11 +333,25 @@ def verify_artifact_manifest(path: Path, trial_id: str, expected_kind: str) -> d
 
 
 def validate_result_evidence(records: list[dict[str, Any]]) -> None:
+    preregistration_protocols: dict[str, str] = {}
+    for record in records:
+        if record.get("event") != "PREREGISTER":
+            continue
+        payload = record.get("payload")
+        if not isinstance(payload, dict):
+            continue
+        trial_id = payload.get("trial_id")
+        protocol_id = payload.get("protocol_id")
+        if isinstance(trial_id, str) and isinstance(protocol_id, str):
+            preregistration_protocols[trial_id] = protocol_id
+
     for record in records:
         if record.get("event") != "RESULT":
             continue
         payload = record["payload"]
         trial_id = str(payload["trial_id"])
+        expected_protocol_id = preregistration_protocols.get(trial_id)
+        require(expected_protocol_id in PROTOCOL_FILES, f"RESULT trial={trial_id} has unsupported/missing preregistration protocol")
         receipt_path = Path(payload["run_guard_receipt"])
         require(receipt_path.exists(), f"Run-guard receipt missing for trial={trial_id}: {receipt_path}")
         receipt = read_json(receipt_path)
@@ -278,10 +373,10 @@ def validate_result_evidence(records: list[dict[str, Any]]) -> None:
         require(git_commit.returncode == 0, f"Execution Git commit is unavailable: {payload['execution_git_commit']}")
 
         dataset_manifest = verify_artifact_manifest(
-            Path(payload["dataset_manifest"]), trial_id, "dataset"
+            Path(payload["dataset_manifest"]), trial_id, "dataset", expected_protocol_id
         )
         artifact_manifest = verify_artifact_manifest(
-            Path(payload["artifact_manifest"]), trial_id, "result"
+            Path(payload["artifact_manifest"]), trial_id, "result", expected_protocol_id
         )
         artifact_paths = {str(entry["path"]) for entry in artifact_manifest["files"]}
         require(str(receipt_path) in artifact_paths, f"Run receipt is not hashed by result manifest: {trial_id}")
@@ -291,7 +386,7 @@ def validate_result_evidence(records: list[dict[str, Any]]) -> None:
         require(dataset_paths, f"Dataset manifest is empty for trial={trial_id}")
 
 
-def verify_ledger(path: Path) -> list[dict[str, Any]]:
+def verify_ledger(path: Path, protocol_id: str) -> list[dict[str, Any]]:
     result = subprocess.run(
         ["python3", "scripts/strategy_validation_ledger.py", "--ledger", str(path), "verify"],
         text=True,
@@ -313,6 +408,23 @@ def verify_ledger(path: Path) -> list[dict[str, Any]]:
         "POLICY_FREEZE",
     ]:
         require(required_event in events, f"Trial ledger missing required event: {required_event}")
+    if protocol_id == "ATM-SVP-2":
+        upgrades = [
+            record for record in records
+            if record.get("event") == "PROTOCOL_UPGRADE"
+            and isinstance(record.get("payload"), dict)
+            and record["payload"].get("from_protocol") == "ATM-SVP-1"
+            and record["payload"].get("to_protocol") == "ATM-SVP-2"
+        ]
+        require(len(upgrades) == 1, "ATM-SVP-2 requires exactly one committed V1->V2 PROTOCOL_UPGRADE event")
+        v2_freezes = [
+            record for record in records
+            if record.get("event") == "POLICY_FREEZE"
+            and isinstance(record.get("payload"), dict)
+            and record["payload"].get("protocol_id") == "ATM-SVP-2"
+            and record["payload"].get("protocol_version") == 2
+        ]
+        require(len(v2_freezes) == 1, "ATM-SVP-2 requires exactly one V2 POLICY_FREEZE ledger event")
     print(result.stdout.strip())
     return records
 
@@ -325,16 +437,17 @@ def main() -> None:
 
     manifest_path = Path(args.manifest)
     ledger_path = Path(args.ledger)
-    require(PROTOCOL_DOC.exists(), f"Protocol document missing: {PROTOCOL_DOC}")
     require(AGENTS.exists(), f"Project instructions missing: {AGENTS}")
-    require("ATM-SVP-1" in AGENTS.read_text(encoding="utf-8"), "AGENTS.md no longer enforces ATM-SVP-1")
     require(manifest_path.exists(), f"Protocol manifest missing: {manifest_path}")
     require(manifest_path == DEFAULT_MANIFEST or manifest_path.suffix == ".json", "Unexpected manifest path")
 
-    policy = validate_policy_freeze()
     manifest = read_json(manifest_path)
-    require(manifest["protocol_id"] == "ATM-SVP-1", "Unexpected protocol_id")
-    require(manifest["protocol_version"] == 1, "Unexpected protocol_version")
+    protocol_id = str(manifest.get("protocol_id", ""))
+    config = protocol_files(protocol_id)
+    protocol_version = config["version"]
+    require(manifest.get("protocol_version") == protocol_version, "Unexpected protocol_version")
+    require(protocol_id in AGENTS.read_text(encoding="utf-8"), f"AGENTS.md no longer enforces {protocol_id}")
+    policy = validate_policy_freeze(protocol_id)
     validate_policy_consistency(manifest, policy)
 
     validate_strategy_identity(manifest)
@@ -343,7 +456,7 @@ def main() -> None:
     validate_g4(manifest)
     validate_g5(manifest)
     validate_g6(manifest)
-    ledger_records = verify_ledger(ledger_path)
+    ledger_records = verify_ledger(ledger_path, protocol_id)
     validate_result_evidence(ledger_records)
 
     gate_status = {
@@ -351,7 +464,7 @@ def main() -> None:
         for name, value in manifest["gates"].items()
         if isinstance(value, dict) and "status" in value
     }
-    print("PROTOCOL_VALID ATM-SVP-1")
+    print(f"PROTOCOL_VALID {protocol_id}")
     for name, status in gate_status.items():
         print(f"{name}={status}")
 

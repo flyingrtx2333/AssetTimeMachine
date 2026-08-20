@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One-shot pristine-holdout firewall for ATM-SVP-1 G4.
+"""One-shot pristine-holdout firewall for ATM-SVP-2 G4.
 
 Lifecycle:
   1. Fill a metadata-only draft manifest and produce a local Git exposure scan.
@@ -30,7 +30,7 @@ from strategy_validation_ledger import (
     verify_records,
 )
 
-PROTOCOL_ID = "ATM-SVP-1"
+PROTOCOL_ID = "ATM-SVP-2"
 STRATEGY_ID = "nfci-dual-core-v11"
 STRATEGY_VERSION = "dualcore-v11-2026-08-15"
 EXPECTED_ROLES = [
@@ -46,6 +46,17 @@ ROLE_ENGINE_REQUIREMENTS = {
     "us_broad_equity": ("atm_g4_us_broad_equity", "USD", "index"),
     "china_large_equity": ("atm_g4_china_large_equity", "CNY", "index"),
     "china_broad_equity": ("atm_g4_china_broad_equity", "CNY", "index"),
+}
+EXPECTED_PASS_FORMULAS = {
+    "reference": "same common evaluation window identity baseline frozen before HOLDOUT_BURNED",
+    "common_reference_cagr": "> 0",
+    "common_reference_sharpe": "> 0",
+    "common_reference_mdd_max": "25%",
+    "positive_one_slot_sharpe_count_min": 4,
+    "one_slot_median_sharpe_min": "0.50 * common_window_identity_sharpe",
+    "all_alternate_cagr": "> 0",
+    "all_alternate_sharpe_min": "0.50 * common_window_identity_sharpe",
+    "all_alternate_mdd_max": "min(25%, 1.25 * common_window_identity_mdd)",
 }
 
 
@@ -125,7 +136,10 @@ def validate_exposure_scan(manifest: dict[str, Any], manifest_path: Path) -> dic
         row = scan_by_role.get(slot["role"])
         if row is None:
             raise SystemExit(f"Exposure scan missing role={slot['role']}")
-        if row.get("source") != slot["alternate_source"] or row.get("symbol") != slot["alternate_symbol"]:
+        if (
+            row.get("source") != slot["alternate_source"]
+            or row.get("source_series_id") != slot["source_series_id"]
+        ):
             raise SystemExit(f"Exposure scan candidate mismatch for role={slot['role']}")
         if row.get("locally_unexposed") is not True:
             raise SystemExit(f"Exposure scan marks role={slot['role']} as exposed")
@@ -155,6 +169,8 @@ def validate_manifest(manifest: dict[str, Any], manifest_path: Path, allowed_sta
     seen_roles: set[str] = set()
     seen_alternates: set[tuple[str, str]] = set()
     seen_normalized_symbols: set[str] = set()
+    coverage_starts: list[date] = []
+    coverage_ends: list[date] = []
     for slot in slots:
         if not isinstance(slot, dict):
             raise SystemExit("Holdout role slot must be an object")
@@ -165,14 +181,21 @@ def validate_manifest(manifest: dict[str, Any], manifest_path: Path, allowed_sta
         if slot.get("current_symbol") != expected[role]:
             raise SystemExit(f"Current role symbol drift for {role}")
         source = slot.get("alternate_source")
+        source_series_id = slot.get("source_series_id")
         symbol = slot.get("alternate_symbol")
-        if not isinstance(source, str) or not source.strip() or not isinstance(symbol, str) or not symbol.strip():
-            raise SystemExit(f"Alternate source/symbol missing for role={role}")
+        if (
+            not isinstance(source, str) or not source.strip()
+            or not isinstance(source_series_id, str) or not source_series_id.strip()
+            or not isinstance(symbol, str) or not symbol.strip()
+        ):
+            raise SystemExit(f"Alternate source/source_series_id/raw symbol missing for role={role}")
         if symbol.casefold() == str(slot["current_symbol"]).casefold():
-            raise SystemExit(f"Alternate symbol equals current symbol for role={role}")
-        key = (source.casefold(), symbol.casefold())
+            raise SystemExit(f"Raw alternate symbol equals current role symbol for role={role}")
+        if not symbol.startswith("g4_raw_"):
+            raise SystemExit(f"Raw alternate symbol must use g4_raw_* namespace for role={role}")
+        key = (source.casefold(), source_series_id.casefold())
         if key in seen_alternates:
-            raise SystemExit(f"Duplicate alternate series: {source}:{symbol}")
+            raise SystemExit(f"Duplicate alternate source series: {source}:{source_series_id}")
         seen_alternates.add(key)
 
         expected_normalized, expected_currency, expected_unit = ROLE_ENGINE_REQUIREMENTS[str(role)]
@@ -211,6 +234,8 @@ def validate_manifest(manifest: dict[str, Any], manifest_path: Path, allowed_sta
         end = parse_iso_date(slot.get("metadata_coverage_end"), f"{role}.metadata_coverage_end")
         if start >= end:
             raise SystemExit(f"Invalid metadata coverage for role={role}")
+        coverage_starts.append(start)
+        coverage_ends.append(end)
         reason = slot.get("selection_reason_without_return_performance")
         if not isinstance(reason, str) or len(reason.strip()) < 20:
             raise SystemExit(f"Selection reason is too weak/missing for role={role}")
@@ -224,6 +249,22 @@ def validate_manifest(manifest: dict[str, Any], manifest_path: Path, allowed_sta
 
     if set(seen_roles) != set(expected):
         raise SystemExit("Holdout role set mismatch")
+    evaluation_window = manifest.get("evaluation_window")
+    if not isinstance(evaluation_window, dict) or evaluation_window.get("rule") != "intersection_of_all_role_metadata_coverage":
+        raise SystemExit("G4 evaluation_window rule must be intersection_of_all_role_metadata_coverage")
+    expected_start = max(coverage_starts).isoformat()
+    expected_end = min(coverage_ends).isoformat()
+    if expected_start >= expected_end:
+        raise SystemExit(f"G4 role coverage has no usable common intersection: {expected_start}..{expected_end}")
+    if manifest.get("status") == "DRAFT_NOT_FROZEN":
+        if evaluation_window.get("start") is not None or evaluation_window.get("end") is not None:
+            raise SystemExit("Draft evaluation_window start/end must remain null; freeze derives them mechanically")
+    else:
+        if evaluation_window.get("start") != expected_start or evaluation_window.get("end") != expected_end:
+            raise SystemExit(
+                f"Frozen evaluation window drifted: expected={expected_start}..{expected_end}, "
+                f"got={evaluation_window.get('start')}..{evaluation_window.get('end')}"
+            )
     budget = manifest.get("formal_run_budget")
     if budget != {
         "one_slot_substitutions": 5,
@@ -232,6 +273,8 @@ def validate_manifest(manifest: dict[str, Any], manifest_path: Path, allowed_sta
         "additional_runs_after_results": 0,
     }:
         raise SystemExit("Formal G4 run budget drifted")
+    if manifest.get("pass_formulas") != EXPECTED_PASS_FORMULAS:
+        raise SystemExit("ATM-SVP-2 G4 pass formulas drifted")
     validate_exposure_scan(manifest, manifest_path)
 
 
@@ -241,6 +284,7 @@ def selection_payload(manifest: dict[str, Any]) -> dict[str, Any]:
         "protocol_id": manifest["protocol_id"],
         "strategy_id": manifest["strategy_id"],
         "strategy_version": manifest["strategy_version"],
+        "evaluation_window": manifest["evaluation_window"],
         "role_slots": manifest["role_slots"],
         "formal_run_budget": manifest["formal_run_budget"],
         "pass_formulas": manifest["pass_formulas"],
@@ -262,6 +306,12 @@ def cmd_freeze(args: argparse.Namespace) -> None:
     validate_manifest(manifest, path, {"DRAFT_NOT_FROZEN"})
     if manifest.get("freeze_git_ref") is not None or manifest.get("frozen_at") is not None:
         raise SystemExit("Draft already contains freeze metadata")
+    evaluation_start = max(slot["metadata_coverage_start"] for slot in manifest["role_slots"])
+    evaluation_end = min(slot["metadata_coverage_end"] for slot in manifest["role_slots"])
+    if evaluation_start >= evaluation_end:
+        raise SystemExit(f"Cannot freeze empty G4 evaluation intersection: {evaluation_start}..{evaluation_end}")
+    manifest["evaluation_window"]["start"] = evaluation_start
+    manifest["evaluation_window"]["end"] = evaluation_end
     manifest["status"] = "FROZEN_UNOPENED"
     manifest["freeze_git_ref"] = current_head()
     manifest["frozen_at"] = now_iso()
@@ -371,7 +421,7 @@ def cmd_authorize_open(args: argparse.Namespace) -> None:
         "holdout_burn_record_hash": committed_burn[0]["record_hash"],
         "selection_payload_sha256": manifest["selection_payload_sha256"],
         "authorized_at": now_iso(),
-        "scope": "One-time full-history opening for the six preregistered ATM-SVP-1 G4 role-preserving runs only.",
+        "scope": "One-time full-history opening for the six preregistered ATM-SVP-2 G4 role-preserving runs only.",
     }
     output = Path(args.receipt)
     output.parent.mkdir(parents=True, exist_ok=True)

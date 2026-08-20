@@ -39,7 +39,8 @@ ROLE_CANDIDATES = [
     "one_slot_china_broad_equity",
 ]
 FORMAL_CANDIDATES = [*ROLE_CANDIDATES, "all_alternate"]
-ALL_RUNS = ["baseline_identity", *FORMAL_CANDIDATES]
+COMMON_WINDOW_RUNS = ["baseline_common_window", *FORMAL_CANDIDATES]
+ALL_RUNS = ["baseline_identity", *COMMON_WINDOW_RUNS]
 
 
 def run(command: list[str], *, env: dict[str, str] | None = None, timeout: int = 300) -> str:
@@ -122,6 +123,37 @@ def close(a: float, b: float, tolerance: float) -> bool:
     return math.isclose(a, b, rel_tol=0.0, abs_tol=tolerance)
 
 
+def expected_evaluation_window(manifest: dict) -> tuple[str, str]:
+    configured = manifest.get("evaluation_window") or {}
+    start = configured.get("start") or max(slot["metadata_coverage_start"] for slot in manifest["role_slots"])
+    end = configured.get("end") or min(slot["metadata_coverage_end"] for slot in manifest["role_slots"])
+    if start >= end:
+        raise SystemExit(f"Invalid G4 common evaluation window: {start}..{end}")
+    return str(start), str(end)
+
+
+def validate_common_fixture(fixture_path: Path, manifest: dict) -> tuple[str, str]:
+    document = json.loads(fixture_path.read_text(encoding="utf-8"))
+    normalization = document.get("g4_normalization") or {}
+    expected_start, expected_end = expected_evaluation_window(manifest)
+    window = normalization.get("evaluation_window") or {}
+    if window.get("start") != expected_start or window.get("end") != expected_end:
+        raise SystemExit(
+            f"G4 common fixture window mismatch: expected={expected_start}..{expected_end}, "
+            f"got={window.get('start')}..{window.get('end')}"
+        )
+    expected_symbols = {
+        "atm_g4_gold_safe_haven",
+        "atm_g4_us_growth_equity",
+        "atm_g4_us_broad_equity",
+        "atm_g4_china_large_equity",
+        "atm_g4_china_broad_equity",
+    }
+    if set(normalization.get("role_symbols") or []) != expected_symbols:
+        raise SystemExit("G4 common fixture does not contain exactly five neutral role symbols")
+    return expected_start, expected_end
+
+
 def validate_formal_authorization(manifest_path: Path, authorization_path: Path) -> dict:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     authorization = json.loads(authorization_path.read_text(encoding="utf-8"))
@@ -151,7 +183,8 @@ def validate_formal_authorization(manifest_path: Path, authorization_path: Path)
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--fixture", required=True)
+    parser.add_argument("--baseline-fixture", required=True, help="Original full-history V11 fixture for frozen identity control")
+    parser.add_argument("--fixture", required=True, help="Role-normalized fixture clipped to the frozen common evaluation window")
     parser.add_argument("--manifest", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--formal", action="store_true")
@@ -159,11 +192,14 @@ def main() -> int:
     parser.add_argument("--workers", type=int, default=4)
     args = parser.parse_args()
 
+    baseline_fixture = Path(args.baseline_fixture)
     fixture = Path(args.fixture)
     manifest = Path(args.manifest)
     output_dir = Path(args.output_dir)
-    if not fixture.is_file() or not manifest.is_file():
-        raise SystemExit("fixture/manifest missing")
+    if not baseline_fixture.is_file() or not fixture.is_file() or not manifest.is_file():
+        raise SystemExit("baseline fixture/common fixture/manifest missing")
+    manifest_document = json.loads(manifest.read_text(encoding="utf-8"))
+    common_start, common_end = validate_common_fixture(fixture, manifest_document)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     authorization = None
@@ -176,8 +212,9 @@ def main() -> int:
 
     def execute(candidate_id: str) -> tuple[str, str]:
         env = os.environ.copy()
+        selected_fixture = baseline_fixture if candidate_id == "baseline_identity" else fixture
         env.update({
-            "ATM_HISTORY_FIXTURE": str(fixture),
+            "ATM_HISTORY_FIXTURE": str(selected_fixture),
             "ATM_V11_ROLE_GENERALIZATION": "1",
             "ATM_V11_ROLE_MANIFEST": str(manifest),
             "ATM_V11_ROLE_CANDIDATE": candidate_id,
@@ -205,6 +242,13 @@ def main() -> int:
         "no_negative_weights": baseline["min_weight"] >= -1e-10,
     }
     baseline_status = "PASS" if all(baseline_checks.values()) else "FAIL"
+    common_baseline = results["baseline_common_window"]["metrics"]
+    common_baseline_checks = {
+        "gross_le_100pct": common_baseline["max_gross"] <= 1.000000001,
+        "no_negative_weights": common_baseline["min_weight"] >= -1e-10,
+        "uses_no_replacement_roles": results["baseline_common_window"]["replaced_roles"] == [],
+    }
+    common_baseline_status = "PASS" if all(common_baseline_checks.values()) else "FAIL"
 
     candidates = [results[candidate_id] for candidate_id in FORMAL_CANDIDATES]
     one_slot_sharpes = [results[candidate_id]["metrics"]["sharpe"] for candidate_id in ROLE_CANDIDATES]
@@ -218,7 +262,8 @@ def main() -> int:
         for candidate_id in FORMAL_CANDIDATES
     }
     g4_checks = {
-        "baseline_identity_pass": baseline_status == "PASS",
+        "full_history_baseline_identity_pass": baseline_status == "PASS",
+        "common_window_baseline_control_pass": common_baseline_status == "PASS",
         "positive_one_slot_sharpe_count_ge_4": sum(value > 0 for value in one_slot_sharpes) >= 4,
         "one_slot_median_sharpe_ge_0_761": median_one_slot >= 0.761,
         "all_alternate_cagr_gt_0": all_alternate["cagr_percent"] > 0,
@@ -235,9 +280,13 @@ def main() -> int:
         "formal": args.formal,
         "evidence_class": "H2_PRISTINE_HOLDOUT" if args.formal else "D0_EXPOSED_EXPLORATORY",
         "holdout_authorization": authorization,
+        "evaluation_window": {"start": common_start, "end": common_end},
         "baseline_identity": results["baseline_identity"],
         "baseline_checks": baseline_checks,
         "baseline_status": baseline_status,
+        "baseline_common_window": results["baseline_common_window"],
+        "baseline_common_window_checks": common_baseline_checks,
+        "baseline_common_window_status": common_baseline_status,
         "candidate_results": candidates,
         "constraint_checks": constraint_checks,
         "one_slot_median_sharpe": median_one_slot,
@@ -253,7 +302,7 @@ def main() -> int:
             "candidate_id", "replaced_roles", "cagr_percent", "mdd_percent", "vol_percent", "sharpe", "trades", "max_gross", "min_weight", "fingerprint"
         ])
         writer.writeheader()
-        for row in [results["baseline_identity"], *candidates]:
+        for row in [results["baseline_identity"], results["baseline_common_window"], *candidates]:
             m = row["metrics"]
             writer.writerow({
                 "candidate_id": row["candidate_id"],
@@ -274,7 +323,7 @@ def main() -> int:
     print(f"G4_ROLE_GENERALIZATION_{document['g4_status']}")
     print(f"OUTPUT_JSON={json_path}")
     print(f"OUTPUT_CSV={csv_path}")
-    if baseline_status != "PASS":
+    if baseline_status != "PASS" or common_baseline_status != "PASS":
         return 3
     if args.formal and formal_status != "PASS":
         return 2

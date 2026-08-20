@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run one formal ATM-SVP-1 experiment behind the committed-preregistration guard."""
+"""Run one formal ATM-SVP experiment behind the committed-preregistration guard."""
 from __future__ import annotations
 
 import argparse
@@ -58,10 +58,11 @@ def main() -> None:
     stderr_path = output_dir / "stderr.txt"
     execution_path = output_dir / "execution.json"
 
+    protocol_id = str(receipt["protocol_id"])
     env = os.environ.copy()
     env.update(
         {
-            "ATM_SVP_PROTOCOL_ID": "ATM-SVP-1",
+            "ATM_SVP_PROTOCOL_ID": protocol_id,
             "ATM_SVP_TRIAL_ID": args.trial_id,
             "ATM_SVP_PREREGISTRATION_RECORD_HASH": receipt["preregistration_record_hash"],
             "ATM_SVP_EXECUTION_GIT_COMMIT": receipt["execution_git_commit"],
@@ -82,7 +83,7 @@ def main() -> None:
     finished_at = now_iso()
 
     execution = {
-        "protocol_id": "ATM-SVP-1",
+        "protocol_id": protocol_id,
         "trial_id": args.trial_id,
         "preregistration_record_hash": receipt["preregistration_record_hash"],
         "execution_git_commit": receipt["execution_git_commit"],

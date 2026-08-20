@@ -1,0 +1,215 @@
+{
+  "protocol_id": "ATM-SVP-2",
+  "protocol_version": 2,
+  "inherits_protocol_id": "ATM-SVP-1",
+  "effective_at": "2026-08-20T06:36:00+08:00",
+  "source_git_ref": "1381a038",
+  "strategy": {
+    "strategy_id": "nfci-dual-core-v11",
+    "strategy_version": "dualcore-v11-2026-08-15",
+    "app_mode": "nfciDualCoreSimplifiedV11",
+    "frozen_at": "2026-08-15",
+    "validation_state": "SHADOW",
+    "research_target_fingerprint": "ba67c8aa24bc7168"
+  },
+  "governance_upgrade": {
+    "from_protocol": "ATM-SVP-1",
+    "scope": "G4_REFERENCE_FRAME_ONLY",
+    "strategy_target_path_changed": false,
+    "prospective_clock_restarted": false,
+    "holdout_burned_before_upgrade": false,
+    "holdout_full_history_opened_before_upgrade": false,
+    "reason": "V1 G4 full-history thresholds fail the original-asset identity control when the six substitutions are correctly placed on a common metadata-derived evaluation window. V2 changes only G4 to a same-window identity reference."
+  },
+  "legacy_research_exposure": {
+    "complete_trial_count_known": false,
+    "research_program_files_lower_bound": 195,
+    "swiftpart_files": 169,
+    "research_python_files": 26,
+    "retrospective_dsr_status": "NOT_CERTIFIED_LEGACY_TRIAL_COUNT",
+    "note": "Program-file count is only a lower bound on research exposure; individual files may contain many parameter or factor trials. It must not be substituted for the true trial count in DSR."
+  },
+  "frozen_retrospective_baseline": {
+    "cagr": 0.14345,
+    "sharpe": 1.522,
+    "mdd": 0.07689,
+    "trades": 451,
+    "folds_total": 7,
+    "folds_sharpe_gt_1": 5,
+    "worst_fold_sharpe": 0.741,
+    "block63_sharpe_p025": 1.221,
+    "block63_mdd_p975": 0.1393
+  },
+  "gates": {
+    "G0_implementation_integrity": {
+      "status": "PASS"
+    },
+    "G1_data_causality": {
+      "status": "PASS",
+      "decision_lag": "T-1",
+      "execution": "T",
+      "nfci_point_in_time": "first-seen/initial-release",
+      "gross_max": 1.0,
+      "shorting_allowed": false,
+      "negative_cash_allowed": false
+    },
+    "G2_retrospective_robustness": {
+      "status": "PASS",
+      "thresholds": {
+        "cagr_min": 0.14,
+        "sharpe_min": 1.5,
+        "mdd_max": 0.085,
+        "folds_sharpe_gt_1_min": 5,
+        "worst_fold_sharpe_min_exclusive": 0.0,
+        "block63_sharpe_p025_min": 1.15,
+        "block63_mdd_p975_max": 0.15
+      }
+    },
+    "G3_model_selection_risk": {
+      "status": "PARTIAL",
+      "future_trial_ledger_required": true,
+      "dsr_probability_pass_min": 0.95,
+      "dsr_probability_weak_min": 0.9,
+      "pbo_pass_max": 0.2,
+      "pbo_strong_max": 0.1,
+      "existing_c3l3_pbo_scope_only": {
+        "min": 0.057,
+        "max": 0.111,
+        "scope": "coarse C3/L3 parameter family only"
+      },
+      "overall_dsr_status": "NOT_CERTIFIED_LEGACY_TRIAL_COUNT"
+    },
+    "G4_domain_preserving_generalization": {
+      "status": "PENDING",
+      "reference_frame": "COMMON_EVALUATION_WINDOW_IDENTITY",
+      "evaluation_window_rule": "intersection_of_all_role_metadata_coverage",
+      "role_slots": [
+        "gold_safe_haven",
+        "us_growth_equity",
+        "us_broad_equity",
+        "china_large_equity",
+        "china_broad_equity"
+      ],
+      "alternate_holdout_manifest": null,
+      "formal_runs_allowed": 6,
+      "one_slot_runs": 5,
+      "all_alternate_runs": 1,
+      "full_history_identity_control_required": true,
+      "common_window_identity_control_required": true,
+      "common_reference_freeze_before_holdout_burn": true,
+      "common_reference_event": "G4_REFERENCE_BASELINE_FROZEN",
+      "common_reference": null,
+      "thresholds": {
+        "common_reference_cagr_min_exclusive": 0.0,
+        "common_reference_sharpe_min_exclusive": 0.0,
+        "common_reference_mdd_absolute_max": 0.25,
+        "positive_one_slot_sharpe_count_min": 4,
+        "one_slot_median_sharpe_retention_min": 0.5,
+        "all_alternate_cagr_min_exclusive": 0.0,
+        "all_alternate_sharpe_retention_min": 0.5,
+        "all_alternate_mdd_relative_multiple_max": 1.25,
+        "all_alternate_mdd_absolute_max": 0.25
+      },
+      "derived_thresholds": null,
+      "legacy_country_equity_test": {
+        "status": "FAIL",
+        "markets": 8,
+        "positive_sharpe_markets": 8,
+        "portfolio_sharpe": 0.417,
+        "portfolio_mdd": 0.267,
+        "preregistered_sharpe_min": 0.45,
+        "preregistered_mdd_max": 0.25,
+        "scope": "price-only method-level country-equity generalization; not full DualCore role-preserving substitution"
+      }
+    },
+    "G5_execution_robustness": {
+      "status": "PASS",
+      "base": {
+        "fee": 0.01,
+        "slippage": 0.0005,
+        "extra_execution_delay_sessions": 0
+      },
+      "adverse_stress": {
+        "fee": 0.015,
+        "slippage": 0.001,
+        "extra_execution_delay_sessions": 1
+      },
+      "thresholds": {
+        "stress_cagr_min_exclusive": 0.0,
+        "stress_sharpe_min_exclusive": 0.0,
+        "stress_mdd_multiple_max": 2.0
+      },
+      "execution_cost_component": {
+        "trial_id": "ATM-SVP1-G5-EXEC-COST-001",
+        "status": "PASS",
+        "result_record_hash": "827e49e7a7800b4e89a8064c24e792e8258ff8805bf47e368c707817853c543a",
+        "execution_git_commit": "dccb08e19634099fb1d5bc22f0b8391fd479ee9b",
+        "base": {
+          "cagr": 0.14345615,
+          "sharpe": 1.522263,
+          "mdd": 0.07689054,
+          "trades": 451,
+          "target_fingerprint": "ba67c8aa24bc7168"
+        },
+        "adverse_cost_without_delay": {
+          "cagr": 0.13051596,
+          "sharpe": 1.386987,
+          "mdd": 0.07911928,
+          "trades": 451,
+          "target_fingerprint": "ba67c8aa24bc7168"
+        }
+      },
+      "execution_delay_component": {
+        "trial_id": "ATM-SVP1-G5-EXEC-DELAY-001",
+        "status": "PASS",
+        "result_record_hash": "e29f434e1720d1e4e611e17521946fe23d5750fb80344474de836a34f7be0429",
+        "execution_git_commit": "52542785920aee3ca0021b8c4f9cdf0416f3fdda",
+        "source_target_fingerprint": "ba67c8aa24bc7168",
+        "scheduled_rebalance_events": 166,
+        "adverse_cost_replay_delay0": {
+          "cagr": 0.13051718,
+          "sharpe": 1.387135,
+          "mdd": 0.07911928,
+          "trades": 451,
+          "configured_delay_sessions": 0
+        },
+        "adverse_cost_plus_delay1": {
+          "cagr": 0.12648191,
+          "sharpe": 1.347129,
+          "mdd": 0.08369464,
+          "trades": 447,
+          "configured_delay_sessions": 1
+        }
+      },
+      "full_gate_decision": "PASS: fixed adverse costs and +1 common-session execution delay satisfy the inherited V1 G5."
+    },
+    "G6_prospective_oos": {
+      "status": "RUNNING",
+      "ledger_mode": "append-only",
+      "protocol_threshold_freeze": {
+        "frozen_at": "2026-08-18T16:28:08+08:00",
+        "new_sessions_at_freeze": 1,
+        "latest_signal_date_at_freeze": "2026-08-17",
+        "prospective_performance_metrics_viewed_or_used": false
+      },
+      "milestones": [63, 126, 252, 504],
+      "primary_decision_sessions": 252,
+      "strong_validation_sessions": 504,
+      "primary_thresholds": {
+        "cagr_min_exclusive": 0.0,
+        "sharpe_min_exclusive": 0.0,
+        "mdd_multiple_max": 2.5,
+        "derived_v11_mdd_max": 0.192225
+      },
+      "strong_thresholds": {
+        "sharpe_retention_min": 0.5,
+        "cagr_retention_min": 0.4,
+        "mdd_multiple_max": 2.0,
+        "must_beat_cash_yield_cny": true,
+        "derived_v11_sharpe_min": 0.761,
+        "derived_v11_cagr_min": 0.05738,
+        "derived_v11_mdd_max": 0.15378
+      }
+    }
+  }
+}

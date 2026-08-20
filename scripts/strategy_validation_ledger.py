@@ -20,6 +20,8 @@ from typing import Any
 
 DEFAULT_LEDGER = Path("tools/research-results/strategy-validation/trial-ledger.jsonl")
 GENESIS = "GENESIS"
+CURRENT_PROTOCOL_ID = "ATM-SVP-2"
+SUPPORTED_PROTOCOL_IDS = {"ATM-SVP-1", "ATM-SVP-2"}
 EVIDENCE_CLASSES = {"D0_EXPOSED", "R1_RETROSPECTIVE", "H2_PRISTINE_HOLDOUT", "P3_PROSPECTIVE"}
 PREREGISTER_REQUIRED_FIELDS = {
     "trial_id",
@@ -62,6 +64,41 @@ HOLDOUT_BURN_REQUIRED_FIELDS = {
     "permanent",
     "rule",
 }
+PROTOCOL_UPGRADE_REQUIRED_FIELDS = {
+    "from_protocol",
+    "to_protocol",
+    "strategy_id",
+    "strategy_version",
+    "governance_change_scope",
+    "strategy_target_path_changed",
+    "prospective_clock_restarted",
+    "g4_holdout_burned_before_upgrade",
+    "g4_full_history_opened_before_upgrade",
+    "reason",
+}
+G4_REFERENCE_REQUIRED_FIELDS = {
+    "protocol_id",
+    "holdout_id",
+    "strategy_id",
+    "strategy_version",
+    "manifest_path",
+    "manifest_sha256",
+    "selection_payload_sha256",
+    "evaluation_start",
+    "evaluation_end",
+    "cagr",
+    "sharpe",
+    "mdd",
+    "trades",
+    "target_fingerprint",
+    "max_gross",
+    "min_weight",
+    "source_fixture_path",
+    "source_fixture_sha256",
+    "execution_git_commit",
+    "reference_artifact_path",
+    "reference_artifact_sha256",
+}
 
 
 def canonical_json(value: Any) -> str:
@@ -99,8 +136,8 @@ def require_payload_fields(payload: dict[str, Any], required: set[str], label: s
 
 def validate_preregister_payload(payload: dict[str, Any]) -> None:
     require_payload_fields(payload, PREREGISTER_REQUIRED_FIELDS, "PREREGISTER")
-    if payload["protocol_id"] != "ATM-SVP-1":
-        raise SystemExit("PREREGISTER protocol_id must be ATM-SVP-1")
+    if payload["protocol_id"] not in SUPPORTED_PROTOCOL_IDS:
+        raise SystemExit(f"PREREGISTER protocol_id must be one of {sorted(SUPPORTED_PROTOCOL_IDS)}")
     if payload["evidence_class"] not in EVIDENCE_CLASSES:
         raise SystemExit(f"Unknown evidence_class: {payload['evidence_class']}")
     candidate_ids = payload["candidate_ids"]
@@ -175,6 +212,8 @@ def verify_records(records: list[dict[str, Any]]) -> None:
     preregistrations: dict[str, dict[str, Any]] = {}
     result_trials: set[str] = set()
     burned_holdout_by_strategy_version: dict[str, str] = {}
+    upgraded_protocols: set[tuple[str, str]] = set()
+    g4_reference_by_holdout: dict[str, dict[str, Any]] = {}
 
     for index, record in enumerate(records, start=1):
         required = {"sequence", "timestamp", "event", "payload", "previous_hash", "record_hash"}
@@ -236,14 +275,57 @@ def verify_records(records: list[dict[str, Any]]) -> None:
                 raise SystemExit(f"Duplicate RESULT for trial_id={trial_id}")
             validate_result_payload(payload, preregistration)
             result_trials.add(trial_id)
+        elif event == "PROTOCOL_UPGRADE":
+            require_payload_fields(payload, PROTOCOL_UPGRADE_REQUIRED_FIELDS, "PROTOCOL_UPGRADE")
+            transition = (str(payload["from_protocol"]), str(payload["to_protocol"]))
+            if transition != ("ATM-SVP-1", "ATM-SVP-2"):
+                raise SystemExit(f"Unsupported protocol upgrade transition: {transition}")
+            if transition in upgraded_protocols:
+                raise SystemExit(f"Duplicate PROTOCOL_UPGRADE transition: {transition}")
+            if payload["strategy_target_path_changed"] is not False:
+                raise SystemExit("ATM-SVP-2 governance upgrade must not change the strategy target path")
+            if payload["prospective_clock_restarted"] is not False:
+                raise SystemExit("ATM-SVP-2 governance upgrade must not restart the prospective clock")
+            if payload["g4_holdout_burned_before_upgrade"] is not False:
+                raise SystemExit("ATM-SVP-2 upgrade must occur before any G4 holdout burn")
+            if payload["g4_full_history_opened_before_upgrade"] is not False:
+                raise SystemExit("ATM-SVP-2 upgrade must occur before any G4 full-history opening")
+            upgraded_protocols.add(transition)
+        elif event == "G4_REFERENCE_BASELINE_FROZEN":
+            require_payload_fields(payload, G4_REFERENCE_REQUIRED_FIELDS, "G4_REFERENCE_BASELINE_FROZEN")
+            if payload["protocol_id"] != "ATM-SVP-2":
+                raise SystemExit("G4 reference baseline must be frozen under ATM-SVP-2")
+            holdout_id = str(payload["holdout_id"])
+            if not holdout_id:
+                raise SystemExit("G4 reference holdout_id must be non-empty")
+            if holdout_id in g4_reference_by_holdout:
+                raise SystemExit(f"Duplicate G4 reference baseline for holdout_id={holdout_id}")
+            if float(payload["cagr"]) <= 0 or float(payload["sharpe"]) <= 0:
+                raise SystemExit("G4 common-window identity reference must have positive CAGR and Sharpe")
+            if float(payload["mdd"]) > 0.25:
+                raise SystemExit("G4 common-window identity reference MDD must be <=25%")
+            if float(payload["max_gross"]) > 1.000000001 or float(payload["min_weight"]) < -1e-10:
+                raise SystemExit("G4 common-window identity reference violates portfolio constraints")
+            g4_reference_by_holdout[holdout_id] = record
         elif event == "HOLDOUT_BURNED":
             require_payload_fields(payload, HOLDOUT_BURN_REQUIRED_FIELDS, "HOLDOUT_BURNED")
-            if payload["protocol_id"] != "ATM-SVP-1":
-                raise SystemExit("HOLDOUT_BURNED protocol_id must be ATM-SVP-1")
+            if payload["protocol_id"] not in SUPPORTED_PROTOCOL_IDS:
+                raise SystemExit(f"HOLDOUT_BURNED protocol_id must be one of {sorted(SUPPORTED_PROTOCOL_IDS)}")
             if payload["permanent"] is not True:
                 raise SystemExit("HOLDOUT_BURNED permanent must be true")
             strategy_version = payload["strategy_version"]
             holdout_id = payload["holdout_id"]
+            if payload["protocol_id"] == "ATM-SVP-2":
+                reference = g4_reference_by_holdout.get(str(holdout_id))
+                if reference is None:
+                    raise SystemExit(
+                        f"ATM-SVP-2 HOLDOUT_BURNED requires an earlier G4_REFERENCE_BASELINE_FROZEN for holdout_id={holdout_id}"
+                    )
+                ref_payload = reference["payload"]
+                if ref_payload["manifest_sha256"] != payload["manifest_sha256"]:
+                    raise SystemExit("G4 reference and HOLDOUT_BURNED manifest SHA do not match")
+                if ref_payload["selection_payload_sha256"] != payload["selection_payload_sha256"]:
+                    raise SystemExit("G4 reference and HOLDOUT_BURNED selection payload SHA do not match")
             if not isinstance(strategy_version, str) or not strategy_version:
                 raise SystemExit("HOLDOUT_BURNED strategy_version must be non-empty")
             if not isinstance(holdout_id, str) or not holdout_id:

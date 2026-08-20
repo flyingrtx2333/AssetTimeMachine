@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from strategy_validation_holdout import EXPECTED_ROLES, ROLE_ENGINE_REQUIREMENTS, burn_records, selection_payload, validate_manifest
+from strategy_validation_holdout import EXPECTED_PASS_FORMULAS, EXPECTED_ROLES, ROLE_ENGINE_REQUIREMENTS, burn_records, selection_payload, validate_manifest
 from strategy_validation_ledger import append_record, read_records, verify_records
 
 
@@ -25,12 +25,14 @@ class StrategyValidationHoldoutTests(unittest.TestCase):
         scan_rows = []
         for index, (role, current) in enumerate(EXPECTED_ROLES, start=1):
             source = f"metadata-source-{index}"
-            symbol = f"PRISTINE_ALT_{index}"
+            source_series_id = f"PRISTINE_SOURCE_{index}"
+            symbol = f"g4_raw_test_{index}"
             normalized_symbol, engine_currency, engine_unit = ROLE_ENGINE_REQUIREMENTS[role]
             roles.append({
                 "role": role,
                 "current_symbol": current,
                 "alternate_source": source,
+                "source_series_id": source_series_id,
                 "alternate_symbol": symbol,
                 "source_currency": engine_currency,
                 "source_unit": engine_unit,
@@ -49,13 +51,13 @@ class StrategyValidationHoldoutTests(unittest.TestCase):
             scan_rows.append({
                 "role": role,
                 "source": source,
-                "symbol": symbol,
+                "source_series_id": source_series_id,
                 "current_tracked_matches": [],
                 "historical_match_commits": [],
                 "locally_unexposed": True,
             })
         scan = {
-            "protocol_id": "ATM-SVP-1",
+            "protocol_id": "ATM-SVP-2",
             "scan_type": "LOCAL_GIT_EXPOSURE_LOWER_BOUND",
             "all_locally_unexposed": True,
             "candidates": scan_rows,
@@ -63,8 +65,8 @@ class StrategyValidationHoldoutTests(unittest.TestCase):
         }
         self.scan_path.write_text(json.dumps(scan), encoding="utf-8")
         return {
-            "holdout_id": "ATM-SVP1-G4-ROLE-HOLDOUT-TEST",
-            "protocol_id": "ATM-SVP-1",
+            "holdout_id": "ATM-SVP2-G4-ROLE-HOLDOUT-TEST",
+            "protocol_id": "ATM-SVP-2",
             "strategy_id": "nfci-dual-core-v11",
             "strategy_version": "dualcore-v11-2026-08-15",
             "status": "DRAFT_NOT_FROZEN",
@@ -74,6 +76,11 @@ class StrategyValidationHoldoutTests(unittest.TestCase):
             "frozen_at": None,
             "selection_payload_sha256": None,
             "local_exposure_scan": self.scan_path.as_posix(),
+            "evaluation_window": {
+                "rule": "intersection_of_all_role_metadata_coverage",
+                "start": None,
+                "end": None,
+            },
             "role_slots": roles,
             "formal_run_budget": {
                 "one_slot_substitutions": 5,
@@ -81,13 +88,7 @@ class StrategyValidationHoldoutTests(unittest.TestCase):
                 "total": 6,
                 "additional_runs_after_results": 0,
             },
-            "pass_formulas": {
-                "positive_one_slot_sharpe_count_min": 4,
-                "one_slot_median_sharpe_min": "0.50 * frozen_baseline_sharpe",
-                "all_alternate_cagr": "> 0",
-                "all_alternate_sharpe_min": "0.50 * frozen_baseline_sharpe",
-                "all_alternate_mdd_max": "2.00 * frozen_baseline_mdd",
-            },
+            "pass_formulas": dict(EXPECTED_PASS_FORMULAS),
             "failure_rule": "After the first formal run, this holdout is permanently exposed and may not be replaced.",
         }
 
@@ -122,7 +123,7 @@ class StrategyValidationHoldoutTests(unittest.TestCase):
     def test_duplicate_alternate_series_is_rejected(self) -> None:
         manifest = self.make_manifest()
         manifest["role_slots"][1]["alternate_source"] = manifest["role_slots"][0]["alternate_source"]
-        manifest["role_slots"][1]["alternate_symbol"] = manifest["role_slots"][0]["alternate_symbol"]
+        manifest["role_slots"][1]["source_series_id"] = manifest["role_slots"][0]["source_series_id"]
         self.write_manifest(manifest)
         with self.assertRaises(SystemExit):
             validate_manifest(manifest, self.manifest_path, {"DRAFT_NOT_FROZEN"})

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create SHA-256 manifests for ATM-SVP-1 datasets and result artifacts."""
+"""Create SHA-256 manifests for ATM-SVP datasets and result artifacts."""
 from __future__ import annotations
 
 import argparse
@@ -83,6 +83,7 @@ def file_record(path: Path) -> dict[str, Any]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--trial-id", required=True)
+    parser.add_argument("--protocol-id", choices=["ATM-SVP-1", "ATM-SVP-2"], default="ATM-SVP-2")
     parser.add_argument("--kind", choices=["dataset", "run", "result"], required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--file", action="append", dest="files", required=True)
@@ -103,7 +104,7 @@ def main() -> None:
 
     records = [file_record(path) for path in sorted(paths, key=lambda value: value.as_posix())]
     manifest = {
-        "protocol_id": "ATM-SVP-1",
+        "protocol_id": args.protocol_id,
         "trial_id": args.trial_id,
         "kind": args.kind,
         "generated_at": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),

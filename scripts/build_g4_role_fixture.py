@@ -5,7 +5,7 @@ Raw holdout series keep their source identifiers in immutable input files. This 
 frozen source series into a role-neutral `atm_g4_*` series using only the normalization rule frozen in
 the holdout manifest, then merges those normalized aliases with the ordinary V11 base fixture.
 
-The initial ATM-SVP-1 implementation intentionally supports only `identity` normalization. A new
+ATM-SVP-2 intentionally supports only `identity` normalization. A new
 normalization formula must be added and committed before a holdout using it is frozen/burned; never
 invent a conversion after opening pristine history.
 """
@@ -19,6 +19,15 @@ from pathlib import Path
 from typing import Any
 
 from strategy_validation_holdout import ROLE_ENGINE_REQUIREMENTS, validate_manifest
+
+G4_BASE_REQUIRED_SYMBOLS = {
+    "gold_cny",
+    "nasdaq_composite",
+    "sp500",
+    "csi300",
+    "shanghai_composite",
+    "usd_per_cny",
+}
 
 
 def sha256(path: Path) -> str:
@@ -85,8 +94,9 @@ def normalize_identity(slot: dict[str, Any], raw: dict[str, Any], source_path: P
     raw_source = str(raw.get("source") or slot["alternate_source"])
     normalized["source"] = f"{raw_source} · ATM-SVP role-normalized identity"
     normalized["normalization"] = {
-        "protocol_id": "ATM-SVP-1",
+        "protocol_id": "ATM-SVP-2",
         "role": role,
+        "source_series_id": slot["source_series_id"],
         "raw_symbol": slot["alternate_symbol"],
         "raw_source_file": source_path.as_posix(),
         "raw_source_sha256": sha256(source_path),
@@ -94,6 +104,41 @@ def normalize_identity(slot: dict[str, Any], raw: dict[str, Any], source_path: P
         "inputs": [],
     }
     return normalized
+
+
+def evaluation_window(manifest: dict[str, Any]) -> tuple[str, str]:
+    configured = manifest.get("evaluation_window") or {}
+    start = configured.get("start") or max(slot["metadata_coverage_start"] for slot in manifest["role_slots"])
+    end = configured.get("end") or min(slot["metadata_coverage_end"] for slot in manifest["role_slots"])
+    if start >= end:
+        raise SystemExit(f"Invalid G4 evaluation window: {start}..{end}")
+    return str(start), str(end)
+
+
+def filter_series(series: dict[str, Any], start: str, end: str) -> dict[str, Any]:
+    dates = series.get("dates")
+    prices = series.get("prices")
+    if not isinstance(dates, list) or not isinstance(prices, list) or len(dates) != len(prices):
+        raise SystemExit(f"Invalid series shape while applying G4 evaluation window: {series.get('symbol')}")
+    indices = [index for index, raw_day in enumerate(dates) if start <= str(raw_day) <= end]
+    if len(indices) < 2:
+        raise SystemExit(
+            f"Series has insufficient rows in G4 common window {start}..{end}: {series.get('symbol')} rows={len(indices)}"
+        )
+    filtered = copy.deepcopy(series)
+    filtered["dates"] = [dates[index] for index in indices]
+    filtered["prices"] = [prices[index] for index in indices]
+    for key in ["open_prices", "high_prices", "low_prices", "close_prices", "volumes"]:
+        values = series.get(key)
+        if values is None:
+            filtered[key] = None
+        elif isinstance(values, list) and len(values) == len(dates):
+            filtered[key] = [values[index] for index in indices]
+        else:
+            raise SystemExit(f"Invalid {key} shape for {series.get('symbol')}")
+    filtered["start_date"] = str(filtered["dates"][0])
+    filtered["end_date"] = str(filtered["dates"][-1])
+    return filtered
 
 
 def build_fixture(base: dict[str, Any], manifest: dict[str, Any], raw_documents: list[tuple[Path, dict[str, Any]]]) -> dict[str, Any]:
@@ -114,19 +159,29 @@ def build_fixture(base: dict[str, Any], manifest: dict[str, Any], raw_documents:
         normalized_rows.append(normalize_identity(slot, raw, source_path))
 
     output = copy.deepcopy(base)
-    base_series = [row for row in output.get("series", []) if isinstance(row, dict)]
+    common_start, common_end = evaluation_window(manifest)
+    all_base_series = [row for row in output.get("series", []) if isinstance(row, dict)]
+    base_series = [row for row in all_base_series if row.get("symbol") in G4_BASE_REQUIRED_SYMBOLS]
+    missing_base = G4_BASE_REQUIRED_SYMBOLS - {str(row.get("symbol")) for row in base_series}
+    if missing_base:
+        raise SystemExit(f"Base fixture missing required G4/V11 symbols: {sorted(missing_base)}")
     neutral_symbols = {row["symbol"] for row in normalized_rows}
     if neutral_symbols.intersection({row.get("symbol") for row in base_series}):
         raise SystemExit("Base fixture already contains a reserved atm_g4_* normalized symbol")
-    output["series"] = [*base_series, *normalized_rows]
+    filtered_base = [filter_series(row, common_start, common_end) for row in base_series]
+    filtered_normalized = [filter_series(row, common_start, common_end) for row in normalized_rows]
+    output["series"] = [*filtered_base, *filtered_normalized]
+    output["start_date"] = common_start
+    output["end_date"] = common_end
 
-    existing_symbols = [value for value in output.get("symbols", []) if isinstance(value, str)]
-    output["symbols"] = [*existing_symbols, *[row["symbol"] for row in normalized_rows if row["symbol"] not in existing_symbols]]
+    output["symbols"] = [str(row["symbol"]) for row in [*filtered_base, *filtered_normalized]]
     output["g4_normalization"] = {
-        "protocol_id": "ATM-SVP-1",
+        "protocol_id": "ATM-SVP-2",
         "holdout_id": manifest["holdout_id"],
         "strategy_version": manifest["strategy_version"],
-        "role_symbols": [row["symbol"] for row in normalized_rows],
+        "evaluation_window": {"start": common_start, "end": common_end},
+        "role_symbols": [row["symbol"] for row in filtered_normalized],
+        "source_series_ids": {slot["role"]: slot["source_series_id"] for slot in manifest["role_slots"]},
         "normalization_rules": {slot["role"]: slot["normalization_rule"] for slot in manifest["role_slots"]},
     }
     return output
