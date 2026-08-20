@@ -1,0 +1,135 @@
+{
+  "files": [
+    {
+      "bytes": 5271408,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/generalization_public_history.json",
+      "sha256": "ab534219b08cdf417ee041be4322d512b29505439c8d0f2a469438d01730ac88"
+    },
+    {
+      "bytes": 24847,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCICREDIT_initial_release.csv",
+      "row_count": 732,
+      "sha256": "953198633f2f19cd42450c631bda3cc1d25bd23b40afc8bf58fa45ada0c4fc8c"
+    },
+    {
+      "bytes": 24762,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCILEVERAGE_initial_release.csv",
+      "row_count": 732,
+      "sha256": "d198027125ca6b317258c2fb4725ed3e5b217356a6b8c549b68dbb18d237b486"
+    },
+    {
+      "bytes": 96837,
+      "columns": [
+        "date",
+        "value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-01-02",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-002/DCPF3M.csv",
+      "row_count": 5728,
+      "sha256": "66bbc7a3cce8d299aa8d3076e1eced2ab1778b7c6704e22ff608726818cd8021"
+    },
+    {
+      "bytes": 158090,
+      "columns": [
+        "date",
+        "value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-01-01",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-002/DFF.csv",
+      "row_count": 9356,
+      "sha256": "38012997538beaa4775d05a32e6fb3b8f2022d8f1af54e36d5c7389607b53050"
+    },
+    {
+      "bytes": 179585,
+      "columns": [
+        "date",
+        "value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-01-02",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-002/GC.csv",
+      "row_count": 6428,
+      "sha256": "3c400c3baf9f2494bdd5f5d0777a015cb520998279f8e339c2a13cec6ff01c88"
+    },
+    {
+      "bytes": 195692,
+      "columns": [
+        "date",
+        "value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-01-02",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-002/HG.csv",
+      "row_count": 6433,
+      "sha256": "0f6a40176eff6f89349c30309d2adf7a9a481a2fd5674ccc6d9c085ca9640c34"
+    },
+    {
+      "bytes": 192960,
+      "columns": [
+        "date",
+        "value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-01-02",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-002/SKEW.csv",
+      "row_count": 6376,
+      "sha256": "a10f3765297918bdbe1032ec77ff6ba6d1689221b4c6aaf66a33727a95bbb2c1"
+    },
+    {
+      "bytes": 3329,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-002/fetch-summary.json",
+      "sha256": "478df8d5f5134d755f35164db2303ec24d7dbe9746fab8dff024bb23992262f0"
+    }
+  ],
+  "generated_at": "2026-08-20T21:32:49+08:00",
+  "git_commit": "0b1c9324321cb570218bf5fc1a335ebd81b4c01e",
+  "kind": "dataset",
+  "metadata": {
+    "controls": [
+      "V11-CONTROL",
+      "ALWAYS-FILL"
+    ],
+    "evidence_class": "R1_RETROSPECTIVE",
+    "factor_rules_frozen": true,
+    "formal_candidates": [
+      "F-FUNDING",
+      "F-COPGOLD",
+      "F-SKEW"
+    ],
+    "lineage": "orthogonal-factor-family-v2"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-002"
+}
