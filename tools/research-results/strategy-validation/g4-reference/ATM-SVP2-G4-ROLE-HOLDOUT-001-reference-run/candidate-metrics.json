@@ -1,0 +1,205 @@
+{
+  "baseline_checks": {
+    "cagr_matches_frozen_within_0_01pp": true,
+    "gross_constraint": true,
+    "mdd_matches_frozen_within_0_01pp": true,
+    "no_negative_weights": true,
+    "sharpe_matches_frozen_within_0_001": true,
+    "target_fingerprint_matches_frozen": true,
+    "trade_count_matches_frozen": true
+  },
+  "baseline_common_window": {
+    "candidate_id": "baseline_common_window",
+    "metrics": {
+      "cagr_percent": 4.454072,
+      "fingerprint": "8945d99bb1a87e9c",
+      "max_gross": 1.0,
+      "mdd_percent": 17.157421,
+      "min_weight": 3.17346e-05,
+      "sharpe": 0.520677,
+      "trades": 319,
+      "vol_percent": 8.817407
+    },
+    "replaced_roles": []
+  },
+  "baseline_common_window_checks": {
+    "cagr_gt_0": true,
+    "constraints_pass": true,
+    "mdd_le_25pct": true,
+    "sharpe_gt_0": true,
+    "uses_no_replacement_roles": true
+  },
+  "baseline_common_window_status": "PASS",
+  "baseline_identity": {
+    "candidate_id": "baseline_identity",
+    "metrics": {
+      "cagr_percent": 14.345615,
+      "fingerprint": "ba67c8aa24bc7168",
+      "max_gross": 1.0,
+      "mdd_percent": 7.689054,
+      "min_weight": 1.2043e-06,
+      "sharpe": 1.522263,
+      "trades": 451,
+      "vol_percent": 8.760667
+    },
+    "replaced_roles": []
+  },
+  "baseline_status": "PASS",
+  "candidate_results": [
+    {
+      "candidate_id": "one_slot_gold_safe_haven",
+      "metrics": {
+        "cagr_percent": 4.454072,
+        "fingerprint": "8945d99bb1a87e9c",
+        "max_gross": 1.0,
+        "mdd_percent": 17.157421,
+        "min_weight": 3.17346e-05,
+        "sharpe": 0.520677,
+        "trades": 319,
+        "vol_percent": 8.817407
+      },
+      "replaced_roles": [
+        "gold_cny"
+      ]
+    },
+    {
+      "candidate_id": "one_slot_us_growth_equity",
+      "metrics": {
+        "cagr_percent": 4.454072,
+        "fingerprint": "8945d99bb1a87e9c",
+        "max_gross": 1.0,
+        "mdd_percent": 17.157421,
+        "min_weight": 3.17346e-05,
+        "sharpe": 0.520677,
+        "trades": 319,
+        "vol_percent": 8.817407
+      },
+      "replaced_roles": [
+        "nasdaq"
+      ]
+    },
+    {
+      "candidate_id": "one_slot_us_broad_equity",
+      "metrics": {
+        "cagr_percent": 4.454072,
+        "fingerprint": "8945d99bb1a87e9c",
+        "max_gross": 1.0,
+        "mdd_percent": 17.157421,
+        "min_weight": 3.17346e-05,
+        "sharpe": 0.520677,
+        "trades": 319,
+        "vol_percent": 8.817407
+      },
+      "replaced_roles": [
+        "sp500"
+      ]
+    },
+    {
+      "candidate_id": "one_slot_china_large_equity",
+      "metrics": {
+        "cagr_percent": 4.454072,
+        "fingerprint": "8945d99bb1a87e9c",
+        "max_gross": 1.0,
+        "mdd_percent": 17.157421,
+        "min_weight": 3.17346e-05,
+        "sharpe": 0.520677,
+        "trades": 319,
+        "vol_percent": 8.817407
+      },
+      "replaced_roles": [
+        "csi300"
+      ]
+    },
+    {
+      "candidate_id": "one_slot_china_broad_equity",
+      "metrics": {
+        "cagr_percent": 4.454072,
+        "fingerprint": "8945d99bb1a87e9c",
+        "max_gross": 1.0,
+        "mdd_percent": 17.157421,
+        "min_weight": 3.17346e-05,
+        "sharpe": 0.520677,
+        "trades": 319,
+        "vol_percent": 8.817407
+      },
+      "replaced_roles": [
+        "shanghai_composite"
+      ]
+    },
+    {
+      "candidate_id": "all_alternate",
+      "metrics": {
+        "cagr_percent": 4.454072,
+        "fingerprint": "8945d99bb1a87e9c",
+        "max_gross": 1.0,
+        "mdd_percent": 17.157421,
+        "min_weight": 3.17346e-05,
+        "sharpe": 0.520677,
+        "trades": 319,
+        "vol_percent": 8.817407
+      },
+      "replaced_roles": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ]
+    }
+  ],
+  "component": "G4_DOMAIN_PRESERVING_GENERALIZATION",
+  "constraint_checks": {
+    "all_alternate": {
+      "gross_le_100pct": true,
+      "no_negative_weights": true
+    },
+    "one_slot_china_broad_equity": {
+      "gross_le_100pct": true,
+      "no_negative_weights": true
+    },
+    "one_slot_china_large_equity": {
+      "gross_le_100pct": true,
+      "no_negative_weights": true
+    },
+    "one_slot_gold_safe_haven": {
+      "gross_le_100pct": true,
+      "no_negative_weights": true
+    },
+    "one_slot_us_broad_equity": {
+      "gross_le_100pct": true,
+      "no_negative_weights": true
+    },
+    "one_slot_us_growth_equity": {
+      "gross_le_100pct": true,
+      "no_negative_weights": true
+    }
+  },
+  "evaluation_window": {
+    "end": "2026-08-12",
+    "start": "2009-07-03"
+  },
+  "evidence_class": "D0_EXPOSED_EXPLORATORY",
+  "formal": false,
+  "g4_checks": {
+    "all_alternate_cagr_gt_0": true,
+    "all_alternate_mdd_relative_pass": true,
+    "all_alternate_sharpe_relative_pass": true,
+    "all_candidate_constraints_pass": true,
+    "common_window_baseline_control_pass": true,
+    "exact_six_formal_candidates_reported": true,
+    "full_history_baseline_identity_pass": true,
+    "one_slot_median_sharpe_relative_pass": true,
+    "positive_one_slot_sharpe_count_ge_4": true
+  },
+  "g4_relative_thresholds": {
+    "all_alternate_mdd_max_percent": 21.44677625,
+    "all_alternate_sharpe_min": 0.2603385,
+    "one_slot_median_sharpe_min": 0.2603385
+  },
+  "g4_status": "EXPLORATORY_NOT_EVIDENCE",
+  "holdout_authorization": null,
+  "one_slot_median_sharpe": 0.520677,
+  "positive_one_slot_sharpe_count": 5,
+  "protocol_id": "ATM-SVP-2",
+  "scope_note": "ATM-SVP-2 compares all six formal role substitutions to the same mechanically derived common-window identity baseline. Development mode is plumbing only; formal evidence additionally requires the committed/burned pristine-holdout authorization and immutable result evidence."
+}
