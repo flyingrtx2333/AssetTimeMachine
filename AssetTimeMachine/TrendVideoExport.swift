@@ -131,6 +131,18 @@ struct ActivityShareSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
+struct LocalFileExportPicker: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let controller = UIDocumentPickerViewController(forExporting: [url], asCopy: true)
+        controller.shouldShowFileExtensions = true
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+}
+
 struct TrendVideoPreviewSheet: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -144,6 +156,8 @@ struct TrendVideoPreviewSheet: View {
     @State private var hasStartedExport = false
     @State private var exportErrorMessage: String?
     @State private var isSaving = false
+    @State private var showsExportPanel = false
+    @State private var localExportURL: URL?
     @State private var shareURL: URL?
     @State private var statusMessage: String?
 
@@ -152,39 +166,30 @@ struct TrendVideoPreviewSheet: View {
             ZStack {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
-                VStack(spacing: 18) {
-                    videoPreviewArea
+                GeometryReader { geometry in
+                    ZStack(alignment: .bottom) {
+                        VStack(spacing: 0) {
+                            videoPreviewArea
+                                .frame(maxHeight: min(geometry.size.height * 0.79, 660))
 
-                    HStack(spacing: 12) {
-                        Button {
-                            Task { await saveVideoToPhotoLibrary() }
-                        } label: {
-                            previewActionLabel(
-                                title: isSaving ? AppLocalization.string("正在保存") : AppLocalization.string("保存到相册"),
-                                systemImage: "square.and.arrow.down",
-                                showsProgress: isSaving
-                            )
+                            Spacer(minLength: 0)
                         }
-                        .buttonStyle(.plain)
-                        .disabled(isSaving || videoURL == nil)
+                        .padding(.horizontal, 22)
+                        .padding(.top, 12)
 
-                        Button {
-                            shareURL = videoURL
-                        } label: {
-                            previewActionLabel(
-                                title: AppLocalization.string("分享"),
-                                systemImage: "square.and.arrow.up"
-                            )
+                        if showsExportPanel {
+                            exportPanel
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                        } else {
+                            exportTriggerButton
+                                .padding(.horizontal, 22)
+                                .padding(.bottom, 18)
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
                         }
-                        .buttonStyle(.plain)
-                        .disabled(videoURL == nil)
                     }
-                    .opacity(videoURL == nil ? 0.56 : 1)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 18)
             }
-            .navigationTitle(AppLocalization.string("视频预览"))
+            .navigationTitle(AppLocalization.string("预览走势视频"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -200,6 +205,18 @@ struct TrendVideoPreviewSheet: View {
         }
         .onDisappear {
             player?.pause()
+        }
+        .sheet(isPresented: Binding(
+            get: { localExportURL != nil },
+            set: { isPresented in
+                if !isPresented {
+                    localExportURL = nil
+                }
+            }
+        )) {
+            if let localExportURL {
+                LocalFileExportPicker(url: localExportURL)
+            }
         }
         .sheet(isPresented: Binding(
             get: { shareURL != nil },
@@ -226,6 +243,137 @@ struct TrendVideoPreviewSheet: View {
         } message: {
             Text(statusMessage ?? "")
         }
+    }
+
+    private var exportTriggerButton: some View {
+        Button {
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                showsExportPanel = true
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 17, weight: .semibold))
+
+                Text(AppLocalization.string("导出视频"))
+                    .font(.system(size: 16, weight: .bold))
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.up")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(Color.black.opacity(0.48))
+            }
+            .foregroundStyle(Color.black.opacity(0.86))
+            .padding(.horizontal, 18)
+            .frame(height: 54)
+            .background(
+                LinearGradient(
+                    colors: [AssetTheme.goldSoft, AssetTheme.gold.opacity(0.92)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ),
+                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+            )
+            .shadow(color: Color.black.opacity(0.28), radius: 18, y: 9)
+        }
+        .buttonStyle(.plain)
+        .disabled(videoURL == nil)
+        .opacity(videoURL == nil ? 0.56 : 1)
+        .accessibilityLabel(AppLocalization.string("导出视频"))
+    }
+
+    private var exportPanel: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.88)) {
+                    showsExportPanel = false
+                }
+            } label: {
+                VStack(spacing: 8) {
+                    Capsule()
+                        .fill(Color.black.opacity(0.13))
+                        .frame(width: 42, height: 5)
+
+                    HStack {
+                        Text(AppLocalization.string("导出视频"))
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Color.black.opacity(0.52))
+
+                        Spacer(minLength: 8)
+
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.black.opacity(0.38))
+                    }
+                }
+                .padding(.top, 10)
+                .padding(.bottom, 12)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(AppLocalization.string("收起导出选项"))
+
+            VStack(spacing: 0) {
+                exportActionRow(
+                    title: AppLocalization.string("保存到本地"),
+                    systemImage: "tray.and.arrow.down.fill",
+                    isProminent: true
+                ) {
+                    localExportURL = videoURL
+                }
+
+                Divider()
+                    .overlay(Color.black.opacity(0.07))
+                    .padding(.leading, 62)
+
+                exportActionRow(
+                    title: isSaving ? AppLocalization.string("正在保存") : AppLocalization.string("保存到相册"),
+                    systemImage: "photo",
+                    showsProgress: isSaving
+                ) {
+                    Task { await saveVideoToPhotoLibrary() }
+                }
+
+                Divider()
+                    .overlay(Color.black.opacity(0.07))
+                    .padding(.leading, 62)
+
+                exportActionRow(
+                    title: AppLocalization.string("用其他应用打开"),
+                    systemImage: "square.and.arrow.up",
+                    showsDisclosure: true
+                ) {
+                    shareURL = videoURL
+                }
+            }
+            .background(Color.white.opacity(0.72), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.black.opacity(0.06), lineWidth: 1)
+            )
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 18)
+        .frame(maxWidth: .infinity)
+        .background {
+            UnevenRoundedRectangle(
+                cornerRadii: .init(topLeading: 30, topTrailing: 30),
+                style: .continuous
+            )
+            .fill(Color(red: 0.94, green: 0.93, blue: 0.91))
+            .shadow(color: Color.black.opacity(0.26), radius: 26, y: -10)
+        }
+        .opacity(videoURL == nil ? 0.72 : 1)
+        .gesture(
+            DragGesture(minimumDistance: 16)
+                .onEnded { value in
+                    guard value.translation.height > 34 else { return }
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.88)) {
+                        showsExportPanel = false
+                    }
+                }
+        )
     }
 
     private var videoPreviewArea: some View {
@@ -277,36 +425,51 @@ struct TrendVideoPreviewSheet: View {
         .shadow(color: Color.black.opacity(0.24), radius: 22, y: 12)
     }
 
-    private func previewActionLabel(title: String, systemImage: String, showsProgress: Bool = false) -> some View {
-        HStack(spacing: 8) {
-            if showsProgress {
-                ProgressView()
-                    .controlSize(.small)
-                    .tint(.black.opacity(0.86))
-            } else {
-                Image(systemName: systemImage)
-                    .font(.subheadline.weight(.bold))
-            }
+    private func exportActionRow(
+        title: String,
+        systemImage: String,
+        isProminent: Bool = false,
+        showsProgress: Bool = false,
+        showsDisclosure: Bool = false,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 13) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .fill(isProminent ? AssetTheme.gold.opacity(0.14) : Color.black.opacity(0.045))
 
-            Text(title)
-                .font(.subheadline.weight(.bold))
-                .lineLimit(1)
+                    if showsProgress {
+                        ProgressView()
+                            .controlSize(.small)
+                            .tint(Color.black.opacity(0.76))
+                    } else {
+                        Image(systemName: systemImage)
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(isProminent ? Color(red: 0.43, green: 0.29, blue: 0.10) : Color.black.opacity(0.72))
+                    }
+                }
+                .frame(width: 42, height: 42)
+
+                Text(title)
+                    .font(.system(size: 17, weight: isProminent ? .bold : .medium))
+                    .foregroundStyle(Color.black.opacity(0.86))
+                    .lineLimit(1)
+
+                Spacer(minLength: 8)
+
+                if showsDisclosure {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.black.opacity(0.36))
+                }
+            }
+            .padding(.horizontal, 11)
+            .frame(height: 58)
+            .contentShape(Rectangle())
         }
-        .foregroundStyle(Color.black.opacity(0.88))
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 13)
-        .background(
-            LinearGradient(
-                colors: [AssetTheme.gold.opacity(0.98), AssetTheme.goldSoft.opacity(0.88)],
-                startPoint: .top,
-                endPoint: .bottom
-            ),
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-        )
+        .buttonStyle(.plain)
+        .disabled(videoURL == nil || (showsProgress && isSaving))
     }
 
     @MainActor
@@ -372,7 +535,6 @@ private final class TrendVideoFrameRenderer {
     private let points: [TimeMachineTrendPoint]
     private let rangeLabel: String
     private let size: CGSize
-    private let dateFormatter: DateFormatter
     private let domain: ClosedRange<Double>
     private let firstDate: Date
     private let lastDate: Date
@@ -389,12 +551,6 @@ private final class TrendVideoFrameRenderer {
         self.firstDate = points.first?.date ?? Date()
         self.lastDate = points.last?.date ?? Date()
         self.domain = Self.makeDomain(points: points)
-
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = AppLocalization.currentLocale
-        formatter.dateFormat = AppLocalization.string("yyyy年M月d日")
-        self.dateFormatter = formatter
     }
 
     func draw(progress: Double, into pixelBuffer: CVPixelBuffer) {
@@ -426,75 +582,116 @@ private final class TrendVideoFrameRenderer {
         let index = visibleEndIndex(progress: progress)
         let point = points[index]
         drawHeader(point: point)
-        drawDateWatermark(point: point)
         drawChart(progress: progress)
-        drawBottomPanels(point: point)
+        drawBottomSummary(point: point)
         drawFooter()
     }
 
     private func drawBackground(in rect: CGRect) {
+        if let backgroundImage = UIImage(named: "trend_video_background") {
+            let imageSize = backgroundImage.size
+            let scale = max(rect.width / max(imageSize.width, 1), rect.height / max(imageSize.height, 1))
+            let drawSize = CGSize(width: imageSize.width * scale, height: imageSize.height * scale)
+            let drawRect = CGRect(
+                x: rect.midX - drawSize.width / 2,
+                y: rect.midY - drawSize.height / 2,
+                width: drawSize.width,
+                height: drawSize.height
+            )
+            backgroundImage.draw(in: drawRect)
+
+            UIColor.black.withAlphaComponent(0.12).setFill()
+            UIBezierPath(rect: rect).fill()
+
+            if let context = UIGraphicsGetCurrentContext() {
+                let readabilityColors = [
+                    UIColor.black.withAlphaComponent(0.18).cgColor,
+                    UIColor.clear.cgColor,
+                    UIColor.black.withAlphaComponent(0.26).cgColor
+                ] as CFArray
+                if let readabilityGradient = CGGradient(
+                    colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                    colors: readabilityColors,
+                    locations: [0, 0.5, 1]
+                ) {
+                    context.drawLinearGradient(
+                        readabilityGradient,
+                        start: CGPoint(x: rect.midX, y: rect.minY),
+                        end: CGPoint(x: rect.midX, y: rect.maxY),
+                        options: []
+                    )
+                }
+            }
+            return
+        }
+
         let colors = [
-            UIColor(red: 0.015, green: 0.022, blue: 0.045, alpha: 1).cgColor,
-            UIColor(red: 0.028, green: 0.046, blue: 0.075, alpha: 1).cgColor,
-            UIColor(red: 0.010, green: 0.012, blue: 0.024, alpha: 1).cgColor
+            UIColor(red: 0.018, green: 0.022, blue: 0.032, alpha: 1).cgColor,
+            UIColor(red: 0.028, green: 0.041, blue: 0.061, alpha: 1).cgColor,
+            UIColor(red: 0.010, green: 0.012, blue: 0.018, alpha: 1).cgColor
         ] as CFArray
         let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 0.45, 1])
         UIGraphicsGetCurrentContext()?.drawLinearGradient(
             gradient!,
-            start: CGPoint(x: rect.minX, y: rect.minY),
-            end: CGPoint(x: rect.maxX, y: rect.maxY * 0.78),
+            start: CGPoint(x: rect.midX, y: rect.minY),
+            end: CGPoint(x: rect.midX, y: rect.maxY),
             options: []
         )
 
-        UIColor(red: 0.93, green: 0.77, blue: 0.45, alpha: 0.04).setFill()
-        UIBezierPath(ovalIn: CGRect(x: -240, y: 520, width: 640, height: 720)).fill()
-        UIColor(red: 0.19, green: 0.55, blue: 0.86, alpha: 0.05).setFill()
-        UIBezierPath(ovalIn: CGRect(x: 720, y: 300, width: 520, height: 720)).fill()
+        guard let context = UIGraphicsGetCurrentContext() else { return }
+        let spotlightColors = [
+            UIColor.white.withAlphaComponent(0.065).cgColor,
+            UIColor.clear.cgColor
+        ] as CFArray
+        if let spotlight = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: spotlightColors, locations: [0, 1]) {
+            context.drawRadialGradient(
+                spotlight,
+                startCenter: CGPoint(x: rect.midX, y: 300),
+                startRadius: 0,
+                endCenter: CGPoint(x: rect.midX, y: 300),
+                endRadius: 390,
+                options: [.drawsAfterEndLocation]
+            )
+        }
     }
 
     private func drawHeader(point: TimeMachineTrendPoint) {
         drawText(
-            AppLocalization.string("资产时光机"),
-            in: CGRect(x: 54, y: 104, width: size.width - 108, height: 42),
-            font: .systemFont(ofSize: 30, weight: .semibold),
-            color: videoGold
+            AppLocalization.string("净资产"),
+            in: CGRect(x: 80, y: 158, width: size.width - 160, height: 50),
+            font: .systemFont(ofSize: 36, weight: .medium),
+            color: videoTextSecondary,
+            alignment: .center
         )
+        drawText(
+            point.netAssets.currencyString(),
+            in: CGRect(x: 36, y: 216, width: size.width - 72, height: 114),
+            font: .monospacedDigitSystemFont(ofSize: 84, weight: .semibold),
+            color: videoGold,
+            alignment: .center
+        )
+
+        videoGold.withAlphaComponent(0.32).setFill()
+        UIBezierPath(roundedRect: CGRect(x: size.width / 2 - 30, y: 350, width: 60, height: 2), cornerRadius: 1).fill()
+
         drawText(
             AppLocalization.string("财富走势回放"),
-            in: CGRect(x: 54, y: 152, width: size.width - 108, height: 86),
-            font: .systemFont(ofSize: 62, weight: .bold),
-            color: videoTextPrimary
+            in: CGRect(x: 80, y: 386, width: size.width - 160, height: 56),
+            font: .systemFont(ofSize: 42, weight: .semibold),
+            color: videoTextPrimary,
+            alignment: .center
         )
         drawText(
-            "\(rangeLabel) · \(dateFormatter.string(from: point.date))",
-            in: CGRect(x: 54, y: 244, width: size.width - 108, height: 42),
-            font: .systemFont(ofSize: 27, weight: .medium),
-            color: videoTextSecondary
-        )
-
-        drawLegend(in: CGRect(x: 56, y: 360, width: 560, height: 42))
-    }
-
-    private func drawDateWatermark(point: TimeMachineTrendPoint) {
-        let year = Calendar.current.component(.year, from: point.date)
-        drawText(
-            "\(year)",
-            in: CGRect(x: 690, y: 318, width: 330, height: 100),
-            font: .monospacedDigitSystemFont(ofSize: 86, weight: .thin),
-            color: videoTextPrimary.withAlphaComponent(0.12),
-            alignment: .right
-        )
-        drawText(
-            point.date.shortDateString,
-            in: CGRect(x: 780, y: 414, width: 240, height: 48),
-            font: .monospacedDigitSystemFont(ofSize: 38, weight: .light),
-            color: videoTextPrimary.withAlphaComponent(0.16),
-            alignment: .right
+            rangeLabel,
+            in: CGRect(x: 80, y: 448, width: size.width - 160, height: 44),
+            font: .systemFont(ofSize: 30, weight: .medium),
+            color: videoTextSecondary,
+            alignment: .center
         )
     }
 
     private func drawChart(progress: Double) {
-        let plotRect = CGRect(x: 74, y: 512, width: size.width - 148, height: 648)
+        let plotRect = CGRect(x: 92, y: 704, width: size.width - 184, height: 630)
         drawGrid(in: plotRect)
 
         let visibleCount = max(2, Int((Double(points.count - 1) * progress).rounded()) + 1)
@@ -505,7 +702,7 @@ private final class TrendVideoFrameRenderer {
         drawSeries(.liabilities, points: visiblePoints, in: plotRect, dashed: true)
 
         if let point = visiblePoints.last {
-            drawCurrentMarker(point: point, in: plotRect)
+            drawCurrentMarkers(point: point, in: plotRect)
         }
 
         drawAxisLabels(in: plotRect)
@@ -514,7 +711,7 @@ private final class TrendVideoFrameRenderer {
     private func drawGrid(in rect: CGRect) {
         guard let context = UIGraphicsGetCurrentContext() else { return }
         context.saveGState()
-        context.setStrokeColor(UIColor.white.withAlphaComponent(0.075).cgColor)
+        context.setStrokeColor(UIColor.white.withAlphaComponent(0.065).cgColor)
         context.setLineWidth(1.2)
 
         for step in 0...4 {
@@ -523,7 +720,8 @@ private final class TrendVideoFrameRenderer {
             context.addLine(to: CGPoint(x: rect.maxX, y: y))
         }
 
-        for step in 0...4 {
+        context.setLineDash(phase: 0, lengths: [5, 10])
+        for step in 0...3 {
             let x = rect.minX + rect.width * CGFloat(step) / 4
             context.move(to: CGPoint(x: x, y: rect.minY))
             context.addLine(to: CGPoint(x: x, y: rect.maxY))
@@ -536,7 +734,7 @@ private final class TrendVideoFrameRenderer {
         guard points.count >= 2, let context = UIGraphicsGetCurrentContext() else { return }
         context.saveGState()
         context.setStrokeColor(uiColor(for: series).cgColor)
-        context.setLineWidth(series == .liabilities ? 5 : 6.5)
+        context.setLineWidth(series == .liabilities ? 4.2 : 6.5)
         context.setLineCap(.round)
         context.setLineJoin(.round)
         if dashed {
@@ -555,36 +753,16 @@ private final class TrendVideoFrameRenderer {
         context.restoreGState()
     }
 
-    private func drawCurrentMarker(point: TimeMachineTrendPoint, in rect: CGRect) {
-        let markerPoint = chartPoint(for: point, series: .netAssets, in: rect)
-        let outer = CGRect(x: markerPoint.x - 18, y: markerPoint.y - 18, width: 36, height: 36)
-        let inner = CGRect(x: markerPoint.x - 7, y: markerPoint.y - 7, width: 14, height: 14)
-        videoCyan.withAlphaComponent(0.18).setFill()
-        UIBezierPath(ovalIn: outer).fill()
-        videoCyan.setFill()
-        UIBezierPath(ovalIn: inner).fill()
-    }
-
-    private func drawLegend(in rect: CGRect) {
-        let items: [(TimeMachineAssetSeries, Bool)] = [(.mainAssets, false), (.netAssets, false), (.liabilities, true)]
-        let itemWidth = rect.width / CGFloat(items.count)
-        for (index, item) in items.enumerated() {
-            let x = rect.minX + CGFloat(index) * itemWidth
-            let color = uiColor(for: item.0)
+    private func drawCurrentMarkers(point: TimeMachineTrendPoint, in rect: CGRect) {
+        for series in TimeMachineAssetSeries.allCases {
+            let markerPoint = chartPoint(for: point, series: series, in: rect)
+            let color = uiColor(for: series)
+            let outer = CGRect(x: markerPoint.x - 15, y: markerPoint.y - 15, width: 30, height: 30)
+            let inner = CGRect(x: markerPoint.x - 6, y: markerPoint.y - 6, width: 12, height: 12)
+            color.withAlphaComponent(0.16).setFill()
+            UIBezierPath(ovalIn: outer).fill()
             color.setFill()
-            if item.1 {
-                for dash in 0..<3 {
-                    UIBezierPath(roundedRect: CGRect(x: x + CGFloat(dash) * 17, y: rect.midY - 3, width: 11, height: 5), cornerRadius: 3).fill()
-                }
-            } else {
-                UIBezierPath(roundedRect: CGRect(x: x, y: rect.midY - 3, width: 42, height: 5), cornerRadius: 3).fill()
-            }
-            drawText(
-                item.0.title,
-                in: CGRect(x: x + 56, y: rect.minY - 1, width: itemWidth - 62, height: rect.height),
-                font: .systemFont(ofSize: 24, weight: .semibold),
-                color: videoTextSecondary
-            )
+            UIBezierPath(ovalIn: inner).fill()
         }
     }
 
@@ -592,81 +770,65 @@ private final class TrendVideoFrameRenderer {
         let upper = domain.upperBound.currencyString()
         let middle = ((domain.lowerBound + domain.upperBound) / 2).currencyString()
         let lower = domain.lowerBound.currencyString()
-        drawText(upper, in: CGRect(x: rect.minX, y: rect.minY - 38, width: 260, height: 30), font: .systemFont(ofSize: 21, weight: .medium), color: videoTextSecondary.withAlphaComponent(0.84))
-        drawText(middle, in: CGRect(x: rect.minX, y: rect.midY - 16, width: 260, height: 30), font: .systemFont(ofSize: 20, weight: .medium), color: videoTextSecondary.withAlphaComponent(0.7))
-        drawText(lower, in: CGRect(x: rect.minX, y: rect.maxY + 8, width: 260, height: 30), font: .systemFont(ofSize: 20, weight: .medium), color: videoTextSecondary.withAlphaComponent(0.72))
-        drawText(firstDate.shortDateString, in: CGRect(x: rect.minX, y: rect.maxY + 44, width: 220, height: 30), font: .systemFont(ofSize: 20, weight: .medium), color: videoTextSecondary)
-        drawText(lastDate.shortDateString, in: CGRect(x: rect.maxX - 220, y: rect.maxY + 44, width: 220, height: 30), font: .systemFont(ofSize: 20, weight: .medium), color: videoTextSecondary, alignment: .right)
+        drawText(upper, in: CGRect(x: rect.maxX - 250, y: rect.minY - 34, width: 250, height: 30), font: .systemFont(ofSize: 21, weight: .medium), color: videoTextSecondary.withAlphaComponent(0.82), alignment: .right)
+        drawText(middle, in: CGRect(x: rect.maxX - 250, y: rect.midY - 16, width: 250, height: 30), font: .systemFont(ofSize: 20, weight: .medium), color: videoTextSecondary.withAlphaComponent(0.68), alignment: .right)
+        drawText(lower, in: CGRect(x: rect.maxX - 250, y: rect.maxY - 26, width: 250, height: 30), font: .systemFont(ofSize: 20, weight: .medium), color: videoTextSecondary.withAlphaComponent(0.70), alignment: .right)
+        drawText(firstDate.shortDateString, in: CGRect(x: rect.minX, y: rect.maxY + 32, width: 220, height: 32), font: .systemFont(ofSize: 21, weight: .medium), color: videoGold.withAlphaComponent(0.76))
+
+        let midpointDate = firstDate.addingTimeInterval(lastDate.timeIntervalSince(firstDate) / 2)
+        drawText(midpointDate.shortDateString, in: CGRect(x: rect.midX - 110, y: rect.maxY + 32, width: 220, height: 32), font: .systemFont(ofSize: 21, weight: .medium), color: videoTextSecondary, alignment: .center)
+        drawText(lastDate.shortDateString, in: CGRect(x: rect.maxX - 220, y: rect.maxY + 32, width: 220, height: 32), font: .systemFont(ofSize: 21, weight: .medium), color: videoGold.withAlphaComponent(0.82), alignment: .right)
     }
 
-    private func drawBottomPanels(point: TimeMachineTrendPoint) {
-        let first = points.first ?? point
-        let panelX: CGFloat = 34
-        let panelWidth = size.width - panelX * 2
-        let panelHeight: CGFloat = 144
-        let gap: CGFloat = 14
-        let startY: CGFloat = 1288
+    private func drawBottomSummary(point: TimeMachineTrendPoint) {
+        let items: [(String, Double, UIColor)] = [
+            (AppLocalization.string("总资产"), point.mainAssets, videoGold),
+            (AppLocalization.string("净资产"), point.netAssets, videoCyan),
+            (AppLocalization.string("总负债"), point.liabilities, videoRed)
+        ]
+        let startX: CGFloat = 70
+        let availableWidth = size.width - startX * 2
+        let columnWidth = availableWidth / CGFloat(items.count)
+        let titleY: CGFloat = 1458
+        let valueY: CGFloat = 1510
 
-        drawValuePanel(
-            title: AppLocalization.string("总资产"),
-            value: point.mainAssets.currencyString(),
-            delta: deltaDescription(current: point.mainAssets, baseline: first.mainAssets),
-            color: videoGold,
-            frame: CGRect(x: panelX, y: startY, width: panelWidth, height: panelHeight)
-        )
-        drawValuePanel(
-            title: AppLocalization.string("净资产"),
-            value: point.netAssets.currencyString(),
-            delta: deltaDescription(current: point.netAssets, baseline: first.netAssets),
-            color: videoCyan,
-            frame: CGRect(x: panelX, y: startY + panelHeight + gap, width: panelWidth, height: panelHeight)
-        )
-        drawValuePanel(
-            title: AppLocalization.string("总负债"),
-            value: point.liabilities.currencyString(),
-            delta: deltaDescription(current: point.liabilities, baseline: first.liabilities),
-            color: videoRed,
-            frame: CGRect(x: panelX, y: startY + (panelHeight + gap) * 2, width: panelWidth, height: panelHeight)
-        )
-    }
-
-    private func drawValuePanel(title: String, value: String, delta: String, color: UIColor, frame: CGRect) {
-        let path = UIBezierPath(roundedRect: frame, cornerRadius: 20)
-        UIColor(red: 0.035, green: 0.055, blue: 0.090, alpha: 0.82).setFill()
-        path.fill()
-        color.withAlphaComponent(0.88).setStroke()
-        path.lineWidth = 2
-        path.stroke()
-
-        drawText(
-            title,
-            in: CGRect(x: frame.minX + 34, y: frame.minY + 36, width: 300, height: 44),
-            font: .systemFont(ofSize: 34, weight: .bold),
-            color: color
-        )
-        drawText(
-            value,
-            in: CGRect(x: frame.midX - 40, y: frame.minY + 25, width: frame.width / 2 + 2, height: 64),
-            font: .monospacedDigitSystemFont(ofSize: 50, weight: .medium),
-            color: videoTextPrimary,
-            alignment: .right
-        )
-        drawText(
-            delta,
-            in: CGRect(x: frame.midX - 40, y: frame.minY + 90, width: frame.width / 2 + 2, height: 34),
-            font: .systemFont(ofSize: 25, weight: .medium),
-            color: videoTextSecondary,
-            alignment: .right
-        )
+        for (index, item) in items.enumerated() {
+            let x = startX + CGFloat(index) * columnWidth
+            item.2.setFill()
+            UIBezierPath(ovalIn: CGRect(x: x, y: titleY + 12, width: 10, height: 10)).fill()
+            drawText(
+                item.0,
+                in: CGRect(x: x + 22, y: titleY, width: columnWidth - 28, height: 38),
+                font: .systemFont(ofSize: 25, weight: .medium),
+                color: videoTextSecondary
+            )
+            drawText(
+                item.1.currencyString(),
+                in: CGRect(x: x, y: valueY, width: columnWidth - 20, height: 48),
+                font: .monospacedDigitSystemFont(ofSize: 29, weight: .medium),
+                color: item.2
+            )
+        }
     }
 
     private func drawFooter() {
+        let logoSize: CGFloat = 44
+        let brandWidth: CGFloat = 218
+        let brandX = (size.width - brandWidth) / 2
+        let logoFrame = CGRect(x: brandX, y: size.height - 94, width: logoSize, height: logoSize)
+
+        if let logoImage = UIImage(named: "brand_logo"), let context = UIGraphicsGetCurrentContext() {
+            context.saveGState()
+            UIBezierPath(roundedRect: logoFrame, cornerRadius: 10).addClip()
+            logoImage.draw(in: logoFrame)
+            context.restoreGState()
+        }
+
         drawText(
-            AppLocalization.string("由资产时光机生成"),
-            in: CGRect(x: 72, y: size.height - 96, width: size.width - 144, height: 32),
-            font: .systemFont(ofSize: 23, weight: .medium),
-            color: videoTextSecondary.withAlphaComponent(0.72),
-            alignment: .center
+            AppLocalization.string("资产时光机"),
+            in: CGRect(x: logoFrame.maxX + 12, y: size.height - 89, width: brandWidth - logoSize - 12, height: 34),
+            font: .systemFont(ofSize: 24, weight: .semibold),
+            color: videoGold.withAlphaComponent(0.74)
         )
     }
 
@@ -680,21 +842,6 @@ private final class TrendVideoFrameRenderer {
             .paragraphStyle: paragraph
         ]
         (text as NSString).draw(in: rect, withAttributes: attributes)
-    }
-
-    private func deltaDescription(current: Double, baseline: Double) -> String {
-        let delta = current - baseline
-        let percentage: Double
-        if abs(baseline) > 0.0001 {
-            percentage = delta / abs(baseline)
-        } else {
-            percentage = 0
-        }
-
-        let sign = delta >= 0 ? "+" : "-"
-        let amount = abs(delta).currencyString()
-        let percent = String(format: "%.1f%%", abs(percentage) * 100)
-        return AppLocalization.format("变化 %@%@ / %@", sign, amount, percent)
     }
 
     private func visibleEndIndex(progress: Double) -> Int {

@@ -13958,6 +13958,29 @@
         }
       }
     },
+    "保存到本地": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save to Files"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存到本地"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "儲存到本機"
+          }
+        }
+      }
+    },
     "保存后的回测会出现在这里": {
       "extractionState": "manual",
       "localizations": {
@@ -17613,6 +17636,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "收起"
+          }
+        }
+      }
+    },
+    "收起导出选项": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapse export options"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "收起导出选项"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "收起匯出選項"
           }
         }
       }
@@ -21368,6 +21414,52 @@
         }
       }
     },
+    "导出视频": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Video"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出视频"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯出影片"
+          }
+        }
+      }
+    },
+    "用其他应用打开": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open in Other Apps"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用其他应用打开"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以其他 App 開啟"
+          }
+        }
+      }
+    },
     "视频保存": {
       "extractionState": "manual",
       "localizations": {
@@ -21525,6 +21617,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "影片預覽"
+          }
+        }
+      }
+    },
+    "预览走势视频": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview Trend Video"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "预览走势视频"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "預覽走勢影片"
           }
         }
       }

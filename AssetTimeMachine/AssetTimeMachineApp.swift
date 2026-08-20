@@ -37,6 +37,19 @@ struct AssetTimeMachineApp: App {
         AppAppearanceMode(rawValue: appearanceModeRawValue) ?? .system
     }
 
+    private var hidesStatusBarForScreenshots: Bool {
+        if ProcessInfo.processInfo.arguments.contains("--hide-status-bar") {
+            return true
+        }
+
+        #if targetEnvironment(simulator)
+        return ProcessInfo.processInfo.environment["SIMULATOR_UDID"]
+            == "02E004D9-A5F0-401A-9023-0E8315F77C8B"
+        #else
+        return false
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             Group {
@@ -49,6 +62,7 @@ struct AssetTimeMachineApp: App {
                 .environment(\.locale, appLanguageStore.language.locale)
                 .environmentObject(appLanguageStore)
                 .preferredColorScheme(appearanceMode.colorScheme)
+                .statusBarHidden(hidesStatusBarForScreenshots)
         }
         .modelContainer(modelBootstrap.container)
     }

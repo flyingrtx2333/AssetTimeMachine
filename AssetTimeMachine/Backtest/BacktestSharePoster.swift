@@ -180,15 +180,11 @@ struct BacktestSharePosterView: View {
 
     private var brandHeader: some View {
         HStack(spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(BacktestPosterPalette.gold)
-                    .frame(width: 28, height: 28)
-
-                Image(systemName: "chart.xyaxis.line")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(BacktestPosterPalette.background)
-            }
+            Image("brand_logo")
+                .resizable()
+                .scaledToFill()
+                .frame(width: 28, height: 28)
+                .clipShape(RoundedRectangle(cornerRadius: 6.5, style: .continuous))
 
             Text(AppLocalization.string("资产时光机"))
                 .font(.system(size: 11, weight: .semibold, design: .default))

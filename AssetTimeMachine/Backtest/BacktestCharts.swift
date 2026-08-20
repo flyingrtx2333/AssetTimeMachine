@@ -201,6 +201,9 @@ struct InteractiveBacktestChart: View, Equatable {
     @State private var viewportStartRatio: Double = 0
     @State private var visibleSpanRatio: Double = 1
     @State private var chartGuideGeometry: BacktestChartGuideGeometry?
+    @State private var pinchStartSpanRatio: Double?
+    @State private var pinchStartViewportStartRatio: Double?
+    @State private var pinchAnchorRatio: Double = 0.5
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.valueStyle == rhs.valueStyle
@@ -395,6 +398,10 @@ struct InteractiveBacktestChart: View, Equatable {
         canShowViewportControls && viewportStartRatio < maxViewportStartRatio - 0.001
     }
 
+    private var hasAdjustedViewport: Bool {
+        canZoomOut || canPanLeft || canPanRight
+    }
+
     private func valueDomain(in dateDomain: ClosedRange<Date>?) -> ClosedRange<Double> {
         var minValue = Double.infinity
         var maxValue = -Double.infinity
@@ -463,6 +470,43 @@ struct InteractiveBacktestChart: View, Equatable {
         visibleSpanRatio = 1
         viewportStartRatio = 0
         updateSelection(nil)
+    }
+
+    private func updateViewportMagnification(_ value: MagnifyGesture.Value) {
+        guard canShowViewportControls else { return }
+
+        if pinchStartSpanRatio == nil {
+            pinchStartSpanRatio = visibleSpanRatio
+            pinchStartViewportStartRatio = viewportStartRatio
+            pinchAnchorRatio = min(max(Double(value.startAnchor.x), 0), 1)
+        }
+
+        guard let startSpan = pinchStartSpanRatio,
+              let startViewport = pinchStartViewportStartRatio else { return }
+        let scale = max(Double(value.magnification), 0.01)
+        let nextSpan = min(max(startSpan / scale, minVisibleSpanRatio), 1)
+        let anchoredRatio = startViewport + startSpan * pinchAnchorRatio
+        visibleSpanRatio = nextSpan
+        viewportStartRatio = min(
+            max(anchoredRatio - nextSpan * pinchAnchorRatio, 0),
+            max(1 - nextSpan, 0)
+        )
+    }
+
+    private func finishViewportMagnification() {
+        pinchStartSpanRatio = nil
+        pinchStartViewportStartRatio = nil
+        clampViewport()
+    }
+
+    private var viewportMagnifyGesture: some Gesture {
+        MagnifyGesture(minimumScaleDelta: 0.01)
+            .onChanged { value in
+                updateViewportMagnification(value)
+            }
+            .onEnded { _ in
+                finishViewportMagnification()
+            }
     }
 
     private func updateSelection(_ date: Date?) {
@@ -628,10 +672,55 @@ struct InteractiveBacktestChart: View, Equatable {
     private var dateNavigator: some View {
         if showsDateRuler, let selectedPoint {
             VStack(spacing: 5) {
-                Text(selectedPoint.date.longDateString)
-                    .font(.system(size: 15, weight: .semibold, design: .default))
-                    .monospacedDigit()
-                    .foregroundStyle(AssetTheme.gold)
+                HStack(spacing: 8) {
+                    dateRowViewportButton(
+                        systemImage: "chevron.left",
+                        accessibilityLabel: AppLocalization.string("图表左移"),
+                        isEnabled: canPanLeft
+                    ) {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            panViewport(by: -0.38)
+                        }
+                    }
+
+                    Spacer(minLength: 6)
+
+                    HStack(spacing: 6) {
+                        Text(selectedPoint.date.longDateString)
+                            .font(.system(size: 15, weight: .semibold, design: .default))
+                            .monospacedDigit()
+                            .foregroundStyle(AssetTheme.gold)
+
+                        if hasAdjustedViewport {
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.18)) {
+                                    resetViewport()
+                                }
+                            } label: {
+                                Image(systemName: "arrow.counterclockwise")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(AssetTheme.textSecondary)
+                                    .frame(width: 22, height: 22)
+                                    .background(AssetTheme.overlaySoft.opacity(0.72), in: Circle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(AppLocalization.string("重置图表视图"))
+                        }
+                    }
+
+                    Spacer(minLength: 6)
+
+                    dateRowViewportButton(
+                        systemImage: "chevron.right",
+                        accessibilityLabel: AppLocalization.string("图表右移"),
+                        isEnabled: canPanRight
+                    ) {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            panViewport(by: 0.38)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity)
 
                 Image(systemName: "triangle.fill")
                     .font(.system(size: 8, weight: .bold))
@@ -646,6 +735,25 @@ struct InteractiveBacktestChart: View, Equatable {
                 )
             }
         }
+    }
+
+    private func dateRowViewportButton(
+        systemImage: String,
+        accessibilityLabel: String,
+        isEnabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(isEnabled ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.30))
+                .frame(width: 30, height: 28)
+                .background(AssetTheme.overlaySoft.opacity(isEnabled ? 0.72 : 0.34), in: Capsule())
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .accessibilityLabel(accessibilityLabel)
     }
 
     @ViewBuilder
@@ -744,7 +852,9 @@ struct InteractiveBacktestChart: View, Equatable {
         let strategySeries = BacktestChartSeriesTitle.strategy
 
         VStack(alignment: .trailing, spacing: 8) {
-            viewportControls
+            if !showsDateRuler {
+                viewportControls
+            }
 
             dateNavigator
 
@@ -760,8 +870,8 @@ struct InteractiveBacktestChart: View, Equatable {
             .chartYScale(domain: domain)
             .chartForegroundStyleScale(domain: foregroundStyleDomain, range: foregroundStyleRange)
             .animation(.easeInOut(duration: 0.2), value: visibleSeriesIDs)
-            .animation(.easeInOut(duration: 0.18), value: viewportStartRatio)
-            .animation(.easeInOut(duration: 0.18), value: visibleSpanRatio)
+            .animation(pinchStartSpanRatio == nil ? .easeInOut(duration: 0.18) : nil, value: viewportStartRatio)
+            .animation(pinchStartSpanRatio == nil ? .easeInOut(duration: 0.18) : nil, value: visibleSpanRatio)
             .chartPlotStyle { plotArea in
                 plotArea
             }
@@ -820,6 +930,7 @@ struct InteractiveBacktestChart: View, Equatable {
                 }
             }
         }
+        .simultaneousGesture(viewportMagnifyGesture)
         .onChange(of: points.count) { _, _ in
             clampViewport()
             initializePersistentSelectionIfNeeded()

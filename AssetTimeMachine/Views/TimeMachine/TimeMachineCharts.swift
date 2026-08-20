@@ -2936,6 +2936,7 @@ struct TimeMachineHorizontalPanGestureView: UIViewRepresentable {
             target: context.coordinator,
             action: #selector(Coordinator.handlePan(_:))
         )
+        recognizer.maximumNumberOfTouches = 1
         recognizer.cancelsTouchesInView = false
         recognizer.delegate = context.coordinator
         view.addGestureRecognizer(recognizer)

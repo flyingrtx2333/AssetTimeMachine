@@ -156,19 +156,7 @@ struct DashboardAllocationChart: View {
     let amountsVisible: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            HStack(spacing: 8) {
-                Text(AppLocalization.string("资产分布"))
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(AssetTheme.textPrimary)
-
-                Spacer(minLength: 0)
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(AssetTheme.textSecondary)
-            }
-
+        VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center, spacing: 20) {
                 ZStack {
                     Chart(slices) { slice in
@@ -727,31 +715,25 @@ struct DashboardFreedomSection: View {
             .padding(.top, 20)
             .padding(.bottom, 14)
 
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Text(AppLocalization.string("距离实现财务自由的进度"))
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(AssetTheme.textSecondary)
+            HStack(alignment: .center, spacing: 12) {
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(AssetTheme.border.opacity(0.42))
 
-                Spacer(minLength: 8)
+                        Capsule()
+                            .fill(AssetTheme.goldSoft)
+                            .frame(width: max(geometry.size.width * CGFloat(freedomProgress), freedomProgress > 0 ? 5 : 0))
+                    }
+                }
+                .frame(height: 6)
 
                 Text(freedomProgress.formatted(.percent.precision(.fractionLength(0))))
                     .font(.system(size: 17, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.goldSoft)
+                    .frame(minWidth: 44, alignment: .trailing)
             }
-
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(AssetTheme.border.opacity(0.42))
-
-                    Capsule()
-                        .fill(AssetTheme.goldSoft)
-                        .frame(width: max(geometry.size.width * CGFloat(freedomProgress), freedomProgress > 0 ? 5 : 0))
-                }
-            }
-            .frame(height: 6)
-            .padding(.top, 8)
             .padding(.bottom, 20)
 
             HStack(alignment: .top, spacing: 0) {
