@@ -157,9 +157,15 @@ localizations.each do |localization|
   locale = localization.dig("attributes", "locale")
   sets = screenshot_sets(localization.fetch("id"))
   puts "LOCALE #{locale} #{localization.fetch("id")} SETS=#{sets.map { |set| set.fetch("id") }.join(",")} COUNTS=#{sets.map { |set| screenshots(set.fetch("id")).length }.join(",")}"
+  sets.each do |set|
+    screenshots(set.fetch("id")).each_with_index do |item, index|
+      attributes = item.fetch("attributes")
+      puts "SCREENSHOT #{locale} #{index + 1} #{item.fetch("id")} #{attributes.fetch("fileName")} #{attributes.dig("assetDeliveryState", "state")}"
+    end
+  end
 end
 exit 0 if command == "inspect"
-abort "Unknown command: #{command}" unless command == "upload"
+abort "Unknown command: #{command}" unless %w[upload replace_after_keep].include?(command)
 
 if command == "upload" && localizations.none? { |item| item.dig("attributes", "locale") == "en-US" }
   english = data(:post, "/v1/appStoreVersionLocalizations", body: {
@@ -175,6 +181,7 @@ end
 
 targets = localizations.map do |localization|
   locale = localization.dig("attributes", "locale")
+  next if command == "replace_after_keep" && locale != ENV.fetch("TARGET_LOCALE", "zh-Hans")
   directory = locale_directory(locale)
   next unless directory
   files = Dir[File.join(root, directory, "*.png")].sort
@@ -187,8 +194,13 @@ targets.each do |localization, files|
   locale = localization.dig("attributes", "locale")
   set = ensure_set(localization.fetch("id"))
   old = screenshots(set.fetch("id"))
-  puts "Replacing #{old.length} screenshots for #{locale} with #{files.length}"
-  old.each { |item| request(:delete, "/v1/appScreenshots/#{item.fetch("id")}") }
+  keep_count = command == "replace_after_keep" ? Integer(ENV.fetch("KEEP_SCREENSHOTS", "2")) : 0
+  abort "Cannot keep #{keep_count} of only #{old.length} screenshots for #{locale}" if keep_count > old.length
+  kept = old.first(keep_count)
+  removed = old.drop(keep_count)
+  puts "Keeping #{kept.length}, replacing #{removed.length} screenshots for #{locale} with #{files.length}"
+  kept.each_with_index { |item, index| puts "KEPT #{locale} #{index + 1} #{item.fetch("id")} #{item.dig("attributes", "fileName")}" }
+  removed.each { |item| request(:delete, "/v1/appScreenshots/#{item.fetch("id")}") }
   uploaded = files.map do |path|
     item = upload_file(set.fetch("id"), path)
     puts "UPLOADED #{locale} #{File.basename(path)} #{item.fetch("id")}"
@@ -196,6 +208,7 @@ targets.each do |localization, files|
   end
   wait_complete(uploaded)
   final = screenshots(set.fetch("id"))
-  abort "Final screenshot count mismatch for #{locale}: #{final.length}" unless final.length == files.length
+  expected_count = kept.length + files.length
+  abort "Final screenshot count mismatch for #{locale}: #{final.length}, expected #{expected_count}" unless final.length == expected_count
   puts "VERIFIED #{locale} #{final.length} screenshots COMPLETE"
 end
