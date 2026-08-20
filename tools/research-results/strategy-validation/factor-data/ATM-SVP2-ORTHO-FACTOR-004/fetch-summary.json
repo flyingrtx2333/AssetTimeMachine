@@ -1,0 +1,116 @@
+{
+  "end": "2026-08-13",
+  "protocol_id": "ATM-SVP-2",
+  "series": {
+    "KRE": {
+      "first_date": "2006-06-22",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-004/KRE.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "PCX",
+        "instrument_type": "ETF",
+        "price_field": "adjusted_close",
+        "series_id": "KRE",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d&includeAdjustedClose=true"
+      },
+      "rows": 5067,
+      "series_id": "KRE",
+      "sha256": "c467f3e8c44dfebaa27e35bbaf69131fd92a574d6cd8981ebd11686db7b0ab07"
+    },
+    "SPHB": {
+      "first_date": "2011-05-05",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-004/SPHB.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "PCX",
+        "instrument_type": "ETF",
+        "price_field": "adjusted_close",
+        "series_id": "SPHB",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d&includeAdjustedClose=true"
+      },
+      "rows": 3841,
+      "series_id": "SPHB",
+      "sha256": "2a50cc8513b95057d23d17f8bb850a4ce624e73d3de036bfff52b4f79714043f"
+    },
+    "SPLV": {
+      "first_date": "2011-05-05",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-004/SPLV.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "PCX",
+        "instrument_type": "ETF",
+        "price_field": "adjusted_close",
+        "series_id": "SPLV",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d&includeAdjustedClose=true"
+      },
+      "rows": 3841,
+      "series_id": "SPLV",
+      "sha256": "89c292b261f53b227f46307a333c85db7b48bcd83f1a20fc9a2267482a3016c2"
+    },
+    "SPY": {
+      "first_date": "2001-01-02",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-004/SPY.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "PCX",
+        "instrument_type": "ETF",
+        "price_field": "adjusted_close",
+        "series_id": "SPY",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d&includeAdjustedClose=true"
+      },
+      "rows": 6441,
+      "series_id": "SPY",
+      "sha256": "d5e4d2f4085d6e92330a4921d19ab957b755ddbefda99288c69903fa2e5cc6ce"
+    },
+    "XLI": {
+      "first_date": "2001-01-02",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-004/XLI.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "PCX",
+        "instrument_type": "ETF",
+        "price_field": "adjusted_close",
+        "series_id": "XLI",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d&includeAdjustedClose=true"
+      },
+      "rows": 6441,
+      "series_id": "XLI",
+      "sha256": "b6588c9c5ba6c03c0c5f06d77d98f8b114e1b653b981f1286c7b8e170b2e3432"
+    },
+    "XLU": {
+      "first_date": "2001-01-02",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-004/XLU.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "PCX",
+        "instrument_type": "ETF",
+        "price_field": "adjusted_close",
+        "series_id": "XLU",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d&includeAdjustedClose=true"
+      },
+      "rows": 6441,
+      "series_id": "XLU",
+      "sha256": "3f4f7468a0146c76f67ae21f2908ad770755a8fbef27645e190bd7b55e7f9311"
+    }
+  },
+  "start": "2001-01-01",
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-004"
+}
