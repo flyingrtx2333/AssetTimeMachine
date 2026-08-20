@@ -1,0 +1,81 @@
+{
+  "diagnostic": "ATM-SVP-2 G4 frozen Yahoo source history availability",
+  "end": "2026-08-12",
+  "generated_at_epoch": 1787269763,
+  "interpretation": "No strategy metrics are computed. This artifact diagnoses whether the exact frozen Yahoo instruments expose reproducible historical daily data through Yahoo-owned interfaces.",
+  "start": "2009-07-03",
+  "symbols": {
+    "000016.SS": {
+      "download": {
+        "content_type": "application/json;charset=utf-8",
+        "crumb_status": 200,
+        "download_status": 401,
+        "response_prefix": "{\"finance\":{\"result\":null,\"error\":{\"code\":\"unauthorized\",\"description\":\"User is not logged in\"}}}",
+        "url_family": "query1.finance.yahoo.com/v7/finance/download"
+      },
+      "history_page": {
+        "bytes": 0,
+        "status": 404,
+        "url": "https://finance.yahoo.com/quote/000016.SS/history/"
+      },
+      "query1_chart": {
+        "currency": "CNY",
+        "exchange": "SHH",
+        "first_trade_date": null,
+        "http_error": null,
+        "timestamp_count": 0,
+        "url_family": "query1.finance.yahoo.com/v8/finance/chart"
+      },
+      "query2_chart": {
+        "currency": "CNY",
+        "exchange": "SHH",
+        "first_trade_date": null,
+        "http_error": null,
+        "timestamp_count": 0,
+        "url_family": "query2.finance.yahoo.com/v8/finance/chart"
+      },
+      "spark_max": {
+        "close_count": 1,
+        "error": null,
+        "timestamp_count": 1,
+        "url_family": "query1.finance.yahoo.com/v7/finance/spark"
+      }
+    },
+    "000047.SS": {
+      "download": {
+        "content_type": "application/json;charset=utf-8",
+        "crumb_status": 200,
+        "download_status": 401,
+        "response_prefix": "{\"finance\":{\"result\":null,\"error\":{\"code\":\"unauthorized\",\"description\":\"User is not logged in\"}}}",
+        "url_family": "query1.finance.yahoo.com/v7/finance/download"
+      },
+      "history_page": {
+        "bytes": 0,
+        "status": 404,
+        "url": "https://finance.yahoo.com/quote/000047.SS/history/"
+      },
+      "query1_chart": {
+        "currency": "CNY",
+        "exchange": "SHH",
+        "first_trade_date": null,
+        "http_error": null,
+        "timestamp_count": 0,
+        "url_family": "query1.finance.yahoo.com/v8/finance/chart"
+      },
+      "query2_chart": {
+        "currency": "CNY",
+        "exchange": "SHH",
+        "first_trade_date": null,
+        "http_error": null,
+        "timestamp_count": 0,
+        "url_family": "query2.finance.yahoo.com/v8/finance/chart"
+      },
+      "spark_max": {
+        "close_count": 1,
+        "error": null,
+        "timestamp_count": 1,
+        "url_family": "query1.finance.yahoo.com/v7/finance/spark"
+      }
+    }
+  }
+}
