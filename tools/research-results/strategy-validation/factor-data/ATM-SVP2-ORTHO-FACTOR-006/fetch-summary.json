@@ -1,0 +1,98 @@
+{
+  "end": "2026-08-13",
+  "protocol_id": "ATM-SVP-2",
+  "series": {
+    "HYG": {
+      "first_date": "2007-04-11",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-006/HYG.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "PCX",
+        "instrument_type": "ETF",
+        "price_field": "adjusted_close",
+        "series_id": "HYG",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d&includeAdjustedClose=true"
+      },
+      "rows": 4867,
+      "series_id": "HYG",
+      "sha256": "adc545b86d08208234ab7cdbaaa5a6a0f0eea35d54766af10b0932ea5403eed5"
+    },
+    "SHY": {
+      "first_date": "2002-07-30",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-006/SHY.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "NGM",
+        "instrument_type": "ETF",
+        "price_field": "adjusted_close",
+        "series_id": "SHY",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d&includeAdjustedClose=true"
+      },
+      "rows": 6049,
+      "series_id": "SHY",
+      "sha256": "9c6bd38c365e371cbb2398d0aa6ada39a21cde734f3c8e454498b5f269fbb4a4"
+    },
+    "VIX": {
+      "first_date": "2001-01-02",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-006/VIX.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "CXI",
+        "instrument_type": "INDEX",
+        "price_field": "adjusted_close",
+        "series_id": "^VIX",
+        "source": "YAHOO",
+        "timezone": "America/Chicago",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d&includeAdjustedClose=true"
+      },
+      "rows": 6442,
+      "series_id": "^VIX",
+      "sha256": "7b3bfb8bfedb700213d4a62576937bed427b66bc3f1f15ae3798fdbf195caa96"
+    },
+    "VIX9D": {
+      "first_date": "2011-01-03",
+      "last_date": "2026-07-17",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-006/VIX9D.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "WCB",
+        "instrument_type": "INDEX",
+        "price_field": "adjusted_close",
+        "series_id": "^VIX9D",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d&includeAdjustedClose=true"
+      },
+      "rows": 3907,
+      "series_id": "^VIX9D",
+      "sha256": "df50bbbea251f6ab83c9d7e2d65d5383d884e2220a45561f850787f9f3dcdc24"
+    },
+    "VVIX": {
+      "first_date": "2007-01-03",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-006/VVIX.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "WCB",
+        "instrument_type": "INDEX",
+        "price_field": "adjusted_close",
+        "series_id": "^VVIX",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d&includeAdjustedClose=true"
+      },
+      "rows": 4925,
+      "series_id": "^VVIX",
+      "sha256": "32166faf90f4085a60971f0b64dcd692942b28c7c04710ad9de964883ea8316e"
+    }
+  },
+  "start": "2001-01-01",
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-006"
+}
