@@ -5342,7 +5342,7 @@ struct StrategyMetricDump {
         for template: AdvancedBacktestStrategyTemplate,
         seriesBySymbol: [String: PublicHistorySeries]
     ) -> [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)] {
-        let options = StrategyNotificationDefaults.assetOptions(for: template)
+        let options = StrategyRebalanceDefaults.assetOptions(for: template)
         let historyProvider: (String) -> PublicHistorySeries? = { symbol in
             seriesBySymbol[normalizedHistorySymbol(symbol)]
         }

@@ -12,12 +12,15 @@ struct DashboardView: View {
     @AppStorage("dashboard.monthlySalary") private var monthlySalary: Double = 10000
     @AppStorage("dashboard.monthlySalarySeedVersion") private var monthlySalarySeedVersion: Int = 0
     @AppStorage("dashboard.annualReturnRate") private var annualReturnRate: Double = 0.03
+    @AppStorage("dashboard.freedomUsesCurrentAssets") private var freedomUsesCurrentAssets = true
+    @AppStorage("dashboard.amountsVisible") private var amountsVisible = true
     let marketStore: RemoteMarketStore
     let cloudStore: AssetTimeMachineCloudStore
     let isActive: Bool
-    let onOpenQuant: () -> Void
     @State private var cachedAllocationSlices: [DashboardAllocationSlice] = []
     @State private var cachedTrendPoints: [TimeMachineTrendPoint] = []
+    @State private var cachedRecentTrendPoints: [TimeMachineTrendPoint] = []
+    @State private var cachedThirtyDayChange: Double?
     @State private var cachedTrendPointValues: [DashboardTrendPointValue] = []
     @State private var cachedFreedomProjection: FinancialFreedomProjection?
     @State private var cachedTotalAssets: Double?
@@ -33,14 +36,11 @@ struct DashboardView: View {
     init(
         marketStore: RemoteMarketStore,
         cloudStore: AssetTimeMachineCloudStore,
-        isActive: Bool,
-        onOpenQuant: @escaping () -> Void
+        isActive: Bool
     ) {
         self.marketStore = marketStore
         self.cloudStore = cloudStore
         self.isActive = isActive
-        self.onOpenQuant = onOpenQuant
-
     }
 
     private var totalAssets: Double {
@@ -49,10 +49,6 @@ struct DashboardView: View {
 
     private var allocationSlices: [DashboardAllocationSlice] {
         cachedAllocationSlices
-    }
-
-    private var trendPoints: [TimeMachineTrendPoint] {
-        cachedTrendPoints
     }
 
     private var freedomProjection: FinancialFreedomProjection? {
@@ -64,7 +60,8 @@ struct DashboardView: View {
             monthlySalary: monthlySalary,
             annualReturnRate: annualReturnRate,
             monthlyExpense: monthlyExpense,
-            annualInflationRate: inflationRate
+            annualInflationRate: inflationRate,
+            usesCurrentAssets: freedomUsesCurrentAssets
         )
     }
 
@@ -79,7 +76,7 @@ struct DashboardView: View {
                             if !hasLoadedDashboardData {
                                 LoadingStateCard(title: AppLocalization.string("首页加载中"))
                             } else {
-                                VStack(alignment: .leading, spacing: 22) {
+                                VStack(alignment: .leading, spacing: 0) {
                                     summaryStrip
                                     freedomSection
                                         .id("dashboard-freedom-section")
@@ -94,14 +91,19 @@ struct DashboardView: View {
                             }
                         }
                         .padding(.horizontal, 20)
-                        .padding(.top, 28)
+                        .padding(.top, 16)
                         .padding(.bottom, TabScrollLayout.bottomPadding)
                     }
                     .scrollDismissesKeyboard(.interactively)
                     .task {
                         migrateDashboardDefaultsIfNeeded()
                         await cloudStore.refreshIfNeeded(from: modelContext)
-                        await focusFreedomSectionIfNeeded(using: proxy)
+                    }
+                    .onChange(of: hasLoadedDashboardData) { _, hasLoaded in
+                        guard hasLoaded else { return }
+                        Task {
+                            await focusFreedomSectionIfNeeded(using: proxy)
+                        }
                     }
                 }
             }
@@ -202,6 +204,7 @@ struct DashboardView: View {
         cachedAllocationSlices = makeAllocationSlices(from: output.allocationSlices)
         cachedTrendPointValues = output.trendPoints
         cachedTrendPoints = output.trendPoints.map(\.trendPoint)
+        updateRecentTrendCache(from: cachedTrendPoints)
         hasLoadedDashboardData = true
         pendingDashboardDataRefreshTask = nil
 
@@ -319,6 +322,28 @@ struct DashboardView: View {
         pendingDashboardProjectionRefreshTask = nil
     }
 
+    @MainActor
+    private func updateRecentTrendCache(from points: [TimeMachineTrendPoint]) {
+        guard let latest = points.last else {
+            cachedRecentTrendPoints = []
+            cachedThirtyDayChange = nil
+            return
+        }
+
+        let cutoff = Calendar.current.date(byAdding: .day, value: -30, to: latest.date) ?? latest.date
+        let recent = points.filter { $0.date >= cutoff }
+        cachedRecentTrendPoints = evenlySampledItems(recent, maxCount: 48)
+
+        guard let first = recent.first,
+              first.mainAssets.isFinite,
+              latest.mainAssets.isFinite,
+              abs(first.mainAssets) > .ulpOfOne else {
+            cachedThirtyDayChange = nil
+            return
+        }
+        cachedThirtyDayChange = (latest.mainAssets / first.mainAssets) - 1
+    }
+
     private func migrateDashboardDefaultsIfNeeded() {
         if monthlyExpenseSeedVersion < 1 {
             if abs(monthlyExpense - 8000) < 0.5 {
@@ -353,38 +378,30 @@ struct DashboardView: View {
     @MainActor
     private func focusFreedomSectionIfNeeded(using proxy: ScrollViewProxy) async {
         guard shouldFocusFreedomSectionForDebug else { return }
-        try? await Task.sleep(for: .milliseconds(450))
+        try? await Task.sleep(for: .milliseconds(250))
         withAnimation(.easeInOut(duration: 0.35)) {
-            proxy.scrollTo("dashboard-freedom-section", anchor: .top)
+            proxy.scrollTo("dashboard-freedom-projection", anchor: .center)
         }
     }
 
     private var summaryStrip: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 12) {
-                Button {
-                    freedomKeyboardDismissSignal += 1
-                    onOpenQuant()
-                } label: {
-                    DashboardTodayStrategyButton()
-                }
-                .buttonStyle(.plain)
+        VStack(alignment: .leading, spacing: 0) {
+            dashboardGreeting
+                .padding(.bottom, 16)
 
-                Spacer(minLength: 0)
-
-                Button {
-                    freedomKeyboardDismissSignal += 1
-                    showsCloudSyncModal = true
-                } label: {
-                    AssetTimeMachineCloudEntryButton(store: cloudStore)
-                }
-                .buttonStyle(.plain)
-            }
+            DashboardAssetHero(
+                totalAmount: totalAssets,
+                recentPoints: cachedRecentTrendPoints,
+                thirtyDayChange: cachedThirtyDayChange,
+                amountsVisible: $amountsVisible
+            )
+            .padding(.bottom, 20)
 
             if !allocationSlices.isEmpty {
                 DashboardAllocationChart(
                     slices: allocationSlices,
-                    totalAmount: totalAssets
+                    totalAmount: totalAssets,
+                    amountsVisible: amountsVisible
                 )
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -404,8 +421,38 @@ struct DashboardView: View {
             Rectangle()
                 .fill(AssetTheme.border.opacity(0.55))
                 .frame(height: 1)
+                .padding(.top, 20)
         }
         .onboardingAnchor(.dashboardAllocation)
+    }
+
+    private var dashboardGreeting: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Text(AppLocalization.string(greetingKey))
+                .font(.system(size: 28, weight: .bold, design: .default))
+                .foregroundStyle(AssetTheme.textPrimary)
+
+            Spacer(minLength: 12)
+
+            Button {
+                freedomKeyboardDismissSignal += 1
+                showsCloudSyncModal = true
+            } label: {
+                DashboardCloudStatusButton(store: cloudStore)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var greetingKey: String {
+        switch Calendar.current.component(.hour, from: Date()) {
+        case 5..<12:
+            return "早上好"
+        case 12..<18:
+            return "下午好"
+        default:
+            return "晚上好"
+        }
     }
 
     private var freedomSection: some View {
@@ -415,32 +462,30 @@ struct DashboardView: View {
             annualReturnRate: $annualReturnRate,
             monthlyExpense: $monthlyExpense,
             inflationRate: $inflationRate,
-            keyboardDismissSignal: $freedomKeyboardDismissSignal
+            usesCurrentAssets: $freedomUsesCurrentAssets,
+            keyboardDismissSignal: $freedomKeyboardDismissSignal,
+            amountsVisible: amountsVisible
         )
         .onboardingAnchor(.dashboardFreedom)
     }
 
 }
 
-struct DashboardTodayStrategyButton: View {
+struct DashboardCloudStatusButton: View {
+    @ObservedObject var store: AssetTimeMachineCloudStore
+
     var body: some View {
-        HStack(spacing: 7) {
-            Image(systemName: "scope")
-                .font(AppTypography.metaStrong)
+        HStack(spacing: 6) {
+            Image(systemName: store.indicatorState.cloudSymbolName)
+                .font(.system(size: 14, weight: .semibold))
 
-            Text(AppLocalization.string("今日策略"))
-                .font(AppTypography.metaStrong)
-
-            Image(systemName: "chevron.right")
-                .font(AppTypography.chartAxisStrip)
+            Text(store.indicatorLabel)
+                .font(.system(size: 11, weight: .medium))
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
         }
-        .foregroundStyle(AssetTheme.goldSoft)
-        .padding(.horizontal, 11)
-        .padding(.vertical, 8)
-        .background(AssetTheme.overlaySoft.opacity(0.86), in: Capsule())
-        .overlay(
-            Capsule()
-                .stroke(AssetTheme.gold.opacity(0.22), lineWidth: 1)
-        )
+        .foregroundStyle(store.indicatorState.symbolColor)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
     }
 }

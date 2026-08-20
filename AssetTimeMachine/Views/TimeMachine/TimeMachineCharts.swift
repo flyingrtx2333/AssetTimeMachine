@@ -407,8 +407,8 @@ struct TimeMachineRangeSelector: View {
                 Text(selectedRange.summaryLabel)
                     .font(.system(size: 13, weight: .semibold, design: .default))
                     .lineLimit(1)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 10, weight: .bold, design: .default))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .bold, design: .default))
             }
             .foregroundStyle(AssetTheme.textPrimary)
             .padding(.horizontal, 11)
@@ -507,6 +507,67 @@ private struct TimeMachineUnifiedTrendSelectionItem: Identifiable {
     let color: Color
 }
 
+private enum TimeMachineSelectionGuideLayout {
+    static let plotLeadingInset: CGFloat = 54
+    static let plotTrailingInset: CGFloat = 16
+}
+
+private struct TimeMachineSelectionGuideAnchors {
+    var rulerBounds: Anchor<CGRect>?
+    var chartBounds: Anchor<CGRect>?
+}
+
+private struct TimeMachineSelectionGuideAnchorKey: PreferenceKey {
+    static var defaultValue = TimeMachineSelectionGuideAnchors()
+
+    static func reduce(
+        value: inout TimeMachineSelectionGuideAnchors,
+        nextValue: () -> TimeMachineSelectionGuideAnchors
+    ) {
+        let next = nextValue()
+        if let rulerBounds = next.rulerBounds {
+            value.rulerBounds = rulerBounds
+        }
+        if let chartBounds = next.chartBounds {
+            value.chartBounds = chartBounds
+        }
+    }
+}
+
+private struct TimeMachineChartSelectionGuideReporter: View {
+    let proxy: ChartProxy
+    let date: Date
+    @Binding var selectionX: CGFloat?
+
+    var body: some View {
+        GeometryReader { geometry in
+            let resolvedX = resolvedSelectionX(in: geometry)
+            Color.clear
+                .onAppear {
+                    report(resolvedX)
+                }
+                .onChange(of: resolvedX) { _, newValue in
+                    report(newValue)
+                }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func resolvedSelectionX(in geometry: GeometryProxy) -> CGFloat? {
+        guard let plotFrame = proxy.plotFrame,
+              let plotX = proxy.position(forX: date) else {
+            return nil
+        }
+        let value = geometry[plotFrame].minX + plotX
+        return value.isFinite ? value : nil
+    }
+
+    private func report(_ value: CGFloat?) {
+        guard selectionX != value else { return }
+        selectionX = value
+    }
+}
+
 struct TimeMachineHeroTrendCard: View {
     let points: [TimeMachineTrendPoint]
     let latestPoint: TimeMachineTrendPoint
@@ -514,11 +575,12 @@ struct TimeMachineHeroTrendCard: View {
     let marketSeries: [TimeMachineMarketTrendSeries]
     let visibleSeriesIDs: Set<String>
     @Binding var selectedRange: TimeMachineRange
+    let amountsVisible: Bool
     let onToggleSeries: (String) -> Void
     let hasRecord: ((Date) -> Bool)?
     let onOpenRecord: ((Date) -> Void)?
     @State private var selectedDate: Date?
-    private let plotCornerRadius: CGFloat = 14
+    @State private var chartSelectionX: CGFloat?
     private let displayPoints: [TimeMachineTrendPoint]
     private let unifiedSeries: [TimeMachineUnifiedTrendSeries]
     private let valueDomain: ClosedRange<Double>
@@ -537,6 +599,7 @@ struct TimeMachineHeroTrendCard: View {
         marketSeries: [TimeMachineMarketTrendSeries],
         visibleSeriesIDs: Set<String>,
         selectedRange: Binding<TimeMachineRange>,
+        amountsVisible: Bool,
         onToggleSeries: @escaping (String) -> Void,
         hasRecord: ((Date) -> Bool)? = nil,
         onOpenRecord: ((Date) -> Void)? = nil
@@ -547,6 +610,7 @@ struct TimeMachineHeroTrendCard: View {
         self.marketSeries = marketSeries
         self.visibleSeriesIDs = visibleSeriesIDs
         self._selectedRange = selectedRange
+        self.amountsVisible = amountsVisible
         self.onToggleSeries = onToggleSeries
         self.hasRecord = hasRecord
         self.onOpenRecord = onOpenRecord
@@ -558,10 +622,13 @@ struct TimeMachineHeroTrendCard: View {
         self.displayPoints = displayPoints
 
         let visibleAssetSeries = TimeMachineAssetSeries.allCases.filter {
-            visibleSeriesIDs.contains($0.id)
+            $0 != .liabilities && visibleSeriesIDs.contains($0.id)
         }
-        let assetValues = visibleAssetSeries.flatMap { series in
+        var assetValues = visibleAssetSeries.flatMap { series in
             displayPoints.map { series.value(from: $0) }.filter(\.isFinite)
+        }
+        if visibleSeriesIDs.contains(TimeMachineAssetSeries.liabilities.id) {
+            assetValues += displayPoints.flatMap { [$0.netAssets, $0.mainAssets] }.filter(\.isFinite)
         }
         let assetValueDomain = assetValues.isEmpty
             ? nil
@@ -627,6 +694,8 @@ struct TimeMachineHeroTrendCard: View {
         self.valueDomain = valueDomain
         self.dateDomain = Self.makeDateDomain(from: displayPoints)
         self.axisDates = chartAxisDates(displayPoints.map(\.date))
+        self._selectedDate = State(initialValue: displayPoints.last?.date)
+        self._chartSelectionX = State(initialValue: nil)
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-timeMachineSelectChartPoint"),
            !displayPoints.isEmpty {
@@ -667,6 +736,10 @@ struct TimeMachineHeroTrendCard: View {
         unifiedSeries.filter { !$0.points.isEmpty }
     }
 
+    private var showsLiabilityBand: Bool {
+        visibleSeriesIDs.contains(TimeMachineAssetSeries.liabilities.id)
+    }
+
     private var hasAssetValueAxis: Bool { assetValueDomain != nil }
     private var hasMarketReturnAxis: Bool { marketReturnDomain != nil }
 
@@ -694,7 +767,9 @@ struct TimeMachineHeroTrendCard: View {
 
     private var selectedSeriesItems: [TimeMachineUnifiedTrendSelectionItem] {
         guard selectedDate != nil else { return [] }
-        return activeSeries.compactMap { series in
+        let assetSeriesIDs = Set(TimeMachineAssetSeries.allCases.map(\.id))
+        var items: [TimeMachineUnifiedTrendSelectionItem] = activeSeries.compactMap { series in
+            guard assetSeriesIDs.contains(series.id) else { return nil }
             guard let point = nearestChartPoint(
                 series.points,
                 to: selectedPoint.date,
@@ -707,6 +782,20 @@ struct TimeMachineHeroTrendCard: View {
                 color: series.color
             )
         }
+        if showsLiabilityBand {
+            let marketIDs = Set(marketOptions.map(\.symbol))
+            let insertionIndex = items.firstIndex { marketIDs.contains($0.id) } ?? items.endIndex
+            items.insert(
+                TimeMachineUnifiedTrendSelectionItem(
+                    id: TimeMachineAssetSeries.liabilities.id,
+                    title: AppLocalization.string("负债"),
+                    value: amountsVisible ? compactCurrency(selectedPoint.liabilities) : "••••••",
+                    color: AssetTheme.negative
+                ),
+                at: insertionIndex
+            )
+        }
+        return items
     }
 
     private static func makeDateDomain(from points: [TimeMachineTrendPoint]) -> ClosedRange<Date> {
@@ -721,12 +810,35 @@ struct TimeMachineHeroTrendCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            heroHeader
-            seriesToggleRow
+        VStack(alignment: .leading, spacing: 16) {
+            dateNavigator
+            heroSummary
 
             ZStack {
                 Chart {
+                    if showsLiabilityBand {
+                        ForEach(displayPoints) { point in
+                            AreaMark(
+                                x: .value(dateAxisKey, point.date),
+                                yStart: .value(AppLocalization.string("净资产"), point.netAssets),
+                                yEnd: .value(AppLocalization.string("总资产"), point.mainAssets)
+                            )
+                            .interpolationMethod(.monotone)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [
+                                        AssetTheme.negative.opacity(0.06),
+                                        AssetTheme.negative.opacity(0.20)
+                                    ],
+                                    startPoint: .bottom,
+                                    endPoint: .top
+                                )
+                            )
+                            .accessibilityLabel(AppLocalization.string("负债"))
+                            .accessibilityValue(point.liabilities.currencyString(code: "CNY"))
+                        }
+                    }
+
                     ForEach(activeSeries) { series in
                         ForEach(series.points) { point in
                             LineMark(
@@ -756,8 +868,8 @@ struct TimeMachineHeroTrendCard: View {
 
                     if selectedDate != nil {
                         RuleMark(x: .value(selectedDateAxisKey, selectedPoint.date))
-                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.38))
-                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 5]))
+                            .foregroundStyle(AssetTheme.gold.opacity(0.72))
+                            .lineStyle(StrokeStyle(lineWidth: 1))
                             .annotation(position: .overlay, alignment: selectedPopoverAlignment, spacing: 7) {
                                 selectedValuePopover
                             }
@@ -767,7 +879,7 @@ struct TimeMachineHeroTrendCard: View {
                     domain: activeSeries.map(\.id),
                     range: activeSeries.map(\.color)
                 )
-                .frame(height: 238)
+                .frame(height: 250)
                 .chartXScale(domain: dateDomain)
                 .chartYScale(domain: valueDomain)
                 .chartXAxis {
@@ -791,7 +903,7 @@ struct TimeMachineHeroTrendCard: View {
                             AxisValueLabel {
                                 if let amount = value.as(Double.self) {
                                     Text(assetAxisLabel(amount))
-                                        .font(.system(size: 9.5, weight: .medium, design: .default))
+                                        .font(.system(size: 10, weight: .medium, design: .default))
                                         .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
                                 }
                             }
@@ -817,18 +929,26 @@ struct TimeMachineHeroTrendCard: View {
                 }
                 .chartLegend(.hidden)
                 .chartOverlay { proxy in
-                    TimeMachineDragOverlay(
-                        proxy: proxy,
-                        selectableValues: displayPoints,
-                        selectionDate: \.date
-                    ) { date in
-                        selectedDate = date
+                    ZStack {
+                        TimeMachineDragOverlay(
+                            proxy: proxy,
+                            selectableValues: displayPoints,
+                            selectionDate: \.date
+                        ) { date in
+                            selectedDate = date
+                        }
+
+                        TimeMachineChartSelectionGuideReporter(
+                            proxy: proxy,
+                            date: selectedPoint.date,
+                            selectionX: $chartSelectionX
+                        )
                     }
                 }
                 .padding(.bottom, 4)
                 .onboardingAnchor(.timeMachineChart)
 
-                if activeSeries.isEmpty {
+                if activeSeries.isEmpty && !showsLiabilityBand {
                     VStack(spacing: 7) {
                         Image(systemName: "chart.line.uptrend.xyaxis")
                             .font(.system(size: 19, weight: .medium))
@@ -839,76 +959,183 @@ struct TimeMachineHeroTrendCard: View {
                     .allowsHitTesting(false)
                 }
             }
-
-            if canOpenSelectedRecord {
-                Button {
-                    onOpenRecord?(selectedSnapshotDate)
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "square.and.pencil")
-                            .font(.system(size: 12, weight: .semibold))
-                        Text(AppLocalization.string("查看当日记录"))
-                            .font(AppTypography.meta)
-                    }
-                    .foregroundStyle(AssetTheme.gold)
-                }
-                .buttonStyle(.plain)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.top, 4)
+            .anchorPreference(key: TimeMachineSelectionGuideAnchorKey.self, value: .bounds) { anchor in
+                TimeMachineSelectionGuideAnchors(chartBounds: anchor)
             }
+
+            seriesToggleRow
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .backgroundPreferenceValue(TimeMachineSelectionGuideAnchorKey.self) { anchors in
+            GeometryReader { geometry in
+                if let rulerBounds = anchors.rulerBounds,
+                   let chartBounds = anchors.chartBounds {
+                    let rulerFrame = geometry[rulerBounds]
+                    let chartFrame = geometry[chartBounds]
+                    let markerY = rulerFrame.minY + 33
+                    let guideEndY = chartFrame.midY
+                    let guideX = chartFrame.minX
+                        + (chartSelectionX ?? selectionGuideXPosition(width: chartFrame.width))
+                    Rectangle()
+                        .fill(AssetTheme.gold.opacity(0.76))
+                        .frame(width: 1, height: max(guideEndY - markerY, 0))
+                        .position(
+                            x: guideX,
+                            y: markerY + max(guideEndY - markerY, 0) / 2
+                        )
+                }
+            }
+        }
+        .overlayPreferenceValue(TimeMachineSelectionGuideAnchorKey.self) { anchors in
+            GeometryReader { geometry in
+                if let rulerBounds = anchors.rulerBounds,
+                   let chartBounds = anchors.chartBounds {
+                    let rulerFrame = geometry[rulerBounds]
+                    let chartFrame = geometry[chartBounds]
+                    let guideX = chartFrame.minX
+                        + (chartSelectionX ?? selectionGuideXPosition(width: chartFrame.width))
+                    selectionGuideMarker
+                        .position(x: guideX, y: rulerFrame.minY + 33)
+                }
+            }
+            .allowsHitTesting(false)
+        }
     }
 
-    private var heroHeader: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack(alignment: .center, spacing: 10) {
-                Text(AppLocalization.string("资产走势"))
-                    .font(.system(size: 16, weight: .bold, design: .default))
-                    .foregroundStyle(AssetTheme.textPrimary)
+    private var selectionGuideMarker: some View {
+        Circle()
+            .fill(AssetTheme.gold.opacity(0.18))
+            .frame(width: 23, height: 23)
+            .overlay(Circle().stroke(AssetTheme.goldSoft.opacity(0.42), lineWidth: 1))
+            .overlay {
+                Circle()
+                    .fill(AssetTheme.goldSoft)
+                    .frame(width: 13, height: 13)
+                    .overlay(Circle().stroke(AssetTheme.textPrimary.opacity(0.92), lineWidth: 1.2))
+            }
+            .shadow(color: AssetTheme.gold.opacity(0.32), radius: 8)
+    }
 
-                Spacer(minLength: 10)
+    private func selectionGuideXPosition(width: CGFloat) -> CGFloat {
+        guard let firstDate = displayPoints.first?.date,
+              let lastDate = displayPoints.last?.date else {
+            return width - TimeMachineSelectionGuideLayout.plotTrailingInset
+        }
+        let duration = max(lastDate.timeIntervalSince(firstDate), 1)
+        let progress = min(max(selectedPoint.date.timeIntervalSince(firstDate) / duration, 0), 1)
+        let availableWidth = max(
+            width
+                - TimeMachineSelectionGuideLayout.plotLeadingInset
+                - TimeMachineSelectionGuideLayout.plotTrailingInset,
+            1
+        )
+        return min(
+            max(
+                TimeMachineSelectionGuideLayout.plotLeadingInset + availableWidth * progress,
+                TimeMachineSelectionGuideLayout.plotLeadingInset
+            ),
+            width - TimeMachineSelectionGuideLayout.plotTrailingInset
+        )
+    }
+
+    private var dateNavigator: some View {
+        VStack(spacing: 8) {
+            ZStack(alignment: .topTrailing) {
+                VStack(spacing: 5) {
+                    Text(selectedPoint.date.longDateString)
+                        .font(.system(size: 15.5, weight: .semibold, design: .default))
+                        .monospacedDigit()
+                        .foregroundStyle(AssetTheme.gold)
+
+                    Image(systemName: "triangle.fill")
+                        .font(.system(size: 8, weight: .bold))
+                        .rotationEffect(.degrees(180))
+                        .foregroundStyle(AssetTheme.gold)
+                }
+                .frame(maxWidth: .infinity)
 
                 TimeMachineRangeSelector(selectedRange: $selectedRange)
+                    .onboardingAnchor(.timeMachineRange)
             }
-            .onboardingAnchor(.timeMachineRange)
 
-            HStack(alignment: .center, spacing: 10) {
-                Text(selectedDate == nil ? dateRangeLabel : selectedPoint.date.chartAxisDateString)
-                    .font(.system(size: 11, weight: .semibold, design: .default))
-                    .monospacedDigit()
-                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 6)
-                    .background(AssetTheme.surface.opacity(0.72), in: Capsule())
-                    .overlay(
-                        Capsule()
-                            .stroke(AssetTheme.border.opacity(selectedDate == nil ? 0.28 : 0.58), lineWidth: 1)
-                    )
-
-                Spacer(minLength: 8)
-
-                Text(axisContextLabel)
-                    .font(AppTypography.chartCaptionStrong)
-                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.76))
-            }
+            TimeMachineDateRuler(
+                points: displayPoints,
+                selectedDate: $selectedDate
+            )
         }
     }
 
-    private var axisContextLabel: String {
-        if hasAssetValueAxis && hasMarketReturnAxis {
-            return AppLocalization.string("资产金额 / 市场涨跌")
+    private var heroSummary: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Text(AppLocalization.string("当日净资产"))
+                    .font(.system(size: 12, weight: .medium, design: .default))
+                    .foregroundStyle(AssetTheme.textSecondary)
+
+                Spacer(minLength: 8)
+            }
+
+            Text(amountsVisible ? compactCurrency(selectedPoint.netAssets) : "••••••")
+                .font(.system(size: 33, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(AssetTheme.goldSoft)
+                .lineLimit(1)
+                .minimumScaleFactor(0.62)
+
+            Text(amountsVisible ? changeFromStartLabel : "••••••")
+                .font(.system(size: 11.5, weight: .semibold, design: .default))
+                .monospacedDigit()
+                .foregroundStyle(changeFromStartColor)
         }
-        if hasMarketReturnAxis {
-            return AppLocalization.string("市场涨跌")
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard canOpenSelectedRecord else { return }
+            onOpenRecord?(selectedSnapshotDate)
         }
-        return AppLocalization.string("资产金额")
+        .accessibilityHint(canOpenSelectedRecord ? AppLocalization.string("查看当日记录") : "")
+    }
+
+    private var changeFromStartLabel: String {
+        guard let firstPoint = displayPoints.first else { return "--" }
+        let change = selectedPoint.netAssets - firstPoint.netAssets
+        let rate = abs(firstPoint.netAssets) > 0.000_1 ? change / abs(firstPoint.netAssets) : 0
+        return AppLocalization.format(
+            "较期初 %@ · %@",
+            signedCompactCurrency(change),
+            signedPercent(rate)
+        )
+    }
+
+    private var changeFromStartColor: Color {
+        guard let firstPoint = displayPoints.first else { return AssetTheme.textSecondary }
+        let change = selectedPoint.netAssets - firstPoint.netAssets
+        return change > 0 ? AssetTheme.positive : (change < 0 ? AssetTheme.negative : AssetTheme.textSecondary)
+    }
+
+    private func compactCurrency(_ value: Double) -> String {
+        "\(renminbiSymbol)\(value.compactNumberString(maxFractionDigits: 1, currencyCode: "CNY"))"
+    }
+
+    private func signedCompactCurrency(_ value: Double) -> String {
+        let sign = value > 0 ? "+" : (value < 0 ? "−" : "")
+        return "\(sign)\(renminbiSymbol)\(abs(value).compactNumberString(maxFractionDigits: 1, currencyCode: "CNY"))"
+    }
+
+    private var renminbiSymbol: String {
+        AppLocalization.currentLanguage == .english ? "CN¥" : "¥"
+    }
+
+    private func signedPercent(_ value: Double) -> String {
+        let sign = value > 0 ? "+" : ""
+        return sign + value.percentString(maxFractionDigits: 1)
     }
 
     private func assetAxisLabel(_ amount: Double) -> String {
-        "¥\(amount.compactNumberString(maxFractionDigits: 1))"
+        guard amountsVisible else { return "••" }
+        if AppLocalization.currentLanguage == .english {
+            return "CN¥\(amount.compactNumberString(maxFractionDigits: 1, currencyCode: "CNY"))"
+        }
+        return amount.compactNumberString(maxFractionDigits: 0, currencyCode: "CNY")
     }
 
     private func accessibilityValue(
@@ -924,16 +1151,16 @@ struct TimeMachineHeroTrendCard: View {
     ) -> String {
         switch scale {
         case .assetValue:
-            return point.displayValue.currencyString(code: "CNY")
+            return amountsVisible ? compactCurrency(point.displayValue) : "••••••"
         case .marketReturn:
             return point.displayValue.percentString(maxFractionDigits: 1)
         }
     }
 
     private var selectedValuePopover: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(selectedPoint.date.chartAxisDateString)
-                .font(.system(size: 9.5, weight: .semibold, design: .default))
+                .font(.system(size: 11, weight: .semibold, design: .default))
                 .monospacedDigit()
                 .foregroundStyle(AssetTheme.textSecondary)
 
@@ -942,20 +1169,20 @@ struct TimeMachineHeroTrendCard: View {
                 .frame(height: 1)
 
             ForEach(selectedSeriesItems) { item in
-                HStack(spacing: 5) {
+                HStack(spacing: 7) {
                     Circle()
                         .fill(item.color)
-                        .frame(width: 5, height: 5)
+                        .frame(width: 6, height: 6)
 
                     Text(item.title)
-                        .font(.system(size: 9, weight: .medium, design: .default))
+                        .font(.system(size: 10.5, weight: .medium, design: .default))
                         .foregroundStyle(AssetTheme.textSecondary)
                         .lineLimit(1)
 
                     Spacer(minLength: 5)
 
                     Text(item.value)
-                        .font(.system(size: 9.5, weight: .semibold, design: .default))
+                        .font(.system(size: 10.5, weight: .semibold, design: .default))
                         .monospacedDigit()
                         .foregroundStyle(AssetTheme.textPrimary)
                         .lineLimit(1)
@@ -963,54 +1190,94 @@ struct TimeMachineHeroTrendCard: View {
                 }
             }
         }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 8)
-        .frame(width: 154)
-        .background(AssetTheme.surface.opacity(0.97), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 11)
+        .frame(width: AppLocalization.currentLanguage == .english ? 198 : 174)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(AssetTheme.surface.opacity(0.76), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.72), lineWidth: 0.8)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.9), lineWidth: 0.8)
         )
-        .shadow(color: Color.black.opacity(0.16), radius: 8, y: 3)
+        .shadow(color: Color.black.opacity(0.24), radius: 12, y: 5)
     }
 
     private var seriesToggleRow: some View {
-        ATMFlowLayout(horizontalSpacing: 7, verticalSpacing: 7, rowAlignment: .leading) {
-            ForEach(TimeMachineAssetSeries.allCases) { series in
-                TimeMachineUnifiedLegendButton(
-                    title: series.title,
-                    color: series.color,
-                    isDashed: series == .liabilities,
-                    isVisible: visibleSeriesIDs.contains(series.id)
-                ) {
-                    onToggleSeries(series.id)
+        HStack(alignment: .center, spacing: 10) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 13) {
+                    ForEach(TimeMachineAssetSeries.allCases) { series in
+                        TimeMachineUnifiedLegendButton(
+                            title: series == .liabilities ? AppLocalization.string("负债差额") : series.title,
+                            color: series.color,
+                            isDashed: false,
+                            isBand: series == .liabilities,
+                            isVisible: visibleSeriesIDs.contains(series.id)
+                        ) {
+                            onToggleSeries(series.id)
+                        }
+                    }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            ForEach(marketOptions) { option in
-                TimeMachineUnifiedLegendButton(
-                    title: option.title,
-                    color: option.color,
-                    isDashed: true,
-                    isVisible: visibleSeriesIDs.contains(option.symbol)
-                ) {
-                    onToggleSeries(option.symbol)
+            HStack(spacing: 2) {
+                ForEach(marketOptions.prefix(2)) { option in
+                    Button {
+                        onToggleSeries(option.symbol)
+                    } label: {
+                        Text(option.title)
+                            .font(.system(size: 9.5, weight: .semibold))
+                            .foregroundStyle(
+                                visibleSeriesIDs.contains(option.symbol)
+                                    ? option.color
+                                    : AssetTheme.textSecondary.opacity(0.72)
+                            )
+                            .padding(.horizontal, 6)
+                            .frame(height: 28)
+                            .background(
+                                visibleSeriesIDs.contains(option.symbol)
+                                    ? AssetTheme.overlayStrong
+                                    : Color.clear,
+                                in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if marketOptions.count > 2 {
+                    Menu {
+                        ForEach(marketOptions.dropFirst(2)) { option in
+                            Button {
+                                onToggleSeries(option.symbol)
+                            } label: {
+                                Label(
+                                    option.title,
+                                    systemImage: visibleSeriesIDs.contains(option.symbol) ? "checkmark" : "circle"
+                                )
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(AssetTheme.textSecondary)
+                            .frame(width: 26, height: 28)
+                    }
                 }
             }
+            .padding(2)
+            .background(AssetTheme.overlayFaint.opacity(0.8), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var dateRangeLabel: String {
-        guard let first = points.first?.date, let last = points.last?.date else { return AppLocalization.string("暂无范围") }
-        return "\(first.chartAxisDateString) - \(last.chartAxisDateString)"
-    }
 }
 
 private struct TimeMachineUnifiedLegendButton: View {
     let title: String
     let color: Color
     let isDashed: Bool
+    let isBand: Bool
     let isVisible: Bool
     let action: () -> Void
 
@@ -1020,22 +1287,12 @@ private struct TimeMachineUnifiedLegendButton: View {
                 legendMark
 
                 Text(title)
-                    .font(.system(size: 11, weight: .semibold, design: .default))
+                    .font(.system(size: 10.5, weight: .semibold, design: .default))
                     .lineLimit(1)
-
-                Image(systemName: isVisible ? "eye.fill" : "eye.slash")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(isVisible ? color : AssetTheme.textSecondary.opacity(0.64))
             }
             .foregroundStyle(isVisible ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.72))
-            .padding(.horizontal, 9)
-            .padding(.vertical, 7)
-            .background(isVisible ? color.opacity(0.10) : AssetTheme.overlayFaint, in: Capsule())
-            .overlay(
-                Capsule()
-                    .stroke(isVisible ? color.opacity(0.42) : AssetTheme.border.opacity(0.34), lineWidth: 0.8)
-            )
-            .contentShape(Capsule())
+            .padding(.vertical, 2)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(AppLocalization.format(isVisible ? "隐藏%@" : "显示%@", title))
@@ -1043,7 +1300,16 @@ private struct TimeMachineUnifiedLegendButton: View {
 
     @ViewBuilder
     private var legendMark: some View {
-        if isDashed {
+        if isBand {
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(color.opacity(isVisible ? 0.34 : 0.14))
+                .frame(width: 16, height: 7)
+                .overlay {
+                    Capsule()
+                        .fill(color.opacity(isVisible ? 0.92 : 0.44))
+                        .frame(height: 2)
+                }
+        } else if isDashed {
             HStack(spacing: 2) {
                 ForEach(0..<3, id: \.self) { _ in
                     Capsule()
@@ -1057,6 +1323,128 @@ private struct TimeMachineUnifiedLegendButton: View {
                 .fill(color)
                 .frame(width: 16, height: 3)
         }
+    }
+}
+
+private struct TimeMachineDateRuler: View {
+    let points: [TimeMachineTrendPoint]
+    @Binding var selectedDate: Date?
+
+    private var firstDate: Date { points.first?.date ?? Date() }
+    private var lastDate: Date { points.last?.date ?? firstDate }
+
+    private var labelDates: [Date] {
+        guard points.count > 1 else { return points.map(\.date) }
+        let desiredCount = min(7, max(2, points.count))
+        let lastIndex = points.count - 1
+        return (0..<desiredCount).map { offset in
+            let ratio = Double(offset) / Double(desiredCount - 1)
+            return points[Int((Double(lastIndex) * ratio).rounded())].date
+        }
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            let width = max(geometry.size.width, 1)
+
+            ZStack(alignment: .topLeading) {
+                Canvas { context, size in
+                    let baselineY: CGFloat = 33
+                    var baseline = Path()
+                    baseline.move(to: CGPoint(x: 0, y: baselineY))
+                    baseline.addLine(to: CGPoint(x: size.width, y: baselineY))
+                    context.stroke(baseline, with: .color(AssetTheme.textSecondary.opacity(0.18)), lineWidth: 0.6)
+
+                    let tickCount = 96
+                    for index in 0...tickCount {
+                        let x = size.width * CGFloat(index) / CGFloat(tickCount)
+                        let medium = index % 4 == 0
+                        var tick = Path()
+                        tick.move(to: CGPoint(x: x, y: baselineY - (medium ? 1 : 0)))
+                        tick.addLine(to: CGPoint(x: x, y: baselineY + (medium ? 7 : 4)))
+                        context.stroke(
+                            tick,
+                            with: .color(AssetTheme.textSecondary.opacity(medium ? 0.34 : 0.19)),
+                            lineWidth: medium ? 0.8 : 0.55
+                        )
+                    }
+
+                    for date in labelDates {
+                        let x = xPosition(for: date, width: size.width)
+                        var majorTick = Path()
+                        majorTick.move(to: CGPoint(x: x, y: baselineY - 2))
+                        majorTick.addLine(to: CGPoint(x: x, y: baselineY + 13))
+                        context.stroke(
+                            majorTick,
+                            with: .color(AssetTheme.textSecondary.opacity(0.5)),
+                            lineWidth: 1
+                        )
+                    }
+                }
+
+                ForEach(Array(labelDates.enumerated()), id: \.offset) { index, date in
+                    Text(rulerLabel(for: date, at: index))
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.82))
+                        .lineLimit(1)
+                        .position(
+                            x: clampedLabelX(for: date, width: width),
+                            y: 7
+                        )
+                }
+
+            }
+            .contentShape(Rectangle())
+            .overlay {
+                TimeMachineHorizontalPanGestureView { location in
+                    updateSelection(at: location.x, width: width)
+                } onEnded: {}
+            }
+            .anchorPreference(key: TimeMachineSelectionGuideAnchorKey.self, value: .bounds) { anchor in
+                TimeMachineSelectionGuideAnchors(rulerBounds: anchor)
+            }
+        }
+        .frame(height: 66)
+        .accessibilityLabel(AppLocalization.string("选择历史日期"))
+    }
+
+    private func xPosition(for date: Date, width: CGFloat) -> CGFloat {
+        let duration = max(lastDate.timeIntervalSince(firstDate), 1)
+        let progress = min(max(date.timeIntervalSince(firstDate) / duration, 0), 1)
+        return width * progress
+    }
+
+    private func clampedLabelX(for date: Date, width: CGFloat) -> CGFloat {
+        min(max(xPosition(for: date, width: width), 27), width - 27)
+    }
+
+    private func updateSelection(at x: CGFloat, width: CGFloat) {
+        guard !points.isEmpty else { return }
+        let availableWidth = max(
+            width
+                - TimeMachineSelectionGuideLayout.plotLeadingInset
+                - TimeMachineSelectionGuideLayout.plotTrailingInset,
+            1
+        )
+        let progress = min(
+            max((x - TimeMachineSelectionGuideLayout.plotLeadingInset) / availableWidth, 0),
+            1
+        )
+        let index = min(max(Int((Double(points.count - 1) * Double(progress)).rounded()), 0), points.count - 1)
+        selectedDate = points[index].date
+    }
+
+    private func rulerLabel(for date: Date, at index: Int) -> String {
+        let calendar = Calendar.current
+        let changesYear = index > 0 && !calendar.isDate(
+            date,
+            equalTo: labelDates[index - 1],
+            toGranularity: .year
+        )
+        let format = index == 0 || changesYear
+            ? AppLocalization.string("yyyy年M月")
+            : AppLocalization.string("M月")
+        return AppFormatterCache.dateFormatter(format: format).string(from: date)
     }
 }
 
@@ -1166,38 +1554,33 @@ struct TimeMachineAxisDateLabel: View {
 struct TimeMachineMonthlySurplusCard: View {
     let points: [TimeMachineMonthlySurplusPoint]
     let annualPoints: [TimeMachineAnnualSurplusPoint]
+    let amountsVisible: Bool
     @State private var selectedDate: Date?
+    @State private var selectedAnnualDate: Date?
     @State private var selectedGranularity: SurplusGranularity = .monthly
-    private let chartCornerRadius: CGFloat = 18
     private let displayPoints: [TimeMachineMonthlySurplusPoint]
     private let latestPoint: TimeMachineMonthlySurplusPoint?
-    private let latestAnnualPoint: TimeMachineAnnualSurplusPoint?
     private let leftDomain: ClosedRange<Double>
-    private let averageSurplus: Double
-    private let positiveMonthCount: Int
-    private let bestMonthPoint: TimeMachineMonthlySurplusPoint?
     private let axisDates: [Date]
 
     init(
         points: [TimeMachineMonthlySurplusPoint],
-        annualPoints: [TimeMachineAnnualSurplusPoint]
+        annualPoints: [TimeMachineAnnualSurplusPoint],
+        amountsVisible: Bool = true
     ) {
         self.points = points
         self.annualPoints = annualPoints
+        self.amountsVisible = amountsVisible
 
         let displayPoints = evenlySampledItems(points, maxCount: 48)
         self.displayPoints = displayPoints
         self.latestPoint = displayPoints.last ?? points.last
-        self.latestAnnualPoint = annualPoints.last
         self.leftDomain = TimeMachineSurplusFormatting.paddedDomain(
             values: displayPoints.map(\.surplus)
         )
-        self.averageSurplus = points.isEmpty
-            ? 0
-            : points.reduce(0) { $0 + $1.surplus } / Double(points.count)
-        self.positiveMonthCount = points.lazy.filter { $0.surplus >= 0 }.count
-        self.bestMonthPoint = points.max { $0.surplus < $1.surplus }
         self.axisDates = chartAxisDates(displayPoints.map(\.monthStart))
+        self._selectedDate = State(initialValue: displayPoints.last?.monthStart)
+        self._selectedAnnualDate = State(initialValue: annualPoints.last?.yearStart)
     }
 
     private enum SurplusGranularity: String, CaseIterable, Identifiable {
@@ -1206,10 +1589,10 @@ struct TimeMachineMonthlySurplusCard: View {
 
         var id: String { rawValue }
 
-        var title: String {
+        var shortTitle: String {
             switch self {
-            case .monthly: return AppLocalization.string("月结余")
-            case .annual: return AppLocalization.string("年结余")
+            case .monthly: return AppLocalization.string("月")
+            case .annual: return AppLocalization.string("年")
             }
         }
     }
@@ -1229,78 +1612,93 @@ struct TimeMachineMonthlySurplusCard: View {
         return nearestChartPoint(displayPoints, to: selectedDate, date: \.monthStart) ?? latestPoint
     }
 
-    private var currentDateLabel: String {
-        switch activeGranularity {
-        case .monthly:
-            return selectedDate == nil ? dateRangeLabel : (selectedPoint?.monthStart.dashboardAxisDateString ?? dateRangeLabel)
-        case .annual:
-            guard let first = annualPoints.first?.yearStart, let last = annualPoints.last?.yearStart else {
-                return AppLocalization.string("暂无范围")
-            }
-            return "\(first.yearAxisDateString) - \(last.yearAxisDateString)"
-        }
+    private var selectedAnnualPoint: TimeMachineAnnualSurplusPoint? {
+        guard let latestPoint = annualPoints.last else { return nil }
+        guard let selectedAnnualDate else { return latestPoint }
+        return nearestChartPoint(annualPoints, to: selectedAnnualDate, date: \.yearStart) ?? latestPoint
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             header
 
             if activeGranularity == .monthly, !displayPoints.isEmpty {
                 chartSection
             } else if activeGranularity == .annual, !annualPoints.isEmpty {
-                TimeMachineAnnualSurplusCard(points: annualPoints)
-            }
-
-            if activeGranularity == .monthly {
-                summaryRow
+                TimeMachineAnnualSurplusCard(
+                    points: annualPoints,
+                    amountsVisible: amountsVisible,
+                    selectedDate: $selectedAnnualDate
+                )
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 11) {
             HStack(alignment: .center, spacing: 10) {
                 Text(AppLocalization.string("结余"))
-                    .font(.system(size: 16.5, weight: .semibold, design: .default))
+                    .font(.system(size: 19, weight: .bold, design: .default))
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
 
                 Spacer(minLength: 8)
 
-                Picker(AppLocalization.string("结余周期"), selection: $selectedGranularity) {
-                    ForEach(SurplusGranularity.allCases) { granularity in
-                        Text(granularity.title).tag(granularity)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 150)
-                .disabled(points.isEmpty || annualPoints.isEmpty)
-            }
+                HStack(spacing: 6) {
+                    Text(currentSurplusPeriodText)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(AssetTheme.textSecondary)
 
-            if activeGranularity == .monthly {
-                HStack(alignment: .center, spacing: 8) {
-                    Text(currentDateLabel)
-                        .font(.system(size: 10.5, weight: .medium, design: .default))
+                    Text(amountsVisible ? currentSurplusText : "••••")
+                        .font(.system(size: 14, weight: .semibold))
                         .monospacedDigit()
-                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.74)
-
-                    Spacer(minLength: 8)
-
-                    if let selectedPoint {
-                        TimeMachineCompactLegendMetric(
-                            title: AppLocalization.string("结余"),
-                            value: TimeMachineSurplusFormatting.formatted(selectedPoint.surplus),
-                            color: TimeMachineSurplusFormatting.color(for: selectedPoint.surplus),
-                            dashed: false
-                        )
-                    }
+                        .foregroundStyle(currentSurplusColor)
                 }
             }
+
+            Picker(AppLocalization.string("结余周期"), selection: $selectedGranularity) {
+                ForEach(SurplusGranularity.allCases) { granularity in
+                    Text(granularity.shortTitle).tag(granularity)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 110)
+            .disabled(points.isEmpty || annualPoints.isEmpty)
         }
+    }
+
+    private var currentSurplusValue: Double {
+        switch activeGranularity {
+        case .monthly:
+            return selectedPoint?.surplus ?? 0
+        case .annual:
+            return selectedAnnualPoint?.surplus ?? 0
+        }
+    }
+
+    private var currentSurplusPeriodText: String {
+        switch activeGranularity {
+        case .monthly:
+            guard let date = selectedPoint?.monthStart else { return "—" }
+            return AppFormatterCache.dateFormatter(
+                format: AppLocalization.string("yyyy年M月")
+            ).string(from: date)
+        case .annual:
+            guard let date = selectedAnnualPoint?.yearStart else { return "—" }
+            return AppFormatterCache.dateFormatter(
+                format: AppLocalization.string("yyyy年")
+            ).string(from: date)
+        }
+    }
+
+    private var currentSurplusText: String {
+        TimeMachineSurplusFormatting.formatted(currentSurplusValue)
+    }
+
+    private var currentSurplusColor: Color {
+        TimeMachineSurplusFormatting.color(for: currentSurplusValue)
     }
 
     private var chartSection: some View {
@@ -1310,9 +1708,9 @@ struct TimeMachineMonthlySurplusCard: View {
 
             HStack(spacing: 6) {
                 TimeMachineAxisStrip(
-                    topLabel: TimeMachineAxisValueStyle.currency(code: "CNY").compactLabel(for: leftDomain.upperBound),
-                    middleLabel: TimeMachineAxisValueStyle.currency(code: "CNY").compactLabel(for: (leftDomain.lowerBound + leftDomain.upperBound) / 2),
-                    bottomLabel: TimeMachineAxisValueStyle.currency(code: "CNY").compactLabel(for: leftDomain.lowerBound),
+                    topLabel: surplusAxisLabel(leftDomain.upperBound),
+                    middleLabel: amountsVisible ? "0" : "••",
+                    bottomLabel: surplusAxisLabel(leftDomain.lowerBound),
                     alignment: .leading,
                     color: AssetTheme.gold
                 )
@@ -1329,16 +1727,23 @@ struct TimeMachineMonthlySurplusCard: View {
                             yStart: .value(AppLocalization.string("零线"), normalized(0, in: leftDomain)),
                             yEnd: .value(AppLocalization.string("月结余"), normalized(point.surplus, in: leftDomain))
                         )
-                        .foregroundStyle(TimeMachineSurplusFormatting.color(for: point.surplus).opacity(selectedPoint?.id == point.id ? 0.96 : 0.82))
+                        .foregroundStyle(surplusBarColor(for: point.surplus).opacity(selectedPoint?.id == point.id ? 1 : 0.84))
                     }
 
-                    if selectedDate != nil, let selectedPoint {
+                    if let selectedPoint {
                         RuleMark(x: .value(AppLocalization.string("选中月份"), selectedPoint.monthStart))
-                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.45))
-                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                            .foregroundStyle(AssetTheme.gold.opacity(0.72))
+                            .lineStyle(StrokeStyle(lineWidth: 1))
+
+                        PointMark(
+                            x: .value(AppLocalization.string("选中月份"), selectedPoint.monthStart),
+                            y: .value(AppLocalization.string("月结余"), normalized(selectedPoint.surplus, in: leftDomain))
+                        )
+                        .foregroundStyle(AssetTheme.goldSoft)
+                        .symbolSize(32)
                     }
                 }
-                .frame(width: chartWidth, height: 168)
+                .frame(width: chartWidth, height: 142)
                 .chartYScale(domain: 0...1)
                 .chartYAxis(.hidden)
                 .chartXAxis { bottomAxisMarks }
@@ -1350,41 +1755,11 @@ struct TimeMachineMonthlySurplusCard: View {
                         selectionDate: \.monthStart
                     ) { date in
                         selectedDate = date
-                    } onEnded: {
-                        selectedDate = nil
                     }
                 }
             }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 9)
-            .background(chartBackground)
         }
-        .frame(height: 186)
-    }
-
-    private var summaryRow: some View {
-        HStack(spacing: 8) {
-            TimeMachineLegendMetric(
-                title: AppLocalization.string("月均结余"),
-                value: TimeMachineSurplusFormatting.formatted(averageSurplus),
-                color: TimeMachineSurplusFormatting.color(for: averageSurplus),
-                dashed: false
-            )
-
-            TimeMachineLegendMetric(
-                title: AppLocalization.string("正结余月份"),
-                value: "\(positiveMonthCount)/\(points.count)",
-                color: AssetTheme.positive,
-                dashed: false
-            )
-
-            TimeMachineLegendMetric(
-                title: AppLocalization.string("最好单月"),
-                value: bestMonthPoint.map { TimeMachineSurplusFormatting.formatted($0.surplus) } ?? "--",
-                color: AssetTheme.goldSoft,
-                dashed: true
-            )
-        }
+        .frame(height: 150)
     }
 
     private var bottomAxisMarks: some AxisContent {
@@ -1403,27 +1778,38 @@ struct TimeMachineMonthlySurplusCard: View {
         }
     }
 
-    private var chartBackground: some View {
-        RoundedRectangle(cornerRadius: chartCornerRadius, style: .continuous)
-            .fill(AssetTheme.surface.opacity(0.46))
-    }
-
-    private var dateRangeLabel: String {
-        guard let first = points.first?.monthStart, let last = points.last?.monthStart else { return AppLocalization.string("暂无范围") }
-        return "\(first.dashboardAxisDateString) - \(last.dashboardAxisDateString)"
-    }
-
     private func normalized(_ value: Double, in domain: ClosedRange<Double>) -> Double {
         let span = domain.upperBound - domain.lowerBound
         guard span.isFinite, span > 0 else { return 0.5 }
         return (value - domain.lowerBound) / span
     }
+
+    private func surplusBarColor(for value: Double) -> Color {
+        value >= 0 ? AssetTheme.goldSoft : AssetTheme.negative
+    }
+
+    private func surplusAxisLabel(_ value: Double) -> String {
+        guard amountsVisible else { return "••" }
+        guard abs(value) > 0.5 else { return "0" }
+        let sign = value > 0 ? "+" : "−"
+        return sign + abs(value).compactNumberString(maxFractionDigits: 1, currencyCode: "CNY")
+    }
 }
 
 struct TimeMachineAnnualSurplusCard: View {
     let points: [TimeMachineAnnualSurplusPoint]
-    @State private var selectedDate: Date?
-    private let chartCornerRadius: CGFloat = 18
+    let amountsVisible: Bool
+    @Binding private var selectedDate: Date?
+
+    init(
+        points: [TimeMachineAnnualSurplusPoint],
+        amountsVisible: Bool = true,
+        selectedDate: Binding<Date?>
+    ) {
+        self.points = points
+        self.amountsVisible = amountsVisible
+        self._selectedDate = selectedDate
+    }
 
     private var latestPoint: TimeMachineAnnualSurplusPoint? {
         points.last
@@ -1433,19 +1819,6 @@ struct TimeMachineAnnualSurplusCard: View {
         guard let latestPoint else { return nil }
         guard let selectedDate else { return latestPoint }
         return nearestChartPoint(points, to: selectedDate, date: \.yearStart) ?? latestPoint
-    }
-
-    private var averageSurplus: Double {
-        guard !points.isEmpty else { return 0 }
-        return points.reduce(0) { $0 + $1.surplus } / Double(points.count)
-    }
-
-    private var positiveYearCount: Int {
-        points.filter { $0.surplus >= 0 }.count
-    }
-
-    private var bestYearPoint: TimeMachineAnnualSurplusPoint? {
-        points.max { $0.surplus < $1.surplus }
     }
 
     private var domain: ClosedRange<Double> {
@@ -1473,61 +1846,12 @@ struct TimeMachineAnnualSurplusCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .center, spacing: 8) {
-                Text(AppLocalization.string("按每年最后一条快照，和上一年年末净资产对比"))
-                    .font(.system(size: 10.5, weight: .medium, design: .default))
-                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
-
-                Spacer(minLength: 8)
-
-                if let selectedPoint {
-                    TimeMachineCompactLegendMetric(
-                        title: selectedPoint.isCurrentYear ? AppLocalization.string("今年至今") : selectedPoint.yearStart.yearAxisDateString,
-                        value: TimeMachineSurplusFormatting.formatted(selectedPoint.surplus),
-                        color: TimeMachineSurplusFormatting.color(for: selectedPoint.surplus),
-                        dashed: false
-                    )
-                }
-            }
-
+        VStack(alignment: .leading, spacing: 0) {
             if !points.isEmpty {
                 chartSection
             }
-
-            summaryRow
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var header: some View {
-        HStack(alignment: .center, spacing: 8) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(AppLocalization.string("年结余"))
-                    .font(.system(size: 15.5, weight: .semibold, design: .default))
-                    .foregroundStyle(AssetTheme.textPrimary)
-                    .lineLimit(1)
-
-                Text(AppLocalization.string("按每年最后一条快照，和上一年年末净资产对比"))
-                    .font(.system(size: 10.5, weight: .medium, design: .default))
-                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
-            }
-
-            Spacer(minLength: 8)
-
-            if let latestPoint {
-                TimeMachineCompactLegendMetric(
-                    title: latestPoint.isCurrentYear ? AppLocalization.string("今年至今") : AppLocalization.string("最近一年"),
-                    value: TimeMachineSurplusFormatting.formatted(latestPoint.surplus),
-                    color: TimeMachineSurplusFormatting.color(for: latestPoint.surplus),
-                    dashed: false
-                )
-            }
-        }
     }
 
     private var chartSection: some View {
@@ -1538,9 +1862,9 @@ struct TimeMachineAnnualSurplusCard: View {
 
             HStack(spacing: 6) {
                 TimeMachineAxisStrip(
-                    topLabel: TimeMachineAxisValueStyle.currency(code: "CNY").compactLabel(for: domain.upperBound),
-                    middleLabel: TimeMachineAxisValueStyle.currency(code: "CNY").compactLabel(for: (domain.lowerBound + domain.upperBound) / 2),
-                    bottomLabel: TimeMachineAxisValueStyle.currency(code: "CNY").compactLabel(for: domain.lowerBound),
+                    topLabel: surplusAxisLabel(domain.upperBound),
+                    middleLabel: amountsVisible ? "0" : "••",
+                    bottomLabel: surplusAxisLabel(domain.lowerBound),
                     alignment: .leading,
                     color: AssetTheme.gold
                 )
@@ -1558,16 +1882,23 @@ struct TimeMachineAnnualSurplusCard: View {
                             yEnd: .value(AppLocalization.string("年结余"), normalized(point.surplus, in: domain)),
                             width: .fixed(barWidth)
                         )
-                        .foregroundStyle(TimeMachineSurplusFormatting.color(for: point.surplus).opacity(selectedPoint?.id == point.id ? 0.96 : 0.82))
+                        .foregroundStyle((point.surplus >= 0 ? AssetTheme.goldSoft : AssetTheme.negative).opacity(selectedPoint?.id == point.id ? 1 : 0.84))
                     }
 
-                    if selectedDate != nil, let selectedPoint {
+                    if let selectedPoint {
                         RuleMark(x: .value(AppLocalization.string("选中年份"), selectedPoint.yearStart))
-                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.45))
-                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                            .foregroundStyle(AssetTheme.gold.opacity(0.72))
+                            .lineStyle(StrokeStyle(lineWidth: 1))
+
+                        PointMark(
+                            x: .value(AppLocalization.string("选中年份"), selectedPoint.yearStart),
+                            y: .value(AppLocalization.string("年结余"), normalized(selectedPoint.surplus, in: domain))
+                        )
+                        .foregroundStyle(AssetTheme.goldSoft)
+                        .symbolSize(32)
                     }
                 }
-                .frame(width: chartWidth, height: 138)
+                .frame(width: chartWidth, height: 132)
                 .chartXScale(
                     domain: dateDomain,
                     range: .plotDimension(startPadding: 4, endPadding: 4)
@@ -1597,52 +1928,24 @@ struct TimeMachineAnnualSurplusCard: View {
                         selectionDate: \.yearStart
                     ) { date in
                         selectedDate = date
-                    } onEnded: {
-                        selectedDate = nil
                     }
                 }
             }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 9)
-            .background(chartBackground)
         }
-        .frame(height: 156)
-    }
-
-    private var summaryRow: some View {
-        HStack(spacing: 8) {
-            TimeMachineLegendMetric(
-                title: AppLocalization.string("年均结余"),
-                value: TimeMachineSurplusFormatting.formatted(averageSurplus),
-                color: TimeMachineSurplusFormatting.color(for: averageSurplus),
-                dashed: false
-            )
-
-            TimeMachineLegendMetric(
-                title: AppLocalization.string("正结余年份"),
-                value: "\(positiveYearCount)/\(points.count)",
-                color: AssetTheme.positive,
-                dashed: false
-            )
-
-            TimeMachineLegendMetric(
-                title: AppLocalization.string("最好年份"),
-                value: bestYearPoint.map { TimeMachineSurplusFormatting.formatted($0.surplus) } ?? "--",
-                color: AssetTheme.goldSoft,
-                dashed: true
-            )
-        }
-    }
-
-    private var chartBackground: some View {
-        RoundedRectangle(cornerRadius: chartCornerRadius, style: .continuous)
-            .fill(AssetTheme.surface.opacity(0.46))
+        .frame(height: 140)
     }
 
     private func normalized(_ value: Double, in domain: ClosedRange<Double>) -> Double {
         let span = domain.upperBound - domain.lowerBound
         guard span.isFinite, span > 0 else { return 0.5 }
         return (value - domain.lowerBound) / span
+    }
+
+    private func surplusAxisLabel(_ value: Double) -> String {
+        guard amountsVisible else { return "••" }
+        guard abs(value) > 0.5 else { return "0" }
+        let sign = value > 0 ? "+" : "−"
+        return sign + abs(value).compactNumberString(maxFractionDigits: 1, currencyCode: "CNY")
     }
 }
 
@@ -2616,7 +2919,7 @@ private final class TimeMachineDragInteractionState {
     }
 }
 
-private struct TimeMachineHorizontalPanGestureView: UIViewRepresentable {
+struct TimeMachineHorizontalPanGestureView: UIViewRepresentable {
     let onChanged: (CGPoint) -> Void
     let onEnded: () -> Void
 

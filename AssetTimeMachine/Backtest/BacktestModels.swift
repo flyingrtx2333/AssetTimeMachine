@@ -57,7 +57,7 @@ enum BacktestTopTab: String, CaseIterable, Identifiable {
     }
 }
 
-enum AdvancedBacktestSignalDirection: String, CaseIterable, Identifiable {
+enum AdvancedBacktestSignalDirection: String, CaseIterable, Identifiable, Sendable {
     case alwaysBuy
     case neverSell
     case consecutiveDown
@@ -243,7 +243,7 @@ enum AdvancedBacktestTradeAction: String {
     }
 }
 
-struct AdvancedBacktestRule {
+struct AdvancedBacktestRule: Sendable {
     var direction: AdvancedBacktestSignalDirection
     var days: Int
 }
@@ -1626,7 +1626,7 @@ struct AdvancedBacktestCandidate: Identifiable {
     }
 }
 
-struct AdvancedBacktestStrategyTemplate: Identifiable {
+struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
     let id: String
     var mode: AdvancedBacktestStrategyMode = .ruleBased
     var selectedAssetSymbols: [String]? = nil
@@ -3122,6 +3122,8 @@ struct BacktestAssetOption: Identifiable, Sendable {
     let iconName: String
     let currency: String
     let unit: String
+    let logoURL: String?
+    let logoSource: String?
 
     var id: String { symbol }
 
@@ -3134,7 +3136,9 @@ struct BacktestAssetOption: Identifiable, Sendable {
         category: String = "other",
         iconName: String = "chart.line.uptrend.xyaxis",
         currency: String = "CNY",
-        unit: String = ""
+        unit: String = "",
+        logoURL: String? = nil,
+        logoSource: String? = nil
     ) {
         self.symbol = symbol
         self.title = title
@@ -3145,6 +3149,8 @@ struct BacktestAssetOption: Identifiable, Sendable {
         self.iconName = iconName
         self.currency = currency
         self.unit = unit
+        self.logoURL = logoURL
+        self.logoSource = logoSource
     }
 
 }
@@ -3203,15 +3209,12 @@ enum BacktestDefaults {
     }
 }
 
-enum StrategyNotificationDefaults {
+enum StrategyRebalanceDefaults {
     static let defaultTemplateID = "core-gold-satellite-equity-curve-state-gate-momentum"
     static let recommendedTemplateID = "risk-contribution-cash-confidence-low-noise"
-    static let defaultHour = 9
 
     static var eligibleTemplates: [AdvancedBacktestStrategyTemplate] {
-        AdvancedBacktestStrategyTemplate.productCatalog.filter {
-            BacktestProductStrategyCatalog.isCuratedTemplateID($0.id)
-        }
+        AdvancedBacktestStrategyTemplate.productCatalog
     }
 
     static func migratedTemplateID(_ id: String) -> String {
@@ -3254,6 +3257,10 @@ enum StrategyNotificationDefaults {
         let options = BacktestDefaults.strategyAssetOptions.filter { selectedSymbols.contains($0.symbol) }
         return options.isEmpty ? BacktestDefaults.dcaAssetOptions : options
     }
+}
+
+enum StrategyNotificationDefaults {
+    static let defaultHour = 9
 }
 
 @MainActor

@@ -116,7 +116,7 @@ extension ContentView {
     func refreshStrategyNotifications() async {
         guard !isApplyingCloudData else { return }
         do {
-            guard !StrategyNotificationDefaults.eligibleTemplates.isEmpty else {
+            guard !StrategyRebalanceDefaults.eligibleTemplates.isEmpty else {
                 if strategyNotificationEnabled {
                     strategyNotificationEnabled = false
                 }
@@ -146,7 +146,7 @@ extension ContentView {
 
     @MainActor
     func currentStrategyNotificationContent(includeAdviceWhenDisabled: Bool = false) async -> (title: String, body: String?) {
-        guard let template = StrategyNotificationDefaults.template(for: strategyNotificationTemplateID) else {
+        guard let template = StrategyRebalanceDefaults.template(for: strategyNotificationTemplateID) else {
             return (AppLocalization.string("策略提醒"), AppLocalization.string("打开资产时光机，选择一个策略作为每日提醒。"))
         }
 
@@ -156,7 +156,7 @@ extension ContentView {
 
         await marketStore.refreshHistoryIfNeeded(force: false)
 
-        let assetOptions = StrategyNotificationDefaults.assetOptions(for: template)
+        let assetOptions = StrategyRebalanceDefaults.assetOptions(for: template)
         let historySymbols = StrategyAdviceProjectionStore.historySymbols(for: assetOptions)
         let historyBySymbol = Dictionary(uniqueKeysWithValues: historySymbols.compactMap { symbol in
             marketStore.history(for: symbol).map { (symbol, $0) }
@@ -164,7 +164,7 @@ extension ContentView {
         let historyToken = marketStore.historyRelevanceToken(for: historySymbols)
         let advice = await strategyAdviceService.advice(
             calculationToken: "\(template.id)|\(historyToken)",
-            mode: template.mode,
+            template: template,
             assetOptions: assetOptions,
             historyBySymbol: historyBySymbol,
             force: false

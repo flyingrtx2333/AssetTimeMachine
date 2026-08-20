@@ -481,6 +481,15 @@ Use this order when looking for a new strategy candidate:
 - Do not add images if the asset folder lacks real matching material.
 - For visible UI changes, verify with a real simulator/device screenshot, not just a mental mockup.
 
+### UI Redesign Workflow
+
+- For any non-trivial UI optimization or redesign, capture the current screen in the simulator first, then use ImageGen with that real screen as the reference to produce at least three materially different, polished concepts before changing SwiftUI code.
+- Concepts must explore different information hierarchy, density, and interaction structure—not merely different colors. Prefer flat, concise, native iOS layouts; avoid nested cards, repeated borders, excessive explanatory copy, and ornamental whitespace.
+- Present the numbered concepts with a short explanation of each direction and wait for the user to select or combine a direction before implementation, unless the user explicitly asks to implement immediately.
+- Treat generated images as design references only. Implement the selected direction with native SwiftUI components, SF Symbols or existing code-native assets, localization, Dynamic Type, and accessibility; do not ship the raster concept as app UI.
+- After implementation, capture the same screen again on a real simulator/device and compare it against the selected concept for hierarchy, spacing, truncation, dark/light appearance, and interaction clarity.
+- Skip the concept round only for trivial copy, spacing, or bug fixes, or when the user has already provided an exact target design.
+
 ## Coding Style & Naming Conventions
 
 Use Swift 5 conventions with 4-space indentation. Prefer small SwiftUI views and explicit domain names such as `AssetSnapshot`, `AssetEntry`, `PortfolioCalculator`, and `TrendAnalysisService`. Keep model fields stable and migration-aware because SwiftData persistence is user-facing.
@@ -501,7 +510,11 @@ Pull requests should describe the user-facing change, list verification commands
 
 ## Current Known Operational Notes
 
-- Latest TestFlight release: version `1.12` build `182`, Delivery UUID `f8c52358-5c21-4db1-8f79-0ceec6804bbc`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.12-182`.
+- Latest TestFlight release: version `1.12` build `186`, Delivery UUID `a6e2dc75-34d8-4aa0-8283-20bf13b0fcdf`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.12-186`.
+- Build 186 brings the Time Machine ruler and value-popover interaction to Quant result charts with shared multi-asset values, strengthens Financial Independence warning and projection presentation, and fixes backend-logo propagation plus manual market-price refresh across currencies, commodities, indices, ETFs, and A-shares. It also replaces the record quick editor with the selected flat private-banking bottom sheet, keeps units, live prices, and recorded market value visible without nested card chrome, and preserves the pinned App-engine strategy baseline.
+- Build 185 replaces the Time Machine screen with a flatter date-ruler-led layout, aligns its selected ruler and chart guide into one continuous axis, compacts the daily net-assets hierarchy, unifies portfolio and benchmark hover values, and refines monthly and annual surplus visualization. It also ships the latest record swipe actions and Financial Independence projection controls while keeping the pinned App-engine strategy baseline unchanged.
+- Build 184 redesigns the Dashboard as a flatter daily wealth overview with cloud backup in the top-right, a compact allocation summary, and a restored Financial Independence projection chart with consistent income/expense colors, privacy-aware values, and an explainable year-to-date surplus detail sheet. It also consolidates add/edit/delete asset recording, adds reusable backend market-logo caching, completes the related three-locale copy, and keeps the pinned App-engine strategy baseline unchanged.
+- Build 183 unifies backend-driven A-share and ETF catalogs across Records and Quant, lets users choose any supported product strategy for daily rebalancing, and adds unit-aware portfolio recording with live CNY market-price and market-value previews. It preserves existing SwiftData records, expands cloud-sync cache invalidation for market-linked holdings, and keeps the pinned App-engine strategy baseline unchanged.
 - Build 182 ships the refined NFCI prospective-validation record in Quant: each frozen forward strategy opens its own validation evidence, shows retrospective robustness, factor evidence, preregistered cross-asset results, and server-backed append-only OOS progress. OOS milestones are scoped to the selected frozen strategy, and freeze date is distinguished from the ledger baseline signal date.
 - Build 181 commits and packages the finalized NFCI forward-watch workflow, server forward-snapshot execution path, multi-series backtest share poster, and Time Machine selected-point value popover. The changed screens were recaptured on iPhone 17 Pro Max and archived under OneDrive `Changed-Pages-2026-08-15-build181`.
 - Build 179 restores accounting clarity to the unified Time Machine chart: total assets, net assets, and liabilities use their actual CNY values on the left axis, while enabled gold and market benchmarks use relative change on the right axis. It also adds explicit scale copy, professional compact amount labels, accurate accessibility values, and preserves independent legend toggles without changing the pinned App-engine strategy baseline.

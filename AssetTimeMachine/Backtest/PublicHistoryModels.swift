@@ -7,8 +7,41 @@ nonisolated struct MarketAssetDescriptor: Codable, Equatable, Identifiable, Send
     let currency: String
     let unit: String
     let source: String?
+    let logoURL: String?
+    let logoSource: String?
 
     var id: String { symbol }
+
+    init(
+        symbol: String,
+        category: String,
+        label: String,
+        currency: String,
+        unit: String,
+        source: String?,
+        logoURL: String? = nil,
+        logoSource: String? = nil
+    ) {
+        self.symbol = symbol
+        self.category = category
+        self.label = label
+        self.currency = currency
+        self.unit = unit
+        self.source = source
+        self.logoURL = logoURL
+        self.logoSource = logoSource
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case symbol
+        case category
+        case label
+        case currency
+        case unit
+        case source
+        case logoURL = "logo_url"
+        case logoSource = "logo_source"
+    }
 }
 
 nonisolated struct MarketAssetCatalogResponse: Codable, Equatable, Sendable {

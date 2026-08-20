@@ -164,6 +164,7 @@ nonisolated struct DashboardFreedomProjectionInput: Equatable, Sendable {
     let annualReturnRate: Double
     let monthlyExpense: Double
     let annualInflationRate: Double
+    let usesCurrentAssets: Bool
 }
 
 nonisolated struct DashboardAllocationDetailValue: Sendable {
@@ -258,6 +259,11 @@ nonisolated struct DashboardFreedomProjectionValue: Sendable {
     let projectedAnnualSurplus: Double
     let yearToDateAnnualSurplus: Double?
     let yearToDateMonthlyAverageSurplus: Double?
+    let yearToDateStartNetAssets: Double?
+    let yearToDateEndNetAssets: Double?
+    let yearToDateStartDate: Date?
+    let yearToDateEndDate: Date?
+    let yearToDateMonthsCounted: Int?
     let projectionPoints: [DashboardFreedomProjectionPointValue]
 
     init(_ projection: FinancialFreedomProjection) {
@@ -280,6 +286,11 @@ nonisolated struct DashboardFreedomProjectionValue: Sendable {
         projectedAnnualSurplus = projection.projectedAnnualSurplus
         yearToDateAnnualSurplus = projection.yearToDateAnnualSurplus
         yearToDateMonthlyAverageSurplus = projection.yearToDateMonthlyAverageSurplus
+        yearToDateStartNetAssets = projection.yearToDateStartNetAssets
+        yearToDateEndNetAssets = projection.yearToDateEndNetAssets
+        yearToDateStartDate = projection.yearToDateStartDate
+        yearToDateEndDate = projection.yearToDateEndDate
+        yearToDateMonthsCounted = projection.yearToDateMonthsCounted
         projectionPoints = projection.projectionPoints.map {
             DashboardFreedomProjectionPointValue(
                 monthOffset: $0.monthOffset,
@@ -315,6 +326,11 @@ nonisolated struct DashboardFreedomProjectionValue: Sendable {
             projectedAnnualSurplus: projectedAnnualSurplus,
             yearToDateAnnualSurplus: yearToDateAnnualSurplus,
             yearToDateMonthlyAverageSurplus: yearToDateMonthlyAverageSurplus,
+            yearToDateStartNetAssets: yearToDateStartNetAssets,
+            yearToDateEndNetAssets: yearToDateEndNetAssets,
+            yearToDateStartDate: yearToDateStartDate,
+            yearToDateEndDate: yearToDateEndDate,
+            yearToDateMonthsCounted: yearToDateMonthsCounted,
             projectionPoints: projectionPoints.map(\.projectionPoint)
         )
     }
@@ -373,7 +389,8 @@ nonisolated enum DashboardProjectionPipeline {
             monthlySalary: input.monthlySalary,
             annualReturnRate: input.annualReturnRate,
             monthlyExpense: input.monthlyExpense,
-            annualInflationRate: input.annualInflationRate
+            annualInflationRate: input.annualInflationRate,
+            usesCurrentAssets: input.usesCurrentAssets
         )
         guard !Task.isCancelled, let projection else { return nil }
         return DashboardFreedomProjectionValue(projection)

@@ -46,7 +46,7 @@ private enum StrategyHoldingPalette {
 struct TodayPositionAdviceCard: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var appLanguageStore: AppLanguageStore
-    @AppStorage("app.strategyNotifications.templateID") private var strategyTemplateID = StrategyNotificationDefaults.defaultTemplateID
+    @AppStorage("app.strategyNotifications.templateID") private var strategyTemplateID = StrategyRebalanceDefaults.defaultTemplateID
     @ObservedObject var marketStore: RemoteMarketStore
     let isActive: Bool
 
@@ -68,13 +68,13 @@ struct TodayPositionAdviceCard: View {
     }
 
     private var selectedTemplate: AdvancedBacktestStrategyTemplate? {
-        StrategyNotificationDefaults.template(for: strategyTemplateID)
+        StrategyRebalanceDefaults.template(for: strategyTemplateID)
     }
 
     private var relevantHistorySymbols: Set<String> {
         guard let selectedTemplate else { return [] }
         return StrategyAdviceProjectionStore.historySymbols(
-            for: StrategyNotificationDefaults.assetOptions(for: selectedTemplate)
+            for: StrategyRebalanceDefaults.assetOptions(for: selectedTemplate)
         )
     }
 
@@ -131,8 +131,9 @@ struct TodayPositionAdviceCard: View {
         }
         .sheet(isPresented: $showsStrategyLibrary) {
             AdvancedStrategyLibrarySheet(
-                templates: StrategyNotificationDefaults.eligibleTemplates,
-                activeTemplateID: selectedTemplate?.id
+                templates: StrategyRebalanceDefaults.eligibleTemplates,
+                activeTemplateID: selectedTemplate?.id,
+                titleLocalizationKey: "选择调仓策略"
             ) { template in
                 strategyTemplateID = template.id
                 showsStrategyLibrary = false
@@ -143,53 +144,64 @@ struct TodayPositionAdviceCard: View {
     }
 
     private var header: some View {
-        HStack(alignment: .top, spacing: 14) {
-            VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
                 Text(AppLocalization.string("今日持仓建议"))
                     .font(AppTypography.eyebrow)
                     .foregroundStyle(AssetTheme.goldSoft)
 
+                Spacer(minLength: 8)
+
                 Button {
-                    showsStrategyLibrary = true
+                    Task { await refreshAdvice(force: true) }
                 } label: {
-                    HStack(spacing: 7) {
-                        Text(selectedTemplate?.title ?? AppLocalization.string("未选择策略"))
-                            .font(AppTypography.sectionTitle)
-                            .foregroundStyle(AssetTheme.textPrimary)
-                            .lineLimit(2)
-
-                        if let selectedTemplate,
-                           BacktestProductStrategyCatalog.isCuratedTemplateID(selectedTemplate.id) {
-                            CuratedStrategyBadge(compact: true)
-                        }
-
-                        Image(systemName: "chevron.right")
-                            .font(AppTypography.microLabel)
-                            .foregroundStyle(AssetTheme.textSecondary)
-                    }
-                    .contentShape(Rectangle())
+                    Image(systemName: "arrow.clockwise")
+                        .font(AppTypography.captionStrong)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .frame(width: 32, height: 32)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(AppLocalization.string("当前策略"))
-                .accessibilityValue(
-                    selectedTemplate.map(StrategyNotificationDefaults.pickerTitle)
-                        ?? AppLocalization.string("未选择策略")
-                )
+                .disabled(adviceStore.isRefreshing || !isActive)
+                .accessibilityLabel(AppLocalization.string("刷新今日持仓建议"))
             }
-
-            Spacer(minLength: 12)
 
             Button {
-                Task { await refreshAdvice(force: true) }
+                showsStrategyLibrary = true
             } label: {
-                Image(systemName: "arrow.clockwise")
-                    .font(AppTypography.captionStrong)
-                    .foregroundStyle(AssetTheme.textSecondary)
-                    .frame(width: 32, height: 32)
+                HStack(spacing: 8) {
+                    Text(AppLocalization.string("调仓策略"))
+                        .font(AppTypography.meta)
+                        .foregroundStyle(AssetTheme.textSecondary)
+
+                    Spacer(minLength: 8)
+
+                    Text(selectedTemplate?.title ?? AppLocalization.string("未选择策略"))
+                        .font(AppTypography.rowTitle)
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .multilineTextAlignment(.trailing)
+                        .lineLimit(2)
+
+                    if let selectedTemplate,
+                       BacktestProductStrategyCatalog.isCuratedTemplateID(selectedTemplate.id) {
+                        CuratedStrategyBadge(compact: true)
+                    }
+
+                    Image(systemName: "chevron.right")
+                        .font(AppTypography.microLabel)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
+                .padding(.vertical, 8)
+                .contentShape(Rectangle())
+                .overlay(alignment: .bottom) {
+                    Divider().overlay(AssetTheme.border.opacity(0.5))
+                }
             }
             .buttonStyle(.plain)
-            .disabled(adviceStore.isRefreshing || !isActive)
-            .accessibilityLabel(AppLocalization.string("刷新今日持仓建议"))
+            .accessibilityLabel(AppLocalization.string("调仓策略"))
+            .accessibilityValue(
+                selectedTemplate.map(StrategyRebalanceDefaults.pickerTitle)
+                    ?? AppLocalization.string("未选择策略")
+            )
         }
     }
 

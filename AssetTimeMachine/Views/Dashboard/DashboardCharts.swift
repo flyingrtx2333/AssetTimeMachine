@@ -29,123 +29,203 @@ enum DashboardAllocationPalette {
     ]
 }
 
+struct DashboardAssetHero: View {
+    let totalAmount: Double
+    let recentPoints: [TimeMachineTrendPoint]
+    let thirtyDayChange: Double?
+    @Binding var amountsVisible: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Text("\(AppLocalization.string("总资产")) (CNY)")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(AssetTheme.textSecondary)
+
+                Button {
+                    amountsVisible.toggle()
+                } label: {
+                    Image(systemName: amountsVisible ? "eye" : "eye.slash")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(AppLocalization.string(amountsVisible ? "隐藏资产金额" : "显示资产金额"))
+
+                Spacer(minLength: 0)
+            }
+
+            HStack(alignment: .bottom, spacing: 18) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(amountsVisible ? totalAmount.currencyString() : "••••••")
+                        .font(.system(size: 30, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.64)
+
+                    HStack(spacing: 8) {
+                        Text(AppLocalization.string("近30日"))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(AssetTheme.textSecondary)
+
+                        Text(changeText)
+                            .font(.system(size: 13, weight: .semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(changeColor)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                if recentPoints.count >= 2 {
+                    recentTrendChart
+                        .frame(width: 176, height: 78)
+                }
+            }
+        }
+    }
+
+    private var recentTrendChart: some View {
+        Chart {
+            ForEach(recentPoints) { point in
+                AreaMark(
+                    x: .value(AppLocalization.string("日期"), point.date),
+                    yStart: .value(AppLocalization.string("总资产"), recentValueDomain.lowerBound),
+                    yEnd: .value(AppLocalization.string("总资产"), point.mainAssets)
+                )
+                .interpolationMethod(.catmullRom)
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [AssetTheme.gold.opacity(0.24), AssetTheme.gold.opacity(0.015)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+
+                LineMark(
+                    x: .value(AppLocalization.string("日期"), point.date),
+                    y: .value(AppLocalization.string("总资产"), point.mainAssets)
+                )
+                .interpolationMethod(.catmullRom)
+                .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                .foregroundStyle(AssetTheme.goldSoft)
+            }
+
+            if let latest = recentPoints.last {
+                PointMark(
+                    x: .value(AppLocalization.string("日期"), latest.date),
+                    y: .value(AppLocalization.string("总资产"), latest.mainAssets)
+                )
+                .foregroundStyle(AssetTheme.goldSoft)
+                .symbolSize(28)
+            }
+        }
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        .chartYScale(domain: recentValueDomain)
+        .chartLegend(.hidden)
+        .clipped()
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private var changeText: String {
+        guard let thirtyDayChange, thirtyDayChange.isFinite else { return "--" }
+        return thirtyDayChange.formatted(
+            .percent
+                .sign(strategy: .always())
+                .precision(.fractionLength(2))
+        )
+    }
+
+    private var changeColor: Color {
+        guard let thirtyDayChange else { return AssetTheme.textSecondary }
+        return thirtyDayChange >= 0 ? AssetTheme.goldSoft : AssetTheme.negative
+    }
+
+    private var recentValueDomain: ClosedRange<Double> {
+        ChartLayoutSupport.paddedValueDomain(values: recentPoints.map(\.mainAssets))
+    }
+}
+
 struct DashboardAllocationChart: View {
     let slices: [DashboardAllocationSlice]
     let totalAmount: Double
-
-    @State private var selectedSliceID: DashboardAllocationSlice.ID?
-    @State private var selectedAngleValue: Double?
-
-    private let legendColumns = [
-        GridItem(.flexible(), spacing: 16, alignment: .topLeading),
-        GridItem(.flexible(), spacing: 16, alignment: .topLeading)
-    ]
-
-    private var displaySlice: DashboardAllocationSlice? {
-        if let selectedSliceID,
-           let selectedSlice = slices.first(where: { $0.id == selectedSliceID }) {
-            return selectedSlice
-        }
-        return slices.first
-    }
-
-    private var totalSliceAmount: Double {
-        slices.reduce(0) { $0 + $1.amount }
-    }
+    let amountsVisible: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            ZStack {
-                Chart(slices) { slice in
-                    SectorMark(
-                        angle: .value(AppLocalization.string("占比"), slice.amount),
-                        innerRadius: .ratio(0.76),
-                        angularInset: 1.6
-                    )
-                    .foregroundStyle(slice.color)
-                    .opacity(isHighlighted(slice) ? 1 : 0.42)
-                }
-                .chartLegend(.hidden)
-                .chartAngleSelection(value: $selectedAngleValue)
-                .onChange(of: selectedAngleValue) { _, newValue in
-                    guard let newValue,
-                          let matchedSlice = slice(for: newValue) else { return }
-                    selectedSliceID = matchedSlice.id
-                }
-                .frame(height: 278)
+        VStack(alignment: .leading, spacing: 15) {
+            HStack(spacing: 8) {
+                Text(AppLocalization.string("资产分布"))
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(AssetTheme.textPrimary)
 
-                VStack(spacing: 6) {
-                    Text(AppLocalization.string("总资产"))
-                        .font(AppTypography.eyebrow)
-                        .foregroundStyle(AssetTheme.textSecondary)
+                Spacer(minLength: 0)
 
-                    Text(totalAmount.currencyString())
-                        .font(.system(size: 22, weight: .bold, design: .default))
-                        .monospacedDigit()
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .multilineTextAlignment(.center)
-                        .minimumScaleFactor(0.7)
-                        .lineLimit(2)
-                }
-                .padding(.horizontal, 18)
-                .allowsHitTesting(false)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(AssetTheme.textSecondary)
             }
-            .frame(maxWidth: .infinity)
 
-            LazyVGrid(columns: legendColumns, alignment: .leading, spacing: 12) {
-                ForEach(slices) { slice in
-                    Button {
-                        toggleSelection(for: slice)
-                    } label: {
-                        HStack(alignment: .top, spacing: 10) {
+            HStack(alignment: .center, spacing: 20) {
+                ZStack {
+                    Chart(slices) { slice in
+                        SectorMark(
+                            angle: .value(AppLocalization.string("占比"), slice.amount),
+                            innerRadius: .ratio(0.69),
+                            angularInset: 1.25
+                        )
+                        .foregroundStyle(slice.color)
+                    }
+                    .chartLegend(.hidden)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(!amountsVisible)
+
+                    VStack(spacing: 4) {
+                        Text(AppLocalization.string("总资产"))
+                            .font(.system(size: 10.5, weight: .medium))
+                            .foregroundStyle(AssetTheme.textSecondary)
+
+                        Text(amountsVisible ? totalAmount.dashboardCompactCurrencyString() : "••••")
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(AssetTheme.textPrimary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
+                }
+                .frame(width: 140, height: 140)
+
+                VStack(spacing: 9) {
+                    ForEach(slices) { slice in
+                        HStack(spacing: 6) {
                             Circle()
                                 .fill(slice.color)
-                                .frame(width: 8, height: 8)
-                                .padding(.top, 5)
+                                .frame(width: 7, height: 7)
 
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(AppLocalization.string(slice.title))
-                                    .font(AppTypography.meta.weight(isHighlighted(slice) ? .semibold : .regular))
-                                    .foregroundStyle(AssetTheme.textPrimary)
-                                    .lineLimit(1)
+                            Text(AppLocalization.string(slice.title))
+                                .font(.system(size: 11.5, weight: .medium))
+                                .foregroundStyle(AssetTheme.textPrimary)
+                                .lineLimit(1)
+                                .frame(maxWidth: .infinity, alignment: .leading)
 
-                                Text(isHighlighted(slice) ? slice.amount.currencyString() : percentageText(for: slice))
-                                    .font(AppTypography.eyebrow)
-                                    .monospacedDigit()
-                                    .foregroundStyle(isHighlighted(slice) ? AssetTheme.goldSoft : AssetTheme.textSecondary)
-                            }
-
-                            Spacer(minLength: 0)
-                        }
-                        .opacity(isHighlighted(slice) ? 1 : 0.78)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-
-            if let displaySlice, displaySlice.details.count > 1 {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(displaySlice.title == AppLocalization.string("其他") ? AppLocalization.string("其他资产明细") : AppLocalization.string("资产明细"))
-                        .font(AppTypography.eyebrow)
-                        .foregroundStyle(AssetTheme.textSecondary)
-
-                    ForEach(displaySlice.details) { detail in
-                        HStack(spacing: 12) {
-                            Text(AppLocalization.string(detail.title))
-                                .font(AppTypography.meta)
+                            Text(amountsVisible ? slice.amount.dashboardCompactCurrencyString() : "••••")
+                                .font(.system(size: 10.5, weight: .semibold))
+                                .monospacedDigit()
                                 .foregroundStyle(AssetTheme.textPrimary)
                                 .lineLimit(1)
 
-                            Spacer()
-
-                            Text(detail.amount.currencyString())
-                                .font(AppTypography.meta.weight(.semibold))
+                            Text(percentageText(for: slice))
+                                .font(.system(size: 10.5, weight: .medium))
                                 .monospacedDigit()
-                                .foregroundStyle(AssetTheme.goldSoft)
+                                .foregroundStyle(AssetTheme.textSecondary)
+                                .frame(width: 35, alignment: .trailing)
                         }
                     }
                 }
+                .frame(maxWidth: .infinity)
             }
         }
     }
@@ -155,43 +235,41 @@ struct DashboardAllocationChart: View {
         return (slice.amount / totalAmount).formatted(.percent.precision(.fractionLength(0)))
     }
 
-    private func isHighlighted(_ slice: DashboardAllocationSlice) -> Bool {
-        displaySlice?.id == slice.id
-    }
+}
 
-    private func toggleSelection(for slice: DashboardAllocationSlice) {
-        selectedSliceID = slice.id
-        selectedAngleValue = midAngleValue(for: slice)
-    }
+private extension Double {
+    func dashboardCompactCurrencyString() -> String {
+        let formatter = AppFormatterCache.compactNumberFormatter(maxFractionDigits: 1)
+        let absoluteValue = abs(self)
+        let sign = self < 0 ? "-" : ""
+        let isChinese = AppLocalization.currentLocale.identifier.lowercased().hasPrefix("zh")
 
-    private func slice(for angleValue: Double) -> DashboardAllocationSlice? {
-        guard totalSliceAmount > 0 else { return nil }
-
-        var currentAngle = 0.0
-        for slice in slices {
-            let nextAngle = currentAngle + slice.amount
-            if angleValue >= currentAngle && angleValue < nextAngle {
-                return slice
-            }
-            currentAngle = nextAngle
+        func value(_ divisor: Double, suffix: String) -> String {
+            let number = formatter.string(from: NSNumber(value: absoluteValue / divisor)) ?? "0"
+            return "\(sign)¥\(number)\(suffix)"
         }
 
-        return slices.last
-    }
-
-    private func midAngleValue(for slice: DashboardAllocationSlice) -> Double? {
-        guard totalSliceAmount > 0 else { return nil }
-
-        var currentAngle = 0.0
-        for candidate in slices {
-            let nextAngle = currentAngle + candidate.amount
-            if candidate.id == slice.id {
-                return (currentAngle + nextAngle) / 2
+        if isChinese {
+            if absoluteValue >= 100_000_000 {
+                return value(100_000_000, suffix: AppLocalization.string("亿"))
             }
-            currentAngle = nextAngle
+            if absoluteValue >= 10_000 {
+                return value(10_000, suffix: AppLocalization.string("万"))
+            }
+        } else {
+            if absoluteValue >= 1_000_000_000 {
+                return value(1_000_000_000, suffix: "B")
+            }
+            if absoluteValue >= 1_000_000 {
+                return value(1_000_000, suffix: "M")
+            }
+            if absoluteValue >= 1_000 {
+                return value(1_000, suffix: "K")
+            }
         }
 
-        return nil
+        let number = formatter.string(from: NSNumber(value: self)) ?? "0"
+        return "¥\(number)"
     }
 }
 
@@ -214,6 +292,11 @@ nonisolated struct FinancialFreedomProjection {
     let projectedAnnualSurplus: Double
     let yearToDateAnnualSurplus: Double?
     let yearToDateMonthlyAverageSurplus: Double?
+    let yearToDateStartNetAssets: Double?
+    let yearToDateEndNetAssets: Double?
+    let yearToDateStartDate: Date?
+    let yearToDateEndDate: Date?
+    let yearToDateMonthsCounted: Int?
     let projectionPoints: [FinancialFreedomProjectionPoint]
 }
 
@@ -227,36 +310,47 @@ nonisolated struct FinancialFreedomProjectionPoint: Identifiable {
     var id: Int { monthOffset }
 }
 
-enum FreedomChartHorizon: Int, CaseIterable, Identifiable {
+nonisolated enum FreedomChartHorizon: Int, CaseIterable, Identifiable {
     case three = 3
     case five = 5
     case ten = 10
     case twenty = 20
+    case thirty = 30
+    case fifty = 50
+    case seventyFive = 75
+    case hundred = 100
+    case hundredFifty = 150
+    case twoHundred = 200
 
     var id: Int { rawValue }
 
     var months: Int { rawValue * 12 }
 
+    @MainActor
     var menuTitle: String {
         AppLocalization.format("未来 %d 年", rawValue)
     }
 
-    static let maxMonths = FreedomChartHorizon.twenty.months
+    static let baseMaximum = FreedomChartHorizon.twenty
+    static let maximum = FreedomChartHorizon.twoHundred
 
     static func recommended(for status: FinancialFreedomProjection.Status) -> FreedomChartHorizon {
-        let targetMonths: Int
+        let requiredMonths: Int
         switch status {
         case .alreadyFree:
-            targetMonths = 0
+            requiredMonths = FreedomChartHorizon.five.months
         case .projected(let months):
-            targetMonths = months
+            requiredMonths = max(FreedomChartHorizon.ten.months, months * 2)
         case .unreachable:
-            targetMonths = 60
+            requiredMonths = FreedomChartHorizon.five.months
         }
 
-        return allCases.min {
-            abs($0.months - targetMonths) < abs($1.months - targetMonths)
-        } ?? .five
+        return allCases.first(where: { $0.months >= requiredMonths }) ?? maximum
+    }
+
+    static func available(for status: FinancialFreedomProjection.Status) -> [FreedomChartHorizon] {
+        let upperBound = max(baseMaximum.rawValue, recommended(for: status).rawValue)
+        return allCases.filter { $0.rawValue <= upperBound }
     }
 }
 
@@ -269,21 +363,22 @@ nonisolated struct FinancialFreedomHistoryPoint: Sendable {
 
 nonisolated enum FinancialFreedomEstimator {
     private static let maxProjectionMonths = 100 * 12
-    private static let chartProjectionMonths = 20 * 12
+    private static let fallbackChartProjectionMonths = FreedomChartHorizon.baseMaximum.months
 
     static func estimate(
         points: [FinancialFreedomHistoryPoint],
         monthlySalary: Double,
         annualReturnRate: Double,
         monthlyExpense: Double,
-        annualInflationRate: Double
+        annualInflationRate: Double,
+        usesCurrentAssets: Bool = true
     ) -> FinancialFreedomProjection? {
         guard let currentPoint = points.last,
               currentPoint.netAssets.isFinite,
               currentPoint.mainAssets.isFinite else { return nil }
-        let currentNetAssets = currentPoint.netAssets
-        let currentTotalAssets = currentPoint.mainAssets
-        let currentLiabilities = max(currentPoint.liabilities, 0)
+        let currentNetAssets = usesCurrentAssets ? currentPoint.netAssets : 0
+        let currentTotalAssets = usesCurrentAssets ? currentPoint.mainAssets : 0
+        let currentLiabilities = usesCurrentAssets ? max(currentPoint.liabilities, 0) : 0
         let currentPassiveIncome = passiveMonthlyIncome(from: currentNetAssets, annualReturnRate: annualReturnRate)
         let monthlyReturnRate = monthlyReturnRate(from: annualReturnRate)
         let maximumReachableMonthlyExpense = maximumReachableMonthlyExpense(
@@ -339,6 +434,11 @@ nonisolated enum FinancialFreedomEstimator {
             projectedAnnualSurplus: projectedAnnualSurplus,
             yearToDateAnnualSurplus: yearToDateSurplus?.annual,
             yearToDateMonthlyAverageSurplus: yearToDateSurplus?.monthlyAverage,
+            yearToDateStartNetAssets: yearToDateSurplus?.startNetAssets,
+            yearToDateEndNetAssets: yearToDateSurplus?.endNetAssets,
+            yearToDateStartDate: yearToDateSurplus?.startDate,
+            yearToDateEndDate: yearToDateSurplus?.endDate,
+            yearToDateMonthsCounted: yearToDateSurplus?.monthsCounted,
             projectionPoints: projectionPoints(
                 from: Calendar.current.startOfDay(for: max(currentPoint.date, Date())),
                 currentNetAssets: currentNetAssets,
@@ -387,10 +487,17 @@ nonisolated enum FinancialFreedomEstimator {
         monthlySalary: Double,
         monthlyReturnRate: Double
     ) -> Int {
-        _ = status
         _ = monthlySalary
         _ = monthlyReturnRate
-        return chartProjectionMonths
+        switch status {
+        case .projected:
+            return max(
+                fallbackChartProjectionMonths,
+                FreedomChartHorizon.recommended(for: status).months
+            )
+        case .alreadyFree, .unreachable:
+            return fallbackChartProjectionMonths
+        }
     }
 
     private static func maximumReachableMonthlyExpense(
@@ -502,10 +609,20 @@ nonisolated enum FinancialFreedomEstimator {
         return projectedAssets - currentNetAssets
     }
 
+    private struct YearToDateSurplusMetrics {
+        let annual: Double
+        let monthlyAverage: Double
+        let startNetAssets: Double
+        let endNetAssets: Double
+        let startDate: Date
+        let endDate: Date
+        let monthsCounted: Int
+    }
+
     private static func yearToDateSurplusMetrics(
         from points: [FinancialFreedomHistoryPoint],
         calendar: Calendar = .current
-    ) -> (annual: Double, monthlyAverage: Double)? {
+    ) -> YearToDateSurplusMetrics? {
         guard !points.isEmpty else { return nil }
 
         let sortedPoints = points.sorted { $0.date < $1.date }
@@ -514,8 +631,8 @@ nonisolated enum FinancialFreedomEstimator {
         let yearPoints = sortedPoints.filter { $0.date >= yearStart }
         guard let lastPoint = yearPoints.last else { return nil }
 
-        let baseline = sortedPoints.last(where: { $0.date < yearStart })?.netAssets ?? yearPoints.first?.netAssets ?? lastPoint.netAssets
-        let annualSurplus = lastPoint.netAssets - baseline
+        let baselinePoint = sortedPoints.last(where: { $0.date < yearStart }) ?? yearPoints.first ?? lastPoint
+        let annualSurplus = lastPoint.netAssets - baselinePoint.netAssets
 
         let monthStarts = Set(
             yearPoints.compactMap { point in
@@ -525,7 +642,15 @@ nonisolated enum FinancialFreedomEstimator {
         let monthsCounted = max(monthStarts.count, 1)
         let monthlyAverage = annualSurplus / Double(monthsCounted)
 
-        return (annualSurplus, monthlyAverage)
+        return YearToDateSurplusMetrics(
+            annual: annualSurplus,
+            monthlyAverage: monthlyAverage,
+            startNetAssets: baselinePoint.netAssets,
+            endNetAssets: lastPoint.netAssets,
+            startDate: baselinePoint.date,
+            endDate: lastPoint.date,
+            monthsCounted: monthsCounted
+        )
     }
 
     private static func passiveMonthlyIncome(from assets: Double, annualReturnRate: Double) -> Double {
@@ -548,10 +673,13 @@ struct DashboardFreedomSection: View {
     @Binding var annualReturnRate: Double
     @Binding var monthlyExpense: Double
     @Binding var inflationRate: Double
+    @Binding var usesCurrentAssets: Bool
     @Binding var keyboardDismissSignal: Int
+    let amountsVisible: Bool
 
     @FocusState private var focusedField: FreedomParameterField?
     @State private var showsAlgorithmExplanation = false
+    @State private var showsYearToDateSurplusDetails = false
     @State private var monthlyExpenseText = ""
     @State private var inflationRateText = ""
     @State private var monthlySalaryText = ""
@@ -565,98 +693,147 @@ struct DashboardFreedomSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .center, spacing: 12) {
-                Text(statusText)
-                    .font(.system(size: 24, weight: .bold, design: .default))
-                    .foregroundStyle(statusColor)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.82)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        dismissKeyboard()
-                    }
-
-                Spacer(minLength: 8)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .center, spacing: 8) {
+                Text(AppLocalization.string("财务自由进度"))
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
 
                 Button {
                     showsAlgorithmExplanation = true
                 } label: {
-                    Image(systemName: "questionmark.circle.fill")
-                        .font(.system(size: 22, weight: .semibold))
-                        .symbolRenderingMode(.hierarchical)
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(AssetTheme.textSecondary)
-                        .frame(width: 36, height: 36)
+                        .frame(width: 28, height: 28)
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(AppLocalization.string("查看财富自由算法说明"))
-            }
 
-            if let reasonText {
-                Text(reasonText)
-                    .font(.system(size: 13, weight: .regular, design: .default))
+                Spacer(minLength: 8)
+
+                Text(statusText)
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .foregroundStyle(statusColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                    .padding(.horizontal, 11)
+                    .frame(height: 30)
+                    .background(statusColor.opacity(0.1), in: Capsule())
+            }
+            .padding(.top, 20)
+            .padding(.bottom, 14)
+
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text(AppLocalization.string("距离实现财务自由的进度"))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(AssetTheme.textSecondary)
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        dismissKeyboard()
-                    }
+
+                Spacer(minLength: 8)
+
+                Text(freedomProgress.formatted(.percent.precision(.fractionLength(0))))
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(AssetTheme.goldSoft)
             }
 
-            VStack(spacing: 10) {
-                HStack(spacing: 8) {
-                    parameterInputField(
-                        title: AppLocalization.string("月开销"),
-                        text: $monthlyExpenseText,
-                        field: .monthlyExpense
-                    )
-                    parameterInputField(
-                        title: AppLocalization.string("月薪"),
-                        text: $monthlySalaryText,
-                        field: .monthlySalary
-                    )
-                }
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(AssetTheme.border.opacity(0.42))
 
-                HStack(spacing: 8) {
-                    parameterInputField(
-                        title: AppLocalization.string("通胀率"),
-                        text: $inflationRateText,
-                        field: .inflationRate,
-                        suffix: "%"
-                    )
-                    parameterInputField(
-                        title: AppLocalization.string("年化收益"),
-                        text: $annualReturnRateText,
-                        field: .annualReturnRate,
-                        suffix: "%"
-                    )
+                    Capsule()
+                        .fill(AssetTheme.goldSoft)
+                        .frame(width: max(geometry.size.width * CGFloat(freedomProgress), freedomProgress > 0 ? 5 : 0))
                 }
             }
-            .contentShape(Rectangle())
-            .simultaneousGesture(
-                TapGesture().onEnded {
-                    dismissKeyboard()
-                }
-            )
+            .frame(height: 6)
+            .padding(.top, 8)
+            .padding(.bottom, 20)
 
-            annualSurplusProgressSection
+            HStack(alignment: .top, spacing: 0) {
+                parameterInputField(
+                    title: AppLocalization.string("月开销"),
+                    systemImage: "wallet.bifold",
+                    text: $monthlyExpenseText,
+                    field: .monthlyExpense
+                )
+                parameterDivider
+                parameterInputField(
+                    title: AppLocalization.string("月薪"),
+                    systemImage: "banknote",
+                    text: $monthlySalaryText,
+                    field: .monthlySalary
+                )
+                parameterDivider
+                parameterInputField(
+                    title: AppLocalization.string("通胀率"),
+                    systemImage: "chart.line.uptrend.xyaxis",
+                    text: $inflationRateText,
+                    field: .inflationRate,
+                    suffix: "%"
+                )
+                parameterDivider
+                parameterInputField(
+                    title: AppLocalization.string("年化收益"),
+                    systemImage: "target",
+                    text: $annualReturnRateText,
+                    field: .annualReturnRate,
+                    suffix: "%"
+                )
+            }
+            .padding(.bottom, 18)
+
+            Button {
+                dismissKeyboard()
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    usesCurrentAssets.toggle()
+                }
+            } label: {
+                HStack(spacing: 9) {
+                    Image(systemName: usesCurrentAssets ? "checkmark.square.fill" : "square")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(usesCurrentAssets ? AssetTheme.goldSoft : AssetTheme.textSecondary)
+
+                    Text(AppLocalization.string("根据当前资产计算"))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(AssetTheme.textSecondary)
+
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.bottom, 14)
+            .accessibilityValue(AppLocalization.string(usesCurrentAssets ? "已开启" : "已关闭"))
+
+            Rectangle()
+                .fill(AssetTheme.border.opacity(0.5))
+                .frame(height: 1)
+
+            yearToDateSurplusRow
+                .padding(.vertical, 14)
+
+            Rectangle()
+                .fill(AssetTheme.border.opacity(0.5))
+                .frame(height: 1)
+
+            if let projection, !projection.projectionPoints.isEmpty {
+                DashboardFreedomProjectionChart(
+                    projection: projection,
+                    amountsVisible: amountsVisible
+                )
+                .id("dashboard-freedom-projection")
+                .padding(.top, 22)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     dismissKeyboard()
                 }
-
-            if let projection, !projection.projectionPoints.isEmpty {
-                DashboardFreedomProjectionChart(projection: projection)
-                    .padding(.top, 2)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        dismissKeyboard()
-                    }
             }
         }
-        .padding(.top, 2)
         .onAppear {
             syncParameterTexts()
         }
@@ -678,66 +855,96 @@ struct DashboardFreedomSection: View {
                 .foregroundStyle(AssetTheme.gold)
             }
         }
-        .alert(AppLocalization.string("财富自由算法"), isPresented: $showsAlgorithmExplanation) {
-            Button(AppLocalization.string("知道了"), role: .cancel) {}
-        } message: {
-            Text(AppLocalization.string("当前净资产作为起始本金；每个月先按年化收益换算出的月复利增长，再加入当月结余（月薪 - 通胀后的月开销）；被动收入按你填写的年化收益折算为每月：净资产 × 年化收益 ÷ 12；目标是被动收入覆盖考虑通胀后的月开销。"))
+        .sheet(isPresented: $showsAlgorithmExplanation) {
+            DashboardFreedomAlgorithmSheet()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $showsYearToDateSurplusDetails) {
+            DashboardYearToDateSurplusDetailSheet(
+                projection: projection,
+                amountsVisible: amountsVisible
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
+        #if DEBUG
+        .task {
+            let arguments = ProcessInfo.processInfo.arguments
+            if arguments.contains("-openFreedomAlgorithm") {
+                showsAlgorithmExplanation = true
+            } else if arguments.contains("-openFreedomSurplusDetails") {
+                showsYearToDateSurplusDetails = true
+            }
+        }
+        #endif
     }
 
     private func parameterInputField(
         title: String,
+        systemImage: String,
         text: Binding<String>,
         field: FreedomParameterField,
         suffix: String? = nil
     ) -> some View {
-        HStack(spacing: 8) {
-            Text(title)
-                .font(.system(size: 12, weight: .medium, design: .default))
+        VStack(spacing: 8) {
+            Image(systemName: systemImage)
+                .font(.system(size: 20, weight: .medium))
+                .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(AssetTheme.textSecondary)
-                .lineLimit(1)
-                .fixedSize(horizontal: true, vertical: false)
+                .frame(height: 24)
+
+            Text(title)
+                .font(.system(size: 10.5, weight: .medium, design: .default))
+                .foregroundStyle(AssetTheme.textSecondary)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.74)
+                .frame(height: 26, alignment: .top)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     dismissKeyboard()
                 }
 
-            TextField(AppLocalization.string("输入"), text: text)
-                .font(.system(size: 15, weight: .semibold, design: .default))
-                .monospacedDigit()
-                .foregroundStyle(AssetTheme.textPrimary)
-                .multilineTextAlignment(.trailing)
-                .keyboardType(.decimalPad)
-                .focused($focusedField, equals: field)
-                .submitLabel(.done)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .onSubmit {
-                    commitField(field)
-                    focusedField = nil
-                }
-
-            if let suffix {
-                Text(suffix)
-                    .font(.system(size: 13, weight: .medium, design: .default))
-                    .foregroundStyle(AssetTheme.textSecondary)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        dismissKeyboard()
+            HStack(spacing: 3) {
+                TextField(AppLocalization.string("输入"), text: text)
+                    .font(.system(size: 13.5, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .multilineTextAlignment(.center)
+                    .keyboardType(.decimalPad)
+                    .focused($focusedField, equals: field)
+                    .submitLabel(.done)
+                    .frame(maxWidth: 62)
+                    .onSubmit {
+                        commitField(field)
+                        focusedField = nil
                     }
+
+                if let suffix {
+                    Text(suffix)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 11)
-        .background(AssetTheme.overlaySubtle.opacity(0.72), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(
-                    focusedField == field ? AssetTheme.gold.opacity(0.42) : AssetTheme.border.opacity(0.24),
-                    lineWidth: 1
-                )
-        )
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+        .overlay(alignment: .bottom) {
+            if focusedField == field {
+                Capsule()
+                    .fill(AssetTheme.gold)
+                    .frame(width: 34, height: 2)
+                    .offset(y: 7)
+            }
+        }
+    }
+
+    private var parameterDivider: some View {
+        Rectangle()
+            .fill(AssetTheme.border.opacity(0.42))
+            .frame(width: 1, height: 72)
+            .padding(.top, 18)
     }
 
     private func dismissKeyboard() {
@@ -815,119 +1022,80 @@ struct DashboardFreedomSection: View {
         annualReturnRate = min(max(percent / 100, -0.99), 1.0)
     }
 
-    private var annualSurplusProgressSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            surplusProgressRow(
-                title: AppLocalization.string("今年年结余"),
-                actual: projection?.yearToDateAnnualSurplus,
-                required: projection?.projectedAnnualSurplus
-            )
-            surplusProgressRow(
-                title: AppLocalization.string("今年月均结余"),
-                actual: projection?.yearToDateMonthlyAverageSurplus,
-                required: projection.map { $0.projectedAnnualSurplus / 12 }
-            )
+    private var freedomProgress: Double {
+        guard let projection,
+              projection.currentMonthlyExpense.isFinite,
+              projection.currentMonthlyExpense > 0,
+              projection.currentPassiveIncome.isFinite else {
+            return 0
         }
+        return min(max(projection.currentPassiveIncome / projection.currentMonthlyExpense, 0), 1)
     }
 
-    private func surplusProgressRow(title: String, actual: Double?, required: Double?) -> some View {
-        let actualText = actual.map { $0.currencyString() } ?? "--"
-        let requiredText = required.map { $0.currencyString() } ?? "--"
-        let progress = surplusProgress(actual: actual, required: required)
-        let progressColor = surplusProgressColor(actual: actual, required: required)
+    private var yearToDateSurplusRow: some View {
+        Button {
+            dismissKeyboard()
+            showsYearToDateSurplusDetails = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .frame(width: 24)
 
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(title)
-                    .font(.system(size: 13, weight: .semibold, design: .default))
+                Text(AppLocalization.string("年初至今结余"))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(AssetTheme.textPrimary)
 
                 Spacer(minLength: 8)
 
-                Text(AppLocalization.format("%@ / %@", actualText, requiredText))
-                    .font(.system(size: 12, weight: .medium, design: .default))
-                    .foregroundStyle(AssetTheme.textSecondary)
+                Text(yearToDateSurplusText)
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(yearToDateSurplusColor)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.82)
-            }
+                    .minimumScaleFactor(0.75)
 
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(AssetTheme.border.opacity(0.34))
-
-                    Capsule()
-                        .fill(progressColor)
-                        .frame(width: max(geometry.size.width * progress, progress > 0 ? 4 : 0))
-                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(AssetTheme.textSecondary)
             }
-            .frame(height: 6)
         }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .accessibilityHint(AppLocalization.string("查看结余计算详情"))
     }
 
-    private func surplusProgress(actual: Double?, required: Double?) -> CGFloat {
-        guard let actual, let required, required.isFinite, abs(required) > .ulpOfOne else { return 0 }
-        guard actual.isFinite else { return 0 }
-        let ratio = actual / required
-        guard ratio.isFinite else { return 0 }
-        return CGFloat(min(max(ratio, 0), 1))
+    private var yearToDateSurplusText: String {
+        guard amountsVisible else { return "••••••" }
+        return projection?.yearToDateAnnualSurplus?.currencyString() ?? "--"
     }
 
-    private func surplusProgressColor(actual: Double?, required: Double?) -> Color {
-        guard let actual, let required, required.isFinite, abs(required) > .ulpOfOne else {
-            return AssetTheme.textSecondary.opacity(0.45)
+    private var yearToDateSurplusColor: Color {
+        guard amountsVisible, let value = projection?.yearToDateAnnualSurplus else {
+            return AssetTheme.textSecondary
         }
-        if actual >= required {
-            return AssetTheme.positive
-        }
-        if actual >= 0 {
-            return AssetTheme.goldSoft
-        }
-        return AssetTheme.negative
+        return value >= 0 ? AssetTheme.goldSoft : AssetTheme.negative
     }
 
     private var statusText: String {
-        guard let projection else { return AppLocalization.string("财富自由时间估算") }
+        guard let projection else { return AppLocalization.string("等待估算") }
 
         switch projection.status {
         case .alreadyFree:
-            return AppLocalization.string("已达到财富自由")
+            return AppLocalization.string("已实现")
         case let .projected(months):
             let years = months / 12
             let remainingMonths = months % 12
             if years > 0, remainingMonths > 0 {
-                return AppLocalization.format("还需 %d 年 %d 月财富自由", years, remainingMonths)
+                return AppLocalization.format("预计还需 %d 年 %d 月", years, remainingMonths)
             } else if years > 0 {
-                return AppLocalization.format("还需 %d 年财富自由", years)
+                return AppLocalization.format("预计还需 %d 年", years)
             } else {
-                return AppLocalization.format("还需 %d 月财富自由", remainingMonths)
+                return AppLocalization.format("预计还需 %d 月", remainingMonths)
             }
         case .unreachable:
-            return AppLocalization.string("当前无法财富自由")
-        }
-    }
-
-    private var reasonText: String? {
-        guard let projection else {
-            return AppLocalization.string("记录资产快照后可开始估算")
-        }
-
-        switch projection.status {
-        case .alreadyFree, .projected:
-            return nil
-        case .unreachable:
-            if let requiredSalary = projection.requiredMonthlySalaryToReachFreedom {
-                return AppLocalization.format(
-                    "按当前参数，需控制月开销在 %@ 以内，或收入涨到 %@/月。",
-                    projection.maximumReachableMonthlyExpense.currencyString(),
-                    requiredSalary.currencyString()
-                )
-            } else {
-                return AppLocalization.format(
-                    "按当前参数，需控制月开销在 %@ 以内。",
-                    projection.maximumReachableMonthlyExpense.currencyString()
-                )
-            }
+            return AppLocalization.string("当前参数不可达")
         }
     }
 
@@ -935,47 +1103,355 @@ struct DashboardFreedomSection: View {
         guard let projection else { return AssetTheme.textPrimary }
         switch projection.status {
         case .alreadyFree:
-            return AssetTheme.goldSoft
+            return AssetTheme.positive
         case .projected:
-            return AssetTheme.textPrimary
+            return AssetTheme.goldSoft
         case .unreachable:
             return AssetTheme.accentOrange
         }
     }
 }
 
+private struct DashboardFreedomAlgorithmSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Image(systemName: "function")
+                            .font(.system(size: 21, weight: .semibold))
+                            .foregroundStyle(AssetTheme.goldSoft)
+                            .frame(width: 42, height: 42)
+                            .background(AssetTheme.goldSoft.opacity(0.10), in: Circle())
+
+                        Text(AppLocalization.string("财富自由算法"))
+                            .font(.system(size: 27, weight: .bold, design: .rounded))
+                            .foregroundStyle(AssetTheme.textPrimary)
+
+                        Text(AppLocalization.string("用起始本金与四项参数，逐月推演被动收入覆盖生活开销的时间。"))
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(AssetTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Rectangle()
+                        .fill(AssetTheme.border.opacity(0.5))
+                        .frame(height: 1)
+                        .padding(.vertical, 20)
+
+                    VStack(alignment: .leading, spacing: 18) {
+                        algorithmStep(
+                            number: "01",
+                            title: AppLocalization.string("确定起点"),
+                            detail: AppLocalization.string("起始本金可选择当前净资产或零，并读取月薪、月开销、通胀率和年化收益。")
+                        )
+                        algorithmStep(
+                            number: "02",
+                            title: AppLocalization.string("逐月复利"),
+                            detail: AppLocalization.string("每月先计算资产收益，再加入月薪减去通胀后月开销形成的结余。")
+                        )
+                        algorithmStep(
+                            number: "03",
+                            title: AppLocalization.string("判断追平"),
+                            detail: AppLocalization.string("当每月被动收入覆盖通胀后的月开销，即视为实现财务自由。")
+                        )
+                    }
+
+                    Rectangle()
+                        .fill(AssetTheme.border.opacity(0.5))
+                        .frame(height: 1)
+                        .padding(.vertical, 20)
+
+                    Text(AppLocalization.string("核心公式"))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .padding(.bottom, 12)
+
+                    formulaRow(
+                        title: AppLocalization.string("被动收入"),
+                        formula: AppLocalization.string("起始本金 × 年化收益 ÷ 12")
+                    )
+
+                    formulaRow(
+                        title: AppLocalization.string("月结余"),
+                        formula: AppLocalization.string("月薪 − 通胀后月开销")
+                    )
+                    .padding(.top, 10)
+                }
+                .padding(.horizontal, 22)
+                .padding(.top, 18)
+                .padding(.bottom, 30)
+            }
+            .background(AssetTheme.pageGradient.ignoresSafeArea())
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(AppLocalization.string("完成")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func algorithmStep(number: String, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 13) {
+            Text(number)
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(AssetTheme.goldSoft)
+                .frame(width: 30, height: 30)
+                .background(AssetTheme.goldSoft.opacity(0.10), in: Circle())
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                Text(detail)
+                    .font(.system(size: 12.5, weight: .regular))
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func formulaRow(title: String, formula: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(AssetTheme.textSecondary)
+
+            Spacer(minLength: 12)
+
+            Text(formula)
+                .font(.system(size: 13.5, weight: .semibold, design: .rounded))
+                .foregroundStyle(AssetTheme.textPrimary)
+                .multilineTextAlignment(.trailing)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 10)
+    }
+}
+
+private struct DashboardYearToDateSurplusDetailSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let projection: FinancialFreedomProjection?
+    let amountsVisible: Bool
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if let projection,
+                   let surplus = projection.yearToDateAnnualSurplus,
+                   let startAssets = projection.yearToDateStartNetAssets,
+                   let endAssets = projection.yearToDateEndNetAssets {
+                    detailContent(
+                        projection: projection,
+                        surplus: surplus,
+                        startAssets: startAssets,
+                        endAssets: endAssets
+                    )
+                } else {
+                    ContentUnavailableView(
+                        AppLocalization.string("暂无本年度结余数据"),
+                        systemImage: "chart.line.uptrend.xyaxis",
+                        description: Text(AppLocalization.string("添加今年的资产记录后即可查看"))
+                    )
+                }
+            }
+            .navigationTitle(AppLocalization.string("结余详情"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(AppLocalization.string("完成")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func detailContent(
+        projection: FinancialFreedomProjection,
+        surplus: Double,
+        startAssets: Double,
+        endAssets: Double
+    ) -> some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(AppLocalization.string("年初至今结余"))
+                    .font(AppTypography.meta)
+                    .foregroundStyle(AssetTheme.textSecondary)
+
+                Text(privateAmount(surplus))
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(surplus >= 0 ? AssetTheme.goldSoft : AssetTheme.negative)
+                    .padding(.top, 5)
+
+                if let startDate = projection.yearToDateStartDate,
+                   let endDate = projection.yearToDateEndDate {
+                    Text("\(startDate.longDateString) – \(endDate.longDateString)")
+                        .font(AppTypography.meta)
+                        .monospacedDigit()
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .padding(.top, 5)
+                }
+
+                VStack(alignment: .leading, spacing: 16) {
+                    surplusProgressRow(
+                        title: AppLocalization.string("今年年结余"),
+                        actual: projection.yearToDateAnnualSurplus,
+                        required: projection.projectedAnnualSurplus
+                    )
+                    surplusProgressRow(
+                        title: AppLocalization.string("今年月均结余"),
+                        actual: projection.yearToDateMonthlyAverageSurplus,
+                        required: projection.projectedAnnualSurplus / 12
+                    )
+                }
+                .padding(.top, 22)
+
+                Divider()
+                    .overlay(AssetTheme.border.opacity(0.55))
+                    .padding(.vertical, 20)
+
+                detailRow(
+                    AppLocalization.string("起点净资产"),
+                    value: privateAmount(startAssets)
+                )
+                detailRow(
+                    AppLocalization.string("当前净资产"),
+                    value: privateAmount(endAssets)
+                )
+                detailRow(
+                    AppLocalization.string("月均结余"),
+                    value: projection.yearToDateMonthlyAverageSurplus.map(privateAmount) ?? "--"
+                )
+
+                if let monthsCounted = projection.yearToDateMonthsCounted {
+                    Text(AppLocalization.format("按 %d 个月记录计算", monthsCounted))
+                        .font(AppTypography.meta)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .padding(.top, 6)
+                }
+
+                Divider()
+                    .overlay(AssetTheme.border.opacity(0.55))
+                    .padding(.vertical, 18)
+
+                Label {
+                    Text(AppLocalization.string("结余按记录区间内的净资产变化计算，包含资产投入、取出、投资盈亏和负债变化，并不等同于收入减去支出。"))
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } icon: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AssetTheme.goldSoft)
+                }
+                .labelStyle(.titleAndIcon)
+            }
+            .padding(.horizontal, 22)
+            .padding(.top, 18)
+            .padding(.bottom, 28)
+        }
+        .background(AssetTheme.pageGradient.ignoresSafeArea())
+    }
+
+    private func detailRow(_ title: String, value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(AssetTheme.textSecondary)
+
+            Spacer(minLength: 12)
+
+            Text(value)
+                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(AssetTheme.textPrimary)
+                .multilineTextAlignment(.trailing)
+        }
+        .padding(.vertical, 9)
+    }
+
+    private func surplusProgressRow(title: String, actual: Double?, required: Double?) -> some View {
+        let progress = amountsVisible ? surplusProgress(actual: actual, required: required) : 0
+        let color = surplusProgressColor(actual: actual, required: required)
+
+        return VStack(alignment: .leading, spacing: 7) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                Spacer(minLength: 8)
+
+                Text(AppLocalization.format(
+                    "%@ / %@",
+                    actual.map(privateAmount) ?? "--",
+                    required.map(privateAmount) ?? "--"
+                ))
+                .font(.system(size: 11.5, weight: .medium, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(AssetTheme.textSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+            }
+
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(AssetTheme.border.opacity(0.34))
+                    Capsule()
+                        .fill(color)
+                        .frame(width: max(geometry.size.width * progress, progress > 0 ? 4 : 0))
+                }
+            }
+            .frame(height: 7)
+        }
+    }
+
+    private func surplusProgress(actual: Double?, required: Double?) -> CGFloat {
+        guard let actual, let required,
+              actual.isFinite, required.isFinite,
+              abs(required) > .ulpOfOne else { return 0 }
+        if required < 0 {
+            return actual >= required ? 1 : 0
+        }
+        return CGFloat(min(max(actual / required, 0), 1))
+    }
+
+    private func surplusProgressColor(actual: Double?, required: Double?) -> Color {
+        guard let actual, let required,
+              actual.isFinite, required.isFinite,
+              abs(required) > .ulpOfOne else {
+            return AssetTheme.textSecondary.opacity(0.45)
+        }
+        if actual >= required { return AssetTheme.positive }
+        if actual >= 0 { return AssetTheme.goldSoft }
+        return AssetTheme.negative
+    }
+
+    private func privateAmount(_ value: Double) -> String {
+        amountsVisible ? value.currencyString() : "••••••"
+    }
+}
+
 struct DashboardFreedomProjectionChart: View {
     let projection: FinancialFreedomProjection
+    let amountsVisible: Bool
 
     @State private var selectedHorizonYears = FreedomChartHorizon.five.rawValue
-
-    private struct IncomeCoveragePoint: Identifiable {
-        let id: String
-        let monthOffset: Double
-        let date: Date
-        let passiveIncome: Double
-    }
-
-    private struct IncomeCoverageSegment: Identifiable {
-        enum State {
-            case aboveExpense
-            case belowExpense
-        }
-
-        let id: String
-        let state: State
-        let points: [IncomeCoveragePoint]
-    }
 
     private struct CrossingMarker {
         let monthOffset: Double
         let date: Date
         let passiveIncome: Double
-    }
-
-    private struct ChartAnalysis {
-        let segments: [IncomeCoverageSegment]
-        let crossingMarker: CrossingMarker?
     }
 
     private var allPoints: [FinancialFreedomProjectionPoint] {
@@ -988,6 +1464,10 @@ struct DashboardFreedomProjectionChart: View {
 
     private var selectedHorizon: FreedomChartHorizon {
         FreedomChartHorizon(rawValue: selectedHorizonYears) ?? recommendedHorizon
+    }
+
+    private var availableHorizons: [FreedomChartHorizon] {
+        FreedomChartHorizon.available(for: projection.status)
     }
 
     private var displayPoints: [FinancialFreedomProjectionPoint] {
@@ -1006,8 +1486,15 @@ struct DashboardFreedomProjectionChart: View {
         }
     }
 
-    private var chartAnalysis: ChartAnalysis {
-        buildChartAnalysis(from: displayPoints)
+    private var crossingMarker: CrossingMarker? {
+        firstCrossingMarker(in: displayPoints)
+    }
+
+    private var isUnreachable: Bool {
+        if case .unreachable = projection.status {
+            return true
+        }
+        return false
     }
 
     private var valueDomain: ClosedRange<Double> {
@@ -1029,10 +1516,10 @@ struct DashboardFreedomProjectionChart: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 12) {
-                projectionLegendChip(title: AppLocalization.string("被动收入"), color: AssetTheme.goldSoft)
-                projectionLegendChip(title: AppLocalization.string("通胀开销"), color: AssetTheme.accentOrange, dashed: true)
+                projectionLegendChip(title: AppLocalization.string("被动收入"), color: AssetTheme.positive)
+                projectionLegendChip(title: AppLocalization.string("通胀开销"), color: AssetTheme.negative, dashed: true)
 
                 Spacer(minLength: 8)
 
@@ -1046,23 +1533,20 @@ struct DashboardFreedomProjectionChart: View {
             }
 
             if let latestPoint = displayPoints.last {
-                VStack(spacing: 0) {
-                    HStack(spacing: 14) {
-                        projectionMetric(title: AppLocalization.string("当前被动收入"), value: projection.currentPassiveIncome.currencyString())
-                        projectionMetric(title: AppLocalization.string("当前月开销"), value: projection.currentMonthlyExpense.currencyString())
-                        projectionMetric(title: AppLocalization.string("终点被动收入"), value: latestPoint.projectedPassiveIncome.currencyString())
-                    }
+                HStack(alignment: .top, spacing: 22) {
+                    projectionFlowMetric(
+                        title: AppLocalization.string("被动收入"),
+                        currentValue: privateCompactAmount(projection.currentPassiveIncome),
+                        futureValue: privateCompactAmount(latestPoint.projectedPassiveIncome)
+                    )
 
-                    Rectangle()
-                        .fill(AssetTheme.border.opacity(0.28))
-                        .frame(height: 1)
-                        .padding(.vertical, 8)
-
-                    HStack(spacing: 14) {
-                        projectionMetric(title: AppLocalization.string("当前总资产"), value: projection.currentTotalAssets.currencyString())
-                        projectionMetric(title: AppLocalization.string("终点总资产"), value: latestPoint.projectedTotalAssets.currencyString())
-                    }
+                    projectionFlowMetric(
+                        title: AppLocalization.string("总资产"),
+                        currentValue: privateCompactAmount(projection.currentTotalAssets),
+                        futureValue: privateCompactAmount(latestPoint.projectedTotalAssets)
+                    )
                 }
+                .padding(.top, 2)
             }
         }
         .onAppear {
@@ -1073,118 +1557,147 @@ struct DashboardFreedomProjectionChart: View {
         }
     }
 
+    private func privateCompactAmount(_ value: Double) -> String {
+        amountsVisible ? value.dashboardCompactCurrencyString() : "••••"
+    }
+
     private var freedomProjectionChart: some View {
-        Chart {
-            ForEach(chartAnalysis.segments) { segment in
-                ForEach(segment.points) { point in
-                    LineMark(
+        ZStack {
+            Chart {
+                ForEach(displayPoints) { point in
+                    AreaMark(
                         x: .value(AppLocalization.string("日期"), point.date),
-                        y: .value(AppLocalization.string("预计被动收入"), point.passiveIncome),
-                        series: .value(AppLocalization.string("系列"), segment.id)
+                        yStart: .value(AppLocalization.string("预计被动收入"), valueDomain.lowerBound),
+                        yEnd: .value(AppLocalization.string("预计被动收入"), point.projectedPassiveIncome)
                     )
                     .interpolationMethod(.monotone)
-                    .lineStyle(StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
-                    .foregroundStyle(segment.state == .aboveExpense ? AssetTheme.positive : AssetTheme.negative)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [
+                                AssetTheme.positive.opacity(0.20),
+                                AssetTheme.positive.opacity(0.012)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
                 }
-            }
 
-            ForEach(displayPoints) { point in
-                LineMark(
-                    x: .value(AppLocalization.string("日期"), point.date),
-                    y: .value(AppLocalization.string("通胀后月开销"), point.projectedMonthlyExpense),
-                    series: .value(AppLocalization.string("系列"), AppLocalization.string("通胀后月开销"))
-                )
-                .interpolationMethod(.monotone)
-                .lineStyle(StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round, dash: [6, 4]))
-                .foregroundStyle(AssetTheme.accentOrange.opacity(0.9))
-            }
+                ForEach(displayPoints) { point in
+                    LineMark(
+                        x: .value(AppLocalization.string("日期"), point.date),
+                        y: .value(AppLocalization.string("预计被动收入"), point.projectedPassiveIncome)
+                    )
+                    .interpolationMethod(.monotone)
+                    .lineStyle(StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                    .foregroundStyle(AssetTheme.positive)
+                }
 
-            if let crossingMarker = chartAnalysis.crossingMarker {
-                RuleMark(x: .value(AppLocalization.string("追平时间"), crossingMarker.date))
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 4]))
-                    .foregroundStyle(AssetTheme.positive.opacity(0.8))
-                    .annotation(position: .top, spacing: 6) {
+                ForEach(displayPoints) { point in
+                    LineMark(
+                        x: .value(AppLocalization.string("日期"), point.date),
+                        y: .value(AppLocalization.string("通胀后月开销"), point.projectedMonthlyExpense),
+                        series: .value(AppLocalization.string("系列"), AppLocalization.string("通胀后月开销"))
+                    )
+                    .interpolationMethod(.monotone)
+                    .lineStyle(StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round, dash: [6, 4]))
+                    .foregroundStyle(AssetTheme.negative.opacity(0.92))
+                }
+
+                if let crossingMarker {
+                    RuleMark(x: .value(AppLocalization.string("追平时间"), crossingMarker.date))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                        .foregroundStyle(AssetTheme.positive.opacity(0.8))
+
+                    PointMark(
+                        x: .value(AppLocalization.string("追平时间"), crossingMarker.date),
+                        y: .value(AppLocalization.string("追平值"), crossingMarker.passiveIncome)
+                    )
+                    .foregroundStyle(AssetTheme.positive)
+                    .symbolSize(40)
+                    .annotation(position: .top, spacing: 7) {
                         crossingBadge(for: crossingMarker.monthOffset)
                     }
+                }
 
-                PointMark(
-                    x: .value(AppLocalization.string("追平时间"), crossingMarker.date),
-                    y: .value(AppLocalization.string("追平值"), crossingMarker.passiveIncome)
-                )
-                .foregroundStyle(AssetTheme.positive)
-                .symbolSize(40)
+                if let latestPoint = displayPoints.last {
+                    PointMark(
+                        x: .value(AppLocalization.string("日期"), latestPoint.date),
+                        y: .value(AppLocalization.string("预计被动收入"), latestPoint.projectedPassiveIncome)
+                    )
+                    .foregroundStyle(AssetTheme.positive)
+                    .symbolSize(30)
+                }
             }
+            .chartXScale(domain: xDomain)
+            .chartYScale(domain: valueDomain)
+            .chartXAxis {
+                AxisMarks(values: xAxisDates) { _ in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
+                        .foregroundStyle(AssetTheme.chartGrid.opacity(0.68))
+                    AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
+                        .foregroundStyle(AssetTheme.chartTick.opacity(0.7))
+                    AxisValueLabel {
+                        EmptyView()
+                    }
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading, values: ChartLayoutSupport.threeTickValues(for: valueDomain)) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
+                        .foregroundStyle(AssetTheme.chartGrid.opacity(0.52))
+                    AxisValueLabel {
+                        if amountsVisible, let amount = value.as(Double.self) {
+                            Text(amount.dashboardCompactCurrencyString())
+                                .font(.system(size: 8.5, weight: .medium, design: .rounded))
+                                .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                        }
+                    }
+                }
+            }
+            .chartLegend(.hidden)
+            .chartPlotStyle { plotArea in
+                plotArea
+                    .background(AssetTheme.overlayFaint.opacity(0.08))
+            }
+            .accessibilityHidden(!amountsVisible)
 
-            if let latestPoint = displayPoints.last {
-                PointMark(
-                    x: .value(AppLocalization.string("日期"), latestPoint.date),
-                    y: .value(AppLocalization.string("预计被动收入"), latestPoint.projectedPassiveIncome)
-                )
-                .foregroundStyle(latestPoint.projectedPassiveIncome >= latestPoint.projectedMonthlyExpense ? AssetTheme.positive : AssetTheme.negative)
-                .symbolSize(36)
+            if isUnreachable {
+                unreachableWarning
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 188)
-        .chartXScale(domain: xDomain)
-        .chartYScale(domain: valueDomain)
-        .chartXAxis {
-            AxisMarks(values: xAxisDates) { _ in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
-                    .foregroundStyle(AssetTheme.chartGrid.opacity(0.68))
-                AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
-                    .foregroundStyle(AssetTheme.chartTick.opacity(0.7))
-                AxisValueLabel {
-                    EmptyView()
-                }
-            }
+        .frame(height: 174)
+    }
+
+    private var unreachableWarning: some View {
+        VStack(spacing: 7) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(AssetTheme.negative)
+
+            Text(AppLocalization.string("按当前参数无法达到财富自由"))
+                .font(.system(size: 11, weight: .semibold, design: .default))
+                .foregroundStyle(AssetTheme.textPrimary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .chartYAxis {
-            AxisMarks(values: ChartLayoutSupport.threeTickValues(for: valueDomain)) { _ in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
-                    .foregroundStyle(AssetTheme.chartGrid.opacity(0.68))
-            }
-        }
-        .chartLegend(.hidden)
-        .chartPlotStyle { plotArea in
-            plotArea
-                .background(
-                    LinearGradient(
-                        colors: [
-                            AssetTheme.overlayFaint.opacity(0.45),
-                            AssetTheme.overlaySubtle.opacity(0.10)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        }
-        .overlay(alignment: .leading) {
-            TimeMachineAxisStrip(
-                topLabel: TimeMachineAxisValueStyle.currency(code: "CNY").compactLabel(for: valueDomain.upperBound),
-                middleLabel: TimeMachineAxisValueStyle.currency(code: "CNY").compactLabel(for: (valueDomain.lowerBound + valueDomain.upperBound) / 2),
-                bottomLabel: TimeMachineAxisValueStyle.currency(code: "CNY").compactLabel(for: valueDomain.lowerBound),
-                alignment: .leading,
-                color: AssetTheme.goldSoft
-            )
-            .frame(width: 42)
-            .padding(.leading, 10)
-            .padding(.vertical, 14)
-            .allowsHitTesting(false)
-        }
-        .overlay(alignment: .topLeading) {
-            Text(AppLocalization.string("收入覆盖趋势"))
-                .font(.system(size: 11, weight: .medium, design: .default))
-                .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AssetTheme.negative.opacity(0.24), lineWidth: 1)
+        )
+        .padding(.horizontal, 48)
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .combine)
     }
 
     private var horizonPicker: some View {
         Menu {
-            ForEach(FreedomChartHorizon.allCases) { horizon in
+            ForEach(availableHorizons) { horizon in
                 Button {
                     selectedHorizonYears = horizon.rawValue
                 } label: {
@@ -1257,87 +1770,24 @@ struct DashboardFreedomProjectionChart: View {
         }
     }
 
-    private func buildChartAnalysis(from points: [FinancialFreedomProjectionPoint]) -> ChartAnalysis {
-        guard let firstPoint = points.first else {
-            return ChartAnalysis(segments: [], crossingMarker: nil)
-        }
-
-        func coverageState(for point: FinancialFreedomProjectionPoint) -> IncomeCoverageSegment.State {
-            point.projectedPassiveIncome >= point.projectedMonthlyExpense ? .aboveExpense : .belowExpense
-        }
-
-        func makeCoveragePoint(from point: FinancialFreedomProjectionPoint, suffix: String = "") -> IncomeCoveragePoint {
-            IncomeCoveragePoint(
-                id: "\(point.monthOffset)\(suffix)",
-                monthOffset: Double(point.monthOffset),
-                date: point.date,
-                passiveIncome: point.projectedPassiveIncome
-            )
-        }
-
-        var segments: [IncomeCoverageSegment] = []
-        var currentSegmentState = coverageState(for: firstPoint)
-        var currentPoints: [IncomeCoveragePoint] = [makeCoveragePoint(from: firstPoint)]
-        var crossingMarker: CrossingMarker?
-        var segmentIndex = 0
-
+    private func firstCrossingMarker(in points: [FinancialFreedomProjectionPoint]) -> CrossingMarker? {
+        guard points.count > 1 else { return nil }
         for index in 1..<points.count {
             let previous = points[index - 1]
             let current = points[index]
             let previousGap = previous.projectedPassiveIncome - previous.projectedMonthlyExpense
             let currentGap = current.projectedPassiveIncome - current.projectedMonthlyExpense
+            let changesCoverageState = (previousGap < 0 && currentGap >= 0) || (previousGap > 0 && currentGap <= 0)
+            guard changesCoverageState, abs(previousGap - currentGap) > .ulpOfOne else { continue }
 
-            let previousState = coverageState(for: previous)
-            let currentState = coverageState(for: current)
-            let hasCrossing = previousState != currentState && abs(previousGap - currentGap) > .ulpOfOne
-
-            if hasCrossing {
-                let progress = previousGap / (previousGap - currentGap)
-                let clampedProgress = min(max(progress, 0), 1)
-                let crossingMonthOffset = Double(previous.monthOffset) + (Double(current.monthOffset - previous.monthOffset) * clampedProgress)
-                let crossingDate = previous.date.addingTimeInterval(current.date.timeIntervalSince(previous.date) * clampedProgress)
-                let crossingIncome = previous.projectedPassiveIncome + ((current.projectedPassiveIncome - previous.projectedPassiveIncome) * clampedProgress)
-                let crossingPoint = IncomeCoveragePoint(
-                    id: "crossing-\(index)",
-                    monthOffset: crossingMonthOffset,
-                    date: crossingDate,
-                    passiveIncome: crossingIncome
-                )
-
-                currentPoints.append(crossingPoint)
-                segments.append(
-                    IncomeCoverageSegment(
-                        id: "income-segment-\(segmentIndex)",
-                        state: currentSegmentState,
-                        points: currentPoints
-                    )
-                )
-
-                if crossingMarker == nil {
-                    crossingMarker = CrossingMarker(
-                        monthOffset: crossingMonthOffset,
-                        date: crossingDate,
-                        passiveIncome: crossingIncome
-                    )
-                }
-
-                segmentIndex += 1
-                currentSegmentState = currentState
-                currentPoints = [crossingPoint, makeCoveragePoint(from: current)]
-            } else {
-                currentPoints.append(makeCoveragePoint(from: current))
-            }
-        }
-
-        segments.append(
-            IncomeCoverageSegment(
-                id: "income-segment-\(segmentIndex)",
-                state: currentSegmentState,
-                points: currentPoints
+            let progress = min(max(previousGap / (previousGap - currentGap), 0), 1)
+            return CrossingMarker(
+                monthOffset: Double(previous.monthOffset) + (Double(current.monthOffset - previous.monthOffset) * progress),
+                date: previous.date.addingTimeInterval(current.date.timeIntervalSince(previous.date) * progress),
+                passiveIncome: previous.projectedPassiveIncome + ((current.projectedPassiveIncome - previous.projectedPassiveIncome) * progress)
             )
-        )
-
-        return ChartAnalysis(segments: segments, crossingMarker: crossingMarker)
+        }
+        return nil
     }
 
     private func crossingBadge(for monthOffset: Double) -> some View {
@@ -1394,19 +1844,29 @@ struct DashboardFreedomProjectionChart: View {
         .padding(.vertical, 4)
     }
 
-    private func projectionMetric(title: String, value: String) -> some View {
+    private func projectionFlowMetric(title: String, currentValue: String, futureValue: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(title)
                 .font(.system(size: 10.5, weight: .medium, design: .default))
                 .foregroundStyle(AssetTheme.textSecondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.78)
-            Text(value)
-                .font(.system(size: 13.5, weight: .semibold, design: .default))
-                .foregroundStyle(AssetTheme.textPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.72)
-                .monospacedDigit()
+
+            HStack(spacing: 5) {
+                Text(currentValue)
+                    .foregroundStyle(AssetTheme.textPrimary)
+
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.62))
+
+                Text(futureValue)
+                    .foregroundStyle(AssetTheme.goldSoft)
+            }
+            .font(.system(size: 13, weight: .semibold, design: .rounded))
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

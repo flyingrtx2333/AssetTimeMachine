@@ -751,7 +751,7 @@ public enum PublicBacktestCore {
         }
 
         let nfci = try loadForwardNFCI(from: nfciData, availableAtOrBefore: decisionAt)
-        let options = StrategyNotificationDefaults.assetOptions(for: template)
+        let options = StrategyRebalanceDefaults.assetOptions(for: template)
         guard !options.isEmpty else { throw PublicBacktestCoreError.computationFailed }
 
         guard let commonCutoffDate = parseDate(dataset.dataCutoff) else {
@@ -1148,7 +1148,7 @@ public enum PublicBacktestCore {
         for template: AdvancedBacktestStrategyTemplate,
         dataset: PublicBacktestDataset
     ) throws -> [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)] {
-        let options = StrategyNotificationDefaults.assetOptions(for: template)
+        let options = StrategyRebalanceDefaults.assetOptions(for: template)
         let historyProvider: (String) -> PublicHistorySeries? = { symbol in
             dataset.seriesBySymbol[normalizedHistorySymbol(symbol)]
         }
@@ -1163,7 +1163,7 @@ public enum PublicBacktestCore {
         for template: AdvancedBacktestStrategyTemplate,
         dataset: PublicBacktestDataset
     ) throws -> ClosedRange<Date> {
-        let options = StrategyNotificationDefaults.assetOptions(for: template)
+        let options = StrategyRebalanceDefaults.assetOptions(for: template)
         let boundarySymbols = template.mode.dateBoundaryAssetSymbols
         let boundaryOptions = options.filter { boundarySymbols?.contains($0.symbol) ?? true }
         let sourceSeries = boundaryOptions.flatMap { option -> [PublicHistorySeries] in

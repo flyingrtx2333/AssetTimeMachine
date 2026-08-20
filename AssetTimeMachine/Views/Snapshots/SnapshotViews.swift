@@ -162,6 +162,7 @@ struct SnapshotListView: View {
     @State private var isPreparingInitialSnapshot = false
     @State private var showsAddAssetItemSheet = false
     @State private var editingAssetItem: AssetItem?
+    @State private var pendingDeletionAssetItem: AssetItem?
     @State private var assetEditorDraftID: UUID?
     @State private var quickEditingAssetItem: AssetItem?
     @State private var quickEditDraftID: UUID?
@@ -177,6 +178,8 @@ struct SnapshotListView: View {
     @State private var cachedItemsByID: [UUID: AssetItem] = [:]
     @State private var itemsByIDCacheToken: String = ""
     @State private var persistenceErrorMessage: String?
+    @State private var assetDeletionErrorMessage: String?
+    @State private var marketLogoRevision = 0
     @AppStorage("app.records.showsZeroBalanceAssets") private var showsZeroBalanceAssets = true
 
     private var currentSnapshot: AssetSnapshot? {
@@ -227,7 +230,9 @@ struct SnapshotListView: View {
     @ViewBuilder
     var body: some View {
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("-openSnapshotArchive") {
+        if ProcessInfo.processInfo.arguments.contains("-previewAddAssetEditor") {
+            AssetItemEditorSheet(marketStore: marketStore)
+        } else if ProcessInfo.processInfo.arguments.contains("-openSnapshotArchive") {
             SnapshotArchiveView()
         } else {
             snapshotListBody
@@ -245,68 +250,76 @@ struct SnapshotListView: View {
             ZStack {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
-                ScrollView(showsIndicators: false) {
-                    LazyVStack(alignment: .leading, spacing: 16) {
-                        if let currentSnapshot = currentSnapshotValue, let layout {
-                            RecordPageHero(
-                                snapshot: currentSnapshot,
-                                totalAssets: layout.displayedTotalAssets,
-                                netAssets: layout.displayedNetAssets,
-                                totalLiabilities: layout.displayedTotalLiabilities,
-                                showsZeroBalanceAssets: showsZeroBalanceAssets,
-                                onToggleZeroBalanceAssets: {
-                                    dismissKeyboard()
-                                    withAnimation(.easeInOut(duration: 0.18)) {
-                                        showsZeroBalanceAssets.toggle()
-                                    }
-                                },
-                                onAddAsset: {
-                                    dismissKeyboard()
-                                    presentAddAssetItemEditor()
-                                }
-                            )
-                            .padding(.bottom, 2)
-
-                            RecordSnapshotSections(
-                                layout: layout,
-                                onboardingActiveAnchorID: onboardingActiveAnchorID,
-                                amountInputs: $amountInputs,
-                                quantityInputs: $quantityInputs,
-                                unitPriceInputs: $unitPriceInputs,
-                                focusedField: $focusedField,
-                                inlineEditingField: inlineEditingField,
-                                onBeginInlineEdit: beginInlineEditing,
-                                onEdit: { item in
-                                    dismissKeyboard()
-                                    presentAssetItemEditor(item)
-                                },
-                                onEditValue: { item in
-                                    presentQuickEdit(for: item)
-                                },
-                                showsZeroBalanceAssets: showsZeroBalanceAssets
-                            )
-
-                        } else if isPreparingInitialSnapshot || !didPrepare || currentSnapshotValue != nil {
-                            LoadingStateCard(title: AppLocalization.string("记录加载中"))
-                        } else {
-                            EmptyStateCard(
-                                title: AppLocalization.string("暂无记录"),
-                                systemImage: "calendar.badge.plus"
-                            )
-                        }
-
-                        Color.clear
-                            .frame(height: TabScrollLayout.keyboardDismissSpacer)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
+                List {
+                    if let currentSnapshot = currentSnapshotValue, let layout {
+                        RecordPageHero(
+                            snapshot: currentSnapshot,
+                            totalAssets: layout.displayedTotalAssets,
+                            netAssets: layout.displayedNetAssets,
+                            totalLiabilities: layout.displayedTotalLiabilities,
+                            showsZeroBalanceAssets: showsZeroBalanceAssets,
+                            onToggleZeroBalanceAssets: {
                                 dismissKeyboard()
+                                withAnimation(.easeInOut(duration: 0.18)) {
+                                    showsZeroBalanceAssets.toggle()
+                                }
+                            },
+                            onAddAsset: {
+                                dismissKeyboard()
+                                presentAddAssetItemEditor()
                             }
+                        )
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 14, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+
+                        RecordSnapshotSections(
+                            layout: layout,
+                            onboardingActiveAnchorID: onboardingActiveAnchorID,
+                            amountInputs: $amountInputs,
+                            quantityInputs: $quantityInputs,
+                            unitPriceInputs: $unitPriceInputs,
+                            focusedField: $focusedField,
+                            inlineEditingField: inlineEditingField,
+                            onBeginInlineEdit: beginInlineEditing,
+                            onEdit: { item in
+                                dismissKeyboard()
+                                presentAssetItemEditor(item)
+                            },
+                            onEditValue: { item in
+                                presentQuickEdit(for: item)
+                            },
+                            onDelete: requestAssetItemDeletion,
+                            showsZeroBalanceAssets: showsZeroBalanceAssets,
+                            marketLogoRevision: marketLogoRevision
+                        )
+                    } else if isPreparingInitialSnapshot || !didPrepare || currentSnapshotValue != nil {
+                        LoadingStateCard(title: AppLocalization.string("记录加载中"))
+                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    } else {
+                        EmptyStateCard(
+                            title: AppLocalization.string("暂无记录"),
+                            systemImage: "calendar.badge.plus"
+                        )
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 18)
-                    .padding(.bottom, TabScrollLayout.bottomPadding)
+
+                    Color.clear
+                        .frame(height: TabScrollLayout.keyboardDismissSpacer)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            dismissKeyboard()
+                        }
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
                 .scrollDismissesKeyboard(.never)
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -321,11 +334,12 @@ struct SnapshotListView: View {
                 }
             }
         }
+        .toolbar(quickEditingAssetItem == nil ? .visible : .hidden, for: .tabBar)
         .sheet(isPresented: $showsAddAssetItemSheet, onDismiss: finishAssetEditorDraft) {
-            AddAssetItemSheet(marketStore: marketStore)
+            AssetItemEditorSheet(snapshot: currentSnapshot, marketStore: marketStore)
         }
         .sheet(item: $editingAssetItem, onDismiss: finishAssetEditorDraft) { item in
-            EditAssetItemSheet(item: item, snapshot: currentSnapshot, marketStore: marketStore)
+            AssetItemEditorSheet(snapshot: currentSnapshot, marketStore: marketStore, editingItem: item)
         }
         .overlay {
             #if DEBUG
@@ -346,26 +360,30 @@ struct SnapshotListView: View {
                             quickEditingAssetItem = nil
                         }
 
-                    QuickRecordValueSheet(
-                        item: item,
-                        snapshot: currentSnapshot,
-                        marketStore: marketStore,
-                        onCancel: {
-                            dismissKeyboard()
-                            finishQuickEditDraft()
-                            quickEditingAssetItem = nil
-                        },
-                        onSaved: {
-                            if let snapshot = currentSnapshot {
-                                hydrateInputs(for: item, from: snapshot)
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 0)
+
+                        QuickRecordValueSheet(
+                            item: item,
+                            snapshot: currentSnapshot,
+                            marketStore: marketStore,
+                            onCancel: {
+                                dismissKeyboard()
+                                finishQuickEditDraft()
+                                quickEditingAssetItem = nil
+                            },
+                            onSaved: {
+                                if let snapshot = currentSnapshot {
+                                    hydrateInputs(for: item, from: snapshot)
+                                }
+                                dismissKeyboard()
+                                finishQuickEditDraft()
+                                quickEditingAssetItem = nil
                             }
-                            dismissKeyboard()
-                            finishQuickEditDraft()
-                            quickEditingAssetItem = nil
-                        }
-                    )
-                    .padding(.horizontal, 24)
-                    .transition(.scale(scale: 0.94).combined(with: .opacity))
+                        )
+                    }
+                    .ignoresSafeArea(edges: .bottom)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 .zIndex(10)
             }
@@ -398,6 +416,9 @@ struct SnapshotListView: View {
             await prepareSnapshotIfNeeded()
             guard !Task.isCancelled, isActive else { return }
             refreshCachedListLayout()
+            await marketStore.refreshAssetCatalogIfNeeded()
+            guard !Task.isCancelled, isActive else { return }
+            marketLogoRevision &+= 1
             #if DEBUG
             await ensureDebugAutoPricedItemIfNeeded()
             if ProcessInfo.processInfo.arguments.contains("-openFirstAutoPricedQuickEdit"),
@@ -460,6 +481,34 @@ struct SnapshotListView: View {
             Button(AppLocalization.string("知道了"), role: .cancel) {}
         } message: {
             Text(persistenceErrorMessage ?? AppLocalization.string("请稍后再试"))
+        }
+        .alert(
+            AppLocalization.string("确认删除资产？"),
+            isPresented: Binding(
+                get: { pendingDeletionAssetItem != nil },
+                set: { if !$0 { pendingDeletionAssetItem = nil } }
+            ),
+            presenting: pendingDeletionAssetItem
+        ) { item in
+            Button(AppLocalization.string("取消"), role: .cancel) {
+                pendingDeletionAssetItem = nil
+            }
+            Button(AppLocalization.string("删除"), role: .destructive) {
+                deleteAssetItem(item)
+            }
+        } message: { item in
+            Text(AppLocalization.format(
+                "将删除“%@”及其所有历史记录，此操作无法撤销。",
+                item.name
+            ))
+        }
+        .alert(AppLocalization.string("删除失败"), isPresented: Binding(
+            get: { assetDeletionErrorMessage != nil },
+            set: { if !$0 { assetDeletionErrorMessage = nil } }
+        )) {
+            Button(AppLocalization.string("知道了"), role: .cancel) {}
+        } message: {
+            Text(assetDeletionErrorMessage ?? AppLocalization.string("请稍后再试"))
         }
     }
 
@@ -544,6 +593,53 @@ struct SnapshotListView: View {
     private func presentAssetItemEditor(_ item: AssetItem) {
         guard beginAssetEditorDraft() else { return }
         editingAssetItem = item
+    }
+
+    @MainActor
+    private func requestAssetItemDeletion(_ item: AssetItem) {
+        dismissKeyboard()
+        pendingDeletionAssetItem = item
+    }
+
+    @MainActor
+    private func deleteAssetItem(_ item: AssetItem) {
+        let itemID = item.id
+        pendingDeletionAssetItem = nil
+        pendingPersistTasks[itemID]?.cancel()
+        pendingPersistTasks[itemID] = nil
+        pendingPersistDrafts[itemID] = nil
+        persistGenerationByItemID[itemID] = nil
+
+        let writeID = ModelContextMutationBarrier.shared.beginDeferredWrite()
+        Task { @MainActor in
+            defer { ModelContextMutationBarrier.shared.finishDeferredWrite(writeID) }
+            do {
+                try await ModelContextMutationBarrier.shared.waitUntilWriteIsAllowed(writeID)
+
+                var descriptor = FetchDescriptor<AssetItem>(
+                    predicate: #Predicate<AssetItem> { candidate in
+                        candidate.id == itemID
+                    }
+                )
+                descriptor.fetchLimit = 1
+                guard let storedItem = try modelContext.fetch(descriptor).first else { return }
+
+                try AssetItemService.deleteItem(storedItem, in: modelContext)
+
+                amountInputs[itemID] = nil
+                quantityInputs[itemID] = nil
+                unitPriceInputs[itemID] = nil
+                cachedItemsByID[itemID] = nil
+                itemsByIDCacheToken = ""
+                refreshCachedListLayout()
+            } catch is CancellationError {
+                return
+            } catch {
+                modelContext.rollback()
+                assetDeletionErrorMessage = AppLocalization.string("请稍后再试")
+                print("[AssetTimeMachine] delete item from record row failed: \(error)")
+            }
+        }
     }
 
     @MainActor
@@ -919,28 +1015,6 @@ struct RecordHeroMetric: View {
     }
 }
 
-struct RecordHeroActionChip: View {
-    let systemImage: String
-    let title: String
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: systemImage)
-                .font(AppTypography.chipIcon)
-            Text(title)
-                .font(AppTypography.chip)
-        }
-        .foregroundStyle(AssetTheme.textPrimary)
-        .padding(.horizontal, 11)
-        .padding(.vertical, 6.5)
-        .background(AssetTheme.overlaySoft.opacity(0.62), in: Capsule())
-        .overlay(
-            Capsule()
-                .stroke(AssetTheme.border.opacity(0.34), lineWidth: 1)
-        )
-    }
-}
-
 struct RecordSnapshotSections: View {
     let layout: SnapshotListLayout
     let onboardingActiveAnchorID: OnboardingAnchorID?
@@ -952,7 +1026,9 @@ struct RecordSnapshotSections: View {
     let onBeginInlineEdit: (RecordInputField) -> Void
     let onEdit: (AssetItem) -> Void
     let onEditValue: (AssetItem) -> Void
+    var onDelete: ((AssetItem) -> Void)? = nil
     var showsZeroBalanceAssets: Bool = true
+    var marketLogoRevision: Int = 0
     var isReadOnly: Bool = false
     var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
 
@@ -964,10 +1040,11 @@ struct RecordSnapshotSections: View {
     }
 
     var body: some View {
+        let _ = marketLogoRevision
         ForEach(layout.nonLiabilityCategoryItems) { categoryItems in
             let items = visibleItems(in: categoryItems.items)
             if !items.isEmpty {
-                RecordCategoryCard(
+                RecordLedgerSection(
                     category: categoryItems.category,
                     items: items,
                     snapshotEntriesByItemID: layout.displayEntriesByItemID,
@@ -981,6 +1058,7 @@ struct RecordSnapshotSections: View {
                     onBeginInlineEdit: onBeginInlineEdit,
                     onEdit: onEdit,
                     onEditValue: onEditValue,
+                    onDelete: onDelete,
                     isReadOnly: isReadOnly,
                     onReadOnlyEdit: onReadOnlyEdit
                 )
@@ -990,17 +1068,21 @@ struct RecordSnapshotSections: View {
         ForEach(layout.liabilityCategoryItems) { categoryItems in
             let items = visibleItems(in: categoryItems.items)
             if !items.isEmpty {
-                LiabilityCategorySection(
+                RecordLedgerSection(
                     category: categoryItems.category,
                     items: items,
                     snapshotEntriesByItemID: layout.displayEntriesByItemID,
+                    onboardingInputItemID: nil,
+                    onboardingActiveAnchorID: onboardingActiveAnchorID,
                     amountInputs: $amountInputs,
                     quantityInputs: $quantityInputs,
+                    unitPriceInputs: $unitPriceInputs,
                     focusedField: $focusedField,
                     inlineEditingField: inlineEditingField,
                     onBeginInlineEdit: onBeginInlineEdit,
                     onEdit: onEdit,
                     onEditValue: onEditValue,
+                    onDelete: onDelete,
                     isReadOnly: isReadOnly,
                     onReadOnlyEdit: onReadOnlyEdit
                 )
@@ -1040,39 +1122,22 @@ struct RecordPageHero: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .center, spacing: 12) {
-                HStack(spacing: 8) {
-                    Text(AppLocalization.string("总资产"))
-                        .font(AppTypography.fieldLabel)
-                        .tracking(0.2)
-                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.94))
-
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                colors: [AssetTheme.goldSoft.opacity(0.52), AssetTheme.border.opacity(0.08)],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: 28, height: 1)
-                }
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 14) {
+                Text(AppLocalization.string("记录"))
+                    .font(.system(size: 22, weight: .semibold, design: .default))
+                    .foregroundStyle(AssetTheme.textPrimary)
 
                 Spacer(minLength: 12)
 
                 if showsActionChips {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 4) {
                         Button(action: onToggleZeroBalanceAssets) {
                             Image(systemName: showsZeroBalanceAssets ? "eye" : "eye.slash")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.system(size: 14, weight: .medium))
                                 .foregroundStyle(showsZeroBalanceAssets ? AssetTheme.goldSoft : AssetTheme.textSecondary)
-                                .frame(width: 32, height: 32)
-                                .background(AssetTheme.overlaySoft.opacity(0.62), in: Circle())
-                                .overlay(
-                                    Circle()
-                                        .stroke(AssetTheme.border.opacity(0.34), lineWidth: 1)
-                                )
+                                .frame(width: 36, height: 36)
+                                .contentShape(Circle())
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(AppLocalization.string(
@@ -1082,24 +1147,33 @@ struct RecordPageHero: View {
                         NavigationLink {
                             SnapshotArchiveView()
                         } label: {
-                            RecordHeroActionChip(
-                                systemImage: "clock.arrow.circlepath",
-                                title: AppLocalization.string("历史记录")
-                            )
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(AssetTheme.goldSoft)
+                                .frame(width: 36, height: 36)
+                                .contentShape(Circle())
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel(AppLocalization.string("历史记录"))
 
                         Button(action: onAddAsset) {
-                            RecordHeroActionChip(
-                                systemImage: "plus",
-                                title: AppLocalization.string("新增资产")
-                            )
+                            Image(systemName: "plus")
+                                .font(.system(size: 17, weight: .medium))
+                                .foregroundStyle(AssetTheme.goldSoft)
+                                .frame(width: 36, height: 36)
+                                .contentShape(Circle())
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel(AppLocalization.string("新增资产"))
                         .onboardingAnchor(.recordsAddAsset)
                     }
                 }
             }
+
+            Text(AppLocalization.string("总资产"))
+                .font(AppTypography.fieldLabel)
+                .tracking(0.2)
+                .foregroundStyle(AssetTheme.textSecondary.opacity(0.92))
 
             totalAssetText
                 .foregroundStyle(
@@ -1114,22 +1188,27 @@ struct RecordPageHero: View {
                 .monospacedDigit()
                 .onboardingAnchor(.recordsTotal)
 
-            HStack(alignment: .bottom, spacing: 12) {
-                Text(snapshot.date.recordDateString)
-                    .font(AppTypography.chartLegendMedium)
-                    .foregroundStyle(AssetTheme.textSecondary.opacity(0.9))
+            HStack(alignment: .top, spacing: 12) {
+                RecordHeroMetric(
+                    title: AppLocalization.string("净资产"),
+                    value: netAssets.currencyString(),
+                    valueColor: netAssetColor
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                Spacer(minLength: 12)
+                RecordHeroMetric(
+                    title: AppLocalization.string("负债"),
+                    value: totalLiabilities.currencyString(),
+                    valueColor: AssetTheme.negative.opacity(0.94)
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                HStack(spacing: 14) {
-                    RecordHeroMetric(title: AppLocalization.string("净资产"), value: netAssets.currencyString(), valueColor: netAssetColor)
-
-                    Rectangle()
-                        .fill(AssetTheme.border.opacity(0.18))
-                        .frame(width: 1, height: 24)
-
-                    RecordHeroMetric(title: AppLocalization.string("负债"), value: totalLiabilities.currencyString(), valueColor: AssetTheme.negative.opacity(0.92))
-                }
+                RecordHeroMetric(
+                    title: AppLocalization.string("日期"),
+                    value: snapshot.date.recordDateString,
+                    valueColor: AssetTheme.textPrimary
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             Rectangle()
@@ -1141,10 +1220,9 @@ struct RecordPageHero: View {
                     )
                 )
                 .frame(height: 1)
-                .padding(.top, 4)
+                .padding(.top, 6)
         }
-        .padding(.top, 2)
-        .padding(.bottom, 4)
+        .padding(.bottom, 2)
     }
 }
 
@@ -1153,11 +1231,29 @@ struct AssetItemGlyph: View {
     var accent: Color = AssetTheme.goldSoft
     var size: CGFloat = 11
 
+    private var resolvedIconKey: String {
+        AssetItemService.resolvedIconKey(for: item)
+    }
+
+    private var marketAssetSectionID: String {
+        let parts = resolvedIconKey.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+        return parts.count == 3 ? parts[1] : "other"
+    }
+
     var body: some View {
-        Image(systemName: AssetItemService.displaySymbolName(for: item))
-            .font(.system(size: size, weight: .medium))
-            .foregroundStyle(accent)
-            .frame(width: size + 3, height: size + 3)
+        if let symbol = item.marketAssetSymbol, resolvedIconKey.hasPrefix("market_asset|") {
+            MarketAssetLogoView(
+                symbol: symbol,
+                sectionID: marketAssetSectionID,
+                title: item.name,
+                size: size + 7
+            )
+        } else {
+            Image(systemName: AssetItemService.displaySymbolName(for: item))
+                .font(.system(size: size, weight: .medium))
+                .foregroundStyle(accent)
+                .frame(width: size + 3, height: size + 3)
+        }
     }
 }
 
@@ -1167,8 +1263,17 @@ struct RecordEntryGlyph: View {
     var glyphSize: CGFloat = 10
 
     var body: some View {
-        AssetItemGlyph(item: item, accent: tint, size: glyphSize)
-            .frame(width: 16, height: 18, alignment: .center)
+        if item.marketAssetSymbol != nil {
+            AssetItemGlyph(item: item, accent: tint, size: 16)
+                .frame(width: 32, height: 32)
+        } else {
+            ZStack {
+                Circle()
+                    .fill(tint.opacity(0.12))
+                AssetItemGlyph(item: item, accent: tint, size: 13)
+            }
+            .frame(width: 32, height: 32)
+        }
     }
 }
 
@@ -1176,15 +1281,19 @@ struct RecordSectionHeader: View {
     let title: String
     let amount: String
     var amountColor: Color = AssetTheme.textPrimary
+    var accent: Color = AssetTheme.goldSoft
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
+        HStack(alignment: .center, spacing: 10) {
             Text(AppLocalization.string(title))
-                .font(AppTypography.meta)
-                .foregroundStyle(AssetTheme.textSecondary.opacity(0.94))
-                .lineLimit(1)
+                .font(AppTypography.blockTitle)
+                .foregroundStyle(accent)
+                .lineLimit(2)
 
-            Spacer(minLength: 10)
+            Rectangle()
+                .fill(accent.opacity(0.34))
+                .frame(maxWidth: .infinity)
+                .frame(height: 1)
 
             Text(amount)
                 .font(AppTypography.bodyStrong)
@@ -1196,20 +1305,7 @@ struct RecordSectionHeader: View {
     }
 }
 
-struct RecordCategoryCard: View {
-    private let inputWidth: CGFloat = 74
-
-    private enum InputBlock: Identifiable {
-        case compact([AssetItem])
-
-        var id: String {
-            switch self {
-            case let .compact(items):
-                return "compact-\(items.map(\.id.uuidString).joined(separator: "-"))"
-            }
-        }
-    }
-
+struct RecordLedgerSection: View {
     let category: AssetCategory
     let items: [AssetItem]
     let snapshotEntriesByItemID: [UUID: AssetEntry]
@@ -1223,161 +1319,109 @@ struct RecordCategoryCard: View {
     let onBeginInlineEdit: (RecordInputField) -> Void
     let onEdit: (AssetItem) -> Void
     let onEditValue: (AssetItem) -> Void
+    var onDelete: ((AssetItem) -> Void)? = nil
     var isReadOnly: Bool = false
     var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
     @State private var draggedItemID: UUID?
 
-    private var categoryTotal: Double {
-        items.reduce(0) { partialResult, item in
-            partialResult + (snapshotEntry(for: item)?.resolvedAmount ?? 0)
+    private var accent: Color {
+        switch category.group {
+        case .financial: AssetTheme.positive
+        case .physical: AssetTheme.accentBlue
+        case .liability: AssetTheme.negative
         }
     }
 
-    private func snapshotEntry(for item: AssetItem) -> AssetEntry? {
-        snapshotEntriesByItemID[item.id]
-    }
-
-    private var inputBlocks: [InputBlock] {
-        items.isEmpty ? [] : [.compact(items)]
+    private var categoryTotal: Double {
+        items.reduce(0) { result, item in
+            result + (snapshotEntriesByItemID[item.id]?.resolvedAmount ?? 0)
+        }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            RecordSectionHeader(
-                title: category.name,
-                amount: categoryTotal.currencyString(),
-                amountColor: AssetTheme.textPrimary
-            )
-
-            VStack(spacing: 10) {
-                ForEach(inputBlocks) { block in
-                    switch block {
-                    case let .compact(compactItems):
-                        RecordMatrixSurface {
-                            RecordItemMatrix(items: compactItems) { item in
-                                ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID, allowsReorder: !isReadOnly) {
-                                    AssetEntryCompactCard(
-                                        item: item,
-                                        snapshotEntry: snapshotEntry(for: item),
-                                        amountText: Binding(
-                                            get: { amountInputs[item.id] ?? "" },
-                                            set: { newValue in
-                                                amountInputs[item.id] = newValue
-                                            }
-                                        ),
-                                        quantityText: Binding(
-                                            get: { quantityInputs[item.id] ?? "" },
-                                            set: { newValue in
-                                                quantityInputs[item.id] = newValue
-                                            }
-                                        ),
-                                        focusedField: $focusedField,
-                                        inlineEditingField: inlineEditingField,
-                                        onBeginInlineEdit: onBeginInlineEdit,
-                                        inputWidth: inputWidth,
-                                        isOnboardingTarget: item.id == onboardingInputItemID,
-                                        showsOnboardingInputPreview: onboardingActiveAnchorID == .recordsFirstInput && item.id == onboardingInputItemID,
-                                        onEdit: {
-                                            onEdit(item)
-                                        },
-                                        onEditValue: {
-                                            onEditValue(item)
-                                        },
-                                        isReadOnly: isReadOnly,
-                                        onReadOnlyEdit: onReadOnlyEdit
-                                    )
-                                }
-                            }
+        Section {
+            ForEach(items) { item in
+                ReorderableRecordCell(
+                    category: category,
+                    item: item,
+                    draggedItemID: $draggedItemID,
+                    allowsReorder: !isReadOnly
+                ) {
+                    RecordLedgerRow(
+                        item: item,
+                        snapshotEntry: snapshotEntriesByItemID[item.id],
+                        amountText: Binding(
+                            get: { amountInputs[item.id] ?? "" },
+                            set: { amountInputs[item.id] = $0 }
+                        ),
+                        quantityText: Binding(
+                            get: { quantityInputs[item.id] ?? "" },
+                            set: { quantityInputs[item.id] = $0 }
+                        ),
+                        unitPriceText: Binding(
+                            get: { unitPriceInputs[item.id] ?? "" },
+                            set: { unitPriceInputs[item.id] = $0 }
+                        ),
+                        focusedField: $focusedField,
+                        inlineEditingField: inlineEditingField,
+                        onBeginInlineEdit: onBeginInlineEdit,
+                        accent: accent,
+                        isOnboardingTarget: item.id == onboardingInputItemID,
+                        showsOnboardingInputPreview: onboardingActiveAnchorID == .recordsFirstInput
+                            && item.id == onboardingInputItemID,
+                        onEdit: { onEdit(item) },
+                        onEditValue: { onEditValue(item) },
+                        isReadOnly: isReadOnly,
+                        onReadOnlyEdit: onReadOnlyEdit
+                    )
+                }
+                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                .listRowBackground(Color.clear)
+                .listRowSeparatorTint(AssetTheme.border.opacity(0.38))
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    if !isReadOnly, let onDelete {
+                        Button(role: .destructive) {
+                            onDelete(item)
+                        } label: {
+                            Label(AppLocalization.string("删除"), systemImage: "trash")
                         }
+
+                        Button {
+                            onEdit(item)
+                        } label: {
+                            Label(AppLocalization.string("编辑"), systemImage: "pencil")
+                        }
+                        .tint(AssetTheme.accentBlue)
                     }
                 }
             }
-        }
-    }
-}
-
-struct LiabilityCategorySection: View {
-    private let inputWidth: CGFloat = 74
-
-    let category: AssetCategory
-    let items: [AssetItem]
-    let snapshotEntriesByItemID: [UUID: AssetEntry]
-    @Binding var amountInputs: [UUID: String]
-    @Binding var quantityInputs: [UUID: String]
-    @FocusState.Binding var focusedField: RecordInputField?
-    let inlineEditingField: RecordInputField?
-    let onBeginInlineEdit: (RecordInputField) -> Void
-    let onEdit: (AssetItem) -> Void
-    let onEditValue: (AssetItem) -> Void
-    var isReadOnly: Bool = false
-    var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
-    @State private var draggedItemID: UUID?
-
-    private var categoryTotal: Double {
-        items.reduce(0) { partialResult, item in
-            partialResult + (snapshotEntry(for: item)?.resolvedAmount ?? 0)
-        }
-    }
-
-    private func snapshotEntry(for item: AssetItem) -> AssetEntry? {
-        snapshotEntriesByItemID[item.id]
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        } header: {
             RecordSectionHeader(
                 title: category.name,
                 amount: categoryTotal.currencyString(),
-                amountColor: AssetTheme.negative.opacity(0.94)
+                amountColor: category.group == .liability ? AssetTheme.negative : AssetTheme.textPrimary,
+                accent: accent
             )
-
-            RecordMatrixSurface {
-                RecordItemMatrix(items: items) { item in
-                    ReorderableRecordCell(category: category, item: item, draggedItemID: $draggedItemID, allowsReorder: !isReadOnly) {
-                        LiabilityEntryCard(
-                            item: item,
-                            snapshotEntry: snapshotEntry(for: item),
-                            amountText: Binding(
-                                get: { amountInputs[item.id] ?? "" },
-                                set: { newValue in
-                                    amountInputs[item.id] = newValue
-                                }
-                            ),
-                            quantityText: Binding(
-                                get: { quantityInputs[item.id] ?? "" },
-                                set: { newValue in
-                                    quantityInputs[item.id] = newValue
-                                }
-                            ),
-                            focusedField: $focusedField,
-                            inlineEditingField: inlineEditingField,
-                            onBeginInlineEdit: onBeginInlineEdit,
-                            inputWidth: inputWidth,
-                            onEdit: {
-                                onEdit(item)
-                            },
-                            onEditValue: {
-                                onEditValue(item)
-                            },
-                            isReadOnly: isReadOnly,
-                            onReadOnlyEdit: onReadOnlyEdit
-                        )
-                    }
-                }
-            }
+            .textCase(nil)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
         }
+        .listSectionSpacing(8)
     }
 }
 
-struct LiabilityEntryCard: View {
+struct RecordLedgerRow: View {
     let item: AssetItem
     let snapshotEntry: AssetEntry?
     @Binding var amountText: String
     @Binding var quantityText: String
+    @Binding var unitPriceText: String
     @FocusState.Binding var focusedField: RecordInputField?
     let inlineEditingField: RecordInputField?
     let onBeginInlineEdit: (RecordInputField) -> Void
-    let inputWidth: CGFloat
+    let accent: Color
+    let isOnboardingTarget: Bool
+    let showsOnboardingInputPreview: Bool
     let onEdit: () -> Void
     let onEditValue: () -> Void
     var isReadOnly: Bool = false
@@ -1391,262 +1435,141 @@ struct LiabilityEntryCard: View {
         !isReadOnly && inlineEditingField == activeField
     }
 
+    private var resolvedAmount: Double? {
+        switch item.valuationMethod {
+        case .directAmount:
+            return normalizedNumber(from: amountText) ?? snapshotEntry?.amount
+        case .quantityAndUnitPrice:
+            guard let quantity = normalizedNumber(from: quantityText) ?? snapshotEntry?.quantity,
+                  let unitPrice = normalizedNumber(from: unitPriceText) ?? snapshotEntry?.unitPrice else {
+                return nil
+            }
+            return quantity * unitPrice
+        }
+    }
+
+    private var quantityDisplayText: String? {
+        guard item.valuationMethod == .quantityAndUnitPrice else { return nil }
+        let value = normalizedNumber(from: quantityText) ?? snapshotEntry?.quantity
+        let number = value?.plainNumberString() ?? "—"
+        guard let unit = item.persistedQuantityUnitTitle, !unit.isEmpty else { return number }
+        return "\(number) \(unit)"
+    }
+
     private var hasDisplayValue: Bool {
-        displayValue != "--"
+        switch item.valuationMethod {
+        case .directAmount:
+            resolvedAmount != nil
+        case .quantityAndUnitPrice:
+            (normalizedNumber(from: quantityText) ?? snapshotEntry?.quantity) != nil
+        }
     }
 
     var body: some View {
-        RecordInputCard {
-            AdaptiveRecordEntryRow {
-                Button {
-                    if isReadOnly, let entry = snapshotEntry {
-                        onReadOnlyEdit?(entry)
-                    } else {
-                        onEdit()
-                    }
-                } label: {
-                    HStack(alignment: .top, spacing: 6) {
-                        RecordEntryGlyph(item: item, tint: hasDisplayValue ? AssetTheme.negative : AssetTheme.negative.opacity(0.72))
+        HStack(alignment: .center, spacing: 10) {
+            Button(action: handleNameTap) {
+                HStack(alignment: .center, spacing: 10) {
+                    RecordEntryGlyph(
+                        item: item,
+                        tint: hasDisplayValue ? accent : AssetTheme.textSecondary,
+                        glyphSize: 13
+                    )
 
-                        Text(AppLocalization.string(item.name))
-                            .font(AppTypography.chartLegendMedium)
-                            .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.86)
-                            .allowsTightening(true)
-                    }
-                    .contentShape(Rectangle())
+                    Text(AppLocalization.string(item.name))
+                        .font(AppTypography.body)
+                        .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .buttonStyle(.plain)
-            } trailing: {
-                RecordInlineValueSlot(
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .layoutPriority(1)
+
+            valueControl
+                .onboardingAnchorIf(isOnboardingTarget, .recordsFirstInput)
+        }
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+        .animation(nil, value: isEditing)
+    }
+
+    @ViewBuilder
+    private var valueControl: some View {
+        if isEditing || showsOnboardingInputPreview {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                ATMInputField(
                     text: item.valuationMethod == .directAmount ? $amountText : $quantityText,
-                    displayValue: displayValue,
-                    placeholder: item.valuationMethod == .directAmount ? "0" : item.compactRecordPlaceholder,
+                    placeholder: "0",
+                    width: 116,
                     focusedField: $focusedField,
                     focusValue: activeField,
-                    isEditing: isEditing,
-                    width: inputWidth,
-                    onTap: {
-                        if isReadOnly, let entry = snapshotEntry {
-                            onReadOnlyEdit?(entry)
-                        } else if item.valuationMethod == .directAmount || item.marketAssetSymbol == nil {
-                            onBeginInlineEdit(activeField)
-                        } else {
-                            onEditValue()
-                        }
-                    },
-                    height: 32,
-                    backgroundOpacity: 0.54,
-                    strokeOpacity: 0.18,
-                    hasDisplayValue: hasDisplayValue
+                    centered: false,
+                    fontSize: 15.5,
+                    fontWeight: .semibold,
+                    height: 34,
+                    backgroundOpacity: 0.035,
+                    strokeOpacity: 0.12
                 )
-            }
-        }
-    }
+                .allowsHitTesting(isEditing)
 
-    private var displayValue: String {
-        if item.valuationMethod == .directAmount {
-            if !amountText.isEmpty { return amountText }
-            if let latestAmount = snapshotEntry?.amount {
-                return latestAmount.plainNumberString()
+                if item.valuationMethod == .quantityAndUnitPrice,
+                   let unit = item.persistedQuantityUnitTitle,
+                   !unit.isEmpty {
+                    Text(unit)
+                        .font(AppTypography.caption)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                }
             }
         } else {
-            if !quantityText.isEmpty { return quantityText }
-            if let latestQuantity = snapshotEntry?.quantity {
-                return latestQuantity.plainNumberString()
-            }
-        }
-        return "--"
-    }
-}
+            Button(action: handleValueTap) {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(resolvedAmount?.currencyString() ?? "—")
+                        .font(AppTypography.bodyStrong)
+                        .monospacedDigit()
+                        .foregroundStyle(item.category?.group == .liability ? AssetTheme.negative : AssetTheme.textPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
 
-struct RecordMatrixSurface<Content: View>: View {
-    @ViewBuilder var content: Content
-
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-
-    var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
-
-        VStack(spacing: 0) {
-            content
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            shape
-                .fill(
-                    LinearGradient(
-                        colors: [AssetTheme.surface.opacity(0.24), AssetTheme.background.opacity(0.92)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
-        .overlay(
-            shape
-                .stroke(
-                    LinearGradient(
-                        colors: [Color.white.opacity(0.06), AssetTheme.goldSoft.opacity(0.08), AssetTheme.border.opacity(0.2)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-        )
-        .shadow(color: .black.opacity(0.16), radius: 18, y: 8)
-        .clipShape(shape)
-    }
-}
-
-private struct RecordItemLayoutRow: Identifiable {
-    let leading: AssetItem
-    let trailing: AssetItem?
-    let spansFullWidth: Bool
-
-    var id: String {
-        if spansFullWidth {
-            return "full-\(leading.id.uuidString)"
-        }
-        return "pair-\(leading.id.uuidString)-\(trailing?.id.uuidString ?? "empty")"
-    }
-}
-
-private enum RecordItemLayoutPolicy {
-    private static let compactNameFont = UIFont.systemFont(ofSize: 11, weight: .regular)
-    private static let compactNameWidth: CGFloat = 62
-
-    static func rows(for items: [AssetItem]) -> [RecordItemLayoutRow] {
-        var rows: [RecordItemLayoutRow] = []
-        var pendingCompactItem: AssetItem?
-
-        for item in items {
-            if spansFullWidth(item) {
-                if let pending = pendingCompactItem {
-                    rows.append(RecordItemLayoutRow(
-                        leading: pending,
-                        trailing: nil,
-                        spansFullWidth: false
-                    ))
-                }
-                rows.append(RecordItemLayoutRow(
-                    leading: item,
-                    trailing: nil,
-                    spansFullWidth: true
-                ))
-                pendingCompactItem = nil
-            } else if let pending = pendingCompactItem {
-                rows.append(RecordItemLayoutRow(
-                    leading: pending,
-                    trailing: item,
-                    spansFullWidth: false
-                ))
-                pendingCompactItem = nil
-            } else {
-                pendingCompactItem = item
-            }
-        }
-
-        if let pending = pendingCompactItem {
-            rows.append(RecordItemLayoutRow(
-                leading: pending,
-                trailing: nil,
-                spansFullWidth: false
-            ))
-        }
-
-        return rows
-    }
-
-    private static func spansFullWidth(_ item: AssetItem) -> Bool {
-        let title = AppLocalization.string(item.name) as NSString
-        let width = title.size(withAttributes: [.font: compactNameFont]).width
-        return width > compactNameWidth
-    }
-}
-
-private struct RecordItemMatrix<Cell: View>: View {
-    let rows: [RecordItemLayoutRow]
-    let cell: (AssetItem) -> Cell
-
-    init(items: [AssetItem], @ViewBuilder cell: @escaping (AssetItem) -> Cell) {
-        rows = RecordItemLayoutPolicy.rows(for: items)
-        self.cell = cell
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                HStack(spacing: 0) {
-                    cell(row.leading)
-                        .frame(maxWidth: .infinity)
-
-                    if !row.spansFullWidth {
-                        Rectangle()
-                            .fill(AssetTheme.border.opacity(0.34))
-                            .frame(width: 1)
-
-                        if let trailing = row.trailing {
-                            cell(trailing)
-                                .frame(maxWidth: .infinity)
-                        } else {
-                            Color.clear
-                                .frame(maxWidth: .infinity)
-                                .accessibilityHidden(true)
-                        }
+                    if let quantityDisplayText {
+                        Text(quantityDisplayText)
+                            .font(AppTypography.caption)
+                            .monospacedDigit()
+                            .foregroundStyle(AssetTheme.textSecondary)
+                            .lineLimit(1)
                     }
                 }
-
-                if index < rows.count - 1 {
-                    Rectangle()
-                        .fill(AssetTheme.border.opacity(0.34))
-                        .frame(height: 1)
-                }
+                .frame(minWidth: 112, alignment: .trailing)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
         }
     }
-}
 
-struct RecordInputCard<Content: View>: View {
-    @ViewBuilder var content: Content
-
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            content
+    private func handleNameTap() {
+        if isReadOnly, let snapshotEntry {
+            onReadOnlyEdit?(snapshotEntry)
+        } else {
+            onEdit()
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 11)
-        .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
-    }
-}
-
-struct AdaptiveRecordEntryRow<Leading: View, Trailing: View>: View {
-    let leading: Leading
-    let trailing: Trailing
-
-    init(
-        @ViewBuilder leading: () -> Leading,
-        @ViewBuilder trailing: () -> Trailing
-    ) {
-        self.leading = leading()
-        self.trailing = trailing()
     }
 
-    var body: some View {
-        HStack(alignment: .center, spacing: 8) {
-            leading
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .layoutPriority(1)
-
-            trailing
-                .fixedSize(horizontal: true, vertical: false)
+    private func handleValueTap() {
+        if isReadOnly, let snapshotEntry {
+            onReadOnlyEdit?(snapshotEntry)
+        } else if item.valuationMethod == .directAmount || item.marketAssetSymbol == nil {
+            onBeginInlineEdit(activeField)
+        } else {
+            onEditValue()
         }
+    }
+
+    private func normalizedNumber(from text: String) -> Double? {
+        let raw = text.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty, let value = Double(raw), value.isFinite else { return nil }
+        return value
     }
 }
 
@@ -1734,100 +1657,6 @@ struct RecordItemDropDelegate: DropDelegate {
     }
 }
 
-struct AssetEntryCompactCard: View {
-    let item: AssetItem
-    let snapshotEntry: AssetEntry?
-    @Binding var amountText: String
-    @Binding var quantityText: String
-    @FocusState.Binding var focusedField: RecordInputField?
-    let inlineEditingField: RecordInputField?
-    let onBeginInlineEdit: (RecordInputField) -> Void
-    let inputWidth: CGFloat
-    let isOnboardingTarget: Bool
-    let showsOnboardingInputPreview: Bool
-    let onEdit: () -> Void
-    let onEditValue: () -> Void
-    var isReadOnly: Bool = false
-    var onReadOnlyEdit: ((AssetEntry) -> Void)? = nil
-
-    private var activeField: RecordInputField {
-        item.valuationMethod == .directAmount ? .amount(item.id) : .quantity(item.id)
-    }
-
-    private var isEditing: Bool {
-        !isReadOnly && inlineEditingField == activeField
-    }
-
-    private var hasDisplayValue: Bool {
-        displayValue != "--"
-    }
-
-    var body: some View {
-        RecordInputCard {
-            AdaptiveRecordEntryRow {
-                Button {
-                    if isReadOnly, let entry = snapshotEntry {
-                        onReadOnlyEdit?(entry)
-                    } else {
-                        onEdit()
-                    }
-                } label: {
-                    HStack(alignment: .top, spacing: 6) {
-                        RecordEntryGlyph(item: item, tint: hasDisplayValue ? AssetTheme.goldSoft : AssetTheme.goldSoft.opacity(0.74))
-
-                        Text(AppLocalization.string(item.name))
-                            .font(AppTypography.chartLegendMedium)
-                            .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.86)
-                            .allowsTightening(true)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            } trailing: {
-                RecordInlineValueSlot(
-                    text: item.valuationMethod == .directAmount ? $amountText : $quantityText,
-                    displayValue: displayValue,
-                    placeholder: item.valuationMethod == .directAmount ? "0" : "0",
-                    focusedField: $focusedField,
-                    focusValue: activeField,
-                    isEditing: isEditing,
-                    showsInputPreview: showsOnboardingInputPreview,
-                    width: inputWidth,
-                    onTap: {
-                        if isReadOnly, let entry = snapshotEntry {
-                            onReadOnlyEdit?(entry)
-                        } else if item.valuationMethod == .directAmount || item.marketAssetSymbol == nil {
-                            onBeginInlineEdit(activeField)
-                        } else {
-                            onEditValue()
-                        }
-                    },
-                    height: 30,
-                    hasDisplayValue: hasDisplayValue
-                )
-                .onboardingAnchorIf(isOnboardingTarget, .recordsFirstInput)
-            }
-        }
-    }
-
-    private var displayValue: String {
-        if item.valuationMethod == .directAmount {
-            if !amountText.isEmpty { return amountText }
-            if let latestAmount = snapshotEntry?.amount {
-                return latestAmount.plainNumberString()
-            }
-        } else {
-            if !quantityText.isEmpty { return quantityText }
-            if let latestQuantity = snapshotEntry?.quantity {
-                return latestQuantity.plainNumberString()
-            }
-        }
-        return "--"
-    }
-}
-
 struct ATMInputField: View {
     @Binding var text: String
     let placeholder: String
@@ -1868,122 +1697,6 @@ struct ATMInputField: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(AssetTheme.border.opacity(strokeOpacity), lineWidth: 1)
             )
-    }
-}
-
-struct RecordInlineValueSlot: View {
-    @Binding var text: String
-    let displayValue: String
-    let placeholder: String
-    @FocusState.Binding var focusedField: RecordInputField?
-    let focusValue: RecordInputField
-    let isEditing: Bool
-    var showsInputPreview: Bool = false
-    let width: CGFloat
-    let onTap: () -> Void
-    var height: CGFloat = 30
-    var centered: Bool = true
-    var fontSize: CGFloat = 12
-    var fontWeight: Font.Weight = .medium
-    var backgroundOpacity: Double = 0.05
-    var strokeOpacity: Double = 0.16
-    var hasDisplayValue: Bool = true
-
-    private var showsField: Bool {
-        isEditing || showsInputPreview
-    }
-
-    var body: some View {
-        Group {
-            if showsField {
-                ATMInputField(
-                    text: $text,
-                    placeholder: placeholder,
-                    width: width,
-                    focusedField: $focusedField,
-                    focusValue: focusValue,
-                    centered: centered,
-                    fontSize: fontSize,
-                    fontWeight: fontWeight,
-                    height: height,
-                    backgroundOpacity: backgroundOpacity,
-                    strokeOpacity: strokeOpacity
-                )
-                .allowsHitTesting(isEditing)
-            } else {
-                Button(action: onTap) {
-                    Text(displayValue)
-                        .font(AppTypography.fieldLabel)
-                        .monospacedDigit()
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.82)
-                        .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.78))
-                        .frame(width: width, alignment: .trailing)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .frame(width: width, height: height, alignment: .trailing)
-        .animation(nil, value: showsField)
-    }
-}
-
-struct RecordInlineLabeledValueSlot: View {
-    let title: String
-    @Binding var text: String
-    let displayValue: String
-    let placeholder: String
-    @FocusState.Binding var focusedField: RecordInputField?
-    let focusValue: RecordInputField
-    let isEditing: Bool
-    var showsInputPreview: Bool = false
-    let width: CGFloat
-    let onTap: () -> Void
-    var hasDisplayValue: Bool = true
-
-    private var showsField: Bool {
-        isEditing || showsInputPreview
-    }
-
-    var body: some View {
-        Group {
-            if showsField {
-                ATMInputField(
-                    text: $text,
-                    placeholder: placeholder,
-                    width: width,
-                    focusedField: $focusedField,
-                    focusValue: focusValue,
-                    centered: true,
-                    fontSize: 12,
-                    fontWeight: .medium,
-                    height: 30,
-                    backgroundOpacity: 0.05,
-                    strokeOpacity: 0.16
-                )
-                .allowsHitTesting(isEditing)
-            } else {
-                Button(action: onTap) {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(title)
-                            .font(AppTypography.chartAxisCompact)
-                            .foregroundStyle(AssetTheme.textSecondary)
-                        Text(displayValue)
-                            .font(AppTypography.fieldLabel)
-                            .monospacedDigit()
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.82)
-                            .foregroundStyle(hasDisplayValue ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.78))
-                    }
-                    .frame(width: width, alignment: .trailing)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .frame(width: width, alignment: .trailing)
-        .animation(nil, value: showsField)
     }
 }
 
@@ -2038,156 +1751,148 @@ struct AssetIconView: View {
     }
 }
 
-struct AssetEditorForm: View {
-    @Binding var name: String
-    @Binding var selectedCategoryID: UUID?
-    @Binding var selectedMarketAssetSymbol: String?
-    @Binding var valuationMethod: ValuationMethod
-    @Binding var selectedIconName: String
-    let sortedCategories: [AssetCategory]
-    let marketAssets: [MarketAssetDescriptor]
-    let isMarketAssetLocked: Bool
+private enum AddAssetItemStep: Int {
+    case asset
+    case details
+}
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(alignment: .top, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(AppLocalization.string("名称"))
-                            .font(AppTypography.blockTitle)
-                            .foregroundStyle(AssetTheme.textPrimary)
+private struct RecordSecurityCatalogPagingState {
+    private(set) var nextPageBySection = ["etf": 2, "a_share": 2]
+    private(set) var hasMoreBySection = ["etf": false, "a_share": false]
 
-                        TextField(AppLocalization.string("示例：银行卡、房产、车辆"), text: $name)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(AssetTheme.textPrimary)
-                            .padding(.horizontal, 14)
-                            .frame(height: TabScrollLayout.keyboardDismissSpacer)
-                            .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .stroke(AssetTheme.border.opacity(0.52), lineWidth: 1)
-                            )
-                    }
+    func canLoadMore(_ sectionID: String) -> Bool {
+        hasMoreBySection[sectionID] == true
+    }
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(AppLocalization.string("归类"))
-                            .font(AppTypography.blockTitle)
-                            .foregroundStyle(AssetTheme.textPrimary)
+    func nextPage(_ sectionID: String) -> Int {
+        nextPageBySection[sectionID] ?? 2
+    }
 
-                        Picker(AppLocalization.string("归类"), selection: Binding(
-                            get: { selectedCategoryID ?? sortedCategories.first?.id },
-                            set: { selectedCategoryID = $0 }
-                        )) {
-                            ForEach(sortedCategories) { category in
-                                Text(AppLocalization.string(category.name)).tag(Optional.some(category.id))
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .frame(height: TabScrollLayout.keyboardDismissSpacer)
-                        .frame(maxWidth: .infinity)
-                        .background(AssetTheme.background.opacity(0.66), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(AssetTheme.border.opacity(0.52), lineWidth: 1)
-                        )
-                    }
-                    .frame(width: 132)
-                }
+    mutating func reset(hasMore: [String: Bool]) {
+        nextPageBySection = ["etf": 2, "a_share": 2]
+        hasMoreBySection = [
+            "etf": hasMore["etf"] == true,
+            "a_share": hasMore["a_share"] == true
+        ]
+    }
 
-                Text(AppLocalization.string("图标"))
-                    .font(AppTypography.blockTitle)
-                    .foregroundStyle(AssetTheme.textPrimary)
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(assetIconOptions) { option in
-                            Button {
-                                selectedIconName = option.key
-                            } label: {
-                                VStack(spacing: 6) {
-                                    AssetIconView(
-                                        iconKey: option.key,
-                                        fallbackSymbolName: option.symbolName,
-                                        accent: selectedIconName == option.key ? AssetTheme.gold : AssetTheme.textPrimary,
-                                        iconSize: 22,
-                                        frameSize: 34
-                                    )
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                                .fill(selectedIconName == option.key ? AssetTheme.overlayStrong : AssetTheme.overlaySubtle)
-                                        )
-                                    Text(AppLocalization.string(option.label))
-                                        .font(AppTypography.chartCaption)
-                                        .foregroundStyle(selectedIconName == option.key ? AssetTheme.goldSoft : AssetTheme.textSecondary)
-                                }
-                                .padding(.vertical, 3)
-                                .frame(width: 56)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 12) {
-                Text(AppLocalization.string("关联市场标的"))
-                    .font(AppTypography.rowTitle)
-                    .foregroundStyle(AssetTheme.textPrimary)
-
-                if isMarketAssetLocked {
-                    Text(AppLocalization.string("已有关联记录，市场标的不可修改。"))
-                        .font(AppTypography.meta)
-                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.82))
-                }
-
-                MarketAssetCatalogSelector(
-                    assets: marketAssets,
-                    selectedSymbol: $selectedMarketAssetSymbol,
-                    isLocked: isMarketAssetLocked
-                ) { asset in
-                    guard let asset else {
-                        valuationMethod = .directAmount
-                        return
-                    }
-                    if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        name = asset.displayTitle
-                    }
-                    if selectedIconName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        selectedIconName = asset.suggestedIconKey
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(AppLocalization.string("记录方式"))
-                        .font(AppTypography.captionStrong)
-                        .foregroundStyle(AssetTheme.textSecondary)
-
-                    Picker(AppLocalization.string("记录方式"), selection: $valuationMethod) {
-                        ForEach(ValuationMethod.allCases) { method in
-                            Text(method.displayName).tag(method)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                }
-            }
-        }
+    mutating func completePage(sectionID: String, hasMore: Bool) {
+        nextPageBySection[sectionID] = nextPage(sectionID) + 1
+        hasMoreBySection[sectionID] = hasMore
     }
 }
 
-struct AddAssetItemSheet: View {
+private struct AddAssetStepIndicator: View {
+    let step: AddAssetItemStep
+    let onSelectAssetStep: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Button(action: onSelectAssetStep) {
+                stepLabel(
+                    number: 1,
+                    title: AppLocalization.string("选择资产"),
+                    isActive: step == .asset,
+                    isCompleted: step == .details
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(step == .asset)
+
+            Rectangle()
+                .fill(step == .details ? AssetTheme.gold.opacity(0.72) : AssetTheme.border.opacity(0.48))
+                .frame(maxWidth: 46, maxHeight: 1)
+
+            stepLabel(
+                number: 2,
+                title: AppLocalization.string("资产详情"),
+                isActive: step == .details,
+                isCompleted: false
+            )
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func stepLabel(number: Int, title: String, isActive: Bool, isCompleted: Bool) -> some View {
+        HStack(spacing: 7) {
+            ZStack {
+                Circle()
+                    .fill(isActive || isCompleted ? AssetTheme.gold : AssetTheme.overlaySubtle)
+                if isCompleted {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(Color.black.opacity(0.76))
+                } else {
+                    Text(String(number))
+                        .font(AppTypography.captionStrong)
+                        .foregroundStyle(isActive ? Color.black.opacity(0.76) : AssetTheme.textSecondary)
+                }
+            }
+            .frame(width: 24, height: 24)
+
+            Text(title)
+                .font(AppTypography.captionStrong)
+                .foregroundStyle(isActive || isCompleted ? AssetTheme.textPrimary : AssetTheme.textSecondary)
+                .lineLimit(1)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(AppLocalization.format("步骤 %d：%@", number, title))
+    }
+}
+
+struct AssetItemEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query private var categories: [AssetCategory]
-    let marketStore: RemoteMarketStore
+    let snapshot: AssetSnapshot?
+    @ObservedObject var marketStore: RemoteMarketStore
+    let editingItem: AssetItem?
 
     @State private var name = ""
     @State private var selectedCategoryID: UUID?
     @State private var selectedMarketAssetSymbol: String?
     @State private var valuationMethod: ValuationMethod = .directAmount
     @State private var selectedIconName = ""
+    @State private var marketAssetSearchText = ""
+    @State private var isSearchingMarketAssets = false
+    @State private var marketAssetSearchMessage: String?
+    @State private var recordSecurityPaging = RecordSecurityCatalogPagingState()
+    @State private var loadingMoreSecuritySectionID: String?
     @State private var errorMessage: String?
+    @State private var step: AddAssetItemStep = .asset
+    @State private var nameWasAutofilled = false
+    @State private var hasCustomizedIcon = false
+    @State private var recordQuantityText = ""
+    @State private var recordUnitPriceText = ""
+    @State private var showsDeleteConfirmation = false
+    @State private var showsMarketChangeConfirmation = false
+
+    init(
+        snapshot: AssetSnapshot? = nil,
+        marketStore: RemoteMarketStore,
+        editingItem: AssetItem? = nil
+    ) {
+        self.snapshot = snapshot
+        self.marketStore = marketStore
+        self.editingItem = editingItem
+
+        guard let editingItem else { return }
+        let storedIconName = (editingItem.iconName ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let currentEntry = snapshot?.entries.first(where: { $0.item?.id == editingItem.id })
+        _name = State(initialValue: editingItem.name)
+        _selectedCategoryID = State(initialValue: editingItem.category?.id)
+        _selectedMarketAssetSymbol = State(initialValue: editingItem.marketAssetSymbol)
+        _valuationMethod = State(initialValue: editingItem.valuationMethod)
+        _selectedIconName = State(initialValue: storedIconName)
+        _step = State(initialValue: .details)
+        _hasCustomizedIcon = State(initialValue: !storedIconName.isEmpty && !storedIconName.hasPrefix("market_asset|"))
+        _recordQuantityText = State(initialValue: currentEntry?.quantity?.plainNumberString() ?? "")
+        _recordUnitPriceText = State(initialValue: currentEntry?.unitPrice?.plainNumberString() ?? "")
+    }
+
+    private var isEditing: Bool { editingItem != nil }
 
     private var sortedCategories: [AssetCategory] {
         categories.sorted {
@@ -2205,6 +1910,10 @@ struct AddAssetItemSheet: View {
     private var selectedCategory: AssetCategory? {
         guard let selectedCategoryID else { return sortedCategories.first }
         return sortedCategories.first(where: { $0.id == selectedCategoryID })
+    }
+
+    private var selectedMarketAsset: MarketAssetDescriptor? {
+        selectedMarketAssetSymbol.flatMap(marketStore.assetDescriptor(for:))
     }
 
     private var resolvedName: String {
@@ -2226,6 +1935,69 @@ struct AddAssetItemSheet: View {
         )
     }
 
+    private var editableName: Binding<String> {
+        Binding(
+            get: { name },
+            set: { newValue in
+                name = newValue
+                nameWasAutofilled = false
+            }
+        )
+    }
+
+    private var displayedIconSymbolName: String {
+        if let definition = AssetIconRegistry.definition(for: selectedIconName) {
+            return definition.symbolName
+        }
+        if let selectedMarketAsset,
+           selectedIconName.isEmpty || selectedIconName.hasPrefix("market_asset|") {
+            return selectedMarketAsset.assetIconName
+        }
+        return AssetIconRegistry.symbolName(for: resolvedIconName, categoryGroup: selectedCategory?.group)
+    }
+
+    private var displayedIconColor: Color {
+        if let selectedMarketAsset,
+           selectedIconName.isEmpty || selectedIconName.hasPrefix("market_asset|") {
+            return selectedMarketAsset.color
+        }
+        return AssetTheme.goldSoft
+    }
+
+    private var usesAutomaticMarketLogo: Bool {
+        selectedMarketAsset != nil
+            && (selectedIconName.isEmpty || selectedIconName.hasPrefix("market_asset|"))
+    }
+
+    private var selectedUnitTitle: String? {
+        guard let selectedMarketAsset else { return nil }
+        let unit = selectedMarketAsset.recordUnitTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !unit.isEmpty { return unit }
+        let currency = selectedMarketAsset.currency.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        return currency.isEmpty ? nil : currency
+    }
+
+    private var selectedUnitPrice: Double? {
+        if let selectedMarketAssetSymbol {
+            return marketStore.recordUnitPriceInCNY(for: selectedMarketAssetSymbol)
+        }
+        return normalizedNumber(from: recordUnitPriceText)
+    }
+
+    private var currentMarketValue: Double? {
+        guard let quantity = normalizedNumber(from: recordQuantityText),
+              let selectedUnitPrice,
+              quantity.isFinite,
+              selectedUnitPrice.isFinite else {
+            return nil
+        }
+        return quantity * selectedUnitPrice
+    }
+
+    private var primaryActionEnabled: Bool {
+        step == .asset || canSave
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -2233,16 +2005,21 @@ struct AddAssetItemSheet: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 18) {
-                        AssetEditorForm(
-                            name: $name,
-                            selectedCategoryID: $selectedCategoryID,
-                            selectedMarketAssetSymbol: $selectedMarketAssetSymbol,
-                            valuationMethod: $valuationMethod,
-                            selectedIconName: $selectedIconName,
-                            sortedCategories: sortedCategories,
-                            marketAssets: marketStore.selectableAssetCatalog,
-                            isMarketAssetLocked: false
-                        )
+                        AddAssetStepIndicator(step: step) {
+                            guard step != .asset else { return }
+                            dismissActiveKeyboard()
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                step = .asset
+                            }
+                        }
+
+                        if step == .asset {
+                            assetSelectionStep
+                                .transition(.opacity.combined(with: .move(edge: .leading)))
+                        } else {
+                            assetDetailsStep
+                                .transition(.opacity.combined(with: .move(edge: .trailing)))
+                        }
 
                         if let errorMessage {
                             Text(errorMessage)
@@ -2260,8 +2037,9 @@ struct AddAssetItemSheet: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
-                    .padding(.top, 8)
+                    .padding(.top, 0)
                     .padding(.bottom, TabScrollLayout.sheetBottomPadding)
+                    .id(step)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         dismissActiveKeyboard()
@@ -2269,6 +2047,8 @@ struct AddAssetItemSheet: View {
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
+            .navigationTitle(AppLocalization.string(isEditing ? "编辑资产类型" : "添加资产类型"))
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(AppLocalization.string("取消")) {
@@ -2277,33 +2057,418 @@ struct AddAssetItemSheet: View {
                     .foregroundStyle(AssetTheme.textSecondary)
                 }
 
-                ToolbarItem(placement: .principal) {
-                    Text(AppLocalization.string("添加资产类型"))
-                        .font(AppTypography.blockTitleBold)
-                        .foregroundStyle(AssetTheme.textPrimary)
-                }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(AppLocalization.string("保存")) {
-                        save()
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button(AppLocalization.string("完成")) {
+                        dismissActiveKeyboard()
                     }
-                    .disabled(!canSave)
-                    .foregroundStyle(canSave ? AssetTheme.gold : AssetTheme.textSecondary)
+                    .font(AppTypography.rowTitle)
+                    .foregroundStyle(AssetTheme.gold)
                 }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                primaryActionBar
             }
             .task {
                 if selectedCategoryID == nil {
                     selectedCategoryID = sortedCategories.first?.id
                 }
                 await marketStore.refreshAssetCatalogIfNeeded()
+                await marketStore.loadRecordETFAssetCatalogIfNeeded()
+                await marketStore.loadRecordAShareAssetCatalogIfNeeded()
+                await searchETFs(keyword: nil)
+            }
+            .task(id: marketAssetSearchText) {
+                let keyword = marketAssetSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !keyword.isEmpty else {
+                    marketAssetSearchMessage = nil
+                    return
+                }
+                try? await Task.sleep(for: .milliseconds(280))
+                guard !Task.isCancelled else { return }
+                await searchETFs(keyword: keyword)
             }
             .task(id: "\(selectedMarketAssetSymbol ?? "")|\(valuationMethod.rawValue)") {
                 guard valuationMethod == .quantityAndUnitPrice,
                       let selectedMarketAssetSymbol else { return }
-                async let liveRefresh: Bool = marketStore.refreshLiveData()
-                async let historyRefresh: Void = marketStore.refreshHistory(for: Set([selectedMarketAssetSymbol]))
-                _ = await (liveRefresh, historyRefresh)
+                await refreshSelectedMarketAsset(selectedMarketAssetSymbol)
             }
+            .alert(
+                AppLocalization.string("确认删除资产？"),
+                isPresented: $showsDeleteConfirmation
+            ) {
+                Button(AppLocalization.string("取消"), role: .cancel) {}
+                Button(AppLocalization.string("删除"), role: .destructive) {
+                    deleteEditingItem()
+                }
+            } message: {
+                Text(AppLocalization.format(
+                    "将删除“%@”及其所有历史记录，此操作无法撤销。",
+                    editingItem?.name ?? resolvedName
+                ))
+            }
+            .alert(
+                AppLocalization.string("更换市场标的？"),
+                isPresented: $showsMarketChangeConfirmation
+            ) {
+                Button(AppLocalization.string("取消"), role: .cancel) {}
+                Button(AppLocalization.string("继续保存")) {
+                    save()
+                }
+            } message: {
+                Text(AppLocalization.string("已有历史记录会保留原金额，但今后将按新的市场标的更新。"))
+            }
+        }
+    }
+
+    private var assetSelectionStep: some View {
+        MarketAssetCatalogSelector(
+            assets: marketStore.recordSelectableAssetCatalog,
+            selectedSymbol: $selectedMarketAssetSymbol,
+            searchText: $marketAssetSearchText,
+            isLocked: false,
+            isSearching: isSearchingMarketAssets,
+            searchMessage: marketAssetSearchMessage,
+            presentationStyle: .flat,
+            canLoadMore: { recordSecurityPaging.canLoadMore($0) },
+            isLoadingMore: { loadingMoreSecuritySectionID == $0 },
+            onLoadMore: { sectionID in
+                Task { await loadMoreRecordSecurities(sectionID: sectionID) }
+            },
+            onSelect: handleMarketAssetSelection
+        )
+    }
+
+    private var assetDetailsStep: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            selectedAssetSummary
+
+            VStack(spacing: 0) {
+                HStack(alignment: .firstTextBaseline, spacing: 16) {
+                    Text(AppLocalization.string("名称"))
+                        .font(AppTypography.rowTitle)
+                        .foregroundStyle(AssetTheme.textSecondary)
+
+                    TextField(AppLocalization.string("自定义名称"), text: editableName)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .font(AppTypography.rowTitle)
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .multilineTextAlignment(.trailing)
+                }
+                .padding(.vertical, 14)
+
+                Divider().overlay(AssetTheme.border.opacity(0.32))
+
+                Menu {
+                    ForEach(sortedCategories) { category in
+                        Button {
+                            selectedCategoryID = category.id
+                        } label: {
+                            if selectedCategoryID == category.id || (selectedCategoryID == nil && category.id == sortedCategories.first?.id) {
+                                Label(AppLocalization.string(category.name), systemImage: "checkmark")
+                            } else {
+                                Text(AppLocalization.string(category.name))
+                            }
+                        }
+                    }
+                } label: {
+                    detailValueRow(
+                        title: AppLocalization.string("归类"),
+                        value: selectedCategory.map { AppLocalization.string($0.name) } ?? "—",
+                        systemImage: "chevron.up.chevron.down"
+                    )
+                }
+
+                if let selectedUnitTitle {
+                    Divider().overlay(AssetTheme.border.opacity(0.32))
+                    detailValueRow(
+                        title: AppLocalization.string("单位"),
+                        value: selectedUnitTitle,
+                        systemImage: nil
+                    )
+                }
+
+                if valuationMethod == .quantityAndUnitPrice {
+                    Divider().overlay(AssetTheme.border.opacity(0.32))
+
+                    if selectedMarketAsset != nil {
+                        detailValueRow(
+                            title: AppLocalization.string("当前市场价"),
+                            value: selectedUnitPrice?.currencyString() ?? "—",
+                            systemImage: nil
+                        )
+
+                        Divider().overlay(AssetTheme.border.opacity(0.32))
+                    }
+
+                    HStack(alignment: .firstTextBaseline, spacing: 16) {
+                        Text(
+                            selectedUnitTitle.map { AppLocalization.format("数量（%@）", $0) }
+                                ?? AppLocalization.string("数量")
+                        )
+                        .font(AppTypography.rowTitle)
+                        .foregroundStyle(AssetTheme.textSecondary)
+
+                        Spacer(minLength: 10)
+
+                        TextField("0", text: $recordQuantityText)
+                            .keyboardType(.decimalPad)
+                            .textFieldStyle(.plain)
+                            .font(AppTypography.rowTitle)
+                            .monospacedDigit()
+                            .foregroundStyle(AssetTheme.textPrimary)
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: 160)
+                    }
+                    .padding(.vertical, 14)
+
+                    if selectedMarketAsset == nil {
+                        Divider().overlay(AssetTheme.border.opacity(0.32))
+
+                        HStack(alignment: .firstTextBaseline, spacing: 16) {
+                            Text(AppLocalization.string("单价"))
+                                .font(AppTypography.rowTitle)
+                                .foregroundStyle(AssetTheme.textSecondary)
+
+                            Spacer(minLength: 10)
+
+                            TextField(AppLocalization.string("输入单价"), text: $recordUnitPriceText)
+                                .keyboardType(.decimalPad)
+                                .textFieldStyle(.plain)
+                                .font(AppTypography.rowTitle)
+                                .monospacedDigit()
+                                .foregroundStyle(AssetTheme.textPrimary)
+                                .multilineTextAlignment(.trailing)
+                                .frame(maxWidth: 160)
+                        }
+                        .padding(.vertical, 14)
+                    }
+
+                    if let currentMarketValue {
+                        Divider().overlay(AssetTheme.border.opacity(0.32))
+                        detailValueRow(
+                            title: AppLocalization.string("当前市值"),
+                            value: currentMarketValue.currencyString(),
+                            systemImage: nil
+                        )
+                    }
+                }
+
+                Divider().overlay(AssetTheme.border.opacity(0.32))
+
+                iconMenu
+            }
+
+            if selectedMarketAsset == nil {
+                VStack(alignment: .leading, spacing: 9) {
+                    Text(AppLocalization.string("记录方式"))
+                        .font(AppTypography.captionStrong)
+                        .foregroundStyle(AssetTheme.textSecondary)
+
+                    Picker(AppLocalization.string("记录方式"), selection: $valuationMethod) {
+                        ForEach(ValuationMethod.allCases) { method in
+                            Text(method.displayName).tag(method)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+            }
+
+            if isEditing {
+                Button(role: .destructive) {
+                    dismissActiveKeyboard()
+                    showsDeleteConfirmation = true
+                } label: {
+                    Label(AppLocalization.string("删除资产"), systemImage: "trash")
+                        .font(AppTypography.rowTitle)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 13)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(AssetTheme.negative)
+            }
+        }
+    }
+
+    private var selectedAssetSummary: some View {
+        HStack(spacing: 13) {
+            if let selectedMarketAsset, usesAutomaticMarketLogo {
+                MarketAssetLogoView(asset: selectedMarketAsset, size: 42)
+            } else {
+                Image(systemName: displayedIconSymbolName)
+                    .font(.system(size: 21, weight: .semibold))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(displayedIconColor)
+                    .frame(width: 42, height: 42)
+                    .background(displayedIconColor.opacity(0.12), in: Circle())
+            }
+
+            Text(selectedMarketAsset?.displayTitle ?? AppLocalization.string("不关联市场标的"))
+                .font(AppTypography.blockTitleBold)
+                .foregroundStyle(AssetTheme.textPrimary)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button {
+                dismissActiveKeyboard()
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    step = .asset
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(AppLocalization.string("更换"))
+                    Image(systemName: "chevron.right")
+                        .font(AppTypography.chartCaption)
+                }
+                .font(AppTypography.captionStrong)
+                .foregroundStyle(AssetTheme.goldSoft)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 4)
+        .padding(.bottom, 14)
+        .overlay(alignment: .bottom) {
+            Divider().overlay(AssetTheme.border.opacity(0.32))
+        }
+    }
+
+    private var iconMenu: some View {
+        Menu {
+            Button {
+                hasCustomizedIcon = false
+                selectedIconName = selectedMarketAsset?.suggestedIconKey ?? ""
+            } label: {
+                Label(AppLocalization.string("自动"), systemImage: selectedMarketAsset?.assetIconName ?? "wand.and.stars")
+            }
+
+            Divider()
+
+            ForEach(assetIconOptions) { option in
+                Button {
+                    hasCustomizedIcon = true
+                    selectedIconName = option.key
+                } label: {
+                    Label(AppLocalization.string(option.label), systemImage: option.symbolName)
+                }
+            }
+        } label: {
+            HStack(spacing: 16) {
+                Text(AppLocalization.string("图标"))
+                    .font(AppTypography.rowTitle)
+                    .foregroundStyle(AssetTheme.textSecondary)
+
+                Spacer(minLength: 10)
+
+                if let selectedMarketAsset, usesAutomaticMarketLogo {
+                    MarketAssetLogoView(asset: selectedMarketAsset, size: 24)
+                } else {
+                    Image(systemName: displayedIconSymbolName)
+                        .font(AppTypography.rowTitle)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(displayedIconColor)
+                        .frame(width: 24, height: 24)
+                }
+
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(AppTypography.chartCaption)
+                    .foregroundStyle(AssetTheme.textSecondary)
+            }
+            .padding(.vertical, 14)
+            .contentShape(Rectangle())
+        }
+    }
+
+    private func detailValueRow(title: String, value: String, systemImage: String?) -> some View {
+        HStack(spacing: 16) {
+            Text(title)
+                .font(AppTypography.rowTitle)
+                .foregroundStyle(AssetTheme.textSecondary)
+
+            Spacer(minLength: 10)
+
+            Text(value)
+                .font(AppTypography.rowTitle)
+                .foregroundStyle(AssetTheme.textPrimary)
+                .lineLimit(2)
+                .multilineTextAlignment(.trailing)
+
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .font(AppTypography.chartCaption)
+                    .foregroundStyle(AssetTheme.textSecondary)
+            }
+        }
+        .padding(.vertical, 14)
+        .contentShape(Rectangle())
+    }
+
+    private var primaryActionBar: some View {
+        VStack(spacing: 0) {
+            Divider().overlay(AssetTheme.border.opacity(0.32))
+
+            Button {
+                dismissActiveKeyboard()
+                if step == .asset {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        step = .details
+                    }
+                } else {
+                    attemptSave()
+                }
+            } label: {
+                Text(AppLocalization.string(step == .asset ? "下一步" : "保存"))
+                    .font(AppTypography.rowTitle)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .foregroundStyle(primaryActionEnabled ? Color.black.opacity(0.82) : AssetTheme.textSecondary)
+                    .background(
+                        primaryActionEnabled ? AssetTheme.gold : AssetTheme.overlayStrong,
+                        in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    )
+            }
+            .buttonStyle(.plain)
+            .disabled(!primaryActionEnabled)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+        }
+        .background(AssetTheme.background.opacity(0.96))
+    }
+
+    private func handleMarketAssetSelection(_ asset: MarketAssetDescriptor?) {
+        if let asset {
+            if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || nameWasAutofilled {
+                name = asset.displayTitle
+                nameWasAutofilled = true
+            }
+            if !hasCustomizedIcon {
+                selectedIconName = asset.suggestedIconKey
+            }
+            valuationMethod = .quantityAndUnitPrice
+        } else {
+            if nameWasAutofilled {
+                name = ""
+                nameWasAutofilled = false
+            }
+            if !hasCustomizedIcon {
+                selectedIconName = ""
+            }
+            valuationMethod = .directAmount
+        }
+    }
+
+    @MainActor
+    private func attemptSave() {
+        guard let editingItem else {
+            save()
+            return
+        }
+        let oldSymbol = editingItem.marketAssetSymbol.map(BacktestAssetSymbol.normalized)
+        let newSymbol = selectedMarketAssetSymbol.map(BacktestAssetSymbol.normalized)
+        if !editingItem.entries.isEmpty, oldSymbol != newSymbol {
+            showsMarketChangeConfirmation = true
+        } else {
+            save()
         }
     }
 
@@ -2312,19 +2477,126 @@ struct AddAssetItemSheet: View {
         guard let selectedCategory else { return }
 
         do {
-            _ = try AssetItemService.createItem(
-                name: resolvedName,
-                category: selectedCategory,
-                valuationMethod: valuationMethod,
-                marketAssetSymbol: selectedMarketAssetSymbol,
-                iconName: resolvedIconName,
-                in: modelContext
-            )
+            let item: AssetItem
+            if let editingItem {
+                try AssetItemService.updateItem(
+                    editingItem,
+                    name: resolvedName,
+                    iconName: resolvedIconName,
+                    valuationMethod: valuationMethod,
+                    marketAssetSymbol: .some(selectedMarketAssetSymbol),
+                    category: selectedCategory,
+                    in: modelContext
+                )
+                item = editingItem
+            } else {
+                item = try AssetItemService.createItem(
+                    name: resolvedName,
+                    category: selectedCategory,
+                    valuationMethod: valuationMethod,
+                    marketAssetSymbol: selectedMarketAssetSymbol,
+                    iconName: resolvedIconName,
+                    in: modelContext
+                )
+            }
+            if valuationMethod == .quantityAndUnitPrice,
+               let snapshot,
+               let quantity = normalizedNumber(from: recordQuantityText) {
+                try SnapshotService.upsertEntry(
+                    snapshot: snapshot,
+                    item: item,
+                    quantity: quantity,
+                    unitPrice: selectedUnitPrice,
+                    in: modelContext
+                )
+            }
             dismiss()
         } catch {
             errorMessage = AppLocalization.string("保存失败，请稍后再试")
-            print("[AssetTimeMachine] create item failed: \(error)")
+            print("[AssetTimeMachine] save item failed: \(error)")
         }
+    }
+
+    @MainActor
+    private func deleteEditingItem() {
+        guard let editingItem else { return }
+        do {
+            try AssetItemService.deleteItem(editingItem, in: modelContext)
+            dismiss()
+        } catch {
+            modelContext.rollback()
+            errorMessage = AppLocalization.string("删除失败")
+            print("[AssetTimeMachine] delete item failed: \(error)")
+        }
+    }
+
+    private func normalizedNumber(from text: String) -> Double? {
+        let raw = text.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty, let value = Double(raw), value.isFinite else { return nil }
+        return value
+    }
+
+    @MainActor
+    private func searchETFs(keyword: String?) async {
+        isSearchingMarketAssets = true
+        marketAssetSearchMessage = nil
+        defer { isSearchingMarketAssets = false }
+        do {
+            let hasMore = try await marketStore.refreshRecordSecurityCatalog(
+                keyword: keyword,
+                pageSize: keyword?.isEmpty == false ? 100 : 60
+            )
+            guard !Task.isCancelled else { return }
+            if keyword?.isEmpty != false {
+                recordSecurityPaging.reset(hasMore: hasMore)
+            }
+        } catch {
+            guard !Task.isCancelled else { return }
+            let hasCachedSecurities = !marketStore.recordETFAssetCatalog.isEmpty
+                || !marketStore.recordAShareAssetCatalog.isEmpty
+            if keyword?.isEmpty == false || !hasCachedSecurities {
+                marketAssetSearchMessage = AppLocalization.string("股票或 ETF 行情暂时不可用")
+            }
+        }
+    }
+
+    @MainActor
+    private func loadMoreRecordSecurities(sectionID: String) async {
+        guard loadingMoreSecuritySectionID == nil,
+              recordSecurityPaging.canLoadMore(sectionID) else { return }
+        loadingMoreSecuritySectionID = sectionID
+        defer { loadingMoreSecuritySectionID = nil }
+
+        do {
+            let page = recordSecurityPaging.nextPage(sectionID)
+            let hasMore = try await marketStore.loadRecordSecurityCatalogPage(
+                sectionID: sectionID,
+                page: page,
+                pageSize: 60
+            )
+            guard !Task.isCancelled else { return }
+            recordSecurityPaging.completePage(sectionID: sectionID, hasMore: hasMore)
+        } catch {
+            guard !Task.isCancelled else { return }
+            marketAssetSearchMessage = AppLocalization.string("股票或 ETF 行情暂时不可用")
+        }
+    }
+
+    @MainActor
+    private func refreshSelectedMarketAsset(_ symbol: String) async {
+        if symbol.hasPrefix(MarketAssetDescriptor.recordETFPrefix)
+            || symbol.hasPrefix(MarketAssetDescriptor.recordASharePrefix) {
+            do {
+                try await marketStore.refreshRecordSecurityHistory(symbol: symbol)
+                guard !Task.isCancelled else { return }
+            } catch {
+                errorMessage = AppLocalization.string("股票或 ETF 行情暂时不可用")
+            }
+            return
+        }
+        async let liveRefresh: Bool = marketStore.refreshLiveData()
+        async let historyRefresh: Bool = marketStore.refreshHistory(for: Set([symbol]))
+        _ = await (liveRefresh, historyRefresh)
     }
 }
 
@@ -2363,10 +2635,17 @@ struct QuickRecordValueSheet: View {
     @State private var unitPriceText: String
     @State private var errorMessage: String?
     @State private var isRefreshingAutoPrice = false
+    @State private var lastManualPriceRefreshAt: Date?
     @State private var manualAutoPriceRefreshTask: Task<Void, Never>?
     @FocusState private var focusedField: QuickRecordValueField?
 
-    init(item: AssetItem, snapshot: AssetSnapshot?, marketStore: RemoteMarketStore, onCancel: @escaping () -> Void, onSaved: @escaping () -> Void) {
+    init(
+        item: AssetItem,
+        snapshot: AssetSnapshot?,
+        marketStore: RemoteMarketStore,
+        onCancel: @escaping () -> Void,
+        onSaved: @escaping () -> Void
+    ) {
         self.item = item
         self.snapshot = snapshot
         self.marketStore = marketStore
@@ -2388,7 +2667,7 @@ struct QuickRecordValueSheet: View {
         case .directAmount:
             return AppLocalization.string(isLiability ? "负债数额" : "资产数额")
         case .quantityAndUnitPrice:
-            return AppLocalization.string("数量")
+            return item.quantityFieldTitle(using: marketStore)
         }
     }
 
@@ -2414,134 +2693,117 @@ struct QuickRecordValueSheet: View {
 
     private var trailingUnitPriceTimestamp: String? {
         guard item.valuationMethod == .quantityAndUnitPrice,
-              item.marketAssetSymbol != nil,
-              let fetchedAt = item.autoPriceFetchedAt(using: marketStore) else {
+              item.marketAssetSymbol != nil else {
             return nil
         }
+        let fetchedAt = lastManualPriceRefreshAt
+            ?? item.autoPriceFetchedAt(using: marketStore)
+        guard let fetchedAt else { return nil }
         return AppLocalization.format("%@更新", fetchedAt.recordTimeString)
     }
 
+    private var quantityUnitTitle: String? {
+        guard item.valuationMethod == .quantityAndUnitPrice else { return nil }
+        return item.quantityUnitTitle(using: marketStore)
+    }
+
+    private var inlinePrimaryTextFieldWidth: CGFloat {
+        let text: String
+        switch item.valuationMethod {
+        case .directAmount:
+            text = amountText
+        case .quantityAndUnitPrice:
+            text = quantityText
+        }
+        return min(170, max(34, CGFloat(max(text.count, 1)) * 21))
+    }
+
+    private var currentMarketValue: Double? {
+        switch item.valuationMethod {
+        case .directAmount:
+            guard let amount = normalizedReadonlyNumber(from: amountText), amount.isFinite else {
+                return nil
+            }
+            return isLiability ? abs(amount) : amount
+        case .quantityAndUnitPrice:
+            guard let quantity = normalizedReadonlyNumber(from: quantityText),
+                  let unitPrice = item.marketAssetSymbol == nil
+                    ? normalizedReadonlyNumber(from: unitPriceText)
+                    : item.resolvedAutoUnitPrice(using: marketStore),
+                  quantity.isFinite,
+                  unitPrice.isFinite else {
+                return nil
+            }
+            return quantity * unitPrice
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 12) {
-                chromeButton(title: AppLocalization.string("取消"), tint: AssetTheme.textSecondary, action: onCancel)
+        VStack(spacing: 0) {
+            sheetHeader
 
-                Spacer(minLength: 8)
-
-                Text(AppLocalization.string("修改本次记录"))
-                    .font(AppTypography.blockTitleBold)
-                    .foregroundStyle(AssetTheme.textPrimary)
-                    .lineLimit(1)
-
-                Spacer(minLength: 8)
-
-                chromeButton(title: AppLocalization.string("保存"), tint: AssetTheme.gold, action: save)
-            }
-
-            HStack(alignment: .center, spacing: 12) {
-                AssetItemGlyph(item: item, accent: isLiability ? AssetTheme.negative : AssetTheme.gold, size: 18)
-
-                Text(AppLocalization.string(item.name))
-                    .font(AppTypography.blockTitle)
-                    .foregroundStyle(AssetTheme.textPrimary)
-
-                Spacer(minLength: 8)
-
-                if let trailingUnitPriceTitle,
-                   let trailingUnitPriceValue {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(trailingUnitPriceTitle)
-                            .font(AppTypography.caption)
-                            .foregroundStyle(AssetTheme.textSecondary)
-                        Text(trailingUnitPriceValue)
-                            .font(AppTypography.rowTitle)
-                            .monospacedDigit()
-                            .foregroundStyle(AssetTheme.textPrimary)
-                        if let trailingUnitPriceTimestamp {
-                            Text(trailingUnitPriceTimestamp)
-                                .font(AppTypography.chartCaption)
-                                .monospacedDigit()
-                                .foregroundStyle(AssetTheme.textSecondary)
-                        }
-                    }
-                }
-            }
-
-            if item.marketAssetSymbol != nil {
-                HStack(spacing: 8) {
-                    Button {
-                        manualAutoPriceRefreshTask?.cancel()
-                        let writeID = ModelContextMutationBarrier.shared.beginDeferredWrite()
-                        manualAutoPriceRefreshTask = Task {
-                            defer { ModelContextMutationBarrier.shared.finishDeferredWrite(writeID) }
-                            do {
-                                try await ModelContextMutationBarrier.shared.waitUntilWriteIsAllowed(writeID)
-                            } catch {
-                                return
-                            }
-                            await refreshAutoPriceManually()
-                            guard !Task.isCancelled else { return }
-                            manualAutoPriceRefreshTask = nil
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            if isRefreshingAutoPrice {
-                                ProgressView()
-                                    .controlSize(.small)
-                                    .tint(AssetTheme.gold)
-                            } else {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(AppTypography.captionStrong)
-                            }
-                            Text(AppLocalization.string(isRefreshingAutoPrice ? "刷新中" : "手动刷新最新价格"))
-                                .font(AppTypography.captionStrong)
-                        }
-                        .foregroundStyle(AssetTheme.goldSoft)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(AssetTheme.overlayMedium.opacity(0.85), in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isRefreshingAutoPrice)
-
-                    Spacer(minLength: 0)
-                }
-            }
-
-            quickEditField(
-                title: primaryFieldTitle,
-                text: bindingForPrimaryField(),
-                placeholder: AppLocalization.format("输入%@", primaryFieldTitle),
-                focus: .primary
-            )
+            editorRow
+                .padding(.horizontal, 26)
+                .padding(.top, 63)
+                .padding(.bottom, errorMessage == nil ? 44 : 16)
 
             if let errorMessage {
                 Text(errorMessage)
                     .font(AppTypography.meta)
                     .foregroundStyle(AssetTheme.negative)
-                    .padding(.horizontal, 2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 26)
+                    .padding(.bottom, 14)
             }
+
+            Rectangle()
+                .fill(Color.white.opacity(0.12))
+                .frame(height: 1)
+                .padding(.horizontal, 20)
+
+            marketValueRow
+                .padding(.horizontal, 26)
+                .padding(.top, 24)
+                .padding(.bottom, 30)
         }
-        .frame(maxWidth: 360)
-        .padding(.horizontal, 18)
-        .padding(.vertical, 18)
+        .frame(maxWidth: 540, minHeight: 435, alignment: .top)
         .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            UnevenRoundedRectangle(
+                topLeadingRadius: 28,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 28,
+                style: .continuous
+            )
                 .fill(.ultraThinMaterial)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            UnevenRoundedRectangle(
+                topLeadingRadius: 28,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 28,
+                style: .continuous
+            )
                 .stroke(
                     LinearGradient(
-                        colors: [Color.white.opacity(0.18), AssetTheme.gold.opacity(0.14)],
+                        colors: [Color.white.opacity(0.16), AssetTheme.gold.opacity(0.08)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
                     lineWidth: 1
                 )
         }
-        .shadow(color: .black.opacity(0.28), radius: 30, x: 0, y: 18)
-        .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .shadow(color: .black.opacity(0.36), radius: 34, x: 0, y: -8)
+        .contentShape(
+            UnevenRoundedRectangle(
+                topLeadingRadius: 28,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 28,
+                style: .continuous
+            )
+        )
         .modifier(QuickRecordAutoFocusModifier(focusedField: $focusedField))
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -2560,38 +2822,216 @@ struct QuickRecordValueSheet: View {
         }
     }
 
-    @ViewBuilder
-    private func quickEditField(title: String, text: Binding<String>, placeholder: String, focus: QuickRecordValueField) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(AppLocalization.string(title))
-                .font(AppTypography.caption)
-                .foregroundStyle(AssetTheme.textSecondary)
-            TextField(placeholder, text: text)
-                .keyboardType(.decimalPad)
-                .textFieldStyle(.plain)
-                .font(.body.weight(.medium))
+    private var sheetHeader: some View {
+        HStack(spacing: 12) {
+            Button(action: onCancel) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 19, weight: .medium))
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(AppLocalization.string("取消"))
+
+            Spacer(minLength: 4)
+
+            Text(AppLocalization.string(item.name))
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(AssetTheme.textPrimary)
-                .focused($focusedField, equals: focus)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(AssetTheme.overlayMedium.opacity(0.9))
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                }
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+
+            Spacer(minLength: 4)
+
+            Button(AppLocalization.string("完成"), action: save)
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(AssetTheme.goldSoft)
+                .frame(minWidth: 44, minHeight: 44, alignment: .trailing)
+                .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 14)
+    }
+
+    private var editorRow: some View {
+        HStack(alignment: .center, spacing: 16) {
+            AssetItemGlyph(
+                item: item,
+                accent: isLiability ? AssetTheme.negative : AssetTheme.goldSoft,
+                size: 34
+            )
+            .frame(width: 46, height: 46)
+
+            inlinePrimaryField
+
+            if item.valuationMethod == .quantityAndUnitPrice {
+                inlineUnitPrice
+                    .frame(minWidth: 116, alignment: .trailing)
+            }
         }
     }
 
-    private func chromeButton(title: String, tint: Color, action: @escaping () -> Void) -> some View {
-        Button(AppLocalization.string(title), action: action)
-            .font(AppTypography.rowTitle)
-            .foregroundStyle(tint)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(Color.white.opacity(0.06), in: Capsule())
+    private var inlinePrimaryField: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            if item.valuationMethod == .directAmount {
+                Text("¥")
+                    .font(.system(size: 25, weight: .medium))
+                    .foregroundStyle(AssetTheme.textSecondary)
+            }
+
+            TextField(
+                AppLocalization.format("输入%@", primaryFieldTitle),
+                text: bindingForPrimaryField()
+            )
+            .keyboardType(.decimalPad)
+            .textFieldStyle(.plain)
+            .font(.system(size: 34, weight: .medium, design: .rounded))
+            .monospacedDigit()
+            .foregroundStyle(AssetTheme.textPrimary)
+            .focused($focusedField, equals: .primary)
+            .minimumScaleFactor(0.65)
+            .frame(width: inlinePrimaryTextFieldWidth, alignment: .leading)
+
+            if let quantityUnitTitle {
+                Text(quantityUnitTitle)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.bottom, 9)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(AssetTheme.goldSoft)
+                .frame(height: 1)
+        }
+        .accessibilityLabel(primaryFieldTitle)
+    }
+
+    @ViewBuilder
+    private var inlineUnitPrice: some View {
+        if item.marketAssetSymbol != nil {
+            VStack(alignment: .trailing, spacing: 8) {
+                if let trailingUnitPriceValue {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(trailingUnitPriceValue)
+                            .font(.system(size: 16, weight: .medium))
+                            .monospacedDigit()
+                            .foregroundStyle(AssetTheme.textPrimary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.76)
+
+                        if let quantityUnitTitle {
+                            Text("/ \(quantityUnitTitle)")
+                                .font(AppTypography.meta)
+                                .foregroundStyle(AssetTheme.textSecondary)
+                                .lineLimit(1)
+                        }
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    Text(isRefreshingAutoPrice
+                        ? AppLocalization.string("刷新中")
+                        : trailingUnitPriceTimestamp ?? "—")
+                        .font(AppTypography.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .lineLimit(1)
+
+                    refreshPriceButton
+                }
+            }
+        } else {
+            VStack(alignment: .trailing, spacing: 7) {
+                Text(trailingUnitPriceTitle ?? AppLocalization.string("单价"))
+                    .font(AppTypography.caption)
+                    .foregroundStyle(AssetTheme.textSecondary)
+
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("¥")
+                        .font(AppTypography.meta)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                    TextField(AppLocalization.string("单价"), text: $unitPriceText)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 16, weight: .medium))
+                        .monospacedDigit()
+                        .multilineTextAlignment(.trailing)
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .focused($focusedField, equals: .unitPrice)
+                        .frame(maxWidth: 82)
+                    if let quantityUnitTitle {
+                        Text("/ \(quantityUnitTitle)")
+                            .font(AppTypography.meta)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                }
+                .padding(.bottom, 5)
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.14))
+                        .frame(height: 1)
+                }
+            }
+        }
+    }
+
+    private var marketValueRow: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(AppLocalization.string("本次市值"))
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(AssetTheme.textSecondary)
+
+            Spacer(minLength: 16)
+
+            Text(currentMarketValue?.currencyString() ?? "—")
+                .font(.system(size: 27, weight: .medium, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(AssetTheme.goldSoft)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+        }
+    }
+
+    private var refreshPriceButton: some View {
+        Button(action: beginManualPriceRefresh) {
+            Group {
+                if isRefreshingAutoPrice {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(AssetTheme.goldSoft)
+                } else {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 15, weight: .medium))
+                }
+            }
+            .foregroundStyle(AssetTheme.textSecondary)
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isRefreshingAutoPrice)
+        .accessibilityLabel(AppLocalization.string("手动刷新最新价格"))
+    }
+
+    private func beginManualPriceRefresh() {
+        manualAutoPriceRefreshTask?.cancel()
+        let writeID = ModelContextMutationBarrier.shared.beginDeferredWrite()
+        manualAutoPriceRefreshTask = Task {
+            defer { ModelContextMutationBarrier.shared.finishDeferredWrite(writeID) }
+            do {
+                try await ModelContextMutationBarrier.shared.waitUntilWriteIsAllowed(writeID)
+            } catch {
+                return
+            }
+            await refreshAutoPriceManually()
+            guard !Task.isCancelled else { return }
+            manualAutoPriceRefreshTask = nil
+        }
     }
 
     private func bindingForPrimaryField() -> Binding<String> {
@@ -2653,7 +3093,8 @@ struct QuickRecordValueSheet: View {
             }
         }
 
-        let didRefreshLiveData = await marketStore.refreshLiveData()
+        guard let symbol = item.marketAssetSymbol else { return }
+        let didRefreshLiveData = await marketStore.refreshRecordPrice(for: symbol)
         guard !Task.isCancelled else { return }
         guard didRefreshLiveData else {
             errorMessage = marketStore.errorMessage ?? AppLocalization.string("暂时没拿到最新价格，稍后再试")
@@ -2666,6 +3107,7 @@ struct QuickRecordValueSheet: View {
         }
 
         unitPriceText = latestRate.plainNumberString()
+        lastManualPriceRefreshAt = .now
 
         guard let snapshot else { return }
         guard !Task.isCancelled else { return }
@@ -2702,259 +3144,6 @@ private func validatedQuickRecordNumber(from text: String, forcePositive: Bool =
         throw QuickRecordValueValidationError(message: AppLocalization.format("%@请输入有效数字", fieldName))
     }
     return forcePositive ? abs(value) : value
-}
-
-struct EditAssetItemSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
-    @Query private var categories: [AssetCategory]
-
-    let item: AssetItem
-    let snapshot: AssetSnapshot?
-    let marketStore: RemoteMarketStore
-    @State private var name: String
-    @State private var selectedCategoryID: UUID?
-    @State private var selectedMarketAssetSymbol: String?
-    @State private var valuationMethod: ValuationMethod
-    @State private var selectedIconName: String
-    @State private var recordQuantityText: String
-    @State private var recordUnitPriceText: String
-    @State private var errorMessage: String?
-
-    init(item: AssetItem, snapshot: AssetSnapshot?, marketStore: RemoteMarketStore) {
-        self.item = item
-        self.snapshot = snapshot
-        self.marketStore = marketStore
-        _name = State(initialValue: item.name)
-        _selectedCategoryID = State(initialValue: item.category?.id)
-        _selectedMarketAssetSymbol = State(initialValue: item.marketAssetSymbol)
-        _valuationMethod = State(initialValue: item.valuationMethod)
-        let storedIconName = (item.iconName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        let initialIcon = storedIconName.isEmpty
-            ? AssetItemService.suggestedIconName(
-                for: item.name,
-                marketAsset: item.marketAssetSymbol.flatMap(marketStore.assetDescriptor(for:))
-            )
-            : storedIconName
-        _selectedIconName = State(initialValue: initialIcon)
-        let currentEntry = snapshot?.entries.first(where: { $0.item?.id == item.id })
-        _recordQuantityText = State(initialValue: currentEntry?.quantity?.plainNumberString() ?? "")
-        _recordUnitPriceText = State(initialValue: currentEntry?.unitPrice?.plainNumberString() ?? "")
-    }
-
-    private var sortedCategories: [AssetCategory] {
-        categories.sorted {
-            if $0.group.sortPriority == $1.group.sortPriority {
-                return $0.createdAt < $1.createdAt
-            }
-            return $0.group.sortPriority < $1.group.sortPriority
-        }
-    }
-
-    private var canSave: Bool {
-        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedCategory != nil
-    }
-
-    private var selectedCategory: AssetCategory? {
-        guard let selectedCategoryID else { return sortedCategories.first }
-        return sortedCategories.first(where: { $0.id == selectedCategoryID })
-    }
-
-    private var resolvedIconName: String {
-        let trimmed = selectedIconName.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty { return trimmed }
-        return AssetItemService.suggestedIconName(
-            for: name,
-            marketAsset: selectedMarketAssetSymbol.flatMap(marketStore.assetDescriptor(for:))
-        )
-    }
-
-    private var showsRecordPricingEditor: Bool {
-        valuationMethod == .quantityAndUnitPrice
-    }
-
-    private var editorMarketAssets: [MarketAssetDescriptor] {
-        let assets = marketStore.selectableAssetCatalog
-        guard let selectedMarketAssetSymbol,
-              !assets.contains(where: { $0.canonicalSymbol == BacktestAssetSymbol.normalized(selectedMarketAssetSymbol) }) else {
-            return assets
-        }
-
-        let legacyKind = item.autoPricedAssetKind
-        let descriptor = MarketAssetDescriptor(
-            symbol: selectedMarketAssetSymbol,
-            category: legacyKind?.isCurrency == true ? "fx" : "other",
-            label: legacyKind?.displayName ?? item.name,
-            currency: legacyKind?.isCurrency == true ? legacyKind?.rawValue.uppercased() ?? "" : "CNY",
-            unit: legacyKind?.isCurrency == true ? "currency" : "",
-            source: nil
-        )
-        return assets + [descriptor]
-    }
-
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                AssetTheme.pageGradient.ignoresSafeArea()
-
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        AssetEditorForm(
-                            name: $name,
-                            selectedCategoryID: $selectedCategoryID,
-                            selectedMarketAssetSymbol: $selectedMarketAssetSymbol,
-                            valuationMethod: $valuationMethod,
-                            selectedIconName: $selectedIconName,
-                            sortedCategories: sortedCategories,
-                            marketAssets: editorMarketAssets,
-                            isMarketAssetLocked: !item.entries.isEmpty
-                        )
-
-                        if showsRecordPricingEditor {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text(AppLocalization.string("本次记录"))
-                                    .font(AppTypography.blockTitle)
-                                    .foregroundStyle(AssetTheme.textPrimary)
-
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text(AppLocalization.string("数量"))
-                                        .font(AppTypography.caption)
-                                        .foregroundStyle(AssetTheme.textSecondary)
-                                    TextField(AppLocalization.string("输入数量"), text: $recordQuantityText)
-                                        .keyboardType(.decimalPad)
-                                        .textFieldStyle(.plain)
-                                        .font(.body.weight(.medium))
-                                        .foregroundStyle(AssetTheme.textPrimary)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 10)
-                                        .background(AssetTheme.overlayMedium, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                }
-
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text(AppLocalization.string("单价"))
-                                        .font(AppTypography.caption)
-                                        .foregroundStyle(AssetTheme.textSecondary)
-                                    TextField(AppLocalization.string("输入单价"), text: $recordUnitPriceText)
-                                        .keyboardType(.decimalPad)
-                                        .textFieldStyle(.plain)
-                                        .font(.body.weight(.medium))
-                                        .foregroundStyle(AssetTheme.textPrimary)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 10)
-                                        .background(AssetTheme.overlayMedium, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                }
-                            }
-                        }
-
-                        if let errorMessage {
-                            Text(errorMessage)
-                                .font(AppTypography.meta)
-                                .foregroundStyle(AssetTheme.negative)
-                                .padding(.horizontal, 4)
-                        }
-
-                        Color.clear
-                            .frame(height: TabScrollLayout.formKeyboardDismissSpacer)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                dismissActiveKeyboard()
-                            }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-                    .padding(.bottom, TabScrollLayout.sheetBottomPadding)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        dismissActiveKeyboard()
-                    }
-                }
-                .scrollDismissesKeyboard(.interactively)
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(AppLocalization.string("取消")) {
-                        dismiss()
-                    }
-                    .foregroundStyle(AssetTheme.textSecondary)
-                }
-
-                ToolbarItem(placement: .principal) {
-                    Text(AppLocalization.string("编辑资产类型"))
-                        .font(AppTypography.blockTitleBold)
-                        .foregroundStyle(AssetTheme.textPrimary)
-                }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(AppLocalization.string("保存")) {
-                        save()
-                    }
-                    .disabled(!canSave)
-                    .foregroundStyle(canSave ? AssetTheme.gold : AssetTheme.textSecondary)
-                }
-
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button(AppLocalization.string("完成")) {
-                        dismissActiveKeyboard()
-                    }
-                    .font(AppTypography.rowTitle)
-                    .foregroundStyle(AssetTheme.gold)
-                }
-            }
-            .task {
-                if selectedCategoryID == nil {
-                    selectedCategoryID = item.category?.id ?? sortedCategories.first?.id
-                }
-                await marketStore.refreshAssetCatalogIfNeeded()
-            }
-            .task(id: "\(selectedMarketAssetSymbol ?? "")|\(valuationMethod.rawValue)") {
-                guard valuationMethod == .quantityAndUnitPrice,
-                      let selectedMarketAssetSymbol else { return }
-                async let liveRefresh: Bool = marketStore.refreshLiveData()
-                async let historyRefresh: Void = marketStore.refreshHistory(for: Set([selectedMarketAssetSymbol]))
-                _ = await (liveRefresh, historyRefresh)
-            }
-        }
-    }
-
-    @MainActor
-    private func save() {
-        guard let selectedCategory else { return }
-
-        do {
-            try AssetItemService.updateItem(
-                item,
-                name: name.trimmingCharacters(in: .whitespacesAndNewlines),
-                iconName: resolvedIconName,
-                valuationMethod: valuationMethod,
-                marketAssetSymbol: .some(selectedMarketAssetSymbol),
-                category: selectedCategory,
-                in: modelContext
-            )
-
-            if showsRecordPricingEditor, let snapshot {
-                try SnapshotService.upsertEntry(
-                    snapshot: snapshot,
-                    item: item,
-                    quantity: normalizedNumber(from: recordQuantityText),
-                    unitPrice: normalizedNumber(from: recordUnitPriceText),
-                    in: modelContext
-                )
-            }
-
-            dismiss()
-        } catch {
-            errorMessage = AppLocalization.string("保存失败，请稍后再试")
-            print("[AssetTimeMachine] update item failed: \(error)")
-        }
-    }
-
-    private func normalizedNumber(from text: String) -> Double? {
-        let raw = text.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !raw.isEmpty, let value = Double(raw), value.isFinite else { return nil }
-        return value
-    }
 }
 
 struct SummaryColumnMetric: View {
@@ -3351,9 +3540,9 @@ struct SnapshotEntryEditSheet: View {
                         VStack(alignment: .leading, spacing: 14) {
                             if usesQuantityAndUnitPrice {
                                 editField(
-                                    title: AppLocalization.string("数量"),
+                                    title: quantityFieldTitle,
                                     text: $quantityText,
-                                    placeholder: AppLocalization.string("输入数量"),
+                                    placeholder: quantityFieldPlaceholder,
                                     focus: .quantity
                                 )
                                 editField(
@@ -3419,6 +3608,20 @@ struct SnapshotEntryEditSheet: View {
             }
             .defaultFocus($focusedField, usesQuantityAndUnitPrice ? .quantity : .amount)
         }
+    }
+
+    private var quantityFieldTitle: String {
+        guard let unit = item?.persistedQuantityUnitTitle, !unit.isEmpty else {
+            return AppLocalization.string("数量")
+        }
+        return AppLocalization.format("数量（%@）", unit)
+    }
+
+    private var quantityFieldPlaceholder: String {
+        guard let unit = item?.persistedQuantityUnitTitle, !unit.isEmpty else {
+            return AppLocalization.string("输入数量")
+        }
+        return AppLocalization.format("输入数量（%@）", unit)
     }
 
     private func editField(title: String, text: Binding<String>, placeholder: String, focus: SnapshotEntryEditField) -> some View {

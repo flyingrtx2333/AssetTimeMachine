@@ -24,7 +24,7 @@ struct ContentView: View {
     @AppStorage("app.notifications.enabled") var notificationEnabled = false
     @AppStorage("app.notifications.intervalHours") var notificationIntervalHours: Double = 1
     @AppStorage("app.strategyNotifications.enabled") var strategyNotificationEnabled = false
-    @AppStorage("app.strategyNotifications.templateID") var strategyNotificationTemplateID = StrategyNotificationDefaults.defaultTemplateID
+    @AppStorage("app.strategyNotifications.templateID") var strategyNotificationTemplateID = StrategyRebalanceDefaults.defaultTemplateID
     @AppStorage("app.strategyNotifications.hour") var strategyNotificationHour: Int = StrategyNotificationDefaults.defaultHour
     @StateObject var runtimeStore = AppRuntimeStore()
     @State var mountedTabs: Set<AppTab> = [.dashboard]
@@ -73,10 +73,7 @@ struct ContentView: View {
                     DashboardView(
                         marketStore: marketStore,
                         cloudStore: cloudStore,
-                        isActive: workActiveTab == .dashboard,
-                        onOpenQuant: {
-                            selectTab(.backtest)
-                        }
+                        isActive: workActiveTab == .dashboard
                     )
                 }
             }
@@ -165,7 +162,7 @@ struct ContentView: View {
         }
         .tint(AssetTheme.gold)
         .task {
-            let migratedStrategyID = StrategyNotificationDefaults.migratedTemplateID(strategyNotificationTemplateID)
+            let migratedStrategyID = StrategyRebalanceDefaults.migratedTemplateID(strategyNotificationTemplateID)
             if migratedStrategyID != strategyNotificationTemplateID {
                 strategyNotificationTemplateID = migratedStrategyID
             }
