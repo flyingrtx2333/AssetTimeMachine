@@ -1,0 +1,148 @@
+{
+  "files": [
+    {
+      "bytes": 187181,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-INSIDER-001/candidates/C-SEC-INSIDER-ALWAYS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "8188da6563b8895ff30a267af28bbafd3de6d6471185067a7635661394ef27f5"
+    },
+    {
+      "bytes": 187159,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-INSIDER-001/candidates/F-SEC-INSIDER-BUY-BREADTH-US-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "452ed3a1d414e9604925fc0b524f95f682630669a8fede1162c9613ea5479e96"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-INSIDER-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "680549562c95c8743b96cc8f366ac6cbb8a429d2b7c449a924968b8409a5cbfe"
+    },
+    {
+      "bytes": 727,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "matched_control_id",
+        "cagr_percent",
+        "mdd_percent",
+        "vol_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "min_weight",
+        "fingerprint",
+        "source_events",
+        "us_derisk_events",
+        "available_us_derisk_events",
+        "retained_events",
+        "folds_sharpe_ge_matched",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-INSIDER-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "85435e1faff93e8d2c63ff8a334ebfa4f887291a145cd5c9c9e8ee9cdbc212f4"
+    },
+    {
+      "bytes": 4494,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-INSIDER-001/candidates/candidate-metrics.json",
+      "sha256": "6382cdabca448aff4122864c18720f5283b6b785c7e80fe0155c36de335e255c"
+    },
+    {
+      "bytes": 288,
+      "columns": [
+        "candidate_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "global_dsr_probability",
+        "global_dsr_pass",
+        "robust_factor_pass",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_matched",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-INSIDER-001/candidates/statistical-audit.csv",
+      "row_count": 1,
+      "sha256": "4fb4ec3733cbe11096db4722a7e4f6ad3c0f13344f438f7faa03b19c13e32220"
+    },
+    {
+      "bytes": 2822,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-INSIDER-001/candidates/statistical-audit.json",
+      "sha256": "6363094b4d74df74c1dfeb854d340ef475d7f70dbe34faeaa835d109efc0fa3d"
+    },
+    {
+      "bytes": 1112,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-INSIDER-001/execution.json",
+      "sha256": "a4861872e2ccb7eb7bea2d61e743549d47dce81432c24bc2d534184c0c19befe"
+    },
+    {
+      "bytes": 434,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-INSIDER-001/run-authorization.json",
+      "sha256": "573e9c6d8b8f791f0602c41ac1e74d5e9570671984f33e2e6eb0808170df9956"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-INSIDER-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 3323,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-INSIDER-001/stdout.txt",
+      "sha256": "fec591c2dbacdde608ef562deff3028a9f615d01946a32235294b40649de4fef"
+    }
+  ],
+  "generated_at": "2026-08-21T19:44:00+08:00",
+  "git_commit": "88140bdd158cee5756f5113ba7da3561ac068492",
+  "kind": "result",
+  "metadata": {
+    "campaign": "sec-insider-buy-breadth-v1",
+    "deterministic_admitted": [],
+    "evidence_class": "R1_RETROSPECTIVE",
+    "formal_execution_commit": "88140bdd158cee5756f5113ba7da3561ac068492",
+    "global_dsr_trial_count": 29,
+    "known_nonmaterial_metadata_issue": "candidate-metrics strategy_lineage retained finra-margin-leverage-v1 template label; trial/candidate IDs and executable SEC factor path were correct; no rerun performed",
+    "robust_pass": []
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-INSIDER-001"
+}

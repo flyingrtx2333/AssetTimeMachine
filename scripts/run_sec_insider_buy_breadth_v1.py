@@ -211,7 +211,7 @@ def write_outputs(output_dir: Path, rows: dict[str, dict]) -> dict:
     document = {
         "protocol_id": "ATM-SVP-2",
         "trial_id": "ATM-SVP2-INSIDER-001",
-        "strategy_lineage": "finra-margin-leverage-v1",
+        "strategy_lineage": "sec-insider-buy-breadth-v1",
         "v11_control": v11,
         "matched_control": matched,
         "candidate_results": [result],

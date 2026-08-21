@@ -1,0 +1,23 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_sec_insider_buy_breadth_v1.py",
+    "--formal",
+    "--fixture",
+    "tools/fixtures/backtest-history/generalization_public_history.json",
+    "--factor-input",
+    "tools/research-results/strategy-validation/factor-data/SEC-INSIDER-BUY-BREADTH-2026-08-21/SEC_INSIDER_BUY_BREADTH_WEEKLY.csv",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-INSIDER-001/candidates"
+  ],
+  "execution_git_commit": "88140bdd158cee5756f5113ba7da3561ac068492",
+  "finished_at": "2026-08-21T19:43:03+08:00",
+  "preregistration_record_hash": "4a4a4610b7dfbb185a01ecd04d64a387c8293d5a1784528d080b5a481925c4c5",
+  "protocol_id": "ATM-SVP-2",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-INSIDER-001/run-authorization.json",
+  "started_at": "2026-08-21T19:41:52+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP2-INSIDER-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP2-INSIDER-001/stdout.txt",
+  "trial_id": "ATM-SVP2-INSIDER-001"
+}
