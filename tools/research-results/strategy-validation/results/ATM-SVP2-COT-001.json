@@ -1,0 +1,67 @@
+{
+  "trial_id": "ATM-SVP2-COT-001",
+  "preregistration_record_hash": "3be368fdccad549739da915d72a56944b8e7772901f0f0a64de05c5b88ae19f4",
+  "execution_git_commit": "bafc02c426fbad9d987cb17498ea61b5f2795233",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/run-authorization.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-COT-001.json",
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/artifact-manifest.json",
+  "status": "FAIL",
+  "candidate_results": [
+    {
+      "candidate_id": "F-COT-LEV-SPX",
+      "metrics": {
+        "cagr_percent": 14.198516,
+        "sharpe": 1.48852,
+        "mdd_percent": 8.060422,
+        "since2020_cagr_percent": 16.962503,
+        "since2020_sharpe": 1.544748,
+        "since2022_cagr_percent": 19.910918,
+        "since2022_sharpe": 1.6646,
+        "source_events": 166,
+        "us_derisk_events": 107,
+        "available_us_derisk_events": 69,
+        "retained_events": 42,
+        "folds_sharpe_ge_matched": 3,
+        "worst_fold_sharpe": 0.534521,
+        "deterministic_admit": false,
+        "bootstrap_probability_cagr_gt_v11": 0.2277,
+        "bootstrap_probability_sharpe_gt_matched": 0.3001,
+        "bootstrap_median_candidate_minus_v11_cagr": -0.0012921201662591184,
+        "bootstrap_median_candidate_minus_matched_sharpe": -0.004893509284559006,
+        "bootstrap_mdd_p975": 0.15065070194314129,
+        "bootstrap_robust_pass": false,
+        "global_post_protocol_dsr_probability": 0.9136168337629926,
+        "global_post_protocol_dsr_trial_count": 26,
+        "robust_factor_pass": false
+      }
+    }
+  ],
+  "matched_control": {
+    "candidate_id": "C-COT-LEV-ALWAYS",
+    "cagr_percent": 14.362971,
+    "sharpe": 1.493322,
+    "mdd_percent": 8.612735,
+    "available_us_derisk_events": 69,
+    "retained_events": 69
+  },
+  "v11_control": {
+    "cagr_percent": 14.345615,
+    "sharpe": 1.522263,
+    "mdd_percent": 7.689054,
+    "target_fingerprint": "ba67c8aa24bc7168"
+  },
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED / NO_ROBUST_FACTOR_PASS. F-COT-LEV-SPX produced CAGR 14.198516%, Sharpe 1.488520 and MDD 8.060422%. It underperformed frozen V11 on both CAGR and Sharpe and also underperformed its availability-matched unconditional retention control (CAGR 14.362971%, Sharpe 1.493322). It beat the matched control in only 3/7 fixed folds. Paired 63-session moving-block bootstrap over 20,000 replicates gave P(CAGR candidate > V11)=22.770% and P(Sharpe candidate > matched)=30.010%; both median incremental deltas were negative and candidate MDD P97.5 was 15.065%, slightly above the frozen 15% ceiling. Cumulative 26-trial DSR probability was 91.362%, below 95%. The weekly S&P 500 Consolidated Leveraged Money net-long-share change therefore did not show reliable incremental timing value under the frozen conservative CFTC availability policy. Per the stop rule, no trader-category, Nasdaq-confirmation, positioning-window, threshold, sign, retention-fraction, stale-rule or availability-policy rescue is permitted in this COT campaign.",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/candidates/statistical-audit.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/candidates/C-COT-LEV-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/candidates/F-COT-LEV-SPX-portfolio.csv"
+  ]
+}

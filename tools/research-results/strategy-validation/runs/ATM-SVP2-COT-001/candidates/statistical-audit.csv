@@ -1,0 +1,2 @@
+candidate_id,deterministic_admit,bootstrap_pass,global_dsr_probability,global_dsr_pass,robust_factor_pass,probability_cagr_gt_v11,probability_sharpe_gt_matched,candidate_mdd_p975
+F-COT-LEV-SPX,False,False,0.9136168337629926,False,False,0.2277,0.3001,0.15065070194314129

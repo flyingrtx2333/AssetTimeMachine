@@ -1,0 +1,147 @@
+{
+  "files": [
+    {
+      "bytes": 187181,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/candidates/C-COT-LEV-ALWAYS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "23edbf7aa7d9f27c0db3dbcf0b026baa79d33d2994836ef3f0136f293964ccbb"
+    },
+    {
+      "bytes": 187149,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/candidates/F-COT-LEV-SPX-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "0a529d78f33a7612e1ce6efb01d99c29a883d79c2648a599a0a238200d5c0ee0"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "fd081ae592ea26193c9067b5b9272446a7065caf9a132af5f68858ce8ba88d70"
+    },
+    {
+      "bytes": 703,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "matched_control_id",
+        "cagr_percent",
+        "mdd_percent",
+        "vol_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "min_weight",
+        "fingerprint",
+        "source_events",
+        "us_derisk_events",
+        "available_us_derisk_events",
+        "retained_events",
+        "folds_sharpe_ge_matched",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "e2afbcc671657e656896e9c6d6582e60f0e5ccfb5334df546838d2721edaffc7"
+    },
+    {
+      "bytes": 4449,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/candidates/candidate-metrics.json",
+      "sha256": "1b5551588ca49f9f495a875a4f124627116d202323413e715a9884e070470d2f"
+    },
+    {
+      "bytes": 272,
+      "columns": [
+        "candidate_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "global_dsr_probability",
+        "global_dsr_pass",
+        "robust_factor_pass",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_matched",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/candidates/statistical-audit.csv",
+      "row_count": 1,
+      "sha256": "fee2b513dc155985329c7bcd8f8e87a0f791a2f4afb0187a6220b9ba17de61b4"
+    },
+    {
+      "bytes": 2789,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/candidates/statistical-audit.json",
+      "sha256": "4eb2e7c02f9d1a93925793792d78a5998411e69f0b1b586a684ae2bb036148d2"
+    },
+    {
+      "bytes": 1093,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/execution.json",
+      "sha256": "596b723228c9c0c246aa3f43d6fecc63a64b9161a673a205b2b11c14670b40ac"
+    },
+    {
+      "bytes": 430,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/run-authorization.json",
+      "sha256": "df689d98aa01758d5e4295ab0f9616ab8e29504ba9c5c104a5f91e8077d89229"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 3278,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-COT-001/stdout.txt",
+      "sha256": "434406925e697d23bae5dcd2ec46b06f81d27b5d73212ebd136f8531eab6682d"
+    }
+  ],
+  "generated_at": "2026-08-21T16:32:46+08:00",
+  "git_commit": "bafc02c426fbad9d987cb17498ea61b5f2795233",
+  "kind": "result",
+  "metadata": {
+    "campaign": "cot-leveraged-money-spx-v1",
+    "deterministic_admitted": [],
+    "evidence_class": "R1_RETROSPECTIVE",
+    "formal_execution_commit": "bafc02c426fbad9d987cb17498ea61b5f2795233",
+    "global_dsr_trial_count": 26,
+    "robust_pass": []
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-COT-001"
+}
