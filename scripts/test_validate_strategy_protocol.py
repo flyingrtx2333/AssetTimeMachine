@@ -32,7 +32,10 @@ class StrategyProtocolValidatorTests(unittest.TestCase):
         result = self.run_validator(V2_MANIFEST)
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertIn("PROTOCOL_VALID ATM-SVP-2", result.stdout)
-        self.assertIn("G4_domain_preserving_generalization=PENDING", result.stdout)
+        self.assertIn(
+            "G4_domain_preserving_generalization=INVALID_SOURCE_UNAVAILABLE",
+            result.stdout,
+        )
         self.assertIn("G5_execution_robustness=PASS", result.stdout)
 
 
