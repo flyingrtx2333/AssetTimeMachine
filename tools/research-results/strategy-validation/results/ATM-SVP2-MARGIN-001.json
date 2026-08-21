@@ -1,0 +1,67 @@
+{
+  "trial_id": "ATM-SVP2-MARGIN-001",
+  "preregistration_record_hash": "44ad442338ef8ab8ea8fbb72046ec27ac3b4153d3dbdee583a8acc63beccb27e",
+  "execution_git_commit": "bc15718086195f7f6e55f40d2a83b28f2f9689f8",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/run-authorization.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-MARGIN-001.json",
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/artifact-manifest.json",
+  "status": "FAIL",
+  "candidate_results": [
+    {
+      "candidate_id": "F-MARGIN-LEV-US",
+      "metrics": {
+        "cagr_percent": 14.440021,
+        "sharpe": 1.516685,
+        "mdd_percent": 8.612794,
+        "since2020_cagr_percent": 17.627182,
+        "since2020_sharpe": 1.610725,
+        "since2022_cagr_percent": 21.052558,
+        "since2022_sharpe": 1.783,
+        "source_events": 166,
+        "us_derisk_events": 107,
+        "available_us_derisk_events": 70,
+        "retained_events": 41,
+        "folds_sharpe_ge_matched": 3,
+        "worst_fold_sharpe": 0.814336,
+        "deterministic_admit": false,
+        "bootstrap_probability_cagr_gt_v11": 0.8173,
+        "bootstrap_probability_sharpe_gt_matched": 0.85365,
+        "bootstrap_median_candidate_minus_v11_cagr": 0.0008780253943056759,
+        "bootstrap_median_candidate_minus_matched_sharpe": 0.021554439222691513,
+        "bootstrap_mdd_p975": 0.14291914711415768,
+        "bootstrap_robust_pass": false,
+        "global_post_protocol_dsr_probability": 0.934554702736849,
+        "global_post_protocol_dsr_trial_count": 27,
+        "robust_factor_pass": false
+      }
+    }
+  ],
+  "matched_control": {
+    "candidate_id": "C-MARGIN-LEV-ALWAYS",
+    "cagr_percent": 14.362971,
+    "sharpe": 1.493322,
+    "mdd_percent": 8.612735,
+    "available_us_derisk_events": 70,
+    "retained_events": 70
+  },
+  "v11_control": {
+    "cagr_percent": 14.345615,
+    "sharpe": 1.522263,
+    "mdd_percent": 7.689054,
+    "target_fingerprint": "ba67c8aa24bc7168"
+  },
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED / NO_ROBUST_FACTOR_PASS, but this is the strongest new-information-domain near-miss in the current post-protocol search. F-MARGIN-LEV-US raised full-history CAGR to 14.440021% versus V11 14.345615% and improved Sharpe versus its matched unconditional retention control (1.516685 versus 1.493322), while keeping MDD at 8.612794%. However full Sharpe remained slightly below V11 1.522263 and the candidate beat the matched control in only 3/7 fixed folds. Paired 63-session moving-block bootstrap over 20,000 replicates gave P(CAGR candidate > V11)=81.730% and P(Sharpe candidate > matched)=85.365%, below the frozen 90% gates; both median incremental deltas were positive and candidate MDD P97.5=14.292% passed the 15% risk gate. Cumulative 27-trial DSR probability was 93.455%, below the frozen 95% requirement. Per the stop rule, no denominator, normalization, lookback, threshold, sign, retention, stale-rule or publication-lag rescue is permitted. Because the evidence is suggestive but not robust-certified, the only allowed continuation is a separately preregistered prospective shadow from a new freeze date, without modifying this historical rule.",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/candidates/statistical-audit.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/candidates/C-MARGIN-LEV-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/candidates/F-MARGIN-LEV-US-portfolio.csv"
+  ]
+}

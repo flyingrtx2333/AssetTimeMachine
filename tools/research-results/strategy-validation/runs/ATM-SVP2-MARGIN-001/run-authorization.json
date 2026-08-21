@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "bc15718086195f7f6e55f40d2a83b28f2f9689f8",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "44ad442338ef8ab8ea8fbb72046ec27ac3b4153d3dbdee583a8acc63beccb27e",
+  "preregistration_record_hash": "44ad442338ef8ab8ea8fbb72046ec27ac3b4153d3dbdee583a8acc63beccb27e",
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-MARGIN-001"
+}

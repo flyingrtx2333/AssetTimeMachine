@@ -1,0 +1,147 @@
+{
+  "files": [
+    {
+      "bytes": 187181,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/candidates/C-MARGIN-LEV-ALWAYS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "32f999e44365622d40123007dfa7ef1d1369d54d7400edb8be8ff32f012b6f45"
+    },
+    {
+      "bytes": 187169,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/candidates/F-MARGIN-LEV-US-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "9c1ea6e4f8b66ce00d7f3391f0cb9b5c02bad2a9f9cda434b40f8bfccdb84a15"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "0b313d912b76c970a997287b32f28cd375d99e3aa50b24827c8f8a4fa830ed44"
+    },
+    {
+      "bytes": 712,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "matched_control_id",
+        "cagr_percent",
+        "mdd_percent",
+        "vol_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "min_weight",
+        "fingerprint",
+        "source_events",
+        "us_derisk_events",
+        "available_us_derisk_events",
+        "retained_events",
+        "folds_sharpe_ge_matched",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "dab76f8ae4cb6823dcebaf08656f9c44cd975f6e17da9407d4dcd811e2f56467"
+    },
+    {
+      "bytes": 4464,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/candidates/candidate-metrics.json",
+      "sha256": "74b828368a418baf796388aeae425f4e69d033aef9f9cb6b1d1248a16adeb404"
+    },
+    {
+      "bytes": 274,
+      "columns": [
+        "candidate_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "global_dsr_probability",
+        "global_dsr_pass",
+        "robust_factor_pass",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_matched",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/candidates/statistical-audit.csv",
+      "row_count": 1,
+      "sha256": "44e071806d1d6e10f280e7aab8d763fc9e47d8a29f823873293a0f55dc3edc93"
+    },
+    {
+      "bytes": 2785,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/candidates/statistical-audit.json",
+      "sha256": "e19730517815dc39467a461df659b6912bcb11778a65a95525a6732e88021db8"
+    },
+    {
+      "bytes": 1097,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/execution.json",
+      "sha256": "d69fb4ce9cfa8802910f41a7de178bed1507e628ccc4a54a04b7d2867e726504"
+    },
+    {
+      "bytes": 433,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/run-authorization.json",
+      "sha256": "5099d9c4d9eb9cfdad3acedbfebac0ee48aa4b688d355c1e116b37340f32feb1"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 3291,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MARGIN-001/stdout.txt",
+      "sha256": "72e06400045023d214a0fa355160fdcd5fddcf1fcd111a5c42032cb5ea07246a"
+    }
+  ],
+  "generated_at": "2026-08-21T16:50:51+08:00",
+  "git_commit": "bc15718086195f7f6e55f40d2a83b28f2f9689f8",
+  "kind": "result",
+  "metadata": {
+    "campaign": "finra-margin-leverage-v1",
+    "deterministic_admitted": [],
+    "evidence_class": "R1_RETROSPECTIVE",
+    "formal_execution_commit": "bc15718086195f7f6e55f40d2a83b28f2f9689f8",
+    "global_dsr_trial_count": 27,
+    "robust_pass": []
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-MARGIN-001"
+}
