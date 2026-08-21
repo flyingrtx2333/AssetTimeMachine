@@ -1,0 +1,65 @@
+{
+  "trial_id": "ATM-SVP2-VRP-001",
+  "preregistration_record_hash": "73b766c372433c350eff6b09bf5320f3dcc6485f0b556ffe7bd29cdadf67c5c5",
+  "execution_git_commit": "94f11bf168d2d8d4387fddfd79c571e635a73c27",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/run-authorization.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-VRP-001.json",
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/artifact-manifest.json",
+  "status": "FAIL",
+  "candidate_results": [
+    {
+      "candidate_id": "F-VRP-PROXY",
+      "metrics": {
+        "cagr_percent": 14.76824,
+        "sharpe": 1.411748,
+        "mdd_percent": 13.380275,
+        "since2020_cagr_percent": 17.944525,
+        "since2020_sharpe": 1.500284,
+        "since2022_cagr_percent": 21.273344,
+        "since2022_sharpe": 1.692498,
+        "eligible_events": 129,
+        "available_events": 127,
+        "completed_events": 64,
+        "folds_sharpe_ge_matched": 3,
+        "worst_fold_sharpe": 0.547146,
+        "deterministic_admit": false,
+        "bootstrap_probability_cagr_gt_v11": 0.80485,
+        "bootstrap_probability_sharpe_gt_matched": 0.4659,
+        "bootstrap_median_candidate_minus_v11_cagr": 0.004147533841482885,
+        "bootstrap_median_candidate_minus_matched_sharpe": -0.0033627642092773913,
+        "bootstrap_mdd_p975": 0.19308231464438502,
+        "bootstrap_robust_pass": false,
+        "global_post_protocol_dsr_probability": 0.8336689736201125,
+        "global_post_protocol_dsr_trial_count": 25,
+        "robust_factor_pass": false
+      }
+    }
+  ],
+  "matched_control": {
+    "candidate_id": "C-VRP-ALWAYS",
+    "cagr_percent": 15.845239,
+    "sharpe": 1.413664,
+    "mdd_percent": 11.256435,
+    "completed_events": 127
+  },
+  "v11_control": {
+    "cagr_percent": 14.345615,
+    "sharpe": 1.522263,
+    "mdd_percent": 7.689054,
+    "target_fingerprint": "ba67c8aa24bc7168"
+  },
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED / NO_ROBUST_FACTOR_PASS. F-VRP-PROXY increased full-history CAGR to 14.768240% but failed the preregistered +0.50 percentage-point CAGR gate, reduced Sharpe to 1.411748 versus V11 1.522263, raised MDD to 13.380275%, beat its availability-matched control in only 3/7 fixed folds, and had lower full Sharpe than C-VRP-ALWAYS 1.413664. The matched control itself reached 15.845239% CAGR, showing that the proxy did not add timing value beyond mechanically using more of V11's unused risk budget. Paired 63-session moving-block bootstrap over 20,000 replicates gave P(CAGR candidate > V11)=80.485% and P(Sharpe candidate > matched)=46.590%; bootstrap MDD P97.5 was 19.308%, and cumulative 25-trial DSR probability was 83.367%. Per the frozen stop rule, no realized-volatility-window, threshold, VIX-series, fill-fraction, event-definition or replacement rescue search is permitted. This daily-data proxy must not be represented as the canonical model-free variance risk premium.",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/candidates/statistical-audit.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/candidates/C-VRP-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/candidates/F-VRP-PROXY-portfolio.csv"
+  ]
+}
