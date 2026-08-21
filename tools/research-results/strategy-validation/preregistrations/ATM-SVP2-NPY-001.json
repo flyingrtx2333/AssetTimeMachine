@@ -1,0 +1,104 @@
+{
+  "trial_id": "ATM-SVP2-NPY-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "FIRST_RELEASE_NET_PAYOUT_YIELD_FACTOR_V1",
+  "strategy_lineage": "net-payout-yield-v1; frozen control nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "hypothesis": "A high first-release aggregate nonfinancial-corporate net payout yield, defined relative only to the prior point-in-time expanding median, identifies frozen V11 U.S.-equity de-risk events that are too early and improves risk-adjusted performance versus both frozen V11 and an availability-matched unconditional retention control.",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-NPY-001.json",
+  "allowed_changes": [
+    "F-NET-PAYOUT-YIELD-US = latest first-release NetPayoutYield >= median of all earlier point-in-time-available first-release NetPayoutYield observations",
+    "NetPayoutYield = (NetDividends - NetEquityIssuance) / EquityMarketValue using same-release Federal Reserve Z.1 tables",
+    "on factor-available frozen V11 U.S.-equity de-risk events, retain exactly 50% of nasdaq/sp500 reductions when risk-on"
+  ],
+  "candidate_ids": ["F-NET-PAYOUT-YIELD-US"],
+  "candidate_count": 1,
+  "selection_metric": "No within-family selection. Evaluate the single candidate against frozen V11 and C-NET-PAYOUT-ALWAYS, then apply every preregistered deterministic, bootstrap, and cumulative DSR gate.",
+  "pass_fail_gates": [
+    "deterministic: full CAGR > V11 CAGR",
+    "deterministic: full Sharpe >= V11 Sharpe",
+    "deterministic: full Sharpe > C-NET-PAYOUT-ALWAYS Sharpe",
+    "deterministic: full MDD <=10%",
+    "deterministic: at least 5/7 fixed folds candidate Sharpe >= matched-control Sharpe",
+    "deterministic: worst fixed-fold Sharpe >0",
+    "deterministic: gross <=100%, min target weight >=0, no financing or negative cash",
+    "bootstrap: paired circular moving blocks, 63 sessions, 20000 replicates, seed 20260822",
+    "bootstrap: P(CAGR candidate > V11) >=0.90",
+    "bootstrap: P(Sharpe candidate > matched control) >=0.90",
+    "bootstrap: median candidate-minus-V11 CAGR delta >0",
+    "bootstrap: median candidate-minus-matched Sharpe delta >0",
+    "bootstrap: candidate MDD P97.5 <=15%",
+    "PBO: not applicable because the family contains exactly one candidate",
+    "global post-protocol DSR probability >=95% using all prior 29 formal return-seeking candidates plus F-NET-PAYOUT-YIELD-US, total trial count 30",
+    "ROBUST_FACTOR_PASS requires every applicable deterministic, bootstrap, and global DSR gate"
+  ],
+  "formal_run_budget": 1,
+  "follow_up_policy": "This Net Payout Yield campaign contains exactly one retrospective candidate. After formal performance is viewed, do not search fixed payout thresholds, rolling medians/percentiles, q/q or y/y changes, z-scores, slopes, dividend-only/repurchase-only/issuance-only variants, alternative denominators, normalization variables, sign reversals, retention fractions, or a second retrospective Net Payout family. A promising non-robust result may only become a separately preregistered prospective shadow without changing this historical rule.",
+  "swift_engine_entrypoint": "scripts/run_net_payout_yield_v1.py -> tools/net_payout_yield_v1.swiftpart + tools/net_payout_yield_v1_logic.swift -> frozen V11 source run + BacktestEngine.runResearchTargetProviderStrategyWithTrace -> shared BacktestDailySimulator",
+  "expected_outputs": [
+    "V11-CONTROL metrics and frozen target fingerprint",
+    "C-NET-PAYOUT-ALWAYS availability-matched U.S.-retention control metrics",
+    "F-NET-PAYOUT-YIELD-US full-history metrics",
+    "all seven fixed fold metrics plus 2020+ and 2022+ slices",
+    "source/U.S.-de-risk/available/retained event counts and portfolio constraints",
+    "one portfolio CSV per control/candidate",
+    "mechanical deterministic ADMIT_FOR_ROBUSTNESS flag",
+    "paired 20000-replicate moving-block bootstrap statistics",
+    "cumulative 30-trial Deflated Sharpe Ratio",
+    "mechanical ROBUST_FACTOR_PASS flag",
+    "factor-library publish + remote readback if and only if ROBUST_FACTOR_PASS=true",
+    "run authorization receipt, execution Git commit and SHA-256 result artifact manifest"
+  ],
+  "factor_definition": {
+    "factor_id": "F-NET-PAYOUT-YIELD-US",
+    "source": "Federal Reserve Financial Accounts Z.1 original quarterly release archives",
+    "coverage": "2011Q1..2026Q1",
+    "dividend_series": "FA106121075",
+    "equity_transaction_series": "FA103164105",
+    "equity_level_series": "LM103164105",
+    "formula": "(NetDividends - NetEquityIssuance) / EquityMarketValue",
+    "availability": "release_date + 1 calendar day",
+    "risk_on_rule": "latest available yield >= prior-only expanding median, excluding the latest observation from the median"
+  },
+  "matched_control": {
+    "control_id": "C-NET-PAYOUT-ALWAYS",
+    "rule": "retain exactly 50% of nasdaq/sp500 reductions on every factor-available frozen V11 U.S.-de-risk event regardless of the payout-yield state"
+  },
+  "shared_rules": {
+    "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+    "eligible_event": "current frozen V11 event reduces nasdaq and/or sp500 versus the prior frozen V11 event target",
+    "retention_fraction": 0.5,
+    "replay_rebalance_band": 0.25,
+    "fee_rate": 0.01,
+    "slippage_rate": 0.0005,
+    "max_gross": 1.0,
+    "shorting_allowed": false,
+    "financing_allowed": false
+  },
+  "forbidden_changes": [
+    "any frozen V11 parameter or target-path change",
+    "any fixed net-payout-yield threshold",
+    "any rolling-window median/percentile or full-sample threshold",
+    "any q/q, y/y, z-score, rank, slope or acceleration transformation",
+    "any dividend-only, repurchase-only, issuance-only, total-payout or earnings-yield rescue",
+    "any CPI, GDP, market-cap, interest-rate or balance-sheet normalization",
+    "any sign reversal",
+    "any 25%, 75%, 100% or other retention-fraction search",
+    "factor-driven trades between frozen V11 event dates",
+    "candidate replacement or a second retrospective Net Payout factor after results",
+    "dropping failed prior formal candidates from cumulative DSR accounting"
+  ],
+  "statistical_audit": {
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260822,
+    "pbo": "NOT_APPLICABLE_SINGLE_CANDIDATE",
+    "global_dsr_prior_candidate_count": 29,
+    "global_dsr_total_candidate_count_after_this_trial": 30
+  },
+  "factor_library_promotion": {
+    "trigger": "ROBUST_FACTOR_PASS=true only",
+    "action": "export -> validate -> import -> complete -> remote readback",
+    "failed_or_near_miss_policy": "retain as research evidence; do not label validated/promoted"
+  }
+}

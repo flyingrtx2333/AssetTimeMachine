@@ -1,0 +1,89 @@
+{
+  "files": [
+    {
+      "bytes": 5271408,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/generalization_public_history.json",
+      "sha256": "ab534219b08cdf417ee041be4322d512b29505439c8d0f2a469438d01730ac88"
+    },
+    {
+      "bytes": 24847,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCICREDIT_initial_release.csv",
+      "row_count": 732,
+      "sha256": "953198633f2f19cd42450c631bda3cc1d25bd23b40afc8bf58fa45ada0c4fc8c"
+    },
+    {
+      "bytes": 24762,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCILEVERAGE_initial_release.csv",
+      "row_count": 732,
+      "sha256": "d198027125ca6b317258c2fb4725ed3e5b217356a6b8c549b68dbb18d237b486"
+    },
+    {
+      "bytes": 27164,
+      "columns": [
+        "quarter",
+        "release_date",
+        "available_date",
+        "net_dividends_saar_billions",
+        "net_equity_issuance_saar_billions",
+        "net_payout_saar_billions",
+        "equity_market_value_billions",
+        "net_payout_yield",
+        "transaction_table_url",
+        "transaction_table_sha256",
+        "transaction_table_local_path",
+        "level_table_url",
+        "level_table_sha256",
+        "level_table_local_path"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/factor-data/NET-PAYOUT-VINTAGE-2026-08-21/NET_PAYOUT_YIELD_FIRST_RELEASE.csv",
+      "row_count": 61,
+      "sha256": "c6474446354251ccf4d359d1600c2f68d73d6e0f9e287100b3b9e17b773701cc"
+    },
+    {
+      "bytes": 756,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/NET-PAYOUT-VINTAGE-2026-08-21/fetch-summary.json",
+      "sha256": "c59da925b465e99a839688d1f20cc8404eb7c2649a43c1e6960089a10c596879"
+    }
+  ],
+  "generated_at": "2026-08-22T00:27:40+08:00",
+  "git_commit": "9489b1d10c1fd9b3f8249a0b51b3f70824f04278",
+  "kind": "dataset",
+  "metadata": {
+    "campaign": "net-payout-yield-v1",
+    "cost": "1.00% fee + 0.05% slippage",
+    "coverage": "2011Q1..2026Q1",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "formal_candidates": [
+      "F-NET-PAYOUT-YIELD-US"
+    ],
+    "performance_viewed_before_freeze": false,
+    "point_in_time": "each quarter uses its own archived Federal Reserve Z.1 release; available release_date+1 day",
+    "signal": "latest first-release net payout yield >= prior-only expanding median"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-NPY-001"
+}

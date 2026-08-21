@@ -1,0 +1,15 @@
+{
+  "first_quarter": "2011Q1",
+  "formula": "(Net Dividends Paid - Corporate Equities Liability Transactions) / Corporate Equities Liability Market Value",
+  "last_quarter": "2026Q1",
+  "max_net_payout_yield": 0.07948729878105518,
+  "min_net_payout_yield": 0.00815625589733912,
+  "nonpositive_count": 0,
+  "output_sha256": "c6474446354251ccf4d359d1600c2f68d73d6e0f9e287100b3b9e17b773701cc",
+  "performance_computed": false,
+  "point_in_time_note": "Every numerator and denominator is read from the same quarter's original Federal Reserve Z.1 release; source HTML is frozen locally with SHA-256.",
+  "positive_count": 61,
+  "purpose": "first-release aggregate net payout yield feasibility; no strategy performance",
+  "raw_table_count": 122,
+  "rows": 61
+}
