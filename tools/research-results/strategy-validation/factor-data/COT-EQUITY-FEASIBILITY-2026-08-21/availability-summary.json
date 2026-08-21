@@ -1,0 +1,64 @@
+{
+  "actual_release_overrides_2025": {
+    "2025-09-30": "2025-11-19",
+    "2025-10-07": "2025-11-21",
+    "2025-10-14": "2025-11-25",
+    "2025-10-21": "2025-12-02",
+    "2025-10-28": "2025-12-05",
+    "2025-11-04": "2025-12-09",
+    "2025-11-10": "2025-12-10",
+    "2025-11-18": "2025-12-12",
+    "2025-11-25": "2025-12-15",
+    "2025-12-02": "2025-12-17",
+    "2025-12-09": "2025-12-19",
+    "2025-12-16": "2025-12-23",
+    "2025-12-23": "2025-12-29"
+  },
+  "calendar_sha256": "e64fbac09f339ec0d19157ba9c610c1b20613db6a76d74fb7781ce06243617c3",
+  "excluded_report_rows": 22,
+  "factor_definition": "weekly change in S&P 500 Consolidated Leveraged Money net-long share of total open interest",
+  "factor_id": "F-COT-LEV-SPX",
+  "factor_input_sha256": "29d8b16d05cccba87bbbfb3927dfe669f1bf458a93e6bcb42eb1aa57cf043305",
+  "first_report_date": "2010-06-15",
+  "first_usable_available_date": "2010-06-29",
+  "known_blackouts": [
+    {
+      "end": "2013-10-29",
+      "reason": "2013 federal shutdown; CFTC resumed rolling publication 2013-10-25 and expected normal schedule by 2013-11-08",
+      "source": "CFTC Release 6745-13",
+      "start": "2013-10-01"
+    },
+    {
+      "end": "2019-02-26",
+      "reason": "2018-2019 lapse in appropriations; last normal COT release was 2018-12-21 and catch-up started 2019-02-01",
+      "source": "CFTC Release 7864-19",
+      "start": "2018-12-24"
+    },
+    {
+      "end": "2023-03-14",
+      "reason": "ION cyber incident delayed COT reports; CFTC issued the report originally scheduled for 2023-03-17 on 2023-03-21",
+      "source": "CFTC Release 8662-23 / COT Historical Special Announcements",
+      "start": "2023-01-31"
+    }
+  ],
+  "last_report_date": "2026-08-11",
+  "last_usable_available_date": "2026-08-18",
+  "normal_conservative_lag_days": 7,
+  "performance_computed": false,
+  "point_in_time_note": "Historical CFTC page dates are report/position dates, not release dates. Ordinary rows are delayed by 7 calendar days; known exceptional publication disruptions are excluded unless the CFTC published an exact actual-release table.",
+  "provenance": {
+    "historical_dates_warning": "https://www.cftc.gov/MarketReports/CommitmentsofTraders/HistoricalViewable/index.htm",
+    "ion_2023": "https://www.cftc.gov/PressRoom/PressReleases/8662-23",
+    "normal_schedule": "https://www.cftc.gov/MarketReports/CommitmentsofTraders/ReleaseSchedule/index.htm",
+    "shutdown_2013": "https://www.cftc.gov/PressRoom/PressReleases/6745-13",
+    "shutdown_2019": "https://www.cftc.gov/PressRoom/PressReleases/7864-19",
+    "shutdown_2025": "https://www.cftc.gov/PressRoom/PressReleases/9147-25",
+    "special_announcements": "https://www.cftc.gov/MarketReports/CommitmentsofTraders/HistoricalSpecialAnnouncements/index.htm"
+  },
+  "purpose": "point-in-time COT factor-input construction only; no strategy performance",
+  "raw_input": "tools/research-results/strategy-validation/factor-data/COT-EQUITY-FEASIBILITY-2026-08-21/TFF_EQUITY_INDEX_RAW.csv",
+  "raw_input_sha256": "daba21eec77fdb0657fed3bbb30b217ad8509bada8b4a9eb3df507355306774a",
+  "risk_on_rule_not_yet_executed": "delta_net_long_share > 0",
+  "rows_total": 844,
+  "rows_usable_with_delta": 821
+}

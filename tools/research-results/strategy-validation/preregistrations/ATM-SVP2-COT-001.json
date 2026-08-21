@@ -1,0 +1,110 @@
+{
+  "trial_id": "ATM-SVP2-COT-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "COT_LEVERAGED_MONEY_SPX_FACTOR_V1",
+  "strategy_lineage": "cot-leveraged-money-spx-v1; frozen control nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "hypothesis": "A positive weekly change in point-in-time-available S&P 500 Consolidated Leveraged Money net-long share can identify frozen V11 U.S.-equity de-risk events that are too early, improving return while matching or exceeding V11 Sharpe and beating an availability-matched unconditional U.S.-retention control.",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-COT-001.json",
+  "allowed_changes": [
+    "F-COT-LEV-SPX exact weekly change in S&P 500 Consolidated Leveraged Money net-long share of total open interest versus the immediately previous point-in-time usable report",
+    "risk-on exactly when DeltaLevNetShare > 0",
+    "on factor-available frozen V11 U.S.-equity de-risk events, retain exactly 50% of nasdaq/sp500 reductions when risk-on"
+  ],
+  "candidate_ids": [
+    "F-COT-LEV-SPX"
+  ],
+  "candidate_count": 1,
+  "selection_metric": "No within-family model selection. There is exactly one candidate; compare it against frozen V11 and C-COT-LEV-ALWAYS, then apply the preregistered deterministic, bootstrap and cumulative DSR gates.",
+  "pass_fail_gates": [
+    "deterministic: full CAGR > V11 CAGR",
+    "deterministic: full Sharpe >= V11 Sharpe",
+    "deterministic: full Sharpe > C-COT-LEV-ALWAYS Sharpe",
+    "deterministic: full MDD <=10%",
+    "deterministic: at least 5/7 fixed folds candidate Sharpe >= matched-control Sharpe",
+    "deterministic: worst fixed-fold Sharpe >0",
+    "deterministic: gross <=100%, min target weight >=0, no financing or negative cash",
+    "bootstrap: paired circular moving blocks, 63 sessions, 20000 replicates, seed 20260821",
+    "bootstrap: P(CAGR candidate > V11) >=0.90",
+    "bootstrap: P(Sharpe candidate > matched control) >=0.90",
+    "bootstrap: median candidate-minus-V11 CAGR delta >0",
+    "bootstrap: median candidate-minus-matched Sharpe delta >0",
+    "bootstrap: candidate MDD P97.5 <=15%",
+    "PBO: not applicable because the family contains exactly one candidate and no within-family selection",
+    "global post-protocol DSR probability >=95% using the prior 25 formal return-seeking candidates plus F-COT-LEV-SPX, total trial count 26",
+    "ROBUST_FACTOR_PASS requires every applicable deterministic, bootstrap and global DSR gate"
+  ],
+  "formal_run_budget": 1,
+  "follow_up_policy": "This COT campaign contains exactly one retrospective candidate. After any formal performance is viewed, do not search another trader category, Nasdaq confirmation, a multi-week positioning window, z-score/percentile/magnitude threshold, sign reversal, retention fraction, stale rule, availability policy, or a second retrospective COT family. A promising non-robust result may only become a new prospective shadow from a new freeze date.",
+  "swift_engine_entrypoint": "scripts/run_cot_leveraged_money_spx_v1.py -> tools/cot_leveraged_money_spx_v1.swiftpart + tools/cot_leveraged_money_spx_v1_logic.swift -> frozen V11 source run + BacktestEngine.runResearchTargetProviderStrategyWithTrace -> shared BacktestDailySimulator",
+  "expected_outputs": [
+    "V11-CONTROL metrics and frozen target fingerprint",
+    "C-COT-LEV-ALWAYS availability-matched U.S.-retention control metrics",
+    "F-COT-LEV-SPX full-history metrics",
+    "all seven fixed fold metrics plus 2020+ and 2022+ slices",
+    "source/U.S.-de-risk/available/retained event counts and portfolio constraints",
+    "one portfolio CSV per control/candidate",
+    "mechanical deterministic ADMIT_FOR_ROBUSTNESS flag",
+    "paired 20000-replicate block-bootstrap statistics",
+    "cumulative 26-trial Deflated Sharpe Ratio",
+    "mechanical ROBUST_FACTOR_PASS flag",
+    "run authorization receipt, execution Git commit and SHA-256 result artifact manifest"
+  ],
+  "factor_definition": {
+    "factor_id": "F-COT-LEV-SPX",
+    "source": "CFTC Traders in Financial Futures, Futures Only",
+    "market": "S&P 500 Consolidated",
+    "cftc_contract_market_code": "13874+",
+    "raw_coverage": "2010-06-15..2026-08-11",
+    "net_share_rule": "(Lev_Money_Positions_Long_All - Lev_Money_Positions_Short_All) / Open_Interest_All",
+    "delta_rule": "current net share minus immediately previous point-in-time usable report net share",
+    "risk_on_rule": "delta_net_long_share > 0",
+    "max_stale_calendar_days": 14
+  },
+  "availability_policy": {
+    "ordinary": "report_date + 7 calendar days",
+    "known_blackouts_excluded": [
+      "2013-10-01..2013-10-29",
+      "2018-12-24..2019-02-26",
+      "2023-01-31..2023-03-14"
+    ],
+    "2025_shutdown_backlog": "exact official CFTC actual publication dates, usable from actual release date +1 calendar day",
+    "historical_report_date_warning": "CFTC historical archive dates are position/report dates, not public release timestamps"
+  },
+  "matched_control": {
+    "control_id": "C-COT-LEV-ALWAYS",
+    "rule": "retain exactly 50% of nasdaq/sp500 reductions on every factor-available frozen V11 U.S.-de-risk event regardless of the sign of DeltaLevNetShare"
+  },
+  "shared_rules": {
+    "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+    "eligible_event": "current frozen V11 event reduces nasdaq and/or sp500 versus the prior frozen V11 event target",
+    "retention_fraction": 0.5,
+    "replay_rebalance_band": 0.25,
+    "fee_rate": 0.01,
+    "slippage_rate": 0.0005,
+    "max_gross": 1.0,
+    "shorting_allowed": false,
+    "financing_allowed": false
+  },
+  "forbidden_changes": [
+    "any frozen V11 parameter or target-path rule change",
+    "any Asset Manager, Dealer, Other Reportable or Nonreportable rescue candidate",
+    "any Nasdaq confirmation, S&P/Nasdaq average or trader-category ensemble",
+    "any 2/4/8/13/26/52-week or other positioning window",
+    "any z-score, percentile, level threshold, magnitude threshold, persistence rule or sign reversal",
+    "any 25%, 75%, 100% or other retention-fraction search",
+    "any change to the 14-day stale rule or frozen CFTC availability policy",
+    "factor-driven trades between frozen V11 event dates",
+    "candidate replacement or a second retrospective COT factor after results",
+    "changing fee/slippage, leverage, financing, shorting or cash constraints",
+    "dropping failed prior formal candidates from cumulative DSR accounting"
+  ],
+  "statistical_audit": {
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260821,
+    "pbo": "NOT_APPLICABLE_SINGLE_CANDIDATE",
+    "global_dsr_prior_candidate_count": 25,
+    "global_dsr_total_candidate_count_after_this_trial": 26
+  }
+}

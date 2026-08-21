@@ -1,0 +1,204 @@
+{
+  "archives": {
+    "2006-2016-history": {
+      "filtered_rows": 10,
+      "sha256": "c3a8d01765133a24ce9c082de88933816497d06f1b03eec8c53750bdd818f14b",
+      "url": "https://www.cftc.gov/files/dea/history/fin_fut_txt_2006_2016.zip",
+      "used_report_date_range": [
+        "2010-06-15",
+        "2010-07-19"
+      ]
+    },
+    "2010": {
+      "filtered_rows": 48,
+      "sha256": "5392a28735d28dcb8feb5e60282c7c686759df9954699b5bcdadcd90db6d7fad",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2010.zip",
+      "used_report_date_range": [
+        "2010-07-20",
+        "2010-12-31"
+      ]
+    },
+    "2011": {
+      "filtered_rows": 104,
+      "sha256": "583a93474847f1070b213e2b12cfa73c48d9ba05f24f7d001a338de125468b57",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2011.zip",
+      "used_report_date_range": [
+        "2011-01-01",
+        "2011-12-31"
+      ]
+    },
+    "2012": {
+      "filtered_rows": 106,
+      "sha256": "c5b65a8c3e0f597fae6b41eaba9246e2a995b14de3aa8fd12aabee8d05032a58",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2012.zip",
+      "used_report_date_range": [
+        "2012-01-01",
+        "2012-12-31"
+      ]
+    },
+    "2013": {
+      "filtered_rows": 104,
+      "sha256": "682e643683c1ca36f723980544f4ff3bef7e0c3d299bc85c0904ef17b97f2780",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2013.zip",
+      "used_report_date_range": [
+        "2013-01-01",
+        "2013-12-31"
+      ]
+    },
+    "2014": {
+      "filtered_rows": 104,
+      "sha256": "83893048e9a73e8b6e81d9ef7a737f9f86db6bdc28f17d393b8df2e87ab713d6",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2014.zip",
+      "used_report_date_range": [
+        "2014-01-01",
+        "2014-12-31"
+      ]
+    },
+    "2015": {
+      "filtered_rows": 104,
+      "sha256": "a506b8ceb510fb49b8b21a1687fff35903698b8968d079b9e5f12ce92f96b68e",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2015.zip",
+      "used_report_date_range": [
+        "2015-01-01",
+        "2015-12-31"
+      ]
+    },
+    "2016": {
+      "filtered_rows": 104,
+      "sha256": "e8570bcd83df5c3e25aca61a59985001db83a8299a25943525c8d109ffc94a15",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2016.zip",
+      "used_report_date_range": [
+        "2016-01-01",
+        "2016-12-31"
+      ]
+    },
+    "2017": {
+      "filtered_rows": 104,
+      "sha256": "e6e2dd537efcc57cdd6cdcc4e45e567fd47e65d8afc8369d8383bf09195ae7f5",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2017.zip",
+      "used_report_date_range": [
+        "2017-01-01",
+        "2017-12-31"
+      ]
+    },
+    "2018": {
+      "filtered_rows": 106,
+      "sha256": "6843d130a25a17c6248df67463810f02077ef4eeafdd629299d21c18f5125e40",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2018.zip",
+      "used_report_date_range": [
+        "2018-01-01",
+        "2018-12-31"
+      ]
+    },
+    "2019": {
+      "filtered_rows": 104,
+      "sha256": "631b31880d513072aa50d63117c896184dd35db3cc8fcdd6debd80197ee7a661",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2019.zip",
+      "used_report_date_range": [
+        "2019-01-01",
+        "2019-12-31"
+      ]
+    },
+    "2020": {
+      "filtered_rows": 104,
+      "sha256": "c90d98d94db708772d669f263fb8061c75f8a7f681ba231fb21247e5c9798e6b",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2020.zip",
+      "used_report_date_range": [
+        "2020-01-01",
+        "2020-12-31"
+      ]
+    },
+    "2021": {
+      "filtered_rows": 104,
+      "sha256": "5c929991038c70ae2501661b6d442b9e784d3c29d3166ceac2e21b45ac93d56a",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2021.zip",
+      "used_report_date_range": [
+        "2021-01-01",
+        "2021-12-31"
+      ]
+    },
+    "2022": {
+      "filtered_rows": 104,
+      "sha256": "94c9c1fdee9dfbe377a09923ddfe26b88d3460605dd076081f221ad367d88601",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2022.zip",
+      "used_report_date_range": [
+        "2022-01-01",
+        "2022-12-31"
+      ]
+    },
+    "2023": {
+      "filtered_rows": 104,
+      "sha256": "43c3dbdd4d01fceefad5e457003751cdc0974c7cf46097b322e26e9e2fe44d7a",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2023.zip",
+      "used_report_date_range": [
+        "2023-01-01",
+        "2023-12-31"
+      ]
+    },
+    "2024": {
+      "filtered_rows": 106,
+      "sha256": "3f00585741a7cf76c207df640951d644dd91ff22a1106b38ca37a2469c765637",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2024.zip",
+      "used_report_date_range": [
+        "2024-01-01",
+        "2024-12-31"
+      ]
+    },
+    "2025": {
+      "filtered_rows": 104,
+      "sha256": "2ea0cda6395f7dd6501c27422be3763e1f2f5b41b768cfd36b871f092a07d438",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2025.zip",
+      "used_report_date_range": [
+        "2025-01-01",
+        "2025-12-31"
+      ]
+    },
+    "2026": {
+      "filtered_rows": 64,
+      "sha256": "2fc95d7008c9fcfdf51d505c05c5a60e06c3d979ae43292c0c5562d9f485f8d6",
+      "url": "https://www.cftc.gov/files/dea/history/fut_fin_txt_2026.zip",
+      "used_report_date_range": [
+        "2026-01-01",
+        "2026-12-31"
+      ]
+    }
+  },
+  "coverage": {
+    "nasdaq100_consolidated": {
+      "commodity_codes": [
+        "209"
+      ],
+      "contract_market_codes": [
+        "20974+"
+      ],
+      "first_report_date": "2010-06-15",
+      "last_report_date": "2026-08-11",
+      "rows": 844
+    },
+    "sp500_consolidated": {
+      "commodity_codes": [
+        "138"
+      ],
+      "contract_market_codes": [
+        "13874+"
+      ],
+      "first_report_date": "2010-06-15",
+      "last_report_date": "2026-08-11",
+      "rows": 844
+    }
+  },
+  "critical_point_in_time_warning": "Report_Date_as_YYYY-MM-DD is the CFTC position/report date, not the public release timestamp. No row may be consumed by a formal backtest until a separate release-availability policy handles normal Friday publication, holidays, and shutdown/backlog exceptions.",
+  "historical_availability_assigned": false,
+  "output_sha256": "daba21eec77fdb0657fed3bbb30b217ad8509bada8b4a9eb3df507355306774a",
+  "performance_computed": false,
+  "purpose": "CFTC TFF equity-index positioning feasibility; no factor signal and no performance",
+  "source": "CFTC Traders in Financial Futures, futures only; 2006-2010 early history archive plus annual compressed archives from 2010-07-20 onward",
+  "targets": {
+    "13874+": "sp500_consolidated",
+    "20974+": "nasdaq100_consolidated"
+  },
+  "years": [
+    2006,
+    2026
+  ]
+}
