@@ -1,0 +1,92 @@
+{
+  "trial_id": "ATM-SVP2-LIT-STRESS-001",
+  "preregistration_record_hash": "3364e3deba8bf538c45940993b8efc9bb3887d6b107e4022da6553f455a86865",
+  "execution_git_commit": "7952fc27d19dc74e164e1c0b9b23cca73d0ff5cb",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/run-authorization.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-LIT-STRESS-001.json",
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/artifact-manifest.json",
+  "status": "FAIL",
+  "candidate_results": [
+    {
+      "candidate_id": "F-BAA",
+      "metrics": {
+        "cagr_percent": 14.153678,
+        "sharpe": 1.442556,
+        "mdd_percent": 8.588683,
+        "since2020_cagr_percent": 17.600385,
+        "since2022_cagr_percent": 20.604691,
+        "folds_sharpe_ge_matched": 5,
+        "worst_fold_sharpe": 0.490012,
+        "deterministic_admit": false,
+        "bootstrap_probability_cagr_gt_v11": 0.26975,
+        "bootstrap_probability_sharpe_gt_matched": 0.779,
+        "bootstrap_mdd_p975": 0.1546885654815953,
+        "bootstrap_robust_pass": false,
+        "family_dsr_probability": 0.9999999999986351,
+        "global_post_protocol_dsr_probability": 0.8620842717975304,
+        "family_pbo": 0.45714285714285713,
+        "robust_factor_pass": false
+      }
+    },
+    {
+      "candidate_id": "F-EPU",
+      "metrics": {
+        "cagr_percent": 14.376026,
+        "sharpe": 1.48498,
+        "mdd_percent": 8.82443,
+        "since2020_cagr_percent": 17.606863,
+        "since2022_cagr_percent": 21.130448,
+        "folds_sharpe_ge_matched": 4,
+        "worst_fold_sharpe": 0.593563,
+        "deterministic_admit": false,
+        "bootstrap_probability_cagr_gt_v11": 0.54095,
+        "bootstrap_probability_sharpe_gt_matched": 0.98365,
+        "bootstrap_mdd_p975": 0.1535491631768694,
+        "bootstrap_robust_pass": false,
+        "family_dsr_probability": 0.9999999999997001,
+        "global_post_protocol_dsr_probability": 0.9030652227828436,
+        "family_pbo": 0.45714285714285713,
+        "robust_factor_pass": false
+      }
+    },
+    {
+      "candidate_id": "F-MOVE",
+      "metrics": {
+        "cagr_percent": 14.607176,
+        "sharpe": 1.503521,
+        "mdd_percent": 8.521421,
+        "since2020_cagr_percent": 18.392842,
+        "since2022_cagr_percent": 21.794669,
+        "folds_sharpe_ge_matched": 5,
+        "worst_fold_sharpe": 0.694512,
+        "deterministic_admit": false,
+        "bootstrap_probability_cagr_gt_v11": 0.86595,
+        "bootstrap_probability_sharpe_gt_matched": 0.99295,
+        "bootstrap_mdd_p975": 0.146315361797841,
+        "bootstrap_robust_pass": false,
+        "family_dsr_probability": 0.9999999999998322,
+        "global_post_protocol_dsr_probability": 0.917480743580944,
+        "family_pbo": 0.45714285714285713,
+        "robust_factor_pass": false
+      }
+    }
+  ],
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED / NO_ROBUST_FACTOR_PASS. F-MOVE was the strongest candidate (CAGR 14.607176%, Sharpe 1.503521, MDD 8.521421%, 5/7 fold wins versus matched control), but it failed the preregistered deterministic CAGR and V11-Sharpe gates. Its paired block bootstrap showed P(CAGR>V11)=86.595%, below the frozen 90% requirement, despite P(Sharpe>matched)=99.295% and acceptable bootstrap MDD P97.5=14.632%. The three-candidate family PBO was 45.714%, above the <=20% gate, and F-MOVE cumulative 24-trial DSR was 91.748%, below 95%. F-EPU and F-BAA failed more strongly. Per the frozen stop rule, no lookback, threshold, source, retention, combination, or replacement rescue is permitted in this campaign.",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/statistical-audit.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/C-BAA-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/F-BAA-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/C-EPU-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/F-EPU-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/C-MOVE-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/F-MOVE-portfolio.csv"
+  ]
+}

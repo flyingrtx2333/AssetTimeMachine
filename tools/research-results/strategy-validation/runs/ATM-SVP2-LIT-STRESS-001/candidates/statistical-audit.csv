@@ -1,0 +1,4 @@
+candidate_id,deterministic_admit,bootstrap_pass,pbo_pass,family_dsr_probability,global_dsr_probability,robust_factor_pass,probability_cagr_gt_v11,probability_sharpe_gt_matched,candidate_mdd_p975
+F-BAA,False,False,False,0.9999999999986351,0.8620842717975304,False,0.26975,0.779,0.1546885654815953
+F-EPU,False,False,False,0.9999999999997001,0.9030652227828436,False,0.54095,0.98365,0.1535491631768694
+F-MOVE,False,False,False,0.9999999999998322,0.917480743580944,False,0.86595,0.99295,0.146315361797841

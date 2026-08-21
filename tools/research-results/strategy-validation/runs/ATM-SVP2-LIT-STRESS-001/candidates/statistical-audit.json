@@ -1,0 +1,257 @@
+{
+  "candidate_results": [
+    {
+      "bootstrap": {
+        "bootstrap": {
+          "block_sessions": 63,
+          "candidate_cagr_p025": 0.09873540215077342,
+          "candidate_cagr_p50": 0.1358115195896757,
+          "candidate_cagr_p975": 0.17536391416975763,
+          "candidate_mdd_p975": 0.1546885654815953,
+          "candidate_sharpe_p025": 1.1229193038656133,
+          "candidate_sharpe_p50": 1.4402573680697892,
+          "candidate_sharpe_p975": 1.7480938553023306,
+          "median_candidate_minus_matched_sharpe": 0.01882490892270916,
+          "median_candidate_minus_v11_cagr": -0.0017431732372037156,
+          "probability_cagr_gt_v11": 0.26975,
+          "probability_sharpe_gt_matched_control": 0.779,
+          "replicates": 20000,
+          "rng_seed": 20260821
+        },
+        "bootstrap_robust_pass": false,
+        "candidate_id": "F-BAA",
+        "checks": {
+          "candidate_mdd_p975_le_0_15": false,
+          "median_cagr_delta_gt_0": false,
+          "median_sharpe_delta_gt_0": true,
+          "probability_cagr_gt_v11_ge_0_90": false,
+          "probability_sharpe_gt_matched_ge_0_90": false
+        },
+        "observed": {
+          "candidate": {
+            "cagr": 0.13640080994597067,
+            "mdd": 0.08588682503310208,
+            "sharpe": 1.4425558507663356
+          },
+          "matched_control": {
+            "cagr": 0.13756545687168095,
+            "mdd": 0.08612735473785937,
+            "sharpe": 1.42304607976416
+          },
+          "v11": {
+            "cagr": 0.13824639794201685,
+            "mdd": 0.07689054224818148,
+            "sharpe": 1.522263241726085
+          }
+        },
+        "sample": {
+          "aligned_portfolio_dates": 6398,
+          "daily_returns": 6397,
+          "first_date": "2002-02-04",
+          "last_date": "2026-08-13"
+        }
+      },
+      "candidate_id": "F-BAA",
+      "deterministic_admit": false,
+      "family_dsr": {
+        "dsr_probability": 0.9999999999986351,
+        "dsr_z": 6.990970006867906,
+        "expected_max_sharpe_annualized": 0.026652234187131894,
+        "observations": 6397,
+        "observed_sharpe_annualized": 1.4425558507663359,
+        "pearson_kurtosis": 9.590772711656834,
+        "skewness": -0.25732626668789826,
+        "trial_count": 3
+      },
+      "family_dsr_pass": true,
+      "global_dsr_pass": false,
+      "global_post_protocol_dsr": {
+        "dsr_probability": 0.8620842717975304,
+        "dsr_z": 1.0897314537674607,
+        "expected_max_sharpe_annualized": 1.2218490382676888,
+        "observations": 6397,
+        "observed_sharpe_annualized": 1.4425558507663359,
+        "pearson_kurtosis": 9.590772711656834,
+        "skewness": -0.25732626668789826,
+        "trial_count": 24
+      },
+      "robust_factor_pass": false
+    },
+    {
+      "bootstrap": {
+        "bootstrap": {
+          "block_sessions": 63,
+          "candidate_cagr_p025": 0.10086435894457779,
+          "candidate_cagr_p50": 0.13796611772509867,
+          "candidate_cagr_p975": 0.17773488367483237,
+          "candidate_mdd_p975": 0.1535491631768694,
+          "candidate_sharpe_p025": 1.165107921185277,
+          "candidate_sharpe_p50": 1.4827410908131107,
+          "candidate_sharpe_p975": 1.7955431374646063,
+          "median_candidate_minus_matched_sharpe": 0.060371140400941714,
+          "median_candidate_minus_v11_cagr": 0.0002878038222813156,
+          "probability_cagr_gt_v11": 0.54095,
+          "probability_sharpe_gt_matched_control": 0.98365,
+          "replicates": 20000,
+          "rng_seed": 20260821
+        },
+        "bootstrap_robust_pass": false,
+        "candidate_id": "F-EPU",
+        "checks": {
+          "candidate_mdd_p975_le_0_15": false,
+          "median_cagr_delta_gt_0": true,
+          "median_sharpe_delta_gt_0": true,
+          "probability_cagr_gt_v11_ge_0_90": false,
+          "probability_sharpe_gt_matched_ge_0_90": true
+        },
+        "observed": {
+          "candidate": {
+            "cagr": 0.13853881259218426,
+            "mdd": 0.08824430437513642,
+            "sharpe": 1.4849795328968902
+          },
+          "matched_control": {
+            "cagr": 0.13756545687168087,
+            "mdd": 0.08612735473785937,
+            "sharpe": 1.4230460797641586
+          },
+          "v11": {
+            "cagr": 0.13824639794201685,
+            "mdd": 0.07689054224818148,
+            "sharpe": 1.522263241726085
+          }
+        },
+        "sample": {
+          "aligned_portfolio_dates": 6398,
+          "daily_returns": 6397,
+          "first_date": "2002-02-04",
+          "last_date": "2026-08-13"
+        }
+      },
+      "candidate_id": "F-EPU",
+      "deterministic_admit": false,
+      "family_dsr": {
+        "dsr_probability": 0.9999999999997001,
+        "dsr_z": 7.200546092240274,
+        "expected_max_sharpe_annualized": 0.026652234187131894,
+        "observations": 6397,
+        "observed_sharpe_annualized": 1.4849795328968904,
+        "pearson_kurtosis": 9.25743424074721,
+        "skewness": -0.24611272781891172,
+        "trial_count": 3
+      },
+      "family_dsr_pass": true,
+      "global_dsr_pass": false,
+      "global_post_protocol_dsr": {
+        "dsr_probability": 0.9030652227828436,
+        "dsr_z": 1.2992167509501145,
+        "expected_max_sharpe_annualized": 1.2218490382676888,
+        "observations": 6397,
+        "observed_sharpe_annualized": 1.4849795328968904,
+        "pearson_kurtosis": 9.25743424074721,
+        "skewness": -0.24611272781891172,
+        "trial_count": 24
+      },
+      "robust_factor_pass": false
+    },
+    {
+      "bootstrap": {
+        "bootstrap": {
+          "block_sessions": 63,
+          "candidate_cagr_p025": 0.10316642294478995,
+          "candidate_cagr_p50": 0.14018100802353797,
+          "candidate_cagr_p975": 0.1795995824746852,
+          "candidate_mdd_p975": 0.146315361797841,
+          "candidate_sharpe_p025": 1.1891184209692975,
+          "candidate_sharpe_p50": 1.5010520083723877,
+          "candidate_sharpe_p975": 1.8103998137846617,
+          "median_candidate_minus_matched_sharpe": 0.08030881650827171,
+          "median_candidate_minus_v11_cagr": 0.002416222645676938,
+          "probability_cagr_gt_v11": 0.86595,
+          "probability_sharpe_gt_matched_control": 0.99295,
+          "replicates": 20000,
+          "rng_seed": 20260821
+        },
+        "bootstrap_robust_pass": false,
+        "candidate_id": "F-MOVE",
+        "checks": {
+          "candidate_mdd_p975_le_0_15": true,
+          "median_cagr_delta_gt_0": true,
+          "median_sharpe_delta_gt_0": true,
+          "probability_cagr_gt_v11_ge_0_90": false,
+          "probability_sharpe_gt_matched_ge_0_90": true
+        },
+        "observed": {
+          "candidate": {
+            "cagr": 0.14076130520579136,
+            "mdd": 0.08521420506300792,
+            "sharpe": 1.5035206538983605
+          },
+          "matched_control": {
+            "cagr": 0.1373859254966473,
+            "mdd": 0.08612735473785971,
+            "sharpe": 1.421308578436034
+          },
+          "v11": {
+            "cagr": 0.13824639794201685,
+            "mdd": 0.07689054224818148,
+            "sharpe": 1.522263241726085
+          }
+        },
+        "sample": {
+          "aligned_portfolio_dates": 6398,
+          "daily_returns": 6397,
+          "first_date": "2002-02-04",
+          "last_date": "2026-08-13"
+        }
+      },
+      "candidate_id": "F-MOVE",
+      "deterministic_admit": false,
+      "family_dsr": {
+        "dsr_probability": 0.9999999999998322,
+        "dsr_z": 7.279297045786778,
+        "expected_max_sharpe_annualized": 0.026652234187131894,
+        "observations": 6397,
+        "observed_sharpe_annualized": 1.5035206538983605,
+        "pearson_kurtosis": 9.988580903732686,
+        "skewness": -0.25965345078945967,
+        "trial_count": 3
+      },
+      "family_dsr_pass": true,
+      "global_dsr_pass": false,
+      "global_post_protocol_dsr": {
+        "dsr_probability": 0.917480743580944,
+        "dsr_z": 1.38832365305993,
+        "expected_max_sharpe_annualized": 1.2218490382676888,
+        "observations": 6397,
+        "observed_sharpe_annualized": 1.5035206538983605,
+        "pearson_kurtosis": 9.988580903732686,
+        "skewness": -0.25965345078945967,
+        "trial_count": 24
+      },
+      "robust_factor_pass": false
+    }
+  ],
+  "family_pbo": {
+    "aligned_portfolio_dates": 6398,
+    "blocks": 8,
+    "pass": false,
+    "pbo": 0.45714285714285713,
+    "selected_oos_rank_median": 0.75,
+    "selected_under_v11_fraction": 0.9142857142857143,
+    "splits": 70,
+    "strong": false
+  },
+  "method": {
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260821,
+    "bootstrap_sampling": "paired circular moving blocks",
+    "family_dsr_trial_count": 3,
+    "global_post_protocol_dsr_trial_count": 24,
+    "pbo_blocks": 8
+  },
+  "protocol_id": "ATM-SVP-2",
+  "robust_pass_candidates": [],
+  "trial_id": "ATM-SVP2-LIT-STRESS-001"
+}
