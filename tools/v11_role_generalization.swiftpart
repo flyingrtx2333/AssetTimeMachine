@@ -47,8 +47,13 @@
                 return
             }
             let expectedRoles = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
-            guard Set(roleMapping.keys) == Set(expectedRoles),
-                  expectedRoles.allSatisfy({ historySeries(roleMapping[$0] ?? "") != nil }) else {
+            let requestedCandidate = ProcessInfo.processInfo.environment["ATM_V11_ROLE_CANDIDATE"] ?? ""
+            guard Set(roleMapping.keys) == Set(expectedRoles) else {
+                print("V11_ROLE_GENERALIZATION_ROLE_MAPPING_INVALID")
+                return
+            }
+            if requestedCandidate != "baseline_identity",
+               !expectedRoles.allSatisfy({ historySeries(roleMapping[$0] ?? "") != nil }) {
                 print("V11_ROLE_GENERALIZATION_SERIES_MISSING")
                 return
             }
@@ -127,9 +132,9 @@
                 return run
             }
 
-            let requestedCandidate = ProcessInfo.processInfo.environment["ATM_V11_ROLE_CANDIDATE"] ?? ""
             let candidateRoles: [String: Set<String>] = [
                 "baseline_identity": [],
+                "baseline_common_window": [],
                 "one_slot_gold_safe_haven": ["gold_cny"],
                 "one_slot_us_growth_equity": ["nasdaq"],
                 "one_slot_us_broad_equity": ["sp500"],

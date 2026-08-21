@@ -1,0 +1,137 @@
+{
+  "files": [
+    {
+      "bytes": 5271408,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/generalization_public_history.json",
+      "sha256": "ab534219b08cdf417ee041be4322d512b29505439c8d0f2a469438d01730ac88"
+    },
+    {
+      "bytes": 24847,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCICREDIT_initial_release.csv",
+      "row_count": 732,
+      "sha256": "953198633f2f19cd42450c631bda3cc1d25bd23b40afc8bf58fa45ada0c4fc8c"
+    },
+    {
+      "bytes": 24762,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCILEVERAGE_initial_release.csv",
+      "row_count": 732,
+      "sha256": "d198027125ca6b317258c2fb4725ed3e5b217356a6b8c549b68dbb18d237b486"
+    },
+    {
+      "bytes": 146776,
+      "columns": [
+        "date",
+        "value"
+      ],
+      "date_column": "date",
+      "first_date": "2007-04-11",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-006/HYG.csv",
+      "row_count": 4867,
+      "sha256": "adc545b86d08208234ab7cdbaaa5a6a0f0eea35d54766af10b0932ea5403eed5"
+    },
+    {
+      "bytes": 180636,
+      "columns": [
+        "date",
+        "value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-07-30",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-006/SHY.csv",
+      "row_count": 6049,
+      "sha256": "9c6bd38c365e371cbb2398d0aa6ada39a21cde734f3c8e454498b5f269fbb4a4"
+    },
+    {
+      "bytes": 194040,
+      "columns": [
+        "date",
+        "value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-01-02",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-006/VIX.csv",
+      "row_count": 6442,
+      "sha256": "7b3bfb8bfedb700213d4a62576937bed427b66bc3f1f15ae3798fdbf195caa96"
+    },
+    {
+      "bytes": 117681,
+      "columns": [
+        "date",
+        "value"
+      ],
+      "date_column": "date",
+      "first_date": "2011-01-03",
+      "format": "csv",
+      "last_date": "2026-07-17",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-006/VIX9D.csv",
+      "row_count": 3907,
+      "sha256": "df50bbbea251f6ab83c9d7e2d65d5383d884e2220a45561f850787f9f3dcdc24"
+    },
+    {
+      "bytes": 145916,
+      "columns": [
+        "date",
+        "value"
+      ],
+      "date_column": "date",
+      "first_date": "2007-01-03",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-006/VVIX.csv",
+      "row_count": 4925,
+      "sha256": "32166faf90f4085a60971f0b64dcd692942b28c7c04710ad9de964883ea8316e"
+    },
+    {
+      "bytes": 3840,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-006/fetch-summary.json",
+      "sha256": "1877915c3b09ebb6a870138393e7bb2c444b6084067ab8acea469fe929097f2a"
+    }
+  ],
+  "generated_at": "2026-08-21T01:29:00+08:00",
+  "git_commit": "9473efd5d27d3b82a732b8a715e912f721d2d739",
+  "kind": "dataset",
+  "metadata": {
+    "evidence_class": "R1_RETROSPECTIVE",
+    "factor_rules_frozen": true,
+    "final_retrospective_discovery_batch": true,
+    "formal_candidates": [
+      "F-VIXTERM",
+      "F-VVIX",
+      "F-CREDITCASH"
+    ],
+    "lineage": "final-crisis-filter-event-budget-v6",
+    "matched_controls": [
+      "C-VIXTERM-ALWAYS",
+      "C-VVIX-ALWAYS",
+      "C-CREDITCASH-ALWAYS"
+    ]
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-006"
+}

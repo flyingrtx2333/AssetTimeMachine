@@ -1,0 +1,89 @@
+{
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-003",
+  "protocol_id": "ATM-SVP-2",
+  "strategy_lineage": "orthogonal-event-factor-family-v3; frozen control nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "hypothesis": "At least one of three previously unresearched market-price factors can improve frozen V11 by timing 50% retention of genuine V11 de-risk events better than a matched factor-availability control, while preserving controlled drawdown and portfolio constraints.",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-003.json",
+  "allowed_changes": [
+    "F-CREDIT exact HYG/LQD adjusted-close 20-common-observation relative-strength state from the frozen design",
+    "F-CYCLICAL exact XLY/XLP adjusted-close 20-common-observation relative-strength state from the frozen design",
+    "F-BREADTH exact RSP/SPY adjusted-close 20-common-observation relative-strength state from the frozen design",
+    "event-only 50% retention replay on unique frozen V11 trade dates with factor-specific matched availability controls"
+  ],
+  "forbidden_changes": [
+    "any frozen V11 parameter or target-path rule change",
+    "any lookback, stale tolerance, retention fraction, threshold, percentile, z-score, moving-average, persistence or band search",
+    "factor-driven trades between frozen V11 event dates",
+    "combining F-CREDIT, F-CYCLICAL and F-BREADTH inside this trial",
+    "replacing a failed candidate after results are viewed",
+    "adding a fourth factor inside this trial",
+    "changing 1.00% fee or 0.05% slippage",
+    "leverage, financing, shorting or negative cash",
+    "using T+0/future factor observations",
+    "using realized candidate metrics to modify another candidate"
+  ],
+  "candidate_ids": [
+    "F-CREDIT",
+    "F-CYCLICAL",
+    "F-BREADTH"
+  ],
+  "candidate_count": 3,
+  "selection_metric": "No winner optimization. Compare each factor only against V11-CONTROL and its own matched availability ALWAYS-retain control, then mechanically report ADMIT_FOR_ROBUSTNESS and STRONG_INCREMENTAL flags.",
+  "pass_fail_gates": [
+    "full-history CAGR > V11-CONTROL CAGR",
+    "full-history Sharpe > the factor's own matched availability control Sharpe",
+    "full-history MDD <=12%",
+    "at least 4/7 fixed folds have candidate Sharpe >= matched-control Sharpe in the same fold",
+    "worst fixed-fold Sharpe >0",
+    "max gross <=100%, min target weight >=0, no financing or negative cash",
+    "STRONG_INCREMENTAL only if admitted plus CAGR >= V11 CAGR +1.0 percentage point and Sharpe >= V11 Sharpe"
+  ],
+  "formal_run_budget": 3,
+  "follow_up_policy": "No rescue search is allowed after results. Do not change the 20-observation horizon, 7-day stale rule, 50% retention fraction, 25% replay band, factor direction or event-only architecture. Any different transform, retention rule, factor combination or new factor is a separately preregistered family and all three results remain in G3 trial accounting.",
+  "swift_engine_entrypoint": "scripts/run_orthogonal_event_factor_v3.py -> tools/orthogonal_event_factor_v3.swiftpart + tools/orthogonal_event_factor_v3_logic.swift -> frozen V11 source run + BacktestEngine.runResearchTargetProviderStrategyWithTrace -> shared BacktestDailySimulator",
+  "expected_outputs": [
+    "V11-CONTROL metrics and target fingerprint",
+    "three matched availability-control metrics",
+    "all F-CREDIT/F-CYCLICAL/F-BREADTH full-history metrics",
+    "all seven fixed fold metrics for every path",
+    "2020+ and 2022+ slices",
+    "trade count and average cash ratio",
+    "source event count, de-risk event count, factor-available events and retained events",
+    "target fingerprint, max gross and min target weight",
+    "one portfolio CSV per path",
+    "mechanical ADMIT_FOR_ROBUSTNESS and STRONG_INCREMENTAL flags",
+    "run authorization receipt, exact execution Git commit and SHA-256 evidence manifests"
+  ],
+  "protocol_component": "ORTHOGONAL_EVENT_FACTOR_FAMILY_V3",
+  "factor_sources": {
+    "F-CREDIT": {
+      "source": "YAHOO",
+      "series_ids": ["HYG", "LQD"],
+      "price_field": "adjusted_close",
+      "risk_on_rule": "latest usable HYG/LQD ratio >= ratio 20 common observations earlier",
+      "matched_control": "retain 50% on every factor-available V11 de-risk event"
+    },
+    "F-CYCLICAL": {
+      "source": "YAHOO",
+      "series_ids": ["XLY", "XLP"],
+      "price_field": "adjusted_close",
+      "risk_on_rule": "latest usable XLY/XLP ratio >= ratio 20 common observations earlier",
+      "matched_control": "retain 50% on every factor-available V11 de-risk event"
+    },
+    "F-BREADTH": {
+      "source": "YAHOO",
+      "series_ids": ["RSP", "SPY"],
+      "price_field": "adjusted_close",
+      "risk_on_rule": "latest usable RSP/SPY ratio >= ratio 20 common observations earlier",
+      "matched_control": "retain 50% on every factor-available V11 de-risk event"
+    }
+  },
+  "shared_rules": {
+    "lookback_observations": 20,
+    "max_stale_calendar_days": 7,
+    "retention_fraction": 0.5,
+    "replay_rebalance_band": 0.25,
+    "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty"
+  }
+}

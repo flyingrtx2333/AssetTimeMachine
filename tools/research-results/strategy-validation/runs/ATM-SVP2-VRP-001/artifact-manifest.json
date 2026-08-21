@@ -1,0 +1,147 @@
+{
+  "files": [
+    {
+      "bytes": 187404,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/candidates/C-VRP-ALWAYS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "e7e5e9221cd76d031509c0e5553671ad199d5c8afe7671e29a92ca6c7be9ac5f"
+    },
+    {
+      "bytes": 187229,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/candidates/F-VRP-PROXY-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "360ca23bb8e4d5ddf262134044fda62f1af4df4a534cbd3b926a22c255477a04"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "dafe862ffe5851bbda4e3dcd49cf92587a378ffbdceadc46859d3f8fa9773d77"
+    },
+    {
+      "bytes": 686,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "matched_control_id",
+        "cagr_percent",
+        "mdd_percent",
+        "vol_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "min_weight",
+        "fingerprint",
+        "source_events",
+        "eligible_events",
+        "available_events",
+        "completed_events",
+        "folds_sharpe_ge_matched",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "009b154c6937b4b8e62db0a38c21349ee30f18b867d05922c97a94b65941e138"
+    },
+    {
+      "bytes": 4440,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/candidates/candidate-metrics.json",
+      "sha256": "b3d37598475fcd6e1863dce8f2e4f4ba1c80a2a50ed010f93ce6eae666ab2d60"
+    },
+    {
+      "bytes": 271,
+      "columns": [
+        "candidate_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "global_dsr_probability",
+        "global_dsr_pass",
+        "robust_factor_pass",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_matched",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/candidates/statistical-audit.csv",
+      "row_count": 1,
+      "sha256": "ec2c75001c389d632a6dbaca6ac313ca186aa62409e3d6d6145cc643c5b062a8"
+    },
+    {
+      "bytes": 2785,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/candidates/statistical-audit.json",
+      "sha256": "db73190d2ac28b83a366d2d400de64164b41ea81d377fd9ca17b1548c1999b48"
+    },
+    {
+      "bytes": 1023,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/execution.json",
+      "sha256": "e011b51d80137491f83e6268c351f77d86b3905c459055b8344159a21a612fe8"
+    },
+    {
+      "bytes": 430,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/run-authorization.json",
+      "sha256": "1c093740490e7694d61b738e4e744e502f80aa0ca20856e9237645d1f03482ab"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 3255,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-VRP-001/stdout.txt",
+      "sha256": "436e4fd9382a7c5747f2f56839f93c07a5e3dec149c0c9c783ab592d76babbcd"
+    }
+  ],
+  "generated_at": "2026-08-21T14:54:22+08:00",
+  "git_commit": "94f11bf168d2d8d4387fddfd79c571e635a73c27",
+  "kind": "result",
+  "metadata": {
+    "campaign": "variance-risk-premium-proxy-v1",
+    "canonical_vrp_measure": false,
+    "deterministic_admitted": [],
+    "evidence_class": "R1_RETROSPECTIVE",
+    "formal_execution_commit": "94f11bf168d2d8d4387fddfd79c571e635a73c27",
+    "robust_pass": []
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-VRP-001"
+}

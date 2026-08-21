@@ -1,0 +1,243 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-005/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-005/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-005/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-005/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-005/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-005/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-005/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-005/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-005/candidates/C-GROWTHBOND-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-005/candidates/F-GROWTHBOND-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-005/candidates/C-BIOTECH-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-005/candidates/F-BIOTECH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-005/candidates/C-TRANSPORT-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-005/candidates/F-TRANSPORT-portfolio.csv"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "F-GROWTHBOND",
+      "metrics": {
+        "admission_checks": {
+          "cagr_gt_v11": true,
+          "constraints_pass": true,
+          "folds_sharpe_ge_matched_ge_4": false,
+          "mdd_le_12pct": false,
+          "sharpe_gt_matched_control": false,
+          "worst_fold_sharpe_gt_0": true
+        },
+        "admit_for_robustness": false,
+        "available_underinvested_events": 129,
+        "average_cash_ratio": 0.249406,
+        "cagr_percent": 15.118864,
+        "candidate_id": "F-GROWTHBOND",
+        "completed_events": 81,
+        "fingerprint": "c1349900b62012f4",
+        "fold_cagrs_percent": [
+          11.853669,
+          0.434048,
+          7.433097,
+          18.007766,
+          10.702266,
+          21.753836,
+          34.82109
+        ],
+        "fold_mdds_percent": [
+          8.846939,
+          19.324619,
+          9.489509,
+          11.738353,
+          7.172496,
+          6.230416,
+          8.191314
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.200751,
+          0.094346,
+          0.831979,
+          1.418532,
+          0.951653,
+          1.697785,
+          2.040018
+        ],
+        "folds_sharpe_ge_matched": 2,
+        "matched_control_id": "C-GROWTHBOND-ALWAYS",
+        "max_gross": 1.0,
+        "mdd_percent": 19.324619,
+        "min_weight": 0.0,
+        "sharpe": 1.260639,
+        "since2020_cagr_percent": 21.045585,
+        "since2020_sharpe": 1.499084,
+        "since2022_cagr_percent": 23.65968,
+        "since2022_sharpe": 1.721114,
+        "source_events": 166,
+        "strong_incremental": false,
+        "trades": 465,
+        "underinvested_events": 129,
+        "vol_percent": 11.298161,
+        "worst_fold_sharpe": 0.094346
+      }
+    },
+    {
+      "candidate_id": "F-BIOTECH",
+      "metrics": {
+        "admission_checks": {
+          "cagr_gt_v11": true,
+          "constraints_pass": true,
+          "folds_sharpe_ge_matched_ge_4": true,
+          "mdd_le_12pct": false,
+          "sharpe_gt_matched_control": true,
+          "worst_fold_sharpe_gt_0": true
+        },
+        "admit_for_robustness": false,
+        "available_underinvested_events": 111,
+        "average_cash_ratio": 0.294102,
+        "cagr_percent": 15.656064,
+        "candidate_id": "F-BIOTECH",
+        "completed_events": 59,
+        "fingerprint": "61f7c94fb8d993e5",
+        "fold_cagrs_percent": [
+          13.138717,
+          1.895989,
+          6.786232,
+          17.195013,
+          8.00435,
+          22.752077,
+          38.656574
+        ],
+        "fold_mdds_percent": [
+          6.075582,
+          19.086206,
+          9.306875,
+          9.61828,
+          5.303433,
+          6.137734,
+          6.319344
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.265791,
+          0.20227,
+          0.873626,
+          1.542246,
+          1.010523,
+          1.725035,
+          2.392034
+        ],
+        "folds_sharpe_ge_matched": 4,
+        "matched_control_id": "C-BIOTECH-ALWAYS",
+        "max_gross": 1.0,
+        "mdd_percent": 19.086206,
+        "min_weight": 0.0,
+        "sharpe": 1.368258,
+        "since2020_cagr_percent": 21.021184,
+        "since2020_sharpe": 1.662204,
+        "since2022_cagr_percent": 25.319421,
+        "since2022_sharpe": 1.867441,
+        "source_events": 166,
+        "strong_incremental": false,
+        "trades": 459,
+        "underinvested_events": 129,
+        "vol_percent": 10.689015,
+        "worst_fold_sharpe": 0.20227
+      }
+    },
+    {
+      "candidate_id": "F-TRANSPORT",
+      "metrics": {
+        "admission_checks": {
+          "cagr_gt_v11": true,
+          "constraints_pass": true,
+          "folds_sharpe_ge_matched_ge_4": false,
+          "mdd_le_12pct": false,
+          "sharpe_gt_matched_control": false,
+          "worst_fold_sharpe_gt_0": true
+        },
+        "admit_for_robustness": false,
+        "available_underinvested_events": 123,
+        "average_cash_ratio": 0.259483,
+        "cagr_percent": 14.504609,
+        "candidate_id": "F-TRANSPORT",
+        "completed_events": 76,
+        "fingerprint": "d5906fc04205ce93",
+        "fold_cagrs_percent": [
+          11.3964,
+          1.217325,
+          5.494402,
+          18.104412,
+          13.401159,
+          20.992472,
+          26.943725
+        ],
+        "fold_mdds_percent": [
+          8.846939,
+          17.189911,
+          12.496805,
+          11.738353,
+          7.167298,
+          6.232345,
+          13.676706
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.133899,
+          0.159747,
+          0.663232,
+          1.47495,
+          1.133921,
+          1.663151,
+          1.565227
+        ],
+        "folds_sharpe_ge_matched": 1,
+        "matched_control_id": "C-TRANSPORT-ALWAYS",
+        "max_gross": 1.0,
+        "mdd_percent": 17.189911,
+        "min_weight": 0.0,
+        "sharpe": 1.241923,
+        "since2020_cagr_percent": 19.954309,
+        "since2020_sharpe": 1.416458,
+        "since2022_cagr_percent": 20.757661,
+        "since2022_sharpe": 1.505282,
+        "source_events": 166,
+        "strong_incremental": false,
+        "trades": 457,
+        "underinvested_events": 129,
+        "vol_percent": 11.027414,
+        "worst_fold_sharpe": 0.159747
+      }
+    }
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-005.json",
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED. F-GROWTHBOND raised CAGR to 15.118864% but failed matched-control Sharpe, fold-comparison and MDD gates (MDD 19.324619%). F-BIOTECH was the strongest timing candidate: CAGR 15.656064%, Sharpe 1.368258 beat its matched control 1.292555, and 4/7 folds matched or beat the control, but MDD 19.086206% violated the frozen 12% ceiling and Sharpe remained below V11. F-TRANSPORT also failed. The event-only 100% completion architecture is therefore not admitted in this family. No gross-target rescue, horizon/stale/band change, or candidate retuning is allowed.",
+  "execution_git_commit": "b21861c3556486bd4bf48e8072edb43fda4429de",
+  "preregistration_record_hash": "cd160903735c040a8899744a1596021f5732be9c111e60b1a8b6b4103fbeef94",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-005/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-005"
+}

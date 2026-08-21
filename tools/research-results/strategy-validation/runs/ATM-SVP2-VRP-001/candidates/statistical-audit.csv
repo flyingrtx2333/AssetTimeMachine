@@ -1,0 +1,2 @@
+candidate_id,deterministic_admit,bootstrap_pass,global_dsr_probability,global_dsr_pass,robust_factor_pass,probability_cagr_gt_v11,probability_sharpe_gt_matched,candidate_mdd_p975
+F-VRP-PROXY,False,False,0.8336689736201125,False,False,0.80485,0.4659,0.19308231464438502

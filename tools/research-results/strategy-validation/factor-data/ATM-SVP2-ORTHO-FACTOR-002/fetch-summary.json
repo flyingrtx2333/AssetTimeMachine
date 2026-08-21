@@ -1,0 +1,90 @@
+{
+  "end": "2026-08-13",
+  "protocol_id": "ATM-SVP-2",
+  "series": {
+    "DCPF3M": {
+      "first_date": "2001-01-02",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-002/DCPF3M.csv",
+      "provenance": {
+        "series_id": "DCPF3M",
+        "source": "FRED",
+        "url_template": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=<series>&cosd=<start>&coed=<end>"
+      },
+      "rows": 5728,
+      "series_id": "DCPF3M",
+      "sha256": "66bbc7a3cce8d299aa8d3076e1eced2ab1778b7c6704e22ff608726818cd8021",
+      "source": "FRED"
+    },
+    "DFF": {
+      "first_date": "2001-01-01",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-002/DFF.csv",
+      "provenance": {
+        "series_id": "DFF",
+        "source": "FRED",
+        "url_template": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=<series>&cosd=<start>&coed=<end>"
+      },
+      "rows": 9356,
+      "series_id": "DFF",
+      "sha256": "38012997538beaa4775d05a32e6fb3b8f2022d8f1af54e36d5c7389607b53050",
+      "source": "FRED"
+    },
+    "GC": {
+      "first_date": "2001-01-02",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-002/GC.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "CMX",
+        "instrument_type": "FUTURE",
+        "series_id": "GC=F",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d"
+      },
+      "rows": 6428,
+      "series_id": "GC=F",
+      "sha256": "3c400c3baf9f2494bdd5f5d0777a015cb520998279f8e339c2a13cec6ff01c88",
+      "source": "YAHOO"
+    },
+    "HG": {
+      "first_date": "2001-01-02",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-002/HG.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "CMX",
+        "instrument_type": "FUTURE",
+        "series_id": "HG=F",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d"
+      },
+      "rows": 6433,
+      "series_id": "HG=F",
+      "sha256": "0f6a40176eff6f89349c30309d2adf7a9a481a2fd5674ccc6d9c085ca9640c34",
+      "source": "YAHOO"
+    },
+    "SKEW": {
+      "first_date": "2001-01-02",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-002/SKEW.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "WCB",
+        "instrument_type": "INDEX",
+        "series_id": "^SKEW",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d"
+      },
+      "rows": 6376,
+      "series_id": "^SKEW",
+      "sha256": "a10f3765297918bdbe1032ec77ff6ba6d1689221b4c6aaf66a33727a95bbb2c1",
+      "source": "YAHOO"
+    }
+  },
+  "start": "2001-01-01",
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-002"
+}

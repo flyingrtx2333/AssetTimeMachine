@@ -41,6 +41,56 @@ ROLE_CANDIDATES = [
 FORMAL_CANDIDATES = [*ROLE_CANDIDATES, "all_alternate"]
 COMMON_WINDOW_RUNS = ["baseline_common_window", *FORMAL_CANDIDATES]
 ALL_RUNS = ["baseline_identity", *COMMON_WINDOW_RUNS]
+FORMAL_PROTOCOL_ID = "ATM-SVP-2"
+
+
+def evaluate_g4_v2(
+    *,
+    common_baseline: dict,
+    one_slot_metrics: list[dict],
+    all_alternate: dict,
+) -> dict:
+    if len(one_slot_metrics) != 5:
+        raise ValueError("ATM-SVP-2 G4 requires exactly five one-slot metrics")
+
+    one_slot_sharpes = [float(row["sharpe"]) for row in one_slot_metrics]
+    median_one_slot = sorted(one_slot_sharpes)[2]
+    common_sharpe = float(common_baseline["sharpe"])
+    common_mdd = float(common_baseline["mdd_percent"])
+    one_slot_min = 0.50 * common_sharpe
+    all_alt_sharpe_min = 0.50 * common_sharpe
+    all_alt_mdd_max = min(25.0, 1.25 * common_mdd)
+
+    def constraints_pass(row: dict) -> bool:
+        return float(row["max_gross"]) <= 1.000000001 and float(row["min_weight"]) >= -1e-10
+
+    positive_count = sum(value > 0 for value in one_slot_sharpes)
+    all_candidate_constraints = all(constraints_pass(row) for row in [*one_slot_metrics, all_alternate])
+    checks = {
+        "common_reference_cagr_gt_0": float(common_baseline["cagr_percent"]) > 0,
+        "common_reference_sharpe_gt_0": common_sharpe > 0,
+        "common_reference_mdd_le_25pct": common_mdd <= 25.0,
+        "common_reference_constraints_pass": constraints_pass(common_baseline),
+        "positive_one_slot_sharpe_count_ge_4": positive_count >= 4,
+        "one_slot_median_sharpe_relative_pass": median_one_slot >= one_slot_min,
+        "all_alternate_cagr_gt_0": float(all_alternate["cagr_percent"]) > 0,
+        "all_alternate_sharpe_relative_pass": float(all_alternate["sharpe"]) >= all_alt_sharpe_min,
+        "all_alternate_mdd_relative_pass": float(all_alternate["mdd_percent"]) <= all_alt_mdd_max,
+        "all_candidate_constraints_pass": all_candidate_constraints,
+    }
+    return {
+        "pass": all(checks.values()),
+        "checks": checks,
+        "thresholds": {
+            "one_slot_median_sharpe_min": one_slot_min,
+            "all_alternate_sharpe_min": all_alt_sharpe_min,
+            "all_alternate_mdd_max_percent": all_alt_mdd_max,
+        },
+        "observed": {
+            "positive_one_slot_sharpe_count": positive_count,
+            "one_slot_median_sharpe": median_one_slot,
+        },
+    }
 
 
 def run(command: list[str], *, env: dict[str, str] | None = None, timeout: int = 300) -> str:
@@ -159,8 +209,8 @@ def validate_formal_authorization(manifest_path: Path, authorization_path: Path)
     authorization = json.loads(authorization_path.read_text(encoding="utf-8"))
     if manifest.get("status") != "FROZEN_UNOPENED":
         raise SystemExit("Formal G4 manifest must be FROZEN_UNOPENED")
-    if authorization.get("protocol_id") != "ATM-SVP-1":
-        raise SystemExit("Formal G4 authorization must be ATM-SVP-1")
+    if authorization.get("protocol_id") != FORMAL_PROTOCOL_ID:
+        raise SystemExit(f"Formal G4 authorization must be {FORMAL_PROTOCOL_ID}")
     if authorization.get("holdout_id") != manifest.get("holdout_id"):
         raise SystemExit("Holdout authorization does not match manifest")
     if authorization.get("frozen_manifest_path") != manifest_path.as_posix():
@@ -243,17 +293,22 @@ def main() -> int:
     }
     baseline_status = "PASS" if all(baseline_checks.values()) else "FAIL"
     common_baseline = results["baseline_common_window"]["metrics"]
+    candidates = [results[candidate_id] for candidate_id in FORMAL_CANDIDATES]
+    one_slot_metrics = [results[candidate_id]["metrics"] for candidate_id in ROLE_CANDIDATES]
+    all_alternate = results["all_alternate"]["metrics"]
+    v2_evaluation = evaluate_g4_v2(
+        common_baseline=common_baseline,
+        one_slot_metrics=one_slot_metrics,
+        all_alternate=all_alternate,
+    )
     common_baseline_checks = {
-        "gross_le_100pct": common_baseline["max_gross"] <= 1.000000001,
-        "no_negative_weights": common_baseline["min_weight"] >= -1e-10,
+        "cagr_gt_0": v2_evaluation["checks"]["common_reference_cagr_gt_0"],
+        "sharpe_gt_0": v2_evaluation["checks"]["common_reference_sharpe_gt_0"],
+        "mdd_le_25pct": v2_evaluation["checks"]["common_reference_mdd_le_25pct"],
+        "constraints_pass": v2_evaluation["checks"]["common_reference_constraints_pass"],
         "uses_no_replacement_roles": results["baseline_common_window"]["replaced_roles"] == [],
     }
     common_baseline_status = "PASS" if all(common_baseline_checks.values()) else "FAIL"
-
-    candidates = [results[candidate_id] for candidate_id in FORMAL_CANDIDATES]
-    one_slot_sharpes = [results[candidate_id]["metrics"]["sharpe"] for candidate_id in ROLE_CANDIDATES]
-    median_one_slot = sorted(one_slot_sharpes)[len(one_slot_sharpes) // 2]
-    all_alternate = results["all_alternate"]["metrics"]
     constraint_checks = {
         candidate_id: {
             "gross_le_100pct": results[candidate_id]["metrics"]["max_gross"] <= 1.000000001,
@@ -264,18 +319,18 @@ def main() -> int:
     g4_checks = {
         "full_history_baseline_identity_pass": baseline_status == "PASS",
         "common_window_baseline_control_pass": common_baseline_status == "PASS",
-        "positive_one_slot_sharpe_count_ge_4": sum(value > 0 for value in one_slot_sharpes) >= 4,
-        "one_slot_median_sharpe_ge_0_761": median_one_slot >= 0.761,
-        "all_alternate_cagr_gt_0": all_alternate["cagr_percent"] > 0,
-        "all_alternate_sharpe_ge_0_761": all_alternate["sharpe"] >= 0.761,
-        "all_alternate_mdd_le_15_378108pct": all_alternate["mdd_percent"] <= 15.378108,
-        "all_candidate_constraints_pass": all(all(row.values()) for row in constraint_checks.values()),
+        "positive_one_slot_sharpe_count_ge_4": v2_evaluation["checks"]["positive_one_slot_sharpe_count_ge_4"],
+        "one_slot_median_sharpe_relative_pass": v2_evaluation["checks"]["one_slot_median_sharpe_relative_pass"],
+        "all_alternate_cagr_gt_0": v2_evaluation["checks"]["all_alternate_cagr_gt_0"],
+        "all_alternate_sharpe_relative_pass": v2_evaluation["checks"]["all_alternate_sharpe_relative_pass"],
+        "all_alternate_mdd_relative_pass": v2_evaluation["checks"]["all_alternate_mdd_relative_pass"],
+        "all_candidate_constraints_pass": v2_evaluation["checks"]["all_candidate_constraints_pass"],
         "exact_six_formal_candidates_reported": len(candidates) == 6,
     }
     formal_status = "PASS" if all(g4_checks.values()) else "FAIL"
 
     document = {
-        "protocol_id": "ATM-SVP-1",
+        "protocol_id": FORMAL_PROTOCOL_ID,
         "component": "G4_DOMAIN_PRESERVING_GENERALIZATION",
         "formal": args.formal,
         "evidence_class": "H2_PRISTINE_HOLDOUT" if args.formal else "D0_EXPOSED_EXPLORATORY",
@@ -289,10 +344,12 @@ def main() -> int:
         "baseline_common_window_status": common_baseline_status,
         "candidate_results": candidates,
         "constraint_checks": constraint_checks,
-        "one_slot_median_sharpe": median_one_slot,
+        "g4_relative_thresholds": v2_evaluation["thresholds"],
+        "positive_one_slot_sharpe_count": v2_evaluation["observed"]["positive_one_slot_sharpe_count"],
+        "one_slot_median_sharpe": v2_evaluation["observed"]["one_slot_median_sharpe"],
         "g4_checks": g4_checks,
         "g4_status": formal_status if args.formal else "EXPLORATORY_NOT_EVIDENCE",
-        "scope_note": "Development mode validates plumbing only. Formal status is valid only with a committed/burned holdout authorization and immutable result evidence.",
+        "scope_note": "ATM-SVP-2 compares all six formal role substitutions to the same mechanically derived common-window identity baseline. Development mode is plumbing only; formal evidence additionally requires the committed/burned pristine-holdout authorization and immutable result evidence.",
     }
     json_path = output_dir / "candidate-metrics.json"
     json_path.write_text(json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")

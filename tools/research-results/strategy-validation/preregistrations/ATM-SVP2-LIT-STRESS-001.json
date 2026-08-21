@@ -1,0 +1,112 @@
+{
+  "trial_id": "ATM-SVP2-LIT-STRESS-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "LITERATURE_MOTIVATED_STRESS_RESOLUTION_FACTOR_V1",
+  "strategy_lineage": "literature-stress-factor-family-v1; frozen control nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "hypothesis": "At least one externally motivated stress-resolution indicator can identify frozen V11 de-risk events that are too early, improving net CAGR by at least 0.50 percentage points while matching or exceeding V11 Sharpe and preserving <=10% full-history MDD under the same Swift engine and execution assumptions.",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-LIT-STRESS-001.json",
+  "allowed_changes": [
+    "F-BAA exact BAA10Y falling-over-20-source-observations state with strict prior-date availability",
+    "F-EPU exact USEPUINDXD falling-over-20-source-observations state with strict prior-date availability",
+    "F-MOVE exact ^MOVE falling-over-20-source-observations state",
+    "event-only retention of exactly 50% of each frozen V11 de-risk reduction when factor risk-on"
+  ],
+  "candidate_ids": [
+    "F-BAA",
+    "F-EPU",
+    "F-MOVE"
+  ],
+  "candidate_count": 3,
+  "selection_metric": "No winner optimization. Report every candidate against frozen V11 and its own matched availability control, then run the same fixed bootstrap, family CSCV/PBO and family/global DSR audits for all three candidates.",
+  "pass_fail_gates": [
+    "deterministic: full CAGR >= V11 CAGR +0.50 percentage points",
+    "deterministic: full Sharpe >= V11 Sharpe",
+    "deterministic: full Sharpe > own matched availability control Sharpe",
+    "deterministic: full MDD <=10%",
+    "deterministic: at least 5/7 fixed folds candidate Sharpe >= matched-control Sharpe",
+    "deterministic: worst fixed-fold Sharpe >0",
+    "deterministic: gross <=100%, min target weight >=0, no financing or negative cash",
+    "bootstrap: paired circular moving blocks, 63 sessions, 20000 replicates, seed 20260821",
+    "bootstrap: P(CAGR candidate > V11) >=0.90",
+    "bootstrap: P(Sharpe candidate > matched control) >=0.90",
+    "bootstrap: median candidate-minus-V11 CAGR delta >0",
+    "bootstrap: median candidate-minus-matched Sharpe delta >0",
+    "bootstrap: candidate MDD P97.5 <=15%",
+    "family CSCV/PBO with 8 chronological blocks <=20%",
+    "family DSR probability >=95% using all three candidates",
+    "global post-protocol DSR probability >=95% using HR-A/B/C, all 18 prior formal factor candidates, and all three candidates in this trial",
+    "ROBUST_FACTOR_PASS requires every applicable deterministic, bootstrap, PBO and both DSR gates"
+  ],
+  "formal_run_budget": 3,
+  "follow_up_policy": "This is the only retrospective family in the literature-stress-factor-v1 campaign. After any formal result is viewed, do not replace candidates, search alternative lookbacks/thresholds/sources/retention fractions, combine factors, alter the event definition, or open a second retrospective family under this campaign. A promising non-robust candidate may only enter a new prospective trial from a new freeze date.",
+  "swift_engine_entrypoint": "scripts/run_literature_stress_factor_v1.py -> tools/literature_stress_factor_v1.swiftpart + tools/literature_stress_factor_v1_logic.swift -> frozen V11 source run + BacktestEngine.runResearchTargetProviderStrategyWithTrace -> shared BacktestDailySimulator",
+  "expected_outputs": [
+    "V11-CONTROL metrics and frozen target fingerprint",
+    "three matched availability-control metrics",
+    "all F-BAA/F-EPU/F-MOVE full-history metrics",
+    "all seven fixed fold metrics plus 2020+ and 2022+ slices",
+    "source/de-risk/available/retained event counts and portfolio constraints",
+    "one portfolio CSV per control/candidate",
+    "mechanical deterministic ADMIT_FOR_ROBUSTNESS flags for all three",
+    "paired block-bootstrap statistics for all three",
+    "family CSCV/PBO result",
+    "family DSR and cumulative post-protocol DSR for all three",
+    "mechanical ROBUST_FACTOR_PASS flags for all three",
+    "run authorization receipt, execution Git commit and SHA-256 result artifact manifest"
+  ],
+  "factor_sources": {
+    "F-BAA": {
+      "source": "FRED",
+      "series_id": "BAA10Y",
+      "availability_rule": "latest finite observation with observation_date < signal_date and <=7 calendar days stale",
+      "risk_on_rule": "current <= value 20 source observations earlier"
+    },
+    "F-EPU": {
+      "source": "FRED",
+      "series_id": "USEPUINDXD",
+      "availability_rule": "latest finite observation with observation_date < signal_date and <=7 calendar days stale",
+      "risk_on_rule": "current <= value 20 source observations earlier"
+    },
+    "F-MOVE": {
+      "source": "YAHOO",
+      "series_id": "^MOVE",
+      "availability_rule": "latest finite close with observation_date <= signal_date and <=7 calendar days stale",
+      "risk_on_rule": "current <= close 20 source observations earlier"
+    }
+  },
+  "shared_rules": {
+    "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+    "retention_fraction": 0.5,
+    "lookback_observations": 20,
+    "max_stale_calendar_days": 7,
+    "replay_rebalance_band": 0.25,
+    "fee_rate": 0.01,
+    "slippage_rate": 0.0005,
+    "max_gross": 1.0,
+    "shorting_allowed": false,
+    "financing_allowed": false
+  },
+  "forbidden_changes": [
+    "any frozen V11 parameter or target-path rule change",
+    "any 10/30/60/120 or other lookback search",
+    "any threshold, percentile, z-score, persistence or stale-tolerance search",
+    "any source substitution after results",
+    "any retention-fraction or rebalance-band search",
+    "factor combinations, voting or ensembles",
+    "factor-driven trades between frozen V11 event dates",
+    "candidate replacement or fourth candidate after results",
+    "changing fee/slippage, leverage, financing, shorting or cash constraints",
+    "using T+0 FRED observations or future observations",
+    "dropping failed post-protocol candidates from DSR accounting"
+  ],
+  "statistical_audit": {
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260821,
+    "pbo_blocks": 8,
+    "dsr_family_candidate_count": 3,
+    "global_dsr_prior_candidate_count": 21,
+    "global_dsr_total_candidate_count_after_this_trial": 24
+  }
+}

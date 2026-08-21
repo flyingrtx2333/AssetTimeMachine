@@ -1,0 +1,66 @@
+{
+  "files": [
+    {
+      "bytes": 375,
+      "columns": [
+        "candidate_id",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_matched_control",
+        "median_candidate_minus_v11_cagr",
+        "median_candidate_minus_matched_sharpe",
+        "candidate_mdd_p975",
+        "bootstrap_robust_pass"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-FACTOR-ROBUST-001/candidates/bootstrap-results.csv",
+      "row_count": 2,
+      "sha256": "a1f9f087b777bb83814fa8dbf35a6a2bbe78d8d28019b9176fbb1a72edc92bf2"
+    },
+    {
+      "bytes": 3725,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-FACTOR-ROBUST-001/candidates/bootstrap-results.json",
+      "sha256": "9bfb29fb687622d6d906e8fc554851cdcc82abb3a4c2a983e8cbc94958fb77bc"
+    },
+    {
+      "bytes": 779,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-FACTOR-ROBUST-001/execution.json",
+      "sha256": "bc7ed00bf535114bed6e5e859a9262d1029a4ccff7064453d9db4ab31b361b9e"
+    },
+    {
+      "bytes": 440,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-FACTOR-ROBUST-001/run-authorization.json",
+      "sha256": "b40f3060bd721b5b24ac0faca225b4d3d4c74fa71f271add367822af243c4d3a"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-FACTOR-ROBUST-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 2909,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-FACTOR-ROBUST-001/stdout.txt",
+      "sha256": "cdaf084d03c3d271649c4dc1becebb75085999aa1d33547efd8cf467133d676e"
+    }
+  ],
+  "generated_at": "2026-08-21T00:44:09+08:00",
+  "git_commit": "1ddf27d2082829994ea85c2e982a83772c7d050d",
+  "kind": "result",
+  "metadata": {
+    "locked_candidates": [
+      "F-BREADTH",
+      "F-HIGHBETA"
+    ],
+    "status": "NO_BOOTSTRAP_ROBUST_PASS",
+    "trial": "ATM-SVP2-FACTOR-ROBUST-001"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-FACTOR-ROBUST-001"
+}

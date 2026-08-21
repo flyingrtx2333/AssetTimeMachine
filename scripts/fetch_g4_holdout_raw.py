@@ -7,6 +7,7 @@ series and short ranges to test source adapters.
 
 Supported frozen source families:
 - FRED_NASDAQ: FRED graph CSV (daily close)
+- YAHOO_FTSE_RUSSELL / YAHOO_WILSHIRE / YAHOO_SSE: Yahoo chart API (daily OHLC)
 - CSINDEX: China Securities Index official index-perf API (daily OHLC)
 - SGE: Shanghai Gold Exchange official daily pages/archive articles (daily OHLC)
 
@@ -38,7 +39,7 @@ from strategy_validation_holdout import validate_manifest
 
 ROOT = Path(__file__).resolve().parents[1]
 USER_AGENT = "AssetTimeMachine-ATM-SVP-G4/1.0"
-SUPPORTED_SOURCES = {"FRED_NASDAQ", "YAHOO_FTSE_RUSSELL", "YAHOO_SSE", "CSINDEX", "SGE"}
+SUPPORTED_SOURCES = {"FRED_NASDAQ", "YAHOO_FTSE_RUSSELL", "YAHOO_WILSHIRE", "YAHOO_SSE", "CSINDEX", "SGE"}
 DEVELOPMENT_ALLOWLIST = {
     "FRED_NASDAQ": {"VIXCLS"},
     "CSINDEX": {"000300"},
@@ -153,6 +154,20 @@ def iso_day(raw: Any) -> str:
     if re.fullmatch(r"\d{8}", text):
         return f"{text[:4]}-{text[4:6]}-{text[6:8]}"
     return date.fromisoformat(text[:10]).isoformat()
+
+
+def dedupe_identical_daily_rows(rows: Iterable[DailyRow], label: str) -> list[DailyRow]:
+    by_day: dict[str, DailyRow] = {}
+    for row in rows:
+        prior = by_day.get(row.day)
+        if prior is None:
+            by_day[row.day] = row
+            continue
+        if prior != row:
+            raise RuntimeError(
+                f"conflicting duplicate date for {label}: {row.day}; first={prior}; duplicate={row}"
+            )
+    return [by_day[key] for key in sorted(by_day)]
 
 
 def validate_rows(rows: Iterable[DailyRow], start: str, end: str, label: str) -> list[DailyRow]:
@@ -373,9 +388,20 @@ class ArchiveListParser(HTMLParser):
     def handle_endtag(self, tag: str) -> None:
         if tag == "a" and self._href is not None:
             text = " ".join("".join(self._text).split())
-            match = re.search(r"20\d{2}-\d{2}-\d{2}", text)
-            if match:
-                self.links.append((self._href, match.group(0)))
+            trading_day = None
+            chinese = re.search(r"(20\d{2})年(\d{1,2})月(\d{1,2})日(?:交易行情|行情)", text)
+            if chinese:
+                trading_day = date(
+                    int(chinese.group(1)),
+                    int(chinese.group(2)),
+                    int(chinese.group(3)),
+                ).isoformat()
+            else:
+                published = re.search(r"20\d{2}-\d{2}-\d{2}", text)
+                if published:
+                    trading_day = published.group(0)
+            if trading_day:
+                self.links.append((self._href, trading_day))
             self._href = None
             self._text = []
 
@@ -561,9 +587,12 @@ def fetch_sge_archive(contract: str, start: str, end: str, cache_dir: Path, work
 def fetch_sge(series_id: str, start: str, end: str, cache_dir: Path, workers: int) -> tuple[list[DailyRow], dict[str, Any]]:
     archive_rows = fetch_sge_archive(series_id, start, end, cache_dir, workers) if start <= "2023-12-31" else []
     recent_rows = fetch_sge_recent(series_id, start, end, cache_dir) if end >= "2024-01-01" else []
-    rows = validate_rows([*archive_rows, *recent_rows], start, end, f"SGE:{series_id}")
+    combined = [*archive_rows, *recent_rows]
+    deduped = dedupe_identical_daily_rows(combined, f"SGE:{series_id}")
+    rows = validate_rows(deduped, start, end, f"SGE:{series_id}")
     return rows, {
         "transport": "sge_official_daily_html_archive_and_current",
+        "identical_duplicate_rows_removed": len(combined) - len(deduped),
         "archive_index": "https://www.sge.com.cn/sjzx/mrhqsj?p=<page>",
         "current_query": "https://www.sge.com.cn/sjzx/quotation_daily_new?start_date=<start>&end_date=<end>",
         "cache_dir": cache_dir.as_posix(),
@@ -598,7 +627,7 @@ def fetch_slot(
         raise SystemExit(f"Unsupported frozen source={source} for role={slot['role']}")
     if source == "FRED_NASDAQ":
         rows, provenance = fetch_fred(source_series_id, start, end)
-    elif source in {"YAHOO_FTSE_RUSSELL", "YAHOO_SSE"}:
+    elif source in {"YAHOO_FTSE_RUSSELL", "YAHOO_WILSHIRE", "YAHOO_SSE"}:
         rows, provenance = fetch_yahoo(source_series_id, start, end)
     elif source == "CSINDEX":
         rows, provenance = fetch_csindex(source_series_id, start, end)

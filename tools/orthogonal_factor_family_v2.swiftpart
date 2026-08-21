@@ -1,0 +1,269 @@
+        if ProcessInfo.processInfo.environment["ATM_ORTHOGONAL_FACTOR_V2"] == "1" {
+            func loadOrthogonalV2FactorPoints(_ path: String) -> [OrthogonalFactorFamilyV2Logic.Point] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 2,
+                          let value = Double(fields[1]),
+                          value.isFinite else { return nil }
+                    return OrthogonalFactorFamilyV2Logic.Point(date: String(fields[0]), value: value)
+                }.sorted { $0.date < $1.date }
+            }
+
+            func loadOrthogonalV2NFCIPoints(_ path: String) -> [BacktestNFCIPoint] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3,
+                          let value = Double(fields[2]),
+                          value.isFinite else { return nil }
+                    return BacktestNFCIPoint(
+                        releaseDate: String(fields[0]),
+                        referenceDate: String(fields[1]),
+                        availableAt: nil,
+                        value: value
+                    )
+                }
+            }
+
+            let formal = ProcessInfo.processInfo.environment["ATM_ORTHOGONAL_FACTOR_V2_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_ORTHOGONAL_FACTOR_V2_OUTPUT_DIR"]
+            let factorDir = ProcessInfo.processInfo.environment["ATM_ORTHOGONAL_FACTOR_V2_DATA_DIR"] ?? ""
+            let dcpf3m = loadOrthogonalV2FactorPoints(URL(fileURLWithPath: factorDir).appendingPathComponent("DCPF3M.csv").path)
+            let dff = loadOrthogonalV2FactorPoints(URL(fileURLWithPath: factorDir).appendingPathComponent("DFF.csv").path)
+            let copper = loadOrthogonalV2FactorPoints(URL(fileURLWithPath: factorDir).appendingPathComponent("HG.csv").path)
+            let gold = loadOrthogonalV2FactorPoints(URL(fileURLWithPath: factorDir).appendingPathComponent("GC.csv").path)
+            let skew = loadOrthogonalV2FactorPoints(URL(fileURLWithPath: factorDir).appendingPathComponent("SKEW.csv").path)
+            guard !dcpf3m.isEmpty, !dff.isEmpty, !copper.isEmpty, !gold.isEmpty, !skew.isEmpty else {
+                print("ORTHOGONAL_FACTOR_V2_DATA_MISSING")
+                return
+            }
+            let fundingSpread = OrthogonalFactorFamilyV2Logic.commonDerived(
+                left: dcpf3m,
+                right: dff,
+                transform: { $0 - $1 }
+            )
+            let copperGoldRatio = OrthogonalFactorFamilyV2Logic.commonDerived(
+                left: copper,
+                right: gold,
+                transform: { copperPrice, goldPrice in
+                    guard copperPrice > 0, goldPrice > 0 else { return nil }
+                    return copperPrice / goldPrice
+                }
+            )
+            guard !fundingSpread.isEmpty, !copperGoldRatio.isEmpty else {
+                print("ORTHOGONAL_FACTOR_V2_DERIVED_DATA_MISSING")
+                return
+            }
+
+            let roleSymbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            let mode: AdvancedBacktestStrategyMode = .nfciDualCoreSimplifiedV11
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+            }
+            let settings = AdvancedBacktestRiskSettings(
+                feeRate: 1.00,
+                slippageRate: 0.05,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            let nfci = BacktestNFCIAsOfData(
+                source: "ALFRED initial-release fixture",
+                credit: loadOrthogonalV2NFCIPoints("tools/research-results/NFCICREDIT_initial_release.csv"),
+                leverage: loadOrthogonalV2NFCIPoints("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            )
+            guard let control = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode,
+                nfciAsOf: nfci
+            ) else {
+                print("ORTHOGONAL_FACTOR_V2_V11_CONTROL_FAILED")
+                return
+            }
+            let baseTargets = Dictionary(uniqueKeysWithValues: control.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+
+            func targetFingerprint(_ states: [BacktestDailyState]) -> String {
+                var hash: UInt64 = 1469598103934665603
+                for state in states {
+                    for symbol in roleSymbols {
+                        var value = UInt64(bitPattern: Int64(((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded()))
+                        for _ in 0..<8 {
+                            hash ^= value & UInt64(0xff)
+                            hash &*= UInt64(1099511628211)
+                            value >>= 8
+                        }
+                    }
+                }
+                return String(format: "%016llx", hash)
+            }
+
+            func constraints(_ states: [BacktestDailyState]) -> (maxGross: Double, minWeight: Double) {
+                let maxGross = states.map { state in
+                    roleSymbols.reduce(0.0) { $0 + max(state.targetWeights[$1] ?? 0, 0) }
+                }.max() ?? 0
+                let allWeights = states.flatMap { state in roleSymbols.map { state.targetWeights[$0] ?? 0 } }
+                return (maxGross, allWeights.min() ?? 0)
+            }
+
+            let folds: [(String, String, String)] = [
+                ("2012-2014", "2012-07-05", "2014-12-31"),
+                ("2015-2016", "2015-01-01", "2016-12-31"),
+                ("2017-2018", "2017-01-01", "2018-12-31"),
+                ("2019-2020", "2019-01-01", "2020-12-31"),
+                ("2021-2022", "2021-01-01", "2022-12-31"),
+                ("2023-2024", "2023-01-01", "2024-12-31"),
+                ("2025-latest", "2025-01-01", "9999-12-31")
+            ]
+
+            func foldMetrics(_ points: [BacktestSeriesPoint]) -> [(String, Double, Double, Double)] {
+                folds.map { name, start, end in
+                    let sliced = points.filter {
+                        let key = $0.date.recordDateString
+                        return key >= start && key <= end
+                    }
+                    let metrics = BacktestMetricsCalculator.performanceMetrics(from: sliced)
+                    return (
+                        name,
+                        metrics?.annualizedReturn ?? 0,
+                        metrics?.maxDrawdown ?? 0,
+                        metrics?.sharpeRatio ?? 0
+                    )
+                }
+            }
+
+            func writePortfolio(_ id: String, _ points: [BacktestSeriesPoint]) {
+                guard formal, let outputDir else { return }
+                try? FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+                let path = URL(fileURLWithPath: outputDir).appendingPathComponent("\(id)-portfolio.csv").path
+                var lines = ["date,portfolio_value"]
+                lines.append(contentsOf: points.map {
+                    "\($0.date.recordDateString),\(String(format: "%.10f", $0.portfolioValue))"
+                })
+                try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            }
+
+            func printRun(id: String, report: AdvancedBacktestReport, states: [BacktestDailyState]) {
+                let constraint = constraints(states)
+                if !formal {
+                    print("SMOKE_FACTOR_ID=\(id)")
+                    print("SMOKE_MAX_GROSS=\(String(format: "%.10f", constraint.maxGross))")
+                    print("SMOKE_MIN_WEIGHT=\(String(format: "%.10f", constraint.minWeight))")
+                    print("SMOKE_END")
+                    return
+                }
+                let m2020 = BacktestMetricsCalculator.performanceMetrics(
+                    from: report.points.filter { $0.date.recordDateString >= "2020-01-01" }
+                )
+                let m2022 = BacktestMetricsCalculator.performanceMetrics(
+                    from: report.points.filter { $0.date.recordDateString >= "2022-01-01" }
+                )
+                let fs = foldMetrics(report.points)
+                print("candidate_id=\(id)")
+                print("cagr=\(String(format: "%.6f", (report.annualizedReturn ?? 0) * 100))")
+                print("mdd=\(String(format: "%.6f", report.maxDrawdown * 100))")
+                print("vol=\(String(format: "%.6f", (report.annualizedVolatility ?? 0) * 100))")
+                print("sharpe=\(String(format: "%.6f", report.sharpeRatio ?? 0))")
+                print("trades=\(report.trades.count)")
+                print("average_cash=\(String(format: "%.6f", report.averageCashRatio))")
+                print("max_gross=\(String(format: "%.10f", constraint.maxGross))")
+                print("min_weight=\(String(format: "%.10f", constraint.minWeight))")
+                print("fingerprint=\(targetFingerprint(states))")
+                print("since2020_cagr=\(String(format: "%.6f", (m2020?.annualizedReturn ?? 0) * 100))")
+                print("since2020_sharpe=\(String(format: "%.6f", m2020?.sharpeRatio ?? 0))")
+                print("since2022_cagr=\(String(format: "%.6f", (m2022?.annualizedReturn ?? 0) * 100))")
+                print("since2022_sharpe=\(String(format: "%.6f", m2022?.sharpeRatio ?? 0))")
+                print("fold_names=\(fs.map { $0.0 }.joined(separator: ";"))")
+                print("fold_sharpes=\(fs.map { String(format: "%.6f", $0.3) }.joined(separator: ";"))")
+                print("fold_cagrs=\(fs.map { String(format: "%.6f", $0.1 * 100) }.joined(separator: ";"))")
+                print("fold_mdds=\(fs.map { String(format: "%.6f", $0.2 * 100) }.joined(separator: ";"))")
+                print("END_CANDIDATE")
+                writePortfolio(id, report.points)
+            }
+
+            func config(_ id: String) -> ResearchTargetStrategyConfig {
+                ResearchTargetStrategyConfig(
+                    symbol: "orthogonal_factor_v2_\(id.lowercased())",
+                    title: "Orthogonal Factor V2 \(id)",
+                    warmupSessions: 253,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0.25,
+                    maxGrossExposure: 1,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "Orthogonal Factor V2 \(id)"
+                )
+            }
+
+            func runOverlay(
+                id: String,
+                riskOn: @escaping (String) -> Bool
+            ) -> ResearchTargetStrategyRun? {
+                BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config(id),
+                    targetWeights: { context, _ in
+                        let executionKey = context.date.recordDateString
+                        guard let baseTarget = baseTargets[executionKey] else { return [:] }
+                        return OrthogonalFactorFamilyV2Logic.completedRiskBudget(
+                            baseTarget: baseTarget,
+                            riskOn: riskOn(context.signalDate.recordDateString)
+                        )
+                    }
+                )
+            }
+
+            print("ORTHOGONAL_FACTOR_FAMILY_V2")
+            if formal {
+                printRun(id: "V11-CONTROL", report: control.report, states: control.dailyStates)
+            } else {
+                print("SMOKE_CONTROL_FINGERPRINT=\(targetFingerprint(control.dailyStates))")
+                print("SMOKE_FACTOR_COUNTS=\(dcpf3m.count);\(dff.count);\(copper.count);\(gold.count);\(skew.count)")
+            }
+
+            guard let alwaysFill = runOverlay(id: "ALWAYS-FILL", riskOn: { _ in true }) else {
+                print("ORTHOGONAL_FACTOR_V2_ALWAYS_FILL_FAILED")
+                return
+            }
+            printRun(id: "ALWAYS-FILL", report: alwaysFill.report, states: alwaysFill.dailyStates)
+
+            guard let funding = runOverlay(id: "F-FUNDING", riskOn: { signalDate in
+                OrthogonalFactorFamilyV2Logic.fallingRiskOn(
+                    points: fundingSpread,
+                    signalDate: signalDate
+                ) ?? false
+            }) else {
+                print("ORTHOGONAL_FACTOR_V2_FUNDING_FAILED")
+                return
+            }
+            printRun(id: "F-FUNDING", report: funding.report, states: funding.dailyStates)
+
+            guard let copgold = runOverlay(id: "F-COPGOLD", riskOn: { signalDate in
+                OrthogonalFactorFamilyV2Logic.risingRiskOn(
+                    points: copperGoldRatio,
+                    signalDate: signalDate
+                ) ?? false
+            }) else {
+                print("ORTHOGONAL_FACTOR_V2_COPGOLD_FAILED")
+                return
+            }
+            printRun(id: "F-COPGOLD", report: copgold.report, states: copgold.dailyStates)
+
+            guard let skewRun = runOverlay(id: "F-SKEW", riskOn: { signalDate in
+                OrthogonalFactorFamilyV2Logic.skewRiskOn(points: skew, signalDate: signalDate) ?? false
+            }) else {
+                print("ORTHOGONAL_FACTOR_V2_SKEW_FAILED")
+                return
+            }
+            printRun(id: "F-SKEW", report: skewRun.report, states: skewRun.dailyStates)
+            print("ORTHOGONAL_FACTOR_FAMILY_V2_COMPLETE")
+            return
+        }

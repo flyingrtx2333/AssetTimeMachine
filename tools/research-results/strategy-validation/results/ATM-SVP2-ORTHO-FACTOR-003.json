@@ -1,0 +1,243 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/candidates/C-CREDIT-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/candidates/F-CREDIT-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/candidates/C-CYCLICAL-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/candidates/F-CYCLICAL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/candidates/C-BREADTH-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/candidates/F-BREADTH-portfolio.csv"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "F-CREDIT",
+      "metrics": {
+        "admission_checks": {
+          "cagr_gt_v11": false,
+          "constraints_pass": true,
+          "folds_sharpe_ge_matched_ge_4": true,
+          "mdd_le_12pct": true,
+          "sharpe_gt_matched_control": true,
+          "worst_fold_sharpe_gt_0": true
+        },
+        "admit_for_robustness": false,
+        "available_derisk_events": 106,
+        "average_cash_ratio": 0.396888,
+        "cagr_percent": 14.222222,
+        "candidate_id": "F-CREDIT",
+        "derisk_events": 134,
+        "fingerprint": "8b8c9d5c38c11412",
+        "fold_cagrs_percent": [
+          10.190439,
+          5.439893,
+          4.550937,
+          16.040495,
+          4.725398,
+          21.373553,
+          33.499863
+        ],
+        "fold_mdds_percent": [
+          5.009617,
+          7.405951,
+          8.06016,
+          8.521362,
+          3.857264,
+          6.232346,
+          8.140054
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.48084,
+          0.815901,
+          0.680378,
+          1.724824,
+          1.004681,
+          1.698989,
+          2.137472
+        ],
+        "folds_sharpe_ge_matched": 4,
+        "matched_control_id": "C-CREDIT-ALWAYS",
+        "max_gross": 1.0,
+        "mdd_percent": 8.574076,
+        "min_weight": 0.0,
+        "retained_events": 66,
+        "sharpe": 1.449611,
+        "since2020_cagr_percent": 17.92535,
+        "since2020_sharpe": 1.593429,
+        "since2022_cagr_percent": 21.279226,
+        "since2022_sharpe": 1.752747,
+        "source_events": 166,
+        "strong_incremental": false,
+        "trades": 440,
+        "vol_percent": 9.152036,
+        "worst_fold_sharpe": 0.680378
+      }
+    },
+    {
+      "candidate_id": "F-CYCLICAL",
+      "metrics": {
+        "admission_checks": {
+          "cagr_gt_v11": false,
+          "constraints_pass": true,
+          "folds_sharpe_ge_matched_ge_4": true,
+          "mdd_le_12pct": true,
+          "sharpe_gt_matched_control": true,
+          "worst_fold_sharpe_gt_0": true
+        },
+        "admit_for_robustness": false,
+        "available_derisk_events": 134,
+        "average_cash_ratio": 0.388864,
+        "cagr_percent": 14.285902,
+        "candidate_id": "F-CYCLICAL",
+        "derisk_events": 134,
+        "fingerprint": "95b5059b736341e3",
+        "fold_cagrs_percent": [
+          11.633585,
+          6.111989,
+          5.024583,
+          15.119062,
+          2.77215,
+          21.37392,
+          35.091665
+        ],
+        "fold_mdds_percent": [
+          5.01663,
+          5.884379,
+          6.418559,
+          8.521421,
+          6.315664,
+          6.232346,
+          8.139049
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.662942,
+          0.889304,
+          0.773436,
+          1.622376,
+          0.4915,
+          1.699017,
+          2.200746
+        ],
+        "folds_sharpe_ge_matched": 6,
+        "matched_control_id": "C-CYCLICAL-ALWAYS",
+        "max_gross": 1.0,
+        "mdd_percent": 8.582025,
+        "min_weight": 0.0,
+        "retained_events": 82,
+        "sharpe": 1.455736,
+        "since2020_cagr_percent": 17.593076,
+        "since2020_sharpe": 1.531344,
+        "since2022_cagr_percent": 20.60524,
+        "since2022_sharpe": 1.664663,
+        "source_events": 166,
+        "strong_incremental": false,
+        "trades": 443,
+        "vol_percent": 9.150414,
+        "worst_fold_sharpe": 0.4915
+      }
+    },
+    {
+      "candidate_id": "F-BREADTH",
+      "metrics": {
+        "admission_checks": {
+          "cagr_gt_v11": true,
+          "constraints_pass": true,
+          "folds_sharpe_ge_matched_ge_4": true,
+          "mdd_le_12pct": true,
+          "sharpe_gt_matched_control": true,
+          "worst_fold_sharpe_gt_0": true
+        },
+        "admit_for_robustness": true,
+        "available_derisk_events": 131,
+        "average_cash_ratio": 0.396264,
+        "cagr_percent": 14.425407,
+        "candidate_id": "F-BREADTH",
+        "derisk_events": 134,
+        "fingerprint": "a9b6220410505465",
+        "fold_cagrs_percent": [
+          9.99536,
+          6.417299,
+          4.455951,
+          16.308116,
+          4.725398,
+          21.373553,
+          33.914719
+        ],
+        "fold_mdds_percent": [
+          5.009617,
+          5.601034,
+          8.152544,
+          7.386345,
+          3.857264,
+          6.232346,
+          8.139061
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.434379,
+          1.016166,
+          0.680464,
+          1.800036,
+          1.004681,
+          1.698989,
+          2.128928
+        ],
+        "folds_sharpe_ge_matched": 4,
+        "matched_control_id": "C-BREADTH-ALWAYS",
+        "max_gross": 1.0,
+        "mdd_percent": 9.102436,
+        "min_weight": 0.0,
+        "retained_events": 60,
+        "sharpe": 1.470087,
+        "since2020_cagr_percent": 18.083649,
+        "since2020_sharpe": 1.605097,
+        "since2022_cagr_percent": 21.410766,
+        "since2022_sharpe": 1.749299,
+        "source_events": 166,
+        "strong_incremental": false,
+        "trades": 444,
+        "vol_percent": 9.14069,
+        "worst_fold_sharpe": 0.680464
+      }
+    }
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-003.json",
+  "decision": "PASS at factor-screening level because F-BREADTH satisfied every preregistered ADMIT_FOR_ROBUSTNESS gate. F-BREADTH CAGR 14.425407% exceeded V11 14.345615%, Sharpe 1.470087 exceeded its matched availability control 1.420693, MDD was 9.102436% <=12%, 4/7 folds matched or beat the matched control, worst-fold Sharpe was 0.680464, and all portfolio constraints held. It did NOT satisfy STRONG_INCREMENTAL because CAGR improvement was <1.0 percentage point and Sharpe remained below V11. F-CREDIT and F-CYCLICAL failed only the CAGR>V11 gate despite beating their matched controls on several robustness dimensions. No factor horizon, retention fraction, stale rule, band, or factor combination may be changed within this family. F-BREADTH may proceed only to a separately preregistered robustness family.",
+  "execution_git_commit": "d8551e833bc148f24228ad114075f92d4cfe4ecd",
+  "preregistration_record_hash": "47b0b302cc162750ad4baf19b8f25de37bbafed3c3611915871f2ff0d7d855b2",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/run-authorization.json",
+  "status": "PASS",
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-003"
+}

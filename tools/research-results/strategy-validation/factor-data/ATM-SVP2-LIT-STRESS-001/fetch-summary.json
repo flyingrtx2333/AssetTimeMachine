@@ -1,0 +1,59 @@
+{
+  "end": "2026-08-13",
+  "performance_computed": false,
+  "protocol_id": "ATM-SVP-2",
+  "series": {
+    "BAA": {
+      "first_date": "2002-01-02",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-LIT-STRESS-001/BAA.csv",
+      "provenance": {
+        "availability_rule": "observation_date < signal_date",
+        "series_id": "BAA10Y",
+        "source": "FRED",
+        "url_template": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=<series>&cosd=<start>&coed=<end>"
+      },
+      "rows": 6153,
+      "series_id": "BAA10Y",
+      "sha256": "01b665d946343d240f1025aa5d2a6a9c7d96ee3f16424f66be38641f204635aa",
+      "source": "FRED"
+    },
+    "EPU": {
+      "first_date": "2002-01-01",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-LIT-STRESS-001/EPU.csv",
+      "provenance": {
+        "availability_rule": "observation_date < signal_date",
+        "series_id": "USEPUINDXD",
+        "source": "FRED",
+        "url_template": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=<series>&cosd=<start>&coed=<end>"
+      },
+      "rows": 8991,
+      "series_id": "USEPUINDXD",
+      "sha256": "d156e55b0c5e082341acaae3d3363e37d3cf570bb841e961e89afa8461552cde",
+      "source": "FRED"
+    },
+    "MOVE": {
+      "first_date": "2002-11-12",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-LIT-STRESS-001/MOVE.csv",
+      "provenance": {
+        "availability_rule": "observation_date <= signal_date",
+        "currency": "USD",
+        "exchange_name": "NYS",
+        "instrument_type": "INDEX",
+        "price_field": "close",
+        "series_id": "^MOVE",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d"
+      },
+      "rows": 5873,
+      "series_id": "^MOVE",
+      "sha256": "047c71f8daf7f5ce7bb5efea5af476f2a4634bff1011922c342a4c656599e219",
+      "source": "YAHOO"
+    }
+  },
+  "start": "2002-01-01",
+  "trial_id": "ATM-SVP2-LIT-STRESS-001"
+}

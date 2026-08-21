@@ -1,0 +1,319 @@
+{
+  "admitted_candidates": [],
+  "candidate_results": [
+    {
+      "admission_checks": {
+        "cagr_gt_v11": false,
+        "constraints_pass": true,
+        "folds_sharpe_ge_always_fill_ge_4": false,
+        "mdd_le_12pct": false,
+        "sharpe_gt_always_fill": false,
+        "worst_fold_sharpe_gt_0": false
+      },
+      "admit_for_robustness": false,
+      "candidate_id": "F-FUNDING",
+      "constraints_pass": true,
+      "folds_sharpe_ge_always_fill": 0,
+      "metrics": {
+        "average_cash_ratio": 0.23764,
+        "cagr_percent": -6.694438,
+        "candidate_id": "F-FUNDING",
+        "fingerprint": "40a74acfc31e0fb9",
+        "fold_cagrs_percent": [
+          -24.402982,
+          -40.945036,
+          -14.377555,
+          -0.258944,
+          -22.728022,
+          21.685718,
+          18.352118
+        ],
+        "fold_mdds_percent": [
+          52.895093,
+          65.017026,
+          32.643558,
+          16.017753,
+          42.221861,
+          6.220821,
+          13.739125
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          -2.491839,
+          -4.010004,
+          -1.579242,
+          0.037455,
+          -2.547094,
+          1.630216,
+          1.232051
+        ],
+        "max_gross": 1.0,
+        "mdd_percent": 94.519766,
+        "min_weight": 0.0,
+        "sharpe": -0.517127,
+        "since2020_cagr_percent": 2.785051,
+        "since2020_sharpe": 0.277829,
+        "since2022_cagr_percent": 9.948714,
+        "since2022_sharpe": 0.820434,
+        "trades": 3339,
+        "vol_percent": 11.629728
+      },
+      "strong_incremental": false,
+      "worst_fold_sharpe": -4.010004
+    },
+    {
+      "admission_checks": {
+        "cagr_gt_v11": false,
+        "constraints_pass": true,
+        "folds_sharpe_ge_always_fill_ge_4": false,
+        "mdd_le_12pct": false,
+        "sharpe_gt_always_fill": false,
+        "worst_fold_sharpe_gt_0": false
+      },
+      "admit_for_robustness": false,
+      "candidate_id": "F-COPGOLD",
+      "constraints_pass": true,
+      "folds_sharpe_ge_always_fill": 1,
+      "metrics": {
+        "average_cash_ratio": 0.246221,
+        "cagr_percent": 6.051634,
+        "candidate_id": "F-COPGOLD",
+        "fingerprint": "b7a19b7988e43c5b",
+        "fold_cagrs_percent": [
+          2.922531,
+          -11.590208,
+          -4.55928,
+          7.769023,
+          -8.726182,
+          19.801101,
+          31.044756
+        ],
+        "fold_mdds_percent": [
+          13.819964,
+          31.379609,
+          16.582593,
+          9.95309,
+          21.351664,
+          7.386484,
+          10.398103
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          0.337726,
+          -1.192866,
+          -0.498324,
+          0.746947,
+          -0.823205,
+          1.544333,
+          1.824674
+        ],
+        "max_gross": 1.0,
+        "mdd_percent": 41.661672,
+        "min_weight": 0.0,
+        "sharpe": 0.570272,
+        "since2020_cagr_percent": 11.002174,
+        "since2020_sharpe": 0.881021,
+        "since2022_cagr_percent": 17.134936,
+        "since2022_sharpe": 1.303829,
+        "trades": 1682,
+        "vol_percent": 11.019082
+      },
+      "strong_incremental": false,
+      "worst_fold_sharpe": -1.192866
+    },
+    {
+      "admission_checks": {
+        "cagr_gt_v11": false,
+        "constraints_pass": true,
+        "folds_sharpe_ge_always_fill_ge_4": false,
+        "mdd_le_12pct": false,
+        "sharpe_gt_always_fill": false,
+        "worst_fold_sharpe_gt_0": false
+      },
+      "admit_for_robustness": false,
+      "candidate_id": "F-SKEW",
+      "constraints_pass": true,
+      "folds_sharpe_ge_always_fill": 0,
+      "metrics": {
+        "average_cash_ratio": 0.261146,
+        "cagr_percent": -1.76241,
+        "candidate_id": "F-SKEW",
+        "fingerprint": "e112eb75cd19e237",
+        "fold_cagrs_percent": [
+          -11.940215,
+          -31.480894,
+          -10.818446,
+          2.781492,
+          -10.459808,
+          21.911736,
+          20.186171
+        ],
+        "fold_mdds_percent": [
+          33.448286,
+          53.224419,
+          26.444547,
+          13.289393,
+          25.091211,
+          6.230199,
+          15.111727
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          -1.161591,
+          -2.927299,
+          -1.156073,
+          0.279792,
+          -1.12331,
+          1.701787,
+          1.244778
+        ],
+        "max_gross": 1.0,
+        "mdd_percent": 82.019505,
+        "min_weight": 0.0,
+        "sharpe": -0.090688,
+        "since2020_cagr_percent": 8.119836,
+        "since2020_sharpe": 0.661891,
+        "since2022_cagr_percent": 16.15031,
+        "since2022_sharpe": 1.24094,
+        "trades": 2504,
+        "vol_percent": 11.559526
+      },
+      "strong_incremental": false,
+      "worst_fold_sharpe": -2.927299
+    }
+  ],
+  "controls": {
+    "ALWAYS-FILL": {
+      "average_cash_ratio": 0.118744,
+      "cagr_percent": 17.695785,
+      "candidate_id": "ALWAYS-FILL",
+      "fingerprint": "7c66934df496d5d1",
+      "fold_cagrs_percent": [
+        14.49617,
+        4.624779,
+        6.510879,
+        27.121495,
+        12.935584,
+        23.125331,
+        30.944714
+      ],
+      "fold_mdds_percent": [
+        8.927635,
+        18.778858,
+        12.734147,
+        12.647804,
+        7.172496,
+        6.221581,
+        13.434421
+      ],
+      "fold_names": [
+        "2012-2014",
+        "2015-2016",
+        "2017-2018",
+        "2019-2020",
+        "2021-2022",
+        "2023-2024",
+        "2025-latest"
+      ],
+      "fold_sharpes": [
+        1.254053,
+        0.370657,
+        0.644119,
+        1.759269,
+        1.108498,
+        1.703817,
+        1.68132
+      ],
+      "max_gross": 1.0,
+      "mdd_percent": 18.778858,
+      "min_weight": 0.0,
+      "sharpe": 1.31105,
+      "since2020_cagr_percent": 22.172397,
+      "since2020_sharpe": 1.474042,
+      "since2022_cagr_percent": 23.000215,
+      "since2022_sharpe": 1.573071,
+      "trades": 411,
+      "vol_percent": 12.615457
+    },
+    "V11-CONTROL": {
+      "average_cash_ratio": 0.425368,
+      "cagr_percent": 14.345615,
+      "candidate_id": "V11-CONTROL",
+      "fingerprint": "ba67c8aa24bc7168",
+      "fold_cagrs_percent": [
+        9.993886,
+        5.484334,
+        4.768754,
+        14.593713,
+        4.769875,
+        21.373553,
+        32.868242
+      ],
+      "fold_mdds_percent": [
+        4.16002,
+        5.646819,
+        6.418819,
+        7.386487,
+        3.319346,
+        6.232346,
+        6.077911
+      ],
+      "fold_names": [
+        "2012-2014",
+        "2015-2016",
+        "2017-2018",
+        "2019-2020",
+        "2021-2022",
+        "2023-2024",
+        "2025-latest"
+      ],
+      "fold_sharpes": [
+        1.524126,
+        0.886092,
+        0.740905,
+        1.687674,
+        1.187752,
+        1.698989,
+        2.220143
+      ],
+      "max_gross": 1.0,
+      "mdd_percent": 7.689054,
+      "min_weight": 0.0,
+      "sharpe": 1.522263,
+      "since2020_cagr_percent": 17.621393,
+      "since2020_sharpe": 1.632712,
+      "since2022_cagr_percent": 21.078444,
+      "since2022_sharpe": 1.785248,
+      "trades": 451,
+      "vol_percent": 8.760667
+    }
+  },
+  "protocol_id": "ATM-SVP-2",
+  "strategy_lineage": "orthogonal-factor-family-v2",
+  "strong_incremental_candidates": [],
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-002"
+}

@@ -1,0 +1,226 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/candidates/ALWAYS-FILL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/candidates/F-FUNDING-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/candidates/F-COPGOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/candidates/F-SKEW-portfolio.csv"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "F-FUNDING",
+      "metrics": {
+        "admission_checks": {
+          "cagr_gt_v11": false,
+          "constraints_pass": true,
+          "folds_sharpe_ge_always_fill_ge_4": false,
+          "mdd_le_12pct": false,
+          "sharpe_gt_always_fill": false,
+          "worst_fold_sharpe_gt_0": false
+        },
+        "admit_for_robustness": false,
+        "average_cash_ratio": 0.23764,
+        "cagr_percent": -6.694438,
+        "candidate_id": "F-FUNDING",
+        "fingerprint": "40a74acfc31e0fb9",
+        "fold_cagrs_percent": [
+          -24.402982,
+          -40.945036,
+          -14.377555,
+          -0.258944,
+          -22.728022,
+          21.685718,
+          18.352118
+        ],
+        "fold_mdds_percent": [
+          52.895093,
+          65.017026,
+          32.643558,
+          16.017753,
+          42.221861,
+          6.220821,
+          13.739125
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          -2.491839,
+          -4.010004,
+          -1.579242,
+          0.037455,
+          -2.547094,
+          1.630216,
+          1.232051
+        ],
+        "folds_sharpe_ge_always_fill": 0,
+        "max_gross": 1.0,
+        "mdd_percent": 94.519766,
+        "min_weight": 0.0,
+        "sharpe": -0.517127,
+        "since2020_cagr_percent": 2.785051,
+        "since2020_sharpe": 0.277829,
+        "since2022_cagr_percent": 9.948714,
+        "since2022_sharpe": 0.820434,
+        "strong_incremental": false,
+        "trades": 3339,
+        "vol_percent": 11.629728,
+        "worst_fold_sharpe": -4.010004
+      }
+    },
+    {
+      "candidate_id": "F-COPGOLD",
+      "metrics": {
+        "admission_checks": {
+          "cagr_gt_v11": false,
+          "constraints_pass": true,
+          "folds_sharpe_ge_always_fill_ge_4": false,
+          "mdd_le_12pct": false,
+          "sharpe_gt_always_fill": false,
+          "worst_fold_sharpe_gt_0": false
+        },
+        "admit_for_robustness": false,
+        "average_cash_ratio": 0.246221,
+        "cagr_percent": 6.051634,
+        "candidate_id": "F-COPGOLD",
+        "fingerprint": "b7a19b7988e43c5b",
+        "fold_cagrs_percent": [
+          2.922531,
+          -11.590208,
+          -4.55928,
+          7.769023,
+          -8.726182,
+          19.801101,
+          31.044756
+        ],
+        "fold_mdds_percent": [
+          13.819964,
+          31.379609,
+          16.582593,
+          9.95309,
+          21.351664,
+          7.386484,
+          10.398103
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          0.337726,
+          -1.192866,
+          -0.498324,
+          0.746947,
+          -0.823205,
+          1.544333,
+          1.824674
+        ],
+        "folds_sharpe_ge_always_fill": 1,
+        "max_gross": 1.0,
+        "mdd_percent": 41.661672,
+        "min_weight": 0.0,
+        "sharpe": 0.570272,
+        "since2020_cagr_percent": 11.002174,
+        "since2020_sharpe": 0.881021,
+        "since2022_cagr_percent": 17.134936,
+        "since2022_sharpe": 1.303829,
+        "strong_incremental": false,
+        "trades": 1682,
+        "vol_percent": 11.019082,
+        "worst_fold_sharpe": -1.192866
+      }
+    },
+    {
+      "candidate_id": "F-SKEW",
+      "metrics": {
+        "admission_checks": {
+          "cagr_gt_v11": false,
+          "constraints_pass": true,
+          "folds_sharpe_ge_always_fill_ge_4": false,
+          "mdd_le_12pct": false,
+          "sharpe_gt_always_fill": false,
+          "worst_fold_sharpe_gt_0": false
+        },
+        "admit_for_robustness": false,
+        "average_cash_ratio": 0.261146,
+        "cagr_percent": -1.76241,
+        "candidate_id": "F-SKEW",
+        "fingerprint": "e112eb75cd19e237",
+        "fold_cagrs_percent": [
+          -11.940215,
+          -31.480894,
+          -10.818446,
+          2.781492,
+          -10.459808,
+          21.911736,
+          20.186171
+        ],
+        "fold_mdds_percent": [
+          33.448286,
+          53.224419,
+          26.444547,
+          13.289393,
+          25.091211,
+          6.230199,
+          15.111727
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          -1.161591,
+          -2.927299,
+          -1.156073,
+          0.279792,
+          -1.12331,
+          1.701787,
+          1.244778
+        ],
+        "folds_sharpe_ge_always_fill": 0,
+        "max_gross": 1.0,
+        "mdd_percent": 82.019505,
+        "min_weight": 0.0,
+        "sharpe": -0.090688,
+        "since2020_cagr_percent": 8.119836,
+        "since2020_sharpe": 0.661891,
+        "since2022_cagr_percent": 16.15031,
+        "since2022_sharpe": 1.24094,
+        "strong_incremental": false,
+        "trades": 2504,
+        "vol_percent": 11.559526,
+        "worst_fold_sharpe": -2.927299
+      }
+    }
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-002.json",
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED. F-FUNDING failed severely (CAGR -6.694438%, Sharpe -0.517127, MDD 94.519766%, 3339 trades). F-COPGOLD also failed (CAGR 6.051634%, Sharpe 0.570272, MDD 41.661672%). F-SKEW failed (CAGR -1.762410%, Sharpe -0.090688, MDD 82.019505%). All three failed the preregistered timing-value gates versus ALWAYS-FILL. No 20-observation horizon, stale tolerance, factor direction, 25% band, overlay semantics, or rescue combination may be changed within this family.",
+  "execution_git_commit": "ae5e17b5a2895dba7bf79848d6a1de4f4d3de361",
+  "preregistration_record_hash": "c4147701e7e4e281ad23e26c6a937c5a2797be4b7414dd23b6b3d60ea66cd220",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-002"
+}

@@ -1,0 +1,2117 @@
+{
+  "artifacts": [
+    {
+      "artifact_key": "curve-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 4083,
+      "factor_key": "atm.event.curve_t10y3m",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-001.json",
+      "sha256": "a4d1783fb4a1db44f25472f6f86afb17e0c718dad6e8fccf0e80df64006bb667",
+      "version_key": "curve-v1"
+    },
+    {
+      "artifact_key": "curve-result",
+      "artifact_type": "formal_result",
+      "byte_size": 3968,
+      "factor_key": "atm.event.curve_t10y3m",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-001.json",
+      "sha256": "1cd435b893bc558f857827b2eb258812cc830f536ce4cbb58b116c0405226351",
+      "version_key": "curve-v1"
+    },
+    {
+      "artifact_key": "usd-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 4083,
+      "factor_key": "atm.event.usd_dxy_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-001.json",
+      "sha256": "a4d1783fb4a1db44f25472f6f86afb17e0c718dad6e8fccf0e80df64006bb667",
+      "version_key": "usd-v1"
+    },
+    {
+      "artifact_key": "usd-result",
+      "artifact_type": "formal_result",
+      "byte_size": 3968,
+      "factor_key": "atm.event.usd_dxy_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-001.json",
+      "sha256": "1cd435b893bc558f857827b2eb258812cc830f536ce4cbb58b116c0405226351",
+      "version_key": "usd-v1"
+    },
+    {
+      "artifact_key": "size-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 4083,
+      "factor_key": "atm.event.size_rut_rui_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-001.json",
+      "sha256": "a4d1783fb4a1db44f25472f6f86afb17e0c718dad6e8fccf0e80df64006bb667",
+      "version_key": "size-v1"
+    },
+    {
+      "artifact_key": "size-result",
+      "artifact_type": "formal_result",
+      "byte_size": 3968,
+      "factor_key": "atm.event.size_rut_rui_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-001.json",
+      "sha256": "1cd435b893bc558f857827b2eb258812cc830f536ce4cbb58b116c0405226351",
+      "version_key": "size-v1"
+    },
+    {
+      "artifact_key": "funding-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 4724,
+      "factor_key": "atm.event.funding_dcpf3m_dff_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-002.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-002.json",
+      "sha256": "b807b9015d926b17c2ba7f9d7096e0e968a79cd0d9cf0291cacf7a97e4fb537b",
+      "version_key": "funding-v1"
+    },
+    {
+      "artifact_key": "funding-result",
+      "artifact_type": "formal_result",
+      "byte_size": 7599,
+      "factor_key": "atm.event.funding_dcpf3m_dff_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-002.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-002.json",
+      "sha256": "e54ae01ce52d9b3143f2870c70f3d3cdac8eb9b4462118ac5e774a8bd4b041ca",
+      "version_key": "funding-v1"
+    },
+    {
+      "artifact_key": "copgold-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 4724,
+      "factor_key": "atm.event.copper_gold_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-002.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-002.json",
+      "sha256": "b807b9015d926b17c2ba7f9d7096e0e968a79cd0d9cf0291cacf7a97e4fb537b",
+      "version_key": "copgold-v1"
+    },
+    {
+      "artifact_key": "copgold-result",
+      "artifact_type": "formal_result",
+      "byte_size": 7599,
+      "factor_key": "atm.event.copper_gold_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-002.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-002.json",
+      "sha256": "e54ae01ce52d9b3143f2870c70f3d3cdac8eb9b4462118ac5e774a8bd4b041ca",
+      "version_key": "copgold-v1"
+    },
+    {
+      "artifact_key": "skew-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 4724,
+      "factor_key": "atm.event.skew_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-002.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-002.json",
+      "sha256": "b807b9015d926b17c2ba7f9d7096e0e968a79cd0d9cf0291cacf7a97e4fb537b",
+      "version_key": "skew-v1"
+    },
+    {
+      "artifact_key": "skew-result",
+      "artifact_type": "formal_result",
+      "byte_size": 7599,
+      "factor_key": "atm.event.skew_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-002.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-002.json",
+      "sha256": "e54ae01ce52d9b3143f2870c70f3d3cdac8eb9b4462118ac5e774a8bd4b041ca",
+      "version_key": "skew-v1"
+    },
+    {
+      "artifact_key": "credit-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 5202,
+      "factor_key": "atm.event.credit_hyg_lqd_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-003.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-003.json",
+      "sha256": "70b0d707de9bcd70510e496755c1fb64965b4f46f8df09197b5e4a1b20c42819",
+      "version_key": "credit-v1"
+    },
+    {
+      "artifact_key": "credit-result",
+      "artifact_type": "formal_result",
+      "byte_size": 8634,
+      "factor_key": "atm.event.credit_hyg_lqd_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-003.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-003.json",
+      "sha256": "edf40b3d02d22f5baf35b69d2bcd7d2002dabd5626956f2c583f2d526c708571",
+      "version_key": "credit-v1"
+    },
+    {
+      "artifact_key": "cyclical-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 5202,
+      "factor_key": "atm.event.cyclical_xly_xlp_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-003.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-003.json",
+      "sha256": "70b0d707de9bcd70510e496755c1fb64965b4f46f8df09197b5e4a1b20c42819",
+      "version_key": "cyclical-v1"
+    },
+    {
+      "artifact_key": "cyclical-result",
+      "artifact_type": "formal_result",
+      "byte_size": 8634,
+      "factor_key": "atm.event.cyclical_xly_xlp_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-003.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-003.json",
+      "sha256": "edf40b3d02d22f5baf35b69d2bcd7d2002dabd5626956f2c583f2d526c708571",
+      "version_key": "cyclical-v1"
+    },
+    {
+      "artifact_key": "indutil-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 5237,
+      "factor_key": "atm.event.indutil_xli_xlu_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-004.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-004.json",
+      "sha256": "2c847db926e33da9b08e272109aed77fb4d3572cc28968e415e61353b4c63d4c",
+      "version_key": "indutil-v1"
+    },
+    {
+      "artifact_key": "indutil-result",
+      "artifact_type": "formal_result",
+      "byte_size": 8508,
+      "factor_key": "atm.event.indutil_xli_xlu_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-004.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-004.json",
+      "sha256": "759738bc0649a7651113a5a07f6677a3cd5fd08f40c78fd37e9d064d002596d9",
+      "version_key": "indutil-v1"
+    },
+    {
+      "artifact_key": "banks-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 5237,
+      "factor_key": "atm.event.banks_kre_spy_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-004.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-004.json",
+      "sha256": "2c847db926e33da9b08e272109aed77fb4d3572cc28968e415e61353b4c63d4c",
+      "version_key": "banks-v1"
+    },
+    {
+      "artifact_key": "banks-result",
+      "artifact_type": "formal_result",
+      "byte_size": 8508,
+      "factor_key": "atm.event.banks_kre_spy_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-004.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-004.json",
+      "sha256": "759738bc0649a7651113a5a07f6677a3cd5fd08f40c78fd37e9d064d002596d9",
+      "version_key": "banks-v1"
+    },
+    {
+      "artifact_key": "growthbond-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 5621,
+      "factor_key": "atm.event.growthbond_qqq_tlt_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-005.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-005.json",
+      "sha256": "bf272f4a3b8c535ceb50810589ebc562c8fbad15df355a306ee9dc7ef41f5558",
+      "version_key": "growthbond-v1"
+    },
+    {
+      "artifact_key": "growthbond-result",
+      "artifact_type": "formal_result",
+      "byte_size": 8515,
+      "factor_key": "atm.event.growthbond_qqq_tlt_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-005.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-005.json",
+      "sha256": "6ef9fd9b2728c1c59908a75e6787a097fd44a37a476fbd122a6e0001df710d71",
+      "version_key": "growthbond-v1"
+    },
+    {
+      "artifact_key": "biotech-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 5621,
+      "factor_key": "atm.event.biotech_xbi_xlv_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-005.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-005.json",
+      "sha256": "bf272f4a3b8c535ceb50810589ebc562c8fbad15df355a306ee9dc7ef41f5558",
+      "version_key": "biotech-v1"
+    },
+    {
+      "artifact_key": "biotech-result",
+      "artifact_type": "formal_result",
+      "byte_size": 8515,
+      "factor_key": "atm.event.biotech_xbi_xlv_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-005.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-005.json",
+      "sha256": "6ef9fd9b2728c1c59908a75e6787a097fd44a37a476fbd122a6e0001df710d71",
+      "version_key": "biotech-v1"
+    },
+    {
+      "artifact_key": "transport-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 5621,
+      "factor_key": "atm.event.transport_iyt_ief_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-005.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-005.json",
+      "sha256": "bf272f4a3b8c535ceb50810589ebc562c8fbad15df355a306ee9dc7ef41f5558",
+      "version_key": "transport-v1"
+    },
+    {
+      "artifact_key": "transport-result",
+      "artifact_type": "formal_result",
+      "byte_size": 8515,
+      "factor_key": "atm.event.transport_iyt_ief_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-005.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-005.json",
+      "sha256": "6ef9fd9b2728c1c59908a75e6787a097fd44a37a476fbd122a6e0001df710d71",
+      "version_key": "transport-v1"
+    },
+    {
+      "artifact_key": "vixterm-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 4557,
+      "factor_key": "atm.event.vixterm_vix9d_vix",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-006.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-006.json",
+      "sha256": "b6f16c3857b1b58a07f93bde7085182bbc957a987e9b2998768fe84ea2656b88",
+      "version_key": "vixterm-v1"
+    },
+    {
+      "artifact_key": "vixterm-result",
+      "artifact_type": "formal_result",
+      "byte_size": 8602,
+      "factor_key": "atm.event.vixterm_vix9d_vix",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-006.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-006.json",
+      "sha256": "91e4ed79d2323e50ac4c06f112eef0d97d700c66fed8a90ab49845cb475672c9",
+      "version_key": "vixterm-v1"
+    },
+    {
+      "artifact_key": "vvix-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 4557,
+      "factor_key": "atm.event.vvix_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-006.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-006.json",
+      "sha256": "b6f16c3857b1b58a07f93bde7085182bbc957a987e9b2998768fe84ea2656b88",
+      "version_key": "vvix-v1"
+    },
+    {
+      "artifact_key": "vvix-result",
+      "artifact_type": "formal_result",
+      "byte_size": 8602,
+      "factor_key": "atm.event.vvix_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-006.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-006.json",
+      "sha256": "91e4ed79d2323e50ac4c06f112eef0d97d700c66fed8a90ab49845cb475672c9",
+      "version_key": "vvix-v1"
+    }
+  ],
+  "batch_key": "atm-svp2-rejected-factor-sync-35ecb3784c6d",
+  "dataset_fingerprint": "f917388fb36e796e1f8a6f5edcc1130ce38793ed27228042e282ce0f21c8670d",
+  "dataset_spec": {
+    "dataset_manifests": {
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-001.json": {
+        "sha256": "e3540d3ccef12ec7027f6f4427ba704c0a3489b43a1bd61921652c3a349866b2"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-002.json": {
+        "sha256": "606a85cbee20dce98c89bd075777abfea71f53038462187b1e44cf7cbe576e7e"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-003.json": {
+        "sha256": "0c036e30fb8e732e16373a8b5e2d34f42f832c4186d859037ee4982ecdb689c7"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-004.json": {
+        "sha256": "c5ca362e942e1b0aef1d523678024d2e1c2cada89a75e3d1cc32c9cd49520f75"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-005.json": {
+        "sha256": "621f30bd45cfe5520d9621828fa9daeb5071e542da6308b350b39c3b78414d88"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-006.json": {
+        "sha256": "0d7e48837115f88db9896eb30dad3d3025abd07958a813c65108f5c62588e282"
+      }
+    },
+    "kind": "six_formal_factor_families"
+  },
+  "factors": [
+    {
+      "description": "ATM-SVP-2 正式历史候选 F-CURVE；未通过冻结 gate，作为 rejected 研究证据永久保留。",
+      "display_name": "收益率曲线 T10Y3M",
+      "factor_key": "atm.event.curve_t10y3m",
+      "family": "yield_curve",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-curve"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 risk overlay research"
+        ],
+        "code_sha256": "58071f77335dea808214ca0667a936ba64b62d64428a7c55e5a9c3bb7e32dcd1",
+        "formula_text": "latest T-1 observation > 0",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 0,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "historical_trial_id": "ATM-SVP2-ORTHO-FACTOR-001",
+          "shared_rules": {},
+          "source_definition": {
+            "risk_on_rule": "latest T-1 observation > 0",
+            "series_id": "T10Y3M",
+            "source": "FRED"
+          }
+        },
+        "required_inputs": [
+          "T10Y3M source value"
+        ],
+        "source_path": "tools/orthogonal_factor_family_v1.swiftpart",
+        "version_key": "curve-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式历史候选 F-USD；未通过冻结 gate，作为 rejected 研究证据永久保留。",
+      "display_name": "美元风险状态 DXY 20观测",
+      "factor_key": "atm.event.usd_dxy_20",
+      "family": "currency_liquidity",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-usd"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 risk overlay research"
+        ],
+        "code_sha256": "58071f77335dea808214ca0667a936ba64b62d64428a7c55e5a9c3bb7e32dcd1",
+        "formula_text": "latest T-1 close <= close 20 source observations earlier",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "historical_trial_id": "ATM-SVP2-ORTHO-FACTOR-001",
+          "shared_rules": {},
+          "source_definition": {
+            "risk_on_rule": "latest T-1 close <= close 20 source observations earlier",
+            "series_id": "DX-Y.NYB",
+            "source": "YAHOO"
+          }
+        },
+        "required_inputs": [
+          "DX-Y.NYB source value"
+        ],
+        "source_path": "tools/orthogonal_factor_family_v1.swiftpart",
+        "version_key": "usd-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式历史候选 F-SIZE；未通过冻结 gate，作为 rejected 研究证据永久保留。",
+      "display_name": "大小盘广度 RUT/RUI 20观测",
+      "factor_key": "atm.event.size_rut_rui_20",
+      "family": "market_breadth",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-size"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 risk overlay research"
+        ],
+        "code_sha256": "58071f77335dea808214ca0667a936ba64b62d64428a7c55e5a9c3bb7e32dcd1",
+        "formula_text": "latest T-1 (^RUT/^RUI) >= ratio 20 common observations earlier",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "historical_trial_id": "ATM-SVP2-ORTHO-FACTOR-001",
+          "shared_rules": {},
+          "source_definition": {
+            "risk_on_rule": "latest T-1 (^RUT/^RUI) >= ratio 20 common observations earlier",
+            "series_ids": [
+              "^RUT",
+              "^RUI"
+            ],
+            "source": "YAHOO"
+          }
+        },
+        "required_inputs": [
+          "^RUT source value",
+          "^RUI source value"
+        ],
+        "source_path": "tools/orthogonal_factor_family_v1.swiftpart",
+        "version_key": "size-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式历史候选 F-FUNDING；未通过冻结 gate，作为 rejected 研究证据永久保留。",
+      "display_name": "短期融资压力 DCPF3M-DFF 20观测",
+      "factor_key": "atm.event.funding_dcpf3m_dff_20",
+      "family": "funding_stress",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-funding"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 risk overlay research"
+        ],
+        "code_sha256": "3d98d4fc507a001ca86a74aa11cacab0c0a82c57daf77d0548ed98bb4e66845a",
+        "formula_text": "latest usable spread <= spread 20 common observations earlier",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "historical_trial_id": "ATM-SVP2-ORTHO-FACTOR-002",
+          "shared_rules": {},
+          "source_definition": {
+            "derived_series": "DCPF3M - DFF on common observation dates",
+            "risk_on_rule": "latest usable spread <= spread 20 common observations earlier",
+            "series_ids": [
+              "DCPF3M",
+              "DFF"
+            ],
+            "source": "FRED"
+          }
+        },
+        "required_inputs": [
+          "DCPF3M source value",
+          "DFF source value"
+        ],
+        "source_path": "tools/orthogonal_factor_family_v2.swiftpart",
+        "version_key": "funding-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式历史候选 F-COPGOLD；未通过冻结 gate，作为 rejected 研究证据永久保留。",
+      "display_name": "铜金比 HG/GC 20观测",
+      "factor_key": "atm.event.copper_gold_20",
+      "family": "cross_asset_macro",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-copgold"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 risk overlay research"
+        ],
+        "code_sha256": "3d98d4fc507a001ca86a74aa11cacab0c0a82c57daf77d0548ed98bb4e66845a",
+        "formula_text": "latest usable ratio >= ratio 20 common observations earlier",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "historical_trial_id": "ATM-SVP2-ORTHO-FACTOR-002",
+          "shared_rules": {},
+          "source_definition": {
+            "derived_series": "HG close / GC close on common observation dates",
+            "risk_on_rule": "latest usable ratio >= ratio 20 common observations earlier",
+            "series_ids": [
+              "HG=F",
+              "GC=F"
+            ],
+            "source": "YAHOO"
+          }
+        },
+        "required_inputs": [
+          "HG=F source value",
+          "GC=F source value"
+        ],
+        "source_path": "tools/orthogonal_factor_family_v2.swiftpart",
+        "version_key": "copgold-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式历史候选 F-SKEW；未通过冻结 gate，作为 rejected 研究证据永久保留。",
+      "display_name": "尾部风险 SKEW 20观测",
+      "factor_key": "atm.event.skew_20",
+      "family": "tail_risk",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-skew"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 risk overlay research"
+        ],
+        "code_sha256": "3d98d4fc507a001ca86a74aa11cacab0c0a82c57daf77d0548ed98bb4e66845a",
+        "formula_text": "latest usable close <= close 20 source observations earlier",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "historical_trial_id": "ATM-SVP2-ORTHO-FACTOR-002",
+          "shared_rules": {},
+          "source_definition": {
+            "risk_on_rule": "latest usable close <= close 20 source observations earlier",
+            "series_id": "^SKEW",
+            "source": "YAHOO"
+          }
+        },
+        "required_inputs": [
+          "^SKEW source value"
+        ],
+        "source_path": "tools/orthogonal_factor_family_v2.swiftpart",
+        "version_key": "skew-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式历史候选 F-CREDIT；未通过冻结 gate，作为 rejected 研究证据永久保留。",
+      "display_name": "信用风险偏好 HYG/LQD 20观测",
+      "factor_key": "atm.event.credit_hyg_lqd_20",
+      "family": "credit_risk_appetite",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-credit"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 risk overlay research"
+        ],
+        "code_sha256": "f683dd4531153025a62d51adfec9ae5695ff93f1c0d6a842706f1752e34a8f9d",
+        "formula_text": "latest usable HYG/LQD ratio >= ratio 20 common observations earlier",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "historical_trial_id": "ATM-SVP2-ORTHO-FACTOR-003",
+          "shared_rules": {
+            "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+            "lookback_observations": 20,
+            "max_stale_calendar_days": 7,
+            "replay_rebalance_band": 0.25,
+            "retention_fraction": 0.5
+          },
+          "source_definition": {
+            "matched_control": "retain 50% on every factor-available V11 de-risk event",
+            "price_field": "adjusted_close",
+            "risk_on_rule": "latest usable HYG/LQD ratio >= ratio 20 common observations earlier",
+            "series_ids": [
+              "HYG",
+              "LQD"
+            ],
+            "source": "YAHOO"
+          }
+        },
+        "required_inputs": [
+          "HYG adjusted_close",
+          "LQD adjusted_close"
+        ],
+        "source_path": "tools/orthogonal_event_factor_v3.swiftpart",
+        "version_key": "credit-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式历史候选 F-CYCLICAL；未通过冻结 gate，作为 rejected 研究证据永久保留。",
+      "display_name": "周期消费偏好 XLY/XLP 20观测",
+      "factor_key": "atm.event.cyclical_xly_xlp_20",
+      "family": "sector_risk_appetite",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-cyclical"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 risk overlay research"
+        ],
+        "code_sha256": "f683dd4531153025a62d51adfec9ae5695ff93f1c0d6a842706f1752e34a8f9d",
+        "formula_text": "latest usable XLY/XLP ratio >= ratio 20 common observations earlier",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "historical_trial_id": "ATM-SVP2-ORTHO-FACTOR-003",
+          "shared_rules": {
+            "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+            "lookback_observations": 20,
+            "max_stale_calendar_days": 7,
+            "replay_rebalance_band": 0.25,
+            "retention_fraction": 0.5
+          },
+          "source_definition": {
+            "matched_control": "retain 50% on every factor-available V11 de-risk event",
+            "price_field": "adjusted_close",
+            "risk_on_rule": "latest usable XLY/XLP ratio >= ratio 20 common observations earlier",
+            "series_ids": [
+              "XLY",
+              "XLP"
+            ],
+            "source": "YAHOO"
+          }
+        },
+        "required_inputs": [
+          "XLY adjusted_close",
+          "XLP adjusted_close"
+        ],
+        "source_path": "tools/orthogonal_event_factor_v3.swiftpart",
+        "version_key": "cyclical-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式历史候选 F-INDUTIL；未通过冻结 gate，作为 rejected 研究证据永久保留。",
+      "display_name": "工业/公用风险偏好 XLI/XLU 20观测",
+      "factor_key": "atm.event.indutil_xli_xlu_20",
+      "family": "sector_risk_appetite",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-indutil"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 risk overlay research"
+        ],
+        "code_sha256": "3be3304231f90d6fb4fc24889f238db4a4fc995ff86d947d237c9337547f747a",
+        "formula_text": "latest usable XLI/XLU ratio >= ratio 20 common observations earlier",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "historical_trial_id": "ATM-SVP2-ORTHO-FACTOR-004",
+          "shared_rules": {
+            "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+            "lookback_observations": 20,
+            "max_stale_calendar_days": 7,
+            "replay_rebalance_band": 0.25,
+            "retention_fraction": 0.5
+          },
+          "source_definition": {
+            "matched_control": "retain 50% on every factor-available V11 de-risk event",
+            "price_field": "adjusted_close",
+            "risk_on_rule": "latest usable XLI/XLU ratio >= ratio 20 common observations earlier",
+            "series_ids": [
+              "XLI",
+              "XLU"
+            ],
+            "source": "YAHOO"
+          }
+        },
+        "required_inputs": [
+          "XLI adjusted_close",
+          "XLU adjusted_close"
+        ],
+        "source_path": "tools/orthogonal_event_factor_v4.swiftpart",
+        "version_key": "indutil-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式历史候选 F-BANKS；未通过冻结 gate，作为 rejected 研究证据永久保留。",
+      "display_name": "区域银行风险偏好 KRE/SPY 20观测",
+      "factor_key": "atm.event.banks_kre_spy_20",
+      "family": "financial_risk_appetite",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-banks"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 risk overlay research"
+        ],
+        "code_sha256": "3be3304231f90d6fb4fc24889f238db4a4fc995ff86d947d237c9337547f747a",
+        "formula_text": "latest usable KRE/SPY ratio >= ratio 20 common observations earlier",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "historical_trial_id": "ATM-SVP2-ORTHO-FACTOR-004",
+          "shared_rules": {
+            "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+            "lookback_observations": 20,
+            "max_stale_calendar_days": 7,
+            "replay_rebalance_band": 0.25,
+            "retention_fraction": 0.5
+          },
+          "source_definition": {
+            "matched_control": "retain 50% on every factor-available V11 de-risk event",
+            "price_field": "adjusted_close",
+            "risk_on_rule": "latest usable KRE/SPY ratio >= ratio 20 common observations earlier",
+            "series_ids": [
+              "KRE",
+              "SPY"
+            ],
+            "source": "YAHOO"
+          }
+        },
+        "required_inputs": [
+          "KRE adjusted_close",
+          "SPY adjusted_close"
+        ],
+        "source_path": "tools/orthogonal_event_factor_v4.swiftpart",
+        "version_key": "banks-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式历史候选 F-GROWTHBOND；未通过冻结 gate，作为 rejected 研究证据永久保留。",
+      "display_name": "成长股/长债 QQQ/TLT 20观测",
+      "factor_key": "atm.event.growthbond_qqq_tlt_20",
+      "family": "cross_asset_risk_appetite",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-growthbond"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 risk overlay research"
+        ],
+        "code_sha256": "809963ce981581c32a2434d281cac4f8d6ddf0a9763ca1eb7142dd3ebc7ab9e1",
+        "formula_text": "latest usable QQQ/TLT ratio >= ratio 20 common observations earlier",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "historical_trial_id": "ATM-SVP2-ORTHO-FACTOR-005",
+          "shared_rules": {
+            "completion_gross_target": 1.0,
+            "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+            "lookback_observations": 20,
+            "max_stale_calendar_days": 7,
+            "replay_rebalance_band": 0.25
+          },
+          "source_definition": {
+            "matched_control": "complete current V11 positive holdings to 100% gross on every factor-available underinvested V11 event",
+            "price_field": "adjusted_close",
+            "risk_on_rule": "latest usable QQQ/TLT ratio >= ratio 20 common observations earlier",
+            "series_ids": [
+              "QQQ",
+              "TLT"
+            ],
+            "source": "YAHOO"
+          }
+        },
+        "required_inputs": [
+          "QQQ adjusted_close",
+          "TLT adjusted_close"
+        ],
+        "source_path": "tools/orthogonal_event_budget_v5.swiftpart",
+        "version_key": "growthbond-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式历史候选 F-BIOTECH；未通过冻结 gate，作为 rejected 研究证据永久保留。",
+      "display_name": "生物科技/医疗 XBI/XLV 20观测",
+      "factor_key": "atm.event.biotech_xbi_xlv_20",
+      "family": "sector_risk_appetite",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-biotech"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 risk overlay research"
+        ],
+        "code_sha256": "809963ce981581c32a2434d281cac4f8d6ddf0a9763ca1eb7142dd3ebc7ab9e1",
+        "formula_text": "latest usable XBI/XLV ratio >= ratio 20 common observations earlier",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "historical_trial_id": "ATM-SVP2-ORTHO-FACTOR-005",
+          "shared_rules": {
+            "completion_gross_target": 1.0,
+            "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+            "lookback_observations": 20,
+            "max_stale_calendar_days": 7,
+            "replay_rebalance_band": 0.25
+          },
+          "source_definition": {
+            "matched_control": "complete current V11 positive holdings to 100% gross on every factor-available underinvested V11 event",
+            "price_field": "adjusted_close",
+            "risk_on_rule": "latest usable XBI/XLV ratio >= ratio 20 common observations earlier",
+            "series_ids": [
+              "XBI",
+              "XLV"
+            ],
+            "source": "YAHOO"
+          }
+        },
+        "required_inputs": [
+          "XBI adjusted_close",
+          "XLV adjusted_close"
+        ],
+        "source_path": "tools/orthogonal_event_budget_v5.swiftpart",
+        "version_key": "biotech-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式历史候选 F-TRANSPORT；未通过冻结 gate，作为 rejected 研究证据永久保留。",
+      "display_name": "运输/国债 IYT/IEF 20观测",
+      "factor_key": "atm.event.transport_iyt_ief_20",
+      "family": "cross_asset_macro",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-transport"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 risk overlay research"
+        ],
+        "code_sha256": "809963ce981581c32a2434d281cac4f8d6ddf0a9763ca1eb7142dd3ebc7ab9e1",
+        "formula_text": "latest usable IYT/IEF ratio >= ratio 20 common observations earlier",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "historical_trial_id": "ATM-SVP2-ORTHO-FACTOR-005",
+          "shared_rules": {
+            "completion_gross_target": 1.0,
+            "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+            "lookback_observations": 20,
+            "max_stale_calendar_days": 7,
+            "replay_rebalance_band": 0.25
+          },
+          "source_definition": {
+            "matched_control": "complete current V11 positive holdings to 100% gross on every factor-available underinvested V11 event",
+            "price_field": "adjusted_close",
+            "risk_on_rule": "latest usable IYT/IEF ratio >= ratio 20 common observations earlier",
+            "series_ids": [
+              "IYT",
+              "IEF"
+            ],
+            "source": "YAHOO"
+          }
+        },
+        "required_inputs": [
+          "IYT adjusted_close",
+          "IEF adjusted_close"
+        ],
+        "source_path": "tools/orthogonal_event_budget_v5.swiftpart",
+        "version_key": "transport-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式历史候选 F-VIXTERM；未通过冻结 gate，作为 rejected 研究证据永久保留。",
+      "display_name": "波动率期限结构 VIX9D/VIX",
+      "factor_key": "atm.event.vixterm_vix9d_vix",
+      "family": "volatility_term_structure",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-vixterm"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 risk overlay research"
+        ],
+        "code_sha256": "281484218a6c14a373082a8b76b9c1d38f6cf963d25c018c79cbd7cd3b77aa32",
+        "formula_text": "latest usable VIX9D/VIX ratio <=1.0",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "historical_trial_id": "ATM-SVP2-ORTHO-FACTOR-006",
+          "shared_rules": {
+            "completion_gross_target": 1.0,
+            "direction_lookback_observations": 20,
+            "event_scope": "unique frozen V11 trade execution dates",
+            "max_stale_calendar_days": 7,
+            "replay_rebalance_band": 0.25
+          },
+          "source_definition": {
+            "matched_control": "complete to 100% on every factor-available underinvested V11 event",
+            "price_field": "adjusted_close",
+            "risk_on_rule": "latest usable VIX9D/VIX ratio <=1.0",
+            "series_ids": [
+              "^VIX9D",
+              "^VIX"
+            ],
+            "source": "YAHOO"
+          }
+        },
+        "required_inputs": [
+          "^VIX9D adjusted_close",
+          "^VIX adjusted_close"
+        ],
+        "source_path": "tools/final_crisis_filter_v6.swiftpart",
+        "version_key": "vixterm-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式历史候选 F-VVIX；未通过冻结 gate，作为 rejected 研究证据永久保留。",
+      "display_name": "波动率波动 VVIX 20观测",
+      "factor_key": "atm.event.vvix_20",
+      "family": "volatility_of_volatility",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-vvix"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 risk overlay research"
+        ],
+        "code_sha256": "281484218a6c14a373082a8b76b9c1d38f6cf963d25c018c79cbd7cd3b77aa32",
+        "formula_text": "latest usable VVIX <= VVIX 20 source observations earlier",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "historical_trial_id": "ATM-SVP2-ORTHO-FACTOR-006",
+          "shared_rules": {
+            "completion_gross_target": 1.0,
+            "direction_lookback_observations": 20,
+            "event_scope": "unique frozen V11 trade execution dates",
+            "max_stale_calendar_days": 7,
+            "replay_rebalance_band": 0.25
+          },
+          "source_definition": {
+            "matched_control": "complete to 100% on every factor-available underinvested V11 event",
+            "price_field": "adjusted_close",
+            "risk_on_rule": "latest usable VVIX <= VVIX 20 source observations earlier",
+            "series_id": "^VVIX",
+            "source": "YAHOO"
+          }
+        },
+        "required_inputs": [
+          "^VVIX adjusted_close"
+        ],
+        "source_path": "tools/final_crisis_filter_v6.swiftpart",
+        "version_key": "vvix-v1"
+      }
+    }
+  ],
+  "methodology": {
+    "already_synced_research_candidates": 3,
+    "evaluation_kind": "event_overlay",
+    "formal_candidate_count": 18,
+    "g3_note": "Rejected candidates remain visible and count in trial accounting; this catalog sync does not reopen or retune them.",
+    "historical_decisions": {
+      "atm.event.banks_kre_spy_20": {
+        "candidate_id": "F-BANKS",
+        "candidate_result": {
+          "candidate_id": "F-BANKS",
+          "metrics": {
+            "admission_checks": {
+              "cagr_gt_v11": false,
+              "constraints_pass": true,
+              "folds_sharpe_ge_matched_ge_4": true,
+              "mdd_le_12pct": true,
+              "sharpe_gt_matched_control": true,
+              "worst_fold_sharpe_gt_0": true
+            },
+            "admit_for_robustness": false,
+            "available_derisk_events": 115,
+            "average_cash_ratio": 0.409197,
+            "cagr_percent": 14.324614,
+            "candidate_id": "F-BANKS",
+            "derisk_events": 134,
+            "fingerprint": "fd0e6525febb2f76",
+            "fold_cagrs_percent": [
+              10.728298,
+              5.655988,
+              4.740328,
+              14.265857,
+              4.725095,
+              21.373553,
+              34.753244
+            ],
+            "fold_mdds_percent": [
+              4.16002,
+              7.405951,
+              6.419609,
+              8.52142,
+              3.857252,
+              6.232346,
+              8.138989
+            ],
+            "fold_names": [
+              "2012-2014",
+              "2015-2016",
+              "2017-2018",
+              "2019-2020",
+              "2021-2022",
+              "2023-2024",
+              "2025-latest"
+            ],
+            "fold_sharpes": [
+              1.570613,
+              0.842938,
+              0.737503,
+              1.598605,
+              1.004659,
+              1.698989,
+              2.180838
+            ],
+            "folds_sharpe_ge_matched": 4,
+            "matched_control_id": "C-BANKS-ALWAYS",
+            "max_gross": 1.0,
+            "mdd_percent": 8.52142,
+            "min_weight": 0.0,
+            "retained_events": 53,
+            "sharpe": 1.485361,
+            "since2020_cagr_percent": 17.936619,
+            "since2020_sharpe": 1.593922,
+            "since2022_cagr_percent": 21.675833,
+            "since2022_sharpe": 1.771514,
+            "source_events": 166,
+            "strong_incremental": false,
+            "trades": 449,
+            "vol_percent": 8.979491,
+            "worst_fold_sharpe": 0.737503
+          }
+        },
+        "family_decision": "PASS at factor-screening level because F-HIGHBETA satisfied every preregistered ADMIT_FOR_ROBUSTNESS gate. F-HIGHBETA CAGR 14.392126% exceeded V11 14.345615%, Sharpe 1.494292 exceeded matched control 1.464578, MDD 8.521421% <=12%, 4/7 folds matched or beat the matched control, worst-fold Sharpe 0.454167 >0, and constraints held. It did NOT satisfy STRONG_INCREMENTAL because CAGR improvement was <1.0 percentage point and Sharpe remained below V11. F-INDUTIL and F-BANKS failed only the CAGR>V11 gate despite beating matched controls on several dimensions. No horizon, retention fraction, stale rule, band, factor direction, or combination may be changed within this family.",
+        "trial_id": "ATM-SVP2-ORTHO-FACTOR-004",
+        "trial_status": "PASS"
+      },
+      "atm.event.biotech_xbi_xlv_20": {
+        "candidate_id": "F-BIOTECH",
+        "candidate_result": {
+          "candidate_id": "F-BIOTECH",
+          "metrics": {
+            "admission_checks": {
+              "cagr_gt_v11": true,
+              "constraints_pass": true,
+              "folds_sharpe_ge_matched_ge_4": true,
+              "mdd_le_12pct": false,
+              "sharpe_gt_matched_control": true,
+              "worst_fold_sharpe_gt_0": true
+            },
+            "admit_for_robustness": false,
+            "available_underinvested_events": 111,
+            "average_cash_ratio": 0.294102,
+            "cagr_percent": 15.656064,
+            "candidate_id": "F-BIOTECH",
+            "completed_events": 59,
+            "fingerprint": "61f7c94fb8d993e5",
+            "fold_cagrs_percent": [
+              13.138717,
+              1.895989,
+              6.786232,
+              17.195013,
+              8.00435,
+              22.752077,
+              38.656574
+            ],
+            "fold_mdds_percent": [
+              6.075582,
+              19.086206,
+              9.306875,
+              9.61828,
+              5.303433,
+              6.137734,
+              6.319344
+            ],
+            "fold_names": [
+              "2012-2014",
+              "2015-2016",
+              "2017-2018",
+              "2019-2020",
+              "2021-2022",
+              "2023-2024",
+              "2025-latest"
+            ],
+            "fold_sharpes": [
+              1.265791,
+              0.20227,
+              0.873626,
+              1.542246,
+              1.010523,
+              1.725035,
+              2.392034
+            ],
+            "folds_sharpe_ge_matched": 4,
+            "matched_control_id": "C-BIOTECH-ALWAYS",
+            "max_gross": 1.0,
+            "mdd_percent": 19.086206,
+            "min_weight": 0.0,
+            "sharpe": 1.368258,
+            "since2020_cagr_percent": 21.021184,
+            "since2020_sharpe": 1.662204,
+            "since2022_cagr_percent": 25.319421,
+            "since2022_sharpe": 1.867441,
+            "source_events": 166,
+            "strong_incremental": false,
+            "trades": 459,
+            "underinvested_events": 129,
+            "vol_percent": 10.689015,
+            "worst_fold_sharpe": 0.20227
+          }
+        },
+        "family_decision": "FAIL / NO_CANDIDATE_ADMITTED. F-GROWTHBOND raised CAGR to 15.118864% but failed matched-control Sharpe, fold-comparison and MDD gates (MDD 19.324619%). F-BIOTECH was the strongest timing candidate: CAGR 15.656064%, Sharpe 1.368258 beat its matched control 1.292555, and 4/7 folds matched or beat the control, but MDD 19.086206% violated the frozen 12% ceiling and Sharpe remained below V11. F-TRANSPORT also failed. The event-only 100% completion architecture is therefore not admitted in this family. No gross-target rescue, horizon/stale/band change, or candidate retuning is allowed.",
+        "trial_id": "ATM-SVP2-ORTHO-FACTOR-005",
+        "trial_status": "FAIL"
+      },
+      "atm.event.copper_gold_20": {
+        "candidate_id": "F-COPGOLD",
+        "candidate_result": {
+          "candidate_id": "F-COPGOLD",
+          "metrics": {
+            "admission_checks": {
+              "cagr_gt_v11": false,
+              "constraints_pass": true,
+              "folds_sharpe_ge_always_fill_ge_4": false,
+              "mdd_le_12pct": false,
+              "sharpe_gt_always_fill": false,
+              "worst_fold_sharpe_gt_0": false
+            },
+            "admit_for_robustness": false,
+            "average_cash_ratio": 0.246221,
+            "cagr_percent": 6.051634,
+            "candidate_id": "F-COPGOLD",
+            "fingerprint": "b7a19b7988e43c5b",
+            "fold_cagrs_percent": [
+              2.922531,
+              -11.590208,
+              -4.55928,
+              7.769023,
+              -8.726182,
+              19.801101,
+              31.044756
+            ],
+            "fold_mdds_percent": [
+              13.819964,
+              31.379609,
+              16.582593,
+              9.95309,
+              21.351664,
+              7.386484,
+              10.398103
+            ],
+            "fold_names": [
+              "2012-2014",
+              "2015-2016",
+              "2017-2018",
+              "2019-2020",
+              "2021-2022",
+              "2023-2024",
+              "2025-latest"
+            ],
+            "fold_sharpes": [
+              0.337726,
+              -1.192866,
+              -0.498324,
+              0.746947,
+              -0.823205,
+              1.544333,
+              1.824674
+            ],
+            "folds_sharpe_ge_always_fill": 1,
+            "max_gross": 1.0,
+            "mdd_percent": 41.661672,
+            "min_weight": 0.0,
+            "sharpe": 0.570272,
+            "since2020_cagr_percent": 11.002174,
+            "since2020_sharpe": 0.881021,
+            "since2022_cagr_percent": 17.134936,
+            "since2022_sharpe": 1.303829,
+            "strong_incremental": false,
+            "trades": 1682,
+            "vol_percent": 11.019082,
+            "worst_fold_sharpe": -1.192866
+          }
+        },
+        "family_decision": "FAIL / NO_CANDIDATE_ADMITTED. F-FUNDING failed severely (CAGR -6.694438%, Sharpe -0.517127, MDD 94.519766%, 3339 trades). F-COPGOLD also failed (CAGR 6.051634%, Sharpe 0.570272, MDD 41.661672%). F-SKEW failed (CAGR -1.762410%, Sharpe -0.090688, MDD 82.019505%). All three failed the preregistered timing-value gates versus ALWAYS-FILL. No 20-observation horizon, stale tolerance, factor direction, 25% band, overlay semantics, or rescue combination may be changed within this family.",
+        "trial_id": "ATM-SVP2-ORTHO-FACTOR-002",
+        "trial_status": "FAIL"
+      },
+      "atm.event.credit_hyg_lqd_20": {
+        "candidate_id": "F-CREDIT",
+        "candidate_result": {
+          "candidate_id": "F-CREDIT",
+          "metrics": {
+            "admission_checks": {
+              "cagr_gt_v11": false,
+              "constraints_pass": true,
+              "folds_sharpe_ge_matched_ge_4": true,
+              "mdd_le_12pct": true,
+              "sharpe_gt_matched_control": true,
+              "worst_fold_sharpe_gt_0": true
+            },
+            "admit_for_robustness": false,
+            "available_derisk_events": 106,
+            "average_cash_ratio": 0.396888,
+            "cagr_percent": 14.222222,
+            "candidate_id": "F-CREDIT",
+            "derisk_events": 134,
+            "fingerprint": "8b8c9d5c38c11412",
+            "fold_cagrs_percent": [
+              10.190439,
+              5.439893,
+              4.550937,
+              16.040495,
+              4.725398,
+              21.373553,
+              33.499863
+            ],
+            "fold_mdds_percent": [
+              5.009617,
+              7.405951,
+              8.06016,
+              8.521362,
+              3.857264,
+              6.232346,
+              8.140054
+            ],
+            "fold_names": [
+              "2012-2014",
+              "2015-2016",
+              "2017-2018",
+              "2019-2020",
+              "2021-2022",
+              "2023-2024",
+              "2025-latest"
+            ],
+            "fold_sharpes": [
+              1.48084,
+              0.815901,
+              0.680378,
+              1.724824,
+              1.004681,
+              1.698989,
+              2.137472
+            ],
+            "folds_sharpe_ge_matched": 4,
+            "matched_control_id": "C-CREDIT-ALWAYS",
+            "max_gross": 1.0,
+            "mdd_percent": 8.574076,
+            "min_weight": 0.0,
+            "retained_events": 66,
+            "sharpe": 1.449611,
+            "since2020_cagr_percent": 17.92535,
+            "since2020_sharpe": 1.593429,
+            "since2022_cagr_percent": 21.279226,
+            "since2022_sharpe": 1.752747,
+            "source_events": 166,
+            "strong_incremental": false,
+            "trades": 440,
+            "vol_percent": 9.152036,
+            "worst_fold_sharpe": 0.680378
+          }
+        },
+        "family_decision": "PASS at factor-screening level because F-BREADTH satisfied every preregistered ADMIT_FOR_ROBUSTNESS gate. F-BREADTH CAGR 14.425407% exceeded V11 14.345615%, Sharpe 1.470087 exceeded its matched availability control 1.420693, MDD was 9.102436% <=12%, 4/7 folds matched or beat the matched control, worst-fold Sharpe was 0.680464, and all portfolio constraints held. It did NOT satisfy STRONG_INCREMENTAL because CAGR improvement was <1.0 percentage point and Sharpe remained below V11. F-CREDIT and F-CYCLICAL failed only the CAGR>V11 gate despite beating their matched controls on several robustness dimensions. No factor horizon, retention fraction, stale rule, band, or factor combination may be changed within this family. F-BREADTH may proceed only to a separately preregistered robustness family.",
+        "trial_id": "ATM-SVP2-ORTHO-FACTOR-003",
+        "trial_status": "PASS"
+      },
+      "atm.event.curve_t10y3m": {
+        "candidate_id": "F-CURVE",
+        "candidate_result": {
+          "candidate_id": "F-CURVE",
+          "metrics": {
+            "admit_for_robustness": false,
+            "average_cash_ratio": 0.140809,
+            "cagr_percent": 16.153293,
+            "folds_sharpe_ge_always_fill": 3,
+            "mdd_percent": 18.778858,
+            "sharpe": 1.232041,
+            "strong_incremental": false,
+            "target_fingerprint": "cf1631e66ffed07d",
+            "trades": 508,
+            "vol_percent": 12.364151,
+            "worst_fold_sharpe": 0.370657
+          }
+        },
+        "family_decision": "FAIL / NO_CANDIDATE_ADMITTED. The ungated ALWAYS-FILL control raised CAGR from V11 14.345615% to 17.695785% but increased MDD from 7.689054% to 18.778858% and reduced Sharpe from 1.522263 to 1.311050, showing that unused risk budget can raise return but at materially worse risk-adjusted performance. F-CURVE increased CAGR to 16.153293% but failed the preregistered incremental-timing gates: Sharpe 1.232041 did not beat ALWAYS-FILL 1.311050, MDD was 18.778858% >12%, and only 3/7 folds matched or beat ALWAYS-FILL Sharpe. F-USD and F-SIZE failed more strongly. No threshold, 20-observation horizon, stale tolerance, sign rule, 25% band, or overlay-semantic rescue search is allowed within this family.",
+        "trial_id": "ATM-SVP2-ORTHO-FACTOR-001",
+        "trial_status": "FAIL"
+      },
+      "atm.event.cyclical_xly_xlp_20": {
+        "candidate_id": "F-CYCLICAL",
+        "candidate_result": {
+          "candidate_id": "F-CYCLICAL",
+          "metrics": {
+            "admission_checks": {
+              "cagr_gt_v11": false,
+              "constraints_pass": true,
+              "folds_sharpe_ge_matched_ge_4": true,
+              "mdd_le_12pct": true,
+              "sharpe_gt_matched_control": true,
+              "worst_fold_sharpe_gt_0": true
+            },
+            "admit_for_robustness": false,
+            "available_derisk_events": 134,
+            "average_cash_ratio": 0.388864,
+            "cagr_percent": 14.285902,
+            "candidate_id": "F-CYCLICAL",
+            "derisk_events": 134,
+            "fingerprint": "95b5059b736341e3",
+            "fold_cagrs_percent": [
+              11.633585,
+              6.111989,
+              5.024583,
+              15.119062,
+              2.77215,
+              21.37392,
+              35.091665
+            ],
+            "fold_mdds_percent": [
+              5.01663,
+              5.884379,
+              6.418559,
+              8.521421,
+              6.315664,
+              6.232346,
+              8.139049
+            ],
+            "fold_names": [
+              "2012-2014",
+              "2015-2016",
+              "2017-2018",
+              "2019-2020",
+              "2021-2022",
+              "2023-2024",
+              "2025-latest"
+            ],
+            "fold_sharpes": [
+              1.662942,
+              0.889304,
+              0.773436,
+              1.622376,
+              0.4915,
+              1.699017,
+              2.200746
+            ],
+            "folds_sharpe_ge_matched": 6,
+            "matched_control_id": "C-CYCLICAL-ALWAYS",
+            "max_gross": 1.0,
+            "mdd_percent": 8.582025,
+            "min_weight": 0.0,
+            "retained_events": 82,
+            "sharpe": 1.455736,
+            "since2020_cagr_percent": 17.593076,
+            "since2020_sharpe": 1.531344,
+            "since2022_cagr_percent": 20.60524,
+            "since2022_sharpe": 1.664663,
+            "source_events": 166,
+            "strong_incremental": false,
+            "trades": 443,
+            "vol_percent": 9.150414,
+            "worst_fold_sharpe": 0.4915
+          }
+        },
+        "family_decision": "PASS at factor-screening level because F-BREADTH satisfied every preregistered ADMIT_FOR_ROBUSTNESS gate. F-BREADTH CAGR 14.425407% exceeded V11 14.345615%, Sharpe 1.470087 exceeded its matched availability control 1.420693, MDD was 9.102436% <=12%, 4/7 folds matched or beat the matched control, worst-fold Sharpe was 0.680464, and all portfolio constraints held. It did NOT satisfy STRONG_INCREMENTAL because CAGR improvement was <1.0 percentage point and Sharpe remained below V11. F-CREDIT and F-CYCLICAL failed only the CAGR>V11 gate despite beating their matched controls on several robustness dimensions. No factor horizon, retention fraction, stale rule, band, or factor combination may be changed within this family. F-BREADTH may proceed only to a separately preregistered robustness family.",
+        "trial_id": "ATM-SVP2-ORTHO-FACTOR-003",
+        "trial_status": "PASS"
+      },
+      "atm.event.funding_dcpf3m_dff_20": {
+        "candidate_id": "F-FUNDING",
+        "candidate_result": {
+          "candidate_id": "F-FUNDING",
+          "metrics": {
+            "admission_checks": {
+              "cagr_gt_v11": false,
+              "constraints_pass": true,
+              "folds_sharpe_ge_always_fill_ge_4": false,
+              "mdd_le_12pct": false,
+              "sharpe_gt_always_fill": false,
+              "worst_fold_sharpe_gt_0": false
+            },
+            "admit_for_robustness": false,
+            "average_cash_ratio": 0.23764,
+            "cagr_percent": -6.694438,
+            "candidate_id": "F-FUNDING",
+            "fingerprint": "40a74acfc31e0fb9",
+            "fold_cagrs_percent": [
+              -24.402982,
+              -40.945036,
+              -14.377555,
+              -0.258944,
+              -22.728022,
+              21.685718,
+              18.352118
+            ],
+            "fold_mdds_percent": [
+              52.895093,
+              65.017026,
+              32.643558,
+              16.017753,
+              42.221861,
+              6.220821,
+              13.739125
+            ],
+            "fold_names": [
+              "2012-2014",
+              "2015-2016",
+              "2017-2018",
+              "2019-2020",
+              "2021-2022",
+              "2023-2024",
+              "2025-latest"
+            ],
+            "fold_sharpes": [
+              -2.491839,
+              -4.010004,
+              -1.579242,
+              0.037455,
+              -2.547094,
+              1.630216,
+              1.232051
+            ],
+            "folds_sharpe_ge_always_fill": 0,
+            "max_gross": 1.0,
+            "mdd_percent": 94.519766,
+            "min_weight": 0.0,
+            "sharpe": -0.517127,
+            "since2020_cagr_percent": 2.785051,
+            "since2020_sharpe": 0.277829,
+            "since2022_cagr_percent": 9.948714,
+            "since2022_sharpe": 0.820434,
+            "strong_incremental": false,
+            "trades": 3339,
+            "vol_percent": 11.629728,
+            "worst_fold_sharpe": -4.010004
+          }
+        },
+        "family_decision": "FAIL / NO_CANDIDATE_ADMITTED. F-FUNDING failed severely (CAGR -6.694438%, Sharpe -0.517127, MDD 94.519766%, 3339 trades). F-COPGOLD also failed (CAGR 6.051634%, Sharpe 0.570272, MDD 41.661672%). F-SKEW failed (CAGR -1.762410%, Sharpe -0.090688, MDD 82.019505%). All three failed the preregistered timing-value gates versus ALWAYS-FILL. No 20-observation horizon, stale tolerance, factor direction, 25% band, overlay semantics, or rescue combination may be changed within this family.",
+        "trial_id": "ATM-SVP2-ORTHO-FACTOR-002",
+        "trial_status": "FAIL"
+      },
+      "atm.event.growthbond_qqq_tlt_20": {
+        "candidate_id": "F-GROWTHBOND",
+        "candidate_result": {
+          "candidate_id": "F-GROWTHBOND",
+          "metrics": {
+            "admission_checks": {
+              "cagr_gt_v11": true,
+              "constraints_pass": true,
+              "folds_sharpe_ge_matched_ge_4": false,
+              "mdd_le_12pct": false,
+              "sharpe_gt_matched_control": false,
+              "worst_fold_sharpe_gt_0": true
+            },
+            "admit_for_robustness": false,
+            "available_underinvested_events": 129,
+            "average_cash_ratio": 0.249406,
+            "cagr_percent": 15.118864,
+            "candidate_id": "F-GROWTHBOND",
+            "completed_events": 81,
+            "fingerprint": "c1349900b62012f4",
+            "fold_cagrs_percent": [
+              11.853669,
+              0.434048,
+              7.433097,
+              18.007766,
+              10.702266,
+              21.753836,
+              34.82109
+            ],
+            "fold_mdds_percent": [
+              8.846939,
+              19.324619,
+              9.489509,
+              11.738353,
+              7.172496,
+              6.230416,
+              8.191314
+            ],
+            "fold_names": [
+              "2012-2014",
+              "2015-2016",
+              "2017-2018",
+              "2019-2020",
+              "2021-2022",
+              "2023-2024",
+              "2025-latest"
+            ],
+            "fold_sharpes": [
+              1.200751,
+              0.094346,
+              0.831979,
+              1.418532,
+              0.951653,
+              1.697785,
+              2.040018
+            ],
+            "folds_sharpe_ge_matched": 2,
+            "matched_control_id": "C-GROWTHBOND-ALWAYS",
+            "max_gross": 1.0,
+            "mdd_percent": 19.324619,
+            "min_weight": 0.0,
+            "sharpe": 1.260639,
+            "since2020_cagr_percent": 21.045585,
+            "since2020_sharpe": 1.499084,
+            "since2022_cagr_percent": 23.65968,
+            "since2022_sharpe": 1.721114,
+            "source_events": 166,
+            "strong_incremental": false,
+            "trades": 465,
+            "underinvested_events": 129,
+            "vol_percent": 11.298161,
+            "worst_fold_sharpe": 0.094346
+          }
+        },
+        "family_decision": "FAIL / NO_CANDIDATE_ADMITTED. F-GROWTHBOND raised CAGR to 15.118864% but failed matched-control Sharpe, fold-comparison and MDD gates (MDD 19.324619%). F-BIOTECH was the strongest timing candidate: CAGR 15.656064%, Sharpe 1.368258 beat its matched control 1.292555, and 4/7 folds matched or beat the control, but MDD 19.086206% violated the frozen 12% ceiling and Sharpe remained below V11. F-TRANSPORT also failed. The event-only 100% completion architecture is therefore not admitted in this family. No gross-target rescue, horizon/stale/band change, or candidate retuning is allowed.",
+        "trial_id": "ATM-SVP2-ORTHO-FACTOR-005",
+        "trial_status": "FAIL"
+      },
+      "atm.event.indutil_xli_xlu_20": {
+        "candidate_id": "F-INDUTIL",
+        "candidate_result": {
+          "candidate_id": "F-INDUTIL",
+          "metrics": {
+            "admission_checks": {
+              "cagr_gt_v11": false,
+              "constraints_pass": true,
+              "folds_sharpe_ge_matched_ge_4": true,
+              "mdd_le_12pct": true,
+              "sharpe_gt_matched_control": true,
+              "worst_fold_sharpe_gt_0": true
+            },
+            "admit_for_robustness": false,
+            "available_derisk_events": 134,
+            "average_cash_ratio": 0.393083,
+            "cagr_percent": 14.321473,
+            "candidate_id": "F-INDUTIL",
+            "derisk_events": 134,
+            "fingerprint": "ee8c3e82e154bc47",
+            "fold_cagrs_percent": [
+              11.427826,
+              5.676234,
+              4.96709,
+              14.424035,
+              2.547526,
+              21.37392,
+              35.130281
+            ],
+            "fold_mdds_percent": [
+              5.009617,
+              7.397502,
+              6.418834,
+              8.521421,
+              6.315445,
+              6.232346,
+              8.138978
+            ],
+            "fold_names": [
+              "2012-2014",
+              "2015-2016",
+              "2017-2018",
+              "2019-2020",
+              "2021-2022",
+              "2023-2024",
+              "2025-latest"
+            ],
+            "fold_sharpes": [
+              1.64525,
+              0.799872,
+              0.778028,
+              1.61793,
+              0.453717,
+              1.699017,
+              2.202511
+            ],
+            "folds_sharpe_ge_matched": 5,
+            "matched_control_id": "C-INDUTIL-ALWAYS",
+            "max_gross": 1.0,
+            "mdd_percent": 8.521421,
+            "min_weight": 0.0,
+            "retained_events": 75,
+            "sharpe": 1.464691,
+            "since2020_cagr_percent": 17.323791,
+            "since2020_sharpe": 1.521921,
+            "since2022_cagr_percent": 20.617285,
+            "since2022_sharpe": 1.665417,
+            "source_events": 166,
+            "strong_incremental": false,
+            "trades": 438,
+            "vol_percent": 9.112646,
+            "worst_fold_sharpe": 0.453717
+          }
+        },
+        "family_decision": "PASS at factor-screening level because F-HIGHBETA satisfied every preregistered ADMIT_FOR_ROBUSTNESS gate. F-HIGHBETA CAGR 14.392126% exceeded V11 14.345615%, Sharpe 1.494292 exceeded matched control 1.464578, MDD 8.521421% <=12%, 4/7 folds matched or beat the matched control, worst-fold Sharpe 0.454167 >0, and constraints held. It did NOT satisfy STRONG_INCREMENTAL because CAGR improvement was <1.0 percentage point and Sharpe remained below V11. F-INDUTIL and F-BANKS failed only the CAGR>V11 gate despite beating matched controls on several dimensions. No horizon, retention fraction, stale rule, band, factor direction, or combination may be changed within this family.",
+        "trial_id": "ATM-SVP2-ORTHO-FACTOR-004",
+        "trial_status": "PASS"
+      },
+      "atm.event.size_rut_rui_20": {
+        "candidate_id": "F-SIZE",
+        "candidate_result": {
+          "candidate_id": "F-SIZE",
+          "metrics": {
+            "admit_for_robustness": false,
+            "average_cash_ratio": 0.253837,
+            "cagr_percent": 8.059363,
+            "folds_sharpe_ge_always_fill": 1,
+            "mdd_percent": 25.837376,
+            "sharpe": 0.739585,
+            "strong_incremental": false,
+            "target_fingerprint": "a2749b159ff2e5a5",
+            "trades": 1517,
+            "vol_percent": 10.933586,
+            "worst_fold_sharpe": -0.545281
+          }
+        },
+        "family_decision": "FAIL / NO_CANDIDATE_ADMITTED. The ungated ALWAYS-FILL control raised CAGR from V11 14.345615% to 17.695785% but increased MDD from 7.689054% to 18.778858% and reduced Sharpe from 1.522263 to 1.311050, showing that unused risk budget can raise return but at materially worse risk-adjusted performance. F-CURVE increased CAGR to 16.153293% but failed the preregistered incremental-timing gates: Sharpe 1.232041 did not beat ALWAYS-FILL 1.311050, MDD was 18.778858% >12%, and only 3/7 folds matched or beat ALWAYS-FILL Sharpe. F-USD and F-SIZE failed more strongly. No threshold, 20-observation horizon, stale tolerance, sign rule, 25% band, or overlay-semantic rescue search is allowed within this family.",
+        "trial_id": "ATM-SVP2-ORTHO-FACTOR-001",
+        "trial_status": "FAIL"
+      },
+      "atm.event.skew_20": {
+        "candidate_id": "F-SKEW",
+        "candidate_result": {
+          "candidate_id": "F-SKEW",
+          "metrics": {
+            "admission_checks": {
+              "cagr_gt_v11": false,
+              "constraints_pass": true,
+              "folds_sharpe_ge_always_fill_ge_4": false,
+              "mdd_le_12pct": false,
+              "sharpe_gt_always_fill": false,
+              "worst_fold_sharpe_gt_0": false
+            },
+            "admit_for_robustness": false,
+            "average_cash_ratio": 0.261146,
+            "cagr_percent": -1.76241,
+            "candidate_id": "F-SKEW",
+            "fingerprint": "e112eb75cd19e237",
+            "fold_cagrs_percent": [
+              -11.940215,
+              -31.480894,
+              -10.818446,
+              2.781492,
+              -10.459808,
+              21.911736,
+              20.186171
+            ],
+            "fold_mdds_percent": [
+              33.448286,
+              53.224419,
+              26.444547,
+              13.289393,
+              25.091211,
+              6.230199,
+              15.111727
+            ],
+            "fold_names": [
+              "2012-2014",
+              "2015-2016",
+              "2017-2018",
+              "2019-2020",
+              "2021-2022",
+              "2023-2024",
+              "2025-latest"
+            ],
+            "fold_sharpes": [
+              -1.161591,
+              -2.927299,
+              -1.156073,
+              0.279792,
+              -1.12331,
+              1.701787,
+              1.244778
+            ],
+            "folds_sharpe_ge_always_fill": 0,
+            "max_gross": 1.0,
+            "mdd_percent": 82.019505,
+            "min_weight": 0.0,
+            "sharpe": -0.090688,
+            "since2020_cagr_percent": 8.119836,
+            "since2020_sharpe": 0.661891,
+            "since2022_cagr_percent": 16.15031,
+            "since2022_sharpe": 1.24094,
+            "strong_incremental": false,
+            "trades": 2504,
+            "vol_percent": 11.559526,
+            "worst_fold_sharpe": -2.927299
+          }
+        },
+        "family_decision": "FAIL / NO_CANDIDATE_ADMITTED. F-FUNDING failed severely (CAGR -6.694438%, Sharpe -0.517127, MDD 94.519766%, 3339 trades). F-COPGOLD also failed (CAGR 6.051634%, Sharpe 0.570272, MDD 41.661672%). F-SKEW failed (CAGR -1.762410%, Sharpe -0.090688, MDD 82.019505%). All three failed the preregistered timing-value gates versus ALWAYS-FILL. No 20-observation horizon, stale tolerance, factor direction, 25% band, overlay semantics, or rescue combination may be changed within this family.",
+        "trial_id": "ATM-SVP2-ORTHO-FACTOR-002",
+        "trial_status": "FAIL"
+      },
+      "atm.event.transport_iyt_ief_20": {
+        "candidate_id": "F-TRANSPORT",
+        "candidate_result": {
+          "candidate_id": "F-TRANSPORT",
+          "metrics": {
+            "admission_checks": {
+              "cagr_gt_v11": true,
+              "constraints_pass": true,
+              "folds_sharpe_ge_matched_ge_4": false,
+              "mdd_le_12pct": false,
+              "sharpe_gt_matched_control": false,
+              "worst_fold_sharpe_gt_0": true
+            },
+            "admit_for_robustness": false,
+            "available_underinvested_events": 123,
+            "average_cash_ratio": 0.259483,
+            "cagr_percent": 14.504609,
+            "candidate_id": "F-TRANSPORT",
+            "completed_events": 76,
+            "fingerprint": "d5906fc04205ce93",
+            "fold_cagrs_percent": [
+              11.3964,
+              1.217325,
+              5.494402,
+              18.104412,
+              13.401159,
+              20.992472,
+              26.943725
+            ],
+            "fold_mdds_percent": [
+              8.846939,
+              17.189911,
+              12.496805,
+              11.738353,
+              7.167298,
+              6.232345,
+              13.676706
+            ],
+            "fold_names": [
+              "2012-2014",
+              "2015-2016",
+              "2017-2018",
+              "2019-2020",
+              "2021-2022",
+              "2023-2024",
+              "2025-latest"
+            ],
+            "fold_sharpes": [
+              1.133899,
+              0.159747,
+              0.663232,
+              1.47495,
+              1.133921,
+              1.663151,
+              1.565227
+            ],
+            "folds_sharpe_ge_matched": 1,
+            "matched_control_id": "C-TRANSPORT-ALWAYS",
+            "max_gross": 1.0,
+            "mdd_percent": 17.189911,
+            "min_weight": 0.0,
+            "sharpe": 1.241923,
+            "since2020_cagr_percent": 19.954309,
+            "since2020_sharpe": 1.416458,
+            "since2022_cagr_percent": 20.757661,
+            "since2022_sharpe": 1.505282,
+            "source_events": 166,
+            "strong_incremental": false,
+            "trades": 457,
+            "underinvested_events": 129,
+            "vol_percent": 11.027414,
+            "worst_fold_sharpe": 0.159747
+          }
+        },
+        "family_decision": "FAIL / NO_CANDIDATE_ADMITTED. F-GROWTHBOND raised CAGR to 15.118864% but failed matched-control Sharpe, fold-comparison and MDD gates (MDD 19.324619%). F-BIOTECH was the strongest timing candidate: CAGR 15.656064%, Sharpe 1.368258 beat its matched control 1.292555, and 4/7 folds matched or beat the control, but MDD 19.086206% violated the frozen 12% ceiling and Sharpe remained below V11. F-TRANSPORT also failed. The event-only 100% completion architecture is therefore not admitted in this family. No gross-target rescue, horizon/stale/band change, or candidate retuning is allowed.",
+        "trial_id": "ATM-SVP2-ORTHO-FACTOR-005",
+        "trial_status": "FAIL"
+      },
+      "atm.event.usd_dxy_20": {
+        "candidate_id": "F-USD",
+        "candidate_result": {
+          "candidate_id": "F-USD",
+          "metrics": {
+            "admit_for_robustness": false,
+            "average_cash_ratio": 0.268788,
+            "cagr_percent": 6.476118,
+            "folds_sharpe_ge_always_fill": 1,
+            "mdd_percent": 45.872745,
+            "sharpe": 0.604369,
+            "strong_incremental": false,
+            "target_fingerprint": "07564edbbc91a338",
+            "trades": 1533,
+            "vol_percent": 11.040047,
+            "worst_fold_sharpe": -1.070643
+          }
+        },
+        "family_decision": "FAIL / NO_CANDIDATE_ADMITTED. The ungated ALWAYS-FILL control raised CAGR from V11 14.345615% to 17.695785% but increased MDD from 7.689054% to 18.778858% and reduced Sharpe from 1.522263 to 1.311050, showing that unused risk budget can raise return but at materially worse risk-adjusted performance. F-CURVE increased CAGR to 16.153293% but failed the preregistered incremental-timing gates: Sharpe 1.232041 did not beat ALWAYS-FILL 1.311050, MDD was 18.778858% >12%, and only 3/7 folds matched or beat ALWAYS-FILL Sharpe. F-USD and F-SIZE failed more strongly. No threshold, 20-observation horizon, stale tolerance, sign rule, 25% band, or overlay-semantic rescue search is allowed within this family.",
+        "trial_id": "ATM-SVP2-ORTHO-FACTOR-001",
+        "trial_status": "FAIL"
+      },
+      "atm.event.vixterm_vix9d_vix": {
+        "candidate_id": "F-VIXTERM",
+        "candidate_result": {
+          "candidate_id": "F-VIXTERM",
+          "metrics": {
+            "admission_checks": {
+              "cagr_gt_v11": true,
+              "constraints_pass": true,
+              "folds_sharpe_ge_matched_ge_4": false,
+              "mdd_le_12pct": false,
+              "sharpe_gt_matched_control": true,
+              "worst_fold_sharpe_gt_0": true
+            },
+            "admit_for_robustness": false,
+            "available_underinvested_events": 101,
+            "average_cash_ratio": 0.265504,
+            "cagr_percent": 15.50823,
+            "candidate_id": "F-VIXTERM",
+            "completed_events": 80,
+            "fingerprint": "a770472f3cad738c",
+            "fold_cagrs_percent": [
+              13.299263,
+              0.991997,
+              7.836431,
+              18.392128,
+              9.990637,
+              22.143081,
+              32.520799
+            ],
+            "fold_mdds_percent": [
+              8.927635,
+              21.155869,
+              11.747313,
+              11.738519,
+              7.167299,
+              6.230416,
+              13.439915
+            ],
+            "fold_names": [
+              "2012-2014",
+              "2015-2016",
+              "2017-2018",
+              "2019-2020",
+              "2021-2022",
+              "2023-2024",
+              "2025-latest"
+            ],
+            "fold_sharpes": [
+              1.168153,
+              0.139237,
+              0.854394,
+              1.448667,
+              1.051612,
+              1.733536,
+              1.761191
+            ],
+            "folds_sharpe_ge_matched": 3,
+            "matched_control_id": "C-VIXTERM-ALWAYS",
+            "max_gross": 1.0,
+            "mdd_percent": 21.155869,
+            "min_weight": 0.0,
+            "sharpe": 1.341352,
+            "since2020_cagr_percent": 19.701537,
+            "since2020_sharpe": 1.438748,
+            "since2022_cagr_percent": 21.298892,
+            "since2022_sharpe": 1.589855,
+            "source_events": 166,
+            "strong_incremental": false,
+            "trades": 445,
+            "underinvested_events": 129,
+            "vol_percent": 10.821872,
+            "worst_fold_sharpe": 0.139237
+          }
+        },
+        "family_decision": "FAIL / FINAL RETROSPECTIVE DISCOVERY STOP. F-VIXTERM raised CAGR to 15.508230% and beat its matched-control Sharpe, but failed MDD (21.155869%) and fold-comparison gates. F-VVIX raised CAGR to 15.318047% but failed matched-control Sharpe, MDD (19.095670%) and fold gates. F-CREDITCASH was the strongest final candidate: CAGR 16.067258%, Sharpe 1.377913, 4/7 fold wins versus matched control, and worst-fold Sharpe 0.704665, but MDD 12.777213% exceeded the frozen 12% ceiling and Sharpe remained below V11 1.522263. No candidate is admitted and no STRONG_INCREMENTAL factor exists. Per preregistered stop rule, no additional retrospective factor-discovery family may be opened under this campaign.",
+        "trial_id": "ATM-SVP2-ORTHO-FACTOR-006",
+        "trial_status": "FAIL"
+      },
+      "atm.event.vvix_20": {
+        "candidate_id": "F-VVIX",
+        "candidate_result": {
+          "candidate_id": "F-VVIX",
+          "metrics": {
+            "admission_checks": {
+              "cagr_gt_v11": true,
+              "constraints_pass": true,
+              "folds_sharpe_ge_matched_ge_4": false,
+              "mdd_le_12pct": false,
+              "sharpe_gt_matched_control": false,
+              "worst_fold_sharpe_gt_0": true
+            },
+            "admit_for_robustness": false,
+            "available_underinvested_events": 109,
+            "average_cash_ratio": 0.258818,
+            "cagr_percent": 15.318047,
+            "candidate_id": "F-VVIX",
+            "completed_events": 65,
+            "fingerprint": "a942a6fa8cb01875",
+            "fold_cagrs_percent": [
+              11.31833,
+              1.317178,
+              6.21308,
+              23.532555,
+              10.693542,
+              22.752077,
+              34.840769
+            ],
+            "fold_mdds_percent": [
+              8.969564,
+              19.09567,
+              12.605859,
+              13.087278,
+              7.167299,
+              6.137734,
+              8.561384
+            ],
+            "fold_names": [
+              "2012-2014",
+              "2015-2016",
+              "2017-2018",
+              "2019-2020",
+              "2021-2022",
+              "2023-2024",
+              "2025-latest"
+            ],
+            "fold_sharpes": [
+              1.148789,
+              0.166565,
+              0.660135,
+              1.631904,
+              0.951075,
+              1.725035,
+              2.024414
+            ],
+            "folds_sharpe_ge_matched": 3,
+            "matched_control_id": "C-VVIX-ALWAYS",
+            "max_gross": 1.0,
+            "mdd_percent": 19.09567,
+            "min_weight": 0.0,
+            "sharpe": 1.275507,
+            "since2020_cagr_percent": 21.459834,
+            "since2020_sharpe": 1.501859,
+            "since2022_cagr_percent": 24.10355,
+            "since2022_sharpe": 1.726627,
+            "source_events": 166,
+            "strong_incremental": false,
+            "trades": 470,
+            "underinvested_events": 129,
+            "vol_percent": 11.29719,
+            "worst_fold_sharpe": 0.166565
+          }
+        },
+        "family_decision": "FAIL / FINAL RETROSPECTIVE DISCOVERY STOP. F-VIXTERM raised CAGR to 15.508230% and beat its matched-control Sharpe, but failed MDD (21.155869%) and fold-comparison gates. F-VVIX raised CAGR to 15.318047% but failed matched-control Sharpe, MDD (19.095670%) and fold gates. F-CREDITCASH was the strongest final candidate: CAGR 16.067258%, Sharpe 1.377913, 4/7 fold wins versus matched control, and worst-fold Sharpe 0.704665, but MDD 12.777213% exceeded the frozen 12% ceiling and Sharpe remained below V11 1.522263. No candidate is admitted and no STRONG_INCREMENTAL factor exists. Per preregistered stop rule, no additional retrospective factor-discovery family may be opened under this campaign.",
+        "trial_id": "ATM-SVP2-ORTHO-FACTOR-006",
+        "trial_status": "FAIL"
+      }
+    },
+    "new_research_trial_created": false,
+    "structured_results_policy": "omitted because factor-library-v1 horizon coordinates do not faithfully represent event-overlay portfolio metrics; exact formal results are attached",
+    "sync_kind": "complete_formal_candidate_catalog_without_survivorship_filter",
+    "this_batch_rejected_candidates": 15
+  },
+  "observations": [],
+  "run_key": "atm-svp2-rejected-factor-sync-35ecb3784c6d",
+  "run_title": "ATM-SVP-2 正式失败因子完整归档",
+  "runner_path": "scripts/export_factor_library_rejected_manifest.py",
+  "runner_sha256": "c045dd6a191d1a8fab1d6a957afbf9110662de4814d6b81237733f631bb8396e",
+  "schema_version": "factor-library-v1",
+  "source_commit": "35ecb3784c6d7937e7cdf0539170e99ce9bafc75",
+  "source_repository": "flyingrtx2333/AssetTimeMachine",
+  "summary": "补齐 retrospective stop-rule 前全部正式因子候选；15个未通过候选以 rejected 状态永久保留，避免因子库产生幸存者偏差。"
+}

@@ -1,0 +1,46 @@
+{
+  "common_window_reference_checks": {
+    "cagr_gt_0": true,
+    "constraints_pass": true,
+    "mdd_le_25pct": true,
+    "sharpe_gt_0": true,
+    "uses_no_replacement_roles": true
+  },
+  "evaluation_window": {
+    "end": "2026-08-12",
+    "rule": "intersection_of_all_role_metadata_coverage",
+    "start": "2009-07-03"
+  },
+  "execution_git_commit": "0984367ee3cb85f0f1f0ea92618173d921eaecc8",
+  "full_history_identity_check": {
+    "cagr_matches_frozen_within_0_01pp": true,
+    "gross_constraint": true,
+    "mdd_matches_frozen_within_0_01pp": true,
+    "no_negative_weights": true,
+    "sharpe_matches_frozen_within_0_001": true,
+    "target_fingerprint_matches_frozen": true,
+    "trade_count_matches_frozen": true
+  },
+  "holdout_id": "ATM-SVP2-G4-ROLE-HOLDOUT-001",
+  "metrics": {
+    "cagr": 0.04454072,
+    "max_gross": 1.0,
+    "mdd": 0.17157421,
+    "min_weight": 3.17346e-05,
+    "sharpe": 0.520677,
+    "target_fingerprint": "8945d99bb1a87e9c",
+    "trades": 319,
+    "volatility": 0.08817407
+  },
+  "protocol_id": "ATM-SVP-2",
+  "reference_type": "EXPOSED_BASE_IDENTITY_COMMON_WINDOW",
+  "relative_thresholds": {
+    "all_alternate_mdd_max_percent": 21.44677625,
+    "all_alternate_sharpe_min": 0.2603385,
+    "one_slot_median_sharpe_min": 0.2603385
+  },
+  "source_fixture_path": "tools/research-results/strategy-validation/g4-reference/ATM-SVP2-G4-ROLE-HOLDOUT-001-identity-common-window.json",
+  "source_fixture_sha256": "e6085f4f19dd9095424d6f56d8d19c130c1467924061b4f58621b308df07f20d",
+  "strategy_id": "nfci-dual-core-v11",
+  "strategy_version": "dualcore-v11-2026-08-15"
+}

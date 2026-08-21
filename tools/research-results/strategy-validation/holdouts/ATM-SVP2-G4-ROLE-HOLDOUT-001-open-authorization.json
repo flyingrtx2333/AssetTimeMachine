@@ -1,0 +1,12 @@
+{
+  "authorization_git_commit": "284cccd671d0dc1f418a1982bde88baff6ad1d36",
+  "authorized_at": "2026-08-21T02:15:48+08:00",
+  "frozen_manifest_path": "tools/research-results/strategy-validation/holdouts/ATM-SVP2-G4-ROLE-HOLDOUT-001.json",
+  "frozen_manifest_sha256": "50922abff9ccc628fc23ae1735a9899009b37ce5e94420a88a22131cd9b04ce6",
+  "holdout_burn_record_hash": "793dc604f7ddc057d9f0b19b2ff84c1359304db338f809ce22d2cadcef4a0d18",
+  "holdout_id": "ATM-SVP2-G4-ROLE-HOLDOUT-001",
+  "protocol_id": "ATM-SVP-2",
+  "scope": "One-time full-history opening for the six preregistered ATM-SVP-2 G4 role-preserving runs only.",
+  "selection_payload_sha256": "65ea8054cb79a32f7be3522088a3d167679431cf548f304a86d080af70bed298",
+  "strategy_version": "dualcore-v11-2026-08-15"
+}

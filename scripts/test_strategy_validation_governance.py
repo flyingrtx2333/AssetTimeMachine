@@ -120,6 +120,64 @@ class StrategyValidationLedgerTests(unittest.TestCase):
             )
         self.assertEqual(len(read_records(self.ledger)), 1)
 
+    @staticmethod
+    def g4_reference_payload(holdout_id: str = "HOLDOUT-G4") -> dict:
+        return {
+            "protocol_id": "ATM-SVP-2", "holdout_id": holdout_id,
+            "strategy_id": "nfci-dual-core-v11", "strategy_version": "dualcore-v11-2026-08-15",
+            "manifest_path": f"holdouts/{holdout_id}.json", "manifest_sha256": "a" * 64,
+            "selection_payload_sha256": "b" * 64, "evaluation_start": "2009-07-03",
+            "evaluation_end": "2026-08-12", "cagr": 0.04, "sharpe": 0.5, "mdd": 0.17,
+            "trades": 300, "target_fingerprint": "c" * 16, "max_gross": 1.0, "min_weight": 0.0,
+            "source_fixture_path": "fixtures/base.json", "source_fixture_sha256": "d" * 64,
+            "execution_git_commit": "e" * 40, "reference_artifact_path": "refs/g4.json",
+            "reference_artifact_sha256": "f" * 64,
+        }
+
+    @staticmethod
+    def g4_burn_payload(holdout_id: str = "HOLDOUT-G4") -> dict:
+        return {
+            "protocol_id": "ATM-SVP-2", "holdout_id": holdout_id,
+            "strategy_id": "nfci-dual-core-v11", "strategy_version": "dualcore-v11-2026-08-15",
+            "manifest_path": f"holdouts/{holdout_id}.json", "manifest_sha256": "a" * 64,
+            "selection_payload_sha256": "b" * 64, "frozen_manifest_git_commit": "1" * 40,
+            "permanent": True, "rule": "Permanently reserve this exact G4 holdout.",
+        }
+
+    @staticmethod
+    def g4_invalid_payload(holdout_id: str = "HOLDOUT-G4") -> dict:
+        return {
+            "protocol_id": "ATM-SVP-2", "holdout_id": holdout_id,
+            "strategy_id": "nfci-dual-core-v11", "strategy_version": "dualcore-v11-2026-08-15",
+            "manifest_path": f"holdouts/{holdout_id}.json", "manifest_sha256": "a" * 64,
+            "authorization_receipt_path": "holdouts/open.json", "authorization_receipt_sha256": "2" * 64,
+            "invalid_stage": "FULL_HISTORY_SOURCE_FETCH",
+            "invalid_reason": "Two frozen Yahoo instruments expose current quote metadata but no reproducible historical daily series.",
+            "opened_full_history": True, "formal_substitution_run_started": False,
+            "substitution_performance_metrics_viewed": False, "permanent_no_replacement": True,
+            "successful_raw_roles": ["gold_safe_haven", "us_growth_equity", "us_broad_equity"],
+            "unavailable_roles": ["china_large_equity", "china_broad_equity"],
+            "diagnostic_artifact_path": "diagnostics/g4-source.json",
+            "diagnostic_artifact_sha256": "3" * 64,
+        }
+
+    def test_g4_holdout_invalid_requires_complete_auditable_payload(self) -> None:
+        append_record(self.ledger, "G4_REFERENCE_BASELINE_FROZEN", self.g4_reference_payload(), "2026-08-19T12:00:00+08:00")
+        append_record(self.ledger, "HOLDOUT_BURNED", self.g4_burn_payload(), "2026-08-19T12:01:00+08:00")
+        payload = self.g4_invalid_payload()
+        del payload["diagnostic_artifact_sha256"]
+        with self.assertRaises(SystemExit):
+            append_record(self.ledger, "G4_HOLDOUT_INVALID", payload, "2026-08-19T12:02:00+08:00")
+        self.assertEqual(len(read_records(self.ledger)), 2)
+
+    def test_valid_g4_holdout_invalid_is_bound_to_burned_holdout(self) -> None:
+        append_record(self.ledger, "G4_REFERENCE_BASELINE_FROZEN", self.g4_reference_payload(), "2026-08-19T12:00:00+08:00")
+        append_record(self.ledger, "HOLDOUT_BURNED", self.g4_burn_payload(), "2026-08-19T12:01:00+08:00")
+        append_record(self.ledger, "G4_HOLDOUT_INVALID", self.g4_invalid_payload(), "2026-08-19T12:02:00+08:00")
+        records = read_records(self.ledger)
+        verify_records(records)
+        self.assertEqual(records[-1]["event"], "G4_HOLDOUT_INVALID")
+
     def test_hash_tampering_is_detected(self) -> None:
         append_record(
             self.ledger,

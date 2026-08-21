@@ -1,0 +1,13 @@
+V11_ROLE_GENERALIZATION
+candidate_id=one_slot_us_growth_equity
+replaced_roles=nasdaq
+cagr=4.454072
+mdd=17.157421
+vol=8.817407
+sharpe=0.520677
+trades=319
+max_gross=1.0000000000
+min_weight=0.0000317346
+fingerprint=8945d99bb1a87e9c
+END_CANDIDATE
+V11_ROLE_GENERALIZATION_COMPLETE

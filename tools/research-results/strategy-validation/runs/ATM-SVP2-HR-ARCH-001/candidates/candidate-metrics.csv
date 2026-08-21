@@ -1,0 +1,5 @@
+candidate_id,cagr_percent,mdd_percent,vol_percent,sharpe,trades,average_cash_ratio,max_gross,min_weight,fingerprint,folds_sharpe_gt1,worst_fold_sharpe,admit_for_robustness,target_region
+V11-CONTROL,14.345615,7.689054,8.760667,1.522263,451,0.425368,1.0,0.0,ba67c8aa24bc7168,5,0.740905,CONTROL,CONTROL
+HR-A,-6.092938,77.972036,14.114956,-0.35932,666,0.089612,1.0,0.0,d4b9b8667895368f,0,-1.353968,False,False
+HR-B,13.834435,13.003196,10.013559,1.300311,512,0.33352,1.0,0.0,9a276ebbd84cc743,4,0.460102,False,False
+HR-C,4.464056,24.021576,10.712404,0.447475,914,0.215912,1.0,0.0,808ee20bc7ff0a53,3,-0.574735,False,False

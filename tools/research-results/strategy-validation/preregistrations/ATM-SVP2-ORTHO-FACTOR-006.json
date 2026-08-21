@@ -1,0 +1,84 @@
+{
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-006",
+  "protocol_id": "ATM-SVP-2",
+  "strategy_lineage": "final-crisis-filter-event-budget-v6; frozen control nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "hypothesis": "At least one crisis/stress filter can selectively permit frozen V11 event-level completion to 100% gross while avoiding the drawdown failure seen in V5 and improving risk-adjusted performance versus its matched unconditional completion control.",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-006.json",
+  "allowed_changes": [
+    "F-VIXTERM exact VIX9D/VIX structural non-inversion state ratio<=1.0",
+    "F-VVIX exact VVIX 20-observation falling state",
+    "F-CREDITCASH exact HYG/SHY adjusted-close 20-common-observation rising state",
+    "reuse of the already-frozen V5 event-only completion-to-100%-gross architecture"
+  ],
+  "forbidden_changes": [
+    "any frozen V11 parameter or target-path rule change",
+    "any VIXTERM threshold search",
+    "any VVIX or credit lookback search",
+    "any stale-tolerance, gross-target or band search",
+    "factor-driven trades between frozen V11 event dates",
+    "combining candidates inside this trial",
+    "replacing a failed candidate after results",
+    "adding a fourth candidate",
+    "changing fee/slippage, leverage, financing, shorting or cash constraints",
+    "using T+0/future factor observations",
+    "opening another retrospective factor-discovery family after this trial"
+  ],
+  "candidate_ids": [
+    "F-VIXTERM",
+    "F-VVIX",
+    "F-CREDITCASH"
+  ],
+  "candidate_count": 3,
+  "selection_metric": "No winner optimization. Compare each candidate against V11-CONTROL and its own matched availability ALWAYS-complete control using frozen gates.",
+  "pass_fail_gates": [
+    "full-history CAGR > V11-CONTROL CAGR",
+    "full-history Sharpe > own matched-control Sharpe",
+    "full-history MDD <=12%",
+    "at least 4/7 fixed folds have candidate Sharpe >= matched-control Sharpe",
+    "worst fixed-fold Sharpe >0",
+    "max gross <=100%, min target weight >=0, no financing or negative cash",
+    "STRONG_INCREMENTAL only if admitted plus CAGR >= V11 CAGR +1.0 percentage point and Sharpe >= V11 Sharpe"
+  ],
+  "formal_run_budget": 3,
+  "follow_up_policy": "This is the final retrospective factor-discovery family in the current campaign. After results are opened, no additional historical factor family, factor combination, threshold rescue, horizon change, stale-rule change, band change or gross-target change is allowed. Passing candidates may only enter separately preregistered robustness work; otherwise research returns to G4/G6/new future data.",
+  "swift_engine_entrypoint": "scripts/run_final_crisis_filter_v6.py -> tools/final_crisis_filter_v6.swiftpart + immutable V3/V1 logic -> frozen V11 source run + BacktestEngine.runResearchTargetProviderStrategyWithTrace -> shared BacktestDailySimulator",
+  "expected_outputs": [
+    "V11-CONTROL metrics/fingerprint",
+    "three matched controls and all three formal candidate metrics",
+    "same seven fixed folds, 2020+, 2022+, trade/cash/constraint/event counts",
+    "mechanical ADMIT_FOR_ROBUSTNESS and STRONG_INCREMENTAL flags",
+    "run authorization, execution Git commit, dataset/result SHA manifests"
+  ],
+  "protocol_component": "FINAL_CRISIS_FILTER_EVENT_BUDGET_V6",
+  "factor_sources": {
+    "F-VIXTERM": {
+      "source": "YAHOO",
+      "series_ids": ["^VIX9D", "^VIX"],
+      "price_field": "adjusted_close",
+      "risk_on_rule": "latest usable VIX9D/VIX ratio <=1.0",
+      "matched_control": "complete to 100% on every factor-available underinvested V11 event"
+    },
+    "F-VVIX": {
+      "source": "YAHOO",
+      "series_id": "^VVIX",
+      "price_field": "adjusted_close",
+      "risk_on_rule": "latest usable VVIX <= VVIX 20 source observations earlier",
+      "matched_control": "complete to 100% on every factor-available underinvested V11 event"
+    },
+    "F-CREDITCASH": {
+      "source": "YAHOO",
+      "series_ids": ["HYG", "SHY"],
+      "price_field": "adjusted_close",
+      "risk_on_rule": "latest usable HYG/SHY ratio >= ratio 20 common observations earlier",
+      "matched_control": "complete to 100% on every factor-available underinvested V11 event"
+    }
+  },
+  "shared_rules": {
+    "max_stale_calendar_days": 7,
+    "direction_lookback_observations": 20,
+    "completion_gross_target": 1.0,
+    "replay_rebalance_band": 0.25,
+    "event_scope": "unique frozen V11 trade execution dates"
+  }
+}

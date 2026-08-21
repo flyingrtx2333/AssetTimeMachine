@@ -1,0 +1,144 @@
+{
+  "files": [
+    {
+      "bytes": 180855,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-12-26",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/candidates/ALWAYS-FILL-portfolio.csv",
+      "row_count": 6166,
+      "sha256": "c03d05df8563ba060f7f2e2479f366d88a12a92a6a40424fff19bf2e4f98d410"
+    },
+    {
+      "bytes": 178118,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-12-26",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/candidates/F-COPGOLD-portfolio.csv",
+      "row_count": 6166,
+      "sha256": "af79b33f0b335667829ed54851304139d9e4b5385c97ab6be45658d5498db21e"
+    },
+    {
+      "bytes": 174178,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-12-26",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/candidates/F-FUNDING-portfolio.csv",
+      "row_count": 6166,
+      "sha256": "59504f0e29bb44c9a44f46a02e5c9f457951a83803255c31a18b49b9f291edbc"
+    },
+    {
+      "bytes": 174372,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-12-26",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/candidates/F-SKEW-portfolio.csv",
+      "row_count": 6166,
+      "sha256": "b45d8ce6e8890991cd8677fb6ee7182d8db60ecede23cecb5e91f4e9c7520003"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "24161f0a347c587e8a0bb34d59a159663744ff4f1b6124885c2c2d2ace8207cf"
+    },
+    {
+      "bytes": 823,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "vol_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "min_weight",
+        "fingerprint",
+        "folds_sharpe_ge_always_fill",
+        "worst_fold_sharpe",
+        "admit_for_robustness",
+        "strong_incremental"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/candidates/candidate-metrics.csv",
+      "row_count": 5,
+      "sha256": "bc26d9ae5a585ae99ce4d0fd8ad284f38bace5df6300cd718233cf830053c81d"
+    },
+    {
+      "bytes": 7855,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/candidates/candidate-metrics.json",
+      "sha256": "70cb3b1aa9e98be58fe3444de7168c3177da958f700fb5a74be0bc0a33902c10"
+    },
+    {
+      "bytes": 1092,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/execution.json",
+      "sha256": "9055d645240d3cf685fc7fea6cc112dba7ce1df168db6c8cec4e16e95d57e1f2"
+    },
+    {
+      "bytes": 439,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/run-authorization.json",
+      "sha256": "cb54a5186b9486187406de78a5d20c35fc3b4a4ee1b2c86e89074f0f0badb9fa"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 5362,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-002/stdout.txt",
+      "sha256": "a93220644cae2f48fff9cc9ef8797c3c1df03d6b84891f06d1c37849d45be0ab"
+    }
+  ],
+  "generated_at": "2026-08-20T21:36:13+08:00",
+  "git_commit": "ae5e17b5a2895dba7bf79848d6a1de4f4d3de361",
+  "kind": "result",
+  "metadata": {
+    "controls": [
+      "V11-CONTROL",
+      "ALWAYS-FILL"
+    ],
+    "status": "NO_CANDIDATE_ADMITTED",
+    "trial": "ATM-SVP2-ORTHO-FACTOR-002"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-002"
+}

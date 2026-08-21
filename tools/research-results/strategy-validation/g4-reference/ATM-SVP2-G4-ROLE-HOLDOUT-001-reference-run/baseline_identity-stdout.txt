@@ -1,0 +1,13 @@
+V11_ROLE_GENERALIZATION
+candidate_id=baseline_identity
+replaced_roles=
+cagr=14.345615
+mdd=7.689054
+vol=8.760667
+sharpe=1.522263
+trades=451
+max_gross=1.0000000000
+min_weight=0.0000012043
+fingerprint=ba67c8aa24bc7168
+END_CANDIDATE
+V11_ROLE_GENERALIZATION_COMPLETE

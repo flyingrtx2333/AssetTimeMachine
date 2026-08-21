@@ -1,0 +1,228 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/candidates/HR-A-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/candidates/HR-B-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/candidates/HR-C-portfolio.csv"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "HR-A",
+      "metrics": {
+        "admission_checks": {
+          "cagr_ge_16pct": false,
+          "cagr_improvement_ge_1_5pp": false,
+          "constraints_pass": true,
+          "folds_sharpe_gt1_ge_5": false,
+          "mdd_le_12pct": false,
+          "sharpe_ge_1_40": false,
+          "worst_fold_sharpe_gt_0": false
+        },
+        "admit_for_robustness": false,
+        "average_cash_ratio": 0.089612,
+        "cagr_percent": -6.092938,
+        "candidate_id": "HR-A",
+        "fingerprint": "d4b9b8667895368f",
+        "fold_cagrs_percent": [
+          10.721377,
+          -18.37648,
+          -5.301924,
+          -2.319606,
+          -17.392942,
+          0.726233,
+          -3.699187
+        ],
+        "fold_mdds_percent": [
+          12.323679,
+          36.964417,
+          22.886749,
+          19.127143,
+          35.09702,
+          12.346687,
+          15.375724
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          0.887741,
+          -1.271887,
+          -0.420041,
+          -0.084377,
+          -1.353968,
+          0.118428,
+          -0.19786
+        ],
+        "folds_sharpe_gt1": 0,
+        "max_gross": 1.0,
+        "mdd_percent": 77.972036,
+        "min_weight": 0.0,
+        "sharpe": -0.35932,
+        "since2020_cagr_percent": -7.602566,
+        "since2020_sharpe": -0.494522,
+        "since2022_cagr_percent": -7.170629,
+        "since2022_sharpe": -0.500619,
+        "target_region": false,
+        "trades": 666,
+        "vol_percent": 14.114956,
+        "worst_fold_sharpe": -1.353968
+      }
+    },
+    {
+      "candidate_id": "HR-B",
+      "metrics": {
+        "admission_checks": {
+          "cagr_ge_16pct": false,
+          "cagr_improvement_ge_1_5pp": false,
+          "constraints_pass": true,
+          "folds_sharpe_gt1_ge_5": false,
+          "mdd_le_12pct": false,
+          "sharpe_ge_1_40": false,
+          "worst_fold_sharpe_gt_0": true
+        },
+        "admit_for_robustness": false,
+        "average_cash_ratio": 0.33352,
+        "cagr_percent": 13.834435,
+        "candidate_id": "HR-B",
+        "fingerprint": "9a276ebbd84cc743",
+        "fold_cagrs_percent": [
+          11.652967,
+          9.477027,
+          3.255641,
+          6.617383,
+          5.303749,
+          22.307605,
+          30.144623
+        ],
+        "fold_mdds_percent": [
+          4.892454,
+          6.030743,
+          9.448334,
+          13.003196,
+          6.352959,
+          7.448922,
+          8.282489
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.384124,
+          1.063832,
+          0.460102,
+          0.631345,
+          0.720912,
+          1.666644,
+          1.952887
+        ],
+        "folds_sharpe_gt1": 4,
+        "max_gross": 1.0,
+        "mdd_percent": 13.003196,
+        "min_weight": 0.0,
+        "sharpe": 1.300311,
+        "since2020_cagr_percent": 15.916504,
+        "since2020_sharpe": 1.294715,
+        "since2022_cagr_percent": 20.479631,
+        "since2022_sharpe": 1.647839,
+        "target_region": false,
+        "trades": 512,
+        "vol_percent": 10.013559,
+        "worst_fold_sharpe": 0.460102
+      }
+    },
+    {
+      "candidate_id": "HR-C",
+      "metrics": {
+        "admission_checks": {
+          "cagr_ge_16pct": false,
+          "cagr_improvement_ge_1_5pp": false,
+          "constraints_pass": true,
+          "folds_sharpe_gt1_ge_5": false,
+          "mdd_le_12pct": false,
+          "sharpe_ge_1_40": false,
+          "worst_fold_sharpe_gt_0": false
+        },
+        "admit_for_robustness": false,
+        "average_cash_ratio": 0.215912,
+        "cagr_percent": 4.464056,
+        "candidate_id": "HR-C",
+        "fingerprint": "808ee20bc7ff0a53",
+        "fold_cagrs_percent": [
+          11.160739,
+          -4.416593,
+          0.016965,
+          3.96047,
+          -5.372179,
+          11.251087,
+          14.634487
+        ],
+        "fold_mdds_percent": [
+          8.39397,
+          19.378639,
+          12.93735,
+          14.962481,
+          15.562503,
+          9.104812,
+          8.243038
+        ],
+        "fold_names": [
+          "2012-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.128993,
+          -0.379547,
+          0.043113,
+          0.393217,
+          -0.574735,
+          1.025922,
+          1.155553
+        ],
+        "folds_sharpe_gt1": 3,
+        "max_gross": 1.0,
+        "mdd_percent": 24.021576,
+        "min_weight": 0.0,
+        "sharpe": 0.447475,
+        "since2020_cagr_percent": 4.975549,
+        "since2020_sharpe": 0.479561,
+        "since2022_cagr_percent": 6.794748,
+        "since2022_sharpe": 0.658463,
+        "target_region": false,
+        "trades": 914,
+        "vol_percent": 10.712404,
+        "worst_fold_sharpe": -0.574735
+      }
+    }
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-HR-ARCH-001.json",
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED. HR-A higher-frequency multi-timescale trend failed severely after costs (CAGR -6.092938%, Sharpe -0.359320, MDD 77.972036%). HR-B risk-budget completion was the strongest new architecture but still failed every primary return/risk admission threshold (CAGR 13.834435%, Sharpe 1.300311, MDD 13.003196%, 4/7 folds Sharpe>1) and underperformed frozen V11 full-history CAGR. HR-C also failed (CAGR 4.464056%, Sharpe 0.447475, MDD 24.021576%). No cadence, band, breadth, horizon or blend-weight rescue search is allowed within this trial.",
+  "execution_git_commit": "f70d775c1718ec17d82cc7d211e5372e26d5a779",
+  "preregistration_record_hash": "b6d2c6578a8fda9add90a512123efe81dc97e00038b10cdb3911d5a26430a490",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP2-HR-ARCH-001"
+}

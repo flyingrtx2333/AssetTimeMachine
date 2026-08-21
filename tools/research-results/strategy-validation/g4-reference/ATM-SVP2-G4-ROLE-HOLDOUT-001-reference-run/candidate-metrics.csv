@@ -1,0 +1,9 @@
+candidate_id,replaced_roles,cagr_percent,mdd_percent,vol_percent,sharpe,trades,max_gross,min_weight,fingerprint
+baseline_identity,,14.345615,7.689054,8.760667,1.522263,451,1.0,1.2043e-06,ba67c8aa24bc7168
+baseline_common_window,,4.454072,17.157421,8.817407,0.520677,319,1.0,3.17346e-05,8945d99bb1a87e9c
+one_slot_gold_safe_haven,gold_cny,4.454072,17.157421,8.817407,0.520677,319,1.0,3.17346e-05,8945d99bb1a87e9c
+one_slot_us_growth_equity,nasdaq,4.454072,17.157421,8.817407,0.520677,319,1.0,3.17346e-05,8945d99bb1a87e9c
+one_slot_us_broad_equity,sp500,4.454072,17.157421,8.817407,0.520677,319,1.0,3.17346e-05,8945d99bb1a87e9c
+one_slot_china_large_equity,csi300,4.454072,17.157421,8.817407,0.520677,319,1.0,3.17346e-05,8945d99bb1a87e9c
+one_slot_china_broad_equity,shanghai_composite,4.454072,17.157421,8.817407,0.520677,319,1.0,3.17346e-05,8945d99bb1a87e9c
+all_alternate,csi300;gold_cny;nasdaq;shanghai_composite;sp500,4.454072,17.157421,8.817407,0.520677,319,1.0,3.17346e-05,8945d99bb1a87e9c

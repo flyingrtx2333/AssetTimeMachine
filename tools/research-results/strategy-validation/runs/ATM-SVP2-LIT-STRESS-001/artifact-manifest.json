@@ -1,0 +1,203 @@
+{
+  "files": [
+    {
+      "bytes": 187139,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/C-BAA-ALWAYS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "069becec7f299f1bf10a984f757c591c8ed6bc99f29933709b1e1acd1cbe5423"
+    },
+    {
+      "bytes": 187139,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/C-EPU-ALWAYS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "bf24e318c9b922674a3235aa0b2686dace498fd3f817151388444b73afd8cc81"
+    },
+    {
+      "bytes": 187130,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/C-MOVE-ALWAYS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "68fa1b591d2ee65c47b10097f409ea76a89380d54135a5042c0ca874a74f62e3"
+    },
+    {
+      "bytes": 187054,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/F-BAA-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "c777f87f6845fa6b317ffb35eeb4d395a7efa682b5f99375aae5a69a96d585a2"
+    },
+    {
+      "bytes": 187149,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/F-EPU-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "5b934754a86552f5a958bbaecdcbf86942d9ec8240ce0a04abc57db22f657de0"
+    },
+    {
+      "bytes": 187175,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/F-MOVE-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "c73aadec59ad8f45df486935c065cb2cae70ea26aadf2826388e1a71d0cec9b9"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "f9771b75e68540ec8be10c6938fa27359a44bc6185973446057a3aa402d8c25a"
+    },
+    {
+      "bytes": 1243,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "matched_control_id",
+        "cagr_percent",
+        "mdd_percent",
+        "vol_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "min_weight",
+        "fingerprint",
+        "source_events",
+        "derisk_events",
+        "available_derisk_events",
+        "retained_events",
+        "folds_sharpe_ge_matched",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/candidate-metrics.csv",
+      "row_count": 7,
+      "sha256": "05850cc0f2258d2d0c436be9d04d3fd99502a1f6577cb424063568b6e08ada1c"
+    },
+    {
+      "bytes": 10959,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/candidate-metrics.json",
+      "sha256": "f8361294cf5c2decab9587ec2403a6f24d9f57cf09008b42d14b88623d66a2e7"
+    },
+    {
+      "bytes": 505,
+      "columns": [
+        "candidate_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "pbo_pass",
+        "family_dsr_probability",
+        "global_dsr_probability",
+        "robust_factor_pass",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_matched",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/statistical-audit.csv",
+      "row_count": 3,
+      "sha256": "46464603d060ee7910d7757aff99bf124c048ad5517467b9124392f390c56a7e"
+    },
+    {
+      "bytes": 8973,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/candidates/statistical-audit.json",
+      "sha256": "0ead9dc21d098850c5a505b136657618d7cd26d7aca5d6a9b807e2ce46a71829"
+    },
+    {
+      "bytes": 1080,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/execution.json",
+      "sha256": "0e2df1a8555a34b24ce233c374d3b8e9960e1cdb864df6d1f6b104c261285c23"
+    },
+    {
+      "bytes": 437,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/run-authorization.json",
+      "sha256": "2bd3ea1498b2f3bc52624b22196958a3f4f2aba12f14d343ffb514738580e276"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 7623,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-LIT-STRESS-001/stdout.txt",
+      "sha256": "ecfb72cfb7232f0cbf8c0ae6e4a84da6014b725cfb6886d7c783b627408d4035"
+    }
+  ],
+  "generated_at": "2026-08-21T14:33:14+08:00",
+  "git_commit": "7952fc27d19dc74e164e1c0b9b23cca73d0ff5cb",
+  "kind": "result",
+  "metadata": {
+    "campaign": "literature-stress-factor-v1",
+    "deterministic_admitted": [],
+    "evidence_class": "R1_RETROSPECTIVE",
+    "formal_execution_commit": "7952fc27d19dc74e164e1c0b9b23cca73d0ff5cb",
+    "robust_pass": []
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-LIT-STRESS-001"
+}

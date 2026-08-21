@@ -1,0 +1,174 @@
+{
+  "files": [
+    {
+      "bytes": 187132,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/C-BANKS-ALWAYS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "8ecf83dc6246dd567bba8b65ae4832ec90c52feba3fdf12c900081594cc45115"
+    },
+    {
+      "bytes": 187180,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/C-HIGHBETA-ALWAYS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "161e2087e4b7c2213df33a33a9f9fed7cbfede5a3602ef96cc2897405cad6ff8"
+    },
+    {
+      "bytes": 187139,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/C-INDUTIL-ALWAYS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "65706875403bdc9ad443fb589a0376d8d2be5a122dd2ee95b876865182b2e2a6"
+    },
+    {
+      "bytes": 187055,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/F-BANKS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "7a5deda989b67ea86b774378820967fec2d88ee9de40b7371fde33b369f43d50"
+    },
+    {
+      "bytes": 187181,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/F-HIGHBETA-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "93c0dffdf3d167f3e08633c525d2efefd46cba9f18fa512090b9ebdf1dd5d0d6"
+    },
+    {
+      "bytes": 187153,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/F-INDUTIL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "dbec8350deec0af949cdddf4447c24a5959b0829838425d527d8f320d6f70fbb"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "d371ce33dcccc0328b288db53285dd5d0932115589e2d2fd973fa76da4ced862"
+    },
+    {
+      "bytes": 1340,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "matched_control_id",
+        "cagr_percent",
+        "mdd_percent",
+        "vol_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "min_weight",
+        "fingerprint",
+        "source_events",
+        "derisk_events",
+        "available_derisk_events",
+        "retained_events",
+        "folds_sharpe_ge_matched",
+        "worst_fold_sharpe",
+        "admit_for_robustness",
+        "strong_incremental"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/candidate-metrics.csv",
+      "row_count": 7,
+      "sha256": "03a70d32ac6189ad9ba8d8a16a754c76bb6be84d56b209fb1a1ba68a81160b0a"
+    },
+    {
+      "bytes": 11042,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/candidate-metrics.json",
+      "sha256": "c15b7ece20596ae9206e5b965bb95827de9df910e32caa986c27cb8f066b5cc0"
+    },
+    {
+      "bytes": 1091,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/execution.json",
+      "sha256": "12a1cd2ee8f836ff5df4047056137409b8c297b8d034eec4d7766e9f2673f04c"
+    },
+    {
+      "bytes": 439,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/run-authorization.json",
+      "sha256": "10bfbb3fb21c5f5d73e16bb399634a02615a55e338a04c04b200696b2f03c59f"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 7701,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/stdout.txt",
+      "sha256": "cba0844eb673a76964f49a5ed2e6b6f46db9d4f9dc1af58f1f4c2d5bc4396ff4"
+    }
+  ],
+  "generated_at": "2026-08-20T22:57:11+08:00",
+  "git_commit": "942a0c24c5de14677cee1ded4e4224c4a4befeae",
+  "kind": "result",
+  "metadata": {
+    "status": "F-HIGHBETA_ADMITTED",
+    "strong_incremental": false,
+    "trial": "ATM-SVP2-ORTHO-FACTOR-004"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-ORTHO-FACTOR-004"
+}

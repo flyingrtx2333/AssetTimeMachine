@@ -1,0 +1,69 @@
+{
+  "trial_id": "ATM-SVP2-FACTOR-ROBUST-001",
+  "protocol_id": "ATM-SVP-2",
+  "strategy_lineage": "bootstrap robustness audit for locked screening winners F-BREADTH and F-HIGHBETA",
+  "hypothesis": "At least one of the two already-preregistered screening winners has stable incremental value under paired 63-session circular moving-block bootstrap rather than a chance full-history advantage.",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-FACTOR-ROBUST-001.json",
+  "allowed_changes": [
+    "statistical resampling only on the exact already-recorded F-BREADTH, F-HIGHBETA, matched-control and V11 portfolio CSVs",
+    "mechanical application of the frozen bootstrap robustness gates"
+  ],
+  "forbidden_changes": [
+    "any factor rule, source, lookback, stale tolerance, retention fraction or rebalance band change",
+    "any new strategy rerun or portfolio reconstruction",
+    "changing block size 63 after results",
+    "changing 20000 bootstrap replicates after results",
+    "changing RNG seed 20260821 after results",
+    "subperiod-only rescue bootstrap after viewing full-history results",
+    "combining F-BREADTH and F-HIGHBETA",
+    "replacing a failed locked factor"
+  ],
+  "candidate_ids": [
+    "F-BREADTH",
+    "F-HIGHBETA"
+  ],
+  "candidate_count": 2,
+  "selection_metric": "No winner optimization. Independently bootstrap-certify or reject both locked screening winners using the same frozen method and gates.",
+  "pass_fail_gates": [
+    "P(CAGR_candidate > CAGR_V11) >=0.90",
+    "P(Sharpe_candidate > Sharpe_matched_control) >=0.90",
+    "median bootstrap candidate-minus-V11 CAGR delta >0",
+    "median bootstrap candidate-minus-matched-control Sharpe delta >0",
+    "candidate bootstrap MDD P97.5 <=15%"
+  ],
+  "formal_run_budget": 2,
+  "follow_up_policy": "No method or gate rescue is allowed. A BOOTSTRAP_ROBUST_PASS may proceed only to a separately preregistered execution/latency stress. A failure preserves the earlier screening PASS but forbids robust-certified wording.",
+  "swift_engine_entrypoint": "No new strategy simulation. scripts/run_screening_factor_bootstrap_robustness.py consumes immutable Swift-engine portfolio outputs from ATM-SVP2-ORTHO-FACTOR-003 and -004.",
+  "expected_outputs": [
+    "observed aligned sample metadata for each locked candidate",
+    "20000 paired circular moving-block bootstrap replicates per locked candidate",
+    "probability candidate CAGR exceeds V11",
+    "probability candidate Sharpe exceeds matched control",
+    "median CAGR and Sharpe deltas",
+    "candidate MDD P97.5",
+    "mechanical BOOTSTRAP_ROBUST_PASS/FAIL for both locked candidates",
+    "run authorization receipt, execution Git commit and SHA-256 artifact manifests"
+  ],
+  "protocol_component": "SCREENING_FACTOR_BOOTSTRAP_ROBUSTNESS",
+  "bootstrap": {
+    "block_sessions": 63,
+    "replicates": 20000,
+    "rng_seed": 20260821,
+    "sessions_per_year": 252,
+    "sampling": "paired circular moving blocks; identical sampled indices for candidate, matched control and V11 within each replicate",
+    "risk_free_rate": 0.0
+  },
+  "inputs": {
+    "F-BREADTH": {
+      "candidate": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/candidates/F-BREADTH-portfolio.csv",
+      "matched_control": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/candidates/C-BREADTH-ALWAYS-portfolio.csv",
+      "v11": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-003/candidates/V11-CONTROL-portfolio.csv"
+    },
+    "F-HIGHBETA": {
+      "candidate": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/F-HIGHBETA-portfolio.csv",
+      "matched_control": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/C-HIGHBETA-ALWAYS-portfolio.csv",
+      "v11": "tools/research-results/strategy-validation/runs/ATM-SVP2-ORTHO-FACTOR-004/candidates/V11-CONTROL-portfolio.csv"
+    }
+  }
+}

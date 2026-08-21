@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "94f11bf168d2d8d4387fddfd79c571e635a73c27",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "73b766c372433c350eff6b09bf5320f3dcc6485f0b556ffe7bd29cdadf67c5c5",
+  "preregistration_record_hash": "73b766c372433c350eff6b09bf5320f3dcc6485f0b556ffe7bd29cdadf67c5c5",
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-VRP-001"
+}

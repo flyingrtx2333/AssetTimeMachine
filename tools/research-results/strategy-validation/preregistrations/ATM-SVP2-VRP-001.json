@@ -1,0 +1,103 @@
+{
+  "trial_id": "ATM-SVP2-VRP-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "VARIANCE_RISK_PREMIUM_PROXY_V1",
+  "strategy_lineage": "variance-risk-premium-proxy-v1; frozen control nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "hypothesis": "A single daily-data variance-risk-premium proxy can identify underinvested frozen V11 trade events where using half of the unused risk budget improves net CAGR by at least 0.50 percentage points while matching or exceeding V11 Sharpe, beating an availability-matched unconditional completion control, and preserving <=10% full-history MDD.",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-VRP-001.json",
+  "allowed_changes": [
+    "F-VRP-PROXY exact VIXCLS-squared minus 21-session annualized daily realized-variance proxy",
+    "trailing threshold fixed to the median of the previous 252 valid VRP proxy market-session observations excluding the current observation",
+    "at eligible underinvested frozen V11 trade events, fill exactly 50% of unused gross pro rata across current positive V11 holdings when the frozen proxy state is risk-on"
+  ],
+  "candidate_ids": [
+    "F-VRP-PROXY"
+  ],
+  "candidate_count": 1,
+  "selection_metric": "No within-family model selection. There is exactly one candidate; report it against frozen V11 and C-VRP-ALWAYS and apply all preregistered deterministic, bootstrap and cumulative DSR gates.",
+  "pass_fail_gates": [
+    "deterministic: full CAGR >= V11 CAGR +0.50 percentage points",
+    "deterministic: full Sharpe >= V11 Sharpe",
+    "deterministic: full Sharpe > C-VRP-ALWAYS Sharpe",
+    "deterministic: full MDD <=10%",
+    "deterministic: at least 5/7 fixed folds candidate Sharpe >= matched-control Sharpe",
+    "deterministic: worst fixed-fold Sharpe >0",
+    "deterministic: gross <=100%, min target weight >=0, no financing or negative cash",
+    "bootstrap: paired circular moving blocks, 63 sessions, 20000 replicates, seed 20260821",
+    "bootstrap: P(CAGR candidate > V11) >=0.90",
+    "bootstrap: P(Sharpe candidate > matched control) >=0.90",
+    "bootstrap: median candidate-minus-V11 CAGR delta >0",
+    "bootstrap: median candidate-minus-matched Sharpe delta >0",
+    "bootstrap: candidate MDD P97.5 <=15%",
+    "PBO: not applicable because the family contains exactly one preregistered candidate and no within-family selection",
+    "global post-protocol DSR probability >=95% using the prior 24 formal return-seeking candidates plus F-VRP-PROXY, total trial count 25",
+    "ROBUST_FACTOR_PASS requires every applicable deterministic, bootstrap and global DSR gate"
+  ],
+  "formal_run_budget": 1,
+  "follow_up_policy": "This campaign contains exactly one candidate. After any formal result is viewed, do not search alternate realized-volatility windows, thresholds, percentiles, VIX/VIX3M substitutions, completion fractions, event definitions, candidate replacements, or a second retrospective VRP-proxy family. A promising non-robust proxy may only enter a new prospective trial from a new freeze date. A future canonical VRP study using model-free option-implied variance and intraday realized variation is a materially new dataset/methodology and requires a new preregistration.",
+  "swift_engine_entrypoint": "scripts/run_vrp_proxy_v1.py -> tools/vrp_proxy_v1.swiftpart + tools/vrp_proxy_v1_logic.swift -> frozen V11 source run + BacktestEngine.runResearchTargetProviderStrategyWithTrace -> shared BacktestDailySimulator",
+  "expected_outputs": [
+    "V11-CONTROL metrics and frozen target fingerprint",
+    "C-VRP-ALWAYS availability-matched completion control metrics",
+    "F-VRP-PROXY full-history metrics",
+    "all seven fixed fold metrics plus 2020+ and 2022+ slices",
+    "source/eligible/available/completed event counts and portfolio constraints",
+    "one portfolio CSV per control/candidate",
+    "mechanical deterministic ADMIT_FOR_ROBUSTNESS flag",
+    "paired 20000-replicate block-bootstrap statistics",
+    "cumulative 25-trial Deflated Sharpe Ratio",
+    "mechanical ROBUST_FACTOR_PASS flag",
+    "run authorization receipt, execution Git commit and SHA-256 result artifact manifest"
+  ],
+  "factor_definition": {
+    "factor_id": "F-VRP-PROXY",
+    "canonical_vrp_measure": false,
+    "disclosure": "This trial is a daily-data proxy and must not be represented as the canonical model-free variance risk premium. The proxy uses VIXCLS squared minus 21-session realized variance from frozen daily S&P 500 sleeve prices.",
+    "vix_source": "FRED VIXCLS",
+    "vix_availability_rule": "latest finite VIX close with observation_date <= frozen V11 signal_date and <=7 calendar days stale",
+    "realized_variance_rule": "RV21_t=(252/21)*sum(log(P_i/P_{i-1})^2) across the 21 returns ending at market session t",
+    "implied_variance_proxy_rule": "IV_t=(VIX_t/100)^2",
+    "vrp_proxy_rule": "VRP_t=IV_t-RV21_t",
+    "threshold_rule": "median of exactly the previous 252 valid market-session VRP proxy observations, excluding t",
+    "risk_on_rule": "VRP_t > trailing_252_median"
+  },
+  "matched_control": {
+    "control_id": "C-VRP-ALWAYS",
+    "rule": "Whenever F-VRP-PROXY is available at an eligible underinvested frozen V11 event, fill exactly 50% of unused gross regardless of factor state"
+  },
+  "shared_rules": {
+    "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+    "eligibility": "current frozen V11 positive gross strictly between 0 and 1 and VRP proxy available",
+    "fill_fraction_of_unused_gross": 0.5,
+    "realized_variance_lookback_returns": 21,
+    "threshold_lookback_valid_sessions": 252,
+    "max_vix_stale_calendar_days": 7,
+    "replay_rebalance_band": 0.25,
+    "fee_rate": 0.01,
+    "slippage_rate": 0.0005,
+    "max_gross": 1.0,
+    "shorting_allowed": false,
+    "financing_allowed": false
+  },
+  "forbidden_changes": [
+    "any frozen V11 parameter or target-path rule change",
+    "any alternative realized-volatility window including 10, 20, 30, 42, 63 or 252 sessions",
+    "any alternative VRP threshold, mean, z-score, percentile, persistence or threshold tuning",
+    "any VIX3M substitution, VIX/VIX3M ensemble, source substitution or revised source after results",
+    "any 25%, 75%, 100% or other completion-fraction search",
+    "factor-driven trades between frozen V11 event dates",
+    "candidate replacement or a second retrospective candidate after results",
+    "changing fee/slippage, leverage, financing, shorting or cash constraints",
+    "dropping failed prior formal candidates from cumulative DSR accounting",
+    "describing this daily-data proxy as the canonical model-free variance risk premium"
+  ],
+  "statistical_audit": {
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260821,
+    "pbo": "NOT_APPLICABLE_SINGLE_CANDIDATE",
+    "global_dsr_prior_candidate_count": 24,
+    "global_dsr_total_candidate_count_after_this_trial": 25
+  }
+}

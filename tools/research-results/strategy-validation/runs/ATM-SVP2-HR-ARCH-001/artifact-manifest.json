@@ -1,0 +1,126 @@
+{
+  "files": [
+    {
+      "bytes": 172677,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-12-26",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/candidates/HR-A-portfolio.csv",
+      "row_count": 6166,
+      "sha256": "51ed069c8d41b96902b1b910e492832572d4f766b46a1e3e4d0b02e1cf65f0fa"
+    },
+    {
+      "bytes": 179617,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-12-26",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/candidates/HR-B-portfolio.csv",
+      "row_count": 6166,
+      "sha256": "a6c958ee293ce3a4fc6969dc1e1d5a94f7eca488ad9e044a2f336e6e94a556bc"
+    },
+    {
+      "bytes": 177838,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-12-26",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/candidates/HR-C-portfolio.csv",
+      "row_count": 6166,
+      "sha256": "dfee29379b7b1b3b3b9525f3c6aaf2d4adcf117a043b7612a0ffb9619dd9dd8d"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "5b8a259805f0a99c7187cc7807b4f8dc02023e4e15b983aa850caed62b51269a"
+    },
+    {
+      "bytes": 620,
+      "columns": [
+        "candidate_id",
+        "cagr_percent",
+        "mdd_percent",
+        "vol_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "min_weight",
+        "fingerprint",
+        "folds_sharpe_gt1",
+        "worst_fold_sharpe",
+        "admit_for_robustness",
+        "target_region"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/candidates/candidate-metrics.csv",
+      "row_count": 4,
+      "sha256": "dcaed6c34db5921d4f9ebca36b8f3a9984a179cc8d5bc286d5ff9e30c171b55a"
+    },
+    {
+      "bytes": 6646,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/candidates/candidate-metrics.json",
+      "sha256": "da7ba8dd6e8f97e8ea38378e6e1c280086f4bc10a855f91fa9157497d487a967"
+    },
+    {
+      "bytes": 959,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/execution.json",
+      "sha256": "8099a673c5e11fa68c46492813e03f5a78fd5218e6904f3b691db74b51bc4cb9"
+    },
+    {
+      "bytes": 434,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/run-authorization.json",
+      "sha256": "145058eeed03790a5c6c4b287b478633ff66d000a6172fe79aa72a7cc56ca8a7"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 4584,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HR-ARCH-001/stdout.txt",
+      "sha256": "6116ef45a802e024f9ed9e83ff79a8bc11989d697eda05ae60f1767e18ccec19"
+    }
+  ],
+  "generated_at": "2026-08-20T15:45:12+08:00",
+  "git_commit": "f70d775c1718ec17d82cc7d211e5372e26d5a779",
+  "kind": "result",
+  "metadata": {
+    "frequency_result": "HIGHER_FREQUENCY_DID_NOT_HELP_NET",
+    "status": "NO_CANDIDATE_ADMITTED",
+    "trial": "ATM-SVP2-HR-ARCH-001"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-HR-ARCH-001"
+}

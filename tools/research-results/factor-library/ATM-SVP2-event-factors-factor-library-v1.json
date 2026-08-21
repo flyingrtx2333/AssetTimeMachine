@@ -1,0 +1,328 @@
+{
+  "artifacts": [
+    {
+      "artifact_key": "creditcash-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 4557,
+      "factor_key": "atm.event.creditcash_hyg_shy_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-006.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-006.json",
+      "sha256": "b6f16c3857b1b58a07f93bde7085182bbc957a987e9b2998768fe84ea2656b88",
+      "version_key": "hyg-shy-20-v1"
+    },
+    {
+      "artifact_key": "creditcash-result",
+      "artifact_type": "formal_result",
+      "byte_size": 8602,
+      "factor_key": "atm.event.creditcash_hyg_shy_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-006.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-006.json",
+      "sha256": "91e4ed79d2323e50ac4c06f112eef0d97d700c66fed8a90ab49845cb475672c9",
+      "version_key": "hyg-shy-20-v1"
+    },
+    {
+      "artifact_key": "breadth-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 5202,
+      "factor_key": "atm.event.breadth_rsp_spy_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-003.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-003.json",
+      "sha256": "70b0d707de9bcd70510e496755c1fb64965b4f46f8df09197b5e4a1b20c42819",
+      "version_key": "rsp-spy-20-v1"
+    },
+    {
+      "artifact_key": "breadth-result",
+      "artifact_type": "formal_result",
+      "byte_size": 8634,
+      "factor_key": "atm.event.breadth_rsp_spy_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-003.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-003.json",
+      "sha256": "edf40b3d02d22f5baf35b69d2bcd7d2002dabd5626956f2c583f2d526c708571",
+      "version_key": "rsp-spy-20-v1"
+    },
+    {
+      "artifact_key": "highbeta-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 5237,
+      "factor_key": "atm.event.highbeta_sphb_splv_20",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-004.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-004.json",
+      "sha256": "2c847db926e33da9b08e272109aed77fb4d3572cc28968e415e61353b4c63d4c",
+      "version_key": "sphb-splv-20-v1"
+    },
+    {
+      "artifact_key": "highbeta-result",
+      "artifact_type": "formal_result",
+      "byte_size": 8508,
+      "factor_key": "atm.event.highbeta_sphb_splv_20",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-ORTHO-FACTOR-004.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-ORTHO-FACTOR-004.json",
+      "sha256": "759738bc0649a7651113a5a07f6677a3cd5fd08f40c78fd37e9d064d002596d9",
+      "version_key": "sphb-splv-20-v1"
+    },
+    {
+      "artifact_key": "screening-winners-robust-preregister",
+      "artifact_type": "robustness_preregistration",
+      "byte_size": 4024,
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-FACTOR-ROBUST-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-FACTOR-ROBUST-001.json",
+      "sha256": "9ed74b9da3700c8dbbe3d5fe7b5678f80172bb755049415c680ed97518a33b7d"
+    },
+    {
+      "artifact_key": "screening-winners-robust-result",
+      "artifact_type": "robustness_result",
+      "byte_size": 5436,
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-FACTOR-ROBUST-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-FACTOR-ROBUST-001.json",
+      "sha256": "e0ca1d3992f906d6ea7f2fec7f38287771ca5a1fa4e37aaef8148ce1bb6d127f"
+    },
+    {
+      "artifact_key": "prospective-factor-preregister",
+      "artifact_type": "prospective_preregistration",
+      "byte_size": 5474,
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-PROSPECTIVE-FACTOR-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-PROSPECTIVE-FACTOR-001.json",
+      "sha256": "e71b7195f9bbd7d30be3b97ccea4671ad051904bb8f554123a9b92d91666fee4"
+    },
+    {
+      "artifact_key": "prospective-factor-registry",
+      "artifact_type": "prospective_registry",
+      "byte_size": 6103,
+      "local_path": "docs/strategies/prospective-factor-shadow-registry-2026-08-21-v2.md",
+      "mime_type": "text/markdown",
+      "original_name": "prospective-factor-shadow-registry-2026-08-21-v2.md",
+      "sha256": "8af3099018b647664fccdf9c0a3cc2eb6492b2db780726a068bdb0d9bdbc9f6d"
+    }
+  ],
+  "batch_key": "atm-svp2-event-factor-sync-fa1b8c05c6e5",
+  "dataset_fingerprint": "4deb0a013fe83161132361ed8339adc1a209c48486a7ca32ef118a34fe11cc35",
+  "dataset_spec": {
+    "dataset_manifests": {
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-FACTOR-ROBUST-001.json": {
+        "sha256": "ab265c2d51fdc543b13a9e685341b15f846ac946af5a778738ab74aa01cb1a4d"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-003.json": {
+        "sha256": "0c036e30fb8e732e16373a8b5e2d34f42f832c4186d859037ee4982ecdb689c7"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-004.json": {
+        "sha256": "c5ca362e942e1b0aef1d523678024d2e1c2cada89a75e3d1cc32c9cd49520f75"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-ORTHO-FACTOR-006.json": {
+        "sha256": "0d7e48837115f88db9896eb30dad3d3025abd07958a813c65108f5c62588e282"
+      }
+    },
+    "kind": "multi_trial_existing_evidence_bundle"
+  },
+  "factors": [
+    {
+      "description": "HYG/SHY 调整收盘价相对强弱状态；仅作为冻结 V11 事件级风险预算研究因子，不代表生产策略。",
+      "display_name": "信用风险偏好 HYG/SHY 20观测",
+      "factor_key": "atm.event.creditcash_hyg_shy_20",
+      "family": "credit_risk_appetite",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "event_overlay",
+        "credit",
+        "retrospective_fail",
+        "prospective_shadow"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 event-level risk overlay"
+        ],
+        "code_sha256": "281484218a6c14a373082a8b76b9c1d38f6cf963d25c018c79cbd7cd3b77aa32",
+        "formula_text": "risk_on = I[(HYG_t / SHY_t) >= (HYG_t-20c / SHY_t-20c)], using common source observations available by T-1 and max 7 calendar days stale",
+        "frequency": "daily",
+        "lifecycle_status": "research",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "denominator": "SHY",
+          "lookback_common_observations": 20,
+          "max_stale_calendar_days": 7,
+          "numerator": "HYG",
+          "price_field": "adjusted_close",
+          "signal_direction": "ratio_non_decreasing"
+        },
+        "required_inputs": [
+          "HYG adjusted_close",
+          "SHY adjusted_close"
+        ],
+        "source_path": "tools/final_crisis_filter_v6.swiftpart",
+        "version_key": "hyg-shy-20-v1"
+      }
+    },
+    {
+      "description": "RSP/SPY 调整收盘价相对强弱状态；历史筛选通过但独立 block-bootstrap robustness 未通过，当前只作研究/前瞻 shadow。",
+      "display_name": "市场广度 RSP/SPY 20观测",
+      "factor_key": "atm.event.breadth_rsp_spy_20",
+      "family": "market_breadth",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "event_overlay",
+        "breadth",
+        "screening_pass",
+        "robustness_fail",
+        "prospective_shadow"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 event-level risk overlay"
+        ],
+        "code_sha256": "f683dd4531153025a62d51adfec9ae5695ff93f1c0d6a842706f1752e34a8f9d",
+        "formula_text": "risk_on = I[(RSP_t / SPY_t) >= (RSP_t-20c / SPY_t-20c)], using common source observations available by T-1 and max 7 calendar days stale",
+        "frequency": "daily",
+        "lifecycle_status": "research",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "denominator": "SPY",
+          "lookback_common_observations": 20,
+          "max_stale_calendar_days": 7,
+          "numerator": "RSP",
+          "price_field": "adjusted_close",
+          "signal_direction": "ratio_non_decreasing"
+        },
+        "required_inputs": [
+          "RSP adjusted_close",
+          "SPY adjusted_close"
+        ],
+        "source_path": "tools/orthogonal_event_factor_v3.swiftpart",
+        "version_key": "rsp-spy-20-v1"
+      }
+    },
+    {
+      "description": "SPHB/SPLV 调整收盘价相对强弱状态；历史筛选通过但独立 block-bootstrap robustness 未通过，当前只作研究/前瞻 shadow。",
+      "display_name": "高Beta风险偏好 SPHB/SPLV 20观测",
+      "factor_key": "atm.event.highbeta_sphb_splv_20",
+      "family": "risk_appetite",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "event_overlay",
+        "high_beta",
+        "screening_pass",
+        "robustness_fail",
+        "prospective_shadow"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 event-level risk overlay"
+        ],
+        "code_sha256": "3be3304231f90d6fb4fc24889f238db4a4fc995ff86d947d237c9337547f747a",
+        "formula_text": "risk_on = I[(SPHB_t / SPLV_t) >= (SPHB_t-20c / SPLV_t-20c)], using common source observations available by T-1 and max 7 calendar days stale",
+        "frequency": "daily",
+        "lifecycle_status": "research",
+        "lookback_sessions": 20,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "denominator": "SPLV",
+          "lookback_common_observations": 20,
+          "max_stale_calendar_days": 7,
+          "numerator": "SPHB",
+          "price_field": "adjusted_close",
+          "signal_direction": "ratio_non_decreasing"
+        },
+        "required_inputs": [
+          "SPHB adjusted_close",
+          "SPLV adjusted_close"
+        ],
+        "source_path": "tools/orthogonal_event_factor_v4.swiftpart",
+        "version_key": "sphb-splv-20-v1"
+      }
+    }
+  ],
+  "methodology": {
+    "base_strategy": "nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+    "evaluation_kind": "event_overlay",
+    "factor_status": {
+      "atm.event.breadth_rsp_spy_20": {
+        "historical_status": "SCREENING_PASS_ROBUSTNESS_FAIL",
+        "lineage_trial": "ATM-SVP2-ORTHO-FACTOR-003",
+        "overlay_evaluation": {
+          "admit_for_robustness": true,
+          "base_strategy": "nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+          "bootstrap_probability_cagr_gt_v11": 0.61395,
+          "bootstrap_robust": false,
+          "event_scope": "frozen V11 de-risk events",
+          "historical_cagr_percent": 14.425407,
+          "historical_mdd_percent": 9.102436,
+          "historical_sharpe": 1.470087,
+          "matched_control": "retain 50% on every factor-available de-risk event",
+          "risk_on_action": "retain exactly 50% of each event reduction, gross cap 100%",
+          "strong_incremental": false
+        }
+      },
+      "atm.event.creditcash_hyg_shy_20": {
+        "historical_status": "FAIL_MDD_AND_RISK_ADJUSTED_QUALITY",
+        "lineage_trial": "ATM-SVP2-ORTHO-FACTOR-006",
+        "overlay_evaluation": {
+          "admit_for_robustness": false,
+          "base_strategy": "nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+          "event_scope": "unique frozen V11 trade events with 0 < gross < 1",
+          "historical_cagr_percent": 16.067258,
+          "historical_mdd_percent": 12.777213,
+          "historical_sharpe": 1.377913,
+          "matched_control": "complete whenever factor is available",
+          "risk_on_action": "complete existing positive V11 holdings proportionally to 100% gross",
+          "strong_incremental": false
+        }
+      },
+      "atm.event.highbeta_sphb_splv_20": {
+        "historical_status": "SCREENING_PASS_ROBUSTNESS_FAIL",
+        "lineage_trial": "ATM-SVP2-ORTHO-FACTOR-004",
+        "overlay_evaluation": {
+          "admit_for_robustness": true,
+          "base_strategy": "nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+          "bootstrap_probability_cagr_gt_v11": 0.5962,
+          "bootstrap_robust": false,
+          "event_scope": "frozen V11 de-risk events",
+          "historical_cagr_percent": 14.392126,
+          "historical_mdd_percent": 8.521421,
+          "historical_sharpe": 1.494292,
+          "matched_control": "retain 50% on every factor-available de-risk event",
+          "risk_on_action": "retain exactly 50% of each event reduction, gross cap 100%",
+          "strong_incremental": false
+        }
+      }
+    },
+    "g3_note": "Historical screening/robustness outcomes remain exactly as recorded; this import is not a new trial and must not reset model-selection accounting.",
+    "new_research_trial_created": false,
+    "prospective_trial": "ATM-SVP2-PROSPECTIVE-FACTOR-001",
+    "sample_design": "legacy/fixed-fold event-overlay research without a truthful strict development-validation-holdout partition",
+    "structured_results_policy": "omitted: factor-library-v1 forward-horizon result coordinates do not faithfully represent event-overlay CAGR/Sharpe/MDD; exact evidence is attached instead",
+    "sync_kind": "catalog_sync_of_existing_research_evidence"
+  },
+  "observations": [],
+  "run_key": "atm-svp2-event-factor-sync-fa1b8c05c6e5",
+  "run_title": "ATM-SVP-2 事件因子研究档案同步",
+  "runner_path": "scripts/export_factor_library_event_manifest.py",
+  "runner_sha256": "71b222c91904d5097cdd262958ebcbdf5796bac39431c1048c19e76e570297c2",
+  "schema_version": "factor-library-v1",
+  "source_commit": "fa1b8c05c6e59bc95f70d47c47ecedf46814eea9",
+  "source_repository": "flyingrtx2333/AssetTimeMachine",
+  "summary": "同步三条已暴露 event-level 因子及其正式证据到 FlyingrtxFast 私有因子库；不重新回测、不新增 trial、不改变 lifecycle 结论。"
+}

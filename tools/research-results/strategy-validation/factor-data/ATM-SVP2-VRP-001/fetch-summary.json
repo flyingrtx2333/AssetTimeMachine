@@ -1,0 +1,14 @@
+{
+  "availability_rule": "VIX close observation_date <= frozen V11 signal_date; max 7 calendar days stale",
+  "end": "2026-08-13",
+  "first_date": "1990-01-02",
+  "last_date": "2026-08-13",
+  "performance_computed": false,
+  "protocol_id": "ATM-SVP-2",
+  "rows": 9251,
+  "series_id": "VIXCLS",
+  "sha256": "4edc0f30dfceaeba79be881eac86138b717a35753469d9661a9a8ecb2e6a2558",
+  "source": "FRED",
+  "start": "1990-01-01",
+  "trial_id": "ATM-SVP2-VRP-001"
+}

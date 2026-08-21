@@ -1,0 +1,73 @@
+{
+  "all_locally_unexposed": false,
+  "candidates": [
+    {
+      "current_tracked_matches": [
+        "scripts/fetch_g4_holdout_raw.py"
+      ],
+      "historical_match_commits": [
+        "2dce0d3a283a77574c8b3048b066ba69218011d1"
+      ],
+      "locally_unexposed": false,
+      "role": "gold_safe_haven",
+      "source": "SGE",
+      "source_series_id": "Au99.95"
+    },
+    {
+      "current_tracked_matches": [],
+      "historical_match_commits": [],
+      "locally_unexposed": true,
+      "role": "us_growth_equity",
+      "source": "FRED_NASDAQ",
+      "source_series_id": "NASDAQ100"
+    },
+    {
+      "current_tracked_matches": [
+        "scripts/fetch_orthogonal_factor_family_v1.py",
+        "scripts/test_fetch_orthogonal_factor_family_v1.py",
+        "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-001/fetch-summary.json",
+        "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-ORTHO-FACTOR-001.json",
+        "tools/research-results/strategy-validation/trial-ledger.jsonl"
+      ],
+      "historical_match_commits": [
+        "9ab4fa78d2bb660f084fa796b14e14515c076aff",
+        "a9f1046a7df9ff2bd9eb58298efa855e45a02c74",
+        "89680cb8c199402b95ceec47272eead6b16552e5"
+      ],
+      "locally_unexposed": false,
+      "role": "us_broad_equity",
+      "source": "YAHOO_FTSE_RUSSELL",
+      "source_series_id": "^RUI"
+    },
+    {
+      "current_tracked_matches": [],
+      "historical_match_commits": [],
+      "locally_unexposed": true,
+      "role": "china_large_equity",
+      "source": "YAHOO_SSE",
+      "source_series_id": "000016.SS"
+    },
+    {
+      "current_tracked_matches": [],
+      "historical_match_commits": [],
+      "locally_unexposed": true,
+      "role": "china_broad_equity",
+      "source": "YAHOO_SSE",
+      "source_series_id": "000047.SS"
+    }
+  ],
+  "excludes": [
+    "tools/research-results/strategy-validation/holdouts/ATM-SVP2-G4-ROLE-HOLDOUT-001.json"
+  ],
+  "generated_at": "2026-08-21T01:35:17+08:00",
+  "git_head": "94f8b1188444988f5330acac1ed3ea8d3a6f49fd",
+  "limitation": "No local Git match does not prove global/prior human non-exposure. It is a conservative reproducible lower-bound check only.",
+  "protocol_id": "ATM-SVP-2",
+  "scan_type": "LOCAL_GIT_EXPOSURE_LOWER_BOUND",
+  "scopes": [
+    "AssetTimeMachine/Backtest",
+    "docs/strategies",
+    "scripts",
+    "tools"
+  ]
+}
