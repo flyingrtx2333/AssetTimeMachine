@@ -1,0 +1,23 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_net_payout_yield_v1.py",
+    "--formal",
+    "--fixture",
+    "tools/fixtures/backtest-history/generalization_public_history.json",
+    "--factor-input",
+    "tools/research-results/strategy-validation/factor-data/NET-PAYOUT-VINTAGE-2026-08-21/NET_PAYOUT_YIELD_FIRST_RELEASE.csv",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/candidates"
+  ],
+  "execution_git_commit": "cc3095505919182e381d3856af34b6464680344a",
+  "finished_at": "2026-08-22T00:32:04+08:00",
+  "preregistration_record_hash": "220dc829365a6abb4c7ce5ef5b58ce49b57574c440fdc913b11ac4204c539a67",
+  "protocol_id": "ATM-SVP-2",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/run-authorization.json",
+  "started_at": "2026-08-22T00:30:55+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/stdout.txt",
+  "trial_id": "ATM-SVP2-NPY-001"
+}

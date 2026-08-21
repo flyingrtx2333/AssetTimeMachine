@@ -1,0 +1,4 @@
+candidate_id,kind,matched_control_id,cagr_percent,mdd_percent,vol_percent,sharpe,trades,average_cash_ratio,max_gross,min_weight,fingerprint,source_events,us_derisk_events,available_us_derisk_events,retained_events,folds_sharpe_ge_matched,worst_fold_sharpe,admit_for_robustness
+V11-CONTROL,CONTROL,,14.345615,7.689054,8.760667,1.522263,451,0.425368,1.0,0.0,ba67c8aa24bc7168,166,0,0,0,CONTROL,0.740905,CONTROL
+C-NET-PAYOUT-ALWAYS,MATCHED_CONTROL,,14.395132,8.612735,8.94761,1.496986,446,0.403829,1.0,0.0,f9c10f749de08c9e,166,107,64,64,CONTROL,0.538066,CONTROL
+F-NET-PAYOUT-YIELD-US,FACTOR,C-NET-PAYOUT-ALWAYS,14.3214,7.689054,8.770486,1.518323,447,0.422396,1.0,0.0,8ea3149742e08159,166,107,64,15,3,0.724879,False

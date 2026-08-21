@@ -1,0 +1,68 @@
+{
+  "trial_id": "ATM-SVP2-NPY-001",
+  "preregistration_record_hash": "220dc829365a6abb4c7ce5ef5b58ce49b57574c440fdc913b11ac4204c539a67",
+  "execution_git_commit": "cc3095505919182e381d3856af34b6464680344a",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/run-authorization.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-NPY-001.json",
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/artifact-manifest.json",
+  "status": "FAIL",
+  "factor_library_published": false,
+  "candidate_results": [
+    {
+      "candidate_id": "F-NET-PAYOUT-YIELD-US",
+      "metrics": {
+        "cagr_percent": 14.3214,
+        "sharpe": 1.518323,
+        "mdd_percent": 7.689054,
+        "since2020_cagr_percent": 17.621393,
+        "since2020_sharpe": 1.632712,
+        "since2022_cagr_percent": 21.078444,
+        "since2022_sharpe": 1.785248,
+        "source_events": 166,
+        "us_derisk_events": 107,
+        "available_us_derisk_events": 64,
+        "retained_events": 15,
+        "folds_sharpe_ge_matched": 3,
+        "worst_fold_sharpe": 0.724879,
+        "deterministic_admit": false,
+        "bootstrap_probability_cagr_gt_v11": 0.3612,
+        "bootstrap_probability_sharpe_gt_matched": 0.81525,
+        "bootstrap_median_candidate_minus_v11_cagr": -0.00020820261045621097,
+        "bootstrap_median_candidate_minus_matched_sharpe": 0.019631310091545173,
+        "bootstrap_mdd_p975": 0.14034556845758578,
+        "bootstrap_robust_pass": false,
+        "global_post_protocol_dsr_probability": 0.9424120489593486,
+        "global_post_protocol_dsr_trial_count": 30,
+        "robust_factor_pass": false
+      }
+    }
+  ],
+  "matched_control": {
+    "candidate_id": "C-NET-PAYOUT-ALWAYS",
+    "cagr_percent": 14.395132,
+    "sharpe": 1.496986,
+    "mdd_percent": 8.612735,
+    "available_us_derisk_events": 64,
+    "retained_events": 64
+  },
+  "v11_control": {
+    "cagr_percent": 14.345615,
+    "sharpe": 1.522263,
+    "mdd_percent": 7.689054,
+    "target_fingerprint": "ba67c8aa24bc7168"
+  },
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED / NO_ROBUST_FACTOR_PASS. F-NET-PAYOUT-YIELD-US used 61 point-in-time first-release Federal Reserve Z.1 quarterly observations from 2011Q1 through 2026Q1 and defined risk-on as the latest net payout yield being at or above the prior-only expanding median. It produced CAGR 14.321400%, Sharpe 1.518323 and MDD 7.689054%, slightly below frozen V11 on CAGR and Sharpe while preserving the same maximum drawdown. It beat its availability-matched unconditional retention control on full Sharpe (1.518323 versus 1.496986) but not on CAGR and beat matched-control Sharpe in only 3/7 fixed folds. Paired 63-session moving-block bootstrap over 20000 replicates gave P(CAGR candidate > V11)=36.120% and P(Sharpe candidate > matched)=81.525%; median candidate-minus-V11 CAGR was negative while median candidate-minus-matched Sharpe was positive. Candidate MDD P97.5=14.035% passed the 15% risk ceiling. Cumulative 30-trial DSR probability was 94.241%, below the frozen 95% requirement. The factor therefore does not qualify for factor-library validated/promotion publication. Per the frozen stop rule, no fixed threshold, rolling percentile, q/q or y/y transformation, payout-component variant, denominator/normalization, sign reversal, retention-fraction or second retrospective Net Payout search is permitted.",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/candidates/statistical-audit.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/candidates/C-NET-PAYOUT-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/candidates/F-NET-PAYOUT-YIELD-US-portfolio.csv"
+  ]
+}

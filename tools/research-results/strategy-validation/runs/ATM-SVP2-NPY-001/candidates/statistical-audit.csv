@@ -1,0 +1,2 @@
+candidate_id,deterministic_admit,bootstrap_pass,global_dsr_probability,global_dsr_pass,robust_factor_pass,probability_cagr_gt_v11,probability_sharpe_gt_matched,candidate_mdd_p975
+F-NET-PAYOUT-YIELD-US,False,False,0.9424120489593486,False,False,0.3612,0.81525,0.14034556845758578

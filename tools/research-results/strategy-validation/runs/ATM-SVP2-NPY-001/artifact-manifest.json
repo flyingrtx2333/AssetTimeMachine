@@ -1,0 +1,148 @@
+{
+  "files": [
+    {
+      "bytes": 187189,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/candidates/C-NET-PAYOUT-ALWAYS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "de3820770eb39d545aaa80683039683184ea78d4621625d0e83a74aca3529611"
+    },
+    {
+      "bytes": 187137,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/candidates/F-NET-PAYOUT-YIELD-US-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "acfbd9845734cf04b1e176afbc8fff71a2f8967a01402e35b59e4341f3aae831"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "d9502e573cff9eb6c8b94c4df11ae14e73d4ec0976a32409996892adb299e438"
+    },
+    {
+      "bytes": 715,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "matched_control_id",
+        "cagr_percent",
+        "mdd_percent",
+        "vol_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "min_weight",
+        "fingerprint",
+        "source_events",
+        "us_derisk_events",
+        "available_us_derisk_events",
+        "retained_events",
+        "folds_sharpe_ge_matched",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "75137aa7c0fac541aae5449edc16476f71c747f8344ac9ee99280d5b9c07e056"
+    },
+    {
+      "bytes": 4469,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/candidates/candidate-metrics.json",
+      "sha256": "d7298bee51cbd3ed7173d81211e089bd489e8782f973b8944632a0fab0f5f8ad"
+    },
+    {
+      "bytes": 281,
+      "columns": [
+        "candidate_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "global_dsr_probability",
+        "global_dsr_pass",
+        "robust_factor_pass",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_matched",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/candidates/statistical-audit.csv",
+      "row_count": 1,
+      "sha256": "956229a2db3cdc3502c7455791146852b4945be887cff2d9b971b68a526ca642"
+    },
+    {
+      "bytes": 2802,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/candidates/statistical-audit.json",
+      "sha256": "6e94fb3fe0dca3280a9ec309aa51bb5b7b1254b760bb00be2d4840b47cf146aa"
+    },
+    {
+      "bytes": 1080,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/execution.json",
+      "sha256": "e5aeb934e382fb911f7e1bd53bb61ad6c5ea634ae929783fb730d6a7a6324350"
+    },
+    {
+      "bytes": 430,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/run-authorization.json",
+      "sha256": "d2016af77dadf3e5c4d70342f1a360a9568021aa87b82b81383fb0aa4f349350"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 3291,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-NPY-001/stdout.txt",
+      "sha256": "d71308a8b77f82450b8ce00dab04e407cf6ce39613387ea761bdf8ce41d9217c"
+    }
+  ],
+  "generated_at": "2026-08-22T00:32:57+08:00",
+  "git_commit": "cc3095505919182e381d3856af34b6464680344a",
+  "kind": "result",
+  "metadata": {
+    "campaign": "net-payout-yield-v1",
+    "deterministic_admitted": [],
+    "evidence_class": "R1_RETROSPECTIVE",
+    "factor_library_published": false,
+    "formal_execution_commit": "cc3095505919182e381d3856af34b6464680344a",
+    "global_dsr_trial_count": 30,
+    "robust_pass": []
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-NPY-001"
+}
