@@ -1,0 +1,43 @@
+{
+  "files": [
+    {
+      "bytes": 18837,
+      "columns": [
+        "reference_month",
+        "conservative_available_date",
+        "debit_millions",
+        "free_credit_cash_millions",
+        "free_credit_margin_millions",
+        "leverage_ratio",
+        "prior_reference_month",
+        "delta_leverage_ratio"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/factor-data/FINRA-MARGIN-FEASIBILITY-2026-08-21/FINRA_MARGIN_LEVERAGE.csv",
+      "row_count": 198,
+      "sha256": "c77e90e60bdb1044520b4b006b600555478a5ff12501292b27d47f1fc38a29a7"
+    },
+    {
+      "bytes": 1277,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/FINRA-MARGIN-FEASIBILITY-2026-08-21/fetch-summary.json",
+      "sha256": "935e351e50cc8a8539a2abc91af48ec0b099900ce6d1685b9c3d35e6b357a67f"
+    }
+  ],
+  "generated_at": "2026-08-21T16:56:52+08:00",
+  "git_commit": "0501ca371358e25d210af4cb3a47c1261f974c7f",
+  "kind": "dataset",
+  "metadata": {
+    "candidate": "F-MARGIN-LEV-PROSPECTIVE",
+    "evidence_class": "P3_PROSPECTIVE",
+    "freeze_date": "2026-08-21",
+    "future_v11_snapshots": "append-only server forward snapshots are runtime inputs, not pre-frozen files",
+    "historical_lineage": "F-MARGIN-LEV-US / ATM-SVP2-MARGIN-001 historical FAIL but suggestive near-miss",
+    "rule_changes_from_historical": false
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-PROSPECTIVE-MARGIN-001"
+}

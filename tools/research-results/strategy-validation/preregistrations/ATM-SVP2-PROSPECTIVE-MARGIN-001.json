@@ -1,0 +1,90 @@
+{
+  "trial_id": "ATM-SVP2-PROSPECTIVE-MARGIN-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "PROSPECTIVE_FINRA_MARGIN_SHADOW",
+  "strategy_lineage": "prospective shadow of historical F-MARGIN-LEV-US on frozen nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "hypothesis": "The exact historically suggestive but non-robust-certified FINRA margin-leverage rule will show genuine incremental timing value on new post-freeze data without any parameter, availability, sign or portfolio-action changes.",
+  "evidence_class": "P3_PROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-PROSPECTIVE-MARGIN-001.json",
+  "allowed_changes": [
+    "append-only prospective snapshots using new frozen-V11 forward snapshots and newly published FINRA margin statistics after 2026-08-21",
+    "mechanical realized-NAV accounting from already-recorded candidate/matched-control shadow targets under frozen 1.00% fee + 0.05% slippage",
+    "operational bug fixes that do not alter factor definition, availability policy, U.S.-de-risk event definition or 50% retention semantics, with old records preserved"
+  ],
+  "candidate_ids": ["F-MARGIN-LEV-PROSPECTIVE"],
+  "candidate_count": 1,
+  "selection_metric": "No candidate selection. Assess the single frozen candidate independently against contemporaneous frozen V11 and its own availability-matched unconditional U.S.-retention control; 252 sessions is provisional only and 504 sessions is the primary decision.",
+  "pass_fail_gates": [
+    "<63 new sessions: integrity/operations only, no performance conclusion",
+    "252 new sessions: provisional observation only; low eligible-event count is INCONCLUSIVE",
+    "504 new sessions: append-only/data-causality integrity must pass",
+    "504 new sessions: at least 8 factor-available eligible frozen-V11 U.S.-de-risk events",
+    "504 new sessions: at least 4 actual candidate interventions",
+    "504 new sessions: candidate net annualized return > contemporaneous V11 shadow",
+    "504 new sessions: candidate realized Sharpe >= contemporaneous V11 shadow Sharpe",
+    "504 new sessions: candidate realized Sharpe > own matched-control Sharpe",
+    "504 new sessions: candidate MDD <=15%",
+    "gross <=100%, no shorting, no financing and no negative cash throughout"
+  ],
+  "formal_run_budget": 1,
+  "follow_up_policy": "Do not tune, replace or reinterpret this candidate using prospective results. A 504-session low-event result is INCONCLUSIVE, not permission to alter the rule. Any future margin-debt hypothesis with another denominator, horizon, sign, threshold, stale rule, publication lag or portfolio action is a new trial with a new freeze date and cannot inherit this prospective label.",
+  "swift_engine_entrypoint": "Frozen V11 forward snapshot + tools/finra_margin_leverage_v1_logic.swift + dedicated prospective margin shadow CLI/runner; target transformations remain in Swift and snapshots are append-only hash-chained records.",
+  "expected_outputs": [
+    "append-only hash-chained prospective margin snapshot ledger",
+    "frozen V11 signal/execution metadata, dataset hash, causal input fingerprint and target fingerprint for every snapshot",
+    "FINRA source snapshot SHA plus latest point-in-time-usable reference month, conservative available date, leverage ratio delta and state",
+    "candidate and matched-control shadow target weights/fingerprints",
+    "U.S.-de-risk/eligible/intervention flags and persistent prior shadow state",
+    "realized net NAV/return/Sharpe/MDD summaries at frozen milestones"
+  ],
+  "freeze_date": "2026-08-21",
+  "provisional_sessions": 252,
+  "primary_decision_sessions": 504,
+  "historical_lineage": {
+    "trial_id": "ATM-SVP2-MARGIN-001",
+    "candidate_id": "F-MARGIN-LEV-US",
+    "historical_status": "FAIL / suggestive near-miss only",
+    "historical_cagr_percent": 14.440021,
+    "historical_sharpe": 1.516685,
+    "historical_mdd_percent": 8.612794,
+    "bootstrap_probability_cagr_gt_v11": 0.8173,
+    "bootstrap_probability_sharpe_gt_matched": 0.85365,
+    "global_27_trial_dsr_probability": 0.934554702736849,
+    "historical_results_are_not_prospective_evidence": true
+  },
+  "factor_definition": {
+    "source": "FINRA Margin Statistics",
+    "unified_start_month": "2010-02",
+    "leverage_rule": "Debit / (CashFreeCredit + MarginFreeCredit)",
+    "delta_rule": "current reference-month leverage ratio minus immediately previous reference-month leverage ratio",
+    "risk_on_rule": "delta_leverage_ratio > 0",
+    "availability_rule": "reference month usable only on first calendar day of second following month",
+    "max_stale_calendar_days": 35
+  },
+  "portfolio_rule": {
+    "event_scope": "frozen V11 rebalance events only",
+    "eligible_event": "current V11 event reduces nasdaq and/or sp500 relative to previous frozen V11 event base target and factor state is available",
+    "candidate_action": "when risk-on retain exactly 50% of each nasdaq/sp500 reduction; otherwise use current V11 event target",
+    "matched_control": "on every factor-available eligible event retain exactly 50% of each nasdaq/sp500 reduction",
+    "unaffected_sleeves": ["gold_cny", "csi300", "shanghai_composite"],
+    "retention_fraction": 0.5,
+    "max_gross": 1.0,
+    "shorting_allowed": false,
+    "financing_allowed": false,
+    "fee_rate": 0.01,
+    "slippage_rate": 0.0005
+  },
+  "forbidden_changes": [
+    "changing any frozen V11 rule or target path",
+    "changing FINRA leverage denominator or input fields",
+    "changing positive-delta risk-on sign",
+    "changing conservative publication lag or 35-day stale rule",
+    "changing 50% U.S.-reduction retention",
+    "adding gold/China interventions",
+    "factor-driven trades between frozen V11 event dates",
+    "adding another candidate to this trial",
+    "recomputing, deleting or overwriting an old prospective snapshot after future outcomes are known",
+    "using any FINRA observation before its conservative available date",
+    "selecting or declaring a winner before the frozen evaluation milestone"
+  ]
+}
