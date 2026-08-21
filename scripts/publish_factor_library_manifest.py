@@ -120,6 +120,21 @@ def require_success(response: requests.Response, *, action: str) -> Any:
     raise RuntimeError(f"{action} failed with HTTP {response.status_code}: {message}")
 
 
+def get_batch_status(*, batch_key: str, token: str, base_url: str, timeout: float) -> dict[str, Any]:
+    api_root = base_url.rstrip("/") + "/api/v1/asset-time-machine/internal/factor-imports"
+    value = require_success(
+        requests.get(
+            f"{api_root}/{batch_key}",
+            headers={"X-API-Key": token, "Accept": "application/json"},
+            timeout=timeout,
+        ),
+        action="factor import batch status",
+    )
+    if not isinstance(value, dict):
+        raise RuntimeError("factor import batch status returned non-object JSON")
+    return value
+
+
 def publish_manifest(
     *,
     manifest_path: Path,
@@ -213,6 +228,8 @@ def main() -> int:
     parser.add_argument("--token-env", default=DEFAULT_TOKEN_ENV)
     parser.add_argument("--agents-file")
     parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--status-only", action="store_true")
+    parser.add_argument("--complete-only", action="store_true")
     parser.add_argument("--timeout", type=float, default=30.0)
     args = parser.parse_args()
 
@@ -220,6 +237,40 @@ def main() -> int:
         args.token_env,
         Path(args.agents_file).resolve() if args.agents_file else None,
     )
+    if args.status_only or args.complete_only:
+        manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
+        batch_key = str(manifest.get("batch_key") or "")
+        if not batch_key:
+            raise ValueError("manifest batch_key is missing")
+        if args.complete_only:
+            api_root = args.base_url.rstrip("/") + "/api/v1/asset-time-machine/internal/factor-imports"
+            completed = require_success(
+                requests.post(
+                    f"{api_root}/{batch_key}/complete",
+                    headers={"X-API-Key": token, "Accept": "application/json"},
+                    timeout=args.timeout,
+                ),
+                action="factor import completion",
+            )
+            print(
+                "FACTOR_LIBRARY_COMPLETE_ONLY "
+                f"batch_key={batch_key} status={completed.get('status')} "
+                f"created_count={completed.get('created_count')} failed_count={completed.get('failed_count')}"
+            )
+            return 0
+        status = get_batch_status(
+            batch_key=batch_key,
+            token=token,
+            base_url=args.base_url,
+            timeout=args.timeout,
+        )
+        print(
+            "FACTOR_LIBRARY_BATCH_STATUS "
+            f"batch_key={batch_key} status={status.get('status')} "
+            f"created_count={status.get('created_count')} failed_count={status.get('failed_count')} "
+            f"staged_bytes={status.get('staged_bytes')} error_message={status.get('error_message')}"
+        )
+        return 0
     result = publish_manifest(
         manifest_path=Path(args.manifest),
         token=token,
