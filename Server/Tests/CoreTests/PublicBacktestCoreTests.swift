@@ -2,6 +2,45 @@ import XCTest
 @testable import AssetTimeMachineBacktestCore
 
 final class PublicBacktestCoreTests: XCTestCase {
+    func testQuantStrategyProxyOverridesRecordedMarketSymbol() throws {
+        let category = AssetCategory(group: .financial)
+        let item = AssetItem(
+            name: "纳斯达克ETF",
+            category: category,
+            marketAssetSymbol: "record_etf:513100.sh",
+            quantStrategyProxySymbol: "gold_cny"
+        )
+        let snapshot = AssetSnapshot(entries: [
+            AssetEntry(amount: 100_000, item: item)
+        ])
+        let advice = StrategyRebalanceAdvice(
+            strategyTitle: "测试策略",
+            asOfDate: Date(timeIntervalSince1970: 1_750_000_000),
+            lookbackSessions: 20,
+            rebalanceSessions: 20,
+            targetAnnualVolatility: nil,
+            allocations: [
+                .init(symbol: "gold_cny", title: "黄金", targetWeight: 0.5, momentum: nil, annualizedVolatility: nil),
+                .init(symbol: "nasdaq", title: "纳指", targetWeight: 0.5, momentum: nil, annualizedVolatility: nil),
+            ]
+        )
+
+        let actions = StrategyRebalanceActionBuilder.actions(
+            for: advice,
+            snapshot: snapshot,
+            selectedAssetOptions: BacktestDefaults.dcaAssetOptions.filter { ["gold_cny", "nasdaq"].contains($0.symbol) },
+            allAssetOptions: BacktestDefaults.dcaAssetOptions
+        )
+
+        let goldAction = try XCTUnwrap(actions.first(where: { $0.symbol == "gold_cny" }))
+        let nasdaqAction = try XCTUnwrap(actions.first(where: { $0.symbol == "nasdaq" }))
+        XCTAssertEqual(goldAction.currentAmount, 100_000)
+        XCTAssertEqual(goldAction.currentWeight, 1)
+        XCTAssertEqual(goldAction.matchedItemNames, ["纳斯达克ETF"])
+        XCTAssertEqual(nasdaqAction.currentAmount, 0)
+        XCTAssertTrue(nasdaqAction.matchedItemNames.isEmpty)
+    }
+
     func testEngineVersionIsPinned() {
         XCTAssertFalse(PublicBacktestCore.engineVersion.isEmpty)
     }

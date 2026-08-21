@@ -26,6 +26,7 @@ nonisolated struct ExportPayload: Codable, Sendable {
         let iconName: String?
         let valuationMethod: String
         let autoPricedAssetKind: String?
+        let quantStrategyProxySymbol: String?
         let sortOrder: Int
         let isActive: Bool
         let createdAt: Date
@@ -139,6 +140,7 @@ private actor CloudExportProjectionStore {
                     iconName: ((item.iconName ?? "").isEmpty ? nil : item.iconName),
                     valuationMethod: item.valuationMethod.rawValue,
                     autoPricedAssetKind: item.marketAssetSymbol,
+                    quantStrategyProxySymbol: item.quantStrategyProxySymbol,
                     sortOrder: item.sortOrder,
                     isActive: item.isActive,
                     createdAt: item.createdAt,
@@ -334,6 +336,7 @@ enum ImportExportService {
                     iconName: (($0.iconName ?? "").isEmpty ? nil : $0.iconName),
                     valuationMethod: $0.valuationMethod.rawValue,
                     autoPricedAssetKind: $0.marketAssetSymbol,
+                    quantStrategyProxySymbol: $0.quantStrategyProxySymbol,
                     sortOrder: $0.sortOrder,
                     isActive: $0.isActive,
                     createdAt: $0.createdAt,
@@ -618,6 +621,8 @@ enum ImportExportService {
                     ).rawValue
                     let targetAutoPricedAssetKindRawValue = itemPayload.autoPricedAssetKind
                         .map(BacktestAssetSymbol.normalized)
+                    let targetQuantStrategyProxySymbolRawValue = itemPayload.quantStrategyProxySymbol
+                        .map(BacktestAssetSymbol.normalized)
                     let targetCategory = itemPayload.categoryID.flatMap { categoryMap[$0] }
 
                     if item.name != itemPayload.name {
@@ -636,6 +641,9 @@ enum ImportExportService {
                     }
                     if item.autoPricedAssetKindRawValue != targetAutoPricedAssetKindRawValue {
                         item.autoPricedAssetKindRawValue = targetAutoPricedAssetKindRawValue
+                    }
+                    if item.quantStrategyProxySymbolRawValue != targetQuantStrategyProxySymbolRawValue {
+                        item.quantStrategyProxySymbolRawValue = targetQuantStrategyProxySymbolRawValue
                     }
                     if item.sortOrder != itemPayload.sortOrder {
                         item.sortOrder = itemPayload.sortOrder
@@ -660,6 +668,7 @@ enum ImportExportService {
                         iconName: itemPayload.iconName ?? "",
                         valuationMethod: ValuationMethod(rawValue: itemPayload.valuationMethod) ?? .directAmount,
                         autoPricedAssetKind: itemPayload.autoPricedAssetKind.flatMap(AutoPricedAssetKind.init(rawValue:)),
+                        quantStrategyProxySymbol: itemPayload.quantStrategyProxySymbol,
                         sortOrder: itemPayload.sortOrder,
                         isActive: itemPayload.isActive,
                         createdAt: itemPayload.createdAt,

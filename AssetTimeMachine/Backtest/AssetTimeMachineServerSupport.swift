@@ -65,19 +65,22 @@ final class AssetItem {
     var category: AssetCategory?
     var resolvedAutoPricedAssetKind: AutoPricedAssetKind?
     var marketAssetSymbol: String?
+    var quantStrategyProxySymbol: String?
 
     init(
         name: String = "",
         note: String = "",
         category: AssetCategory? = nil,
         resolvedAutoPricedAssetKind: AutoPricedAssetKind? = nil,
-        marketAssetSymbol: String? = nil
+        marketAssetSymbol: String? = nil,
+        quantStrategyProxySymbol: String? = nil
     ) {
         self.name = name
         self.note = note
         self.category = category
         self.resolvedAutoPricedAssetKind = resolvedAutoPricedAssetKind
         self.marketAssetSymbol = marketAssetSymbol
+        self.quantStrategyProxySymbol = quantStrategyProxySymbol
     }
 }
 

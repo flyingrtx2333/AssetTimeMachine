@@ -24,6 +24,7 @@ enum SyncMergeSmoke {
             iconName: nil,
             valuationMethod: ValuationMethod.directAmount.rawValue,
             autoPricedAssetKind: nil,
+            quantStrategyProxySymbol: nil,
             sortOrder: 0,
             isActive: true,
             createdAt: now,

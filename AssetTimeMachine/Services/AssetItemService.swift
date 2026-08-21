@@ -9,6 +9,7 @@ enum AssetItemService {
         valuationMethod: ValuationMethod = .directAmount,
         autoPricedAssetKind: AutoPricedAssetKind? = nil,
         marketAssetSymbol: String? = nil,
+        quantStrategyProxySymbol: String? = nil,
         note: String = "",
         iconName: String? = nil,
         saveChanges: Bool = true,
@@ -21,6 +22,7 @@ enum AssetItemService {
             iconName: iconName ?? suggestedIconName(for: name, autoPricedAssetKind: autoPricedAssetKind),
             valuationMethod: valuationMethod,
             autoPricedAssetKind: autoPricedAssetKind,
+            quantStrategyProxySymbol: quantStrategyProxySymbol,
             sortOrder: nextSortOrder,
             category: category
         )
@@ -43,6 +45,7 @@ enum AssetItemService {
         valuationMethod: ValuationMethod? = nil,
         autoPricedAssetKind: AutoPricedAssetKind?? = nil,
         marketAssetSymbol: String?? = nil,
+        quantStrategyProxySymbol: String?? = nil,
         isActive: Bool? = nil,
         category: AssetCategory? = nil,
         saveChanges: Bool = true,
@@ -54,6 +57,7 @@ enum AssetItemService {
         if let valuationMethod { item.valuationMethod = valuationMethod }
         if let autoPricedAssetKind { item.autoPricedAssetKind = autoPricedAssetKind }
         if let marketAssetSymbol { item.marketAssetSymbol = marketAssetSymbol }
+        if let quantStrategyProxySymbol { item.quantStrategyProxySymbol = quantStrategyProxySymbol }
         if let isActive { item.isActive = isActive }
         if let category { item.category = category }
         item.updatedAt = .now

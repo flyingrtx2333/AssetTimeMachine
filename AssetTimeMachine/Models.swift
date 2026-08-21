@@ -154,6 +154,7 @@ final class AssetItem {
     var iconName: String?
     var valuationMethodRawValue: String
     var autoPricedAssetKindRawValue: String?
+    var quantStrategyProxySymbolRawValue: String?
     var sortOrder: Int
     var isActive: Bool
     var createdAt: Date
@@ -169,6 +170,7 @@ final class AssetItem {
         iconName: String? = nil,
         valuationMethod: ValuationMethod = .directAmount,
         autoPricedAssetKind: AutoPricedAssetKind? = nil,
+        quantStrategyProxySymbol: String? = nil,
         sortOrder: Int = 0,
         isActive: Bool = true,
         createdAt: Date = .now,
@@ -181,6 +183,7 @@ final class AssetItem {
         self.iconName = iconName
         self.valuationMethodRawValue = valuationMethod.rawValue
         self.autoPricedAssetKindRawValue = autoPricedAssetKind?.rawValue
+        self.quantStrategyProxySymbolRawValue = quantStrategyProxySymbol.map(BacktestAssetSymbol.normalized)
         self.sortOrder = sortOrder
         self.isActive = isActive
         self.createdAt = createdAt
@@ -213,6 +216,20 @@ final class AssetItem {
         set {
             let normalized = newValue.map(BacktestAssetSymbol.normalized)
             autoPricedAssetKindRawValue = normalized?.isEmpty == false ? normalized : nil
+        }
+    }
+
+    /// Optional user override used only when matching recorded holdings to the
+    /// daily quantitative strategy. Nil keeps the existing self/keyword match.
+    var quantStrategyProxySymbol: String? {
+        get {
+            guard let rawValue = quantStrategyProxySymbolRawValue?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !rawValue.isEmpty else { return nil }
+            return BacktestAssetSymbol.normalized(rawValue)
+        }
+        set {
+            let normalized = newValue.map(BacktestAssetSymbol.normalized)
+            quantStrategyProxySymbolRawValue = normalized?.isEmpty == false ? normalized : nil
         }
     }
 }

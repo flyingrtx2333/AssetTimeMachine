@@ -1932,6 +1932,7 @@ struct AssetItemEditorSheet: View {
     @State private var name = ""
     @State private var selectedCategoryID: UUID?
     @State private var selectedMarketAssetSymbol: String?
+    @State private var selectedQuantStrategyProxySymbol: String?
     @State private var valuationMethod: ValuationMethod = .directAmount
     @State private var selectedIconName = ""
     @State private var marketAssetSearchText = ""
@@ -1950,6 +1951,7 @@ struct AssetItemEditorSheet: View {
     @State private var recordUnitPriceText = ""
     @State private var showsDeleteConfirmation = false
     @State private var showsMarketChangeConfirmation = false
+    @State private var showsAdvancedOptions = false
 
     init(
         snapshot: AssetSnapshot? = nil,
@@ -1971,6 +1973,7 @@ struct AssetItemEditorSheet: View {
         _name = State(initialValue: editingItem.name)
         _selectedCategoryID = State(initialValue: editingItem.category?.id)
         _selectedMarketAssetSymbol = State(initialValue: editingItem.marketAssetSymbol)
+        _selectedQuantStrategyProxySymbol = State(initialValue: editingItem.quantStrategyProxySymbol)
         _valuationMethod = State(initialValue: editingItem.valuationMethod)
         _selectedIconName = State(initialValue: storedIconName)
         _step = State(initialValue: .details)
@@ -2048,6 +2051,23 @@ struct AssetItemEditorSheet: View {
 
     private var selectedMarketAsset: MarketAssetDescriptor? {
         selectedMarketAssetSymbol.flatMap(marketStore.assetDescriptor(for:))
+    }
+
+    private var quantStrategyProxyOptions: [BacktestAssetOption] {
+        BacktestDefaults.strategyAssetOptions
+    }
+
+    private var resolvedQuantStrategyProxySymbol: String? {
+        selectedCategory?.group == .financial ? selectedQuantStrategyProxySymbol : nil
+    }
+
+    private var quantStrategyHoldingDisplayName: String {
+        guard let selectedQuantStrategyProxySymbol else {
+            return AppLocalization.format("%@（本身）", resolvedName)
+        }
+        return quantStrategyProxyOptions.first(where: {
+            BacktestAssetSymbol.normalized($0.symbol) == BacktestAssetSymbol.normalized(selectedQuantStrategyProxySymbol)
+        })?.title ?? selectedQuantStrategyProxySymbol
     }
 
     private var resolvedName: String {
@@ -2493,6 +2513,10 @@ struct AssetItemEditorSheet: View {
                 }
             }
 
+            if !isOnboarding, selectedCategory?.group == .financial {
+                advancedOptionsSection
+            }
+
             if isEditing {
                 Button(role: .destructive) {
                     dismissActiveKeyboard()
@@ -2601,6 +2625,76 @@ struct AssetItemEditorSheet: View {
             }
             .padding(.vertical, 14)
             .contentShape(Rectangle())
+        }
+    }
+
+    private var advancedOptionsSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                dismissActiveKeyboard()
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    showsAdvancedOptions.toggle()
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    Text(AppLocalization.string("高级选项"))
+                        .font(AppTypography.rowTitle)
+                        .foregroundStyle(AssetTheme.textPrimary)
+
+                    Spacer(minLength: 10)
+
+                    Image(systemName: "chevron.down")
+                        .font(AppTypography.chartCaption)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .rotationEffect(.degrees(showsAdvancedOptions ? 180 : 0))
+                }
+                .padding(.vertical, 14)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if showsAdvancedOptions {
+                Divider().overlay(AssetTheme.border.opacity(0.32))
+
+                Menu {
+                    Button {
+                        selectedQuantStrategyProxySymbol = nil
+                    } label: {
+                        if selectedQuantStrategyProxySymbol == nil {
+                            Label(AppLocalization.format("%@（本身）", resolvedName), systemImage: "checkmark")
+                        } else {
+                            Text(AppLocalization.format("%@（本身）", resolvedName))
+                        }
+                    }
+
+                    Divider()
+
+                    ForEach(quantStrategyProxyOptions) { option in
+                        Button {
+                            selectedQuantStrategyProxySymbol = option.symbol
+                        } label: {
+                            if selectedQuantStrategyProxySymbol.map(BacktestAssetSymbol.normalized)
+                                == BacktestAssetSymbol.normalized(option.symbol) {
+                                Label(option.title, systemImage: "checkmark")
+                            } else {
+                                Text(option.title)
+                            }
+                        }
+                    }
+                } label: {
+                    detailValueRow(
+                        title: AppLocalization.string("量化策略持仓视作"),
+                        value: quantStrategyHoldingDisplayName,
+                        systemImage: "chevron.up.chevron.down"
+                    )
+                }
+
+                Text(AppLocalization.string("仅影响每日量化持仓分析，不改变资产记录。"))
+                    .font(AppTypography.caption)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom, 12)
+            }
         }
     }
 
@@ -2715,6 +2809,7 @@ struct AssetItemEditorSheet: View {
                             iconName: resolvedIconName,
                             valuationMethod: valuationMethod,
                             marketAssetSymbol: .some(selectedMarketAssetSymbol),
+                            quantStrategyProxySymbol: .some(resolvedQuantStrategyProxySymbol),
                             category: selectedCategory,
                             saveChanges: !isOnboarding,
                             in: modelContext
@@ -2728,6 +2823,7 @@ struct AssetItemEditorSheet: View {
                                 iconName: resolvedIconName,
                                 valuationMethod: valuationMethod,
                                 marketAssetSymbol: .some(selectedMarketAssetSymbol),
+                                quantStrategyProxySymbol: .some(resolvedQuantStrategyProxySymbol),
                                 category: selectedCategory,
                                 saveChanges: false,
                                 in: modelContext
@@ -2740,6 +2836,7 @@ struct AssetItemEditorSheet: View {
                             category: selectedCategory,
                             valuationMethod: valuationMethod,
                             marketAssetSymbol: selectedMarketAssetSymbol,
+                            quantStrategyProxySymbol: resolvedQuantStrategyProxySymbol,
                             iconName: resolvedIconName,
                             saveChanges: !isOnboarding,
                             in: modelContext

@@ -1546,6 +1546,10 @@ enum StrategyRebalanceActionBuilder {
     }
 
     private static func itemMatchesStrategySymbol(_ item: AssetItem, symbol: String) -> Bool {
+        if let proxySymbol = item.quantStrategyProxySymbol {
+            return BacktestAssetSymbol.normalized(proxySymbol) == BacktestAssetSymbol.normalized(symbol)
+        }
+
         if let marketSymbol = item.marketAssetSymbol,
            BacktestAssetSymbol.normalized(marketSymbol) == BacktestAssetSymbol.normalized(symbol) {
             return true

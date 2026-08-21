@@ -1,6 +1,38 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@（本身）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%@ (itself)" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "%@（本身）" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "%@（本身）" } }
+      }
+    },
+    "高级选项": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Advanced Options" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "高级选项" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "進階選項" } }
+      }
+    },
+    "量化策略持仓视作": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Treat as in Strategy" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "量化策略持仓视作" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "量化策略持倉視作" } }
+      }
+    },
+    "仅影响每日量化持仓分析，不改变资产记录。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Only affects daily strategy holding analysis. Asset records stay unchanged." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "仅影响每日量化持仓分析，不改变资产记录。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "僅影響每日量化持倉分析，不改變資產記錄。" } }
+      }
+    },
     "添加第一项资产": {
       "extractionState": "manual",
       "localizations": {
