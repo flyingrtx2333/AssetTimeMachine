@@ -1,0 +1,20 @@
+{
+  "availability_policy": "reference month is usable only on first calendar day of the second following month",
+  "availability_rationale": "FINRA states updates are generally published in the third week of the month following the reference month; this policy is deliberately later",
+  "factor_definition": "debit / (free credit in cash accounts + free credit in securities margin accounts)",
+  "first_reference_month": "2010-02",
+  "first_usable_available_date": "2010-05-01",
+  "last_reference_month": "2026-07",
+  "last_usable_available_date": "2026-09-01",
+  "output_sha256": "c77e90e60bdb1044520b4b006b600555478a5ff12501292b27d47f1fc38a29a7",
+  "performance_computed": false,
+  "purpose": "FINRA margin leverage feasibility; no strategy performance",
+  "raw_state_not_yet_strategy_executed": "delta_leverage_ratio > 0",
+  "rows": 198,
+  "source": "FINRA Margin Statistics",
+  "source_schema_note": "Use only 2010-02 onward unified FINRA Rule 4521-era rows; pre-2010 legacy NYSE/FINRA free-credit aggregation is excluded",
+  "source_url": "https://www.finra.org/sites/default/files/2021-03/margin-statistics.xlsx",
+  "source_xlsx_sha256": "af947a17abf21df44b2d3657bd4e9fe7ea0c30db7cb367ab0483e394148fbf05",
+  "unified_start_month": "2010-02",
+  "usable_delta_rows": 197
+}

@@ -1,0 +1,82 @@
+{
+  "files": [
+    {
+      "bytes": 5271408,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/generalization_public_history.json",
+      "sha256": "ab534219b08cdf417ee041be4322d512b29505439c8d0f2a469438d01730ac88"
+    },
+    {
+      "bytes": 24847,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCICREDIT_initial_release.csv",
+      "row_count": 732,
+      "sha256": "953198633f2f19cd42450c631bda3cc1d25bd23b40afc8bf58fa45ada0c4fc8c"
+    },
+    {
+      "bytes": 24762,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCILEVERAGE_initial_release.csv",
+      "row_count": 732,
+      "sha256": "d198027125ca6b317258c2fb4725ed3e5b217356a6b8c549b68dbb18d237b486"
+    },
+    {
+      "bytes": 18837,
+      "columns": [
+        "reference_month",
+        "conservative_available_date",
+        "debit_millions",
+        "free_credit_cash_millions",
+        "free_credit_margin_millions",
+        "leverage_ratio",
+        "prior_reference_month",
+        "delta_leverage_ratio"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/factor-data/FINRA-MARGIN-FEASIBILITY-2026-08-21/FINRA_MARGIN_LEVERAGE.csv",
+      "row_count": 198,
+      "sha256": "c77e90e60bdb1044520b4b006b600555478a5ff12501292b27d47f1fc38a29a7"
+    },
+    {
+      "bytes": 1277,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/FINRA-MARGIN-FEASIBILITY-2026-08-21/fetch-summary.json",
+      "sha256": "935e351e50cc8a8539a2abc91af48ec0b099900ce6d1685b9c3d35e6b357a67f"
+    }
+  ],
+  "generated_at": "2026-08-21T16:46:13+08:00",
+  "git_commit": "98c9be1bf4021bd13c6f58406f08c7733425a489",
+  "kind": "dataset",
+  "metadata": {
+    "availability_policy": "reference month usable first calendar day of second following month; max stale 35 days",
+    "campaign": "finra-margin-leverage-v1",
+    "cost": "1.00% fee + 0.05% slippage",
+    "coverage": "2010-02..2026-07",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "formal_candidates": [
+      "F-MARGIN-LEV-US"
+    ],
+    "performance_viewed_before_freeze": false
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-MARGIN-001"
+}
