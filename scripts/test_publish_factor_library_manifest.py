@@ -67,9 +67,18 @@ class FactorLibraryPublisherTests(unittest.TestCase):
     def test_resolve_token_can_read_local_agents_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "AGENTS.md"
-            path.write_text("FRK_TOKEN=frk_local_only\n", encoding="utf-8")
+            fake_token = "frk_" + "local_only"
+            path.write_text(f"FRK_TOKEN={fake_token}\n", encoding="utf-8")
             with patch.dict(os.environ, {}, clear=True):
-                self.assertEqual(resolve_token("FRK_TOKEN", path), "frk_local_only")
+                self.assertEqual(resolve_token("FRK_TOKEN", path), fake_token)
+
+    def test_resolve_token_can_read_markdown_bullet_code_agents_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "AGENTS.md"
+            fake_token = "frk_" + "markdown_local_only"
+            path.write_text(f"- `FRK_TOKEN={fake_token}`\n", encoding="utf-8")
+            with patch.dict(os.environ, {}, clear=True):
+                self.assertEqual(resolve_token("FRK_TOKEN", path), fake_token)
 
 
 if __name__ == "__main__":

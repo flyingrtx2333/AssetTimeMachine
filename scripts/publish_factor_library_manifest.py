@@ -39,7 +39,7 @@ def resolve_token(token_env: str, agents_file: Path | None) -> str:
         return token
     if agents_file is not None:
         text = agents_file.read_text(encoding="utf-8")
-        match = re.search(r"(?:^|\n)\s*FRK_TOKEN\s*=\s*(frk_[^\s]+)", text)
+        match = re.search(r"FRK_TOKEN\s*=\s*(frk_[A-Za-z0-9_-]+)", text)
         if match:
             return match.group(1)
     raise ValueError(
