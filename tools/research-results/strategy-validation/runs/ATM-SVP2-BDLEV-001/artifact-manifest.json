@@ -1,0 +1,147 @@
+{
+  "files": [
+    {
+      "bytes": 187185,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/candidates/C-BDLEV-ALWAYS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "c2714e3b9233d73240ef0c11923c6bc72607459dfee1b9956e6c4793522ab0c1"
+    },
+    {
+      "bytes": 187143,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/candidates/F-BDLEV-ANNUAL-US-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "76e7a7e1d3d90349c8cb6d56b43ff02054df3f4e16ab1e86719190e8b7a870c3"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "3bcd259f223b6c316b6e571f664d93bdf51b0e7fb14aca828837432176052ba3"
+    },
+    {
+      "bytes": 703,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "matched_control_id",
+        "cagr_percent",
+        "mdd_percent",
+        "vol_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "min_weight",
+        "fingerprint",
+        "source_events",
+        "us_derisk_events",
+        "available_us_derisk_events",
+        "retained_events",
+        "folds_sharpe_ge_matched",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "504775fdde836c4f27ba21a0ce8a23a6ef2b7e6af7df27679785bfbb81b5efd7"
+    },
+    {
+      "bytes": 4466,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/candidates/candidate-metrics.json",
+      "sha256": "00ec9ce5633541a37983ac24bb8b1000a6a43e7cce23e63b95845f5cec571ee0"
+    },
+    {
+      "bytes": 276,
+      "columns": [
+        "candidate_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "global_dsr_probability",
+        "global_dsr_pass",
+        "robust_factor_pass",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_matched",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/candidates/statistical-audit.csv",
+      "row_count": 1,
+      "sha256": "c502bb2c2023b5157a5074f692606507fc67c0cd94377db8cf7d34b0b4747d9a"
+    },
+    {
+      "bytes": 2794,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/candidates/statistical-audit.json",
+      "sha256": "395f2584a6d9fb5e13fa49367316425a1750f401099f1a62edb031b5c1b9f4f9"
+    },
+    {
+      "bytes": 1110,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/execution.json",
+      "sha256": "aee0499042e7f88d92ca17836cf1d5c8f4c09d19d9e8bef168575caed193f0b6"
+    },
+    {
+      "bytes": 432,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/run-authorization.json",
+      "sha256": "66b3d26b0ce22d7853185cddf33dbde6233cbe69ef7d8cb2bde546fb610c9b68"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 3294,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/stdout.txt",
+      "sha256": "006eae96cf360fcf839a6ea9e79aedfa2e33d25d0284f8fbc7eeabac5e45a9cc"
+    }
+  ],
+  "generated_at": "2026-08-21T18:31:21+08:00",
+  "git_commit": "48acb22f4624a1a5b1b563734c3891a77745ac6d",
+  "kind": "result",
+  "metadata": {
+    "campaign": "broker-dealer-annual-book-leverage-v1",
+    "deterministic_admitted": [],
+    "evidence_class": "R1_RETROSPECTIVE",
+    "formal_execution_commit": "48acb22f4624a1a5b1b563734c3891a77745ac6d",
+    "global_dsr_trial_count": 28,
+    "robust_pass": []
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-BDLEV-001"
+}

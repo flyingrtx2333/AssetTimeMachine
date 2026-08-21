@@ -1,0 +1,4 @@
+candidate_id,kind,matched_control_id,cagr_percent,mdd_percent,vol_percent,sharpe,trades,average_cash_ratio,max_gross,min_weight,fingerprint,source_events,us_derisk_events,available_us_derisk_events,retained_events,folds_sharpe_ge_matched,worst_fold_sharpe,admit_for_robustness
+V11-CONTROL,CONTROL,,14.345615,7.689054,8.760667,1.522263,451,0.425368,1.0,0.0,ba67c8aa24bc7168,166,0,0,0,CONTROL,0.740905,CONTROL
+C-BDLEV-ALWAYS,MATCHED_CONTROL,,14.377894,8.612735,8.944473,1.495851,446,0.405159,1.0,0.0,1f022382f6b9a290,166,107,60,60,CONTROL,0.538066,CONTROL
+F-BDLEV-ANNUAL-US,FACTOR,C-BDLEV-ALWAYS,14.21013,8.627785,8.895354,1.487671,446,0.411373,1.0,0.0,481f68cd9dbe3c33,166,107,60,33,5,0.538072,False

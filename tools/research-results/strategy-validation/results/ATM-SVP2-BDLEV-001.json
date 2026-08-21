@@ -1,0 +1,67 @@
+{
+  "trial_id": "ATM-SVP2-BDLEV-001",
+  "preregistration_record_hash": "9dd92a3b82648fbc784b64f8ecd58166d56d0cf68f4eb87e9c54e1575eee301e",
+  "execution_git_commit": "48acb22f4624a1a5b1b563734c3891a77745ac6d",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/run-authorization.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-BDLEV-001.json",
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/artifact-manifest.json",
+  "status": "FAIL",
+  "candidate_results": [
+    {
+      "candidate_id": "F-BDLEV-ANNUAL-US",
+      "metrics": {
+        "cagr_percent": 14.21013,
+        "sharpe": 1.487671,
+        "mdd_percent": 8.627785,
+        "since2020_cagr_percent": 17.00822,
+        "since2020_sharpe": 1.533173,
+        "since2022_cagr_percent": 19.95529,
+        "since2022_sharpe": 1.667879,
+        "source_events": 166,
+        "us_derisk_events": 107,
+        "available_us_derisk_events": 60,
+        "retained_events": 33,
+        "folds_sharpe_ge_matched": 5,
+        "worst_fold_sharpe": 0.538072,
+        "deterministic_admit": false,
+        "bootstrap_probability_cagr_gt_v11": 0.24465,
+        "bootstrap_probability_sharpe_gt_matched": 0.21715,
+        "bootstrap_median_candidate_minus_v11_cagr": -0.0011654321136308002,
+        "bootstrap_median_candidate_minus_matched_sharpe": -0.008193871689197718,
+        "bootstrap_mdd_p975": 0.146973324112042,
+        "bootstrap_robust_pass": false,
+        "global_post_protocol_dsr_probability": 0.9173662068544753,
+        "global_post_protocol_dsr_trial_count": 28,
+        "robust_factor_pass": false
+      }
+    }
+  ],
+  "matched_control": {
+    "candidate_id": "C-BDLEV-ALWAYS",
+    "cagr_percent": 14.377894,
+    "sharpe": 1.495851,
+    "mdd_percent": 8.612735,
+    "available_us_derisk_events": 60,
+    "retained_events": 60
+  },
+  "v11_control": {
+    "cagr_percent": 14.345615,
+    "sharpe": 1.522263,
+    "mdd_percent": 7.689054,
+    "target_fingerprint": "ba67c8aa24bc7168"
+  },
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED / NO_ROBUST_FACTOR_PASS. F-BDLEV-ANNUAL-US used first-release Federal Reserve Z.1 Security Brokers and Dealers balance sheets and same-release four-quarter book-leverage growth to avoid revision leakage. It produced CAGR 14.210130%, Sharpe 1.487671 and MDD 8.627785%, underperforming frozen V11 on CAGR and Sharpe and underperforming its availability-matched unconditional retention control (CAGR 14.377894%, Sharpe 1.495851). Although candidate Sharpe was at least matched-control Sharpe in 5/7 fixed folds, full-history evidence was adverse. Paired 63-session moving-block bootstrap over 20,000 replicates gave P(CAGR candidate > V11)=24.465% and P(Sharpe candidate > matched)=21.715%; both median incremental deltas were negative. Candidate MDD P97.5=14.697% passed the 15% risk ceiling, but cumulative 28-trial DSR probability was only 91.737%, below 95%. Per the frozen stop rule, no quarterly-change, level, sign reversal, capital-ratio, winsorization, alternate horizon, retention, release-lag, stale-window or ensemble rescue is permitted in this campaign.",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/candidates/statistical-audit.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/candidates/C-BDLEV-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-BDLEV-001/candidates/F-BDLEV-ANNUAL-US-portfolio.csv"
+  ]
+}
