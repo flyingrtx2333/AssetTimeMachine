@@ -1,0 +1,347 @@
+        if ProcessInfo.processInfo.environment["ATM_VRP_PROXY_V1"] == "1" {
+            func loadVRPVIXPoints(_ path: String) -> [VRPProxyV1Logic.Point] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 2, let value = Double(fields[1]), value.isFinite, value > 0 else { return nil }
+                    return VRPProxyV1Logic.Point(date: String(fields[0]), value: value)
+                }.sorted { $0.date < $1.date }
+            }
+
+            func loadVRPNFCIPoints(_ path: String) -> [BacktestNFCIPoint] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3, let value = Double(fields[2]), value.isFinite else { return nil }
+                    return BacktestNFCIPoint(
+                        releaseDate: String(fields[0]),
+                        referenceDate: String(fields[1]),
+                        availableAt: nil,
+                        value: value
+                    )
+                }
+            }
+
+            let formal = ProcessInfo.processInfo.environment["ATM_VRP_PROXY_V1_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_VRP_PROXY_V1_OUTPUT_DIR"]
+            let factorDir = ProcessInfo.processInfo.environment["ATM_VRP_PROXY_V1_DATA_DIR"] ?? ""
+            let vixPoints = loadVRPVIXPoints(URL(fileURLWithPath: factorDir).appendingPathComponent("VIXCLS.csv").path)
+            guard !vixPoints.isEmpty else {
+                print("VRP_PROXY_V1_DATA_MISSING")
+                return
+            }
+
+            let roleSymbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            let mode: AdvancedBacktestStrategyMode = .nfciDualCoreSimplifiedV11
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+            }
+            let settings = AdvancedBacktestRiskSettings(
+                feeRate: 1.00,
+                slippageRate: 0.05,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            let nfci = BacktestNFCIAsOfData(
+                source: "ALFRED initial-release fixture",
+                credit: loadVRPNFCIPoints("tools/research-results/NFCICREDIT_initial_release.csv"),
+                leverage: loadVRPNFCIPoints("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            )
+            guard let source = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode,
+                nfciAsOf: nfci
+            ) else {
+                print("VRP_PROXY_V1_SOURCE_FAILED")
+                return
+            }
+
+            let dates = source.dailyStates.map(\.date)
+            let dateIndex = Dictionary(uniqueKeysWithValues: dates.enumerated().map { ($0.element.recordDateString, $0.offset) })
+            let sourceTargets = Dictionary(uniqueKeysWithValues: source.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            let sourceTradeDates = Set(source.report.trades.map { $0.date.recordDateString })
+            let sortedSourceEventDates = sourceTradeDates.sorted()
+
+            func vrpBlankMA(_ values: [Double], _ period: Int) -> [Double?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func vrpBlankBoll(_ values: [Double], _ period: Int, _ multiplier: Double) -> [(middle: Double, lower: Double, upper: Double)?] {
+                Array(repeating: nil, count: values.count)
+            }
+            func alignedVRPPrices(_ symbol: String) -> [Double]? {
+                guard let input = inputs.first(where: { $0.assetOption.symbol == symbol }),
+                      let prepared = BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+                        assetSeries: input.assetSeries,
+                        assetOption: input.assetOption,
+                        fxSeries: input.fxSeries,
+                        movingAverage: vrpBlankMA,
+                        bollingerBands: vrpBlankBoll
+                      ) else { return nil }
+                let map = Dictionary(uniqueKeysWithValues: prepared.pricePoints.map { ($0.date.recordDateString, $0.cnyPrice) })
+                var output: [Double] = []
+                var last: Double?
+                for date in dates {
+                    if let value = map[date.recordDateString], value.isFinite, value > 0 { last = value }
+                    guard let value = last else { return nil }
+                    output.append(value)
+                }
+                return output
+            }
+            guard let sp500Prices = alignedVRPPrices("sp500"), sp500Prices.count == dates.count else {
+                print("VRP_PROXY_V1_SP500_ALIGNMENT_FAILED")
+                return
+            }
+
+            func vrpValue(at index: Int) -> Double? {
+                guard dates.indices.contains(index), sp500Prices.indices.contains(index), index >= 21 else { return nil }
+                let signalDate = dates[index].recordDateString
+                guard let vix = VRPProxyV1Logic.latestUsableValue(
+                    points: vixPoints,
+                    signalDate: signalDate,
+                    maxStaleDays: 7
+                ), let rv = VRPProxyV1Logic.annualizedRealizedVariance(
+                    prices: sp500Prices,
+                    signalIndex: index,
+                    lookbackReturns: 21
+                ) else { return nil }
+                return VRPProxyV1Logic.vrpProxy(vixPercent: vix, realizedVariance: rv)
+            }
+
+            func vrpState(at signalIndex: Int) -> Bool? {
+                guard signalIndex >= 273, let current = vrpValue(at: signalIndex) else { return nil }
+                var history: [Double] = []
+                var index = signalIndex - 1
+                while index >= 21 && history.count < 252 {
+                    if let value = vrpValue(at: index) { history.append(value) }
+                    index -= 1
+                }
+                guard history.count == 252, let threshold = VRPProxyV1Logic.median(history) else { return nil }
+                return current > threshold
+            }
+
+            func targetFingerprint(_ states: [BacktestDailyState]) -> String {
+                var hash: UInt64 = 1469598103934665603
+                for state in states {
+                    for symbol in roleSymbols {
+                        var value = UInt64(bitPattern: Int64(((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded()))
+                        for _ in 0..<8 {
+                            hash ^= value & UInt64(0xff)
+                            hash &*= UInt64(1099511628211)
+                            value >>= 8
+                        }
+                    }
+                }
+                return String(format: "%016llx", hash)
+            }
+
+            func constraints(_ states: [BacktestDailyState]) -> (maxGross: Double, minWeight: Double) {
+                let maxGross = states.map { state in
+                    roleSymbols.reduce(0.0) { $0 + max(state.targetWeights[$1] ?? 0, 0) }
+                }.max() ?? 0
+                let values = states.flatMap { state in roleSymbols.map { state.targetWeights[$0] ?? 0 } }
+                return (maxGross, values.min() ?? 0)
+            }
+
+            let folds: [(String, String, String)] = [
+                ("2012-2014", "2012-07-05", "2014-12-31"),
+                ("2015-2016", "2015-01-01", "2016-12-31"),
+                ("2017-2018", "2017-01-01", "2018-12-31"),
+                ("2019-2020", "2019-01-01", "2020-12-31"),
+                ("2021-2022", "2021-01-01", "2022-12-31"),
+                ("2023-2024", "2023-01-01", "2024-12-31"),
+                ("2025-latest", "2025-01-01", "9999-12-31")
+            ]
+            func foldMetrics(_ points: [BacktestSeriesPoint]) -> [(String, Double, Double, Double)] {
+                folds.map { name, start, end in
+                    let sliced = points.filter {
+                        let key = $0.date.recordDateString
+                        return key >= start && key <= end
+                    }
+                    let metrics = BacktestMetricsCalculator.performanceMetrics(from: sliced)
+                    return (name, metrics?.annualizedReturn ?? 0, metrics?.maxDrawdown ?? 0, metrics?.sharpeRatio ?? 0)
+                }
+            }
+
+            func writePortfolio(_ id: String, _ points: [BacktestSeriesPoint]) {
+                guard formal, let outputDir else { return }
+                try? FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+                let path = URL(fileURLWithPath: outputDir).appendingPathComponent("\(id)-portfolio.csv").path
+                var lines = ["date,portfolio_value"]
+                lines.append(contentsOf: points.map {
+                    "\($0.date.recordDateString),\(String(format: "%.10f", $0.portfolioValue))"
+                })
+                try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            }
+
+            struct VRPEventStats {
+                var sourceEvents = 0
+                var eligibleEvents = 0
+                var availableEvents = 0
+                var completedEvents = 0
+            }
+
+            let replayConfig = ResearchTargetStrategyConfig(
+                symbol: "vrp_proxy_v1",
+                title: "Variance Risk Premium Proxy V1",
+                warmupSessions: 21,
+                rebalanceSessions: 1,
+                rebalanceBand: 0.25,
+                maxGrossExposure: 1,
+                allowsFinancedExposure: false,
+                financingAnnualRate: 0,
+                buyReason: "Variance risk premium proxy V1"
+            )
+
+            func runReplay(alwaysFillWhenAvailable: Bool, factorEnabled: Bool) -> (run: ResearchTargetStrategyRun, stats: VRPEventStats)? {
+                var pending: [String: Double] = [:]
+                var stats = VRPEventStats()
+                guard let replay = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: replayConfig,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let executionDate = data.dates[index].recordDateString
+                        guard sourceTradeDates.contains(executionDate), let currentBase = sourceTargets[executionDate] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        stats.sourceEvents += 1
+                        pending = currentBase
+                        let gross = currentBase.values.reduce(0.0) { $0 + max($1, 0) }
+                        guard gross > 1e-10, gross < 1.0 - 1e-10 else {
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+                        stats.eligibleEvents += 1
+                        let signalDate = data.dates[signalIndex].recordDateString
+                        guard let alignedSignalIndex = dateIndex[signalDate], let state = vrpState(at: alignedSignalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+                        stats.availableEvents += 1
+                        let fill = alwaysFillWhenAvailable || (factorEnabled && state)
+                        if fill {
+                            pending = VRPProxyV1Logic.completionTarget(
+                                base: currentBase,
+                                factorRiskOn: true,
+                                fillFraction: 0.5
+                            )
+                            stats.completedEvents += 1
+                        }
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { return nil }
+                return (replay, stats)
+            }
+
+            func printPath(_ id: String, _ run: ResearchTargetStrategyRun, _ stats: VRPEventStats) {
+                let constraint = constraints(run.dailyStates)
+                if !formal {
+                    print("SMOKE_VRP_PATH=\(id)")
+                    print("SMOKE_VRP_SOURCE_COUNT=\(stats.sourceEvents)")
+                    print("SMOKE_VRP_ELIGIBLE_COUNT=\(stats.eligibleEvents)")
+                    print("SMOKE_VRP_AVAILABLE_COUNT=\(stats.availableEvents)")
+                    print("SMOKE_VRP_COMPLETED_COUNT=\(stats.completedEvents)")
+                    print("SMOKE_MAX_GROSS=\(String(format: "%.10f", constraint.maxGross))")
+                    print("SMOKE_MIN_WEIGHT=\(String(format: "%.10f", constraint.minWeight))")
+                    print("SMOKE_END")
+                    return
+                }
+                let m2020 = BacktestMetricsCalculator.performanceMetrics(from: run.report.points.filter { $0.date.recordDateString >= "2020-01-01" })
+                let m2022 = BacktestMetricsCalculator.performanceMetrics(from: run.report.points.filter { $0.date.recordDateString >= "2022-01-01" })
+                let fs = foldMetrics(run.report.points)
+                print("candidate_id=\(id)")
+                print("cagr=\(String(format: "%.6f", (run.report.annualizedReturn ?? 0) * 100))")
+                print("mdd=\(String(format: "%.6f", run.report.maxDrawdown * 100))")
+                print("vol=\(String(format: "%.6f", (run.report.annualizedVolatility ?? 0) * 100))")
+                print("sharpe=\(String(format: "%.6f", run.report.sharpeRatio ?? 0))")
+                print("trades=\(run.report.trades.count)")
+                print("average_cash=\(String(format: "%.6f", run.report.averageCashRatio))")
+                print("max_gross=\(String(format: "%.10f", constraint.maxGross))")
+                print("min_weight=\(String(format: "%.10f", constraint.minWeight))")
+                print("fingerprint=\(targetFingerprint(run.dailyStates))")
+                print("source_events=\(stats.sourceEvents)")
+                print("eligible_events=\(stats.eligibleEvents)")
+                print("available_events=\(stats.availableEvents)")
+                print("completed_events=\(stats.completedEvents)")
+                print("since2020_cagr=\(String(format: "%.6f", (m2020?.annualizedReturn ?? 0) * 100))")
+                print("since2020_sharpe=\(String(format: "%.6f", m2020?.sharpeRatio ?? 0))")
+                print("since2022_cagr=\(String(format: "%.6f", (m2022?.annualizedReturn ?? 0) * 100))")
+                print("since2022_sharpe=\(String(format: "%.6f", m2022?.sharpeRatio ?? 0))")
+                print("fold_names=\(fs.map { $0.0 }.joined(separator: ";"))")
+                print("fold_sharpes=\(fs.map { String(format: "%.6f", $0.3) }.joined(separator: ";"))")
+                print("fold_cagrs=\(fs.map { String(format: "%.6f", $0.1 * 100) }.joined(separator: ";"))")
+                print("fold_mdds=\(fs.map { String(format: "%.6f", $0.2 * 100) }.joined(separator: ";"))")
+                print("END_CANDIDATE")
+                writePortfolio(id, run.report.points)
+            }
+
+            print("VRP_PROXY_V1")
+            print("source_target_fingerprint=\(targetFingerprint(source.dailyStates))")
+            print("source_unique_event_dates=\(sortedSourceEventDates.count)")
+
+            guard let identity = runReplay(alwaysFillWhenAvailable: false, factorEnabled: false) else {
+                print("VRP_PROXY_V1_IDENTITY_FAILED")
+                return
+            }
+            let sourceCAGR = source.report.annualizedReturn ?? 0
+            let sourceSharpe = source.report.sharpeRatio ?? 0
+            let identityMatch = abs((identity.run.report.annualizedReturn ?? 0) - sourceCAGR) <= 0.0002
+                && abs(identity.run.report.maxDrawdown - source.report.maxDrawdown) <= 0.0002
+                && abs((identity.run.report.sharpeRatio ?? 0) - sourceSharpe) <= 0.002
+            print("SMOKE_IDENTITY_MATCH=\(identityMatch ? "true" : "false")")
+            if !identityMatch {
+                print("VRP_PROXY_V1_IDENTITY_MISMATCH")
+                return
+            }
+
+            if formal {
+                let sourceConstraint = constraints(source.dailyStates)
+                let fs = foldMetrics(source.report.points)
+                let m2020 = BacktestMetricsCalculator.performanceMetrics(from: source.report.points.filter { $0.date.recordDateString >= "2020-01-01" })
+                let m2022 = BacktestMetricsCalculator.performanceMetrics(from: source.report.points.filter { $0.date.recordDateString >= "2022-01-01" })
+                print("candidate_id=V11-CONTROL")
+                print("cagr=\(String(format: "%.6f", sourceCAGR * 100))")
+                print("mdd=\(String(format: "%.6f", source.report.maxDrawdown * 100))")
+                print("vol=\(String(format: "%.6f", (source.report.annualizedVolatility ?? 0) * 100))")
+                print("sharpe=\(String(format: "%.6f", sourceSharpe))")
+                print("trades=\(source.report.trades.count)")
+                print("average_cash=\(String(format: "%.6f", source.report.averageCashRatio))")
+                print("max_gross=\(String(format: "%.10f", sourceConstraint.maxGross))")
+                print("min_weight=\(String(format: "%.10f", sourceConstraint.minWeight))")
+                print("fingerprint=\(targetFingerprint(source.dailyStates))")
+                print("source_events=\(sortedSourceEventDates.count)")
+                print("eligible_events=0")
+                print("available_events=0")
+                print("completed_events=0")
+                print("since2020_cagr=\(String(format: "%.6f", (m2020?.annualizedReturn ?? 0) * 100))")
+                print("since2020_sharpe=\(String(format: "%.6f", m2020?.sharpeRatio ?? 0))")
+                print("since2022_cagr=\(String(format: "%.6f", (m2022?.annualizedReturn ?? 0) * 100))")
+                print("since2022_sharpe=\(String(format: "%.6f", m2022?.sharpeRatio ?? 0))")
+                print("fold_names=\(fs.map { $0.0 }.joined(separator: ";"))")
+                print("fold_sharpes=\(fs.map { String(format: "%.6f", $0.3) }.joined(separator: ";"))")
+                print("fold_cagrs=\(fs.map { String(format: "%.6f", $0.1 * 100) }.joined(separator: ";"))")
+                print("fold_mdds=\(fs.map { String(format: "%.6f", $0.2 * 100) }.joined(separator: ";"))")
+                print("END_CANDIDATE")
+                writePortfolio("V11-CONTROL", source.report.points)
+            }
+
+            guard let matched = runReplay(alwaysFillWhenAvailable: true, factorEnabled: false),
+                  let candidate = runReplay(alwaysFillWhenAvailable: false, factorEnabled: true) else {
+                print("VRP_PROXY_V1_REPLAY_FAILED")
+                return
+            }
+            printPath("C-VRP-ALWAYS", matched.run, matched.stats)
+            printPath("F-VRP-PROXY", candidate.run, candidate.stats)
+            print("VRP_PROXY_V1_COMPLETE")
+            return
+        }
