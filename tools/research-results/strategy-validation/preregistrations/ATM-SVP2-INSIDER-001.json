@@ -1,0 +1,113 @@
+{
+  "trial_id": "ATM-SVP2-INSIDER-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "SEC_INSIDER_BUY_BREADTH_FACTOR_V1",
+  "strategy_lineage": "sec-insider-buy-breadth-v1; frozen control nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "hypothesis": "A week-over-week increase in the breadth of issuers with initial Form 4 open-market insider purchases identifies frozen V11 U.S.-equity de-risk events that are too early and can improve return while matching or exceeding V11 Sharpe and beating an availability-matched unconditional U.S.-retention control.",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-INSIDER-001.json",
+  "allowed_changes": [
+    "F-SEC-INSIDER-BUY-BREADTH-US exact weekly breadth of distinct issuer CIKs with initial Form 4 NONDERIV_TRANS open-market purchase TRANS_CODE=P and acquired=A",
+    "risk-on exactly when current completed-week buy-issuer breadth exceeds the immediately previous completed-week breadth",
+    "completed Monday-Friday filing week usable on following Tuesday and stale after 10 calendar days",
+    "on factor-available frozen V11 U.S.-equity de-risk events retain exactly 50% of nasdaq/sp500 reductions when risk-on"
+  ],
+  "candidate_ids": ["F-SEC-INSIDER-BUY-BREADTH-US"],
+  "candidate_count": 1,
+  "selection_metric": "No within-family model selection. Compare the single candidate against frozen V11 and C-SEC-INSIDER-ALWAYS, then apply every preregistered deterministic, bootstrap and cumulative DSR gate.",
+  "pass_fail_gates": [
+    "deterministic: full CAGR > V11 CAGR",
+    "deterministic: full Sharpe >= V11 Sharpe",
+    "deterministic: full Sharpe > C-SEC-INSIDER-ALWAYS Sharpe",
+    "deterministic: full MDD <=10%",
+    "deterministic: at least 5/7 fixed folds candidate Sharpe >= matched-control Sharpe",
+    "deterministic: worst fixed-fold Sharpe >0",
+    "deterministic: gross <=100%, min target weight >=0, no financing or negative cash",
+    "bootstrap: paired circular moving blocks, 63 sessions, 20000 replicates, seed 20260821",
+    "bootstrap: P(CAGR candidate > V11) >=0.90",
+    "bootstrap: P(Sharpe candidate > matched control) >=0.90",
+    "bootstrap: median candidate-minus-V11 CAGR delta >0",
+    "bootstrap: median candidate-minus-matched Sharpe delta >0",
+    "bootstrap: candidate MDD P97.5 <=15%",
+    "PBO: not applicable because the family contains exactly one candidate and no within-family selection",
+    "global post-protocol DSR probability >=95% using prior 28 formal return-seeking candidates plus F-SEC-INSIDER-BUY-BREADTH-US, total trial count 29",
+    "ROBUST_FACTOR_PASS requires every applicable deterministic, bootstrap and global DSR gate"
+  ],
+  "formal_run_budget": 1,
+  "follow_up_policy": "This SEC-insider campaign contains exactly one retrospective candidate. After formal performance is viewed, do not search sales, buy/sell ratios, net purchases, dollar/share weighting, market-cap weighting, issuer-size filters, reporting-owner subgroups, alternate weekly/multiweek windows, z-scores, percentiles, breadth thresholds, magnitude thresholds, sign reversals, availability variants, retention fractions, Form 4/A amendment incorporation or a second retrospective SEC-insider family. A promising non-robust result may only become a separately preregistered prospective shadow from a new freeze date.",
+  "swift_engine_entrypoint": "scripts/run_sec_insider_buy_breadth_v1.py -> tools/sec_insider_buy_breadth_v1.swiftpart + tools/sec_insider_buy_breadth_v1_logic.swift -> frozen V11 source run + BacktestEngine.runResearchTargetProviderStrategyWithTrace -> shared BacktestDailySimulator",
+  "expected_outputs": [
+    "V11-CONTROL metrics and frozen target fingerprint",
+    "C-SEC-INSIDER-ALWAYS availability-matched U.S.-retention control metrics",
+    "F-SEC-INSIDER-BUY-BREADTH-US full-history metrics",
+    "all seven fixed fold metrics plus 2020+ and 2022+ slices",
+    "source/U.S.-de-risk/available/retained event counts and portfolio constraints",
+    "one portfolio CSV per control/candidate",
+    "mechanical deterministic ADMIT_FOR_ROBUSTNESS flag",
+    "paired 20000-replicate block-bootstrap statistics",
+    "cumulative 29-trial Deflated Sharpe Ratio",
+    "mechanical ROBUST_FACTOR_PASS flag",
+    "run authorization receipt, execution Git commit and SHA-256 result artifact manifest"
+  ],
+  "factor_definition": {
+    "factor_id": "F-SEC-INSIDER-BUY-BREADTH-US",
+    "source": "SEC Insider Transactions Data Sets",
+    "frozen_coverage": "2012Q1..2026Q2",
+    "source_quarter_count": 58,
+    "qualifying_initial_form4_filings": 233821,
+    "weekly_rows": 756,
+    "usable_delta_rows": 755,
+    "document_type_rule": "DOCUMENT_TYPE=4 only; 4/A excluded",
+    "transaction_rule": "NONDERIV_TRANS with TRANS_CODE=P and TRANS_ACQUIRED_DISP_CD=A",
+    "breadth_rule": "count distinct ISSUERCIK values with at least one qualifying filing in each completed Monday-Friday filing week",
+    "delta_rule": "current weekly distinct-issuer count minus immediately previous completed-week count",
+    "risk_on_rule": "delta_buy_issuer_count > 0",
+    "availability_rule": "completed filing week usable on following Tuesday",
+    "max_stale_calendar_days": 10
+  },
+  "point_in_time_controls": {
+    "historical_acceptance_timestamp_required": false,
+    "filing_date_used": true,
+    "same_week_or_same_day_use_allowed": false,
+    "form4_amendments_used": false,
+    "source_quarter_zip_sha_frozen": true,
+    "accession_level_evidence_frozen": true
+  },
+  "matched_control": {
+    "control_id": "C-SEC-INSIDER-ALWAYS",
+    "rule": "retain exactly 50% of nasdaq/sp500 reductions on every factor-available frozen V11 U.S.-de-risk event regardless of insider-buy breadth change"
+  },
+  "shared_rules": {
+    "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+    "eligible_event": "current frozen V11 event reduces nasdaq and/or sp500 versus prior frozen V11 event target",
+    "retention_fraction": 0.5,
+    "replay_rebalance_band": 0.25,
+    "fee_rate": 0.01,
+    "slippage_rate": 0.0005,
+    "max_gross": 1.0,
+    "shorting_allowed": false,
+    "financing_allowed": false
+  },
+  "forbidden_changes": [
+    "any frozen V11 parameter or target-path rule change",
+    "using Form 4/A amendments to rewrite the historical information set",
+    "using sales, buy/sell ratios, net purchases, transaction values or shares",
+    "using director/officer/10-percent-owner subgroup selection or issuer-size filtering",
+    "using market-cap weighting or any survivorship-filtered index membership",
+    "using alternate weekly or multiweek windows, moving averages, z-scores, percentiles or thresholds",
+    "using same-day, next-day, following-Monday or another availability rule",
+    "using any 25%, 75%, 100% or other retention-fraction search",
+    "factor-driven trades between frozen V11 event dates",
+    "candidate replacement or a second retrospective SEC-insider factor after results",
+    "changing fee/slippage, leverage, financing, shorting or cash constraints",
+    "dropping failed prior formal candidates from cumulative DSR accounting"
+  ],
+  "statistical_audit": {
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260821,
+    "pbo": "NOT_APPLICABLE_SINGLE_CANDIDATE",
+    "global_dsr_prior_candidate_count": 28,
+    "global_dsr_total_candidate_count_after_this_trial": 29
+  }
+}

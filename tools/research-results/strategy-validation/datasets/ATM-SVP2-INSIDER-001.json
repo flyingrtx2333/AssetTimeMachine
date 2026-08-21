@@ -1,0 +1,100 @@
+{
+  "files": [
+    {
+      "bytes": 5271408,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/generalization_public_history.json",
+      "sha256": "ab534219b08cdf417ee041be4322d512b29505439c8d0f2a469438d01730ac88"
+    },
+    {
+      "bytes": 24847,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCICREDIT_initial_release.csv",
+      "row_count": 732,
+      "sha256": "953198633f2f19cd42450c631bda3cc1d25bd23b40afc8bf58fa45ada0c4fc8c"
+    },
+    {
+      "bytes": 24762,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCILEVERAGE_initial_release.csv",
+      "row_count": 732,
+      "sha256": "d198027125ca6b317258c2fb4725ed3e5b217356a6b8c549b68dbb18d237b486"
+    },
+    {
+      "bytes": 13048650,
+      "columns": [
+        "quarter",
+        "accession_number",
+        "filing_date",
+        "issuer_cik",
+        "issuer_trading_symbol"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/factor-data/SEC-INSIDER-BUY-BREADTH-2026-08-21/SEC_FORM4_OPEN_MARKET_BUY_FILINGS.csv",
+      "row_count": 233821,
+      "sha256": "6edc4f5b41666dc180e70633c9f08b030dbf2e98be1fdab8b88a3270a86575c9"
+    },
+    {
+      "bytes": 34179,
+      "columns": [
+        "week_start",
+        "week_end",
+        "conservative_available_date",
+        "open_market_buy_issuer_count",
+        "prior_week_buy_issuer_count",
+        "delta_buy_issuer_count"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/factor-data/SEC-INSIDER-BUY-BREADTH-2026-08-21/SEC_INSIDER_BUY_BREADTH_WEEKLY.csv",
+      "row_count": 756,
+      "sha256": "b5c65f2304e6690cfdb662d1a157163e703e557aca54a8abe9642029ec258a94"
+    },
+    {
+      "bytes": 18750,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/SEC-INSIDER-BUY-BREADTH-2026-08-21/fetch-summary.json",
+      "sha256": "c1793e2d77f490a36fbfa2a0d6b73908900327f29be3fc2c25244c945d625ceb"
+    }
+  ],
+  "generated_at": "2026-08-21T19:38:50+08:00",
+  "git_commit": "e699db709ad4ae1aacebeb460686bbe463e04dd7",
+  "kind": "dataset",
+  "metadata": {
+    "availability_policy": "completed Monday-Friday filing week usable following Tuesday; max stale 10 calendar days",
+    "campaign": "sec-insider-buy-breadth-v1",
+    "cost": "1.00% fee + 0.05% slippage",
+    "document_rule": "initial Form 4 only; nonderivative P acquired=A; 4/A excluded",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "formal_candidates": [
+      "F-SEC-INSIDER-BUY-BREADTH-US"
+    ],
+    "performance_viewed_before_freeze": false,
+    "qualifying_form4_filings": 233821,
+    "sec_quarters": 58,
+    "weekly_rows": 756
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-INSIDER-001"
+}
