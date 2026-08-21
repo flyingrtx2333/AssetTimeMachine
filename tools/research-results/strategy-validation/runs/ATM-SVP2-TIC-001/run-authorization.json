@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "c75579eacd0939d7594341430d97accdd74af0e3",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "163a3a6e2b71718522a83864a99c7f231283a29d767cd7e35e0e6fd59d171f2b",
+  "preregistration_record_hash": "163a3a6e2b71718522a83864a99c7f231283a29d767cd7e35e0e6fd59d171f2b",
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-TIC-001"
+}

@@ -1,0 +1,81 @@
+{
+  "candidate_results": [
+    {
+      "bootstrap": {
+        "bootstrap": {
+          "block_sessions": 63,
+          "candidate_cagr_p025": 0.10266304807797216,
+          "candidate_cagr_p50": 0.13852090343188067,
+          "candidate_cagr_p975": 0.1772623173064284,
+          "candidate_mdd_p975": 0.14659417627872415,
+          "candidate_sharpe_p025": 1.2003901277387743,
+          "candidate_sharpe_p50": 1.5147771046241871,
+          "candidate_sharpe_p975": 1.8170867130981598,
+          "median_candidate_minus_matched_sharpe": 0.021088340513174653,
+          "median_candidate_minus_v11_cagr": 0.0008326709577050478,
+          "probability_cagr_gt_v11": 0.76235,
+          "probability_sharpe_gt_matched_control": 0.86925,
+          "replicates": 20000,
+          "rng_seed": 20260822
+        },
+        "bootstrap_robust_pass": false,
+        "candidate_id": "F-TIC-FLOW-CONTRARIAN-US",
+        "checks": {
+          "candidate_mdd_p975_le_0_15": true,
+          "median_cagr_delta_gt_0": true,
+          "median_sharpe_delta_gt_0": true,
+          "probability_cagr_gt_v11_ge_0_90": false,
+          "probability_sharpe_gt_matched_ge_0_90": false
+        },
+        "observed": {
+          "candidate": {
+            "cagr": 0.13909359035912322,
+            "mdd": 0.08612735471079691,
+            "sharpe": 1.5162872164267827
+          },
+          "matched_control": {
+            "cagr": 0.13841328718901294,
+            "mdd": 0.08612735473552835,
+            "sharpe": 1.4933222888842226
+          },
+          "v11": {
+            "cagr": 0.13824639794201676,
+            "mdd": 0.07689054224818148,
+            "sharpe": 1.5222632417260844
+          }
+        },
+        "sample": {
+          "aligned_portfolio_dates": 6398,
+          "daily_returns": 6397,
+          "first_date": "2002-02-04",
+          "last_date": "2026-08-13"
+        }
+      },
+      "candidate_id": "F-TIC-FLOW-CONTRARIAN-US",
+      "deterministic_admit": false,
+      "global_dsr_pass": false,
+      "global_post_protocol_dsr": {
+        "dsr_probability": 0.9434467224912781,
+        "dsr_z": 1.5843831456227975,
+        "expected_max_sharpe_annualized": 1.1957003660816736,
+        "observations": 6397,
+        "observed_sharpe_annualized": 1.5162872164267824,
+        "pearson_kurtosis": 9.640598046274242,
+        "skewness": -0.20355931741644087,
+        "trial_count": 31
+      },
+      "robust_factor_pass": false
+    }
+  ],
+  "method": {
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260822,
+    "bootstrap_sampling": "paired circular moving blocks",
+    "family_pbo": "not_applicable_single_candidate",
+    "global_post_protocol_dsr_trial_count": 31
+  },
+  "protocol_id": "ATM-SVP-2",
+  "robust_pass_candidates": [],
+  "trial_id": "ATM-SVP2-TIC-001"
+}

@@ -1,0 +1,68 @@
+{
+  "trial_id": "ATM-SVP2-TIC-001",
+  "preregistration_record_hash": "163a3a6e2b71718522a83864a99c7f231283a29d767cd7e35e0e6fd59d171f2b",
+  "execution_git_commit": "c75579eacd0939d7594341430d97accdd74af0e3",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-TIC-001/run-authorization.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-TIC-001.json",
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-TIC-001/artifact-manifest.json",
+  "status": "FAIL",
+  "factor_library_published": false,
+  "candidate_results": [
+    {
+      "candidate_id": "F-TIC-FLOW-CONTRARIAN-US",
+      "metrics": {
+        "cagr_percent": 14.433724,
+        "sharpe": 1.516287,
+        "mdd_percent": 8.612735,
+        "since2020_cagr_percent": 17.551334,
+        "since2020_sharpe": 1.617652,
+        "since2022_cagr_percent": 21.143061,
+        "since2022_sharpe": 1.790351,
+        "source_events": 166,
+        "us_derisk_events": 107,
+        "available_us_derisk_events": 69,
+        "retained_events": 35,
+        "folds_sharpe_ge_matched": 3,
+        "worst_fold_sharpe": 0.712144,
+        "deterministic_admit": false,
+        "bootstrap_probability_cagr_gt_v11": 0.76235,
+        "bootstrap_probability_sharpe_gt_matched": 0.86925,
+        "bootstrap_median_candidate_minus_v11_cagr": 0.0008326709577050478,
+        "bootstrap_median_candidate_minus_matched_sharpe": 0.021088340513174653,
+        "bootstrap_mdd_p975": 0.14659417627872415,
+        "bootstrap_robust_pass": false,
+        "global_post_protocol_dsr_probability": 0.9434467224912781,
+        "global_post_protocol_dsr_trial_count": 31,
+        "robust_factor_pass": false
+      }
+    }
+  ],
+  "matched_control": {
+    "candidate_id": "C-TIC-FLOW-ALWAYS",
+    "cagr_percent": 14.362971,
+    "sharpe": 1.493322,
+    "mdd_percent": 8.612735,
+    "available_us_derisk_events": 69,
+    "retained_events": 69
+  },
+  "v11_control": {
+    "cagr_percent": 14.345615,
+    "sharpe": 1.522263,
+    "mdd_percent": 7.689054,
+    "target_fingerprint": "ba67c8aa24bc7168"
+  },
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED / NO_ROBUST_FACTOR_PASS. F-TIC-FLOW-CONTRARIAN-US used 185 point-in-time first-release U.S. Treasury TIC monthly observations from 2011-01 through 2026-05 and treated negative foreign net purchases of U.S. corporate stocks as a contrarian risk-on state, with actual release date +1 availability and a 45-calendar-day stale ceiling. The February 2023 Form S to expanded Form SLT series break was preserved explicitly and only the common economic sign was used; no cross-regime magnitude comparison was allowed. The candidate produced CAGR 14.433724%, Sharpe 1.516287 and MDD 8.612735%. CAGR exceeded frozen V11 and Sharpe exceeded the availability-matched unconditional retention control, but full Sharpe remained below V11 1.522263 and the candidate beat matched-control Sharpe in only 3/7 fixed folds. Paired 63-session moving-block bootstrap over 20000 replicates gave P(CAGR candidate > V11)=76.235% and P(Sharpe candidate > matched)=86.925%; both median incremental deltas were positive and candidate MDD P97.5=14.659% passed the 15% risk ceiling. Cumulative 31-trial DSR probability was 94.345%, below the frozen 95% requirement. Therefore the factor is not published as a validated/promoted factor. Per the stop rule, no sign reversal, magnitude threshold, percentile/z-score, multi-month aggregation, normalization, country decomposition, regime rescaling, stale-rule change, retention search or second retrospective TIC equity-flow factor is permitted.",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-TIC-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-TIC-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-TIC-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-TIC-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-TIC-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-TIC-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-TIC-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-TIC-001/candidates/statistical-audit.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-TIC-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-TIC-001/candidates/C-TIC-FLOW-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-TIC-001/candidates/F-TIC-FLOW-CONTRARIAN-US-portfolio.csv"
+  ]
+}

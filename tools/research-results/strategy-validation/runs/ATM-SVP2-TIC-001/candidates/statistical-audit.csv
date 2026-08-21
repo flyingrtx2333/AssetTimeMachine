@@ -1,0 +1,2 @@
+candidate_id,deterministic_admit,bootstrap_pass,global_dsr_probability,global_dsr_pass,robust_factor_pass,probability_cagr_gt_v11,probability_sharpe_gt_matched,candidate_mdd_p975
+F-TIC-FLOW-CONTRARIAN-US,False,False,0.9434467224912781,False,False,0.76235,0.86925,0.14659417627872415
