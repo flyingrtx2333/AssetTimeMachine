@@ -1,0 +1,112 @@
+{
+  "trial_id": "ATM-SVP2-BDLEV-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "BROKER_DEALER_ANNUAL_BOOK_LEVERAGE_FACTOR_V1",
+  "strategy_lineage": "broker-dealer-annual-book-leverage-v1; frozen control nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "hypothesis": "Negative annual broker-dealer book-leverage growth, measured point-in-time from the same original Federal Reserve Z.1 release, identifies frozen V11 U.S.-equity de-risk events that are too early and can improve return while matching or exceeding V11 Sharpe and beating an availability-matched unconditional U.S.-retention control.",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-BDLEV-001.json",
+  "allowed_changes": [
+    "F-BDLEV-ANNUAL-US exact book leverage = Total Financial Assets / (Total Financial Assets - Total Liabilities)",
+    "annual growth = log current-quarter book leverage minus log four-quarter-lag book leverage, with both balance sheets read from the same historical first-release Z.1 table",
+    "favorable exactly when annual_log_book_leverage_growth < 0",
+    "on factor-available frozen V11 U.S.-equity de-risk events, retain exactly 50% of nasdaq/sp500 reductions when favorable"
+  ],
+  "candidate_ids": ["F-BDLEV-ANNUAL-US"],
+  "candidate_count": 1,
+  "selection_metric": "No within-family model selection. Compare the single candidate against frozen V11 and C-BDLEV-ALWAYS, then apply every preregistered deterministic, bootstrap and cumulative DSR gate.",
+  "pass_fail_gates": [
+    "deterministic: full CAGR > V11 CAGR",
+    "deterministic: full Sharpe >= V11 Sharpe",
+    "deterministic: full Sharpe > C-BDLEV-ALWAYS Sharpe",
+    "deterministic: full MDD <=10%",
+    "deterministic: at least 5/7 fixed folds candidate Sharpe >= matched-control Sharpe",
+    "deterministic: worst fixed-fold Sharpe >0",
+    "deterministic: gross <=100%, min target weight >=0, no financing or negative cash",
+    "bootstrap: paired circular moving blocks, 63 sessions, 20000 replicates, seed 20260821",
+    "bootstrap: P(CAGR candidate > V11) >=0.90",
+    "bootstrap: P(Sharpe candidate > matched control) >=0.90",
+    "bootstrap: median candidate-minus-V11 CAGR delta >0",
+    "bootstrap: median candidate-minus-matched Sharpe delta >0",
+    "bootstrap: candidate MDD P97.5 <=15%",
+    "PBO: not applicable because the family contains exactly one candidate and no within-family selection",
+    "global post-protocol DSR probability >=95% using prior 27 formal return-seeking candidates plus F-BDLEV-ANNUAL-US, total trial count 28",
+    "ROBUST_FACTOR_PASS requires every applicable deterministic, bootstrap and global DSR gate"
+  ],
+  "formal_run_budget": 1,
+  "follow_up_policy": "This broker-dealer leverage campaign contains exactly one retrospective candidate. After formal performance is viewed, do not search quarterly leverage changes, leverage levels, positive-growth sign reversals, capital-ratio inversions, seasonal adjustments, winsorization, clipping, alternate growth horizons, thresholds, persistence rules, retention fractions, release lags, stale windows, Nasdaq confirmation, ensembles, or a second retrospective broker-dealer leverage family. A promising non-robust result may only become a separately preregistered prospective shadow from a new freeze date.",
+  "swift_engine_entrypoint": "scripts/run_broker_dealer_leverage_v1.py -> tools/broker_dealer_leverage_v1.swiftpart + tools/broker_dealer_leverage_v1_logic.swift -> frozen V11 source run + BacktestEngine.runResearchTargetProviderStrategyWithTrace -> shared BacktestDailySimulator",
+  "expected_outputs": [
+    "V11-CONTROL metrics and frozen target fingerprint",
+    "C-BDLEV-ALWAYS availability-matched U.S.-retention control metrics",
+    "F-BDLEV-ANNUAL-US full-history metrics",
+    "all seven fixed fold metrics plus 2020+ and 2022+ slices",
+    "source/U.S.-de-risk/available/retained event counts and portfolio constraints",
+    "one portfolio CSV per control/candidate",
+    "mechanical deterministic ADMIT_FOR_ROBUSTNESS flag",
+    "paired 20000-replicate block-bootstrap statistics",
+    "cumulative 28-trial Deflated Sharpe Ratio",
+    "mechanical ROBUST_FACTOR_PASS flag",
+    "run authorization receipt, execution Git commit and SHA-256 result artifact manifest"
+  ],
+  "factor_definition": {
+    "factor_id": "F-BDLEV-ANNUAL-US",
+    "source": "Federal Reserve historical Financial Accounts of the United States Z.1 release archive",
+    "frozen_coverage": "2012Q1..2026Q1",
+    "raw_release_table_count": 57,
+    "asset_series_code": "FL664090005",
+    "liability_series_code": "FL664190005",
+    "book_leverage_rule": "Total Financial Assets / (Total Financial Assets - Total Liabilities)",
+    "annual_growth_rule": "log(current book leverage) - log(four-quarter-lag book leverage), both calculated from values in the same historical release table",
+    "favorable_rule": "annual_log_book_leverage_growth < 0",
+    "quarterly_change": "diagnostic only; forbidden as a return-seeking candidate",
+    "availability_rule": "historical official Z.1 release date + 1 calendar day",
+    "max_stale_calendar_days": 150,
+    "maximum_observed_historical_release_gap_days": 120
+  },
+  "point_in_time_controls": {
+    "revised_current_fred_history_used": false,
+    "same_release_lagged_comparison": true,
+    "raw_source_html_frozen": true,
+    "raw_source_sha_required": true,
+    "current_2026q1_mutable_page_frozen_locally": true
+  },
+  "matched_control": {
+    "control_id": "C-BDLEV-ALWAYS",
+    "rule": "retain exactly 50% of nasdaq/sp500 reductions on every factor-available frozen V11 U.S.-de-risk event regardless of annual broker-dealer leverage growth"
+  },
+  "shared_rules": {
+    "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+    "eligible_event": "current frozen V11 event reduces nasdaq and/or sp500 versus prior frozen V11 event target",
+    "retention_fraction": 0.5,
+    "replay_rebalance_band": 0.25,
+    "fee_rate": 0.01,
+    "slippage_rate": 0.0005,
+    "max_gross": 1.0,
+    "shorting_allowed": false,
+    "financing_allowed": false
+  },
+  "forbidden_changes": [
+    "any frozen V11 parameter or target-path rule change",
+    "using today's revised FRED/Z.1 history instead of frozen first-release tables",
+    "using cross-release quarter-over-quarter differences that mix statistical vintages",
+    "using quarterly leverage change as a return-seeking candidate",
+    "using leverage levels, capital ratios, inverse leverage or positive-growth sign reversal",
+    "any seasonal adjustment, winsorization, clipping, z-score, percentile, level or magnitude threshold",
+    "any 2-quarter, 3-quarter, 2-year or other alternate growth horizon",
+    "any 25%, 75%, 100% or other retention-fraction search",
+    "any change to release+1 availability or 150-day stale guard",
+    "factor-driven trades between frozen V11 event dates",
+    "candidate replacement or a second retrospective broker-dealer leverage factor after results",
+    "changing fee/slippage, leverage, financing, shorting or cash constraints",
+    "dropping failed prior formal candidates from cumulative DSR accounting"
+  ],
+  "statistical_audit": {
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260821,
+    "pbo": "NOT_APPLICABLE_SINGLE_CANDIDATE",
+    "global_dsr_prior_candidate_count": 27,
+    "global_dsr_total_candidate_count_after_this_trial": 28
+  }
+}

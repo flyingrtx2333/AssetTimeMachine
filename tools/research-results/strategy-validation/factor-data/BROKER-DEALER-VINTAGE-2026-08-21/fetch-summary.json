@@ -1,0 +1,15 @@
+{
+  "availability_policy": "usable one calendar day after the historical Z.1 release date",
+  "candidate_rule_not_yet_strategy_executed": "annual_log_book_leverage_growth < 0",
+  "first_quarter": "2012Q1",
+  "forecasting_variable": "annual log book-leverage growth computed between the current quarter and four quarters earlier inside the same historical Z.1 release",
+  "formula": "Assets/(Assets-Liabilities)",
+  "last_quarter": "2026Q1",
+  "output_sha256": "da510905f5ff9fdb073c7961abf26f17f15d0c48900885664d4770268616469d",
+  "performance_computed": false,
+  "point_in_time_note": "Every observation and its four-quarter comparison value are read from the same original Federal Reserve Z.1 release page; later revisions are not used. All source HTML is frozen locally with SHA-256.",
+  "purpose": "first-release broker-dealer leverage data only; no strategy performance",
+  "quarterly_change_is_diagnostic_only": true,
+  "raw_source_table_count": 57,
+  "rows": 57
+}

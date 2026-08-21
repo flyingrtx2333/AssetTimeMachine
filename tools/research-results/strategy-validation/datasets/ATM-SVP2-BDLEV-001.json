@@ -1,0 +1,436 @@
+{
+  "files": [
+    {
+      "bytes": 5271408,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/generalization_public_history.json",
+      "sha256": "ab534219b08cdf417ee041be4322d512b29505439c8d0f2a469438d01730ac88"
+    },
+    {
+      "bytes": 24847,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCICREDIT_initial_release.csv",
+      "row_count": 732,
+      "sha256": "953198633f2f19cd42450c631bda3cc1d25bd23b40afc8bf58fa45ada0c4fc8c"
+    },
+    {
+      "bytes": 24762,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCILEVERAGE_initial_release.csv",
+      "row_count": 732,
+      "sha256": "d198027125ca6b317258c2fb4725ed3e5b217356a6b8c549b68dbb18d237b486"
+    },
+    {
+      "bytes": 20741,
+      "columns": [
+        "quarter",
+        "release_date",
+        "available_date",
+        "prior_quarter_assets_same_release",
+        "prior_quarter_liabilities_same_release",
+        "prior_quarter_book_leverage_same_release",
+        "lag4_quarter_assets_same_release",
+        "lag4_quarter_liabilities_same_release",
+        "lag4_quarter_book_leverage_same_release",
+        "total_financial_assets",
+        "total_liabilities",
+        "book_equity_assets_minus_liabilities",
+        "book_leverage",
+        "quarterly_log_change_diagnostic_only",
+        "annual_log_book_leverage_growth",
+        "source_table_url",
+        "source_table_sha256",
+        "source_table_local_path"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/BROKER_DEALER_BOOK_LEVERAGE_FIRST_RELEASE.csv",
+      "row_count": 57,
+      "sha256": "da510905f5ff9fdb073c7961abf26f17f15d0c48900885664d4770268616469d"
+    },
+    {
+      "bytes": 970,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/fetch-summary.json",
+      "sha256": "8986f4205af8cb30340632bedb551d02c96faf4360f5e7cb27907c869187f1e9"
+    },
+    {
+      "bytes": 25946,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2012Q1.html",
+      "sha256": "d67f25f659607c884e1f4980dc2bdf13b91ff55f18bc0b42de5e68256cc8eee4"
+    },
+    {
+      "bytes": 25966,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2012Q2.html",
+      "sha256": "e552af3d98d7e131cb951aa70c9a84ccf64c8cc910c27b51910b4804f40d185f"
+    },
+    {
+      "bytes": 25962,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2012Q3.html",
+      "sha256": "4d4bde918c140bcbb0a0ad2ca3b7840db0e8ad3a24a540dd621a7fcf16f66c04"
+    },
+    {
+      "bytes": 26071,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2012Q4.html",
+      "sha256": "9da5fdb8b266e66176b4386625d339ff6df9b4eed4baf2944b94fab054073c2a"
+    },
+    {
+      "bytes": 26078,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2013Q1.html",
+      "sha256": "62a32c5e2448b34b218c1d6d517013a6b8c019e574786cb2449c2b9b53b8c835"
+    },
+    {
+      "bytes": 26119,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2013Q2.html",
+      "sha256": "76bfae952fd4a1c8d8c7957bd15560450fa0a23f364da04ba9ce53e25ccbad86"
+    },
+    {
+      "bytes": 26081,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2013Q3.html",
+      "sha256": "83521d6ab7e066378687e472e9527c567534c8b6b472cb5948845de178d5fd14"
+    },
+    {
+      "bytes": 26071,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2013Q4.html",
+      "sha256": "da69f1874244da3882c990df601b1ab1fec7e19905b1653e607e447b11b2474a"
+    },
+    {
+      "bytes": 26032,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2014Q1.html",
+      "sha256": "a1778687a4c9e0bab081f9ce19068558cbc2ef1f50c422a5e310f5d83d0da465"
+    },
+    {
+      "bytes": 26747,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2014Q2.html",
+      "sha256": "8aa59e4d2e81c82f01b4a74d83ca98124c2ad6eb0ed94ada7169726cc28aa37a"
+    },
+    {
+      "bytes": 27348,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2014Q3.html",
+      "sha256": "540e14df022744098255210c66c65440a0731b3317d2280feca77a4dddb61ad7"
+    },
+    {
+      "bytes": 27334,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2014Q4.html",
+      "sha256": "640dd57cf63849a081a7d717396e9cbef45f7a502faef1a03c4acdb12cbf163c"
+    },
+    {
+      "bytes": 27328,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2015Q1.html",
+      "sha256": "77a331f75809fa6a3e1c9f7cff80e8ec7a213d3c4e7bc4e215d12230eda9074c"
+    },
+    {
+      "bytes": 25730,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2015Q2.html",
+      "sha256": "a600424cef2ea5eeb8deecb1c674a8b9a4e36a6319f29d823332fd646e2dd544"
+    },
+    {
+      "bytes": 25725,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2015Q3.html",
+      "sha256": "cfd72652bfa6bf315277886a1c058ea1b6fb07a38c6a8816f726273e911da733"
+    },
+    {
+      "bytes": 25714,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2015Q4.html",
+      "sha256": "a952043467f943ac221827edb6f0bac590f9bff08071102d080c8f378f666e7b"
+    },
+    {
+      "bytes": 25705,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2016Q1.html",
+      "sha256": "002fa500d9b84e52a87118ea7e1b9dd5954dfa4dc3a55ab4a590e34a429169e6"
+    },
+    {
+      "bytes": 28031,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2016Q2.html",
+      "sha256": "c20f73e982deea98e15a2c87ddb24aa34529049e43f31a843f4c3c2730b61931"
+    },
+    {
+      "bytes": 26469,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2016Q3.html",
+      "sha256": "d59885588bdf165da8d86b3e5ce1d1871b28606c5a0048075514e786da7f3e15"
+    },
+    {
+      "bytes": 26501,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2016Q4.html",
+      "sha256": "9e40274a65b29df2b5b239ae80b013522091f9d3d90a85da683d394a5c99b38e"
+    },
+    {
+      "bytes": 93945,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2017Q1.html",
+      "sha256": "04f3d4da83b194a30dcb03388d55a594cc06249e1b3c48f9cfd0e2a6ebd928dd"
+    },
+    {
+      "bytes": 93954,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2017Q2.html",
+      "sha256": "06006f9ddd9d76084c476a5bb48b5ab59bfab265add3748aed6f2c6628fa8fa4"
+    },
+    {
+      "bytes": 93900,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2017Q3.html",
+      "sha256": "a90c095439c2c503fc9a6d97acd06a84c0edfbce409f82d761d196dbf4b9497d"
+    },
+    {
+      "bytes": 93609,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2017Q4.html",
+      "sha256": "a560fdf3ae268210ff60cb429b1d63bfa3783cf7c1dfa089aff8777ec3c51db3"
+    },
+    {
+      "bytes": 93608,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2018Q1.html",
+      "sha256": "9529636311317decce0f035d04cc083319cc0396cd4166477c12d29153fedb3a"
+    },
+    {
+      "bytes": 93622,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2018Q2.html",
+      "sha256": "93db086bb2ff39d1976cafb8bcc30b7981d3c33a752177c682702b2543763fe1"
+    },
+    {
+      "bytes": 90637,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2018Q3.html",
+      "sha256": "e44fe5c41bf952c2abcd3e0fa356c98e5bdd8f33d68eee36cd970e32c8882c17"
+    },
+    {
+      "bytes": 90631,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2018Q4.html",
+      "sha256": "78c5d4c412e4fc9c8a0db2234f682056c6962efaa313c690e1b4a5eeef2e02b4"
+    },
+    {
+      "bytes": 90302,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2019Q1.html",
+      "sha256": "e5e6a3586e78aae499f83a25a092cbbaa09c6f7fc003b7cfdfb1ed8c0c1d9c85"
+    },
+    {
+      "bytes": 90352,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2019Q2.html",
+      "sha256": "78447bc4cb8e6a2967e4ca428b65e64f6926532596d6f58f41616075d7a04b6d"
+    },
+    {
+      "bytes": 90129,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2019Q3.html",
+      "sha256": "fbc2d98346758bde59d3a31f0385b0bbe26be51257c131f7b259ef565b8c4f6b"
+    },
+    {
+      "bytes": 90124,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2019Q4.html",
+      "sha256": "df194e6de2d85ed0caf8ff2ac29f70e68bf772766223725a66cdcf2ee50584e1"
+    },
+    {
+      "bytes": 90121,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2020Q1.html",
+      "sha256": "fda025e5321620801312804cb537a03e29b14fea236906c5c7b89007469507c1"
+    },
+    {
+      "bytes": 90131,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2020Q2.html",
+      "sha256": "66bf92a25ae4c32ec4f268a94138751c15ea62243091de8923d9bdd0418936da"
+    },
+    {
+      "bytes": 90134,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2020Q3.html",
+      "sha256": "01f389092ae5be37c763fb0a0eda582d4d23fd1b8bcabff37ad71d665a430239"
+    },
+    {
+      "bytes": 90125,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2020Q4.html",
+      "sha256": "3d0150fdab168675043c329f466428d72b03c66d0351789395b4a4d2180f3bc2"
+    },
+    {
+      "bytes": 92011,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2021Q1.html",
+      "sha256": "324ccf5a22d50088a25db0de2b59607edfb1bca91535c9d9513fc96285adb842"
+    },
+    {
+      "bytes": 92023,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2021Q2.html",
+      "sha256": "9226d597cef1ec6f36be2f0ae8b606ff002cb2f23b7665974fc0cd9c4ee55859"
+    },
+    {
+      "bytes": 96588,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2021Q3.html",
+      "sha256": "9888077b8329e7b060753ea528b09e375ed47aa834c5a060c20257f98e71338e"
+    },
+    {
+      "bytes": 94829,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2021Q4.html",
+      "sha256": "964632cb404c5d8e7072d07cfd164abc97d6f53a2bd8eaaa3b15c942cfa6cee0"
+    },
+    {
+      "bytes": 96657,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2022Q1.html",
+      "sha256": "f90399445f0a8102d23ec870c6cf1f873f6a6a5b34cae0c6aa7d49a326a12125"
+    },
+    {
+      "bytes": 96629,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2022Q2.html",
+      "sha256": "41af29bf95f64a63842590d4a230a1071c572982f43e27e6d862de23ddce84c5"
+    },
+    {
+      "bytes": 96620,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2022Q3.html",
+      "sha256": "7cd4777a828e0033fd25f1a37cbb5577fea70cbefdf0ac84177d412876b9d9ae"
+    },
+    {
+      "bytes": 96622,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2022Q4.html",
+      "sha256": "22532bd37e81540c5d20d6f0eac2941d24da51a12fe174612ffef778aafde4cb"
+    },
+    {
+      "bytes": 96671,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2023Q1.html",
+      "sha256": "a08b6139cbafc37e0f00f07ea295298563f447db9b478743ca8535d6630c53ac"
+    },
+    {
+      "bytes": 101676,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2023Q2.html",
+      "sha256": "99735637d97cda2881cc9f39aadfb1a65c4160b264663698ee2205c0d43e39dc"
+    },
+    {
+      "bytes": 101679,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2023Q3.html",
+      "sha256": "dd31c48fa8d3c3a86400babce673bc7240d6c8b29bc6e9901e14dda1958e6770"
+    },
+    {
+      "bytes": 104530,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2023Q4.html",
+      "sha256": "aaa38ea57f6d73cdcfb6ec504c7882268ad593420f3938ace7b4db56b3a4eb5e"
+    },
+    {
+      "bytes": 104508,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2024Q1.html",
+      "sha256": "1cae4e036a92db3130bae4fc1c8651e0bb9214d96cfcff5027ef1d58d87b69bc"
+    },
+    {
+      "bytes": 104529,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2024Q2.html",
+      "sha256": "55fc2181aaedee06c8582ca030f78dbd296e66cda0a7a19bad870063f9c2f668"
+    },
+    {
+      "bytes": 104534,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2024Q3.html",
+      "sha256": "c205097a92319560d6547dbd7e3531d9234fff7e494676bd3d71f39572e09dfe"
+    },
+    {
+      "bytes": 101280,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2024Q4.html",
+      "sha256": "50526e6e45a98bf3380a1dd8093727f02bb0f5e0431a36b389bc767d239f1f9c"
+    },
+    {
+      "bytes": 108982,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2025Q1.html",
+      "sha256": "62edf9061ea7aa7ec08c69357fd3529056e8e5df1d899cbd88d8a8874dd9c1df"
+    },
+    {
+      "bytes": 108990,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2025Q2.html",
+      "sha256": "585bbf4ba06a5ebd5c749ea5d0d3bc82f94b95ce53e00dbffb0d791990ecb80b"
+    },
+    {
+      "bytes": 108990,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2025Q3.html",
+      "sha256": "74bfe1481a777a90afe22f01b4f56ea5decf826ddd00d0f2f602577e60a28eeb"
+    },
+    {
+      "bytes": 131003,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2025Q4.html",
+      "sha256": "6f67b0185cdf550434992101c687d6e43391caa24af39b9b13873020e835d3e6"
+    },
+    {
+      "bytes": 139978,
+      "format": "html",
+      "path": "tools/research-results/strategy-validation/factor-data/BROKER-DEALER-VINTAGE-2026-08-21/raw-first-release-tables/2026Q1.html",
+      "sha256": "53d525eca44d8078b90b38e157ad728c3778693ba45db4e932baeb20fb0e2e45"
+    }
+  ],
+  "generated_at": "2026-08-21T18:26:34+08:00",
+  "git_commit": "1c4dbd236ea24e35b12ac47123be682a4aeda931",
+  "kind": "dataset",
+  "metadata": {
+    "availability": "historical Z.1 release date +1 calendar day; max stale 150 days",
+    "campaign": "broker-dealer-annual-book-leverage-v1",
+    "cost": "1.00% fee + 0.05% slippage",
+    "coverage": "2012Q1..2026Q1",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "factor": "same-release annual log book-leverage growth < 0",
+    "formal_candidates": [
+      "F-BDLEV-ANNUAL-US"
+    ],
+    "performance_viewed_before_freeze": false,
+    "raw_release_tables": 57
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-BDLEV-001"
+}
