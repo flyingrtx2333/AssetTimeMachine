@@ -1,0 +1,105 @@
+{
+  "trial_id": "ATM-SVP2-TIC-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "FIRST_RELEASE_TIC_FOREIGN_EQUITY_FLOW_V1",
+  "strategy_lineage": "tic-foreign-equity-flow-v1; frozen control nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "hypothesis": "Negative first-release monthly net foreign purchases of U.S. corporate stocks, interpreted as a contrarian cross-border equity-flow signal, identify frozen V11 U.S.-equity de-risk events that are too early and improve risk-adjusted performance versus frozen V11 and an availability-matched unconditional retention control.",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-TIC-001.json",
+  "candidate_ids": ["F-TIC-FLOW-CONTRARIAN-US"],
+  "candidate_count": 1,
+  "selection_metric": "No within-family selection. Evaluate the single frozen candidate against V11 and C-TIC-FLOW-ALWAYS, then apply every deterministic, paired-bootstrap and cumulative-DSR gate.",
+  "expected_outputs": [
+    "V11-CONTROL metrics and frozen target fingerprint",
+    "C-TIC-FLOW-ALWAYS availability-matched U.S.-retention control metrics",
+    "F-TIC-FLOW-CONTRARIAN-US full-history metrics",
+    "all seven fixed-fold metrics plus 2020+ and 2022+ slices",
+    "source/U.S.-de-risk/factor-available/retained event counts and portfolio constraints",
+    "one portfolio CSV per control/candidate",
+    "mechanical deterministic ADMIT_FOR_ROBUSTNESS flag",
+    "paired 20000-replicate moving-block bootstrap audit",
+    "cumulative 31-trial Deflated Sharpe Ratio",
+    "mechanical ROBUST_FACTOR_PASS flag",
+    "factor-library publish plus remote readback if and only if ROBUST_FACTOR_PASS=true",
+    "formal-run authorization receipt, execution Git commit and SHA-256 result manifest"
+  ],
+  "allowed_changes": [
+    "risk-on exactly when latest point-in-time-available TIC net foreign purchases of U.S. corporate stocks is <0",
+    "latest observation must be no more than 45 calendar days old",
+    "on factor-available frozen V11 U.S.-equity de-risk events retain exactly 50% of nasdaq/sp500 reductions when risk-on"
+  ],
+  "data_definition": {
+    "source": "U.S. Treasury TIC monthly release archives",
+    "coverage": "2011-01..2026-05",
+    "availability": "actual release date +1 calendar day",
+    "series_break": "2023-02 Form S to expanded Form SLT",
+    "old_regime": "snetus Grand Total Corp Stocks net foreign purchases",
+    "new_regime": "slt_table1 Grand Total U.S. Corporate Equity net U.S. sales, normalized to same economic sign",
+    "sign_convention": "positive means foreign residents are net buyers/increase holdings of U.S. stocks",
+    "cross_regime_magnitude_comparison_allowed": false,
+    "max_stale_calendar_days": 45
+  },
+  "matched_control": {
+    "control_id": "C-TIC-FLOW-ALWAYS",
+    "rule": "retain exactly 50% of nasdaq/sp500 reductions on every factor-available frozen V11 U.S.-de-risk event regardless of TIC sign"
+  },
+  "shared_rules": {
+    "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+    "eligible_event": "current V11 event reduces nasdaq and/or sp500 versus prior V11 event target",
+    "retention_fraction": 0.5,
+    "replay_rebalance_band": 0.25,
+    "fee_rate": 0.01,
+    "slippage_rate": 0.0005,
+    "max_gross": 1.0,
+    "shorting_allowed": false,
+    "financing_allowed": false
+  },
+  "pass_fail_gates": [
+    "full CAGR > V11 CAGR",
+    "full Sharpe >= V11 Sharpe",
+    "full Sharpe > C-TIC-FLOW-ALWAYS Sharpe",
+    "full MDD <=10%",
+    "at least 5/7 fixed folds candidate Sharpe >= matched-control Sharpe",
+    "worst fixed-fold Sharpe >0",
+    "gross <=100%, min target weight >=0, no financing or negative cash",
+    "paired circular moving-block bootstrap: block 63 sessions, 20000 replicates, seed 20260822",
+    "bootstrap P(CAGR candidate > V11) >=0.90",
+    "bootstrap P(Sharpe candidate > matched) >=0.90",
+    "bootstrap median candidate-minus-V11 CAGR >0",
+    "bootstrap median candidate-minus-matched Sharpe >0",
+    "bootstrap candidate MDD P97.5 <=15%",
+    "global 31-trial DSR probability >=95%",
+    "ROBUST_FACTOR_PASS requires every applicable deterministic, bootstrap and DSR gate"
+  ],
+  "formal_run_budget": 1,
+  "statistical_audit": {
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260822,
+    "pbo": "NOT_APPLICABLE_SINGLE_CANDIDATE",
+    "global_dsr_prior_candidate_count": 30,
+    "global_dsr_total_candidate_count_after_this_trial": 31
+  },
+  "factor_library_promotion": {
+    "trigger": "ROBUST_FACTOR_PASS=true only",
+    "action": "export -> validate -> import -> complete -> remote readback",
+    "failed_or_near_miss_policy": "retain as research evidence; do not label validated/promoted"
+  },
+  "forbidden_changes": [
+    "any frozen V11 parameter or target-path change",
+    "positive-flow momentum sign reversal",
+    "fixed dollar-flow threshold or magnitude threshold",
+    "percentile, z-score, expanding/rolling median or regime-specific threshold",
+    "multi-month averaging, accumulation, change, slope or acceleration",
+    "GDP, market-cap, FX, Treasury-flow, bond-flow or total-TIC normalization",
+    "private/official/country decomposition rescue",
+    "removing or rescaling across the February 2023 series break",
+    "changing the 45-day stale rule",
+    "changing the 50% retention fraction",
+    "factor-driven trades between V11 events",
+    "a second retrospective TIC equity-flow factor after results",
+    "dropping failed prior candidates from DSR accounting"
+  ],
+  "follow_up_policy": "No rescue search after formal performance. A promising but non-robust result may only become a separately preregistered prospective shadow with this exact rule unchanged.",
+  "swift_engine_entrypoint": "scripts/run_tic_foreign_equity_flow_v1.py -> tools/tic_foreign_equity_flow_v1.swiftpart + tools/tic_foreign_equity_flow_v1_logic.swift -> frozen V11 source run + shared ResearchTargetProvider/BacktestDailySimulator"
+}

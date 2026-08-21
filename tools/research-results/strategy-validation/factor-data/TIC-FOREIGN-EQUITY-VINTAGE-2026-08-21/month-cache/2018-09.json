@@ -1,0 +1,17 @@
+{
+  "cache_schema": "tic-foreign-equity-first-release-v1",
+  "report_month": "2018-09",
+  "row": {
+    "archive_filename": "ticrel_20181116.zip",
+    "archive_sha256": "99b42d47682b7bdda43c8154ddbd6037d02836e9bb5954235f17c1b0324a44cd",
+    "archive_url": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/ticrel_20181116.zip",
+    "available_date": "2018-11-17",
+    "net_foreign_purchases_us_stocks_millions": -16911.0,
+    "regime": "FORM_S_NET_FOREIGN_PURCHASES",
+    "release_date": "2018-11-16",
+    "report_month": "2018-09",
+    "series_break_2023_02": false,
+    "source_member": "snetus.txt",
+    "source_member_sha256": "1739b37433aa84e4f494f5825752dc3d5b47aeb59bef4f3fc148c759bc78bb58"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "cache_schema": "tic-foreign-equity-first-release-v1",
+  "report_month": "2020-10",
+  "row": {
+    "archive_filename": "ticrel_20201215.zip",
+    "archive_sha256": "51843972c57e56bf7bba3ad54647c9cbc1878c63efc89db58cad2c81caa7b18a",
+    "archive_url": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/ticrel_20201215.zip",
+    "available_date": "2020-12-16",
+    "net_foreign_purchases_us_stocks_millions": 24074.0,
+    "regime": "FORM_S_NET_FOREIGN_PURCHASES",
+    "release_date": "2020-12-15",
+    "report_month": "2020-10",
+    "series_break_2023_02": false,
+    "source_member": "snetus.txt",
+    "source_member_sha256": "666292a78611ee43558046dbb605998d62b838924218ff2f401436fe4ae72ad8"
+  }
+}

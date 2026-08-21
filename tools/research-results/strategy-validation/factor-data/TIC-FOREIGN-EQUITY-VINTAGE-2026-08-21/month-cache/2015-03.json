@@ -1,0 +1,17 @@
+{
+  "cache_schema": "tic-foreign-equity-first-release-v1",
+  "report_month": "2015-03",
+  "row": {
+    "archive_filename": "ticrel_20150515.zip",
+    "archive_sha256": "77948be95bd9411ae2062a75276bed069d0443006ce88d8c556a1daa4a5b1b67",
+    "archive_url": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/ticrel_20150515.zip",
+    "available_date": "2015-05-16",
+    "net_foreign_purchases_us_stocks_millions": -14910.0,
+    "regime": "FORM_S_NET_FOREIGN_PURCHASES",
+    "release_date": "2015-05-15",
+    "report_month": "2015-03",
+    "series_break_2023_02": false,
+    "source_member": "snetus.txt",
+    "source_member_sha256": "e64c06d6a38b609948dcb2631a396af5abce0a5835c2dc851f90d41d3367079e"
+  }
+}
