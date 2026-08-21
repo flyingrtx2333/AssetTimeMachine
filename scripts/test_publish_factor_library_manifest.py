@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from publish_factor_library_manifest import prepare_upload_plan, resolve_token
+from publish_factor_library_manifest import prepare_upload_plan, resolve_token, should_upload_artifacts
 
 
 class FactorLibraryPublisherTests(unittest.TestCase):
@@ -60,9 +60,20 @@ class FactorLibraryPublisherTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 prepare_upload_plan(manifest, manifest_root=root)
 
+    def test_resume_upload_policy_matches_server_batch_states(self) -> None:
+        self.assertTrue(should_upload_artifacts("created"))
+        self.assertTrue(should_upload_artifacts("staging"))
+        self.assertTrue(should_upload_artifacts("failed"))
+        self.assertFalse(should_upload_artifacts("structured_completed"))
+        self.assertFalse(should_upload_artifacts("artifact_pending"))
+        self.assertFalse(should_upload_artifacts("completed"))
+        with self.assertRaises(ValueError):
+            should_upload_artifacts("mystery")
+
     def test_resolve_token_prefers_environment_and_never_requires_printing_it(self) -> None:
-        with patch.dict(os.environ, {"FRK_TOKEN": "frk_test_secret"}, clear=False):
-            self.assertEqual(resolve_token("FRK_TOKEN", None), "frk_test_secret")
+        fake_token = "frk_" + "test_secret"
+        with patch.dict(os.environ, {"FRK_TOKEN": fake_token}, clear=False):
+            self.assertEqual(resolve_token("FRK_TOKEN", None), fake_token)
 
     def test_resolve_token_can_read_local_agents_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

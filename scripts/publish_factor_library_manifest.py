@@ -96,6 +96,14 @@ def prepare_upload_plan(
     return wire, uploads
 
 
+def should_upload_artifacts(batch_status: str) -> bool:
+    if batch_status in {"created", "staging", "failed"}:
+        return True
+    if batch_status in {"structured_completed", "artifact_pending", "completed"}:
+        return False
+    raise ValueError(f"unknown factor import batch status: {batch_status}")
+
+
 def response_json(response: requests.Response) -> Any:
     try:
         return response.json()
@@ -162,22 +170,24 @@ def publish_manifest(
         raise ValueError("manifest batch_key is missing")
 
     uploaded: list[str] = []
-    for artifact_key, artifact in uploads.items():
-        with artifact.path.open("rb") as handle:
-            upload_response = requests.put(
-                f"{api_root}/{batch_key}/artifacts/{artifact_key}",
-                headers=headers,
-                files={
-                    "file": (
-                        artifact.path.name,
-                        handle,
-                        artifact.mime_type,
-                    )
-                },
-                timeout=timeout,
-            )
-        require_success(upload_response, action=f"artifact upload {artifact_key}")
-        uploaded.append(artifact_key)
+    batch_status = str(batch.get("status") or "")
+    if should_upload_artifacts(batch_status):
+        for artifact_key, artifact in uploads.items():
+            with artifact.path.open("rb") as handle:
+                upload_response = requests.put(
+                    f"{api_root}/{batch_key}/artifacts/{artifact_key}",
+                    headers=headers,
+                    files={
+                        "file": (
+                            artifact.path.name,
+                            handle,
+                            artifact.mime_type,
+                        )
+                    },
+                    timeout=timeout,
+                )
+            require_success(upload_response, action=f"artifact upload {artifact_key}")
+            uploaded.append(artifact_key)
 
     completed = require_success(
         requests.post(
