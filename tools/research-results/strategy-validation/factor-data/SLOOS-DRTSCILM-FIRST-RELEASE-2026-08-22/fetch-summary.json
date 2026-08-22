@@ -1,0 +1,19 @@
+{
+  "availability_rule": "release_date + 1 calendar day",
+  "first_observation_date": "2010-04-01",
+  "first_release_date": "2010-04-20",
+  "last_observation_date": "2026-07-01",
+  "last_release_date": "2026-08-03",
+  "missing_release_snapshots": [],
+  "output_sha256": "7285cbe4c8c900a86c5322136f797441f64d35f9cfa5a84532dce6a691e25025",
+  "performance_computed": false,
+  "purpose": "first-release SLOOS standards construction only; no strategy performance",
+  "raw_snapshot_count": 67,
+  "release_dates": 67,
+  "release_id": 191,
+  "risk_direction_only": "higher net tightening is adverse for future U.S. stock returns; no strategy threshold is selected in this fetcher",
+  "series_id": "DRTSCILM",
+  "trusted_observation_start": "2010-04-01",
+  "trusted_start_reason": "ALFRED SLOOS release calendar begins 2010-04-20; older observations are not treated as point-in-time initial releases",
+  "usable_initial_observations": 66
+}

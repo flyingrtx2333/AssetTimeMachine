@@ -1,0 +1,121 @@
+{
+  "trial_id": "ATM-SVP2-SLOOS-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "FIRST_RELEASE_SLOOS_CREDIT_STANDARDS_FACTOR_V1",
+  "strategy_lineage": "sloos-standards-v1; frozen control nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "hypothesis": "When the point-in-time Senior Loan Officer Opinion Survey reports no net tightening in C&I lending standards, frozen V11 de-risk events are more likely to be overly defensive. Retaining exactly half of the current V11 reduction should improve return without leverage, while outperforming an availability-matched unconditional half-retention control and preserving V11-like risk quality.",
+  "literature_basis": {
+    "primary": "Chava, Gallmeyer, and Park (2015), Credit conditions and stock return predictability, Journal of Monetary Economics, doi:10.1016/j.jmoneco.2015.06.004",
+    "out_of_sample_support": "Profitable timing of the stock market with the senior loan officer survey, Finance Research Letters (2023)",
+    "economic_direction": "tighter bank lending standards predict lower subsequent U.S. stock returns; DRTSCILM <= 0 therefore defines the frozen risk-on state"
+  },
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-SLOOS-001.json",
+  "allowed_changes": [
+    "F-SLOOS-STANDARDS uses only trusted point-in-time ALFRED DRTSCILM releases from 2010Q2 onward; each quarterly value becomes usable release_date + 1 calendar day and persists until the next release",
+    "risk-on iff the latest available DRTSCILM value is <= 0; zero is the economic no-net-tightening boundary and is not selected from strategy performance",
+    "on a genuine frozen V11 de-risk event, risk-on retains exactly 50% of each asset reduction relative to the previous V11 event target, subject to gross <=100%",
+    "risk-off or unavailable leaves the current frozen V11 event target unchanged"
+  ],
+  "candidate_ids": [
+    "F-SLOOS-STANDARDS"
+  ],
+  "candidate_count": 1,
+  "selection_metric": "No within-family selection. Evaluate the single frozen candidate against frozen V11 and C-SLOOS-ALWAYS. Primary inference uses the common point-in-time window beginning 2010-05-01; full-history product metrics are also reported only for disclosure and cumulative DSR compatibility.",
+  "pass_fail_gates": [
+    "deterministic 2010-05-01+: candidate CAGR > V11 CAGR",
+    "deterministic 2010-05-01+: candidate Sharpe >= V11 Sharpe",
+    "deterministic 2010-05-01+: candidate Sharpe > C-SLOOS-ALWAYS Sharpe",
+    "deterministic 2010-05-01+: candidate MDD <=10%",
+    "deterministic: at least 4/6 fixed folds candidate Sharpe >= matched-control Sharpe",
+    "deterministic: worst fixed-fold Sharpe >0",
+    "deterministic: target gross <=100%, min target weight >=0, no financing or negative target weights",
+    "bootstrap on the 2010-05-01+ common window: paired circular moving blocks, 63 sessions, 20000 replicates, seed 20260822",
+    "bootstrap: P(CAGR candidate > V11) >=0.90",
+    "bootstrap: P(Sharpe candidate > matched control) >=0.90",
+    "bootstrap: median candidate-minus-V11 CAGR delta >0",
+    "bootstrap: median candidate-minus-matched Sharpe delta >0",
+    "bootstrap: candidate MDD P97.5 <=15%",
+    "PBO: not applicable because the family contains exactly one candidate",
+    "global post-protocol DSR probability >=95% using all prior 32 formal return-seeking candidates plus F-SLOOS-STANDARDS, total trial count 33; DSR retains the established full-history candidate-return convention and is supplementary to the point-in-time-window gates",
+    "ROBUST_FACTOR_PASS requires every applicable deterministic, bootstrap, and global DSR gate"
+  ],
+  "formal_run_budget": 1,
+  "follow_up_policy": "This SLOOS campaign contains exactly one retrospective candidate. After formal performance is viewed, do not change the zero threshold, sign, release lag, trusted start, evaluation start, 50% retention fraction, rebalance band, event definition, persistence, survey question, bank-size variant, loan-demand combination, rolling/percentile/z-score transform, asset-specific retention rule, matched control, or gross constraint; do not open a second retrospective SLOOS rescue family. A suggestive non-robust result may only enter a separately preregistered prospective shadow with this exact historical rule.",
+  "swift_engine_entrypoint": "scripts/run_sloos_standards_v1.py -> tools/sloos_standards_v1.swiftpart + tools/sloos_standards_v1_logic.swift + immutable tools/orthogonal_event_factor_v3_logic.swift -> frozen V11 source run + BacktestEngine.runResearchTargetProviderStrategyWithTrace -> shared BacktestDailySimulator",
+  "expected_outputs": [
+    "V11-CONTROL full-history metrics and frozen target fingerprint",
+    "C-SLOOS-ALWAYS availability-matched unconditional half-retention metrics",
+    "F-SLOOS-STANDARDS full-history and 2010-05-01+ metrics",
+    "six fixed folds: 2010-2012, 2013-2015, 2016-2018, 2019-2021, 2022-2024, 2025-latest",
+    "2020+ and 2022+ slices",
+    "source/de-risk/available/retained event counts and portfolio constraints",
+    "one portfolio CSV per control/candidate",
+    "mechanical deterministic ADMIT_FOR_ROBUSTNESS flag",
+    "paired 20000-replicate common-window moving-block bootstrap statistics",
+    "cumulative 33-trial Deflated Sharpe Ratio",
+    "mechanical ROBUST_FACTOR_PASS flag",
+    "factor-library archival with truthful lifecycle after the formal result",
+    "run authorization receipt, execution Git commit and SHA-256 result artifact manifest"
+  ],
+  "factor_definition": {
+    "factor_id": "F-SLOOS-STANDARDS",
+    "series_id": "DRTSCILM",
+    "source": "Federal Reserve Senior Loan Officer Opinion Survey via ALFRED release vintages",
+    "trusted_point_in_time_coverage": "2010Q2..2026Q3",
+    "trusted_start_reason": "the public ALFRED SLOOS release calendar begins 2010-04-20, so older observations are not relabeled as if their true historical first-release dates were known",
+    "availability": "release_date + 1 calendar day",
+    "state_persistence": "the latest released quarterly survey value remains active until the next survey release",
+    "risk_on_rule": "latest DRTSCILM <= 0",
+    "interpretation": "DRTSCILM is the net percentage of domestic banks tightening C&I standards for large and middle-market firms; values above zero indicate net tightening"
+  },
+  "strategy_action": {
+    "eligible_event": "a genuine frozen V11 trade event that reduces at least one asset weight relative to the previous frozen V11 event target",
+    "risk_on_action": "retain exactly 50% of each current event reduction, without increasing any asset above its previous V11 event target and with total gross capped at 100%",
+    "risk_off_or_unavailable": "use frozen V11 event target unchanged"
+  },
+  "matched_control": {
+    "control_id": "C-SLOOS-ALWAYS",
+    "rule": "on every SLOOS-available frozen V11 de-risk event, apply the identical 50% retention action regardless of SLOOS state"
+  },
+  "shared_rules": {
+    "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+    "primary_evaluation_start": "2010-05-01",
+    "retention_fraction": 0.5,
+    "replay_rebalance_band": 0.25,
+    "fee_rate": 0.01,
+    "slippage_rate": 0.0005,
+    "max_gross": 1.0,
+    "shorting_allowed": false,
+    "financing_allowed": false
+  },
+  "forbidden_changes": [
+    "any frozen V11 parameter, source, or target-path change",
+    "any threshold other than DRTSCILM <= 0",
+    "any SLOOS sign reversal or alternate survey series after results",
+    "any rolling median, percentile, rank, slope, acceleration, z-score, persistence, or multi-quarter confirmation search",
+    "any use of pre-2010Q2 observations as purported first releases",
+    "any release-lag relaxation or use of a survey observation before its release date",
+    "any retention fraction other than exactly 50%",
+    "any factor-driven trade between frozen V11 event dates",
+    "any asset-specific or U.S.-only retention tuning after results",
+    "any completion-to-100%-gross or financed exposure rescue",
+    "candidate replacement or a second retrospective SLOOS candidate after results",
+    "dropping failed prior formal candidates from cumulative DSR accounting"
+  ],
+  "statistical_audit": {
+    "bootstrap_sample_start": "2010-05-01",
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260822,
+    "pbo": "NOT_APPLICABLE_SINGLE_CANDIDATE",
+    "global_dsr_prior_candidate_count": 32,
+    "global_dsr_total_candidate_count_after_this_trial": 33,
+    "global_dsr_return_window": "full history for consistency with prior post-protocol DSR accounting"
+  },
+  "factor_library_archival": {
+    "action_after_formal_result": "archive the factor definition, preregistration, formal result and evidence in FlyingrtxFast with the truthful lifecycle status",
+    "robust_pass_policy": "may advance only according to the factor-library lifecycle and protocol gates",
+    "fail_policy": "archive as rejected research evidence; never hide the failed trial"
+  }
+}
