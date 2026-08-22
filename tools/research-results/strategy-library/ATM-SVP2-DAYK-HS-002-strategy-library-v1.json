@@ -1,0 +1,255 @@
+{
+  "batch_key": "ATM-SVP2-DAYK-HS-002-strategy-library-v1",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-DAYK-HS-002.json",
+    "decision": "FAIL / NO_CANDIDATE_ADMITTED. The frozen 日K高速002 bullish volatility-compression continuation rule failed the preregistered all-gates decision. The fixed one-third combined path produced 0.043926% CAGR, 0.038904 Sharpe and 7.685948% MDD versus 0.478848% CAGR for CNY cash. Average net round-trip return was -0.026984% with profit factor 0.870708; only 4/7 fixed folds had positive Sharpe. No standalone asset outperformed cash and gold completed only 112 round trips. The matched compression control was materially worse (-1.004881% CAGR, -0.373520 Sharpe), showing that the SMA(50) trend gate helped but did not create a tradable edge. At 0.05% adverse slippage per fill, combined CAGR fell to -1.517273%, Sharpe to -1.084620 and MDD rose to 32.075415%. Gross exposure, nonnegative cash and zero-overnight-position invariants passed. Per the stop rule, no SMA/ATR/compression/close-location/take-profit tuning, asset deletion, factor addition, stop-loss, dynamic sizing or execution rescue is permitted in this trial. The index OHLC paths remain non-investable execution proxies.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "ad24794b6979557b595d47f84f2206140c772b96",
+    "methodology": {
+      "follow_up_policy": "After any formal metric is viewed, do not tune or replace SMA/ATR lookbacks, compression multiple, close-location threshold, take-profit multiple, allocation, asset set, exit timing, fee, or slippage inside this trial. Do not add RSI, volume, calendar, stop-loss, overnight, asset-specific or dynamic-sizing rescue variants. Any such mechanism is a new trial and must be preregistered with the complete family counted before results.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "at least two of three standalone assets have full-period CAGR above the CNY cash control",
+        "at least two of three standalone assets have full-period Sharpe >0",
+        "each standalone asset has at least 150 completed round trips",
+        "fixed one-third combined CAGR >= CNY cash CAGR +2.00 percentage points",
+        "fixed one-third combined Sharpe >=1.00",
+        "fixed one-third combined MDD <=10%",
+        "fixed one-third combined Sharpe > C-COMPRESSION-COMBINED Sharpe",
+        "fixed one-third combined average net round-trip return >0 and profit factor >=1.05",
+        "at least 5/7 fixed time folds have combined Sharpe >0",
+        "combined 2020+ CAGR and 2022+ CAGR are each greater than full-window CNY cash CAGR",
+        "with 0.05% adverse slippage per fill, combined CAGR remains above CNY cash CAGR and Sharpe >0.50",
+        "maximum intraday gross <=100%, minimum end-of-day cash >=0 and overnight position days =0"
+      ],
+      "selection_metric": "No within-family selection. There is exactly one cross-asset rule; all three standalone paths, the fixed one-third combined path, matched controls and execution stress are reported, and PASS requires every preregistered gate."
+    },
+    "preregistration_hash": "f5fa93f151914c3afed4c570fd5622e0acdf7b8c9d1522cd2403765bb036c74d",
+    "protocol_id": "ATM-SVP-2",
+    "run_key": "ATM-SVP2-DAYK-HS-002",
+    "status": "FAIL",
+    "title": "INDEPENDENT_INTRADAY_VOLATILITY_COMPRESSION_CONTINUATION_V1"
+  },
+  "schema_version": "strategy-library-v1",
+  "source_commit": "ad24794b6979557b595d47f84f2206140c772b96",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "During an intact 50-session uptrend, a T-1 true range no greater than 0.75 times the prior 14-session ATR together with a close in the upper quartile indicates constrained selling and incomplete information diffusion. Buying the next open and exiting at open plus 0.25 ATR, or at the same-session close if unfilled, should add repeatable net return across gold, Nasdaq and S&P 500 after the user-specified fee without overnight risk.",
+      "display_name": "日K高速002",
+      "family": "日K高速",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/C-CASH-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/C-COMPRESSION-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/C-COMPRESSION-GOLD-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/C-COMPRESSION-NASDAQ-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/C-COMPRESSION-SP500-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/DKHS002-COMBINED-SLIP005-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/DKHS002-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/DKHS002-GOLD-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/DKHS002-NASDAQ-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/DKHS002-SP500-portfolio.csv"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": 0.043926417805351115,
+        "candidate_id": "S-DAYK-HIGH-SPEED-002",
+        "conclusion": "FAIL / NO_CANDIDATE_ADMITTED. The frozen 日K高速002 bullish volatility-compression continuation rule failed the preregistered all-gates decision. The fixed one-third combined path produced 0.043926% CAGR, 0.038904 Sharpe and 7.685948% MDD versus 0.478848% CAGR for CNY cash. Average net round-trip return was -0.026984% with profit factor 0.870708; only 4/7 fixed folds had positive Sharpe. No standalone asset outperformed cash and gold completed only 112 round trips. The matched compression control was materially worse (-1.004881% CAGR, -0.373520 Sharpe), showing that the SMA(50) trend gate helped but did not create a tradable edge. At 0.05% adverse slippage per fill, combined CAGR fell to -1.517273%, Sharpe to -1.084620 and MDD rose to 32.075415%. Gross exposure, nonnegative cash and zero-overnight-position invariants passed. Per the stop rule, no SMA/ATR/compression/close-location/take-profit tuning, asset deletion, factor addition, stop-loss, dynamic sizing or execution rescue is permitted in this trial. The index OHLC paths remain non-investable execution proxies.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "max_intraday_gross": 1,
+          "minimum_end_of_day_cash": 92857.39276512586,
+          "overnight_position_days": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "dsr_probability": null,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": 4,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 7.68594794889245,
+        "metrics": {
+          "asset_paths": {
+            "gold_cny": {
+              "average_trade_return_percent": -0.061587957954434336,
+              "cagr_percent": 0.18888125360507768,
+              "mdd_percent": 6.545923875323326,
+              "profit_factor": 0.7825267706173804,
+              "round_trips": 112,
+              "sharpe": 0.1410495732146129,
+              "take_profit_hits": 64,
+              "win_rate_percent": 60.71428571428571
+            },
+            "nasdaq": {
+              "average_trade_return_percent": -0.026237081936957028,
+              "cagr_percent": -0.11687791090144728,
+              "mdd_percent": 17.517068835032244,
+              "profit_factor": 0.8821759766369779,
+              "round_trips": 526,
+              "sharpe": -0.031105666565919964,
+              "take_profit_hits": 287,
+              "win_rate_percent": 64.82889733840305
+            },
+            "sp500": {
+              "average_trade_return_percent": -0.02053371162663875,
+              "cagr_percent": 0.003008956436878485,
+              "mdd_percent": 20.919238019765853,
+              "profit_factor": 0.8856930425602458,
+              "round_trips": 540,
+              "sharpe": 0.012475603519601943,
+              "take_profit_hits": 300,
+              "win_rate_percent": 62.40740740740741
+            }
+          },
+          "cash_control_cagr_percent": 0.47884818454275724,
+          "combined": {
+            "average_trade_return_percent": -0.026983667799764507,
+            "cagr_percent": 0.043926417805351115,
+            "folds_with_positive_sharpe": 4,
+            "mdd_percent": 7.68594794889245,
+            "profit_factor": 0.8707075961860474,
+            "round_trips": 1178,
+            "sharpe": 0.038904188254749776,
+            "since2020_cagr_percent": -0.1190077883739371,
+            "since2022_cagr_percent": 0.001237634199546811,
+            "total_return_percent": 1.1019931658076798,
+            "win_rate_percent": 63.3276740237691
+          },
+          "constraints": {
+            "max_intraday_gross": 1,
+            "minimum_end_of_day_cash": 92857.39276512586,
+            "overnight_position_days": 0,
+            "pass": true
+          },
+          "matched_compression_control": {
+            "cagr_percent": -1.0048807428684414,
+            "mdd_percent": 31.29935619561382,
+            "sharpe": -0.3735204029553346
+          },
+          "preregistered_gate_pass": false,
+          "slippage_stress": {
+            "cagr_percent": -1.517272590280816,
+            "mdd_percent": 32.075414649018754,
+            "sharpe": -1.0846195346185936
+          }
+        },
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "sharpe": 0.038904188254749776,
+        "since2020_cagr_percent": -0.1190077883739371,
+        "since2022_cagr_percent": 0.001237634199546811,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-DAYK-HIGH-SPEED-002",
+      "strategy_kind": "strategy",
+      "tags": [
+        "ATM-SVP2-DAYK-HS-002",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [
+          "gold_cny",
+          "nasdaq",
+          "sp500"
+        ],
+        "code_sha256": "a551208b2cb84d8d825356856308639732239b04fe231960fcee50e2365745a9",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "During an intact 50-session uptrend, a T-1 true range no greater than 0.75 times the prior 14-session ATR together with a close in the upper quartile indicates constrained selling and incomplete information diffusion. Buying the next open and exiting at open plus 0.25 ATR, or at the same-session close if unfilled, should add repeatable net return across gold, Nasdaq and S&P 500 after the user-specified fee without overnight risk.",
+        "parameters": {
+          "allowed_changes": [
+            "one fixed cross-asset rule: previous close above trailing SMA(50), previous true range no greater than 0.75 times the 14-session ATR ending at T-2, and previous close location at least 0.75",
+            "enter at the current real OHLC open and set the same-session take-profit to open plus 0.25 times the frozen T-2 ATR(14)",
+            "if the current high reaches the frozen take-profit, exit at that target; otherwise exit at the current close",
+            "standalone 100% sleeve runs for gold_cny, nasdaq and sp500 plus one fixed one-third-per-asset combined run",
+            "matched compression controls that remove only the SMA(50) trend gate, a CNY demand-cash control and one preregistered 0.05% adverse-slippage execution stress"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "reading current-session high, low or close before the opening buy decision",
+            "including the T-1 compression bar or any T-session range in the ATR baseline",
+            "any SMA, ATR, compression, close-location or take-profit parameter grid or post-result threshold change",
+            "asset-specific parameters or dropping a weak gold, Nasdaq or S&P 500 component",
+            "adding RSI, MACD, volume, calendar or another factor after viewing this result",
+            "adding a stop-loss, holding overnight or changing the close liquidation rule",
+            "shorting, borrowing, financing, leverage, negative target weights, gross exposure above 100% or negative end-of-day cash",
+            "changing the user-specified 0.005% per-fill fee or hiding the preregistered slippage stress",
+            "representing index OHLC execution as directly investable product evidence"
+          ],
+          "shared_rules": {
+            "atr_baseline_end": "T-2; excludes the T-1 compression bar",
+            "atr_lookback_sessions": 14,
+            "compression_atr_multiple": 0.75,
+            "entry": "buy current session open after the open-time causal signal passes",
+            "evaluation_end": "2026-08-20",
+            "evaluation_start": "2001-09-05",
+            "exit": "sell at open + 0.25 * frozen prior ATR if current high reaches it; otherwise sell current close",
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "minimum_previous_close_location": 0.75,
+            "overnight_positions_allowed": false,
+            "shorting_allowed": false,
+            "take_profit_atr_multiple": 0.25,
+            "trend_lookback_sessions": 50,
+            "trend_rule": "previous close > mean of the 50 closes ending at previous close"
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "tools/dayk_high_speed_002_logic.swift",
+        "target_fingerprint": null,
+        "version_key": "S-DAYK-HIGH-SPEED-002"
+      }
+    }
+  ]
+}

@@ -1,0 +1,336 @@
+{
+  "batch_key": "ATM-SVP2-US-VALUE-PROD-001-strategy-library-v1",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-US-VALUE-PROD-001.json",
+    "decision": "PASS / S-IWD-PROD-SP500-ROLE ROBUST_STRATEGY_PASS. IWD preserves the frozen V11 signal/target/event path and 100% gross while replacing only the realized sp500 role return from 2004-02-02 onward. Full CAGR 14.468031% vs V11 14.345615%, full Sharpe 1.542584 vs 1.522263, full MDD 7.689054% vs 7.689054%. On the post-substitution evaluation window, CAGR 14.727241% vs 14.594439% and Sharpe 1.555816 vs 1.533946. IWD passed 5/7 fold Sharpe comparisons, all deterministic gates, 20000-replicate paired block bootstrap with P(CAGR>V11)=90.985% and P(Sharpe>V11)=98.215%, MDD P97.5=13.193%, and cumulative 40-performance-candidate DSR=97.202%. VBR is rejected despite higher CAGR because it won only 4/7 fold Sharpe comparisons and P(Sharpe>V11)=81.965%<90%. No post-result blend/timing/start/ETF rescue is permitted. IWD is a retrospective robust strategy candidate, not a claim that G0-G6/prospective validation is complete; freeze it for prospective OOS before product promotion.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "b23a21ca63fdd4366c2028a180418821915b08bb",
+    "methodology": {
+      "follow_up_policy": "This result-informed production-path value campaign ends after both candidates are opened. Do not blend IWD/VBR with S&P or each other, change the 2004-02-02 start, substitute only part of the sp500 role, add a third value ETF, alter the calendar carry-forward rule, add timing or valuation gates, change V11 targets/events, add leverage, or rerun a nicer variant. A future value hypothesis must be materially new, independently motivated, preregistered, and counted as a new trial family.",
+      "formal_run_budget": 2,
+      "pass_fail_gates": [
+        "deterministic 2004-02-02+: candidate CAGR > V11 CAGR",
+        "deterministic 2004-02-02+: candidate Sharpe >= V11 Sharpe",
+        "deterministic 2004-02-02+: candidate MDD <=10%",
+        "deterministic: at least 5/7 fixed folds candidate Sharpe >= V11 Sharpe in the same fold",
+        "deterministic: worst fixed-fold Sharpe >0",
+        "deterministic: source production V11 full target fingerprint exactly equals ba67c8aa24bc7168; candidate execution-event target fingerprints equal the source execution-event target fingerprint; target gross <=100%, min target weight >=0, no financing or shorting",
+        "bootstrap on 2004-02-02+ behavior: paired circular moving blocks versus V11, 63 sessions, 20000 replicates, seed 20260822",
+        "bootstrap: P(CAGR candidate > V11) >=0.90",
+        "bootstrap: P(Sharpe candidate > V11) >=0.90",
+        "bootstrap: median candidate-minus-V11 CAGR delta >0",
+        "bootstrap: median candidate-minus-V11 Sharpe delta >0",
+        "bootstrap: candidate MDD P97.5 <=15%",
+        "PBO/winner-selection test: not applicable because both candidates are independently reported and no family winner is selected",
+        "global post-protocol DSR probability >=95% using the prior 38 performance-bearing formal candidates plus both new candidates, total 40",
+        "ROBUST_STRATEGY_PASS requires every applicable deterministic, bootstrap, and global DSR gate"
+      ],
+      "selection_metric": "No winner selection. Both result-informed value-role candidates are independently compared with the same production-path V11 and both remain in G3/global DSR accounting regardless of outcome."
+    },
+    "preregistration_hash": "0ded9ee2e8a5aa9c2a79baf5abfa4f09332d17e174514ee5571b1bd642b88ae2",
+    "protocol_id": "ATM-SVP-2",
+    "run_key": "ATM-SVP2-US-VALUE-PROD-001",
+    "status": "PASS",
+    "title": "US_VALUE_PRODUCTION_PATH_ROLE_SUBSTITUTION_V1"
+  },
+  "schema_version": "strategy-library-v1",
+  "source_commit": "b23a21ca63fdd4366c2028a180418821915b08bb",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "The prior common-window value-role trial suggested positive value-role incremental returns but restarted all portfolios from cash, which mixed role substitution with a path reset. Replaying the same two preregistered value instruments on the full frozen production V11 path can isolate whether IWD or VBR improves the sp500 realized-return role while preserving all V11 signals, target weights, execution events, gross exposure, fees, and cash policy.",
+      "display_name": "V12 / IWD 美股价值角色",
+      "family": "美股资产角色",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/statistical-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/statistical-audit.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/V11-CONTROL-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/S-IWD-PROD-SP500-ROLE-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/S-VBR-PROD-SP500-ROLE-portfolio.csv"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": 0.90985,
+        "bootstrap_probability_sharpe": 0.98215,
+        "cagr_percent": 14.468031,
+        "candidate_id": "S-IWD-PROD-SP500-ROLE",
+        "conclusion": "PASS / S-IWD-PROD-SP500-ROLE ROBUST_STRATEGY_PASS. IWD preserves the frozen V11 signal/target/event path and 100% gross while replacing only the realized sp500 role return from 2004-02-02 onward. Full CAGR 14.468031% vs V11 14.345615%, full Sharpe 1.542584 vs 1.522263, full MDD 7.689054% vs 7.689054%. On the post-substitution evaluation window, CAGR 14.727241% vs 14.594439% and Sharpe 1.555816 vs 1.533946. IWD passed 5/7 fold Sharpe comparisons, all deterministic gates, 20000-replicate paired block bootstrap with P(CAGR>V11)=90.985% and P(Sharpe>V11)=98.215%, MDD P97.5=13.193%, and cumulative 40-performance-candidate DSR=97.202%. VBR is rejected despite higher CAGR because it won only 4/7 fold Sharpe comparisons and P(Sharpe>V11)=81.965%<90%. No post-result blend/timing/start/ETF rescue is permitted. IWD is a retrospective robust strategy candidate, not a claim that G0-G6/prospective validation is complete; freeze it for prospective OOS before product promotion.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "shorting_allowed": false
+        },
+        "dsr_probability": 0.9720150502468123,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": 5,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 7.689054,
+        "metrics": {
+          "bootstrap_mdd_p975": 0.1319267369002894,
+          "bootstrap_median_candidate_minus_v11_cagr": 0.0012425372109185068,
+          "bootstrap_median_candidate_minus_v11_sharpe": 0.021414119573850865,
+          "bootstrap_probability_cagr_gt_v11": 0.90985,
+          "bootstrap_probability_sharpe_gt_v11": 0.98215,
+          "bootstrap_robust_pass": true,
+          "cagr_percent": 14.468031,
+          "deterministic_admit": true,
+          "evaluation_cagr_percent": 14.727241,
+          "evaluation_mdd_percent": 7.402337,
+          "evaluation_sharpe": 1.555816,
+          "evaluation_start": "2004-02-02",
+          "execution_event_target_fingerprint": "ea843d2a26d9eff3",
+          "folds_sharpe_ge_v11": 5,
+          "global_dsr_pass": true,
+          "global_post_protocol_dsr_probability": 0.9720150502468123,
+          "global_post_protocol_dsr_trial_count": 40,
+          "mdd_percent": 7.689054,
+          "robust_strategy_pass": true,
+          "sharpe": 1.542584,
+          "since2020_cagr_percent": 17.79399,
+          "since2020_sharpe": 1.667149,
+          "since2022_cagr_percent": 21.271905,
+          "since2022_sharpe": 1.817952,
+          "worst_fold_sharpe": 0.694282
+        },
+        "result_status": "PASS",
+        "robust_strategy_pass": true,
+        "sharpe": 1.542584,
+        "since2020_cagr_percent": 17.79399,
+        "since2022_cagr_percent": 21.271905,
+        "superseded_by": "ATM-SVP2-IWD-SPY-TR-001"
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-IWD-PROD-SP500-ROLE",
+      "strategy_kind": "strategy_asset_role_not_factor",
+      "tags": [
+        "ATM-SVP2-US-VALUE-PROD-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "410d7c5014a7360f61d14b9d1f509008de39050605d93e91b33d41a2bef4cedd",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "suspended",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "The prior common-window value-role trial suggested positive value-role incremental returns but restarted all portfolios from cash, which mixed role substitution with a path reset. Replaying the same two preregistered value instruments on the full frozen production V11 path can isolate whether IWD or VBR improves the sp500 realized-return role while preserving all V11 signals, target weights, execution events, gross exposure, fees, and cash policy.",
+        "parameters": {
+          "allowed_changes": [
+            "preserve the full frozen V11 history from its original start rather than restarting all portfolios from cash in 2004",
+            "S-IWD-PROD-SP500-ROLE replaces only the realized return under the frozen V11 sp500 portfolio role with IWD adjusted-close return from 2004-02-02 onward",
+            "S-VBR-PROD-SP500-ROLE performs the identical role substitution using VBR",
+            "before 2004-02-02 both candidates use the original frozen S&P role return and are identical to production V11",
+            "on union-calendar dates without a new value-ETF quote, carry the last adjusted close forward so that role return is zero on that date and the next quote realizes the full close-to-close ETF return",
+            "the V11 source full target fingerprint must remain ba67c8aa24bc7168 and both candidate execution-event target fingerprints must equal the source execution-event fingerprint"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "dropping either IWD or VBR from this result-informed continuation",
+            "any frozen V11 signal, parameter, event date, target sizing, or target-path change",
+            "any value/S&P or IWD/VBR blend",
+            "any substitution fraction other than exactly 100% of the sp500 realized-return role",
+            "any alternative value ETF or third candidate",
+            "any value timing, moving average, momentum, valuation, volatility, or regime gate",
+            "any substitution-start change after performance is viewed",
+            "any leverage, financing, negative target weights, or gross above 100%",
+            "using IWD/VBR prices to alter V11 signals or target weights"
+          ],
+          "shared_rules": {
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "production_v11_target_fingerprint": "ba67c8aa24bc7168",
+            "rebalance_band": 0.25,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005,
+            "sp500_role_substitution_fraction": 1.0,
+            "substitution_start": "2004-02-02"
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "scripts/run_us_value_production_role_v1.py",
+        "target_fingerprint": "ea843d2a26d9eff3",
+        "version_key": "S-IWD-PROD-SP500-ROLE"
+      }
+    },
+    {
+      "description": "The prior common-window value-role trial suggested positive value-role incremental returns but restarted all portfolios from cash, which mixed role substitution with a path reset. Replaying the same two preregistered value instruments on the full frozen production V11 path can isolate whether IWD or VBR improves the sp500 realized-return role while preserving all V11 signals, target weights, execution events, gross exposure, fees, and cash policy.",
+      "display_name": "result-informed production-path continuation of ATM-SVP2-US-VALUE-ROLE-001",
+      "family": "美股资产角色",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/statistical-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/statistical-audit.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/V11-CONTROL-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/S-IWD-PROD-SP500-ROLE-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/S-VBR-PROD-SP500-ROLE-portfolio.csv"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": 0.937,
+        "bootstrap_probability_sharpe": 0.81965,
+        "cagr_percent": 14.660787,
+        "candidate_id": "S-VBR-PROD-SP500-ROLE",
+        "conclusion": "PASS / S-IWD-PROD-SP500-ROLE ROBUST_STRATEGY_PASS. IWD preserves the frozen V11 signal/target/event path and 100% gross while replacing only the realized sp500 role return from 2004-02-02 onward. Full CAGR 14.468031% vs V11 14.345615%, full Sharpe 1.542584 vs 1.522263, full MDD 7.689054% vs 7.689054%. On the post-substitution evaluation window, CAGR 14.727241% vs 14.594439% and Sharpe 1.555816 vs 1.533946. IWD passed 5/7 fold Sharpe comparisons, all deterministic gates, 20000-replicate paired block bootstrap with P(CAGR>V11)=90.985% and P(Sharpe>V11)=98.215%, MDD P97.5=13.193%, and cumulative 40-performance-candidate DSR=97.202%. VBR is rejected despite higher CAGR because it won only 4/7 fold Sharpe comparisons and P(Sharpe>V11)=81.965%<90%. No post-result blend/timing/start/ETF rescue is permitted. IWD is a retrospective robust strategy candidate, not a claim that G0-G6/prospective validation is complete; freeze it for prospective OOS before product promotion.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "shorting_allowed": false
+        },
+        "dsr_probability": 0.9717249958351852,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": 4,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 7.689054,
+        "metrics": {
+          "bootstrap_mdd_p975": 0.1361868822828174,
+          "bootstrap_median_candidate_minus_v11_cagr": 0.0032194214165566226,
+          "bootstrap_median_candidate_minus_v11_sharpe": 0.0193756177900275,
+          "bootstrap_probability_cagr_gt_v11": 0.937,
+          "bootstrap_probability_sharpe_gt_v11": 0.81965,
+          "bootstrap_robust_pass": false,
+          "cagr_percent": 14.660787,
+          "deterministic_admit": false,
+          "evaluation_cagr_percent": 14.944855,
+          "evaluation_mdd_percent": 7.474188,
+          "evaluation_sharpe": 1.554547,
+          "evaluation_start": "2004-02-02",
+          "execution_event_target_fingerprint": "ea843d2a26d9eff3",
+          "folds_sharpe_ge_v11": 4,
+          "global_dsr_pass": true,
+          "global_post_protocol_dsr_probability": 0.9717249958351852,
+          "global_post_protocol_dsr_trial_count": 40,
+          "mdd_percent": 7.689054,
+          "robust_strategy_pass": false,
+          "sharpe": 1.540749,
+          "since2020_cagr_percent": 18.576994,
+          "since2020_sharpe": 1.709114,
+          "since2022_cagr_percent": 21.236799,
+          "since2022_sharpe": 1.805212,
+          "worst_fold_sharpe": 0.651363
+        },
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "sharpe": 1.540749,
+        "since2020_cagr_percent": 18.576994,
+        "since2022_cagr_percent": 21.236799,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-VBR-PROD-SP500-ROLE",
+      "strategy_kind": "strategy_asset_role_not_factor",
+      "tags": [
+        "ATM-SVP2-US-VALUE-PROD-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "410d7c5014a7360f61d14b9d1f509008de39050605d93e91b33d41a2bef4cedd",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "The prior common-window value-role trial suggested positive value-role incremental returns but restarted all portfolios from cash, which mixed role substitution with a path reset. Replaying the same two preregistered value instruments on the full frozen production V11 path can isolate whether IWD or VBR improves the sp500 realized-return role while preserving all V11 signals, target weights, execution events, gross exposure, fees, and cash policy.",
+        "parameters": {
+          "allowed_changes": [
+            "preserve the full frozen V11 history from its original start rather than restarting all portfolios from cash in 2004",
+            "S-IWD-PROD-SP500-ROLE replaces only the realized return under the frozen V11 sp500 portfolio role with IWD adjusted-close return from 2004-02-02 onward",
+            "S-VBR-PROD-SP500-ROLE performs the identical role substitution using VBR",
+            "before 2004-02-02 both candidates use the original frozen S&P role return and are identical to production V11",
+            "on union-calendar dates without a new value-ETF quote, carry the last adjusted close forward so that role return is zero on that date and the next quote realizes the full close-to-close ETF return",
+            "the V11 source full target fingerprint must remain ba67c8aa24bc7168 and both candidate execution-event target fingerprints must equal the source execution-event fingerprint"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "dropping either IWD or VBR from this result-informed continuation",
+            "any frozen V11 signal, parameter, event date, target sizing, or target-path change",
+            "any value/S&P or IWD/VBR blend",
+            "any substitution fraction other than exactly 100% of the sp500 realized-return role",
+            "any alternative value ETF or third candidate",
+            "any value timing, moving average, momentum, valuation, volatility, or regime gate",
+            "any substitution-start change after performance is viewed",
+            "any leverage, financing, negative target weights, or gross above 100%",
+            "using IWD/VBR prices to alter V11 signals or target weights"
+          ],
+          "shared_rules": {
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "production_v11_target_fingerprint": "ba67c8aa24bc7168",
+            "rebalance_band": 0.25,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005,
+            "sp500_role_substitution_fraction": 1.0,
+            "substitution_start": "2004-02-02"
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "scripts/run_us_value_production_role_v1.py",
+        "target_fingerprint": "ea843d2a26d9eff3",
+        "version_key": "S-VBR-PROD-SP500-ROLE"
+      }
+    }
+  ]
+}

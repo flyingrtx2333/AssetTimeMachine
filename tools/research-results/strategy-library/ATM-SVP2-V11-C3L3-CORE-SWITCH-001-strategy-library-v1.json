@@ -1,0 +1,229 @@
+{
+  "batch_key": "ATM-SVP2-V11-C3L3-CORE-SWITCH-001-strategy-library-v1",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-V11-C3L3-CORE-SWITCH-001.json",
+    "decision": "FAIL / NO_ROBUST_STRATEGY_PASS. The preregistered one-shot C3/L3 core switch increased full-history CAGR to 14.504572% from frozen V11 14.345615% while keeping MDD at 7.771319% and satisfying the unlevered max-gross/nonnegative-weight and fee-invariant-target constraints. However full Sharpe fell to 1.516321 versus V11 1.522263 and only 3/7 fixed folds matched or exceeded V11 Sharpe. The frozen paired 20,000-replicate bootstrap also failed: P(CAGR candidate>V11)=81.320% and P(Sharpe candidate>V11)=35.565%, with a negative median Sharpe delta, although MDD P97.5=14.5752458% and cumulative 44-candidate DSR=96.981% passed their individual gates. Therefore deterministic and bootstrap admission fail and robust_strategy_pass=false. Per the preregistered stop rule, no OR/AND, lookback, threshold, source-event, blend, band, fee, or rescue variant may be opened under this campaign.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "56f256fddc50853476b2f1152cf328ca0d24091a",
+    "methodology": {
+      "follow_up_policy": "One-shot result-informed architecture test. After performance is opened, do not change C3/L3 OR to AND, 8/4 release lookbacks, -0.03 thresholds, source-event union, stress/calm mapping, HighCore/V11 source definitions, blend fractions, band, fee semantics, or add any second rescue variant. Failure closes this retrospective core-switch campaign.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "deterministic: full CAGR > frozen V11 CAGR",
+        "deterministic: full Sharpe >= frozen V11 Sharpe",
+        "deterministic: full MDD <=10%",
+        "deterministic: at least 5/7 fixed folds candidate Sharpe >= V11 Sharpe",
+        "deterministic: worst fixed-fold candidate Sharpe >0",
+        "deterministic: target gross <=100%, min target weight >=0, no financing or shorting",
+        "deterministic: candidate target fingerprint identical under 1.00% and 0.03% user fees",
+        "deterministic: frozen stress-event count identical under 1.00% and 0.03% user fees and source_events=stress_events+calm_events",
+        "bootstrap: paired circular moving blocks candidate versus V11, 63 sessions, 20000 replicates, seed 20260822",
+        "bootstrap: P(CAGR candidate > V11) >=0.90",
+        "bootstrap: P(Sharpe candidate > V11) >=0.90",
+        "bootstrap: median candidate-minus-V11 CAGR delta >0",
+        "bootstrap: median candidate-minus-V11 Sharpe delta >0",
+        "bootstrap: candidate MDD P97.5 <=15%",
+        "PBO not applicable: one fixed candidate, no within-family selection",
+        "global post-protocol DSR probability >=95% using 43 prior performance-bearing formal candidates plus this candidate, total 44",
+        "ROBUST_STRATEGY_PASS requires every applicable deterministic, bootstrap, and DSR gate"
+      ],
+      "selection_metric": "No model selection. One mechanically defined candidate uses the already-frozen C3/L3 state to choose between two already-frozen source targets."
+    },
+    "preregistration_hash": "f030544ba6d47761287523396f8b57a30582b88d0d97a81d5d8a399c5a0faca3",
+    "protocol_id": "ATM-SVP-2",
+    "run_key": "ATM-SVP2-V11-C3L3-CORE-SWITCH-001",
+    "status": "FAIL",
+    "title": "V11_C3L3_STRESS_ADAPTIVE_HIGHCORE_SWITCH_V1"
+  },
+  "schema_version": "strategy-library-v1",
+  "source_commit": "56f256fddc50853476b2f1152cf328ca0d24091a",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "The standalone HighCore has strong CAGR evidence but inconsistent fold Sharpe. Using the exact frozen V11 DualCore target only on existing C3/L3 stress events and the exact HighCore target otherwise can retain HighCore return uplift while restoring cross-regime risk-adjusted consistency, without adding numeric thresholds, leverage, financing, new assets, or new daily timing events.",
+      "display_name": "V11 C3/L3 核心切换",
+      "family": "V11核心架构",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/candidates/statistical-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/candidates/statistical-audit.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/candidates/V11-CONTROL-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/candidates/S-V11-C3L3-CORE-SWITCH-portfolio.csv"
+          }
+        ],
+        "bootstrap": {
+          "block_sessions": 63,
+          "candidate_mdd_p975": 0.14575245802406722,
+          "median_candidate_minus_v11_cagr": 0.0014949511142220845,
+          "median_candidate_minus_v11_sharpe": -0.005577543914077943,
+          "probability_cagr_gt_v11": 0.8132,
+          "probability_sharpe_gt_v11": 0.35565,
+          "replicates": 20000,
+          "rng_seed": 20260822
+        },
+        "bootstrap_probability_cagr": 0.8132,
+        "bootstrap_probability_sharpe": 0.35565,
+        "cagr_percent": 14.504572,
+        "candidate_id": "S-V11-C3L3-CORE-SWITCH",
+        "conclusion": "FAIL / NO_ROBUST_STRATEGY_PASS. The preregistered one-shot C3/L3 core switch increased full-history CAGR to 14.504572% from frozen V11 14.345615% while keeping MDD at 7.771319% and satisfying the unlevered max-gross/nonnegative-weight and fee-invariant-target constraints. However full Sharpe fell to 1.516321 versus V11 1.522263 and only 3/7 fixed folds matched or exceeded V11 Sharpe. The frozen paired 20,000-replicate bootstrap also failed: P(CAGR candidate>V11)=81.320% and P(Sharpe candidate>V11)=35.565%, with a negative median Sharpe delta, although MDD P97.5=14.5752458% and cumulative 44-candidate DSR=96.981% passed their individual gates. Therefore deterministic and bootstrap admission fail and robust_strategy_pass=false. Per the preregistered stop rule, no OR/AND, lookback, threshold, source-event, blend, band, fee, or rescue variant may be opened under this campaign.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "shorting_allowed": false
+        },
+        "dsr_probability": 0.9698101850231363,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": 3,
+        "gates": {
+          "cagr_gt_v11": true,
+          "constraints_pass": true,
+          "fee_invariant_target_fingerprint": true,
+          "folds_sharpe_ge_v11_ge_5_of_7": false,
+          "mdd_le_10pct": true,
+          "sharpe_ge_v11": false,
+          "worst_fold_sharpe_gt_0": true
+        },
+        "max_gross": 1.0,
+        "mdd_percent": 7.771319,
+        "metrics": {
+          "admission_checks": {
+            "cagr_gt_v11": true,
+            "constraints_pass": true,
+            "fee_invariant_target_fingerprint": true,
+            "folds_sharpe_ge_v11_ge_5_of_7": false,
+            "mdd_le_10pct": true,
+            "sharpe_ge_v11": false,
+            "worst_fold_sharpe_gt_0": true
+          },
+          "average_cash_ratio": 0.417679,
+          "bootstrap": {
+            "block_sessions": 63,
+            "candidate_mdd_p975": 0.14575245802406722,
+            "median_candidate_minus_v11_cagr": 0.0014949511142220845,
+            "median_candidate_minus_v11_sharpe": -0.005577543914077943,
+            "probability_cagr_gt_v11": 0.8132,
+            "probability_sharpe_gt_v11": 0.35565,
+            "replicates": 20000,
+            "rng_seed": 20260822
+          },
+          "bootstrap_robust_pass": false,
+          "cagr_percent": 14.504572,
+          "deterministic_admit": false,
+          "fee_invariant_target": true,
+          "folds_sharpe_ge_v11": 3,
+          "global_dsr_pass": true,
+          "global_post_protocol_dsr_probability": 0.9698101850231363,
+          "global_post_protocol_dsr_trial_count": 44,
+          "max_gross": 1.0,
+          "mdd_percent": 7.771319,
+          "min_weight": 0.0,
+          "robust_strategy_pass": false,
+          "sharpe": 1.516321,
+          "since2020_cagr_percent": 17.699145,
+          "since2020_sharpe": 1.615672,
+          "since2022_cagr_percent": 21.099194,
+          "since2022_sharpe": 1.757421,
+          "trades": 426,
+          "vol_percent": 8.89118,
+          "worst_fold_sharpe": 0.78956
+        },
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "sharpe": 1.516321,
+        "since2020_cagr_percent": 17.699145,
+        "since2022_cagr_percent": 21.099194,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-V11-C3L3-CORE-SWITCH",
+      "strategy_kind": "strategy_architecture_not_factor",
+      "tags": [
+        "ATM-SVP2-V11-C3L3-CORE-SWITCH-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "d4641f15d1a90db8f7e251a888c0e42f47e192c49dc735f109d873a7a1814919",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "The standalone HighCore has strong CAGR evidence but inconsistent fold Sharpe. Using the exact frozen V11 DualCore target only on existing C3/L3 stress events and the exact HighCore target otherwise can retain HighCore return uplift while restoring cross-regime risk-adjusted consistency, without adding numeric thresholds, leverage, financing, new assets, or new daily timing events.",
+        "parameters": {
+          "allowed_changes": [
+            "candidate source targets are exactly the frozen V11 DualCore targets and exact current V11 HighCore targets; neither source strategy is modified",
+            "source event dates are the fixed union of actual V11 and HighCore trade dates; no extra daily timing events are added",
+            "on each source event signal date, stress=true iff frozen V11 C3/L3 state triggers: 8-release NFCICREDIT change <= -0.03 OR 4-release NFCILEVERAGE change <= -0.03",
+            "if stress=true use the exact V11 target; otherwise use the exact HighCore target",
+            "replay through the shared BacktestDailySimulator with the frozen 25% band, max gross 100%, no shorting, no financing",
+            "user fee may affect execution P&L only; candidate target fingerprint and C3/L3 stress-event count must be identical under 1.00% and 0.03% fee"
+          ],
+          "candidate_definition": {
+            "calm_target": "exact S-V11-HIGHCORE-ONLY current implementation",
+            "candidate_id": "S-V11-C3L3-CORE-SWITCH",
+            "max_gross": 1.0,
+            "new_numeric_parameters": 0,
+            "rebalance_band": 0.25,
+            "source_event_scope": "union of V11 and HighCore actual trade dates",
+            "stress_rule": "NFCICREDIT 8-release delta <= -0.03 OR NFCILEVERAGE 4-release delta <= -0.03",
+            "stress_target": "exact frozen V11 DualCore target"
+          },
+          "forbidden_changes": [
+            "C3/L3 OR-to-AND or any alternate logical combination",
+            "any C3/L3 lookback or threshold change",
+            "any alternative stress selector, volatility gate, drawdown gate, factor, timing, or market regime",
+            "any blend between V11 and HighCore; candidate must select exactly one frozen target at each source event",
+            "any new event date outside the frozen source-event union",
+            "any modification to V11 or HighCore source implementations",
+            "leverage, financing, shorting, negative target weights, gross above 100%, or fee-driven target changes",
+            "rerunning a modified rescue candidate after seeing the result"
+          ],
+          "shared_rules": {
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "frozen_v11_control_fingerprint": "ba67c8aa24bc7168",
+            "low_fee_target_invariance_check": 0.0003,
+            "max_gross": 1.0,
+            "pre_performance_smoke_calm_events": 119,
+            "pre_performance_smoke_source_events": 178,
+            "pre_performance_smoke_stress_events": 59,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "scripts/run_v11_c3l3_adaptive_core_v1.py",
+        "target_fingerprint": null,
+        "version_key": "S-V11-C3L3-CORE-SWITCH"
+      }
+    }
+  ]
+}

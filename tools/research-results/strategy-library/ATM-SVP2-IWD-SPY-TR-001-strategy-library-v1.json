@@ -1,0 +1,201 @@
+{
+  "batch_key": "ATM-SVP2-IWD-SPY-TR-001-strategy-library-v1",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-IWD-SPY-TR-001.json",
+    "decision": "FAIL / MATCHED TOTAL-RETURN AUDIT DOES NOT CONFIRM ROBUST IWD VALUE ALPHA. IWD remained directionally better than matched SPY: evaluation CAGR 14.509755% vs SPY 14.465392% and Sharpe 1.547475 vs 1.535352, with 5/7 fold Sharpe wins, equal full MDD 7.689054%, and cumulative 41-candidate DSR 97.577%. However paired 20000-replicate bootstrap gave P(CAGR IWD>SPY)=67.210% and P(Sharpe IWD>SPY)=88.065%, both below the frozen 90% gates. Therefore robust_strategy_pass=false. ATM-SVP2-US-VALUE-PROD-001 remains a truthful PASS under its original price-index comparator, but it cannot support a value-premium/product V12 promotion after this stricter matched-total-return audit. The already frozen IWD prospective trial is suspended; no SPY/IWD blend, timing, alternate start, ETF replacement, or threshold rescue is permitted.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "737e156014bd30ea1e4ef87d7d8fc5931a59627a",
+    "methodology": {
+      "follow_up_policy": "This is a methodology-correction audit, not a rescue search. After formal performance is opened, do not change SPY, IWD, adjusted-close price field, 2000-05-30 start, substitution fraction, calendar alignment, folds, thresholds, fees, target path, or add any third comparator. If the audit fails, ATM-SVP2-US-VALUE-PROD-001 remains a truthful historical PASS under its original preregistration but its value-premium/product-upgrade interpretation is downgraded; the IWD V12 prospective/product promotion must be suspended rather than rescued. If the audit passes, the exact IWD rule remains frozen and its existing prospective clock may continue without historical retuning.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "deterministic 2000-05-30+: IWD candidate CAGR > SPY matched-control CAGR",
+        "deterministic 2000-05-30+: IWD candidate Sharpe >= SPY matched-control Sharpe",
+        "deterministic 2000-05-30+: IWD candidate MDD <=10%",
+        "deterministic: at least 5/7 fixed folds candidate Sharpe >= SPY matched-control Sharpe in the same fold",
+        "deterministic: worst fixed-fold candidate Sharpe >0",
+        "deterministic: source production V11 full target fingerprint exactly equals ba67c8aa24bc7168; SPY control and IWD candidate execution-event target fingerprints exactly equal the source execution-event target fingerprint; target gross <=100%, min target weight >=0, no financing or shorting",
+        "bootstrap on 2000-05-30+ common behavior: paired circular moving blocks IWD versus SPY, 63 sessions, 20000 replicates, seed 20260822",
+        "bootstrap: P(CAGR IWD > CAGR SPY) >=0.90",
+        "bootstrap: P(Sharpe IWD > Sharpe SPY) >=0.90",
+        "bootstrap: median IWD-minus-SPY CAGR delta >0",
+        "bootstrap: median IWD-minus-SPY Sharpe delta >0",
+        "bootstrap: IWD candidate MDD P97.5 <=15%",
+        "PBO: not applicable because there is one fixed candidate and one non-selectable matched control",
+        "global post-protocol DSR probability >=95% using the prior 40 performance-bearing formal candidates plus this IWD matched-comparator candidate, total 41",
+        "ROBUST_MATCHED_ROLE_PASS requires every applicable deterministic, bootstrap, and global DSR gate"
+      ],
+      "selection_metric": "No model selection. Compare the single IWD candidate only with the fixed SPY matched-total-return control. The original V11 price-index path is reported for background/identity only and is not the primary admission comparator."
+    },
+    "preregistration_hash": "81370e7f46ce11af964c89df16e5bddf5de2a5ff26a2c7ebb35c984b4ffe4d2c",
+    "protocol_id": "ATM-SVP-2",
+    "run_key": "ATM-SVP2-IWD-SPY-TR-001",
+    "status": "FAIL",
+    "title": "IWD_VS_SPY_MATCHED_TOTAL_RETURN_PRODUCTION_ROLE_AUDIT_V1"
+  },
+  "schema_version": "strategy-library-v1",
+  "source_commit": "737e156014bd30ea1e4ef87d7d8fc5931a59627a",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "After eliminating the post-result comparator mismatch between the frozen V11 S&P 500 price-index role and IWD adjusted-close total-return proxy, the IWD value-role implementation still improves the same production target/event path relative to a matched SPY adjusted-close total-return control. A pass is required before the IWD result may be interpreted as value-role improvement rather than dividend/total-return measurement advantage.",
+      "display_name": "IWD vs SPY 同口径审计",
+      "family": "美股资产角色",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/statistical-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/statistical-audit.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/V11-CONTROL-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/C-SPY-TR-PROD-SP500-ROLE-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/S-IWD-VS-SPY-TR-ROLE-portfolio.csv"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": 0.6721,
+        "bootstrap_probability_sharpe": 0.88065,
+        "cagr_percent": 14.509755,
+        "candidate_id": "S-IWD-VS-SPY-TR-ROLE",
+        "conclusion": "FAIL / MATCHED TOTAL-RETURN AUDIT DOES NOT CONFIRM ROBUST IWD VALUE ALPHA. IWD remained directionally better than matched SPY: evaluation CAGR 14.509755% vs SPY 14.465392% and Sharpe 1.547475 vs 1.535352, with 5/7 fold Sharpe wins, equal full MDD 7.689054%, and cumulative 41-candidate DSR 97.577%. However paired 20000-replicate bootstrap gave P(CAGR IWD>SPY)=67.210% and P(Sharpe IWD>SPY)=88.065%, both below the frozen 90% gates. Therefore robust_strategy_pass=false. ATM-SVP2-US-VALUE-PROD-001 remains a truthful PASS under its original price-index comparator, but it cannot support a value-premium/product V12 promotion after this stricter matched-total-return audit. The already frozen IWD prospective trial is suspended; no SPY/IWD blend, timing, alternate start, ETF replacement, or threshold rescue is permitted.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "shorting_allowed": false
+        },
+        "dsr_probability": 0.9757703351863505,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": 5,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 7.689054,
+        "metrics": {
+          "bootstrap_mdd_p975": 0.13656680311050728,
+          "bootstrap_median_candidate_minus_matched_cagr": 0.00040361634575088873,
+          "bootstrap_median_candidate_minus_matched_sharpe": 0.011788568305094116,
+          "bootstrap_probability_cagr_gt_matched": 0.6721,
+          "bootstrap_probability_sharpe_gt_matched": 0.88065,
+          "bootstrap_robust_pass": false,
+          "cagr_percent": 14.509755,
+          "deterministic_admit": true,
+          "evaluation_cagr_percent": 14.509755,
+          "evaluation_mdd_percent": 7.689054,
+          "evaluation_sharpe": 1.547475,
+          "evaluation_start": "2000-05-30",
+          "execution_event_target_fingerprint": "ea843d2a26d9eff3",
+          "folds_sharpe_ge_matched": 5,
+          "global_dsr_pass": true,
+          "global_post_protocol_dsr_probability": 0.9757703351863505,
+          "global_post_protocol_dsr_trial_count": 41,
+          "matched_control_id": "C-SPY-TR-PROD-SP500-ROLE",
+          "matched_evaluation_cagr_percent": 14.465392,
+          "matched_evaluation_mdd_percent": 7.689054,
+          "matched_evaluation_sharpe": 1.535352,
+          "mdd_percent": 7.689054,
+          "robust_strategy_pass": false,
+          "sharpe": 1.547475,
+          "since2020_cagr_percent": 17.79399,
+          "since2020_sharpe": 1.667149,
+          "since2022_cagr_percent": 21.271905,
+          "since2022_sharpe": 1.817952,
+          "worst_fold_sharpe": 1.072567
+        },
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "sharpe": 1.547475,
+        "since2020_cagr_percent": 17.79399,
+        "since2022_cagr_percent": 21.271905,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-IWD-VS-SPY-TR-ROLE",
+      "strategy_kind": "strategy_asset_role_not_factor",
+      "tags": [
+        "ATM-SVP2-IWD-SPY-TR-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "441fc988676dfd41e648fd2e493bc46a72d7fef1825ea363b23d3e841f811026",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "After eliminating the post-result comparator mismatch between the frozen V11 S&P 500 price-index role and IWD adjusted-close total-return proxy, the IWD value-role implementation still improves the same production target/event path relative to a matched SPY adjusted-close total-return control. A pass is required before the IWD result may be interpreted as value-role improvement rather than dividend/total-return measurement advantage.",
+        "parameters": {
+          "allowed_changes": [
+            "introduce one fixed matched control C-SPY-TR-PROD-SP500-ROLE using SPY Yahoo adjusted-close total-return proxy on the exact frozen V11 sp500 portfolio role",
+            "evaluate one fixed candidate S-IWD-VS-SPY-TR-ROLE using IWD Yahoo adjusted-close total-return proxy on the same role",
+            "use 2000-05-30 as the common substitution/evaluation start because IWD first quotes on 2000-05-26 and its second quote on 2000-05-30 is the first date with a defined IWD close-to-close return; SPY is already available",
+            "before 2000-05-30 both paths use the original frozen S&P price-index role and are identical to V11",
+            "on union-calendar dates with no new IWD/SPY quote, carry the last adjusted close forward so that day's matched role return is zero and the next quote realizes the full close-to-close return",
+            "retain frozen V11 signals, target weights, execution events, 100% gross limit, no-financing policy, fees, slippage, and cash model unchanged"
+          ],
+          "candidate_definition": {
+            "candidate_id": "S-IWD-VS-SPY-TR-ROLE",
+            "instrument": "IWD",
+            "price_field": "Yahoo adjusted_close_total_return_proxy",
+            "role": "sp500 realized-return portfolio role only",
+            "signal_use": "none",
+            "substitution_fraction": 1.0,
+            "substitution_start": "2000-05-30"
+          },
+          "forbidden_changes": [
+            "using the V11 price-index role as the primary admission comparator",
+            "SPY/IWD blend or partial substitution",
+            "VBR, QUAL, MTUM, or any other comparator/candidate",
+            "any alternative price field, dividend adjustment, synthetic total-return construction, or start date",
+            "any value timing, valuation, momentum, volatility, macro, or regime gate",
+            "any frozen V11 signal, target, event, band, or risk-parameter change",
+            "leverage, financing, shorting, negative target weights, or gross above 100%",
+            "dropping this audit from G3 accounting if it fails"
+          ],
+          "shared_rules": {
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "matched_price_field": "adjusted_close_total_return_proxy",
+            "max_gross": 1.0,
+            "production_v11_target_fingerprint": "ba67c8aa24bc7168",
+            "rebalance_band": 0.25,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005,
+            "sp500_role_substitution_fraction": 1.0,
+            "substitution_start": "2000-05-30"
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "scripts/run_us_total_return_matched_role_v1.py",
+        "target_fingerprint": "ea843d2a26d9eff3",
+        "version_key": "S-IWD-VS-SPY-TR-ROLE"
+      }
+    }
+  ]
+}

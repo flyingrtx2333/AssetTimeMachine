@@ -1,0 +1,187 @@
+{
+  "batch_key": "ATM-SVP2-V11-HIGHCORE-001-strategy-library-v1",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-V11-HIGHCORE-001.json",
+    "decision": "FAIL / NO_ROBUST_STRATEGY_PASS. The exact current simplified-V11 high-return core raised full CAGR to 14.809181% versus V11 14.345615%, with Sharpe 1.523994 versus 1.522263 and MDD 7.771319% versus 7.689054%. It preserved 100% gross, nonnegative targets, no financing, and identical target fingerprints under 1.00% and 0.03% user fees. However, candidate Sharpe was at least V11 Sharpe in only 3/7 fixed folds, so deterministic admission failed. Paired 20,000-replicate 63-session bootstrap gave P(CAGR candidate > V11)=98.220% but P(Sharpe candidate > V11)=53.190%; median CAGR and Sharpe deltas were positive and candidate MDD P97.5=14.607% passed the 15% risk ceiling. Cumulative 43-candidate DSR=97.085% passed 95%. The evidence supports a higher-return research/aggressive-tier interpretation, not a robust all-around V11 replacement. Per the frozen stop rule, no blend-fraction, active-scale, band, C3/L3, LowNoise-profile, or other rescue tuning is permitted in this campaign.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "133cfef52a3819f2669b52f3a2640c40735aba81",
+    "methodology": {
+      "follow_up_policy": "This is a one-shot re-audit of an already exposed current component. After formal performance is opened, do not alter active scale, band, C3/L3 thresholds, LowNoise profile, stable-core blend fraction, costs, asset universe, start date, or add a second high-core-only variant. Failure closes this retrospective standalone-high-core campaign; success may support a separate aggressive product tier but does not retroactively make the old pre-protocol searches certified.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "deterministic: full CAGR > frozen V11 CAGR",
+        "deterministic: full Sharpe >= frozen V11 Sharpe",
+        "deterministic: full MDD <=10%",
+        "deterministic: at least 5/7 fixed folds candidate Sharpe >= V11 Sharpe",
+        "deterministic: worst fixed-fold candidate Sharpe >0",
+        "deterministic: target gross <=100%, min target weight >=0, no financing or shorting",
+        "deterministic: candidate target fingerprint is identical under 1.00% and 0.03% user fees",
+        "bootstrap: paired circular moving blocks candidate versus V11, 63 sessions, 20000 replicates, seed 20260822",
+        "bootstrap: P(CAGR candidate > V11) >=0.90",
+        "bootstrap: P(Sharpe candidate > V11) >=0.90",
+        "bootstrap: median candidate-minus-V11 CAGR delta >0",
+        "bootstrap: median candidate-minus-V11 Sharpe delta >0",
+        "bootstrap: candidate MDD P97.5 <=15%",
+        "PBO not applicable: one mechanically fixed candidate, no family winner selection",
+        "global post-protocol DSR probability >=95% using 42 prior performance-bearing formal candidates plus this candidate, total 43",
+        "ROBUST_STRATEGY_PASS requires every applicable deterministic, bootstrap, and global DSR gate"
+      ],
+      "selection_metric": "No model selection. There is one mechanically defined candidate: the exact current V11 high-return core before the 50/50 stable-core mix."
+    },
+    "preregistration_hash": "16fc4baadbee67d3bb722b708e0525771c59da922b0c17447b302a5be0487e20",
+    "protocol_id": "ATM-SVP-2",
+    "run_key": "ATM-SVP2-V11-HIGHCORE-001",
+    "status": "FAIL",
+    "title": "V11_SIMPLIFIED_HIGH_RETURN_CORE_ONLY_FORMAL_REAUDIT_V1"
+  },
+  "schema_version": "strategy-library-v1",
+  "source_commit": "133cfef52a3819f2669b52f3a2640c40735aba81",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "The exact simplified-V11 high-return core, without the 50/50 stable CashConfidence core blend, forms a distinct aggressive product tier that can improve CAGR and Sharpe versus frozen V11 without adding parameters, leverage, shorting, financing, or changing the frozen high-return-core implementation.",
+      "display_name": "V11 HighCore 高收益核心",
+      "family": "V11核心架构",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/statistical-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/statistical-audit.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/V11-CONTROL-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/S-V11-HIGHCORE-ONLY-portfolio.csv"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": 0.9822,
+        "bootstrap_probability_sharpe": 0.5319,
+        "cagr_percent": 14.809181,
+        "candidate_id": "S-V11-HIGHCORE-ONLY",
+        "conclusion": "FAIL / NO_ROBUST_STRATEGY_PASS. The exact current simplified-V11 high-return core raised full CAGR to 14.809181% versus V11 14.345615%, with Sharpe 1.523994 versus 1.522263 and MDD 7.771319% versus 7.689054%. It preserved 100% gross, nonnegative targets, no financing, and identical target fingerprints under 1.00% and 0.03% user fees. However, candidate Sharpe was at least V11 Sharpe in only 3/7 fixed folds, so deterministic admission failed. Paired 20,000-replicate 63-session bootstrap gave P(CAGR candidate > V11)=98.220% but P(Sharpe candidate > V11)=53.190%; median CAGR and Sharpe deltas were positive and candidate MDD P97.5=14.607% passed the 15% risk ceiling. Cumulative 43-candidate DSR=97.085% passed 95%. The evidence supports a higher-return research/aggressive-tier interpretation, not a robust all-around V11 replacement. Per the frozen stop rule, no blend-fraction, active-scale, band, C3/L3, LowNoise-profile, or other rescue tuning is permitted in this campaign.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "shorting_allowed": false
+        },
+        "dsr_probability": 0.9708548099127492,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": 3,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 7.771319,
+        "metrics": {
+          "bootstrap_mdd_p975": 0.1460658789054459,
+          "bootstrap_median_candidate_minus_v11_cagr": 0.004328869900119943,
+          "bootstrap_median_candidate_minus_v11_sharpe": 0.0015076133057218,
+          "bootstrap_probability_cagr_gt_v11": 0.9822,
+          "bootstrap_probability_sharpe_gt_v11": 0.5319,
+          "bootstrap_robust_pass": false,
+          "cagr_percent": 14.809181,
+          "deterministic_admit": false,
+          "fee_invariant_target_fingerprint": true,
+          "folds_sharpe_ge_v11": 3,
+          "global_dsr_pass": true,
+          "global_post_protocol_dsr_probability": 0.9708548099127492,
+          "global_post_protocol_dsr_trial_count": 43,
+          "mdd_percent": 7.771319,
+          "robust_strategy_pass": false,
+          "sharpe": 1.523994,
+          "since2020_cagr_percent": 17.726621,
+          "since2020_sharpe": 1.619881,
+          "since2022_cagr_percent": 21.062466,
+          "since2022_sharpe": 1.762876,
+          "target_fingerprint": "094b1f53ad1153ac",
+          "worst_fold_sharpe": 0.780054
+        },
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "sharpe": 1.523994,
+        "since2020_cagr_percent": 17.726621,
+        "since2022_cagr_percent": 21.062466,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-V11-HIGHCORE-ONLY",
+      "strategy_kind": "strategy_architecture_not_factor",
+      "tags": [
+        "ATM-SVP2-V11-HIGHCORE-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "81dd7e509dc2d6f64775c03c1fbdd7ab49f0084974cdea111a705b99d7c755a3",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "The exact simplified-V11 high-return core, without the 50/50 stable CashConfidence core blend, forms a distinct aggressive product tier that can improve CAGR and Sharpe versus frozen V11 without adding parameters, leverage, shorting, financing, or changing the frozen high-return-core implementation.",
+        "parameters": {
+          "allowed_changes": [
+            "remove only the final 50/50 blend with the stable CashConfidence core and expose the exact current simplified-V11 high-return core as a standalone strategy",
+            "reuse CashConfidenceProfile.lowNoiseSimplifiedV11 exactly",
+            "reuse NFCI C3/L3 sleeve exactly with riskScale=1.0 and rebalanceBand=25%",
+            "reuse the same 1.00% frozen decision fee + 0.05% slippage semantics as V11 while allowing user fee to affect execution only",
+            "total target gross remains <=100%; no shorting, financing, or negative target weights"
+          ],
+          "candidate_definition": {
+            "base_component": "exact highReturnCore inside runNFCIDualCoreV1WithTrace profile simplifiedV11",
+            "candidate_id": "S-V11-HIGHCORE-ONLY",
+            "cash_confidence_profile": "lowNoiseSimplifiedV11",
+            "final_dualcore_blend": "removed; standalone high-return core is 100% of strategy target",
+            "new_free_parameters": 0,
+            "nfci_risk_scale": 1.0,
+            "nfci_sleeve": "C3/L3 unchanged",
+            "rebalance_band": 0.25
+          },
+          "forbidden_changes": [
+            "any tuning or restoration of earlier Generic100/V9 parameters",
+            "any stable-core blend other than exactly zero in this candidate",
+            "any new active scale, band, threshold, ranking, factor, timing, asset or execution rule",
+            "leverage, financing, shorting, negative target weights or gross above 100%",
+            "dropping prior formal attempts from G3/DSR accounting",
+            "rerunning a modified high-core-only candidate after seeing this result"
+          ],
+          "shared_rules": {
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "frozen_v11_control_fingerprint": "ba67c8aa24bc7168",
+            "max_gross": 1.0,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005,
+            "user_fee_target_invariance_check": 0.0003
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "scripts/run_v11_high_return_core_only_v1.py",
+        "target_fingerprint": "094b1f53ad1153ac",
+        "version_key": "S-V11-HIGHCORE-ONLY"
+      }
+    }
+  ]
+}

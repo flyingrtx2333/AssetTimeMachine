@@ -1,0 +1,303 @@
+{
+  "batch_key": "ATM-SVP2-DAYK-HS-005-strategy-library-v1",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-DAYK-HS-005.json",
+    "decision": "FAIL / NO_CANDIDATE_ADMITTED. The frozen 日K高速005 2-of-4 multifactor filter produced 2.075348% CAGR, 0.426032 Sharpe and 7.794649% MDD versus 0.363091% CNY cash. It completed 333 round trips with 74.774775% wins, 0.152373% average net return and profit factor 1.287513. The unfiltered base-pullback control was better on CAGR (2.516575%), Sharpe (0.490865), average trade (0.173828%) and profit factor (1.337021). Thus the preregistered trend-alignment, RSI3, volatility-expansion and bullish-rejection vote did not add incremental selection value; only 3/5 folds had positive Sharpe. At 0.05% adverse slippage per fill, candidate CAGR was 0.871808%, Sharpe 0.195190 and MDD 9.255634%. Exposure, cash, holding-period, cross-calendar marking and final-liquidation invariants passed. Per the stop rule, no alternative vote threshold, factor deletion, factor weighting or indicator tuning is permitted inside 005.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "05fe50a05aae375d1988d2fe762387c7dc06bbb1",
+    "methodology": {
+      "follow_up_policy": "After any formal 005 metric is viewed, do not change the 2/4 vote requirement, factor definitions, SMA/ATR/RSI lookbacks, pullback or candle thresholds, take-profit, holding period, allocation, assets, fee, slippage or cross-calendar marking inside this trial. Any weighted vote, factor deletion/addition, stop-loss or dynamic sizing is a new trial.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "at least two of three standalone assets have full-period CAGR above the CNY cash control",
+        "at least two of three standalone assets have full-period Sharpe >0",
+        "each standalone asset has at least 75 completed round trips",
+        "fixed one-third combined CAGR >= CNY cash CAGR +2.00 percentage points",
+        "fixed one-third combined Sharpe >=1.00",
+        "fixed one-third combined MDD <=12%",
+        "fixed one-third combined Sharpe > C-BASE-PULLBACK-COMBINED Sharpe",
+        "fixed one-third combined average net round-trip return >0 and profit factor >=1.10",
+        "at least 4/5 fixed time folds have combined Sharpe >0",
+        "combined 2020+ CAGR and 2022+ CAGR are each greater than full-window CNY cash CAGR",
+        "with 0.05% adverse slippage per fill, combined CAGR remains above CNY cash CAGR and Sharpe >0.50",
+        "maximum gross <=100%, minimum end-of-day cash >=0, every trade holds 2-5 observed asset sessions and final open positions =0"
+      ],
+      "selection_metric": "No within-family selection. There is exactly one 2-of-4 multifactor candidate. All standalone paths, the fixed one-third combined path, unfiltered base controls and execution stress are reported; PASS requires every preregistered gate."
+    },
+    "preregistration_hash": "7e620ca181c510fd7bc745cfbd8e950c05055be3906302c363d506f8bece5bd0",
+    "protocol_id": "ATM-SVP-2",
+    "run_key": "ATM-SVP2-DAYK-HS-005",
+    "status": "FAIL",
+    "title": "INDEPENDENT_DAILY_MULTIFACTOR_PULLBACK_REVERSAL_V1"
+  },
+  "schema_version": "strategy-library-v1",
+  "source_commit": "05fe50a05aae375d1988d2fe762387c7dc06bbb1",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "A daily-scale one-ATR pullback above SMA(200) is more likely to reverse when at least two independent confirmations agree across slow trend alignment, short-term RSI oversold state, volatility expansion and bullish intraday rejection. The fixed 2-of-4 filter should improve net trade quality and risk-adjusted performance over the unfiltered 004 base rule across gold, Nasdaq and S&P 500.",
+      "display_name": "日K高速005",
+      "family": "日K高速",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/C-BASE-PULLBACK-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/C-BASE-PULLBACK-GOLD-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/C-BASE-PULLBACK-NASDAQ-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/C-BASE-PULLBACK-SP500-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/C-CASH-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/DKHS005-COMBINED-SLIP005-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/DKHS005-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/DKHS005-GOLD-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/DKHS005-NASDAQ-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/DKHS005-SP500-portfolio.csv"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": 2.0753481035121535,
+        "candidate_id": "S-DAYK-HIGH-SPEED-005",
+        "conclusion": "FAIL / NO_CANDIDATE_ADMITTED. The frozen 日K高速005 2-of-4 multifactor filter produced 2.075348% CAGR, 0.426032 Sharpe and 7.794649% MDD versus 0.363091% CNY cash. It completed 333 round trips with 74.774775% wins, 0.152373% average net return and profit factor 1.287513. The unfiltered base-pullback control was better on CAGR (2.516575%), Sharpe (0.490865), average trade (0.173828%) and profit factor (1.337021). Thus the preregistered trend-alignment, RSI3, volatility-expansion and bullish-rejection vote did not add incremental selection value; only 3/5 folds had positive Sharpe. At 0.05% adverse slippage per fill, candidate CAGR was 0.871808%, Sharpe 0.195190 and MDD 9.255634%. Exposure, cash, holding-period, cross-calendar marking and final-liquidation invariants passed. Per the stop rule, no alternative vote threshold, factor deletion, factor weighting or indicator tuning is permitted inside 005.",
+        "constraints": {
+          "carried_mark_valuation_count": 29,
+          "final_open_positions": 0,
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1,
+          "maximum_holding_sessions": 5,
+          "minimum_end_of_day_cash": 0,
+          "minimum_holding_sessions": 2,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "dsr_probability": null,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": 3,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 7.7946487813821035,
+        "metrics": {
+          "asset_paths": {
+            "gold_cny": {
+              "average_holding_sessions": 3.7435897435897436,
+              "average_trade_return_percent": 0.06396393942589337,
+              "cagr_percent": 0.7324930948955588,
+              "mdd_percent": 9.13233772381775,
+              "profit_factor": 1.0996684187811918,
+              "round_trips": 78,
+              "sharpe": 0.15316777982068577,
+              "take_profit_hits": 43,
+              "time_exits": 35,
+              "win_rate_percent": 66.66666666666666
+            },
+            "nasdaq": {
+              "average_holding_sessions": 3.4511278195488724,
+              "average_trade_return_percent": 0.12925098401408544,
+              "cagr_percent": 1.9386236977986027,
+              "mdd_percent": 21.338611129156188,
+              "profit_factor": 1.2105927439837754,
+              "round_trips": 133,
+              "sharpe": 0.26674425404806057,
+              "take_profit_hits": 91,
+              "time_exits": 42,
+              "win_rate_percent": 74.43609022556392
+            },
+            "sp500": {
+              "average_holding_sessions": 3.2295081967213113,
+              "average_trade_return_percent": 0.2341036941595281,
+              "cagr_percent": 3.299186886772132,
+              "mdd_percent": 9.200215243267968,
+              "profit_factor": 1.6376095914618118,
+              "round_trips": 122,
+              "sharpe": 0.538871371367071,
+              "take_profit_hits": 92,
+              "time_exits": 30,
+              "win_rate_percent": 80.32786885245902
+            }
+          },
+          "cash_control_cagr_percent": 0.3630910680378685,
+          "combined": {
+            "average_holding_sessions": 3.4384384384384385,
+            "average_trade_return_percent": 0.1523730295392054,
+            "cagr_percent": 2.0753481035121535,
+            "folds_with_positive_sharpe": 3,
+            "mdd_percent": 7.7946487813821035,
+            "profit_factor": 1.2875130156703753,
+            "round_trips": 333,
+            "sharpe": 0.4260318144139877,
+            "since2020_cagr_percent": 3.067701671700762,
+            "since2022_cagr_percent": 1.9179811553055037,
+            "total_return_percent": 21.19404091860597,
+            "win_rate_percent": 74.77477477477478
+          },
+          "constraints": {
+            "carried_mark_valuation_count": 29,
+            "final_open_positions": 0,
+            "max_gross": 1,
+            "maximum_holding_sessions": 5,
+            "minimum_end_of_day_cash": 0,
+            "minimum_holding_sessions": 2,
+            "pass": true
+          },
+          "factor_vote_counts": {
+            "gold_cny": {
+              "1": 13,
+              "2": 61,
+              "3": 67
+            },
+            "nasdaq": {
+              "0": 1,
+              "1": 17,
+              "2": 118,
+              "3": 96,
+              "4": 18
+            },
+            "sp500": {
+              "0": 4,
+              "1": 22,
+              "2": 100,
+              "3": 90,
+              "4": 7
+            }
+          },
+          "matched_base_pullback_control": {
+            "average_trade_return_percent": 0.17382827878052873,
+            "cagr_percent": 2.51657519805657,
+            "mdd_percent": 7.258192657882824,
+            "profit_factor": 1.3370213089433878,
+            "round_trips": 363,
+            "sharpe": 0.49086470750979094
+          },
+          "preregistered_gate_pass": false,
+          "slippage_stress": {
+            "cagr_percent": 0.8718082767136259,
+            "mdd_percent": 9.25563396802733,
+            "sharpe": 0.1951895975518459
+          }
+        },
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "sharpe": 0.4260318144139877,
+        "since2020_cagr_percent": 3.067701671700762,
+        "since2022_cagr_percent": 1.9179811553055037,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-DAYK-HIGH-SPEED-005",
+      "strategy_kind": "strategy",
+      "tags": [
+        "ATM-SVP2-DAYK-HS-005",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [
+          "gold_cny",
+          "nasdaq",
+          "sp500"
+        ],
+        "code_sha256": "9cd1b01ce2cc20a9098e129a9e8398f022e4477b3658819409fbcb6f37201153",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "A daily-scale one-ATR pullback above SMA(200) is more likely to reverse when at least two independent confirmations agree across slow trend alignment, short-term RSI oversold state, volatility expansion and bullish intraday rejection. The fixed 2-of-4 filter should improve net trade quality and risk-adjusted performance over the unfiltered 004 base rule across gold, Nasdaq and S&P 500.",
+        "parameters": {
+          "allowed_changes": [
+            "retain the frozen 004 base setup: previous close above SMA(200) and two-session decline at least 1.00 times ATR(14)",
+            "add exactly four equal binary T-1 factor votes: SMA(50)>SMA(200), RSI(3)<=30, ATR(14)>ATR(60), and a bullish rejection bar with close>open and close location>=0.60",
+            "enter only when at least two of four factor votes pass; no alternative vote threshold or factor weighting",
+            "retain the 004 next-open entry, no entry-session exit, 0.75 ATR profit limit from held session two and held-session-five close expiry",
+            "standalone 100% sleeve runs plus one fixed one-third-per-asset combined run, matched unfiltered base controls, CNY cash and 0.05% per-fill adverse-slippage stress"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "reading execution-session high, low or close before the opening buy decision",
+            "allowing a same-session take-profit exit on the entry bar",
+            "testing or selecting among 1/4, 2/4, 3/4 or 4/4 vote requirements",
+            "optimizing factor weights, periods, RSI threshold, candle close location, ATR comparison or trend comparisons",
+            "any post-result change to the base pullback, take-profit or holding-period parameters",
+            "using synthetic OHLC or omitting carried value for a held asset on its non-session date",
+            "asset-specific parameters or dropping a weak gold, Nasdaq or S&P 500 component",
+            "adding MACD, volume, calendar, stop-loss, shorting, borrowing, financing, leverage or negative weights",
+            "changing the user-specified fee or hiding the preregistered slippage stress",
+            "representing index OHLC execution as directly investable product evidence"
+          ],
+          "shared_rules": {
+            "atr_fast_sessions": 14,
+            "atr_slow_sessions": 60,
+            "bullish_close_location_threshold": 0.6,
+            "entry": "buy current real daily open after T-1 base setup and at least 2/4 votes",
+            "evaluation_end": "2026-08-20",
+            "evaluation_start": "2017-04-11",
+            "exit": "no entry-day exit; from held session 2 sell at entry open + 0.75 * frozen T-1 ATR14 if daily high reaches it, otherwise held session 5 close",
+            "factor_votes": [
+              "SMA50>SMA200",
+              "RSI3<=30",
+              "ATR14>ATR60",
+              "previous close>open and close location>=0.60"
+            ],
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "maximum_holding_sessions": 5,
+            "minimum_factor_votes": 2,
+            "minimum_holding_sessions": 2,
+            "overnight_required": true,
+            "pullback_atr_multiple": 1.0,
+            "pullback_window_sessions": 2,
+            "rsi_lookback_sessions": 3,
+            "shorting_allowed": false,
+            "take_profit_atr_multiple": 0.75,
+            "trend_lookback_sessions": 200,
+            "trend_rule": "previous close > SMA200"
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "tools/dayk_high_speed_005_logic.swift",
+        "target_fingerprint": null,
+        "version_key": "S-DAYK-HIGH-SPEED-005"
+      }
+    }
+  ]
+}

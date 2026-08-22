@@ -1,0 +1,332 @@
+{
+  "batch_key": "ATM-SVP2-US-MQ-ROLE-002-strategy-library-v1",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-US-MQ-ROLE-002.json",
+    "decision": "FAIL / NO ROBUST_STRATEGY_PASS. QUAL is a strong near-miss: full CAGR 14.422013%, Sharpe 1.532266, MDD 7.689054%; on 2013-07-19+ CAGR 13.069187% vs V11 12.897746%, Sharpe 1.480549 vs 1.457295, MDD 7.379394% vs 7.386487%. QUAL passed deterministic gates and paired bootstrap: P(CAGR>V11)=95.565%, P(Sharpe>V11)=98.490%, MDD P97.5=12.583%; cumulative 38-performance-candidate DSR was only 88.271%, below 95%, so it cannot be labeled robust/promoted. MTUM failed deterministic Sharpe and bootstrap with evaluation Sharpe 1.445010 vs V11 1.457295. No blend, alternate ETF, substitution fraction, timing gate, or threshold rescue is permitted. The exact QUAL rule may only continue as a newly frozen prospective strategy-role shadow.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "77d32cd902a4b1fbf9f53c877bda83f7e71a74ff",
+    "methodology": {
+      "follow_up_policy": "After either repair result is opened, do not change the 2013-07-19 substitution start, ETF, role, carry-forward rule, substitution percentage, V11 target path, evaluation window, momentum/quality weighting, blend candidates with each other or S&P, add another style ETF, or introduce style timing. No second repair is allowed unless a new implementation defect is demonstrated independently of performance; any economic change is a new campaign and trial count.",
+      "formal_run_budget": 2,
+      "pass_fail_gates": [
+        "deterministic 2013-07-19+: candidate CAGR > V11 CAGR",
+        "deterministic 2013-07-19+: candidate Sharpe >= V11 Sharpe",
+        "deterministic 2013-07-19+: candidate MDD <=10%",
+        "deterministic: at least 5/7 fixed folds candidate Sharpe >= V11 Sharpe in the same fold",
+        "deterministic: worst fixed-fold Sharpe >0",
+        "deterministic: source production V11 full daily target fingerprint exactly equals ba67c8aa24bc7168; each candidate execution-event target fingerprint exactly equals the source execution-event target fingerprint; gross <=100%, min target weight >=0, no financing or shorting",
+        "bootstrap on 2013-07-19+ behavior: paired circular moving blocks versus V11, 63 sessions, 20000 replicates, seed 20260822",
+        "bootstrap: P(CAGR candidate > V11) >=0.90",
+        "bootstrap: P(Sharpe candidate > V11) >=0.90",
+        "bootstrap: median candidate-minus-V11 CAGR delta >0",
+        "bootstrap: median candidate-minus-V11 Sharpe delta >0",
+        "bootstrap: candidate MDD P97.5 <=15%",
+        "PBO/winner-selection test: not applicable because both preregistered roles are independently reported and no family winner is selected",
+        "global post-protocol DSR probability >=95% using the 36 prior performance-bearing formal return-seeking candidates plus both repair candidates, total DSR Sharpe vector 38; the invalid predecessor remains visible in G3 ledger accounting but has no performance value to insert",
+        "ROBUST_STRATEGY_PASS requires every applicable deterministic, bootstrap and global DSR gate"
+      ],
+      "selection_metric": "No winner selection or survivor reporting. MTUM and QUAL are independently compared with the same production-path V11 over 2013-07-19+ and both remain in G3/global multiple-testing accounting regardless of outcome. The INVALID predecessor remains in the ledger as an attempted formal run but contributes no Sharpe value to DSR because no candidate performance was produced."
+    },
+    "preregistration_hash": "c2beba7302da93b27ade17fbf2a61d48a3644f707bfba8c187fa13baaa1cafe6",
+    "protocol_id": "ATM-SVP-2",
+    "run_key": "ATM-SVP2-US-MQ-ROLE-002",
+    "status": "FAIL",
+    "title": "US_MOMENTUM_QUALITY_PRODUCTION_PATH_ROLE_SUBSTITUTION_V1_CALENDAR_REPAIR"
+  },
+  "schema_version": "strategy-library-v1",
+  "source_commit": "77d32cd902a4b1fbf9f53c877bda83f7e71a74ff",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "The exact two frozen MTUM/QUAL broad-U.S.-equity role substitutions from ATM-SVP2-US-MQ-ROLE-001 can be evaluated after correcting only the union-calendar alignment bug that invalidated the predecessor before candidate performance was recorded. No economic candidate rule is changed.",
+      "display_name": "MTUM 美股动量角色替代",
+      "family": "美股质量动量角色",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/statistical-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/statistical-audit.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/V11-CONTROL-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/F-MTUM-SP500-ROLE-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/F-QUAL-SP500-ROLE-portfolio.csv"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": 0.8395,
+        "bootstrap_probability_sharpe": 0.40715,
+        "cagr_percent": 14.478703,
+        "candidate_id": "F-MTUM-SP500-ROLE",
+        "conclusion": "FAIL / NO ROBUST_STRATEGY_PASS. QUAL is a strong near-miss: full CAGR 14.422013%, Sharpe 1.532266, MDD 7.689054%; on 2013-07-19+ CAGR 13.069187% vs V11 12.897746%, Sharpe 1.480549 vs 1.457295, MDD 7.379394% vs 7.386487%. QUAL passed deterministic gates and paired bootstrap: P(CAGR>V11)=95.565%, P(Sharpe>V11)=98.490%, MDD P97.5=12.583%; cumulative 38-performance-candidate DSR was only 88.271%, below 95%, so it cannot be labeled robust/promoted. MTUM failed deterministic Sharpe and bootstrap with evaluation Sharpe 1.445010 vs V11 1.457295. No blend, alternate ETF, substitution fraction, timing gate, or threshold rescue is permitted. The exact QUAL rule may only continue as a newly frozen prospective strategy-role shadow.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "shorting_allowed": false
+        },
+        "dsr_probability": 0.8559445511478739,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": 5,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 8.402893,
+        "metrics": {
+          "bootstrap_mdd_p975": 0.13760179535997402,
+          "bootstrap_median_candidate_minus_v11_cagr": 0.0023948587703398333,
+          "bootstrap_median_candidate_minus_v11_sharpe": -0.008173260740767518,
+          "bootstrap_probability_cagr_gt_v11": 0.8395,
+          "bootstrap_probability_sharpe_gt_v11": 0.40715,
+          "bootstrap_robust_pass": false,
+          "cagr_percent": 14.478703,
+          "deterministic_admit": false,
+          "evaluation_cagr_percent": 13.13546,
+          "evaluation_mdd_percent": 8.402893,
+          "evaluation_sharpe": 1.44501,
+          "evaluation_start": "2013-07-19",
+          "execution_event_target_fingerprint": "ea843d2a26d9eff3",
+          "folds_sharpe_ge_v11": 5,
+          "global_dsr_pass": false,
+          "global_post_protocol_dsr_probability": 0.8559445511478739,
+          "global_post_protocol_dsr_trial_count": 38,
+          "mdd_percent": 8.402893,
+          "robust_strategy_pass": false,
+          "sharpe": 1.516655,
+          "since2020_cagr_percent": 17.638946,
+          "since2020_sharpe": 1.58872,
+          "since2022_cagr_percent": 20.816337,
+          "since2022_sharpe": 1.722929,
+          "worst_fold_sharpe": 0.772356
+        },
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "sharpe": 1.516655,
+        "since2020_cagr_percent": 17.638946,
+        "since2022_cagr_percent": 20.816337,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "F-MTUM-SP500-ROLE",
+      "strategy_kind": "strategy_asset_role_not_factor",
+      "tags": [
+        "ATM-SVP2-US-MQ-ROLE-002",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "ed0abab839187ea4b4cae9efbede1559c4ddb573f221c6ead0e69c37efa5e0ed",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "The exact two frozen MTUM/QUAL broad-U.S.-equity role substitutions from ATM-SVP2-US-MQ-ROLE-001 can be evaluated after correcting only the union-calendar alignment bug that invalidated the predecessor before candidate performance was recorded. No economic candidate rule is changed.",
+        "parameters": {
+          "allowed_changes": [
+            "replace only the predecessor's same-date-quote requirement with last-observation carry-forward for non-quote union-calendar dates",
+            "reuse the exact frozen MTUM and QUAL adjusted-close files and all original production V11/NFCI inputs",
+            "reuse exactly the 2013-07-19 substitution start and 100% sp500 realized-return role substitution",
+            "reuse the identical V11 signal dates, event dates, target weights, USD/CNY conversion, fees, slippage, rebalance band, cash treatment and risk reductions"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "any frozen V11 signal, parameter, event date, target sizing, or target-path change",
+            "any substitution before or after the frozen 2013-07-19 start",
+            "any style/S&P blend or MTUM/QUAL blend",
+            "any substitution fraction other than exactly 100% of the sp500 realized-return role",
+            "any alternate momentum or quality ETF, third candidate, or winner-only reporting",
+            "any style timing, moving average, relative-strength gate, valuation gate, regime switch, or adaptive allocation",
+            "any leverage, financing, negative target weights, or gross above 100%",
+            "any calendar fill other than last-observation carry-forward on non-quote union-calendar dates",
+            "including pre-substitution identical returns in current-candidate DSR evidence"
+          ],
+          "shared_rules": {
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "production_v11_target_fingerprint": "ba67c8aa24bc7168",
+            "rebalance_band": 0.25,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005,
+            "sp500_role_substitution_fraction": 1.0,
+            "substitution_start": "2013-07-19"
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "scripts/run_us_momentum_quality_role_v2.py",
+        "target_fingerprint": "ea843d2a26d9eff3",
+        "version_key": "F-MTUM-SP500-ROLE"
+      }
+    },
+    {
+      "description": "The exact two frozen MTUM/QUAL broad-U.S.-equity role substitutions from ATM-SVP2-US-MQ-ROLE-001 can be evaluated after correcting only the union-calendar alignment bug that invalidated the predecessor before candidate performance was recorded. No economic candidate rule is changed.",
+      "display_name": "QUAL 美股质量角色替代",
+      "family": "美股质量动量角色",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/statistical-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/statistical-audit.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/V11-CONTROL-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/F-MTUM-SP500-ROLE-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/F-QUAL-SP500-ROLE-portfolio.csv"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": 0.95565,
+        "bootstrap_probability_sharpe": 0.9849,
+        "cagr_percent": 14.422013,
+        "candidate_id": "F-QUAL-SP500-ROLE",
+        "conclusion": "FAIL / NO ROBUST_STRATEGY_PASS. QUAL is a strong near-miss: full CAGR 14.422013%, Sharpe 1.532266, MDD 7.689054%; on 2013-07-19+ CAGR 13.069187% vs V11 12.897746%, Sharpe 1.480549 vs 1.457295, MDD 7.379394% vs 7.386487%. QUAL passed deterministic gates and paired bootstrap: P(CAGR>V11)=95.565%, P(Sharpe>V11)=98.490%, MDD P97.5=12.583%; cumulative 38-performance-candidate DSR was only 88.271%, below 95%, so it cannot be labeled robust/promoted. MTUM failed deterministic Sharpe and bootstrap with evaluation Sharpe 1.445010 vs V11 1.457295. No blend, alternate ETF, substitution fraction, timing gate, or threshold rescue is permitted. The exact QUAL rule may only continue as a newly frozen prospective strategy-role shadow.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "shorting_allowed": false
+        },
+        "dsr_probability": 0.8827105747017763,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": 6,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 7.689054,
+        "metrics": {
+          "bootstrap_mdd_p975": 0.12583386053135734,
+          "bootstrap_median_candidate_minus_v11_cagr": 0.0016160585448374357,
+          "bootstrap_median_candidate_minus_v11_sharpe": 0.02276337977010967,
+          "bootstrap_probability_cagr_gt_v11": 0.95565,
+          "bootstrap_probability_sharpe_gt_v11": 0.9849,
+          "bootstrap_robust_pass": true,
+          "cagr_percent": 14.422013,
+          "deterministic_admit": true,
+          "evaluation_cagr_percent": 13.069187,
+          "evaluation_mdd_percent": 7.379394,
+          "evaluation_sharpe": 1.480549,
+          "evaluation_start": "2013-07-19",
+          "execution_event_target_fingerprint": "ea843d2a26d9eff3",
+          "folds_sharpe_ge_v11": 6,
+          "global_dsr_pass": false,
+          "global_post_protocol_dsr_probability": 0.8827105747017763,
+          "global_post_protocol_dsr_trial_count": 38,
+          "mdd_percent": 7.689054,
+          "robust_strategy_pass": false,
+          "sharpe": 1.532266,
+          "since2020_cagr_percent": 17.64344,
+          "since2020_sharpe": 1.642162,
+          "since2022_cagr_percent": 21.123459,
+          "since2022_sharpe": 1.794869,
+          "worst_fold_sharpe": 0.761351
+        },
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "sharpe": 1.532266,
+        "since2020_cagr_percent": 17.64344,
+        "since2022_cagr_percent": 21.123459,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "F-QUAL-SP500-ROLE",
+      "strategy_kind": "strategy_asset_role_not_factor",
+      "tags": [
+        "ATM-SVP2-US-MQ-ROLE-002",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "ed0abab839187ea4b4cae9efbede1559c4ddb573f221c6ead0e69c37efa5e0ed",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "The exact two frozen MTUM/QUAL broad-U.S.-equity role substitutions from ATM-SVP2-US-MQ-ROLE-001 can be evaluated after correcting only the union-calendar alignment bug that invalidated the predecessor before candidate performance was recorded. No economic candidate rule is changed.",
+        "parameters": {
+          "allowed_changes": [
+            "replace only the predecessor's same-date-quote requirement with last-observation carry-forward for non-quote union-calendar dates",
+            "reuse the exact frozen MTUM and QUAL adjusted-close files and all original production V11/NFCI inputs",
+            "reuse exactly the 2013-07-19 substitution start and 100% sp500 realized-return role substitution",
+            "reuse the identical V11 signal dates, event dates, target weights, USD/CNY conversion, fees, slippage, rebalance band, cash treatment and risk reductions"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "any frozen V11 signal, parameter, event date, target sizing, or target-path change",
+            "any substitution before or after the frozen 2013-07-19 start",
+            "any style/S&P blend or MTUM/QUAL blend",
+            "any substitution fraction other than exactly 100% of the sp500 realized-return role",
+            "any alternate momentum or quality ETF, third candidate, or winner-only reporting",
+            "any style timing, moving average, relative-strength gate, valuation gate, regime switch, or adaptive allocation",
+            "any leverage, financing, negative target weights, or gross above 100%",
+            "any calendar fill other than last-observation carry-forward on non-quote union-calendar dates",
+            "including pre-substitution identical returns in current-candidate DSR evidence"
+          ],
+          "shared_rules": {
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "production_v11_target_fingerprint": "ba67c8aa24bc7168",
+            "rebalance_band": 0.25,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005,
+            "sp500_role_substitution_fraction": 1.0,
+            "substitution_start": "2013-07-19"
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "scripts/run_us_momentum_quality_role_v2.py",
+        "target_fingerprint": "ea843d2a26d9eff3",
+        "version_key": "F-QUAL-SP500-ROLE"
+      }
+    }
+  ]
+}

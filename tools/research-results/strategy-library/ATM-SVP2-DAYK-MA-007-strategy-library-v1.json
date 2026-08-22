@@ -1,0 +1,247 @@
+{
+  "batch_key": "ATM-SVP2-DAYK-MA-007-strategy-library-v1",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-DAYK-MA-007.json",
+    "decision": "FAIL / NO_CANDIDATE_ADMITTED. The frozen 日K多资产007 three-role trend/risk allocator produced 6.744752% CAGR, 0.704081 Sharpe and 23.417924% MDD over the exact 2012-07-05 to 2026-08-20 common window with the user-specified 0.005% fee and zero primary slippage. The same-cost frozen V11 control produced 14.274693% CAGR, 1.652911 Sharpe and 7.393120% MDD, so 007 missed all three direct V11 comparison gates by wide margins. Its inverse-volatility and 10% portfolio-volatility budget did add risk-adjusted value versus the same-eligibility equal-weight control: Sharpe improved from 0.603621 to 0.704081 and MDD fell from 27.864248% to 23.417924%, although CAGR was slightly lower than the control's 6.939375%. Six of seven folds had positive Sharpe, but only two exceeded 1.00; the 2021-2022 fold failed severely at -8.882628% CAGR, -0.959697 Sharpe and 22.549914% MDD. At 0.05% adverse slippage per fill, CAGR remained 6.479474% but Sharpe was only 0.679037 and MDD 23.877259%. Target cadence, trade count, gross, cash, single-asset cap and regional-role integrity checks passed. The result shows that simple role diversification plus volatility sizing is better than equal-weight trend allocation but is not a substitute for V11's state routing, recovery, risk-contribution and NFCI de-risk-retention architecture. No 200/126/63 period, cadence, band, role, volatility target or cap rescue is allowed inside 007.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "56f256fddc50853476b2f1152cf328ca0d24091a",
+    "methodology": {
+      "follow_up_policy": "After any formal 007 metric is viewed, do not modify the role mapping, SMA/momentum/volatility periods, score, volatility floor, risk allocation, target volatility, single-asset cap, cadence, band, cost or window inside this trial. No weak region or fold may be removed. Any alternative is a separately preregistered trial and 007 remains in trial accounting.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "candidate full-window CAGR >= same-cost V11 CAGR",
+        "candidate full-window Sharpe >= same-cost V11 Sharpe",
+        "candidate full-window MDD <= same-cost V11 MDD",
+        "candidate Sharpe > C-DKMA007-EQUAL-ELIGIBLE Sharpe",
+        "candidate CAGR >= CNY cash CAGR +5.00 percentage points, Sharpe >=1.00 and MDD <=15%",
+        "at least 6/7 fixed folds have Sharpe >0 and at least 4/7 have Sharpe >1.00",
+        "candidate 2020+ and 2022+ CAGR each exceed full-window CNY cash CAGR",
+        "with 0.05% adverse slippage per fill, CAGR >= CNY cash CAGR +3.00 percentage points and Sharpe >0.75",
+        "candidate target changes are 20-200 and executed trade count <=500",
+        "maximum gross <=100%, minimum target weight and cash >=0, maximum asset weight <=50%, and US/China regional-role violations =0"
+      ],
+      "selection_metric": "No candidate selection. One frozen candidate must beat same-cost V11 on CAGR and Sharpe without greater MDD and pass every absolute, fold, stress, turnover and constraint gate. Matched equal-weight, V11 and cash paths are controls only."
+    },
+    "preregistration_hash": "0664cafb0d04bea5ec2c8899ab49691e45c0c58c50dea7f30889145942966297",
+    "protocol_id": "ATM-SVP-2",
+    "run_key": "ATM-SVP2-DAYK-MA-007",
+    "status": "FAIL",
+    "title": "INDEPENDENT_DAILY_THREE_ROLE_TREND_RISK_ALLOCATOR_V1"
+  },
+  "schema_version": "strategy-library-v1",
+  "source_commit": "56f256fddc50853476b2f1152cf328ca0d24091a",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "A low-complexity three-role daily-close allocation that combines absolute trend eligibility, within-role risk-adjusted momentum, inverse-volatility diversification, a 10% portfolio-volatility target and cash should capture persistent gold/US/China risk premia with materially less noise than isolated trade triggers. It should match or exceed frozen V11 on same-cost common-window CAGR and Sharpe while not exceeding V11 drawdown.",
+      "display_name": "dayk-multi-asset-007 / 日K多资产007",
+      "family": "日K高速",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/C-CASH-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/C-DKMA007-EQUAL-ELIGIBLE-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/DKMA007-RISK-BALANCED-SLIP005-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/DKMA007-RISK-BALANCED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/V11-CONTROL-portfolio.csv"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": null,
+        "candidate_id": "S-DAYK-MULTI-ASSET-007",
+        "conclusion": "FAIL / NO_CANDIDATE_ADMITTED. The frozen 日K多资产007 three-role trend/risk allocator produced 6.744752% CAGR, 0.704081 Sharpe and 23.417924% MDD over the exact 2012-07-05 to 2026-08-20 common window with the user-specified 0.005% fee and zero primary slippage. The same-cost frozen V11 control produced 14.274693% CAGR, 1.652911 Sharpe and 7.393120% MDD, so 007 missed all three direct V11 comparison gates by wide margins. Its inverse-volatility and 10% portfolio-volatility budget did add risk-adjusted value versus the same-eligibility equal-weight control: Sharpe improved from 0.603621 to 0.704081 and MDD fell from 27.864248% to 23.417924%, although CAGR was slightly lower than the control's 6.939375%. Six of seven folds had positive Sharpe, but only two exceeded 1.00; the 2021-2022 fold failed severely at -8.882628% CAGR, -0.959697 Sharpe and 22.549914% MDD. At 0.05% adverse slippage per fill, CAGR remained 6.479474% but Sharpe was only 0.679037 and MDD 23.877259%. Target cadence, trade count, gross, cash, single-asset cap and regional-role integrity checks passed. The result shows that simple role diversification plus volatility sizing is better than equal-weight trend allocation but is not a substitute for V11's state routing, recovery, risk-contribution and NFCI de-risk-retention architecture. No 200/126/63 period, cadence, band, role, volatility target or cap rescue is allowed inside 007.",
+        "constraints": {
+          "china_role_violation_sessions": 0,
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0000000000000002,
+          "maximum_asset_weight": 0.5,
+          "minimum_cash": 0.0,
+          "minimum_target_weight": 0.0,
+          "pass": true,
+          "shorting_allowed": false,
+          "us_role_violation_sessions": 0
+        },
+        "dsr_probability": null,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": null,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": null,
+        "metrics": {
+          "candidate": {
+            "average_cash_ratio": 0.22674965221189342,
+            "cagr_percent": 6.744752444272728,
+            "folds_sharpe_gt_1": 2,
+            "folds_with_positive_sharpe": 6,
+            "mdd_percent": 23.417924183832135,
+            "sharpe": 0.7040814363500046,
+            "since2020_cagr_percent": 5.354690184866162,
+            "since2022_cagr_percent": 4.479377433224263,
+            "target_change_count": 154,
+            "total_return_percent": 151.41007155698404,
+            "trades": 269,
+            "volatility_percent": 9.585192993451964
+          },
+          "cash_control_cagr_percent": 0.3640210285861256,
+          "constraints": {
+            "china_role_violation_sessions": 0,
+            "max_gross": 1.0000000000000002,
+            "maximum_asset_weight": 0.5,
+            "minimum_cash": 0.0,
+            "minimum_target_weight": 0.0,
+            "pass": true,
+            "us_role_violation_sessions": 0
+          },
+          "failed_preregistered_gates": [
+            "candidate full-window CAGR >= same-cost V11 CAGR",
+            "candidate full-window Sharpe >= same-cost V11 Sharpe",
+            "candidate full-window MDD <= same-cost V11 MDD",
+            "candidate Sharpe >=1.00",
+            "candidate MDD <=15%",
+            "at least 4/7 fixed folds have Sharpe >1.00",
+            "adverse-slippage Sharpe >0.75"
+          ],
+          "matched_equal_eligible_control": {
+            "cagr_percent": 6.939375356553246,
+            "mdd_percent": 27.864248105416134,
+            "sharpe": 0.6036208469866677,
+            "trades": 201
+          },
+          "preregistered_gate_pass": false,
+          "same_cost_v11_control": {
+            "average_cash_ratio": 0.4296444878570223,
+            "cagr_percent": 14.27469268000725,
+            "mdd_percent": 7.393120497995041,
+            "sharpe": 1.6529108055751296,
+            "trades": 275
+          },
+          "slippage_stress": {
+            "cagr_percent": 6.479474359606607,
+            "mdd_percent": 23.877258576666698,
+            "sharpe": 0.6790366493894981
+          },
+          "worst_fold": {
+            "cagr_percent": -8.882628323688358,
+            "mdd_percent": 22.549913854207617,
+            "name": "2021-2022",
+            "sharpe": -0.959697063624827
+          }
+        },
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "sharpe": null,
+        "since2020_cagr_percent": null,
+        "since2022_cagr_percent": null,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-DAYK-MULTI-ASSET-007",
+      "strategy_kind": "strategy",
+      "tags": [
+        "ATM-SVP2-DAYK-MA-007",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "72f15d08160f9345538feab9db197607096e9a7ea83cc52bb9d3443da0636872",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "A low-complexity three-role daily-close allocation that combines absolute trend eligibility, within-role risk-adjusted momentum, inverse-volatility diversification, a 10% portfolio-volatility target and cash should capture persistent gold/US/China risk premia with materially less noise than isolated trade triggers. It should match or exceed frozen V11 on same-cost common-window CAGR and Sharpe while not exceeding V11 drawdown.",
+        "parameters": {
+          "allowed_changes": [
+            "use one fixed daily-close candidate with exactly three roles: gold, one selected US index, and one selected China index",
+            "require previous close>SMA200 and positive 126-session return; rank within each role by 126-session return divided by max(63-session volatility,8%)",
+            "allocate selected roles by inverse max(63-session volatility,8%), cap one asset at 50%, and scale gross toward a fixed 10% forecast portfolio volatility without exceeding 100%",
+            "recompute every 20 common sessions, use a 10% hard rebalance band, decide on T-1 and execute on T close",
+            "compare against same-eligibility equal-role control, exact same-cost frozen V11, CNY cash, and 0.05% per-fill adverse-slippage stress"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "using execution-session close or later data to form the target executed on that session",
+            "testing alternative SMA, momentum or volatility lookbacks or combining multiple lookbacks",
+            "testing alternative 5/10/20/40-session cadence, band, volatility target, floor or asset cap",
+            "holding both Nasdaq and S&P 500 or both CSI300 and Shanghai Composite simultaneously",
+            "top-N selection across all five assets, optimized role weights or post-result region deletion",
+            "adding NFCI or any macro/fundamental factor to the candidate",
+            "adding stops, take-profit, maximum hold, leverage, financing, shorting or negative cash",
+            "changing V11 internals, point-in-time NFCI history or frozen decision-cost calendar",
+            "changing the user fee or hiding the preregistered slippage stress",
+            "promoting retrospective results as completed prospective evidence"
+          ],
+          "shared_rules": {
+            "asset_cap": 0.5,
+            "candidate_nfci_use": false,
+            "evaluation_end": "2026-08-20",
+            "evaluation_start": "2012-07-05",
+            "execution": "T close from T-1 or earlier daily-close information",
+            "financing_allowed": false,
+            "hard_rebalance_band": 0.1,
+            "maximum_gross": 1.0,
+            "momentum_lookback_sessions": 126,
+            "rebalance_sessions": 20,
+            "role_groups": [
+              [
+                "gold_cny"
+              ],
+              [
+                "nasdaq",
+                "sp500"
+              ],
+              [
+                "csi300",
+                "shanghai_composite"
+              ]
+            ],
+            "role_score": "return126 / max(annualized volatility63, 8%)",
+            "shorting_allowed": false,
+            "target_portfolio_volatility": 0.1,
+            "trend_lookback_sessions": 200,
+            "trend_rule": "previous close>SMA200 and return126>0",
+            "volatility_floor": 0.08,
+            "volatility_lookback_sessions": 63
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "tools/dayk_multi_asset_007_logic.swift",
+        "target_fingerprint": null,
+        "version_key": "S-DAYK-MULTI-ASSET-007"
+      }
+    }
+  ]
+}

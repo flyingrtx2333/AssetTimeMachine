@@ -1,0 +1,201 @@
+{
+  "batch_key": "ATM-SVP2-QUAL-SPY-TR-001-strategy-library-v1",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-QUAL-SPY-TR-001.json",
+    "decision": "FAIL / MATCHED TOTAL-RETURN AUDIT DOES NOT CONFIRM ROBUST QUAL QUALITY ALPHA. QUAL remains directionally better than matched SPY: evaluation CAGR 13.069187% vs SPY 13.008582% and Sharpe 1.480549 vs 1.470548, with 5/7 fold Sharpe wins and slightly lower MDD 7.379394% vs 7.384346%. However paired 20,000-replicate bootstrap gave P(CAGR QUAL>SPY)=75.190% and P(Sharpe QUAL>SPY)=83.945%, both below the frozen 90% gates; cumulative 42-candidate DSR=88.967%<95%. Therefore robust_strategy_pass=false. The earlier ATM-SVP2-US-MQ-ROLE-002 QUAL result remains truthful against the original price-index comparator but cannot support a quality-premium/product promotion after matched total-return correction. QUAL may remain visible only as an explicitly labeled research experiment; its prospective promotion interpretation is suspended. No SPY/QUAL blend, timing, alternate start, ETF replacement, threshold, or comparator rescue is permitted.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "328a0487c175b35b4e1a5f82ac3d2faea07579e6",
+    "methodology": {
+      "follow_up_policy": "Methodology-correction audit only. After performance is opened do not change SPY, QUAL, adjusted-close field, 2013-07-19 start, substitution fraction, calendar alignment, folds, thresholds, fees, target path or add a comparator. Failure downgrades the QUAL promotion interpretation and suspends its prospective promotion; no rescue search.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "deterministic 2013-07-19+: QUAL CAGR > SPY matched-control CAGR",
+        "deterministic 2013-07-19+: QUAL Sharpe >= SPY matched-control Sharpe",
+        "deterministic 2013-07-19+: QUAL MDD <=10%",
+        "deterministic: at least 5/7 fixed folds QUAL Sharpe >= SPY matched-control Sharpe",
+        "deterministic: worst fixed-fold QUAL Sharpe >0",
+        "deterministic: V11 full target fingerprint=ba67c8aa24bc7168; SPY/QUAL execution-event target fingerprints equal source; gross<=100%; nonnegative targets; no financing or shorting",
+        "bootstrap: paired circular moving blocks QUAL versus SPY, 63 sessions, 20000 replicates, seed 20260822",
+        "bootstrap: P(CAGR QUAL > SPY) >=0.90",
+        "bootstrap: P(Sharpe QUAL > SPY) >=0.90",
+        "bootstrap: median QUAL-minus-SPY CAGR delta >0",
+        "bootstrap: median QUAL-minus-SPY Sharpe delta >0",
+        "bootstrap: QUAL MDD P97.5 <=15%",
+        "PBO not applicable: one fixed candidate and one non-selectable matched control",
+        "global post-protocol DSR probability >=95% using 41 prior performance-bearing formal candidates plus this candidate, total 42",
+        "ROBUST_MATCHED_ROLE_PASS requires every applicable deterministic, bootstrap and DSR gate"
+      ],
+      "selection_metric": "No model selection. Compare the single fixed QUAL candidate only with the fixed SPY matched-total-return control; V11 price-index path is identity/background only."
+    },
+    "preregistration_hash": "2f867f01e77b8d16687053fd502f4317bd6fef21e491a030525941455ebe928e",
+    "protocol_id": "ATM-SVP-2",
+    "run_key": "ATM-SVP2-QUAL-SPY-TR-001",
+    "status": "FAIL",
+    "title": "QUAL_VS_SPY_MATCHED_TOTAL_RETURN_PRODUCTION_ROLE_AUDIT_V1"
+  },
+  "schema_version": "strategy-library-v1",
+  "source_commit": "328a0487c175b35b4e1a5f82ac3d2faea07579e6",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "After removing the S&P price-index versus ETF adjusted-close total-return comparator mismatch, QUAL still improves the frozen V11 sp500 realized-return role relative to a matched SPY adjusted-close total-return control. A pass is required before interpreting the QUAL near-miss as quality-role alpha rather than dividend/total-return measurement advantage.",
+      "display_name": "QUAL vs SPY 同口径审计",
+      "family": "美股质量动量角色",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/statistical-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/statistical-audit.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/V11-CONTROL-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/C-SPY-TR-PROD-SP500-ROLE-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/S-QUAL-VS-SPY-TR-ROLE-portfolio.csv"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": 0.7519,
+        "bootstrap_probability_sharpe": 0.83945,
+        "cagr_percent": 14.422013,
+        "candidate_id": "S-QUAL-VS-SPY-TR-ROLE",
+        "conclusion": "FAIL / MATCHED TOTAL-RETURN AUDIT DOES NOT CONFIRM ROBUST QUAL QUALITY ALPHA. QUAL remains directionally better than matched SPY: evaluation CAGR 13.069187% vs SPY 13.008582% and Sharpe 1.480549 vs 1.470548, with 5/7 fold Sharpe wins and slightly lower MDD 7.379394% vs 7.384346%. However paired 20,000-replicate bootstrap gave P(CAGR QUAL>SPY)=75.190% and P(Sharpe QUAL>SPY)=83.945%, both below the frozen 90% gates; cumulative 42-candidate DSR=88.967%<95%. Therefore robust_strategy_pass=false. The earlier ATM-SVP2-US-MQ-ROLE-002 QUAL result remains truthful against the original price-index comparator but cannot support a quality-premium/product promotion after matched total-return correction. QUAL may remain visible only as an explicitly labeled research experiment; its prospective promotion interpretation is suspended. No SPY/QUAL blend, timing, alternate start, ETF replacement, threshold, or comparator rescue is permitted.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "shorting_allowed": false
+        },
+        "dsr_probability": 0.8896672939131469,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": 5,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 7.689054,
+        "metrics": {
+          "bootstrap_mdd_p975": 0.1258338605313579,
+          "bootstrap_median_candidate_minus_matched_cagr": 0.0005865714074288902,
+          "bootstrap_median_candidate_minus_matched_sharpe": 0.009836972815516098,
+          "bootstrap_probability_cagr_gt_matched": 0.7519,
+          "bootstrap_probability_sharpe_gt_matched": 0.83945,
+          "bootstrap_robust_pass": false,
+          "cagr_percent": 14.422013,
+          "deterministic_admit": true,
+          "evaluation_cagr_percent": 13.069187,
+          "evaluation_mdd_percent": 7.379394,
+          "evaluation_sharpe": 1.480549,
+          "evaluation_start": "2013-07-19",
+          "execution_event_target_fingerprint": "ea843d2a26d9eff3",
+          "folds_sharpe_ge_matched": 5,
+          "global_dsr_pass": false,
+          "global_post_protocol_dsr_probability": 0.8896672939131469,
+          "global_post_protocol_dsr_trial_count": 42,
+          "matched_control_id": "C-SPY-TR-PROD-SP500-ROLE",
+          "matched_evaluation_cagr_percent": 13.008582,
+          "matched_evaluation_mdd_percent": 7.384346,
+          "matched_evaluation_sharpe": 1.470548,
+          "mdd_percent": 7.689054,
+          "robust_strategy_pass": false,
+          "sharpe": 1.532266,
+          "since2020_cagr_percent": 17.64344,
+          "since2020_sharpe": 1.642162,
+          "since2022_cagr_percent": 21.123459,
+          "since2022_sharpe": 1.794869,
+          "worst_fold_sharpe": 0.761351
+        },
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "sharpe": 1.532266,
+        "since2020_cagr_percent": 17.64344,
+        "since2022_cagr_percent": 21.123459,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-QUAL-VS-SPY-TR-ROLE",
+      "strategy_kind": "strategy_asset_role_not_factor",
+      "tags": [
+        "ATM-SVP2-QUAL-SPY-TR-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "f0068a1bdcb52a58656c080f30fca7afe9268998cb8b8648b242b41095461a12",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "After removing the S&P price-index versus ETF adjusted-close total-return comparator mismatch, QUAL still improves the frozen V11 sp500 realized-return role relative to a matched SPY adjusted-close total-return control. A pass is required before interpreting the QUAL near-miss as quality-role alpha rather than dividend/total-return measurement advantage.",
+        "parameters": {
+          "allowed_changes": [
+            "introduce fixed C-SPY-TR-PROD-SP500-ROLE using SPY Yahoo adjusted-close total-return proxy on the exact frozen V11 sp500 portfolio role",
+            "evaluate fixed S-QUAL-VS-SPY-TR-ROLE using QUAL Yahoo adjusted-close total-return proxy on the same role",
+            "use 2013-07-19 as common substitution/evaluation start because QUAL first quotes 2013-07-18 and the next session is the first defined QUAL close-to-close return",
+            "before 2013-07-19 both paths use the original frozen S&P price-index role and are identical to V11",
+            "on union-calendar dates with no new QUAL/SPY quote, carry the last adjusted close forward",
+            "retain frozen V11 signals, target weights, execution events, 100% gross limit, no financing, fees, slippage and cash model"
+          ],
+          "candidate_definition": {
+            "candidate_id": "S-QUAL-VS-SPY-TR-ROLE",
+            "instrument": "QUAL",
+            "price_field": "Yahoo adjusted_close_total_return_proxy",
+            "role": "sp500 realized-return portfolio role only",
+            "signal_use": "none",
+            "substitution_fraction": 1.0,
+            "substitution_start": "2013-07-19"
+          },
+          "forbidden_changes": [
+            "using V11 price-index role as primary admission comparator",
+            "SPY/QUAL blend or partial substitution",
+            "IWD, VBR, MTUM or any other candidate/comparator",
+            "alternative price field, dividend adjustment, synthetic total-return construction or start date",
+            "quality timing, momentum, volatility, macro or regime gate",
+            "any frozen V11 signal, target, event, band or risk-parameter change",
+            "leverage, financing, shorting, negative target weights or gross above 100%",
+            "dropping this audit from G3 accounting if it fails"
+          ],
+          "shared_rules": {
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "matched_price_field": "adjusted_close_total_return_proxy",
+            "max_gross": 1.0,
+            "production_v11_target_fingerprint": "ba67c8aa24bc7168",
+            "rebalance_band": 0.25,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005,
+            "sp500_role_substitution_fraction": 1.0,
+            "substitution_start": "2013-07-19"
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "scripts/run_qual_spy_total_return_matched_v1.py",
+        "target_fingerprint": "ea843d2a26d9eff3",
+        "version_key": "S-QUAL-VS-SPY-TR-ROLE"
+      }
+    }
+  ]
+}

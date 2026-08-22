@@ -1,0 +1,324 @@
+{
+  "batch_key": "ATM-SVP2-US-VALUE-ROLE-001-strategy-library-v1",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-US-VALUE-ROLE-001.json",
+    "decision": "FAIL / NO_CANDIDATE_ADMITTED / NO_ROBUST_STRATEGY_PASS. Both preregistered value-role substitutions showed positive return evidence relative to the frozen common-window V11 control but failed the frozen risk gates. IWD improved common-window CAGR from V11 8.195539% to 8.524869% and Sharpe from 0.874886 to 0.914479, beat V11 Sharpe in 5/7 fixed folds, and had paired-bootstrap P(CAGR>V11)=97.360% and P(Sharpe>V11)=99.180%. However, IWD MDD was 19.990634% and bootstrap MDD P97.5 was 26.524%, far above the frozen 10%/15% limits; cumulative 36-trial DSR probability was only 11.821%. VBR improved CAGR to 8.631507% and Sharpe to 0.906520 and also won 5/7 folds, with P(CAGR>V11)=95.205%, but P(Sharpe>V11)=88.505%, MDD was 21.618129%, bootstrap MDD P97.5 was 27.635%, and DSR was 11.084%. The trial additionally documents that restarting frozen V11 from cash at the 2004-01-30 common window materially changes its path and produces 21.291405% MDD, so this campaign is not evidence that a production V11 role substitution would retain the production V11 7.689054% MDD. Because the common-window restart design and asset substitutions were preregistered before performance, they may not be changed after seeing results. No S&P/IWD/VBR blend, substitution fraction, alternate common start, winner selection, or value timing rescue is permitted. The stable incremental return evidence from IWD is informative for future independent asset-role hypotheses, but neither current candidate is a validated strategy.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "e021936d69582345bdec7d86f1a4608cae61052c",
+    "methodology": {
+      "follow_up_policy": "This retrospective value-role campaign ends after the two frozen substitutions are opened. Do not rescue either result by blending IWD/VBR with S&P 500, mixing IWD and VBR, changing the substitution percentage, changing the common start, switching between value ETFs, adding a third value ETF, timing the value role, changing the V11 target path, or selecting only the nicer candidate for reporting. Any materially different asset role requires a new preregistered campaign and a new trial count.",
+      "formal_run_budget": 2,
+      "pass_fail_gates": [
+        "deterministic common-window CAGR > V11-CONTROL CAGR",
+        "deterministic common-window Sharpe >= V11-CONTROL Sharpe",
+        "deterministic common-window MDD <=10%",
+        "deterministic: at least 5/7 fixed folds candidate Sharpe >= V11-CONTROL Sharpe in the same fold",
+        "deterministic: worst fixed-fold Sharpe >0",
+        "deterministic: target gross <=100%, min target weight >=0, no financing or shorting",
+        "bootstrap: paired circular moving blocks against the common-window V11 control, 63 sessions, 20000 replicates, seed 20260822",
+        "bootstrap: P(CAGR candidate > V11) >=0.90",
+        "bootstrap: P(Sharpe candidate > V11) >=0.90",
+        "bootstrap: median candidate-minus-V11 CAGR delta >0",
+        "bootstrap: median candidate-minus-V11 Sharpe delta >0",
+        "bootstrap: candidate MDD P97.5 <=15%",
+        "PBO/winner-selection test: not applicable because neither candidate may be selected as a family winner; both are independently reported",
+        "global post-protocol DSR probability >=95% using all prior 34 formal return-seeking candidates plus both current candidates, total trial count 36",
+        "ROBUST_STRATEGY_PASS for a candidate requires every applicable deterministic, bootstrap, and global DSR gate"
+      ],
+      "selection_metric": "No winner selection, blend search, or survivor reporting. Each role candidate is assessed independently against the same common-window frozen V11 control. A pass by one candidate does not erase or modify the other candidate's trial count or result."
+    },
+    "preregistration_hash": "8f257e03718a560e43166683d1d453662dcc6210535f01456f35e920a6b38e29",
+    "protocol_id": "ATM-SVP-2",
+    "run_key": "ATM-SVP2-US-VALUE-ROLE-001",
+    "status": "FAIL",
+    "title": "US_VALUE_ASSET_ROLE_SUBSTITUTION_V1"
+  },
+  "schema_version": "strategy-library-v1",
+  "source_commit": "e021936d69582345bdec7d86f1a4608cae61052c",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "The frozen V11 broad-U.S.-equity portfolio role may be leaving an independent long-run value risk premium unused. Replacing only the realized asset return carried by V11's sp500 output slot with a fixed large/mid-value ETF (IWD) or a fixed small-value ETF (VBR), while preserving every V11 signal date, target weight, currency treatment, risk reduction, fee, and rebalance rule, can improve common-window CAGR and risk-adjusted performance without increasing gross exposure.",
+      "display_name": "IWD 美股价值角色替代",
+      "family": "美股资产角色",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/statistical-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/statistical-audit.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/V11-CONTROL-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/F-IWD-SP500-ROLE-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/F-VBR-SP500-ROLE-portfolio.csv"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": 0.9736,
+        "bootstrap_probability_sharpe": 0.9918,
+        "cagr_percent": 8.524869,
+        "candidate_id": "F-IWD-SP500-ROLE",
+        "conclusion": "FAIL / NO_CANDIDATE_ADMITTED / NO_ROBUST_STRATEGY_PASS. Both preregistered value-role substitutions showed positive return evidence relative to the frozen common-window V11 control but failed the frozen risk gates. IWD improved common-window CAGR from V11 8.195539% to 8.524869% and Sharpe from 0.874886 to 0.914479, beat V11 Sharpe in 5/7 fixed folds, and had paired-bootstrap P(CAGR>V11)=97.360% and P(Sharpe>V11)=99.180%. However, IWD MDD was 19.990634% and bootstrap MDD P97.5 was 26.524%, far above the frozen 10%/15% limits; cumulative 36-trial DSR probability was only 11.821%. VBR improved CAGR to 8.631507% and Sharpe to 0.906520 and also won 5/7 folds, with P(CAGR>V11)=95.205%, but P(Sharpe>V11)=88.505%, MDD was 21.618129%, bootstrap MDD P97.5 was 27.635%, and DSR was 11.084%. The trial additionally documents that restarting frozen V11 from cash at the 2004-01-30 common window materially changes its path and produces 21.291405% MDD, so this campaign is not evidence that a production V11 role substitution would retain the production V11 7.689054% MDD. Because the common-window restart design and asset substitutions were preregistered before performance, they may not be changed after seeing results. No S&P/IWD/VBR blend, substitution fraction, alternate common start, winner selection, or value timing rescue is permitted. The stable incremental return evidence from IWD is informative for future independent asset-role hypotheses, but neither current candidate is a validated strategy.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "shorting_allowed": false
+        },
+        "dsr_probability": 0.1182102963310745,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": 5,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 19.990634,
+        "metrics": {
+          "bootstrap_mdd_p975": 0.2652414577638579,
+          "bootstrap_median_candidate_minus_v11_cagr": 0.0032252527851867885,
+          "bootstrap_median_candidate_minus_v11_sharpe": 0.039514104154233565,
+          "bootstrap_probability_cagr_gt_v11": 0.9736,
+          "bootstrap_probability_sharpe_gt_v11": 0.9918,
+          "bootstrap_robust_pass": false,
+          "cagr_percent": 8.524869,
+          "deterministic_admit": false,
+          "folds_sharpe_ge_v11": 5,
+          "global_post_protocol_dsr_probability": 0.1182102963310745,
+          "global_post_protocol_dsr_trial_count": 36,
+          "mdd_percent": 19.990634,
+          "robust_strategy_pass": false,
+          "sharpe": 0.914479,
+          "since2020_cagr_percent": 12.68922,
+          "since2020_sharpe": 1.049628,
+          "since2022_cagr_percent": 11.321116,
+          "since2022_sharpe": 0.96856,
+          "worst_fold_sharpe": 0.099785
+        },
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "sharpe": 0.914479,
+        "since2020_cagr_percent": 12.68922,
+        "since2022_cagr_percent": 11.321116,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "F-IWD-SP500-ROLE",
+      "strategy_kind": "strategy_asset_role_not_factor",
+      "tags": [
+        "ATM-SVP2-US-VALUE-ROLE-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "0c180a31d202ab2860267e7b5165bd87afd760785e3606dbeda4b4ff5c2e5f83",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "The frozen V11 broad-U.S.-equity portfolio role may be leaving an independent long-run value risk premium unused. Replacing only the realized asset return carried by V11's sp500 output slot with a fixed large/mid-value ETF (IWD) or a fixed small-value ETF (VBR), while preserving every V11 signal date, target weight, currency treatment, risk reduction, fee, and rebalance rule, can improve common-window CAGR and risk-adjusted performance without increasing gross exposure.",
+        "parameters": {
+          "allowed_changes": [
+            "F-IWD-SP500-ROLE replaces only the realized USD adjusted-close total-return series carried by the frozen V11 sp500 portfolio role with IWD; the asset option, role key, USD/CNY conversion, V11 signals and V11 target weights remain unchanged",
+            "F-VBR-SP500-ROLE performs the identical role substitution using VBR",
+            "the common evaluation starts 2004-01-30, the first available VBR adjusted-close date; V11-CONTROL is independently rerun from cash on exactly the same common window rather than compared with the longer 2002 baseline",
+            "both candidates are preregistered independently before either candidate performance is viewed and both remain permanently in G3/global multiple-testing accounting regardless of outcome"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "any frozen V11 signal, parameter, event date, target sizing, or target-path modification",
+            "any post-result IWD/VBR blend or blend with S&P 500",
+            "any substitution fraction other than exactly 100% of the sp500 role",
+            "any candidate selection that hides, removes, or downweights the other preregistered candidate from G3/DSR accounting",
+            "any alternative value ETF, value index, small-cap ETF, factor score, or third candidate after results",
+            "any value timing, moving average, relative-strength, valuation threshold, momentum confirmation, or regime gate",
+            "any common-evaluation-start change after performance is viewed",
+            "any leverage, financing, negative cash, or gross exposure above 100%",
+            "using future IWD/VBR returns to alter V11 signals or target weights"
+          ],
+          "shared_rules": {
+            "baseline_initial_cash": 100000,
+            "common_evaluation_start": "2004-01-30",
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "rebalance_band": 0.25,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005,
+            "sp500_role_substitution_fraction": 1.0,
+            "v11_signal_logic_changed": false,
+            "v11_target_weights_changed": false
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "scripts/run_us_value_role_substitution_v1.py",
+        "target_fingerprint": null,
+        "version_key": "F-IWD-SP500-ROLE"
+      }
+    },
+    {
+      "description": "The frozen V11 broad-U.S.-equity portfolio role may be leaving an independent long-run value risk premium unused. Replacing only the realized asset return carried by V11's sp500 output slot with a fixed large/mid-value ETF (IWD) or a fixed small-value ETF (VBR), while preserving every V11 signal date, target weight, currency treatment, risk reduction, fee, and rebalance rule, can improve common-window CAGR and risk-adjusted performance without increasing gross exposure.",
+      "display_name": "VBR 美股价值角色替代",
+      "family": "美股资产角色",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/statistical-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/statistical-audit.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/V11-CONTROL-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/F-IWD-SP500-ROLE-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/F-VBR-SP500-ROLE-portfolio.csv"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": 0.95205,
+        "bootstrap_probability_sharpe": 0.88505,
+        "cagr_percent": 8.631507,
+        "candidate_id": "F-VBR-SP500-ROLE",
+        "conclusion": "FAIL / NO_CANDIDATE_ADMITTED / NO_ROBUST_STRATEGY_PASS. Both preregistered value-role substitutions showed positive return evidence relative to the frozen common-window V11 control but failed the frozen risk gates. IWD improved common-window CAGR from V11 8.195539% to 8.524869% and Sharpe from 0.874886 to 0.914479, beat V11 Sharpe in 5/7 fixed folds, and had paired-bootstrap P(CAGR>V11)=97.360% and P(Sharpe>V11)=99.180%. However, IWD MDD was 19.990634% and bootstrap MDD P97.5 was 26.524%, far above the frozen 10%/15% limits; cumulative 36-trial DSR probability was only 11.821%. VBR improved CAGR to 8.631507% and Sharpe to 0.906520 and also won 5/7 folds, with P(CAGR>V11)=95.205%, but P(Sharpe>V11)=88.505%, MDD was 21.618129%, bootstrap MDD P97.5 was 27.635%, and DSR was 11.084%. The trial additionally documents that restarting frozen V11 from cash at the 2004-01-30 common window materially changes its path and produces 21.291405% MDD, so this campaign is not evidence that a production V11 role substitution would retain the production V11 7.689054% MDD. Because the common-window restart design and asset substitutions were preregistered before performance, they may not be changed after seeing results. No S&P/IWD/VBR blend, substitution fraction, alternate common start, winner selection, or value timing rescue is permitted. The stable incremental return evidence from IWD is informative for future independent asset-role hypotheses, but neither current candidate is a validated strategy.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "shorting_allowed": false
+        },
+        "dsr_probability": 0.110841800695195,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": 5,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 21.618129,
+        "metrics": {
+          "bootstrap_mdd_p975": 0.2763465666112383,
+          "bootstrap_median_candidate_minus_v11_cagr": 0.0042073280590428745,
+          "bootstrap_median_candidate_minus_v11_sharpe": 0.031684766930741015,
+          "bootstrap_probability_cagr_gt_v11": 0.95205,
+          "bootstrap_probability_sharpe_gt_v11": 0.88505,
+          "bootstrap_robust_pass": false,
+          "cagr_percent": 8.631507,
+          "deterministic_admit": false,
+          "folds_sharpe_ge_v11": 5,
+          "global_post_protocol_dsr_probability": 0.110841800695195,
+          "global_post_protocol_dsr_trial_count": 36,
+          "mdd_percent": 21.618129,
+          "robust_strategy_pass": false,
+          "sharpe": 0.90652,
+          "since2020_cagr_percent": 13.078513,
+          "since2020_sharpe": 1.054274,
+          "since2022_cagr_percent": 11.149542,
+          "since2022_sharpe": 0.943967,
+          "worst_fold_sharpe": 0.12563
+        },
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "sharpe": 0.90652,
+        "since2020_cagr_percent": 13.078513,
+        "since2022_cagr_percent": 11.149542,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "F-VBR-SP500-ROLE",
+      "strategy_kind": "strategy_asset_role_not_factor",
+      "tags": [
+        "ATM-SVP2-US-VALUE-ROLE-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "0c180a31d202ab2860267e7b5165bd87afd760785e3606dbeda4b4ff5c2e5f83",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "The frozen V11 broad-U.S.-equity portfolio role may be leaving an independent long-run value risk premium unused. Replacing only the realized asset return carried by V11's sp500 output slot with a fixed large/mid-value ETF (IWD) or a fixed small-value ETF (VBR), while preserving every V11 signal date, target weight, currency treatment, risk reduction, fee, and rebalance rule, can improve common-window CAGR and risk-adjusted performance without increasing gross exposure.",
+        "parameters": {
+          "allowed_changes": [
+            "F-IWD-SP500-ROLE replaces only the realized USD adjusted-close total-return series carried by the frozen V11 sp500 portfolio role with IWD; the asset option, role key, USD/CNY conversion, V11 signals and V11 target weights remain unchanged",
+            "F-VBR-SP500-ROLE performs the identical role substitution using VBR",
+            "the common evaluation starts 2004-01-30, the first available VBR adjusted-close date; V11-CONTROL is independently rerun from cash on exactly the same common window rather than compared with the longer 2002 baseline",
+            "both candidates are preregistered independently before either candidate performance is viewed and both remain permanently in G3/global multiple-testing accounting regardless of outcome"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "any frozen V11 signal, parameter, event date, target sizing, or target-path modification",
+            "any post-result IWD/VBR blend or blend with S&P 500",
+            "any substitution fraction other than exactly 100% of the sp500 role",
+            "any candidate selection that hides, removes, or downweights the other preregistered candidate from G3/DSR accounting",
+            "any alternative value ETF, value index, small-cap ETF, factor score, or third candidate after results",
+            "any value timing, moving average, relative-strength, valuation threshold, momentum confirmation, or regime gate",
+            "any common-evaluation-start change after performance is viewed",
+            "any leverage, financing, negative cash, or gross exposure above 100%",
+            "using future IWD/VBR returns to alter V11 signals or target weights"
+          ],
+          "shared_rules": {
+            "baseline_initial_cash": 100000,
+            "common_evaluation_start": "2004-01-30",
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "rebalance_band": 0.25,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005,
+            "sp500_role_substitution_fraction": 1.0,
+            "v11_signal_logic_changed": false,
+            "v11_target_weights_changed": false
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "scripts/run_us_value_role_substitution_v1.py",
+        "target_fingerprint": null,
+        "version_key": "F-VBR-SP500-ROLE"
+      }
+    }
+  ]
+}
