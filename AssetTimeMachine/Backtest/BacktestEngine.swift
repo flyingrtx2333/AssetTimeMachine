@@ -196,6 +196,7 @@ nonisolated struct ResearchDailySwingAudit {
     let minimumEndOfDayCash: Double
     let maxConcurrentPositions: Int
     let finalOpenPositions: Int
+    let carriedMarkValuationCount: Int
 }
 
 nonisolated struct ResearchDailySwingRun {
@@ -212,6 +213,7 @@ private nonisolated struct ResearchDailySwingPosition {
     let entryPrice: Double
     let entryDate: Date
     let takeProfitPrice: Double
+    var lastMarkPrice: Double
     var observedSessions: Int
 }
 
@@ -5338,6 +5340,7 @@ nonisolated enum BacktestEngine {
         var observedMaxGross = 0.0
         var minimumEndOfDayCash = normalizedInitialCash
         var maxConcurrentPositions = 0
+        var carriedMarkValuationCount = 0
         let benchmarkStartIndex = simulationRange.lowerBound
 
         func bar(_ symbol: String, on date: Date) -> ResearchIntradayOHLCBar? {
@@ -5367,6 +5370,7 @@ nonisolated enum BacktestEngine {
             for symbol in occupiedAtOpen.sorted() {
                 guard var position = positions[symbol], let currentBar = bar(symbol, on: date) else { continue }
                 position.observedSessions += 1
+                position.lastMarkPrice = currentBar.close
                 positions[symbol] = position
                 let targetHit = currentBar.high >= position.takeProfitPrice
                 let timeExit = position.observedSessions >= maximumHoldingSessions
@@ -5404,8 +5408,8 @@ nonisolated enum BacktestEngine {
             }
 
             let openPortfolioValue = cash + positions.reduce(0.0) { partial, item in
-                guard let currentBar = bar(item.key, on: date) else { return partial }
-                return partial + item.value.units * currentBar.open
+                let markPrice = bar(item.key, on: date)?.open ?? item.value.lastMarkPrice
+                return partial + item.value.units * markPrice
             }
             let signalIndex = max(index - 1, 0)
             let context = StrategyTargetContext(
@@ -5441,6 +5445,7 @@ nonisolated enum BacktestEngine {
                     entryPrice: buyPrice,
                     entryDate: date,
                     takeProfitPrice: rawTakeProfitPrice,
+                    lastMarkPrice: currentBar.close,
                     observedSessions: 1
                 )
                 trades.append(.init(
@@ -5461,8 +5466,10 @@ nonisolated enum BacktestEngine {
             var holdingsBySymbol: [String: Double] = [:]
             var holdingsValue = 0.0
             for (symbol, position) in positions {
-                guard let currentBar = bar(symbol, on: date) else { continue }
-                let value = position.units * currentBar.close
+                let currentClose = bar(symbol, on: date)?.close
+                if currentClose == nil { carriedMarkValuationCount += 1 }
+                let markPrice = currentClose ?? position.lastMarkPrice
+                let value = position.units * markPrice
                 holdingsBySymbol[symbol] = value
                 holdingsValue += value
             }
@@ -5561,7 +5568,8 @@ nonisolated enum BacktestEngine {
                 maxGrossExposure: observedMaxGross,
                 minimumEndOfDayCash: minimumEndOfDayCash,
                 maxConcurrentPositions: maxConcurrentPositions,
-                finalOpenPositions: positions.count
+                finalOpenPositions: positions.count,
+                carriedMarkValuationCount: carriedMarkValuationCount
             )
         )
     }

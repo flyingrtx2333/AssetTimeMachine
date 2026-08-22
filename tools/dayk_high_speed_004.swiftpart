@@ -1,6 +1,6 @@
-        if ProcessInfo.processInfo.environment["ATM_DAYK_HIGH_SPEED_003"] == "1" {
-            let formal = ProcessInfo.processInfo.environment["ATM_DAYK_HIGH_SPEED_003_FORMAL"] == "1"
-            let outputDir = ProcessInfo.processInfo.environment["ATM_DAYK_HIGH_SPEED_003_OUTPUT_DIR"]
+        if ProcessInfo.processInfo.environment["ATM_DAYK_HIGH_SPEED_004"] == "1" {
+            let formal = ProcessInfo.processInfo.environment["ATM_DAYK_HIGH_SPEED_004_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_DAYK_HIGH_SPEED_004_OUTPUT_DIR"]
             let symbols = ["gold_cny", "nasdaq", "sp500"]
             let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
             let allInputs = symbols.compactMap { options[$0] }.map { option in
@@ -9,7 +9,7 @@
                 }
             }
             guard allInputs.count == symbols.count else {
-                print("DAYK_HIGH_SPEED_003_INPUTS_MISSING")
+                print("DAYK_HIGH_SPEED_004_INPUTS_MISSING")
                 return
             }
 
@@ -20,7 +20,7 @@
             dateFormatter.dateFormat = "yyyy-MM-dd"
             guard let evaluationStart = dateFormatter.date(from: "2017-04-11"),
                   let evaluationEnd = dateFormatter.date(from: "2026-08-20") else {
-                print("DAYK_HIGH_SPEED_003_DATE_PARSE_FAILED")
+                print("DAYK_HIGH_SPEED_004_DATE_PARSE_FAILED")
                 return
             }
             let evaluationBounds = evaluationStart...evaluationEnd
@@ -57,17 +57,17 @@
             ) -> ResearchDailySwingRun? {
                 let selected = allInputs.filter { selectedSymbols.contains($0.assetOption.symbol) }
                 let fixedSleeveWeight = 1.0 / Double(selectedSymbols.count)
-                var logicBarsBySymbol: [String: [DayKHighSpeed003Bar]] = [:]
+                var logicBarsBySymbol: [String: [DayKHighSpeed004Bar]] = [:]
                 var takeProfitBySymbolAndDate: [String: Double] = [:]
                 let config = ResearchTargetStrategyConfig(
                     symbol: id,
-                    title: "日K高速003",
+                    title: "日K高速004",
                     warmupSessions: 200,
                     rebalanceSessions: 1,
                     maxGrossExposure: 1,
                     allowsFinancedExposure: false,
                     financingAnnualRate: 0,
-                    buyReason: "日K高速003开盘信号"
+                    buyReason: "日K高速004开盘信号"
                 )
                 func cacheKey(_ symbol: String, _ date: Date) -> String {
                     symbol + "|" + date.recordDateString
@@ -78,25 +78,25 @@
                     settings: makeSettings(slippagePercent: slippagePercent),
                     config: config,
                     dateBounds: evaluationBounds,
-                    maximumHoldingSessions: DayKHighSpeed003Logic.maximumHoldingSessions,
+                    maximumHoldingSessions: DayKHighSpeed004Logic.maximumHoldingSessions,
                     targetWeights: { context, data in
                         guard mode != .cash else { return [:] }
                         var weights: [String: Double] = [:]
                         for symbol in selectedSymbols {
                             guard let sourceBars = data.barsBySymbol[symbol],
                                   let executionIndex = data.barIndexByDateBySymbol[symbol]?[context.date] else { continue }
-                            let logicBars: [DayKHighSpeed003Bar]
+                            let logicBars: [DayKHighSpeed004Bar]
                             if let cached = logicBarsBySymbol[symbol] {
                                 logicBars = cached
                             } else {
                                 let converted = sourceBars.map {
-                                    DayKHighSpeed003Bar(open: $0.open, high: $0.high, low: $0.low, close: $0.close)
+                                    DayKHighSpeed004Bar(open: $0.open, high: $0.high, low: $0.low, close: $0.close)
                                 }
                                 logicBarsBySymbol[symbol] = converted
                                 logicBars = converted
                             }
                             let requireTrend = mode == .candidate
-                            guard let signal = DayKHighSpeed003Logic.signal(
+                            guard let signal = DayKHighSpeed004Logic.signal(
                                 bars: logicBars,
                                 executionIndex: executionIndex,
                                 requireTrend: requireTrend
@@ -202,10 +202,10 @@
             }
 
             let candidateSpecs: [(String, [String])] = [
-                ("DKHS003-GOLD", ["gold_cny"]),
-                ("DKHS003-NASDAQ", ["nasdaq"]),
-                ("DKHS003-SP500", ["sp500"]),
-                ("DKHS003-COMBINED", symbols)
+                ("DKHS004-GOLD", ["gold_cny"]),
+                ("DKHS004-NASDAQ", ["nasdaq"]),
+                ("DKHS004-SP500", ["sp500"]),
+                ("DKHS004-COMBINED", symbols)
             ]
             let controlSpecs: [(String, [String])] = [
                 ("C-PULLBACK-GOLD", ["gold_cny"]),
@@ -217,46 +217,46 @@
             var controlRuns: [(String, ResearchDailySwingRun)] = []
             for spec in candidateSpecs {
                 guard let run = runPath(id: spec.0, selectedSymbols: spec.1, mode: .candidate, slippagePercent: 0) else {
-                    print("DAYK_HIGH_SPEED_003_CANDIDATE_RUN_FAILED=\(spec.0)")
+                    print("DAYK_HIGH_SPEED_004_CANDIDATE_RUN_FAILED=\(spec.0)")
                     return
                 }
                 candidateRuns.append((spec.0, run))
             }
             for spec in controlSpecs {
                 guard let run = runPath(id: spec.0, selectedSymbols: spec.1, mode: .matchedPullbackControl, slippagePercent: 0) else {
-                    print("DAYK_HIGH_SPEED_003_CONTROL_RUN_FAILED=\(spec.0)")
+                    print("DAYK_HIGH_SPEED_004_CONTROL_RUN_FAILED=\(spec.0)")
                     return
                 }
                 controlRuns.append((spec.0, run))
             }
             guard let cashRun = runPath(id: "C-CASH-COMBINED", selectedSymbols: symbols, mode: .cash, slippagePercent: 0),
-                  let stressRun = runPath(id: "DKHS003-COMBINED-SLIP005", selectedSymbols: symbols, mode: .candidate, slippagePercent: 0.05) else {
-                print("DAYK_HIGH_SPEED_003_AUDIT_RUN_FAILED")
+                  let stressRun = runPath(id: "DKHS004-COMBINED-SLIP005", selectedSymbols: symbols, mode: .candidate, slippagePercent: 0.05) else {
+                print("DAYK_HIGH_SPEED_004_AUDIT_RUN_FAILED")
                 return
             }
 
-            let candidateCombined = candidateRuns.first { $0.0 == "DKHS003-COMBINED" }!.1
+            let candidateCombined = candidateRuns.first { $0.0 == "DKHS004-COMBINED" }!.1
             let signalCount = candidateCombined.audit.roundTripsBySymbol.values.reduce(0, +)
             if !formal {
-                print("DAYK_HIGH_SPEED_003_SMOKE_SIGNAL_COUNT=\(signalCount)")
-                for (id, run) in candidateRuns where id != "DKHS003-COMBINED" {
+                print("DAYK_HIGH_SPEED_004_SMOKE_SIGNAL_COUNT=\(signalCount)")
+                for (id, run) in candidateRuns where id != "DKHS004-COMBINED" {
                     let count = run.audit.roundTripsBySymbol.values.reduce(0, +)
-                    print("DAYK_HIGH_SPEED_003_SMOKE_PATH_COUNT=\(id):\(count)")
+                    print("DAYK_HIGH_SPEED_004_SMOKE_PATH_COUNT=\(id):\(count)")
                 }
                 let holdingSessions = candidateCombined.audit.holdingSessionsBySymbol.values.flatMap { $0 }
-                print("DAYK_HIGH_SPEED_003_SMOKE_MAX_GROSS=\(String(format: "%.10f", candidateCombined.audit.maxGrossExposure))")
-                print("DAYK_HIGH_SPEED_003_SMOKE_MIN_HOLDING=\(holdingSessions.min() ?? 0)")
-                print("DAYK_HIGH_SPEED_003_SMOKE_MAX_HOLDING=\(holdingSessions.max() ?? 0)")
-                print("DAYK_HIGH_SPEED_003_SMOKE_FINAL_OPEN_POSITIONS=\(candidateCombined.audit.finalOpenPositions)")
-                print("DAYK_HIGH_SPEED_003_SMOKE_CARRIED_MARKS=\(candidateCombined.audit.carriedMarkValuationCount)")
-                print("DAYK_HIGH_SPEED_003_SMOKE_MIN_CASH=\(String(format: "%.6f", candidateCombined.audit.minimumEndOfDayCash))")
-                print("DAYK_HIGH_SPEED_003_SMOKE_OK")
+                print("DAYK_HIGH_SPEED_004_SMOKE_MAX_GROSS=\(String(format: "%.10f", candidateCombined.audit.maxGrossExposure))")
+                print("DAYK_HIGH_SPEED_004_SMOKE_MIN_HOLDING=\(holdingSessions.min() ?? 0)")
+                print("DAYK_HIGH_SPEED_004_SMOKE_MAX_HOLDING=\(holdingSessions.max() ?? 0)")
+                print("DAYK_HIGH_SPEED_004_SMOKE_FINAL_OPEN_POSITIONS=\(candidateCombined.audit.finalOpenPositions)")
+                print("DAYK_HIGH_SPEED_004_SMOKE_CARRIED_MARKS=\(candidateCombined.audit.carriedMarkValuationCount)")
+                print("DAYK_HIGH_SPEED_004_SMOKE_MIN_CASH=\(String(format: "%.6f", candidateCombined.audit.minimumEndOfDayCash))")
+                print("DAYK_HIGH_SPEED_004_SMOKE_OK")
                 return
             }
 
             if let outputDir {
                 try? FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
-                for (id, run) in candidateRuns + controlRuns + [("C-CASH-COMBINED", cashRun), ("DKHS003-COMBINED-SLIP005", stressRun)] {
+                for (id, run) in candidateRuns + controlRuns + [("C-CASH-COMBINED", cashRun), ("DKHS004-COMBINED-SLIP005", stressRun)] {
                     var lines = ["date,portfolio_value"]
                     lines.append(contentsOf: run.report.points.map {
                         "\($0.date.recordDateString),\(String(format: "%.10f", $0.portfolioValue))"
@@ -266,12 +266,12 @@
                 }
             }
             let document: [String: Any] = [
-                "trial_id": "ATM-SVP2-DAYK-HS-003",
-                "candidate_id": "S-DAYK-HIGH-SPEED-003",
+                "trial_id": "ATM-SVP2-DAYK-HS-004",
+                "candidate_id": "S-DAYK-HIGH-SPEED-004",
                 "candidate_paths": candidateRuns.map { pathDocument($0.0, $0.1) },
                 "matched_control_paths": controlRuns.map { pathDocument($0.0, $0.1) },
                 "cash_control": pathDocument("C-CASH-COMBINED", cashRun),
-                "slippage_stress": pathDocument("DKHS003-COMBINED-SLIP005", stressRun),
+                "slippage_stress": pathDocument("DKHS004-COMBINED-SLIP005", stressRun),
                 "fee_rate_per_fill": 0.00005,
                 "primary_slippage_rate_per_fill": 0.0,
                 "stress_slippage_rate_per_fill": 0.0005,
@@ -281,10 +281,10 @@
             guard JSONSerialization.isValidJSONObject(document),
                   let json = try? JSONSerialization.data(withJSONObject: document, options: [.sortedKeys]),
                   let text = String(data: json, encoding: .utf8) else {
-                print("DAYK_HIGH_SPEED_003_JSON_FAILED")
+                print("DAYK_HIGH_SPEED_004_JSON_FAILED")
                 return
             }
-            print("DAYK_HIGH_SPEED_003_FORMAL_JSON=" + text)
-            print("DAYK_HIGH_SPEED_003_FORMAL_OK")
+            print("DAYK_HIGH_SPEED_004_FORMAL_JSON=" + text)
+            print("DAYK_HIGH_SPEED_004_FORMAL_OK")
             return
         }
