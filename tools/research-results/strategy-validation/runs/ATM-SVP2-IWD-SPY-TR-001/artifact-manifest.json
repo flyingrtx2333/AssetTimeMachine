@@ -1,0 +1,141 @@
+{
+  "files": [
+    {
+      "bytes": 187180,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/C-SPY-TR-PROD-SP500-ROLE-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "b3bf83670af56b559a7a740f7135c03cec1b4202ecc08e414ac3bf6fa136ce1c"
+    },
+    {
+      "bytes": 187182,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/S-IWD-VS-SPY-TR-ROLE-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "0e018b1a1990bbd6dd62bc20d653f6943b48d5ae36d880c45783eafe761360e5"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "9f7a7c9ea79010c1d694027940d9863fe543efe91b7d7b0eefab2fa84e16295c"
+    },
+    {
+      "bytes": 548,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "evaluation_cagr_percent",
+        "evaluation_mdd_percent",
+        "evaluation_sharpe",
+        "full_cagr_percent",
+        "full_mdd_percent",
+        "full_sharpe",
+        "folds_sharpe_ge_matched",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "29274ff94ff6786eea41d01a7633c2f34a224d0432ab26aedc803981ef5a8417"
+    },
+    {
+      "bytes": 4533,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/candidate-metrics.json",
+      "sha256": "0c87e42aac96d83e365e490ecf5399b6f327a1a883f45c622be98643b172fd1f"
+    },
+    {
+      "bytes": 328,
+      "columns": [
+        "candidate_id",
+        "matched_control_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "global_dsr_probability",
+        "global_dsr_pass",
+        "robust_strategy_pass",
+        "probability_cagr_gt_matched",
+        "probability_sharpe_gt_matched",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/statistical-audit.csv",
+      "row_count": 1,
+      "sha256": "62ffae4d6197f6da98f4d91fba85767427b6e5b2c4c964d8107815b472a726d0"
+    },
+    {
+      "bytes": 3180,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/statistical-audit.json",
+      "sha256": "ead1b5447bffb1c61a1ebfb029ab506cc6a21c8f5523cd0519914024bc813532"
+    },
+    {
+      "bytes": 1222,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/execution.json",
+      "sha256": "926a38df1b160c38560bafa1bfe32c36ae8b51fd4299379629af618664333b6a"
+    },
+    {
+      "bytes": 437,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/run-authorization.json",
+      "sha256": "45766d31836c4b9223c6bfd2e932d2232a712b80b22f4d7c2677949f5083a98e"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 3393,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/stdout.txt",
+      "sha256": "62a16277bd99f4dcaaec28b42b1da536ad0421f45eaad8e37797a9f873033337"
+    }
+  ],
+  "generated_at": "2026-08-22T12:27:11+08:00",
+  "git_commit": "737e156014bd30ea1e4ef87d7d8fc5931a59627a",
+  "kind": "run",
+  "metadata": {
+    "bootstrap_pass": false,
+    "candidate": "S-IWD-VS-SPY-TR-ROLE",
+    "deterministic_pass": true,
+    "global_dsr_pass": true,
+    "matched_control": "C-SPY-TR-PROD-SP500-ROLE",
+    "product_interpretation": "suspend IWD V12 promotion/prospective; prior historical PASS remains in ledger under its original comparator",
+    "status": "FAIL_MATCHED_COMPARATOR"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-IWD-SPY-TR-001"
+}

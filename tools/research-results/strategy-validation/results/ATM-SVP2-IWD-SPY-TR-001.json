@@ -1,0 +1,74 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/statistical-audit.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/C-SPY-TR-PROD-SP500-ROLE-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/candidates/S-IWD-VS-SPY-TR-ROLE-portfolio.csv"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-IWD-VS-SPY-TR-ROLE",
+      "metrics": {
+        "bootstrap_mdd_p975": 0.13656680311050728,
+        "bootstrap_median_candidate_minus_matched_cagr": 0.00040361634575088873,
+        "bootstrap_median_candidate_minus_matched_sharpe": 0.011788568305094116,
+        "bootstrap_probability_cagr_gt_matched": 0.6721,
+        "bootstrap_probability_sharpe_gt_matched": 0.88065,
+        "bootstrap_robust_pass": false,
+        "cagr_percent": 14.509755,
+        "deterministic_admit": true,
+        "evaluation_cagr_percent": 14.509755,
+        "evaluation_mdd_percent": 7.689054,
+        "evaluation_sharpe": 1.547475,
+        "evaluation_start": "2000-05-30",
+        "execution_event_target_fingerprint": "ea843d2a26d9eff3",
+        "folds_sharpe_ge_matched": 5,
+        "global_dsr_pass": true,
+        "global_post_protocol_dsr_probability": 0.9757703351863505,
+        "global_post_protocol_dsr_trial_count": 41,
+        "matched_control_id": "C-SPY-TR-PROD-SP500-ROLE",
+        "matched_evaluation_cagr_percent": 14.465392,
+        "matched_evaluation_mdd_percent": 7.689054,
+        "matched_evaluation_sharpe": 1.535352,
+        "mdd_percent": 7.689054,
+        "robust_strategy_pass": false,
+        "sharpe": 1.547475,
+        "since2020_cagr_percent": 17.79399,
+        "since2020_sharpe": 1.667149,
+        "since2022_cagr_percent": 21.271905,
+        "since2022_sharpe": 1.817952,
+        "worst_fold_sharpe": 1.072567
+      }
+    }
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-IWD-SPY-TR-001.json",
+  "decision": "FAIL / MATCHED TOTAL-RETURN AUDIT DOES NOT CONFIRM ROBUST IWD VALUE ALPHA. IWD remained directionally better than matched SPY: evaluation CAGR 14.509755% vs SPY 14.465392% and Sharpe 1.547475 vs 1.535352, with 5/7 fold Sharpe wins, equal full MDD 7.689054%, and cumulative 41-candidate DSR 97.577%. However paired 20000-replicate bootstrap gave P(CAGR IWD>SPY)=67.210% and P(Sharpe IWD>SPY)=88.065%, both below the frozen 90% gates. Therefore robust_strategy_pass=false. ATM-SVP2-US-VALUE-PROD-001 remains a truthful PASS under its original price-index comparator, but it cannot support a value-premium/product V12 promotion after this stricter matched-total-return audit. The already frozen IWD prospective trial is suspended; no SPY/IWD blend, timing, alternate start, ETF replacement, or threshold rescue is permitted.",
+  "execution_git_commit": "737e156014bd30ea1e4ef87d7d8fc5931a59627a",
+  "matched_control": {
+    "cagr_percent": 14.465392,
+    "candidate_id": "C-SPY-TR-PROD-SP500-ROLE",
+    "evaluation_cagr_percent": 14.465392,
+    "evaluation_mdd_percent": 7.689054,
+    "evaluation_sharpe": 1.535352,
+    "mdd_percent": 7.689054,
+    "sharpe": 1.535352
+  },
+  "preregistration_record_hash": "81370e7f46ce11af964c89df16e5bddf5de2a5ff26a2c7ebb35c984b4ffe4d2c",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-IWD-SPY-TR-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP2-IWD-SPY-TR-001",
+  "v11_price_index_background": {
+    "cagr_percent": 14.345615,
+    "candidate_id": "V11-CONTROL",
+    "mdd_percent": 7.689054,
+    "sharpe": 1.522263
+  }
+}

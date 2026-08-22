@@ -1,0 +1,188 @@
+{
+  "admitted_candidates": [
+    "S-IWD-VS-SPY-TR-ROLE"
+  ],
+  "candidate_results": [
+    {
+      "admission_checks": {
+        "constraints_and_target_identity_pass": true,
+        "evaluation_cagr_gt_spy_matched": true,
+        "evaluation_mdd_le_10pct": true,
+        "evaluation_sharpe_ge_spy_matched": true,
+        "folds_sharpe_ge_spy_ge_5_of_7": true,
+        "worst_fold_sharpe_gt_0": true
+      },
+      "admit_for_robustness": true,
+      "candidate_id": "S-IWD-VS-SPY-TR-ROLE",
+      "folds_sharpe_ge_matched": 5,
+      "matched_control_id": "C-SPY-TR-PROD-SP500-ROLE",
+      "metrics": {
+        "average_cash_ratio": 0.425325,
+        "candidate_id": "S-IWD-VS-SPY-TR-ROLE",
+        "evaluation_cagr_percent": 14.509755,
+        "evaluation_mdd_percent": 7.689054,
+        "evaluation_sharpe": 1.547475,
+        "fingerprint": "ea843d2a26d9eff3",
+        "fold_cagrs_percent": [
+          12.458194,
+          20.247875,
+          17.263295,
+          9.587384,
+          6.387001,
+          7.636201,
+          26.909848
+        ],
+        "fold_mdds_percent": [
+          7.689054,
+          7.295969,
+          6.996601,
+          5.597781,
+          6.159852,
+          7.402337,
+          6.254261
+        ],
+        "fold_names": [
+          "2000H2-2003",
+          "2004-2007",
+          "2008-2011",
+          "2012-2015",
+          "2016-2019",
+          "2020-2022",
+          "2023-latest"
+        ],
+        "fold_sharpes": [
+          1.508795,
+          1.783569,
+          1.585302,
+          1.45109,
+          1.072567,
+          1.124208,
+          2.000461
+        ],
+        "full_cagr_percent": 14.509755,
+        "full_mdd_percent": 7.689054,
+        "full_sharpe": 1.547475,
+        "max_gross": 1.0,
+        "min_weight": 0.0,
+        "since2020_cagr_percent": 17.79399,
+        "since2020_sharpe": 1.667149,
+        "since2022_cagr_percent": 21.271905,
+        "since2022_sharpe": 1.817952,
+        "trades": 450
+      },
+      "worst_fold_sharpe": 1.072567
+    }
+  ],
+  "evaluation_start": "2000-05-30",
+  "matched_control": {
+    "average_cash_ratio": 0.425872,
+    "candidate_id": "C-SPY-TR-PROD-SP500-ROLE",
+    "evaluation_cagr_percent": 14.465392,
+    "evaluation_mdd_percent": 7.689054,
+    "evaluation_sharpe": 1.535352,
+    "fingerprint": "ea843d2a26d9eff3",
+    "fold_cagrs_percent": [
+      11.989662,
+      20.015599,
+      17.207847,
+      9.71357,
+      6.571593,
+      7.610329,
+      26.778633
+    ],
+    "fold_mdds_percent": [
+      7.689054,
+      7.289918,
+      6.970065,
+      5.599423,
+      6.409886,
+      7.384346,
+      6.231085
+    ],
+    "fold_names": [
+      "2000H2-2003",
+      "2004-2007",
+      "2008-2011",
+      "2012-2015",
+      "2016-2019",
+      "2020-2022",
+      "2023-latest"
+    ],
+    "fold_sharpes": [
+      1.45367,
+      1.761915,
+      1.581365,
+      1.466744,
+      1.088879,
+      1.10729,
+      1.971188
+    ],
+    "full_cagr_percent": 14.465392,
+    "full_mdd_percent": 7.689054,
+    "full_sharpe": 1.535352,
+    "max_gross": 1.0,
+    "min_weight": 0.0,
+    "since2020_cagr_percent": 17.714699,
+    "since2020_sharpe": 1.642695,
+    "since2022_cagr_percent": 21.173701,
+    "since2022_sharpe": 1.791891,
+    "trades": 450
+  },
+  "protocol_id": "ATM-SVP-2",
+  "strategy_lineage": "iwd-vs-spy-total-return-production-role-v1",
+  "trial_id": "ATM-SVP2-IWD-SPY-TR-001",
+  "v11_price_index_control": {
+    "average_cash_ratio": 0.425368,
+    "candidate_id": "V11-CONTROL",
+    "evaluation_cagr_percent": 14.345615,
+    "evaluation_mdd_percent": 7.689054,
+    "evaluation_sharpe": 1.522263,
+    "fingerprint": "ea843d2a26d9eff3",
+    "fold_cagrs_percent": [
+      11.936473,
+      19.829288,
+      17.204633,
+      9.462245,
+      6.494211,
+      7.552115,
+      26.651383
+    ],
+    "fold_mdds_percent": [
+      7.689054,
+      7.266168,
+      6.955059,
+      5.601034,
+      6.418819,
+      7.386487,
+      6.232346
+    ],
+    "fold_names": [
+      "2000H2-2003",
+      "2004-2007",
+      "2008-2011",
+      "2012-2015",
+      "2016-2019",
+      "2020-2022",
+      "2023-latest"
+    ],
+    "fold_sharpes": [
+      1.438916,
+      1.747006,
+      1.581048,
+      1.429787,
+      1.076333,
+      1.090901,
+      1.963606
+    ],
+    "full_cagr_percent": 14.345615,
+    "full_mdd_percent": 7.689054,
+    "full_sharpe": 1.522263,
+    "max_gross": 1.0,
+    "min_weight": 0.0,
+    "since2020_cagr_percent": 17.621393,
+    "since2020_sharpe": 1.632712,
+    "since2022_cagr_percent": 21.078444,
+    "since2022_sharpe": 1.785248,
+    "trades": 451
+  }
+}

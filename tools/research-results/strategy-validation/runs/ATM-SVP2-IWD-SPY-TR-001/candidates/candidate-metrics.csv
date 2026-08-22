@@ -1,0 +1,4 @@
+candidate_id,kind,evaluation_cagr_percent,evaluation_mdd_percent,evaluation_sharpe,full_cagr_percent,full_mdd_percent,full_sharpe,folds_sharpe_ge_matched,worst_fold_sharpe,admit_for_robustness
+V11-CONTROL,PRICE_INDEX_BACKGROUND,14.345615,7.689054,1.522263,14.345615,7.689054,1.522263,CONTROL,1.076333,CONTROL
+C-SPY-TR-PROD-SP500-ROLE,MATCHED_CONTROL,14.465392,7.689054,1.535352,14.465392,7.689054,1.535352,CONTROL,1.088879,CONTROL
+S-IWD-VS-SPY-TR-ROLE,ASSET_ROLE_STRATEGY,14.509755,7.689054,1.547475,14.509755,7.689054,1.547475,5,1.072567,True

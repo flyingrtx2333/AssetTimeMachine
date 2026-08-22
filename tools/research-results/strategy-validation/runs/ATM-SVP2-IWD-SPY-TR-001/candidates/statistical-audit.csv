@@ -1,0 +1,2 @@
+candidate_id,matched_control_id,deterministic_admit,bootstrap_pass,global_dsr_probability,global_dsr_pass,robust_strategy_pass,probability_cagr_gt_matched,probability_sharpe_gt_matched,candidate_mdd_p975
+S-IWD-VS-SPY-TR-ROLE,C-SPY-TR-PROD-SP500-ROLE,True,False,0.9757703351863505,True,False,0.6721,0.88065,0.13656680311050728

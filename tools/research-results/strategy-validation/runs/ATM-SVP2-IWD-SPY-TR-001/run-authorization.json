@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "737e156014bd30ea1e4ef87d7d8fc5931a59627a",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "81370e7f46ce11af964c89df16e5bddf5de2a5ff26a2c7ebb35c984b4ffe4d2c",
+  "preregistration_record_hash": "81370e7f46ce11af964c89df16e5bddf5de2a5ff26a2c7ebb35c984b4ffe4d2c",
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-IWD-SPY-TR-001"
+}
