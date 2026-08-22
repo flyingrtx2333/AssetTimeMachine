@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "2b2fe31a10a21914cec07fe3dc53529ee5d15846",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "aade3c6a9b90fc2a31969b46dde66e02fc64e7dc5596b4fb3e63cb5c74f5f770",
+  "preregistration_record_hash": "aade3c6a9b90fc2a31969b46dde66e02fc64e7dc5596b4fb3e63cb5c74f5f770",
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-DAYK-HS-006"
+}

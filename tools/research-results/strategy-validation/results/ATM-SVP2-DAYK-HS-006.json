@@ -1,0 +1,123 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/candidates/C-CASH-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/candidates/C-CONSECUTIVE-NO-SMA-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/candidates/C-CONSECUTIVE-NO-SMA-GOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/candidates/C-CONSECUTIVE-NO-SMA-NASDAQ-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/candidates/C-CONSECUTIVE-NO-SMA-SP500-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/candidates/DKHS006-COMBINED-SLIP005-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/candidates/DKHS006-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/candidates/DKHS006-GOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/candidates/DKHS006-NASDAQ-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/candidates/DKHS006-SP500-portfolio.csv"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-DAYK-HIGH-SPEED-006",
+      "metrics": {
+        "asset_paths": {
+          "gold_cny": {
+            "average_holding_sessions": 14.642857142857142,
+            "average_trade_return_percent": 0.7856306999139618,
+            "cagr_percent": 5.498178303680179,
+            "gap_stop_exits": 1,
+            "mdd_percent": 19.9902595467993,
+            "profit_factor": 1.7383278961934558,
+            "round_trips": 70,
+            "sharpe": 0.5423006122565132,
+            "stop_exits": 70,
+            "time_exits": 0,
+            "win_rate_percent": 34.285714285714285
+          },
+          "nasdaq": {
+            "average_holding_sessions": 13.125,
+            "average_trade_return_percent": 0.7975868392324231,
+            "cagr_percent": 7.26921167021195,
+            "gap_stop_exits": 12,
+            "mdd_percent": 15.949728916457234,
+            "profit_factor": 1.8563142151206917,
+            "round_trips": 88,
+            "sharpe": 0.7144410140054613,
+            "stop_exits": 88,
+            "time_exits": 0,
+            "win_rate_percent": 50.0
+          },
+          "sp500": {
+            "average_holding_sessions": 13.877777777777778,
+            "average_trade_return_percent": 0.21766982365994855,
+            "cagr_percent": 1.906766955437189,
+            "gap_stop_exits": 15,
+            "mdd_percent": 22.229027489543274,
+            "profit_factor": 1.2343220869603777,
+            "round_trips": 90,
+            "sharpe": 0.2715626493449782,
+            "stop_exits": 90,
+            "time_exits": 0,
+            "win_rate_percent": 42.22222222222222
+          }
+        },
+        "cash_control_cagr_percent": 0.3630910680378685,
+        "combined": {
+          "average_holding_sessions": 13.826612903225806,
+          "average_trade_return_percent": 0.5837583668380081,
+          "cagr_percent": 5.251095228075275,
+          "folds_with_positive_sharpe": 4,
+          "mdd_percent": 11.9159351915322,
+          "profit_factor": 1.6030822109736815,
+          "round_trips": 248,
+          "sharpe": 0.7592046613287933,
+          "since2020_cagr_percent": 5.5020239376943225,
+          "since2022_cagr_percent": 5.852403728677058,
+          "total_return_percent": 61.43443082715905,
+          "win_rate_percent": 42.74193548387097
+        },
+        "constraints": {
+          "carried_mark_valuation_count": 104,
+          "completed_trades_all_stop_exits": true,
+          "final_open_positions": 0,
+          "max_concurrent_positions": 3,
+          "max_gross": 1.0,
+          "maximum_holding_sessions": 59,
+          "minimum_end_of_day_cash": 0.0,
+          "minimum_holding_sessions": 2,
+          "pass": true,
+          "time_forced_exits": 0
+        },
+        "failed_preregistered_gates": [
+          "fixed one-third combined Sharpe >=1.00",
+          "fixed one-third combined Sharpe > C-CONSECUTIVE-NO-SMA-COMBINED Sharpe"
+        ],
+        "matched_no_sma_control": {
+          "average_trade_return_percent": 0.6086574219254463,
+          "cagr_percent": 6.560827987556572,
+          "mdd_percent": 15.432965454112354,
+          "profit_factor": 1.559200223186803,
+          "round_trips": 286,
+          "sharpe": 0.778908764316119,
+          "win_rate_percent": 43.00699300699301
+        },
+        "preregistered_gate_pass": false,
+        "slippage_stress": {
+          "cagr_percent": 4.330355099493199,
+          "mdd_percent": 12.671404540008899,
+          "sharpe": 0.6313272327392455
+        }
+      }
+    }
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-DAYK-HS-006.json",
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED. The frozen 日K高速006 three-consecutive-rise plus SMA200 strategy, with no profit target, no maximum holding period and a nondecreasing two-ATR daily trailing stop, produced 5.251095% combined CAGR, 0.759205 Sharpe and 11.915935% MDD versus 0.363091% CNY cash. It completed 248 stop-driven round trips with 42.741935% wins, 0.583758% average net return and profit factor 1.603082; all three standalone assets exceeded cash, 4/5 fixed folds had positive Sharpe, and the 0.05% adverse-slippage path retained 4.330355% CAGR, 0.631327 Sharpe and 12.671405% MDD. However, it failed the frozen combined Sharpe >=1.00 gate and did not beat the otherwise identical no-SMA control on Sharpe: 0.759205 versus 0.778909; the no-SMA control also had higher CAGR at 6.560828%. Therefore SMA200 did not add incremental selection value and the candidate is not admitted despite being the strongest valid 日K高速 trial so far. Exposure, cash, cross-calendar marking, minimum hold, stop-only exit and no-time-liquidation invariants passed. Per the stop rule, removing SMA200 or changing rise count, ATR stop distance, sizing or asset mix requires a new preregistered trial; index OHLC remains a non-investable execution proxy.",
+  "execution_git_commit": "2b2fe31a10a21914cec07fe3dc53529ee5d15846",
+  "preregistration_record_hash": "aade3c6a9b90fc2a31969b46dde66e02fc64e7dc5596b4fb3e63cb5c74f5f770",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-006/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP2-DAYK-HS-006"
+}
