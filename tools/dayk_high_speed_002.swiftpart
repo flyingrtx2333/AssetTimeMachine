@@ -1,0 +1,275 @@
+        if ProcessInfo.processInfo.environment["ATM_DAYK_HIGH_SPEED_002"] == "1" {
+            let formal = ProcessInfo.processInfo.environment["ATM_DAYK_HIGH_SPEED_002_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_DAYK_HIGH_SPEED_002_OUTPUT_DIR"]
+            let symbols = ["gold_cny", "nasdaq", "sp500"]
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let allInputs = symbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard allInputs.count == symbols.count else {
+                print("DAYK_HIGH_SPEED_002_INPUTS_MISSING")
+                return
+            }
+
+            let dateFormatter = DateFormatter()
+            dateFormatter.calendar = BacktestSeriesAlignment.historicalSeriesCalendar
+            dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+            dateFormatter.timeZone = BacktestSeriesAlignment.historicalSeriesCalendar.timeZone
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            guard let evaluationStart = dateFormatter.date(from: "2001-09-05"),
+                  let evaluationEnd = dateFormatter.date(from: "2026-08-20") else {
+                print("DAYK_HIGH_SPEED_002_DATE_PARSE_FAILED")
+                return
+            }
+            let evaluationBounds = evaluationStart...evaluationEnd
+            let folds: [(String, String, String)] = [
+                ("2001-2004", "2001-09-05", "2004-12-31"),
+                ("2005-2008", "2005-01-01", "2008-12-31"),
+                ("2009-2012", "2009-01-01", "2012-12-31"),
+                ("2013-2016", "2013-01-01", "2016-12-31"),
+                ("2017-2020", "2017-01-01", "2020-12-31"),
+                ("2021-2022", "2021-01-01", "2022-12-31"),
+                ("2023-latest", "2023-01-01", "9999-12-31")
+            ]
+
+            enum DayKPathMode {
+                case candidate
+                case matchedCompressionControl
+                case cash
+            }
+
+            func makeSettings(slippagePercent: Double) -> AdvancedBacktestRiskSettings {
+                AdvancedBacktestRiskSettings(
+                    feeRate: 0.005,
+                    slippageRate: slippagePercent,
+                    maxPositionRatio: 100,
+                    cooldownDays: 0,
+                    stopLossRatio: 0,
+                    takeProfitRatio: 0
+                )
+            }
+
+            func runPath(
+                id: String,
+                selectedSymbols: [String],
+                mode: DayKPathMode,
+                slippagePercent: Double
+            ) -> ResearchIntradayRoundTripRun? {
+                let selected = allInputs.filter { selectedSymbols.contains($0.assetOption.symbol) }
+                let fixedSleeveWeight = 1.0 / Double(selectedSymbols.count)
+                var logicBarsBySymbol: [String: [DayKHighSpeed002Bar]] = [:]
+                var takeProfitBySymbolAndDate: [String: Double] = [:]
+                let config = ResearchTargetStrategyConfig(
+                    symbol: id,
+                    title: "日K高速002",
+                    warmupSessions: 50,
+                    rebalanceSessions: 1,
+                    maxGrossExposure: 1,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "日K高速002开盘信号"
+                )
+                func cacheKey(_ symbol: String, _ date: Date) -> String {
+                    symbol + "|" + date.recordDateString
+                }
+                return BacktestEngine.runResearchIntradayRoundTripStrategyWithTrace(
+                    assetInputs: selected,
+                    initialCash: 100_000,
+                    settings: makeSettings(slippagePercent: slippagePercent),
+                    config: config,
+                    dateBounds: evaluationBounds,
+                    targetWeights: { context, data in
+                        guard mode != .cash else { return [:] }
+                        var weights: [String: Double] = [:]
+                        for symbol in selectedSymbols {
+                            guard let sourceBars = data.barsBySymbol[symbol],
+                                  let executionIndex = data.barIndexByDateBySymbol[symbol]?[context.date] else { continue }
+                            let logicBars: [DayKHighSpeed002Bar]
+                            if let cached = logicBarsBySymbol[symbol] {
+                                logicBars = cached
+                            } else {
+                                let converted = sourceBars.map {
+                                    DayKHighSpeed002Bar(open: $0.open, high: $0.high, low: $0.low, close: $0.close)
+                                }
+                                logicBarsBySymbol[symbol] = converted
+                                logicBars = converted
+                            }
+                            let requireTrend = mode == .candidate
+                            guard let signal = DayKHighSpeed002Logic.signal(
+                                bars: logicBars,
+                                executionIndex: executionIndex,
+                                requireTrend: requireTrend
+                            ) else { continue }
+                            weights[symbol] = fixedSleeveWeight
+                            takeProfitBySymbolAndDate[cacheKey(symbol, context.date)] = signal.takeProfitPrice
+                        }
+                        return weights
+                    },
+                    takeProfitPrice: { symbol, date, _ in
+                        takeProfitBySymbolAndDate[cacheKey(symbol, date)]
+                    }
+                )
+            }
+
+            func foldMetrics(_ points: [BacktestSeriesPoint]) -> [[String: Any]] {
+                folds.map { name, start, end in
+                    let slice = points.filter {
+                        let key = $0.date.recordDateString
+                        return key >= start && key <= end
+                    }
+                    let metrics = BacktestMetricsCalculator.performanceMetrics(from: slice)
+                    return [
+                        "name": name,
+                        "cagr_percent": (metrics?.annualizedReturn ?? 0) * 100,
+                        "mdd_percent": (metrics?.maxDrawdown ?? 0) * 100,
+                        "sharpe": metrics?.sharpeRatio ?? 0,
+                        "sessions": slice.count
+                    ]
+                }
+            }
+
+            func tradeStats(_ returns: [Double]) -> [String: Any] {
+                let gains = returns.filter { $0 > 0 }
+                let losses = returns.filter { $0 < 0 }
+                let grossProfit = gains.reduce(0, +)
+                let grossLoss = abs(losses.reduce(0, +))
+                return [
+                    "round_trips": returns.count,
+                    "win_rate_percent": returns.isEmpty ? 0 : Double(gains.count) / Double(returns.count) * 100,
+                    "average_return_percent": returns.isEmpty ? 0 : returns.reduce(0, +) / Double(returns.count) * 100,
+                    "profit_factor": grossLoss > 0 ? grossProfit / grossLoss : (grossProfit > 0 ? 999.0 : 0.0)
+                ]
+            }
+
+            func pathDocument(_ id: String, _ run: ResearchIntradayRoundTripRun) -> [String: Any] {
+                let points = run.report.points
+                let since2020 = BacktestMetricsCalculator.performanceMetrics(
+                    from: points.filter { $0.date.recordDateString >= "2020-01-01" }
+                )
+                let since2022 = BacktestMetricsCalculator.performanceMetrics(
+                    from: points.filter { $0.date.recordDateString >= "2022-01-01" }
+                )
+                let last10 = BacktestMetricsCalculator.performanceMetrics(
+                    from: points.filter { $0.date.recordDateString >= "2016-08-20" }
+                )
+                let allReturns = run.audit.realizedReturnsBySymbol.values.flatMap { $0 }
+                var hash: UInt64 = 1469598103934665603
+                for state in run.dailyStates {
+                    for symbol in symbols {
+                        var value = UInt64(bitPattern: Int64(((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded()))
+                        for _ in 0..<8 {
+                            hash ^= value & UInt64(0xff)
+                            hash &*= UInt64(1099511628211)
+                            value >>= 8
+                        }
+                    }
+                }
+                return [
+                    "id": id,
+                    "start": points.first?.date.recordDateString ?? "",
+                    "end": points.last?.date.recordDateString ?? "",
+                    "sessions": points.count,
+                    "cagr_percent": (run.report.annualizedReturn ?? 0) * 100,
+                    "mdd_percent": run.report.maxDrawdown * 100,
+                    "volatility_percent": (run.report.annualizedVolatility ?? 0) * 100,
+                    "sharpe": run.report.sharpeRatio ?? 0,
+                    "total_return_percent": run.report.totalReturn * 100,
+                    "average_intraday_gross": run.report.averageExposureRatio,
+                    "max_intraday_gross": run.audit.maxIntradayGrossExposure,
+                    "minimum_end_of_day_cash": run.audit.minimumEndOfDayCash,
+                    "overnight_position_days": run.audit.overnightPositionDays,
+                    "round_trips_by_symbol": run.audit.roundTripsBySymbol,
+                    "take_profit_hits_by_symbol": run.audit.takeProfitHitsBySymbol,
+                    "trade_stats": tradeStats(allReturns),
+                    "since2020_cagr_percent": (since2020?.annualizedReturn ?? 0) * 100,
+                    "since2020_sharpe": since2020?.sharpeRatio ?? 0,
+                    "since2022_cagr_percent": (since2022?.annualizedReturn ?? 0) * 100,
+                    "since2022_sharpe": since2022?.sharpeRatio ?? 0,
+                    "last10y_cagr_percent": (last10?.annualizedReturn ?? 0) * 100,
+                    "last10y_sharpe": last10?.sharpeRatio ?? 0,
+                    "folds": foldMetrics(points),
+                    "target_fingerprint": String(format: "%016llx", hash)
+                ]
+            }
+
+            let candidateSpecs: [(String, [String])] = [
+                ("DKHS002-GOLD", ["gold_cny"]),
+                ("DKHS002-NASDAQ", ["nasdaq"]),
+                ("DKHS002-SP500", ["sp500"]),
+                ("DKHS002-COMBINED", symbols)
+            ]
+            let controlSpecs: [(String, [String])] = [
+                ("C-COMPRESSION-GOLD", ["gold_cny"]),
+                ("C-COMPRESSION-NASDAQ", ["nasdaq"]),
+                ("C-COMPRESSION-SP500", ["sp500"]),
+                ("C-COMPRESSION-COMBINED", symbols)
+            ]
+            var candidateRuns: [(String, ResearchIntradayRoundTripRun)] = []
+            var controlRuns: [(String, ResearchIntradayRoundTripRun)] = []
+            for spec in candidateSpecs {
+                guard let run = runPath(id: spec.0, selectedSymbols: spec.1, mode: .candidate, slippagePercent: 0) else {
+                    print("DAYK_HIGH_SPEED_002_CANDIDATE_RUN_FAILED=\(spec.0)")
+                    return
+                }
+                candidateRuns.append((spec.0, run))
+            }
+            for spec in controlSpecs {
+                guard let run = runPath(id: spec.0, selectedSymbols: spec.1, mode: .matchedCompressionControl, slippagePercent: 0) else {
+                    print("DAYK_HIGH_SPEED_002_CONTROL_RUN_FAILED=\(spec.0)")
+                    return
+                }
+                controlRuns.append((spec.0, run))
+            }
+            guard let cashRun = runPath(id: "C-CASH-COMBINED", selectedSymbols: symbols, mode: .cash, slippagePercent: 0),
+                  let stressRun = runPath(id: "DKHS002-COMBINED-SLIP005", selectedSymbols: symbols, mode: .candidate, slippagePercent: 0.05) else {
+                print("DAYK_HIGH_SPEED_002_AUDIT_RUN_FAILED")
+                return
+            }
+
+            let candidateCombined = candidateRuns.first { $0.0 == "DKHS002-COMBINED" }!.1
+            let signalCount = candidateCombined.audit.roundTripsBySymbol.values.reduce(0, +)
+            if !formal {
+                print("DAYK_HIGH_SPEED_002_SMOKE_SIGNAL_COUNT=\(signalCount)")
+                print("DAYK_HIGH_SPEED_002_SMOKE_MAX_GROSS=\(String(format: "%.10f", candidateCombined.audit.maxIntradayGrossExposure))")
+                print("DAYK_HIGH_SPEED_002_SMOKE_OVERNIGHT_DAYS=\(candidateCombined.audit.overnightPositionDays)")
+                print("DAYK_HIGH_SPEED_002_SMOKE_MIN_CASH=\(String(format: "%.6f", candidateCombined.audit.minimumEndOfDayCash))")
+                print("DAYK_HIGH_SPEED_002_SMOKE_OK")
+                return
+            }
+
+            if let outputDir {
+                try? FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+                for (id, run) in candidateRuns + controlRuns + [("C-CASH-COMBINED", cashRun), ("DKHS002-COMBINED-SLIP005", stressRun)] {
+                    var lines = ["date,portfolio_value"]
+                    lines.append(contentsOf: run.report.points.map {
+                        "\($0.date.recordDateString),\(String(format: "%.10f", $0.portfolioValue))"
+                    })
+                    let path = URL(fileURLWithPath: outputDir).appendingPathComponent("\(id)-portfolio.csv").path
+                    try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+                }
+            }
+            let document: [String: Any] = [
+                "trial_id": "ATM-SVP2-DAYK-HS-002",
+                "candidate_id": "S-DAYK-HIGH-SPEED-002",
+                "candidate_paths": candidateRuns.map { pathDocument($0.0, $0.1) },
+                "matched_control_paths": controlRuns.map { pathDocument($0.0, $0.1) },
+                "cash_control": pathDocument("C-CASH-COMBINED", cashRun),
+                "slippage_stress": pathDocument("DKHS002-COMBINED-SLIP005", stressRun),
+                "fee_rate_per_fill": 0.00005,
+                "primary_slippage_rate_per_fill": 0.0,
+                "stress_slippage_rate_per_fill": 0.0005,
+                "evaluation_start": "2001-09-05",
+                "evaluation_end": "2026-08-20"
+            ]
+            guard JSONSerialization.isValidJSONObject(document),
+                  let json = try? JSONSerialization.data(withJSONObject: document, options: [.sortedKeys]),
+                  let text = String(data: json, encoding: .utf8) else {
+                print("DAYK_HIGH_SPEED_002_JSON_FAILED")
+                return
+            }
+            print("DAYK_HIGH_SPEED_002_FORMAL_JSON=" + text)
+            print("DAYK_HIGH_SPEED_002_FORMAL_OK")
+            return
+        }
