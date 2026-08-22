@@ -1,0 +1,127 @@
+{
+  "allowed_changes": [
+    "introduce fixed C-SPY-TR-PROD-SP500-ROLE using SPY Yahoo adjusted-close total-return proxy on the exact frozen V11 sp500 portfolio role",
+    "evaluate fixed S-QUAL-VS-SPY-TR-ROLE using QUAL Yahoo adjusted-close total-return proxy on the same role",
+    "use 2013-07-19 as common substitution/evaluation start because QUAL first quotes 2013-07-18 and the next session is the first defined QUAL close-to-close return",
+    "before 2013-07-19 both paths use the original frozen S&P price-index role and are identical to V11",
+    "on union-calendar dates with no new QUAL/SPY quote, carry the last adjusted close forward",
+    "retain frozen V11 signals, target weights, execution events, 100% gross limit, no financing, fees, slippage and cash model"
+  ],
+  "audit_motivation": {
+    "correction_policy": "preserve the original QUAL result; add this stricter formal audit and require it for any promotion interpretation",
+    "discovered_after_prior_result": true,
+    "methodological_issue": "the frozen V11 sp500 fixture is an S&P 500 price-index series while QUAL was evaluated with Yahoo adjusted close, a total-return proxy; IWD matched-control audit demonstrated this comparator mismatch can create apparent role improvement",
+    "prior_trial": "ATM-SVP2-US-MQ-ROLE-002",
+    "prior_trial_status": "FAIL only because cumulative DSR<95%; QUAL deterministic and paired-bootstrap gates passed"
+  },
+  "candidate_count": 1,
+  "candidate_definition": {
+    "candidate_id": "S-QUAL-VS-SPY-TR-ROLE",
+    "instrument": "QUAL",
+    "price_field": "Yahoo adjusted_close_total_return_proxy",
+    "role": "sp500 realized-return portfolio role only",
+    "signal_use": "none",
+    "substitution_fraction": 1.0,
+    "substitution_start": "2013-07-19"
+  },
+  "candidate_ids": [
+    "S-QUAL-VS-SPY-TR-ROLE"
+  ],
+  "candidate_kind": "STRATEGY_ASSET_ROLE_NOT_FACTOR",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-QUAL-SPY-TR-001.json",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "expected_outputs": [
+    "V11 price-index background metrics and ba67c8aa24bc7168 source fingerprint",
+    "C-SPY-TR-PROD-SP500-ROLE matched-control metrics",
+    "S-QUAL-VS-SPY-TR-ROLE candidate metrics",
+    "seven fixed folds: 2013H2-2014, 2015-2016, 2017-2018, 2019-2020, 2021-2022, 2023-2024, 2025-latest",
+    "2020+ and 2022+ slices",
+    "target-identity and portfolio constraints",
+    "portfolio CSVs",
+    "deterministic admission flag",
+    "20000-replicate paired bootstrap QUAL vs SPY",
+    "cumulative 42-candidate DSR",
+    "robust matched-role flag",
+    "run authorization/execution/artifact manifests"
+  ],
+  "factor_library_archival": {
+    "is_factor": false,
+    "policy": "strategy role audit only; do not upload as factor-library factor"
+  },
+  "fixed_folds": [
+    "2013H2-2014",
+    "2015-2016",
+    "2017-2018",
+    "2019-2020",
+    "2021-2022",
+    "2023-2024",
+    "2025-latest"
+  ],
+  "follow_up_policy": "Methodology-correction audit only. After performance is opened do not change SPY, QUAL, adjusted-close field, 2013-07-19 start, substitution fraction, calendar alignment, folds, thresholds, fees, target path or add a comparator. Failure downgrades the QUAL promotion interpretation and suspends its prospective promotion; no rescue search.",
+  "forbidden_changes": [
+    "using V11 price-index role as primary admission comparator",
+    "SPY/QUAL blend or partial substitution",
+    "IWD, VBR, MTUM or any other candidate/comparator",
+    "alternative price field, dividend adjustment, synthetic total-return construction or start date",
+    "quality timing, momentum, volatility, macro or regime gate",
+    "any frozen V11 signal, target, event, band or risk-parameter change",
+    "leverage, financing, shorting, negative target weights or gross above 100%",
+    "dropping this audit from G3 accounting if it fails"
+  ],
+  "formal_run_budget": 1,
+  "hypothesis": "After removing the S&P price-index versus ETF adjusted-close total-return comparator mismatch, QUAL still improves the frozen V11 sp500 realized-return role relative to a matched SPY adjusted-close total-return control. A pass is required before interpreting the QUAL near-miss as quality-role alpha rather than dividend/total-return measurement advantage.",
+  "matched_control": {
+    "control_id": "C-SPY-TR-PROD-SP500-ROLE",
+    "instrument": "SPY",
+    "price_field": "Yahoo adjusted_close_total_return_proxy",
+    "role": "same sp500 realized-return portfolio role",
+    "selection_status": "fixed non-selectable matched investable broad-market control",
+    "substitution_start": "2013-07-19"
+  },
+  "pass_fail_gates": [
+    "deterministic 2013-07-19+: QUAL CAGR > SPY matched-control CAGR",
+    "deterministic 2013-07-19+: QUAL Sharpe >= SPY matched-control Sharpe",
+    "deterministic 2013-07-19+: QUAL MDD <=10%",
+    "deterministic: at least 5/7 fixed folds QUAL Sharpe >= SPY matched-control Sharpe",
+    "deterministic: worst fixed-fold QUAL Sharpe >0",
+    "deterministic: V11 full target fingerprint=ba67c8aa24bc7168; SPY/QUAL execution-event target fingerprints equal source; gross<=100%; nonnegative targets; no financing or shorting",
+    "bootstrap: paired circular moving blocks QUAL versus SPY, 63 sessions, 20000 replicates, seed 20260822",
+    "bootstrap: P(CAGR QUAL > SPY) >=0.90",
+    "bootstrap: P(Sharpe QUAL > SPY) >=0.90",
+    "bootstrap: median QUAL-minus-SPY CAGR delta >0",
+    "bootstrap: median QUAL-minus-SPY Sharpe delta >0",
+    "bootstrap: QUAL MDD P97.5 <=15%",
+    "PBO not applicable: one fixed candidate and one non-selectable matched control",
+    "global post-protocol DSR probability >=95% using 41 prior performance-bearing formal candidates plus this candidate, total 42",
+    "ROBUST_MATCHED_ROLE_PASS requires every applicable deterministic, bootstrap and DSR gate"
+  ],
+  "protocol_component": "QUAL_VS_SPY_MATCHED_TOTAL_RETURN_PRODUCTION_ROLE_AUDIT_V1",
+  "protocol_id": "ATM-SVP-2",
+  "selection_metric": "No model selection. Compare the single fixed QUAL candidate only with the fixed SPY matched-total-return control; V11 price-index path is identity/background only.",
+  "shared_rules": {
+    "fee_rate": 0.01,
+    "financing_allowed": false,
+    "matched_price_field": "adjusted_close_total_return_proxy",
+    "max_gross": 1.0,
+    "production_v11_target_fingerprint": "ba67c8aa24bc7168",
+    "rebalance_band": 0.25,
+    "shorting_allowed": false,
+    "slippage_rate": 0.0005,
+    "sp500_role_substitution_fraction": 1.0,
+    "substitution_start": "2013-07-19"
+  },
+  "statistical_audit": {
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260822,
+    "bootstrap_sample_start": "2013-07-19",
+    "family_pbo": "NOT_APPLICABLE_SINGLE_FIXED_CANDIDATE_WITH_MATCHED_CONTROL",
+    "global_dsr_current_candidate_count": 1,
+    "global_dsr_prior_performance_candidate_count": 41,
+    "global_dsr_return_window": "2013-07-19+ candidate behavior only",
+    "global_dsr_total_performance_candidate_count_after_this_trial": 42
+  },
+  "strategy_lineage": "matched-comparator audit of F-QUAL-SP500-ROLE from ATM-SVP2-US-MQ-ROLE-002; frozen nfci-dual-core-v11 target/event path",
+  "swift_engine_entrypoint": "scripts/run_qual_spy_total_return_matched_v1.py -> tools/qual_spy_total_return_matched_v1.swiftpart -> full frozen V11 source path + matched SPY/QUAL adjusted-close role returns -> shared BacktestDailySimulator",
+  "trial_id": "ATM-SVP2-QUAL-SPY-TR-001"
+}
