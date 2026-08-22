@@ -1,0 +1,139 @@
+{
+  "last_major_revision_quarter": "2016Q2",
+  "major_revision_count": 6,
+  "major_revision_quarters": [
+    "2011Q3",
+    "2012Q2",
+    "2014Q2",
+    "2015Q4",
+    "2016Q1",
+    "2016Q2"
+  ],
+  "major_revision_threshold_absolute_share": 0.02,
+  "max_absolute_revision_delta": 0.05260861299099884,
+  "performance_computed": false,
+  "purpose": "HEShare first-release vintage continuity audit only; no strategy performance",
+  "rows": 60,
+  "top_revisions": [
+    {
+      "absolute_revision_delta": 0.05260861299099884,
+      "current_first_release_heshare": 0.72230156954799,
+      "current_quarter": "2016Q2",
+      "current_release_date": "2016-09-16",
+      "observed_first_release_change": -0.04417876217555072,
+      "previous_first_release_heshare": 0.7664803317235407,
+      "previous_quarter": "2016Q1",
+      "previous_quarter_backcast_in_current_release": 0.7138717187325418,
+      "revision_delta": -0.05260861299099884,
+      "same_vintage_economic_change": 0.008429850815448114
+    },
+    {
+      "absolute_revision_delta": 0.04233675718191421,
+      "current_first_release_heshare": 0.7664803317235407,
+      "current_quarter": "2016Q1",
+      "current_release_date": "2016-06-09",
+      "observed_first_release_change": 0.0566541366128438,
+      "previous_first_release_heshare": 0.7098261951106969,
+      "previous_quarter": "2015Q4",
+      "previous_quarter_backcast_in_current_release": 0.7521629522926111,
+      "revision_delta": 0.04233675718191421,
+      "same_vintage_economic_change": 0.014317379430929589
+    },
+    {
+      "absolute_revision_delta": 0.03730137900170172,
+      "current_first_release_heshare": 0.7419895675733718,
+      "current_quarter": "2014Q2",
+      "current_release_date": "2014-09-18",
+      "observed_first_release_change": 0.047981705102027705,
+      "previous_first_release_heshare": 0.694007862471344,
+      "previous_quarter": "2014Q1",
+      "previous_quarter_backcast_in_current_release": 0.7313092414730458,
+      "revision_delta": 0.03730137900170172,
+      "same_vintage_economic_change": 0.010680326100325988
+    },
+    {
+      "absolute_revision_delta": 0.03243192466940836,
+      "current_first_release_heshare": 0.7098261951106969,
+      "current_quarter": "2015Q4",
+      "current_release_date": "2016-03-10",
+      "observed_first_release_change": -0.02434297786204942,
+      "previous_first_release_heshare": 0.7341691729727463,
+      "previous_quarter": "2015Q3",
+      "previous_quarter_backcast_in_current_release": 0.701737248303338,
+      "revision_delta": -0.03243192466940836,
+      "same_vintage_economic_change": 0.008088946807358943
+    },
+    {
+      "absolute_revision_delta": 0.031580364557220575,
+      "current_first_release_heshare": 0.5886445782488547,
+      "current_quarter": "2011Q3",
+      "current_release_date": "2011-12-08",
+      "observed_first_release_change": -0.07922540476887796,
+      "previous_first_release_heshare": 0.6678699830177327,
+      "previous_quarter": "2011Q2",
+      "previous_quarter_backcast_in_current_release": 0.6362896184605121,
+      "revision_delta": -0.031580364557220575,
+      "same_vintage_economic_change": -0.047645040211657386
+    },
+    {
+      "absolute_revision_delta": 0.020054118035166324,
+      "current_first_release_heshare": 0.6327052427636961,
+      "current_quarter": "2012Q2",
+      "current_release_date": "2012-09-20",
+      "observed_first_release_change": 0.0029088801271679454,
+      "previous_first_release_heshare": 0.6297963626365282,
+      "previous_quarter": "2012Q1",
+      "previous_quarter_backcast_in_current_release": 0.6498504806716945,
+      "revision_delta": 0.020054118035166324,
+      "same_vintage_economic_change": -0.01714523790799838
+    },
+    {
+      "absolute_revision_delta": 0.01700287987073379,
+      "current_first_release_heshare": 0.7341691729727463,
+      "current_quarter": "2015Q3",
+      "current_release_date": "2015-12-10",
+      "observed_first_release_change": -0.005284158101850234,
+      "previous_first_release_heshare": 0.7394533310745965,
+      "previous_quarter": "2015Q2",
+      "previous_quarter_backcast_in_current_release": 0.7224504512038628,
+      "revision_delta": -0.01700287987073379,
+      "same_vintage_economic_change": 0.011718721768883555
+    },
+    {
+      "absolute_revision_delta": 0.016930393588166615,
+      "current_first_release_heshare": 0.7394533310745965,
+      "current_quarter": "2015Q2",
+      "current_release_date": "2015-09-18",
+      "observed_first_release_change": -0.0017949092534892408,
+      "previous_first_release_heshare": 0.7412482403280858,
+      "previous_quarter": "2015Q1",
+      "previous_quarter_backcast_in_current_release": 0.7243178467399192,
+      "revision_delta": -0.016930393588166615,
+      "same_vintage_economic_change": 0.015135484334677374
+    },
+    {
+      "absolute_revision_delta": 0.015777122439216917,
+      "current_first_release_heshare": 0.6312115896428311,
+      "current_quarter": "2012Q4",
+      "current_release_date": "2013-03-07",
+      "observed_first_release_change": -0.014676102282790593,
+      "previous_first_release_heshare": 0.6458876919256217,
+      "previous_quarter": "2012Q3",
+      "previous_quarter_backcast_in_current_release": 0.6301105694864048,
+      "revision_delta": -0.015777122439216917,
+      "same_vintage_economic_change": 0.0011010201564263244
+    },
+    {
+      "absolute_revision_delta": 0.013288184011304494,
+      "current_first_release_heshare": 0.7412482403280858,
+      "current_quarter": "2015Q1",
+      "current_release_date": "2015-06-11",
+      "observed_first_release_change": 0.0016837000325662377,
+      "previous_first_release_heshare": 0.7395645402955195,
+      "previous_quarter": "2014Q4",
+      "previous_quarter_backcast_in_current_release": 0.726276356284215,
+      "revision_delta": -0.013288184011304494,
+      "same_vintage_economic_change": 0.014971884043870731
+    }
+  ]
+}

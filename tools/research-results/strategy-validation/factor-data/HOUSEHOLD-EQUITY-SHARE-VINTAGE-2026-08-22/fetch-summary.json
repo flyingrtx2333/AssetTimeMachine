@@ -1,0 +1,25 @@
+{
+  "computed_mutual_fund_formula": {
+    "bond_funds": "FL153064205 * (FL653061105 + FL653061703 + FL653062003 + FL653063005) / FL653164205",
+    "equity_funds": "FL153064205 * FL653064100 / FL653164205",
+    "implementation_note": "level aliases LM... are accepted when archived balance-sheet tables display LM rather than FL; same-release mutual fund total financial assets LM654090000 is equivalent to mutual fund shares liability FL653164205 per the Federal Reserve series definition"
+  },
+  "first_quarter": "2011Q1",
+  "last_quarter": "2026Q1",
+  "loans_schema_note": "When legacy FL154023005 is absent after the June 2026 Z.1 taxonomy change, the exact legacy economic definition is reconstructed as FL153065005 + FL153069005 + FL163066223.",
+  "max_household_equity_share": 0.8412082431782605,
+  "min_household_equity_share": 0.5886445782488547,
+  "output_sha256": "85d43abb2d191e1e3c33a160ced99d9152fa409e74a40b381a243e4c069bde4a",
+  "paper_definition": "(direct corporate equities + equity mutual fund holdings) / (equity assets + debt securities + loans + bond mutual fund holdings)",
+  "paper_series": [
+    "FL153064105",
+    "FL153064245",
+    "FL154022005",
+    "FL154023005",
+    "FL153064235"
+  ],
+  "performance_computed": false,
+  "point_in_time_note": "Every component is obtained from the same quarter's archived Federal Reserve Z.1 release; source household and mutual-fund tables are frozen locally with SHA-256 and become usable release_date+1 calendar day.",
+  "purpose": "first-release Household Equity Share construction only; no strategy performance",
+  "rows": 61
+}

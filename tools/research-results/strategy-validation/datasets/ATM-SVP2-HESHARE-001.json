@@ -1,0 +1,126 @@
+{
+  "files": [
+    {
+      "bytes": 5271408,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/generalization_public_history.json",
+      "sha256": "ab534219b08cdf417ee041be4322d512b29505439c8d0f2a469438d01730ac88"
+    },
+    {
+      "bytes": 24847,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCICREDIT_initial_release.csv",
+      "row_count": 732,
+      "sha256": "953198633f2f19cd42450c631bda3cc1d25bd23b40afc8bf58fa45ada0c4fc8c"
+    },
+    {
+      "bytes": 24762,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCILEVERAGE_initial_release.csv",
+      "row_count": 732,
+      "sha256": "d198027125ca6b317258c2fb4725ed3e5b217356a6b8c549b68dbb18d237b486"
+    },
+    {
+      "bytes": 35010,
+      "columns": [
+        "quarter",
+        "release_date",
+        "available_date",
+        "household_direct_equity_billions",
+        "household_mutual_fund_shares_billions",
+        "household_equity_fund_holdings_billions",
+        "household_debt_securities_billions",
+        "household_loans_billions",
+        "household_bond_fund_holdings_billions",
+        "household_equity_assets_billions",
+        "household_credit_assets_billions",
+        "household_equity_share",
+        "loans_source",
+        "household_table_url",
+        "household_table_sha256",
+        "household_table_local_path",
+        "mutual_fund_table_url",
+        "mutual_fund_table_sha256",
+        "mutual_fund_table_local_path",
+        "household_mutual_fund_table_url",
+        "household_mutual_fund_table_sha256",
+        "household_mutual_fund_table_local_path"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/factor-data/HOUSEHOLD-EQUITY-SHARE-VINTAGE-2026-08-22/HOUSEHOLD_EQUITY_SHARE_FIRST_RELEASE.csv",
+      "row_count": 61,
+      "sha256": "85d43abb2d191e1e3c33a160ced99d9152fa409e74a40b381a243e4c069bde4a"
+    },
+    {
+      "bytes": 1596,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/HOUSEHOLD-EQUITY-SHARE-VINTAGE-2026-08-22/fetch-summary.json",
+      "sha256": "88c9d7820e85d4e67448f3f929a22318c360a84031d5d42ec71c900b63d453de"
+    },
+    {
+      "bytes": 10355,
+      "columns": [
+        "current_quarter",
+        "previous_quarter",
+        "current_release_date",
+        "previous_first_release_heshare",
+        "previous_quarter_backcast_in_current_release",
+        "revision_delta",
+        "current_first_release_heshare",
+        "observed_first_release_change",
+        "same_vintage_economic_change",
+        "absolute_revision_delta"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/factor-data/HOUSEHOLD-EQUITY-SHARE-VINTAGE-2026-08-22/vintage-continuity-audit.csv",
+      "row_count": 60,
+      "sha256": "56ed50bd82bd1d6236e46782af40e515de282a6cd41edd578edf5ee235e58367"
+    },
+    {
+      "bytes": 5882,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/HOUSEHOLD-EQUITY-SHARE-VINTAGE-2026-08-22/vintage-continuity-summary.json",
+      "sha256": "8ff76db61f33920f01f13581cfa9c14b3d3b47f5fbfe26ffcea810308a73c038"
+    }
+  ],
+  "generated_at": "2026-08-22T09:52:09+08:00",
+  "git_commit": "541ae9c0ab9258d579d93ab39a9decd3903d8231",
+  "kind": "dataset",
+  "metadata": {
+    "campaign": "household-equity-share-v1",
+    "cost": "1.00% fee + 0.05% slippage",
+    "coverage": "2011Q1..2026Q1; stable signal regime frozen at 2016Q3+ from pre-performance vintage audit",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "formal_candidates": [
+      "F-HESHARE-US-COMPLETION"
+    ],
+    "performance_viewed_before_freeze": false,
+    "point_in_time": "same-quarter archived Federal Reserve Z.1 first-release tables; available release_date+1 calendar day",
+    "primary_evaluation_start": "2017-01-01",
+    "signal": "latest stable-regime HEShare <= prior-only expanding median"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-HESHARE-001"
+}
