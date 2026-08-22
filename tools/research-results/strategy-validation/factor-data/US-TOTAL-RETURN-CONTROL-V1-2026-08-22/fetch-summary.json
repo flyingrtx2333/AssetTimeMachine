@@ -1,0 +1,27 @@
+{
+  "performance_computed": false,
+  "purpose": "matched investable broad-U.S. total-return control construction only; no strategy performance",
+  "selection_policy": "SPY is fixed ex ante as the investable broad-S&P total-return comparator for IWD because the frozen V11 sp500 fixture is a price index while IWD uses adjusted close",
+  "series": {
+    "SPY": {
+      "first_date": "1993-01-29",
+      "last_date": "2026-08-21",
+      "max_calendar_gap": 7,
+      "official_inception": "1993-01-22",
+      "path": "tools/research-results/strategy-validation/factor-data/US-TOTAL-RETURN-CONTROL-V1-2026-08-22/SPY.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "PCX",
+        "instrument_type": "ETF",
+        "price_field": "adjusted_close_total_return_proxy",
+        "series_id": "SPY",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d&includeAdjustedClose=true"
+      },
+      "role": "broad U.S. S&P 500 investable matched control",
+      "rows": 8448,
+      "sha256": "9da956fdcec7fe20edd9c1f8fe9401e01000c97700697320be2e52bf50b9ef24"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "IWD_first_two_dates": [
+    "2000-05-26",
+    "2000-05-30"
+  ],
+  "SPY_first_date": "1993-01-29",
+  "matched_price_field": "Yahoo adjusted_close_total_return_proxy for both IWD and SPY",
+  "performance_computed": false,
+  "purpose": "pre-performance matched total-return comparator alignment audit",
+  "reason": "IWD requires its first adjusted close as the prior price, so its second quoted session is the first date with a defined IWD close-to-close return; SPY is already available",
+  "substitution_start": "2000-05-30"
+}
