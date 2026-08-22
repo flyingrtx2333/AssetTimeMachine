@@ -27,7 +27,7 @@
   ],
   "generated_at": "2026-08-22T11:30:02+08:00",
   "git_commit": "7c28410579c2c4fd65b3dea7019c3ceaea095f85",
-  "kind": "run",
+  "kind": "result",
   "metadata": {
     "candidate_performance_recorded": false,
     "reason": "hybrid style-return series required a quote on every union-calendar S&P date; 11 holiday/weekend dates had no MTUM/QUAL quote and caused pre-performance termination",

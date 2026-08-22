@@ -1,0 +1,121 @@
+{
+  "files": [
+    {
+      "bytes": 187189,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/candidates/S-V11-C3L3-CORE-SWITCH-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "2849fd24a0f122f30afceb3ded53ef33448c351f78254be5ff2d29bb9467dec6"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "4112758c2148862b611736fe1d16e06314f8dd26217efc3d4fd1e0927241c94d"
+    },
+    {
+      "bytes": 425,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "vol_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "min_weight",
+        "fingerprint",
+        "folds_sharpe_ge_v11",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/candidates/candidate-metrics.csv",
+      "row_count": 2,
+      "sha256": "df03f09e7b08a3e017a3f25e8cabaf93075dff0f0f2b3427e0aa254b14d8762d"
+    },
+    {
+      "bytes": 3272,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/candidates/candidate-metrics.json",
+      "sha256": "b7e16ea4548d9df085de95b1468b78b57f4b9f639e1c2dccb0d1313cd1c4187c"
+    },
+    {
+      "bytes": 279,
+      "columns": [
+        "candidate_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "global_dsr_probability",
+        "global_dsr_pass",
+        "robust_strategy_pass",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_v11",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/candidates/statistical-audit.csv",
+      "row_count": 1,
+      "sha256": "18b02ba9cd2e48a6a7353ef74425d6d6d0cb01d71826e36532df0deb1aefed42"
+    },
+    {
+      "bytes": 2842,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/candidates/statistical-audit.json",
+      "sha256": "a73b2d7cf65147bac16e44312610d8ec47366c40a388929974cfe533a7878ef1"
+    },
+    {
+      "bytes": 1022,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/execution.json",
+      "sha256": "b93317bba4544a115a5c5df39147a7d7e0b8ec298ea962d353406e09f295b8b8"
+    },
+    {
+      "bytes": 447,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/run-authorization.json",
+      "sha256": "23c96026f610343941719946628a30070c1bb0bda55d4e8f0677ee7566de4e8b"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 2406,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-C3L3-CORE-SWITCH-001/stdout.txt",
+      "sha256": "630c06ce99ecbf9ed81cec15c4500c7dd6a06ce99d24f2f51ce4d6029123fa5e"
+    }
+  ],
+  "generated_at": "2026-08-22T23:36:40+08:00",
+  "git_commit": "56f256fddc50853476b2f1152cf328ca0d24091a",
+  "kind": "result",
+  "metadata": {},
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-V11-C3L3-CORE-SWITCH-001"
+}

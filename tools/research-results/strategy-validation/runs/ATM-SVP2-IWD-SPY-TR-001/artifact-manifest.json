@@ -126,7 +126,7 @@
   ],
   "generated_at": "2026-08-22T12:27:11+08:00",
   "git_commit": "737e156014bd30ea1e4ef87d7d8fc5931a59627a",
-  "kind": "run",
+  "kind": "result",
   "metadata": {
     "bootstrap_pass": false,
     "candidate": "S-IWD-VS-SPY-TR-ROLE",

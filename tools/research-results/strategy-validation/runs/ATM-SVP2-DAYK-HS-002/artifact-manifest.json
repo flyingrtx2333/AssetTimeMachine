@@ -198,7 +198,7 @@
   ],
   "generated_at": "2026-08-22T19:09:09+08:00",
   "git_commit": "ad24794b6979557b595d47f84f2206140c772b96",
-  "kind": "run",
+  "kind": "result",
   "metadata": {
     "candidate_id": "S-DAYK-HIGH-SPEED-002",
     "performance_viewed": true,

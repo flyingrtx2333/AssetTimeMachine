@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "56f256fddc50853476b2f1152cf328ca0d24091a",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "0664cafb0d04bea5ec2c8899ab49691e45c0c58c50dea7f30889145942966297",
+  "preregistration_record_hash": "f030544ba6d47761287523396f8b57a30582b88d0d97a81d5d8a399c5a0faca3",
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-V11-C3L3-CORE-SWITCH-001"
+}

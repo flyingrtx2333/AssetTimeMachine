@@ -114,7 +114,7 @@
   ],
   "generated_at": "2026-08-22T15:57:05+08:00",
   "git_commit": "133cfef52a3819f2669b52f3a2640c40735aba81",
-  "kind": "run",
+  "kind": "result",
   "metadata": {
     "cagr_bootstrap_pass": true,
     "candidate": "S-V11-HIGHCORE-ONLY",

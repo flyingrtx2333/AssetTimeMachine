@@ -1,0 +1,2 @@
+candidate_id,deterministic_admit,bootstrap_pass,global_dsr_probability,global_dsr_pass,robust_strategy_pass,probability_cagr_gt_v11,probability_sharpe_gt_v11,candidate_mdd_p975
+S-V11-C3L3-CORE-SWITCH,False,False,0.9698101850231363,True,False,0.8132,0.35565,0.14575245802406722

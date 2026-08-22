@@ -18,6 +18,12 @@ V11 = {"candidate_id": "V11-CONTROL", "trial_id": "FROZEN-V11", "cagr_percent": 
 SKIP_TRIALS = {
     "ATM-SVP2-FACTOR-ROBUST-001",  # duplicates candidates already represented by their originating formal trials
 }
+# A later stricter formal audit may preserve an earlier PASS as truthful historical
+# evidence while removing its product-promotion interpretation. Keep both records,
+# but never count the superseded candidate as a current robust strategy champion.
+SUPERSEDED_STRATEGY_CANDIDATES = {
+    "S-IWD-PROD-SP500-ROLE": "ATM-SVP2-IWD-SPY-TR-001",
+}
 
 
 def finite_number(value: Any) -> float | None:
@@ -52,6 +58,8 @@ def load_rows() -> list[dict[str, Any]]:
                 "mdd_percent": mdd,
                 "status": status,
                 "robust_factor_pass": bool(metrics.get("robust_factor_pass")) if "robust_factor_pass" in metrics else None,
+                "robust_strategy_pass": bool(metrics.get("robust_strategy_pass")) if "robust_strategy_pass" in metrics else None,
+                "superseded_by": SUPERSEDED_STRATEGY_CANDIDATES.get(candidate_id),
                 "bootstrap_probability_cagr_gt_v11": finite_number(metrics.get("bootstrap_probability_cagr_gt_v11")),
                 "bootstrap_probability_sharpe_gt_matched": finite_number(metrics.get("bootstrap_probability_sharpe_gt_matched")),
                 "global_dsr_probability": finite_number(metrics.get("global_post_protocol_dsr_probability")),
@@ -110,6 +118,10 @@ def build_report(rows: list[dict[str, Any]]) -> tuple[dict[str, Any], str]:
     max_cagr = max(universe, key=lambda row: row["cagr_percent"])
     max_sharpe = max(universe, key=lambda row: row["sharpe"])
     robust_passes = [row for row in rows if row.get("robust_factor_pass") is True]
+    robust_strategy_passes = [
+        row for row in rows
+        if row.get("robust_strategy_pass") is True and row.get("superseded_by") is None
+    ]
     target_20_under_10 = [row for row in universe if row["cagr_percent"] >= 20.0 and row["mdd_percent"] <= 10.0]
     target_18_under_10 = [row for row in universe if row["cagr_percent"] >= 18.0 and row["mdd_percent"] <= 10.0]
 
@@ -121,6 +133,8 @@ def build_report(rows: list[dict[str, Any]]) -> tuple[dict[str, Any], str]:
         "max_cagr": max_cagr,
         "max_sharpe": max_sharpe,
         "robust_factor_passes": robust_passes,
+        "current_robust_strategy_passes": robust_strategy_passes,
+        "superseded_strategy_candidates": SUPERSEDED_STRATEGY_CANDIDATES,
         "candidates_ge_20_cagr_and_le_10_mdd": target_20_under_10,
         "candidates_ge_18_cagr_and_le_10_mdd": target_18_under_10,
     }
@@ -137,10 +151,12 @@ def build_report(rows: list[dict[str, Any]]) -> tuple[dict[str, Any], str]:
         "",
         f"- 唯一正式候选数：**{len(rows)}**；另加冻结 V11 控制。",
         f"- 全部正式记录中最高 CAGR：**{pct(max_cagr['cagr_percent'])}**（{max_cagr['candidate_id']}），对应 MDD **{pct(max_cagr['mdd_percent'])}**、Sharpe **{num(max_cagr['sharpe'])}**。",
-        f"- 最高 Sharpe：**{num(max_sharpe['sharpe'])}**（{max_sharpe['candidate_id']}），CAGR **{pct(max_sharpe['cagr_percent'])}**、MDD **{pct(max_sharpe['mdd_percent'])}**。",
+        f"- 最高 Sharpe（仅描述 formal 历史记录，不等于可晋级冠军）：**{num(max_sharpe['sharpe'])}**（{max_sharpe['candidate_id']}，trial status={max_sharpe['status']}），CAGR **{pct(max_sharpe['cagr_percent'])}**、MDD **{pct(max_sharpe['mdd_percent'])}**。",
         f"- `CAGR >=20% 且 MDD <=10%`：**{len(target_20_under_10)} 个**。",
         f"- `CAGR >=18% 且 MDD <=10%`：**{len(target_18_under_10)} 个**。",
         f"- 当前 formal result 中 `robust_factor_pass=true`：**{len(robust_passes)} 个**。",
+        f"- 排除后续严格审计已 supersede 的旧 PASS 后，当前 `robust_strategy_pass=true` 且可继续晋级：**{len(robust_strategy_passes)} 个**。",
+        "- V12/IWD 的旧 `S-IWD-PROD-SP500-ROLE` PASS 已被 `ATM-SVP2-IWD-SPY-TR-001` matched total-return audit supersede；它保留为历史证据，但不计入当前策略冠军。",
         "",
         "## 最大回撤约束下的最高历史 CAGR",
         "",
@@ -168,12 +184,22 @@ def build_report(rows: list[dict[str, Any]]) -> tuple[dict[str, Any], str]:
         "",
         "## 全部正式候选（按 CAGR 降序）",
         "",
-        "| 候选 | CAGR | MDD | Sharpe | Robust | Trial |",
-        "|---|---:|---:|---:|---|---|",
+        "| 候选 | CAGR | MDD | Sharpe | Factor robust | Strategy robust | Status | Superseded | Trial |",
+        "|---|---:|---:|---:|---|---|---|---|---|",
     ])
     for row in ordered:
-        robust = "CONTROL" if row["candidate_id"] == "V11-CONTROL" else ("PASS" if row.get("robust_factor_pass") else "NO")
-        lines.append(f"| {row['candidate_id']} | {pct(row['cagr_percent'])} | {pct(row['mdd_percent'])} | {num(row['sharpe'])} | {robust} | {row['trial_id']} |")
+        if row["candidate_id"] == "V11-CONTROL":
+            factor_robust = "CONTROL"
+            strategy_robust = "CONTROL"
+            superseded = "—"
+        else:
+            factor_robust = "PASS" if row.get("robust_factor_pass") is True else "NO"
+            strategy_robust = "PASS" if row.get("robust_strategy_pass") is True else "NO"
+            superseded = row.get("superseded_by") or "—"
+        lines.append(
+            f"| {row['candidate_id']} | {pct(row['cagr_percent'])} | {pct(row['mdd_percent'])} | {num(row['sharpe'])} | "
+            f"{factor_robust} | {strategy_robust} | {row['status']} | {superseded} | {row['trial_id']} |"
+        )
 
     lines.extend([
         "",

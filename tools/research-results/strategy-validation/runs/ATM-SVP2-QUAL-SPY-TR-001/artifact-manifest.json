@@ -126,7 +126,7 @@
   ],
   "generated_at": "2026-08-22T15:23:04+08:00",
   "git_commit": "328a0487c175b35b4e1a5f82ac3d2faea07579e6",
-  "kind": "run",
+  "kind": "result",
   "metadata": {
     "bootstrap_pass": false,
     "candidate": "S-QUAL-VS-SPY-TR-ROLE",

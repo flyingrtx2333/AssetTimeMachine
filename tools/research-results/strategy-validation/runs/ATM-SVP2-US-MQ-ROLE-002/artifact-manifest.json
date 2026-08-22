@@ -125,7 +125,7 @@
   ],
   "generated_at": "2026-08-22T11:42:57+08:00",
   "git_commit": "77d32cd902a4b1fbf9f53c877bda83f7e71a74ff",
-  "kind": "run",
+  "kind": "result",
   "metadata": {
     "calendar_repair_only": true,
     "repair_of": "ATM-SVP2-US-MQ-ROLE-001",

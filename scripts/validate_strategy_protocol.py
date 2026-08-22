@@ -380,8 +380,16 @@ def validate_result_evidence(records: list[dict[str, Any]]) -> None:
         )
         artifact_paths = {str(entry["path"]) for entry in artifact_manifest["files"]}
         require(str(receipt_path) in artifact_paths, f"Run receipt is not hashed by result manifest: {trial_id}")
+        manifest_path = str(payload["artifact_manifest"])
         for artifact in payload["artifacts"]:
-            require(str(artifact) in artifact_paths, f"RESULT artifact is not covered by result manifest: {artifact}")
+            artifact = str(artifact)
+            # A SHA-256 manifest cannot hash itself without creating an impossible
+            # self-referential digest. The manifest builder explicitly forbids using
+            # its own output as an input, so only this exact path is exempt from
+            # coverage; every other RESULT artifact must still be hashed.
+            if artifact == manifest_path:
+                continue
+            require(artifact in artifact_paths, f"RESULT artifact is not covered by result manifest: {artifact}")
         dataset_paths = {str(entry["path"]) for entry in dataset_manifest["files"]}
         require(dataset_paths, f"Dataset manifest is empty for trial={trial_id}")
 
