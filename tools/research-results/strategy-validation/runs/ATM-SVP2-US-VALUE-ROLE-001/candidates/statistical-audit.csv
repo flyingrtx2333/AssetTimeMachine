@@ -1,0 +1,3 @@
+candidate_id,deterministic_admit,bootstrap_pass,global_dsr_probability,global_dsr_pass,robust_strategy_pass,probability_cagr_gt_v11,probability_sharpe_gt_v11,candidate_mdd_p975
+F-IWD-SP500-ROLE,False,False,0.1182102963310745,False,False,0.9736,0.9918,0.2652414577638579
+F-VBR-SP500-ROLE,False,False,0.110841800695195,False,False,0.95205,0.88505,0.2763465666112383

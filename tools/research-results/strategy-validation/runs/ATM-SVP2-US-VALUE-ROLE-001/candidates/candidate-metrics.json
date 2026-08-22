@@ -1,0 +1,195 @@
+{
+  "admitted_candidates": [],
+  "candidate_results": [
+    {
+      "admission_checks": {
+        "cagr_gt_v11": true,
+        "constraints_pass": true,
+        "folds_sharpe_ge_v11_ge_5_of_7": true,
+        "mdd_le_10pct": false,
+        "sharpe_ge_v11": true,
+        "worst_fold_sharpe_gt_0": true
+      },
+      "admit_for_robustness": false,
+      "candidate_id": "F-IWD-SP500-ROLE",
+      "constraints_pass": true,
+      "folds_sharpe_ge_v11": 5,
+      "metrics": {
+        "average_cash_ratio": 0.371742,
+        "cagr_percent": 8.524869,
+        "candidate_id": "F-IWD-SP500-ROLE",
+        "fingerprint": "cd84b901fde2a462",
+        "fold_cagrs_percent": [
+          10.090153,
+          9.217086,
+          0.514687,
+          7.493387,
+          4.285151,
+          14.876351,
+          11.321116
+        ],
+        "fold_mdds_percent": [
+          7.654738,
+          10.921358,
+          12.972771,
+          5.312914,
+          8.138301,
+          10.731031,
+          19.063421
+        ],
+        "fold_names": [
+          "2004-2006",
+          "2007-2009",
+          "2010-2012",
+          "2013-2015",
+          "2016-2018",
+          "2019-2021",
+          "2022-latest"
+        ],
+        "fold_sharpes": [
+          1.471709,
+          0.955763,
+          0.099785,
+          1.30586,
+          0.628381,
+          1.269288,
+          0.96856
+        ],
+        "max_gross": 1.0,
+        "mdd_percent": 19.990634,
+        "min_weight": 0.0,
+        "sharpe": 0.914479,
+        "since2020_cagr_percent": 12.68922,
+        "since2020_sharpe": 1.049628,
+        "since2022_cagr_percent": 11.321116,
+        "since2022_sharpe": 0.96856,
+        "trades": 427,
+        "vol_percent": 9.08995
+      },
+      "worst_fold_sharpe": 0.099785
+    },
+    {
+      "admission_checks": {
+        "cagr_gt_v11": true,
+        "constraints_pass": true,
+        "folds_sharpe_ge_v11_ge_5_of_7": true,
+        "mdd_le_10pct": false,
+        "sharpe_ge_v11": true,
+        "worst_fold_sharpe_gt_0": true
+      },
+      "admit_for_robustness": false,
+      "candidate_id": "F-VBR-SP500-ROLE",
+      "constraints_pass": true,
+      "folds_sharpe_ge_v11": 5,
+      "metrics": {
+        "average_cash_ratio": 0.371637,
+        "cagr_percent": 8.631507,
+        "candidate_id": "F-VBR-SP500-ROLE",
+        "fingerprint": "cd84b901fde2a462",
+        "fold_cagrs_percent": [
+          10.18676,
+          9.336027,
+          0.781525,
+          7.336196,
+          4.002083,
+          15.813002,
+          11.149542
+        ],
+        "fold_mdds_percent": [
+          8.468254,
+          10.920906,
+          13.623014,
+          5.758822,
+          8.139673,
+          10.856938,
+          19.824208
+        ],
+        "fold_names": [
+          "2004-2006",
+          "2007-2009",
+          "2010-2012",
+          "2013-2015",
+          "2016-2018",
+          "2019-2021",
+          "2022-latest"
+        ],
+        "fold_sharpes": [
+          1.432678,
+          0.957816,
+          0.12563,
+          1.244989,
+          0.569953,
+          1.293351,
+          0.943967
+        ],
+        "max_gross": 1.0,
+        "mdd_percent": 21.618129,
+        "min_weight": 0.0,
+        "sharpe": 0.90652,
+        "since2020_cagr_percent": 13.078513,
+        "since2020_sharpe": 1.054274,
+        "since2022_cagr_percent": 11.149542,
+        "since2022_sharpe": 0.943967,
+        "trades": 428,
+        "vol_percent": 9.295231
+      },
+      "worst_fold_sharpe": 0.12563
+    }
+  ],
+  "common_evaluation_start": "2004-01-30",
+  "protocol_id": "ATM-SVP-2",
+  "strategy_lineage": "us-value-role-substitution-v1",
+  "trial_id": "ATM-SVP2-US-VALUE-ROLE-001",
+  "v11_control": {
+    "average_cash_ratio": 0.371649,
+    "cagr_percent": 8.195539,
+    "candidate_id": "V11-CONTROL",
+    "fingerprint": "1353a90cd143c2a4",
+    "fold_cagrs_percent": [
+      9.743902,
+      8.969508,
+      0.106622,
+      7.049846,
+      4.604053,
+      15.590622,
+      10.214973
+    ],
+    "fold_mdds_percent": [
+      7.85043,
+      10.92136,
+      14.177613,
+      5.297703,
+      8.142919,
+      10.680493,
+      20.499739
+    ],
+    "fold_names": [
+      "2004-2006",
+      "2007-2009",
+      "2010-2012",
+      "2013-2015",
+      "2016-2018",
+      "2019-2021",
+      "2022-latest"
+    ],
+    "fold_sharpes": [
+      1.428324,
+      0.935402,
+      0.059701,
+      1.237417,
+      0.665058,
+      1.300707,
+      0.869663
+    ],
+    "max_gross": 1.0,
+    "mdd_percent": 21.291405,
+    "min_weight": 0.0,
+    "sharpe": 0.874886,
+    "since2020_cagr_percent": 12.222325,
+    "since2020_sharpe": 0.997315,
+    "since2022_cagr_percent": 10.214973,
+    "since2022_sharpe": 0.869663,
+    "trades": 430,
+    "vol_percent": 9.173561
+  }
+}

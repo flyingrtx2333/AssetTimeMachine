@@ -1,0 +1,81 @@
+{
+  "trial_id": "ATM-SVP2-US-VALUE-ROLE-001",
+  "preregistration_record_hash": "8f257e03718a560e43166683d1d453662dcc6210535f01456f35e920a6b38e29",
+  "execution_git_commit": "e021936d69582345bdec7d86f1a4608cae61052c",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/run-authorization.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-US-VALUE-ROLE-001.json",
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/artifact-manifest.json",
+  "status": "FAIL",
+  "candidate_results": [
+    {
+      "candidate_id": "F-IWD-SP500-ROLE",
+      "metrics": {
+        "cagr_percent": 8.524869,
+        "sharpe": 0.914479,
+        "mdd_percent": 19.990634,
+        "since2020_cagr_percent": 12.68922,
+        "since2020_sharpe": 1.049628,
+        "since2022_cagr_percent": 11.321116,
+        "since2022_sharpe": 0.96856,
+        "folds_sharpe_ge_v11": 5,
+        "worst_fold_sharpe": 0.099785,
+        "deterministic_admit": false,
+        "bootstrap_probability_cagr_gt_v11": 0.9736,
+        "bootstrap_probability_sharpe_gt_v11": 0.9918,
+        "bootstrap_median_candidate_minus_v11_cagr": 0.0032252527851867885,
+        "bootstrap_median_candidate_minus_v11_sharpe": 0.039514104154233565,
+        "bootstrap_mdd_p975": 0.2652414577638579,
+        "bootstrap_robust_pass": false,
+        "global_post_protocol_dsr_probability": 0.1182102963310745,
+        "global_post_protocol_dsr_trial_count": 36,
+        "robust_strategy_pass": false
+      }
+    },
+    {
+      "candidate_id": "F-VBR-SP500-ROLE",
+      "metrics": {
+        "cagr_percent": 8.631507,
+        "sharpe": 0.90652,
+        "mdd_percent": 21.618129,
+        "since2020_cagr_percent": 13.078513,
+        "since2020_sharpe": 1.054274,
+        "since2022_cagr_percent": 11.149542,
+        "since2022_sharpe": 0.943967,
+        "folds_sharpe_ge_v11": 5,
+        "worst_fold_sharpe": 0.12563,
+        "deterministic_admit": false,
+        "bootstrap_probability_cagr_gt_v11": 0.95205,
+        "bootstrap_probability_sharpe_gt_v11": 0.88505,
+        "bootstrap_median_candidate_minus_v11_cagr": 0.0042073280590428745,
+        "bootstrap_median_candidate_minus_v11_sharpe": 0.031684766930741015,
+        "bootstrap_mdd_p975": 0.2763465666112383,
+        "bootstrap_robust_pass": false,
+        "global_post_protocol_dsr_probability": 0.110841800695195,
+        "global_post_protocol_dsr_trial_count": 36,
+        "robust_strategy_pass": false
+      }
+    }
+  ],
+  "v11_control": {
+    "candidate_id": "V11-CONTROL",
+    "common_window_start": "2004-01-30",
+    "cagr_percent": 8.195539,
+    "sharpe": 0.874886,
+    "mdd_percent": 21.291405,
+    "target_fingerprint": "1353a90cd143c2a4"
+  },
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED / NO_ROBUST_STRATEGY_PASS. Both preregistered value-role substitutions showed positive return evidence relative to the frozen common-window V11 control but failed the frozen risk gates. IWD improved common-window CAGR from V11 8.195539% to 8.524869% and Sharpe from 0.874886 to 0.914479, beat V11 Sharpe in 5/7 fixed folds, and had paired-bootstrap P(CAGR>V11)=97.360% and P(Sharpe>V11)=99.180%. However, IWD MDD was 19.990634% and bootstrap MDD P97.5 was 26.524%, far above the frozen 10%/15% limits; cumulative 36-trial DSR probability was only 11.821%. VBR improved CAGR to 8.631507% and Sharpe to 0.906520 and also won 5/7 folds, with P(CAGR>V11)=95.205%, but P(Sharpe>V11)=88.505%, MDD was 21.618129%, bootstrap MDD P97.5 was 27.635%, and DSR was 11.084%. The trial additionally documents that restarting frozen V11 from cash at the 2004-01-30 common window materially changes its path and produces 21.291405% MDD, so this campaign is not evidence that a production V11 role substitution would retain the production V11 7.689054% MDD. Because the common-window restart design and asset substitutions were preregistered before performance, they may not be changed after seeing results. No S&P/IWD/VBR blend, substitution fraction, alternate common start, winner selection, or value timing rescue is permitted. The stable incremental return evidence from IWD is informative for future independent asset-role hypotheses, but neither current candidate is a validated strategy.",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/statistical-audit.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/F-IWD-SP500-ROLE-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates/F-VBR-SP500-ROLE-portfolio.csv"
+  ]
+}

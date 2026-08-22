@@ -1,0 +1,25 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_us_value_role_substitution_v1.py",
+    "--formal",
+    "--fixture",
+    "tools/fixtures/backtest-history/generalization_public_history.json",
+    "--iwd-input",
+    "tools/research-results/strategy-validation/factor-data/US-VALUE-ROLE-V1-2026-08-22/IWD.csv",
+    "--vbr-input",
+    "tools/research-results/strategy-validation/factor-data/US-VALUE-ROLE-V1-2026-08-22/VBR.csv",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/candidates"
+  ],
+  "execution_git_commit": "e021936d69582345bdec7d86f1a4608cae61052c",
+  "finished_at": "2026-08-22T10:58:31+08:00",
+  "preregistration_record_hash": "8f257e03718a560e43166683d1d453662dcc6210535f01456f35e920a6b38e29",
+  "protocol_id": "ATM-SVP-2",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/run-authorization.json",
+  "started_at": "2026-08-22T10:57:28+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-ROLE-001/stdout.txt",
+  "trial_id": "ATM-SVP2-US-VALUE-ROLE-001"
+}

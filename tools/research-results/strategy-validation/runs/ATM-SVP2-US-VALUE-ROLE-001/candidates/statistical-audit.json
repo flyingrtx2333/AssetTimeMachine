@@ -1,0 +1,142 @@
+{
+  "candidate_results": [
+    {
+      "bootstrap": {
+        "bootstrap": {
+          "block_sessions": 63,
+          "candidate_cagr_p025": 0.045814312151418006,
+          "candidate_cagr_p50": 0.08214987562960457,
+          "candidate_cagr_p975": 0.12062516242047276,
+          "candidate_mdd_p975": 0.2652414577638579,
+          "candidate_sharpe_p025": 0.5459700921500887,
+          "candidate_sharpe_p50": 0.9151735151352263,
+          "candidate_sharpe_p975": 1.2812458400490172,
+          "median_candidate_minus_v11_cagr": 0.0032252527851867885,
+          "median_candidate_minus_v11_sharpe": 0.039514104154233565,
+          "probability_cagr_gt_v11": 0.9736,
+          "probability_sharpe_gt_v11": 0.9918,
+          "replicates": 20000,
+          "rng_seed": 20260822
+        },
+        "bootstrap_robust_pass": false,
+        "candidate_id": "F-IWD-SP500-ROLE",
+        "checks": {
+          "candidate_mdd_p975_le_0_15": false,
+          "median_cagr_delta_gt_0": true,
+          "median_sharpe_delta_gt_0": true,
+          "probability_cagr_gt_v11_ge_0_90": true,
+          "probability_sharpe_gt_v11_ge_0_90": true
+        },
+        "observed": {
+          "candidate": {
+            "cagr": 0.0822798472786291,
+            "mdd": 0.19990634043355404,
+            "sharpe": 0.9150671583462296
+          },
+          "v11": {
+            "cagr": 0.07901423621656986,
+            "mdd": 0.2129140483415497,
+            "sharpe": 0.8749616116729297
+          }
+        },
+        "sample": {
+          "aligned_portfolio_dates": 5861,
+          "daily_returns": 5860,
+          "evaluation_start": "2004-01-30",
+          "first_date": "2004-03-01",
+          "last_date": "2026-08-13"
+        }
+      },
+      "candidate_id": "F-IWD-SP500-ROLE",
+      "deterministic_admit": false,
+      "global_dsr_pass": false,
+      "global_post_protocol_dsr": {
+        "dsr_probability": 0.1182102963310745,
+        "dsr_z": -1.1839809782624946,
+        "expected_max_sharpe_annualized": 1.1630435997138688,
+        "observations": 5866,
+        "observed_sharpe_annualized": 0.9144786746351575,
+        "pearson_kurtosis": 9.602787100534716,
+        "skewness": -0.3237654926729389,
+        "trial_count": 36
+      },
+      "robust_strategy_pass": false
+    },
+    {
+      "bootstrap": {
+        "bootstrap": {
+          "block_sessions": 63,
+          "candidate_cagr_p025": 0.04604634766970686,
+          "candidate_cagr_p50": 0.08308052488289083,
+          "candidate_cagr_p975": 0.12215233278466402,
+          "candidate_mdd_p975": 0.2763465666112383,
+          "candidate_sharpe_p025": 0.5379817952758935,
+          "candidate_sharpe_p50": 0.9078845002180468,
+          "candidate_sharpe_p975": 1.2696031820416918,
+          "median_candidate_minus_v11_cagr": 0.0042073280590428745,
+          "median_candidate_minus_v11_sharpe": 0.031684766930741015,
+          "probability_cagr_gt_v11": 0.95205,
+          "probability_sharpe_gt_v11": 0.88505,
+          "replicates": 20000,
+          "rng_seed": 20260822
+        },
+        "bootstrap_robust_pass": false,
+        "candidate_id": "F-VBR-SP500-ROLE",
+        "checks": {
+          "candidate_mdd_p975_le_0_15": false,
+          "median_cagr_delta_gt_0": true,
+          "median_sharpe_delta_gt_0": true,
+          "probability_cagr_gt_v11_ge_0_90": true,
+          "probability_sharpe_gt_v11_ge_0_90": false
+        },
+        "observed": {
+          "candidate": {
+            "cagr": 0.0833119503262942,
+            "mdd": 0.21618128716575247,
+            "sharpe": 0.9071470306195433
+          },
+          "v11": {
+            "cagr": 0.07901423621656986,
+            "mdd": 0.2129140483415497,
+            "sharpe": 0.8749616116729297
+          }
+        },
+        "sample": {
+          "aligned_portfolio_dates": 5861,
+          "daily_returns": 5860,
+          "evaluation_start": "2004-01-30",
+          "first_date": "2004-03-01",
+          "last_date": "2026-08-13"
+        }
+      },
+      "candidate_id": "F-VBR-SP500-ROLE",
+      "deterministic_admit": false,
+      "global_dsr_pass": false,
+      "global_post_protocol_dsr": {
+        "dsr_probability": 0.110841800695195,
+        "dsr_z": -1.2220635350640492,
+        "expected_max_sharpe_annualized": 1.1630435997138688,
+        "observations": 5866,
+        "observed_sharpe_annualized": 0.90652037357278,
+        "pearson_kurtosis": 9.202739341773007,
+        "skewness": -0.32933922403629806,
+        "trial_count": 36
+      },
+      "robust_strategy_pass": false
+    }
+  ],
+  "method": {
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260822,
+    "bootstrap_sample_start": "2004-01-30",
+    "bootstrap_sampling": "paired circular moving blocks versus common-window V11",
+    "family_pbo": "not_applicable_no_winner_selection_two_independent_preregistered_roles",
+    "global_dsr_note": "both current role candidates are included in the trial-count correction regardless of outcome",
+    "global_post_protocol_dsr_prior_trial_count": 34,
+    "global_post_protocol_dsr_total_trial_count": 36
+  },
+  "protocol_id": "ATM-SVP-2",
+  "robust_pass_candidates": [],
+  "trial_id": "ATM-SVP2-US-VALUE-ROLE-001"
+}

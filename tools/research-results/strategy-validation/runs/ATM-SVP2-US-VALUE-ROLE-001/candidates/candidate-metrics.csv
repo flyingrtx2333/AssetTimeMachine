@@ -1,0 +1,4 @@
+candidate_id,kind,cagr_percent,mdd_percent,sharpe,trades,average_cash_ratio,max_gross,min_weight,folds_sharpe_ge_v11,worst_fold_sharpe,admit_for_robustness
+V11-CONTROL,CONTROL,8.195539,21.291405,0.874886,430,0.371649,1.0,0.0,CONTROL,0.059701,CONTROL
+F-IWD-SP500-ROLE,ASSET_ROLE_STRATEGY,8.524869,19.990634,0.914479,427,0.371742,1.0,0.0,5,0.099785,False
+F-VBR-SP500-ROLE,ASSET_ROLE_STRATEGY,8.631507,21.618129,0.90652,428,0.371637,1.0,0.0,5,0.12563,False
