@@ -1,0 +1,868 @@
+{
+  "candidate_id": "S-DAYK-HIGH-SPEED-004",
+  "candidate_paths": [
+    {
+      "average_gross": 0.09373720835038886,
+      "average_holding_sessions": 3.6547619047619047,
+      "cagr_percent": 1.003495210657701,
+      "carried_mark_valuation_count": 6,
+      "end": "2026-08-20",
+      "final_open_positions": 0,
+      "folds": [
+        {
+          "cagr_percent": -1.0580409333614815,
+          "mdd_percent": 5.305849219599968,
+          "name": "2017-2018",
+          "sessions": 450,
+          "sharpe": -0.33638193939361777
+        },
+        {
+          "cagr_percent": 0.770789032016439,
+          "mdd_percent": 7.2637839991004896,
+          "name": "2019-2020",
+          "sessions": 519,
+          "sharpe": 0.15133456062275857
+        },
+        {
+          "cagr_percent": 2.321101385435176,
+          "mdd_percent": 3.5871812788427646,
+          "name": "2021-2022",
+          "sessions": 516,
+          "sharpe": 0.9488413330788593
+        },
+        {
+          "cagr_percent": 2.4250606608957836,
+          "mdd_percent": 7.002013230682396,
+          "name": "2023-2024",
+          "sessions": 516,
+          "sharpe": 0.4389107242354862
+        },
+        {
+          "cagr_percent": 0.18742524009358608,
+          "mdd_percent": 8.162345365613517,
+          "name": "2025-latest",
+          "sessions": 442,
+          "sharpe": 0.0652404395318031
+        }
+      ],
+      "id": "DKHS004-GOLD",
+      "last10y_cagr_percent": 1.003495210657701,
+      "last10y_sharpe": 0.1962801094151773,
+      "max_concurrent_positions": 1,
+      "max_gross": 1,
+      "maximum_holding_sessions": 5,
+      "mdd_percent": 8.962905378122986,
+      "minimum_end_of_day_cash": 0,
+      "minimum_holding_sessions": 2,
+      "position_nights": 229,
+      "round_trips_by_symbol": {
+        "gold_cny": 84
+      },
+      "sessions": 2443,
+      "sharpe": 0.1962801094151773,
+      "since2020_cagr_percent": 2.146697143060794,
+      "since2020_sharpe": 0.3547788175371435,
+      "since2022_cagr_percent": 2.025863717813392,
+      "since2022_sharpe": 0.3148081243699312,
+      "start": "2017-04-11",
+      "take_profit_hits_by_symbol": {
+        "gold_cny": 47
+      },
+      "target_fingerprint": "b2b38593d0c23b46",
+      "time_exits_by_symbol": {
+        "gold_cny": 37
+      },
+      "total_return_percent": 9.794337881741711,
+      "trade_stats": {
+        "average_return_percent": 0.08966668632256625,
+        "profit_factor": 1.1467871991480072,
+        "round_trips": 84,
+        "win_rate_percent": 66.66666666666666
+      },
+      "volatility_percent": 5.760973345597325
+    },
+    {
+      "average_gross": 0.14492137696557586,
+      "average_holding_sessions": 3.3680555555555554,
+      "cagr_percent": 2.4705832350113255,
+      "carried_mark_valuation_count": 0,
+      "end": "2026-08-20",
+      "final_open_positions": 0,
+      "folds": [
+        {
+          "cagr_percent": -7.169996839106718,
+          "mdd_percent": 17.477124295262485,
+          "name": "2017-2018",
+          "sessions": 434,
+          "sharpe": -0.6925284192566087
+        },
+        {
+          "cagr_percent": 5.605736533542571,
+          "mdd_percent": 9.940496805619189,
+          "name": "2019-2020",
+          "sessions": 505,
+          "sharpe": 0.6201047926797663
+        },
+        {
+          "cagr_percent": 8.440097491768395,
+          "mdd_percent": 4.971100058496601,
+          "name": "2021-2022",
+          "sessions": 503,
+          "sharpe": 1.111895605041784
+        },
+        {
+          "cagr_percent": 5.076489659606209,
+          "mdd_percent": 5.835474857055898,
+          "name": "2023-2024",
+          "sessions": 502,
+          "sharpe": 0.6454929676949527
+        },
+        {
+          "cagr_percent": -0.6353852637794422,
+          "mdd_percent": 10.145055593260206,
+          "name": "2025-latest",
+          "sessions": 409,
+          "sharpe": -0.02176895367440935
+        }
+      ],
+      "id": "DKHS004-NASDAQ",
+      "last10y_cagr_percent": 2.4705832350113255,
+      "last10y_sharpe": 0.3191855591439765,
+      "max_concurrent_positions": 1,
+      "max_gross": 1,
+      "maximum_holding_sessions": 5,
+      "mdd_percent": 20.644481885519085,
+      "minimum_end_of_day_cash": 0,
+      "minimum_holding_sessions": 2,
+      "position_nights": 341,
+      "round_trips_by_symbol": {
+        "nasdaq": 144
+      },
+      "sessions": 2353,
+      "sharpe": 0.3191855591439765,
+      "since2020_cagr_percent": 4.526553281796053,
+      "since2020_sharpe": 0.5452723489725864,
+      "since2022_cagr_percent": 2.2618354676603447,
+      "since2022_sharpe": 0.3275839048170501,
+      "start": "2017-04-11",
+      "take_profit_hits_by_symbol": {
+        "nasdaq": 101
+      },
+      "target_fingerprint": "956587255b87c726",
+      "time_exits_by_symbol": {
+        "nasdaq": 43
+      },
+      "total_return_percent": 25.65712348713143,
+      "trade_stats": {
+        "average_return_percent": 0.15477272855921878,
+        "profit_factor": 1.255349971100048,
+        "round_trips": 144,
+        "win_rate_percent": 75.69444444444444
+      },
+      "volatility_percent": 8.91659267855347
+    },
+    {
+      "average_gross": 0.12792180195495112,
+      "average_holding_sessions": 3.22962962962963,
+      "cagr_percent": 3.8056556519274976,
+      "carried_mark_valuation_count": 0,
+      "end": "2026-08-20",
+      "final_open_positions": 0,
+      "folds": [
+        {
+          "cagr_percent": 1.9184070626163674,
+          "mdd_percent": 8.207616282183016,
+          "name": "2017-2018",
+          "sessions": 434,
+          "sharpe": 0.31647359961265714
+        },
+        {
+          "cagr_percent": 1.8680710941453293,
+          "mdd_percent": 10.567185445332212,
+          "name": "2019-2020",
+          "sessions": 505,
+          "sharpe": 0.2616490869672635
+        },
+        {
+          "cagr_percent": 5.6673416977186974,
+          "mdd_percent": 5.886318396555831,
+          "name": "2021-2022",
+          "sessions": 503,
+          "sharpe": 0.7822804699421687
+        },
+        {
+          "cagr_percent": 7.582428617453707,
+          "mdd_percent": 4.560313074142854,
+          "name": "2023-2024",
+          "sessions": 502,
+          "sharpe": 1.360972038936794
+        },
+        {
+          "cagr_percent": 1.6670507248188082,
+          "mdd_percent": 5.852767129902898,
+          "name": "2025-latest",
+          "sessions": 409,
+          "sharpe": 0.29910585370105747
+        }
+      ],
+      "id": "DKHS004-SP500",
+      "last10y_cagr_percent": 3.8056556519274976,
+      "last10y_sharpe": 0.5741909070750734,
+      "max_concurrent_positions": 1,
+      "max_gross": 1,
+      "maximum_holding_sessions": 5,
+      "mdd_percent": 10.56718544533231,
+      "minimum_end_of_day_cash": 0,
+      "minimum_holding_sessions": 2,
+      "position_nights": 301,
+      "round_trips_by_symbol": {
+        "sp500": 135
+      },
+      "sessions": 2353,
+      "sharpe": 0.5741909070750734,
+      "since2020_cagr_percent": 3.4573127981647245,
+      "since2020_sharpe": 0.5103656954051956,
+      "since2022_cagr_percent": 4.2731029525793,
+      "since2022_sharpe": 0.7310126177663412,
+      "start": "2017-04-11",
+      "take_profit_hits_by_symbol": {
+        "sp500": 101
+      },
+      "target_fingerprint": "63d15bbe0f04e916",
+      "time_exits_by_symbol": {
+        "sp500": 34
+      },
+      "total_return_percent": 41.8390600221765,
+      "trade_stats": {
+        "average_return_percent": 0.24652141210154682,
+        "profit_factor": 1.6843050225474627,
+        "round_trips": 135,
+        "win_rate_percent": 80.74074074074075
+      },
+      "volatility_percent": 6.943735645403922
+    },
+    {
+      "average_gross": 0.12218597633027696,
+      "average_holding_sessions": 3.3829201101928374,
+      "cagr_percent": 2.51657519805657,
+      "carried_mark_valuation_count": 33,
+      "end": "2026-08-20",
+      "final_open_positions": 0,
+      "folds": [
+        {
+          "cagr_percent": -2.0849785802208753,
+          "mdd_percent": 7.1065833207856075,
+          "name": "2017-2018",
+          "sessions": 450,
+          "sharpe": -0.38235743983439624
+        },
+        {
+          "cagr_percent": 2.826992509679993,
+          "mdd_percent": 5.385559352990125,
+          "name": "2019-2020",
+          "sessions": 519,
+          "sharpe": 0.504253704399968
+        },
+        {
+          "cagr_percent": 5.507779658639134,
+          "mdd_percent": 3.08907560456791,
+          "name": "2021-2022",
+          "sessions": 516,
+          "sharpe": 1.224771293609662
+        },
+        {
+          "cagr_percent": 5.104298586955869,
+          "mdd_percent": 4.468556237212991,
+          "name": "2023-2024",
+          "sessions": 516,
+          "sharpe": 1.0342295754585211
+        },
+        {
+          "cagr_percent": 0.5359594706490611,
+          "mdd_percent": 6.585794003046123,
+          "name": "2025-latest",
+          "sessions": 442,
+          "sharpe": 0.1135098663016379
+        }
+      ],
+      "id": "DKHS004-COMBINED",
+      "last10y_cagr_percent": 2.51657519805657,
+      "last10y_sharpe": 0.49086470750979144,
+      "max_concurrent_positions": 3,
+      "max_gross": 1,
+      "maximum_holding_sessions": 5,
+      "mdd_percent": 7.258192657882824,
+      "minimum_end_of_day_cash": 0,
+      "minimum_holding_sessions": 2,
+      "position_nights": 631,
+      "round_trips_by_symbol": {
+        "gold_cny": 84,
+        "nasdaq": 144,
+        "sp500": 135
+      },
+      "sessions": 2443,
+      "sharpe": 0.49086470750979144,
+      "since2020_cagr_percent": 3.476568778994049,
+      "since2020_sharpe": 0.6471711706658052,
+      "since2022_cagr_percent": 2.953757846350946,
+      "since2022_sharpe": 0.5951213530025041,
+      "start": "2017-04-11",
+      "take_profit_hits_by_symbol": {
+        "gold_cny": 47,
+        "nasdaq": 101,
+        "sp500": 101
+      },
+      "target_fingerprint": "3384bf898f70a864",
+      "time_exits_by_symbol": {
+        "gold_cny": 37,
+        "nasdaq": 43,
+        "sp500": 34
+      },
+      "total_return_percent": 26.185892999635453,
+      "trade_stats": {
+        "average_return_percent": 0.17382827878052873,
+        "profit_factor": 1.3370213089433869,
+        "round_trips": 363,
+        "win_rate_percent": 75.48209366391184
+      },
+      "volatility_percent": 5.161549915157919
+    }
+  ],
+  "cash_control": {
+    "average_gross": 0,
+    "average_holding_sessions": 0,
+    "cagr_percent": 0.3630910680378685,
+    "carried_mark_valuation_count": 0,
+    "end": "2026-08-20",
+    "final_open_positions": 0,
+    "folds": [
+      {
+        "cagr_percent": 0.36277468600633966,
+        "mdd_percent": 0,
+        "name": "2017-2018",
+        "sessions": 450,
+        "sharpe": 2095992418232.6719
+      },
+      {
+        "cagr_percent": 0.3606147636208812,
+        "mdd_percent": 0,
+        "name": "2019-2020",
+        "sessions": 519,
+        "sharpe": 2075342364435.8018
+      },
+      {
+        "cagr_percent": 0.3609995484867179,
+        "mdd_percent": 0,
+        "name": "2021-2022",
+        "sessions": 516,
+        "sharpe": 2047195608831.2822
+      },
+      {
+        "cagr_percent": 0.3595092420966228,
+        "mdd_percent": 0,
+        "name": "2023-2024",
+        "sessions": 516,
+        "sharpe": 2060439758721.9492
+      },
+      {
+        "cagr_percent": 0.37669776527855525,
+        "mdd_percent": 0,
+        "name": "2025-latest",
+        "sessions": 442,
+        "sharpe": 2090189726738.3103
+      }
+    ],
+    "id": "C-CASH-COMBINED",
+    "last10y_cagr_percent": 0.3630910680378685,
+    "last10y_sharpe": 2073528545249.8662,
+    "max_concurrent_positions": 0,
+    "max_gross": 0,
+    "maximum_holding_sessions": 0,
+    "mdd_percent": 0,
+    "minimum_end_of_day_cash": 100000,
+    "minimum_holding_sessions": 0,
+    "position_nights": 0,
+    "round_trips_by_symbol": {
+      "gold_cny": 0,
+      "nasdaq": 0,
+      "sp500": 0
+    },
+    "sessions": 2443,
+    "sharpe": 2073528545249.8662,
+    "since2020_cagr_percent": 0.36342637233277575,
+    "since2020_sharpe": 2064129531380.2017,
+    "since2022_cagr_percent": 0.3653730224580265,
+    "since2022_sharpe": 2071355534767.1816,
+    "start": "2017-04-11",
+    "take_profit_hits_by_symbol": {
+      "gold_cny": 0,
+      "nasdaq": 0,
+      "sp500": 0
+    },
+    "target_fingerprint": "a86b465f35458de3",
+    "time_exits_by_symbol": {
+      "gold_cny": 0,
+      "nasdaq": 0,
+      "sp500": 0
+    },
+    "total_return_percent": 3.4498151280849765,
+    "trade_stats": {
+      "average_return_percent": 0,
+      "profit_factor": 0,
+      "round_trips": 0,
+      "win_rate_percent": 0
+    },
+    "volatility_percent": 1.6879439677939215e-13
+  },
+  "evaluation_end": "2026-08-20",
+  "evaluation_start": "2017-04-11",
+  "fee_rate_per_fill": 5e-05,
+  "matched_control_paths": [
+    {
+      "average_gross": 0.1469504707327057,
+      "average_holding_sessions": 3.71875,
+      "cagr_percent": 1.3378241946712555,
+      "carried_mark_valuation_count": 11,
+      "end": "2026-08-20",
+      "final_open_positions": 0,
+      "folds": [
+        {
+          "cagr_percent": -0.08509264512692738,
+          "mdd_percent": 6.793273210088523,
+          "name": "2017-2018",
+          "sessions": 450,
+          "sharpe": 0.0017038907407836814
+        },
+        {
+          "cagr_percent": 2.447957626871622,
+          "mdd_percent": 7.263783999100788,
+          "name": "2019-2020",
+          "sessions": 519,
+          "sharpe": 0.3893195559404929
+        },
+        {
+          "cagr_percent": 0.8003954689416171,
+          "mdd_percent": 6.637886392748224,
+          "name": "2021-2022",
+          "sessions": 516,
+          "sharpe": 0.1529902343037439
+        },
+        {
+          "cagr_percent": 2.8234487430053523,
+          "mdd_percent": 6.279654678610017,
+          "name": "2023-2024",
+          "sessions": 516,
+          "sharpe": 0.5033156449577628
+        },
+        {
+          "cagr_percent": 0.3762204863250407,
+          "mdd_percent": 9.582951156502105,
+          "name": "2025-latest",
+          "sessions": 442,
+          "sharpe": 0.08504225440029194
+        }
+      ],
+      "id": "C-PULLBACK-GOLD",
+      "last10y_cagr_percent": 1.3378241946712555,
+      "last10y_sharpe": 0.22309768327437432,
+      "max_concurrent_positions": 1,
+      "max_gross": 1,
+      "maximum_holding_sessions": 5,
+      "mdd_percent": 9.582951156502165,
+      "minimum_end_of_day_cash": 0,
+      "minimum_holding_sessions": 2,
+      "position_nights": 359,
+      "round_trips_by_symbol": {
+        "gold_cny": 128
+      },
+      "sessions": 2443,
+      "sharpe": 0.22309768327437432,
+      "since2020_cagr_percent": 2.363707485376354,
+      "since2020_sharpe": 0.33866583010417567,
+      "since2022_cagr_percent": 2.064369850217762,
+      "since2022_sharpe": 0.3028631594202651,
+      "start": "2017-04-11",
+      "take_profit_hits_by_symbol": {
+        "gold_cny": 73
+      },
+      "target_fingerprint": "24c98db9819a68ba",
+      "time_exits_by_symbol": {
+        "gold_cny": 55
+      },
+      "total_return_percent": 13.242709634786598,
+      "trade_stats": {
+        "average_return_percent": 0.08823480452573122,
+        "profit_factor": 1.1490100065291753,
+        "round_trips": 128,
+        "win_rate_percent": 67.1875
+      },
+      "volatility_percent": 6.7884854110522115
+    },
+    {
+      "average_gross": 0.1963450913727157,
+      "average_holding_sessions": 3.357142857142857,
+      "cagr_percent": 2.439170576244165,
+      "carried_mark_valuation_count": 0,
+      "end": "2026-08-20",
+      "final_open_positions": 0,
+      "folds": [
+        {
+          "cagr_percent": -7.351837070583822,
+          "mdd_percent": 20.716072040560547,
+          "name": "2017-2018",
+          "sessions": 434,
+          "sharpe": -0.6186102811228744
+        },
+        {
+          "cagr_percent": 6.887328515579405,
+          "mdd_percent": 11.878002156077866,
+          "name": "2019-2020",
+          "sessions": 505,
+          "sharpe": 0.5359697560900842
+        },
+        {
+          "cagr_percent": 8.671891061709335,
+          "mdd_percent": 8.497967242386185,
+          "name": "2021-2022",
+          "sessions": 503,
+          "sharpe": 0.6091040661304025
+        },
+        {
+          "cagr_percent": 7.292810660734816,
+          "mdd_percent": 5.835474857055857,
+          "name": "2023-2024",
+          "sessions": 502,
+          "sharpe": 0.8752012676393119
+        },
+        {
+          "cagr_percent": -5.497614516385019,
+          "mdd_percent": 17.944001066225425,
+          "name": "2025-latest",
+          "sessions": 409,
+          "sharpe": -0.38580364180492493
+        }
+      ],
+      "id": "C-PULLBACK-NASDAQ",
+      "last10y_cagr_percent": 2.439170576244165,
+      "last10y_sharpe": 0.25363437565917374,
+      "max_concurrent_positions": 1,
+      "max_gross": 1,
+      "maximum_holding_sessions": 5,
+      "mdd_percent": 20.716072040560547,
+      "minimum_end_of_day_cash": 0,
+      "minimum_holding_sessions": 2,
+      "position_nights": 462,
+      "round_trips_by_symbol": {
+        "nasdaq": 196
+      },
+      "sessions": 2353,
+      "sharpe": 0.25363437565917374,
+      "since2020_cagr_percent": 3.8045572470817746,
+      "since2020_sharpe": 0.3420922841330698,
+      "since2022_cagr_percent": 1.742274654262821,
+      "since2022_sharpe": 0.19845185839474305,
+      "start": "2017-04-11",
+      "take_profit_hits_by_symbol": {
+        "nasdaq": 135
+      },
+      "target_fingerprint": "f6637bb35d3c7a37",
+      "time_exits_by_symbol": {
+        "nasdaq": 61
+      },
+      "total_return_percent": 25.297110529935996,
+      "trade_stats": {
+        "average_return_percent": 0.12351417925312207,
+        "profit_factor": 1.1679665532407293,
+        "round_trips": 196,
+        "win_rate_percent": 73.46938775510205
+      },
+      "volatility_percent": 12.770853742186672
+    },
+    {
+      "average_gross": 0.1712707182320442,
+      "average_holding_sessions": 3.2768361581920904,
+      "cagr_percent": 4.89223847264546,
+      "carried_mark_valuation_count": 0,
+      "end": "2026-08-20",
+      "final_open_positions": 0,
+      "folds": [
+        {
+          "cagr_percent": -1.9441156743135735,
+          "mdd_percent": 10.543353728960971,
+          "name": "2017-2018",
+          "sessions": 434,
+          "sharpe": -0.1783822263952494
+        },
+        {
+          "cagr_percent": 6.013273803567731,
+          "mdd_percent": 17.134053128452486,
+          "name": "2019-2020",
+          "sessions": 505,
+          "sharpe": 0.4861292793391184
+        },
+        {
+          "cagr_percent": 6.038105010801664,
+          "mdd_percent": 10.741671189727937,
+          "name": "2021-2022",
+          "sessions": 503,
+          "sharpe": 0.5786955621943384
+        },
+        {
+          "cagr_percent": 10.77831719468949,
+          "mdd_percent": 4.560313074142859,
+          "name": "2023-2024",
+          "sessions": 502,
+          "sharpe": 1.792325056166476
+        },
+        {
+          "cagr_percent": 2.864297458404308,
+          "mdd_percent": 9.188031657596586,
+          "name": "2025-latest",
+          "sessions": 409,
+          "sharpe": 0.33754415407256677
+        }
+      ],
+      "id": "C-PULLBACK-SP500",
+      "last10y_cagr_percent": 4.89223847264546,
+      "last10y_sharpe": 0.5147743799969828,
+      "max_concurrent_positions": 1,
+      "max_gross": 1,
+      "maximum_holding_sessions": 5,
+      "mdd_percent": 17.13405312845247,
+      "minimum_end_of_day_cash": 0,
+      "minimum_holding_sessions": 2,
+      "position_nights": 403,
+      "round_trips_by_symbol": {
+        "sp500": 177
+      },
+      "sessions": 2353,
+      "sharpe": 0.5147743799969828,
+      "since2020_cagr_percent": 5.797337086080234,
+      "since2020_sharpe": 0.5598340274111491,
+      "since2022_cagr_percent": 6.191928163146931,
+      "since2022_sharpe": 0.6885070915202549,
+      "start": "2017-04-11",
+      "take_profit_hits_by_symbol": {
+        "sp500": 128
+      },
+      "target_fingerprint": "b79d0a05a3a00c32",
+      "time_exits_by_symbol": {
+        "sp500": 49
+      },
+      "total_return_percent": 56.356436516399675,
+      "trade_stats": {
+        "average_return_percent": 0.25164472569621893,
+        "profit_factor": 1.540614436678974,
+        "round_trips": 177,
+        "win_rate_percent": 78.53107344632768
+      },
+      "volatility_percent": 10.342545576491661
+    },
+    {
+      "average_gross": 0.17071950368852765,
+      "average_holding_sessions": 3.4211576846307383,
+      "cagr_percent": 3.041148133758309,
+      "carried_mark_valuation_count": 42,
+      "end": "2026-08-20",
+      "final_open_positions": 0,
+      "folds": [
+        {
+          "cagr_percent": -3.0173979876765844,
+          "mdd_percent": 9.333859007626156,
+          "name": "2017-2018",
+          "sessions": 450,
+          "sharpe": -0.4303352037728265
+        },
+        {
+          "cagr_percent": 5.241899162021535,
+          "mdd_percent": 7.492292805781389,
+          "name": "2019-2020",
+          "sessions": 519,
+          "sharpe": 0.6653143932469591
+        },
+        {
+          "cagr_percent": 5.340954425001443,
+          "mdd_percent": 5.6250743794092335,
+          "name": "2021-2022",
+          "sessions": 516,
+          "sharpe": 0.6291951524594449
+        },
+        {
+          "cagr_percent": 7.019042032919787,
+          "mdd_percent": 4.221948136932211,
+          "name": "2023-2024",
+          "sessions": 516,
+          "sharpe": 1.3580346272335238
+        },
+        {
+          "cagr_percent": -0.6380055498638404,
+          "mdd_percent": 9.191620469960807,
+          "name": "2025-latest",
+          "sessions": 442,
+          "sharpe": -0.041426747463111216
+        }
+      ],
+      "id": "C-PULLBACK-COMBINED",
+      "last10y_cagr_percent": 3.041148133758309,
+      "last10y_sharpe": 0.43712903867429126,
+      "max_concurrent_positions": 3,
+      "max_gross": 1,
+      "maximum_holding_sessions": 5,
+      "mdd_percent": 9.333859007626156,
+      "minimum_end_of_day_cash": 0,
+      "minimum_holding_sessions": 2,
+      "position_nights": 844,
+      "round_trips_by_symbol": {
+        "gold_cny": 128,
+        "nasdaq": 196,
+        "sp500": 177
+      },
+      "sessions": 2443,
+      "sharpe": 0.43712903867429126,
+      "since2020_cagr_percent": 4.157326861430355,
+      "since2020_sharpe": 0.5474865459594292,
+      "since2022_cagr_percent": 3.4877242416457177,
+      "since2022_sharpe": 0.48379298124749726,
+      "start": "2017-04-11",
+      "take_profit_hits_by_symbol": {
+        "gold_cny": 73,
+        "nasdaq": 135,
+        "sp500": 128
+      },
+      "target_fingerprint": "a372e87e2fd8f2f1",
+      "time_exits_by_symbol": {
+        "gold_cny": 55,
+        "nasdaq": 61,
+        "sp500": 49
+      },
+      "total_return_percent": 32.35906504908155,
+      "trade_stats": {
+        "average_return_percent": 0.1597683643934854,
+        "profit_factor": 1.264772383598528,
+        "round_trips": 501,
+        "win_rate_percent": 73.65269461077844
+      },
+      "volatility_percent": 7.214571584082656
+    }
+  ],
+  "preregistered_gate_evaluation": {
+    "checks": {
+      "at_least_four_of_five_positive_sharpe_folds": true,
+      "at_least_two_assets_outperform_cash": true,
+      "at_least_two_assets_positive_sharpe": true,
+      "combined_average_trade_return_positive": true,
+      "combined_cagr_ge_cash_plus_2pp": true,
+      "combined_mdd_le_12pct": true,
+      "combined_profit_factor_ge_1_10": true,
+      "combined_sharpe_ge_1": false,
+      "combined_sharpe_gt_matched_pullback_control": true,
+      "each_asset_at_least_75_round_trips": true,
+      "max_gross_le_100pct": true,
+      "maximum_holding_sessions_le_5": true,
+      "minimum_end_of_day_cash_nonnegative": true,
+      "minimum_holding_sessions_ge_2": true,
+      "since2020_cagr_gt_cash_full_cagr": true,
+      "since2022_cagr_gt_cash_full_cagr": true,
+      "slippage_stress_cagr_gt_cash": true,
+      "slippage_stress_sharpe_gt_0_5": false,
+      "zero_final_open_positions": true
+    },
+    "diagnostics": {
+      "cash_cagr_percent": 0.3630910680378685,
+      "minimum_asset_round_trips": 84,
+      "positive_sharpe_asset_count": 3,
+      "positive_sharpe_fold_count": 4,
+      "profitable_asset_count": 3
+    },
+    "pass": false
+  },
+  "primary_slippage_rate_per_fill": 0,
+  "slippage_stress": {
+    "average_gross": 0.1221607207849495,
+    "average_holding_sessions": 3.3829201101928374,
+    "cagr_percent": 1.199344021133708,
+    "carried_mark_valuation_count": 33,
+    "end": "2026-08-20",
+    "final_open_positions": 0,
+    "folds": [
+      {
+        "cagr_percent": -3.2524477227478865,
+        "mdd_percent": 7.92123152877994,
+        "name": "2017-2018",
+        "sessions": 450,
+        "sharpe": -0.6160211125638414
+      },
+      {
+        "cagr_percent": 1.4640101259605798,
+        "mdd_percent": 5.635666416685387,
+        "name": "2019-2020",
+        "sessions": 519,
+        "sharpe": 0.2778668150186308
+      },
+      {
+        "cagr_percent": 4.518681621524401,
+        "mdd_percent": 3.119732960086613,
+        "name": "2021-2022",
+        "sessions": 516,
+        "sharpe": 1.0213287381223117
+      },
+      {
+        "cagr_percent": 3.326084520973027,
+        "mdd_percent": 4.9116100095466795,
+        "name": "2023-2024",
+        "sessions": 516,
+        "sharpe": 0.6941354836981287
+      },
+      {
+        "cagr_percent": -0.7510213636555463,
+        "mdd_percent": 6.955828308707048,
+        "name": "2025-latest",
+        "sessions": 442,
+        "sharpe": -0.08942654333710003
+      }
+    ],
+    "id": "DKHS004-COMBINED-SLIP005",
+    "last10y_cagr_percent": 1.199344021133708,
+    "last10y_sharpe": 0.2501132259277525,
+    "max_concurrent_positions": 3,
+    "max_gross": 1,
+    "maximum_holding_sessions": 5,
+    "mdd_percent": 8.849386398695643,
+    "minimum_end_of_day_cash": 0,
+    "minimum_holding_sessions": 2,
+    "position_nights": 631,
+    "round_trips_by_symbol": {
+      "gold_cny": 84,
+      "nasdaq": 144,
+      "sp500": 135
+    },
+    "sessions": 2443,
+    "sharpe": 0.2501132259277525,
+    "since2020_cagr_percent": 2.1479842586669573,
+    "since2020_sharpe": 0.4148027089559242,
+    "since2022_cagr_percent": 1.6124909040370117,
+    "since2022_sharpe": 0.34009722727920405,
+    "start": "2017-04-11",
+    "take_profit_hits_by_symbol": {
+      "gold_cny": 47,
+      "nasdaq": 101,
+      "sp500": 101
+    },
+    "target_fingerprint": "ce826c645217df20",
+    "time_exits_by_symbol": {
+      "gold_cny": 37,
+      "nasdaq": 43,
+      "sp500": 34
+    },
+    "total_return_percent": 11.802819915541063,
+    "trade_stats": {
+      "average_return_percent": 0.07370451238495783,
+      "profit_factor": 1.1363106327036339,
+      "round_trips": 363,
+      "win_rate_percent": 73.55371900826447
+    },
+    "volatility_percent": 5.130065289136453
+  },
+  "stress_slippage_rate_per_fill": 0.0005,
+  "trial_id": "ATM-SVP2-DAYK-HS-004"
+}
