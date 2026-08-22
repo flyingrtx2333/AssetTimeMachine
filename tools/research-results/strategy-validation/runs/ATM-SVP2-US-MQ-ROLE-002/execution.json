@@ -1,0 +1,25 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_us_momentum_quality_role_v2.py",
+    "--formal",
+    "--fixture",
+    "tools/fixtures/backtest-history/generalization_public_history.json",
+    "--mtum-input",
+    "tools/research-results/strategy-validation/factor-data/US-MOMENTUM-QUALITY-ROLE-V1-2026-08-22/MTUM.csv",
+    "--qual-input",
+    "tools/research-results/strategy-validation/factor-data/US-MOMENTUM-QUALITY-ROLE-V1-2026-08-22/QUAL.csv",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates"
+  ],
+  "execution_git_commit": "77d32cd902a4b1fbf9f53c877bda83f7e71a74ff",
+  "finished_at": "2026-08-22T11:41:34+08:00",
+  "preregistration_record_hash": "c2beba7302da93b27ade17fbf2a61d48a3644f707bfba8c187fa13baaa1cafe6",
+  "protocol_id": "ATM-SVP-2",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/run-authorization.json",
+  "started_at": "2026-08-22T11:40:25+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/stdout.txt",
+  "trial_id": "ATM-SVP2-US-MQ-ROLE-002"
+}

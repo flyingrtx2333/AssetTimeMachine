@@ -1,0 +1,83 @@
+{
+  "trial_id": "ATM-SVP2-PROSPECTIVE-QUAL-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "PROSPECTIVE_QUAL_PRODUCTION_PATH_ROLE_SHADOW_V1",
+  "candidate_kind": "STRATEGY_ASSET_ROLE_NOT_FACTOR",
+  "strategy_lineage": "exact F-QUAL-SP500-ROLE rule from ATM-SVP2-US-MQ-ROLE-002; frozen production V11 target path with QUAL realized-return substitution only",
+  "hypothesis": "The exact frozen QUAL broad-U.S.-equity role substitution will continue to improve frozen V11 risk-adjusted returns on genuinely new post-freeze market data without changing V11 signals, target weights, event dates, gross exposure, or financing policy.",
+  "evidence_class": "P3_PROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-US-MQ-ROLE-002.json",
+  "freeze_date": "2026-08-22",
+  "first_eligible_market_session": "2026-08-24",
+  "historical_evidence": {
+    "source_trial": "ATM-SVP2-US-MQ-ROLE-002",
+    "historical_status": "FAIL because cumulative DSR <95%; not robust/promoted",
+    "deterministic_gates_passed": true,
+    "paired_bootstrap_gates_passed": true,
+    "historical_evaluation_cagr_percent": 13.069187,
+    "historical_v11_evaluation_cagr_percent": 12.897746,
+    "historical_evaluation_sharpe": 1.480549,
+    "historical_v11_evaluation_sharpe": 1.457295,
+    "historical_evaluation_mdd_percent": 7.379394,
+    "historical_v11_evaluation_mdd_percent": 7.386487,
+    "historical_bootstrap_probability_cagr_gt_v11": 0.95565,
+    "historical_bootstrap_probability_sharpe_gt_v11": 0.9849,
+    "historical_global_dsr_probability": 0.8827105747017763
+  },
+  "allowed_changes": [
+    "none to the economic rule: every future control session uses the frozen V11 target path and event semantics",
+    "where the V11 sp500 role realizes broad-S&P return, the prospective candidate realizes QUAL adjusted-close total-return proxy return instead",
+    "on union-calendar dates without a new QUAL quote, carry forward the last available QUAL adjusted close so that day's QUAL role return is zero",
+    "append new post-freeze observations and immutable integrity metadata only"
+  ],
+  "candidate_ids": [
+    "F-QUAL-SP500-ROLE-PROSPECTIVE"
+  ],
+  "candidate_count": 1,
+  "selection_metric": "There is one frozen prospective candidate and one frozen V11 control; no model selection, replacement ETF, blend, timing, or threshold search is permitted.",
+  "pass_fail_gates": [
+    "append-only evidence integrity and exact V11 execution-event target identity must pass",
+    "primary decision requires at least 504 new common market sessions after 2026-08-22",
+    "at least 80 prospective sessions must have positive V11 sp500 target weight, otherwise INCONCLUSIVE_LOW_EXPOSURE",
+    "candidate prospective annualized return > V11 prospective annualized return",
+    "candidate prospective Sharpe >= V11 prospective Sharpe",
+    "paired 63-session moving-block bootstrap: P(candidate CAGR > V11 CAGR) >=0.90",
+    "paired bootstrap median candidate-minus-V11 CAGR delta >0",
+    "candidate prospective MDD <=15%",
+    "candidate target gross equals V11 target gross and remains <=100%; no shorting, financing, or negative target weights"
+  ],
+  "formal_run_budget": 1,
+  "follow_up_policy": "Before the 504-session primary decision do not change QUAL, the sp500 role, substitution fraction, target path, calendar carry-forward policy, costs, source policy, or gates. At 63 sessions report operational health only; 126 early observation only; 252 provisional only. Weak early results are retained and never rewritten.",
+  "swift_engine_entrypoint": "frozen V11 prospective target snapshot + exact QUAL role-return shadow using the ATM-SVP2-US-MQ-ROLE-002 calendar-alignment semantics; append-only prospective ledger",
+  "expected_outputs": [
+    "zero-performance FREEZE record",
+    "append-only per-session control/candidate return records with source hashes",
+    "execution-event target identity proof",
+    "positive-sp500-exposure session count",
+    "63/126/252/504 session milestone reports",
+    "504-session primary decision or INCONCLUSIVE_LOW_EXPOSURE"
+  ],
+  "candidate_rule": {
+    "base_strategy": "nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+    "instrument": "QUAL",
+    "role": "sp500 realized-return role only",
+    "substitution_fraction": 1.0,
+    "signal_use": "none",
+    "target_path_change": false,
+    "gross_change": false,
+    "financing": false
+  },
+  "forbidden_changes": [
+    "QUAL/S&P blend or partial substitution",
+    "MTUM or any third ETF",
+    "style timing, moving averages, valuation, momentum, volatility, or regime gates",
+    "any V11 signal/target/event change",
+    "leverage or financing",
+    "using pre-freeze data as prospective evidence",
+    "deleting weak prospective sessions or restarting the clock"
+  ],
+  "factor_library_archival": {
+    "is_factor": false,
+    "policy": "strategy-role prospective evidence only; do not upload as a factor-library factor"
+  }
+}

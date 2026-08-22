@@ -1,0 +1,4 @@
+candidate_id,kind,evaluation_cagr_percent,evaluation_mdd_percent,evaluation_sharpe,full_cagr_percent,full_mdd_percent,full_sharpe,folds_sharpe_ge_v11,worst_fold_sharpe,admit_for_robustness
+V11-CONTROL,CONTROL,12.897746,7.386487,1.457295,14.345615,7.689054,1.522263,CONTROL,0.740905,CONTROL
+F-MTUM-SP500-ROLE,ASSET_ROLE_STRATEGY,13.13546,8.402893,1.44501,14.478703,8.402893,1.516655,5,0.772356,False
+F-QUAL-SP500-ROLE,ASSET_ROLE_STRATEGY,13.069187,7.379394,1.480549,14.422013,7.689054,1.532266,6,0.761351,True

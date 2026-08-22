@@ -1,0 +1,137 @@
+{
+  "files": [
+    {
+      "bytes": 187188,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/F-MTUM-SP500-ROLE-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "0273d209502e5d19ca2d6903237630af55c506ed56f4546075f41b6cdd87f2fd"
+    },
+    {
+      "bytes": 187172,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/F-QUAL-SP500-ROLE-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "11ee553ef22f60bb95263eee747ffecb6ee734f6a18ff94c72e3d247b63d3214"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "c89c9426fe824bc4821f74e42ef23f578940d577c040366afcf099c6512b47a9"
+    },
+    {
+      "bytes": 513,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "evaluation_cagr_percent",
+        "evaluation_mdd_percent",
+        "evaluation_sharpe",
+        "full_cagr_percent",
+        "full_mdd_percent",
+        "full_sharpe",
+        "folds_sharpe_ge_v11",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "a6754525a5939871ac0b1fb43f4cefc8f1dccbb144846e79d75e1c4bdc51128c"
+    },
+    {
+      "bytes": 5076,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/candidate-metrics.json",
+      "sha256": "e7c0f5560b5f57279cfc0d3b235ec56be9239b67e755cf0045542c77e41fd860"
+    },
+    {
+      "bytes": 370,
+      "columns": [
+        "candidate_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "global_dsr_probability",
+        "global_dsr_pass",
+        "robust_strategy_pass",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_v11",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/statistical-audit.csv",
+      "row_count": 2,
+      "sha256": "4454831f1011c31e822ef1a0151e08ee7d3f4bd49aa1762209eebcb1fe45df4c"
+    },
+    {
+      "bytes": 5181,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/candidates/statistical-audit.json",
+      "sha256": "5bf2eb449334814f99a823993be418341972403c8d15cd314fde2fc4100d6ada"
+    },
+    {
+      "bytes": 1234,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/execution.json",
+      "sha256": "0f2ff0085a345e5136965df542b6c9ce1319f6363f9041c8306154bebfd233fd"
+    },
+    {
+      "bytes": 437,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/run-authorization.json",
+      "sha256": "392a007a4659d685ad5062e799380c2833ef11f2df3a8e8e31ebe4bea5ee5424"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 3622,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-002/stdout.txt",
+      "sha256": "c7201b281a1e5f9822c6f3e8a3d4151392302bbfd1b633a7574cf03e8f2ae69c"
+    }
+  ],
+  "generated_at": "2026-08-22T11:42:57+08:00",
+  "git_commit": "77d32cd902a4b1fbf9f53c877bda83f7e71a74ff",
+  "kind": "run",
+  "metadata": {
+    "calendar_repair_only": true,
+    "repair_of": "ATM-SVP2-US-MQ-ROLE-001",
+    "status": "FAIL_NO_ROBUST_STRATEGY_PASS",
+    "strong_near_miss": "F-QUAL-SP500-ROLE"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-US-MQ-ROLE-002"
+}

@@ -1,0 +1,10 @@
+{
+  "candidate_count": 2,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "77d32cd902a4b1fbf9f53c877bda83f7e71a74ff",
+  "formal_run_budget": 2,
+  "ledger_head_at_authorization": "c2beba7302da93b27ade17fbf2a61d48a3644f707bfba8c187fa13baaa1cafe6",
+  "preregistration_record_hash": "c2beba7302da93b27ade17fbf2a61d48a3644f707bfba8c187fa13baaa1cafe6",
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-US-MQ-ROLE-002"
+}

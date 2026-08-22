@@ -1,0 +1,3 @@
+candidate_id,deterministic_admit,bootstrap_pass,global_dsr_probability,global_dsr_pass,robust_strategy_pass,probability_cagr_gt_v11,probability_sharpe_gt_v11,candidate_mdd_p975
+F-MTUM-SP500-ROLE,False,False,0.8559445511478739,False,False,0.8395,0.40715,0.13760179535997402
+F-QUAL-SP500-ROLE,True,True,0.8827105747017763,False,False,0.95565,0.9849,0.12583386053135734

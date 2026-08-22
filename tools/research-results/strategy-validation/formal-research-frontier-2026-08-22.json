@@ -49,18 +49,21 @@
       "trial_id": "ATM-SVP2-ORTHO-FACTOR-001"
     },
     "8.0": {
-      "cagr_percent": 14.345615,
-      "candidate_id": "V11-CONTROL",
+      "bootstrap_probability_cagr_gt_v11": 0.95565,
+      "bootstrap_probability_sharpe_gt_matched": null,
+      "cagr_percent": 14.422013,
+      "candidate_id": "F-QUAL-SP500-ROLE",
+      "global_dsr_probability": 0.8827105747017763,
       "mdd_percent": 7.689054,
       "robust_factor_pass": null,
-      "sharpe": 1.522263,
-      "status": "CONTROL",
-      "trial_id": "FROZEN-V11"
+      "sharpe": 1.532266,
+      "status": "FAIL",
+      "trial_id": "ATM-SVP2-US-MQ-ROLE-002"
     }
   },
   "candidates_ge_18_cagr_and_le_10_mdd": [],
   "candidates_ge_20_cagr_and_le_10_mdd": [],
-  "formal_unique_candidates": 36,
+  "formal_unique_candidates": 38,
   "frozen_control": {
     "cagr_percent": 14.345615,
     "candidate_id": "V11-CONTROL",
@@ -83,23 +86,41 @@
     "trial_id": "ATM-SVP2-ORTHO-FACTOR-001"
   },
   "max_sharpe": {
-    "cagr_percent": 14.345615,
-    "candidate_id": "V11-CONTROL",
+    "bootstrap_probability_cagr_gt_v11": 0.95565,
+    "bootstrap_probability_sharpe_gt_matched": null,
+    "cagr_percent": 14.422013,
+    "candidate_id": "F-QUAL-SP500-ROLE",
+    "global_dsr_probability": 0.8827105747017763,
     "mdd_percent": 7.689054,
     "robust_factor_pass": null,
-    "sharpe": 1.522263,
-    "status": "CONTROL",
-    "trial_id": "FROZEN-V11"
+    "sharpe": 1.532266,
+    "status": "FAIL",
+    "trial_id": "ATM-SVP2-US-MQ-ROLE-002"
   },
   "pareto_frontier": [
     {
-      "cagr_percent": 14.345615,
-      "candidate_id": "V11-CONTROL",
+      "bootstrap_probability_cagr_gt_v11": 0.95565,
+      "bootstrap_probability_sharpe_gt_matched": null,
+      "cagr_percent": 14.422013,
+      "candidate_id": "F-QUAL-SP500-ROLE",
+      "global_dsr_probability": 0.8827105747017763,
       "mdd_percent": 7.689054,
       "robust_factor_pass": null,
-      "sharpe": 1.522263,
-      "status": "CONTROL",
-      "trial_id": "FROZEN-V11"
+      "sharpe": 1.532266,
+      "status": "FAIL",
+      "trial_id": "ATM-SVP2-US-MQ-ROLE-002"
+    },
+    {
+      "bootstrap_probability_cagr_gt_v11": 0.8395,
+      "bootstrap_probability_sharpe_gt_matched": null,
+      "cagr_percent": 14.478703,
+      "candidate_id": "F-MTUM-SP500-ROLE",
+      "global_dsr_probability": 0.8559445511478739,
+      "mdd_percent": 8.402893,
+      "robust_factor_pass": null,
+      "sharpe": 1.516655,
+      "status": "FAIL",
+      "trial_id": "ATM-SVP2-US-MQ-ROLE-002"
     },
     {
       "bootstrap_probability_cagr_gt_v11": 0.86595,
@@ -112,18 +133,6 @@
       "sharpe": 1.503521,
       "status": "FAIL",
       "trial_id": "ATM-SVP2-LIT-STRESS-001"
-    },
-    {
-      "bootstrap_probability_cagr_gt_v11": 0.76235,
-      "bootstrap_probability_sharpe_gt_matched": 0.86925,
-      "cagr_percent": 14.433724,
-      "candidate_id": "F-TIC-FLOW-CONTRARIAN-US",
-      "global_dsr_probability": 0.9434467224912781,
-      "mdd_percent": 8.612735,
-      "robust_factor_pass": false,
-      "sharpe": 1.516287,
-      "status": "FAIL",
-      "trial_id": "ATM-SVP2-TIC-001"
     },
     {
       "bootstrap_probability_cagr_gt_v11": 0.8173,
