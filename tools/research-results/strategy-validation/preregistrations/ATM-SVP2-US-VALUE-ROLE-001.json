@@ -1,0 +1,121 @@
+{
+  "trial_id": "ATM-SVP2-US-VALUE-ROLE-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "US_VALUE_ASSET_ROLE_SUBSTITUTION_V1",
+  "candidate_kind": "STRATEGY_ASSET_ROLE_NOT_FACTOR",
+  "strategy_lineage": "us-value-role-substitution-v1; frozen nfci-dual-core-v11 signal and target path on a 2004-01-30+ common window",
+  "hypothesis": "The frozen V11 broad-U.S.-equity portfolio role may be leaving an independent long-run value risk premium unused. Replacing only the realized asset return carried by V11's sp500 output slot with a fixed large/mid-value ETF (IWD) or a fixed small-value ETF (VBR), while preserving every V11 signal date, target weight, currency treatment, risk reduction, fee, and rebalance rule, can improve common-window CAGR and risk-adjusted performance without increasing gross exposure.",
+  "literature_basis": {
+    "IWD": "iShares Russell 1000 Value ETF; fixed large/mid-cap U.S. value exposure, official inception 2000-05-22",
+    "VBR": "Vanguard Small-Cap Value ETF; fixed U.S. small-cap value exposure, official inception 2004-01-26",
+    "economic_basis": "long-horizon value premia have extensive cross-market empirical support; this trial tests investable value-role P&L rather than a fitted value timing signal"
+  },
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-US-VALUE-ROLE-001.json",
+  "allowed_changes": [
+    "F-IWD-SP500-ROLE replaces only the realized USD adjusted-close total-return series carried by the frozen V11 sp500 portfolio role with IWD; the asset option, role key, USD/CNY conversion, V11 signals and V11 target weights remain unchanged",
+    "F-VBR-SP500-ROLE performs the identical role substitution using VBR",
+    "the common evaluation starts 2004-01-30, the first available VBR adjusted-close date; V11-CONTROL is independently rerun from cash on exactly the same common window rather than compared with the longer 2002 baseline",
+    "both candidates are preregistered independently before either candidate performance is viewed and both remain permanently in G3/global multiple-testing accounting regardless of outcome"
+  ],
+  "candidate_ids": [
+    "F-IWD-SP500-ROLE",
+    "F-VBR-SP500-ROLE"
+  ],
+  "candidate_count": 2,
+  "selection_metric": "No winner selection, blend search, or survivor reporting. Each role candidate is assessed independently against the same common-window frozen V11 control. A pass by one candidate does not erase or modify the other candidate's trial count or result.",
+  "pass_fail_gates": [
+    "deterministic common-window CAGR > V11-CONTROL CAGR",
+    "deterministic common-window Sharpe >= V11-CONTROL Sharpe",
+    "deterministic common-window MDD <=10%",
+    "deterministic: at least 5/7 fixed folds candidate Sharpe >= V11-CONTROL Sharpe in the same fold",
+    "deterministic: worst fixed-fold Sharpe >0",
+    "deterministic: target gross <=100%, min target weight >=0, no financing or shorting",
+    "bootstrap: paired circular moving blocks against the common-window V11 control, 63 sessions, 20000 replicates, seed 20260822",
+    "bootstrap: P(CAGR candidate > V11) >=0.90",
+    "bootstrap: P(Sharpe candidate > V11) >=0.90",
+    "bootstrap: median candidate-minus-V11 CAGR delta >0",
+    "bootstrap: median candidate-minus-V11 Sharpe delta >0",
+    "bootstrap: candidate MDD P97.5 <=15%",
+    "PBO/winner-selection test: not applicable because neither candidate may be selected as a family winner; both are independently reported",
+    "global post-protocol DSR probability >=95% using all prior 34 formal return-seeking candidates plus both current candidates, total trial count 36",
+    "ROBUST_STRATEGY_PASS for a candidate requires every applicable deterministic, bootstrap, and global DSR gate"
+  ],
+  "formal_run_budget": 2,
+  "follow_up_policy": "This retrospective value-role campaign ends after the two frozen substitutions are opened. Do not rescue either result by blending IWD/VBR with S&P 500, mixing IWD and VBR, changing the substitution percentage, changing the common start, switching between value ETFs, adding a third value ETF, timing the value role, changing the V11 target path, or selecting only the nicer candidate for reporting. Any materially different asset role requires a new preregistered campaign and a new trial count.",
+  "swift_engine_entrypoint": "scripts/run_us_value_role_substitution_v1.py -> tools/us_value_role_substitution_v1.swiftpart -> frozen V11 common-window source run + immutable source-event target replay with alternative sp500-role realized-return series -> shared BacktestDailySimulator",
+  "expected_outputs": [
+    "V11-CONTROL common-window metrics, source-event count, and target fingerprint",
+    "F-IWD-SP500-ROLE common-window metrics, 2020+ and 2022+ slices, seven fixed folds and constraints",
+    "F-VBR-SP500-ROLE common-window metrics, 2020+ and 2022+ slices, seven fixed folds and constraints",
+    "identity replay proving that unchanged common-window inputs reproduce the source V11 metrics",
+    "one portfolio CSV per control/candidate",
+    "mechanical deterministic ADMIT_FOR_ROBUSTNESS flags for both candidates",
+    "paired 20000-replicate bootstrap statistics for both candidates",
+    "cumulative 36-trial Deflated Sharpe Ratio for both candidates using an inventory that includes both current candidates",
+    "mechanical ROBUST_STRATEGY_PASS flags for both candidates",
+    "run authorization receipt, execution Git commit, and SHA-256 result artifact manifest"
+  ],
+  "candidate_definitions": {
+    "F-IWD-SP500-ROLE": {
+      "instrument": "IWD",
+      "role": "replace the realized-return series under V11 role key sp500",
+      "price_field": "Yahoo adjusted_close used as a total-return proxy",
+      "signal_use": "none; IWD prices affect only realized portfolio P&L, not V11 signals or target weights"
+    },
+    "F-VBR-SP500-ROLE": {
+      "instrument": "VBR",
+      "role": "replace the realized-return series under V11 role key sp500",
+      "price_field": "Yahoo adjusted_close used as a total-return proxy",
+      "signal_use": "none; VBR prices affect only realized portfolio P&L, not V11 signals or target weights"
+    }
+  },
+  "shared_rules": {
+    "common_evaluation_start": "2004-01-30",
+    "baseline_initial_cash": 100000,
+    "rebalance_band": 0.25,
+    "fee_rate": 0.01,
+    "slippage_rate": 0.0005,
+    "max_gross": 1.0,
+    "shorting_allowed": false,
+    "financing_allowed": false,
+    "v11_signal_logic_changed": false,
+    "v11_target_weights_changed": false,
+    "sp500_role_substitution_fraction": 1.0
+  },
+  "fixed_folds": [
+    "2004-2006",
+    "2007-2009",
+    "2010-2012",
+    "2013-2015",
+    "2016-2018",
+    "2019-2021",
+    "2022-latest"
+  ],
+  "forbidden_changes": [
+    "any frozen V11 signal, parameter, event date, target sizing, or target-path modification",
+    "any post-result IWD/VBR blend or blend with S&P 500",
+    "any substitution fraction other than exactly 100% of the sp500 role",
+    "any candidate selection that hides, removes, or downweights the other preregistered candidate from G3/DSR accounting",
+    "any alternative value ETF, value index, small-cap ETF, factor score, or third candidate after results",
+    "any value timing, moving average, relative-strength, valuation threshold, momentum confirmation, or regime gate",
+    "any common-evaluation-start change after performance is viewed",
+    "any leverage, financing, negative cash, or gross exposure above 100%",
+    "using future IWD/VBR returns to alter V11 signals or target weights"
+  ],
+  "statistical_audit": {
+    "bootstrap_sample_start": "2004-01-30",
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260822,
+    "family_pbo": "NOT_APPLICABLE_NO_WINNER_SELECTION_TWO_INDEPENDENT_PREREGISTERED_ROLES",
+    "global_dsr_prior_candidate_count": 34,
+    "global_dsr_current_candidate_count": 2,
+    "global_dsr_total_candidate_count_after_this_trial": 36,
+    "global_dsr_return_window": "each candidate's full common-window portfolio history"
+  },
+  "factor_library_archival": {
+    "is_factor": false,
+    "policy": "Do not upload IWD/VBR role substitutions as factor-library factors. Preserve them as strategy-validation artifacts/results only."
+  }
+}

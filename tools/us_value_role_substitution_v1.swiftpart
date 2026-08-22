@@ -1,0 +1,260 @@
+        if ProcessInfo.processInfo.environment["ATM_US_VALUE_ROLE_V1"] == "1" {
+            func loadValueRoleSeries(_ path: String, roleSymbol: String, label: String) -> PublicHistorySeries? {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return nil }
+                var dates: [String] = []
+                var prices: [Double] = []
+                for line in text.split(whereSeparator: \.isNewline).dropFirst() {
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 2, let value = Double(fields[1]), value.isFinite, value > 0 else { continue }
+                    dates.append(String(fields[0]))
+                    prices.append(value)
+                }
+                guard dates.count >= 1000, dates.count == prices.count else { return nil }
+                return PublicHistorySeries(
+                    symbol: roleSymbol,
+                    category: "index",
+                    label: label,
+                    currency: "USD",
+                    unit: "USD",
+                    source: "Yahoo adjusted close / fixed research fixture",
+                    dates: dates,
+                    prices: prices,
+                    hasOHLC: false,
+                    ohlcSource: nil,
+                    ohlcCoverageRatio: nil,
+                    openPrices: nil,
+                    highPrices: nil,
+                    lowPrices: nil,
+                    closePrices: nil,
+                    volumes: nil
+                )
+            }
+
+            func loadValueRoleNFCI(_ path: String) -> [BacktestNFCIPoint] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3, let value = Double(fields[2]), value.isFinite else { return nil }
+                    return BacktestNFCIPoint(
+                        releaseDate: String(fields[0]),
+                        referenceDate: String(fields[1]),
+                        availableAt: nil,
+                        value: value
+                    )
+                }
+            }
+
+            func researchDate(_ text: String) -> Date? {
+                let formatter = DateFormatter()
+                formatter.calendar = Calendar(identifier: .gregorian)
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
+                formatter.dateFormat = "yyyy-MM-dd"
+                return formatter.date(from: text)
+            }
+
+            let formal = ProcessInfo.processInfo.environment["ATM_US_VALUE_ROLE_V1_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_US_VALUE_ROLE_V1_OUTPUT_DIR"]
+            let iwdPath = ProcessInfo.processInfo.environment["ATM_US_VALUE_ROLE_V1_IWD_PATH"] ?? ""
+            let vbrPath = ProcessInfo.processInfo.environment["ATM_US_VALUE_ROLE_V1_VBR_PATH"] ?? ""
+            guard
+                let iwd = loadValueRoleSeries(iwdPath, roleSymbol: "sp500", label: "IWD role substitute"),
+                let vbr = loadValueRoleSeries(vbrPath, roleSymbol: "sp500", label: "VBR role substitute"),
+                let commonStart = researchDate("2004-01-30"),
+                let farEnd = researchDate("2099-12-31")
+            else {
+                print("US_VALUE_ROLE_V1_DATA_MISSING")
+                return
+            }
+
+            let roleSymbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            let mode: AdvancedBacktestStrategyMode = .nfciDualCoreSimplifiedV11
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let calculationOptions = mode.requiredSignalAssetSymbols.compactMap { options[$0] }
+            let originalInputs = calculationOptions.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+            }
+            let commonBounds = commonStart...farEnd
+            let baselineInputs = BacktestEngine.filteredAdvancedAssetInputs(originalInputs, within: commonBounds)
+
+            func substitutedInputs(_ replacement: PublicHistorySeries) -> [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)] {
+                let inputs = calculationOptions.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        if normalizedHistorySymbol(symbol) == "sp500" { return replacement }
+                        return seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                return BacktestEngine.filteredAdvancedAssetInputs(inputs, within: commonBounds)
+            }
+
+            let settings = AdvancedBacktestRiskSettings(
+                feeRate: 1.00,
+                slippageRate: 0.05,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            let nfci = BacktestNFCIAsOfData(
+                source: "ALFRED initial-release fixture",
+                credit: loadValueRoleNFCI("tools/research-results/NFCICREDIT_initial_release.csv"),
+                leverage: loadValueRoleNFCI("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            )
+            guard let source = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: baselineInputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode,
+                nfciAsOf: nfci
+            ) else {
+                print("US_VALUE_ROLE_V1_SOURCE_FAILED")
+                return
+            }
+            let sourceTargets = Dictionary(uniqueKeysWithValues: source.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            let sourceTradeDates = Set(source.report.trades.map { $0.date.recordDateString })
+
+            func targetFingerprint(_ states: [BacktestDailyState]) -> String {
+                var hash: UInt64 = 1469598103934665603
+                for state in states {
+                    for symbol in roleSymbols {
+                        var value = UInt64(bitPattern: Int64(((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded()))
+                        for _ in 0..<8 {
+                            hash ^= value & UInt64(0xff)
+                            hash &*= UInt64(1099511628211)
+                            value >>= 8
+                        }
+                    }
+                }
+                return String(format: "%016llx", hash)
+            }
+
+            func constraints(_ states: [BacktestDailyState]) -> (maxGross: Double, minWeight: Double) {
+                let maxGross = states.map { state in roleSymbols.reduce(0.0) { $0 + max(state.targetWeights[$1] ?? 0, 0) } }.max() ?? 0
+                let values = states.flatMap { state in roleSymbols.map { state.targetWeights[$0] ?? 0 } }
+                return (maxGross, values.min() ?? 0)
+            }
+
+            let folds: [(String, String, String)] = [
+                ("2004-2006", "2004-01-30", "2006-12-31"),
+                ("2007-2009", "2007-01-01", "2009-12-31"),
+                ("2010-2012", "2010-01-01", "2012-12-31"),
+                ("2013-2015", "2013-01-01", "2015-12-31"),
+                ("2016-2018", "2016-01-01", "2018-12-31"),
+                ("2019-2021", "2019-01-01", "2021-12-31"),
+                ("2022-latest", "2022-01-01", "9999-12-31")
+            ]
+            func foldMetrics(_ points: [BacktestSeriesPoint]) -> [(String, Double, Double, Double)] {
+                folds.map { name, start, end in
+                    let slice = points.filter { $0.date.recordDateString >= start && $0.date.recordDateString <= end }
+                    let metrics = BacktestMetricsCalculator.performanceMetrics(from: slice)
+                    return (name, metrics?.annualizedReturn ?? 0, metrics?.maxDrawdown ?? 0, metrics?.sharpeRatio ?? 0)
+                }
+            }
+            func writePortfolio(_ id: String, _ points: [BacktestSeriesPoint]) {
+                guard formal, let outputDir else { return }
+                try? FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+                let path = URL(fileURLWithPath: outputDir).appendingPathComponent("\(id)-portfolio.csv").path
+                var lines = ["date,portfolio_value"]
+                lines.append(contentsOf: points.map { "\($0.date.recordDateString),\(String(format: "%.10f", $0.portfolioValue))" })
+                try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            }
+
+            let replayConfig = ResearchTargetStrategyConfig(
+                symbol: "us_value_role_substitution_v1",
+                title: "U.S. Value Role Substitution V1",
+                warmupSessions: 21,
+                rebalanceSessions: 1,
+                rebalanceBand: 0.25,
+                maxGrossExposure: 1,
+                allowsFinancedExposure: false,
+                financingAnnualRate: 0,
+                buyReason: "Frozen V11 role substitution"
+            )
+            func runReplay(_ assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)]) -> ResearchTargetStrategyRun? {
+                var pending: [String: Double] = [:]
+                return BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: assetInputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: replayConfig,
+                    rebalanceDecision: { index, _, data in
+                        guard data.dates.indices.contains(index) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let day = data.dates[index].recordDateString
+                        guard sourceTradeDates.contains(day), let target = sourceTargets[day] else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        pending = target
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                )
+            }
+            guard let identity = runReplay(baselineInputs) else {
+                print("US_VALUE_ROLE_V1_IDENTITY_FAILED")
+                return
+            }
+            let identityMatch = abs((identity.report.annualizedReturn ?? 0) - (source.report.annualizedReturn ?? 0)) <= 0.0002
+                && abs(identity.report.maxDrawdown - source.report.maxDrawdown) <= 0.0002
+                && abs((identity.report.sharpeRatio ?? 0) - (source.report.sharpeRatio ?? 0)) <= 0.002
+            print("US_VALUE_ROLE_V1")
+            print("source_target_fingerprint=\(targetFingerprint(source.dailyStates))")
+            print("source_event_count=\(sourceTradeDates.count)")
+            print("SMOKE_IDENTITY_MATCH=\(identityMatch ? "true" : "false")")
+            if !identityMatch {
+                print("US_VALUE_ROLE_V1_IDENTITY_MISMATCH")
+                return
+            }
+
+            guard let iwdRun = runReplay(substitutedInputs(iwd)), let vbrRun = runReplay(substitutedInputs(vbr)) else {
+                print("US_VALUE_ROLE_V1_CANDIDATE_FAILED")
+                return
+            }
+
+            if !formal {
+                for (id, run) in [("F-IWD-SP500-ROLE", iwdRun), ("F-VBR-SP500-ROLE", vbrRun)] {
+                    let c = constraints(run.dailyStates)
+                    print("SMOKE_VALUE_ROLE_PATH=\(id)")
+                    print("SMOKE_MAX_GROSS=\(String(format: "%.10f", c.maxGross))")
+                    print("SMOKE_MIN_WEIGHT=\(String(format: "%.10f", c.minWeight))")
+                    print("SMOKE_END")
+                }
+                print("US_VALUE_ROLE_V1_COMPLETE")
+                return
+            }
+
+            func printPath(_ id: String, _ run: ResearchTargetStrategyRun) {
+                let c = constraints(run.dailyStates)
+                let fs = foldMetrics(run.report.points)
+                let m2020 = BacktestMetricsCalculator.performanceMetrics(from: run.report.points.filter { $0.date.recordDateString >= "2020-01-01" })
+                let m2022 = BacktestMetricsCalculator.performanceMetrics(from: run.report.points.filter { $0.date.recordDateString >= "2022-01-01" })
+                print("candidate_id=\(id)")
+                print("cagr=\(String(format: "%.6f", (run.report.annualizedReturn ?? 0) * 100))")
+                print("mdd=\(String(format: "%.6f", run.report.maxDrawdown * 100))")
+                print("vol=\(String(format: "%.6f", (run.report.annualizedVolatility ?? 0) * 100))")
+                print("sharpe=\(String(format: "%.6f", run.report.sharpeRatio ?? 0))")
+                print("trades=\(run.report.trades.count)")
+                print("average_cash=\(String(format: "%.6f", run.report.averageCashRatio))")
+                print("max_gross=\(String(format: "%.10f", c.maxGross))")
+                print("min_weight=\(String(format: "%.10f", c.minWeight))")
+                print("fingerprint=\(targetFingerprint(run.dailyStates))")
+                print("since2020_cagr=\(String(format: "%.6f", (m2020?.annualizedReturn ?? 0) * 100))")
+                print("since2020_sharpe=\(String(format: "%.6f", m2020?.sharpeRatio ?? 0))")
+                print("since2022_cagr=\(String(format: "%.6f", (m2022?.annualizedReturn ?? 0) * 100))")
+                print("since2022_sharpe=\(String(format: "%.6f", m2022?.sharpeRatio ?? 0))")
+                print("fold_names=\(fs.map { $0.0 }.joined(separator: ";"))")
+                print("fold_sharpes=\(fs.map { String(format: "%.6f", $0.3) }.joined(separator: ";"))")
+                print("fold_cagrs=\(fs.map { String(format: "%.6f", $0.1 * 100) }.joined(separator: ";"))")
+                print("fold_mdds=\(fs.map { String(format: "%.6f", $0.2 * 100) }.joined(separator: ";"))")
+                print("END_CANDIDATE")
+                writePortfolio(id, run.report.points)
+            }
+            printPath("V11-CONTROL", ResearchTargetStrategyRun(report: source.report, dailyStates: source.dailyStates))
+            printPath("F-IWD-SP500-ROLE", iwdRun)
+            printPath("F-VBR-SP500-ROLE", vbrRun)
+            print("US_VALUE_ROLE_V1_COMPLETE")
+            return
+        }

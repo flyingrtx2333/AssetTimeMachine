@@ -1,0 +1,48 @@
+{
+  "common_evaluation_start": "2004-01-30",
+  "performance_computed": false,
+  "purpose": "fixed IWD/VBR role-substitution data construction only; no strategy performance",
+  "selection_policy": "both externally motivated value-role candidates are fetched before any AssetTimeMachine candidate performance is viewed",
+  "series": {
+    "IWD": {
+      "first_date": "2000-05-26",
+      "last_date": "2026-08-21",
+      "max_calendar_gap": 7,
+      "official_inception": "2000-05-22",
+      "path": "tools/research-results/strategy-validation/factor-data/US-VALUE-ROLE-V1-2026-08-22/IWD.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "PCX",
+        "instrument_type": "ETF",
+        "price_field": "adjusted_close_total_return_proxy",
+        "series_id": "IWD",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d&includeAdjustedClose=true"
+      },
+      "role": "Russell 1000 Value / large-mid value",
+      "rows": 6598,
+      "sha256": "289ccf4dca423a49537c8b31fb95fb598b6a823ae28a980275d42d16673c1671"
+    },
+    "VBR": {
+      "first_date": "2004-01-30",
+      "last_date": "2026-08-21",
+      "max_calendar_gap": 5,
+      "official_inception": "2004-01-26",
+      "path": "tools/research-results/strategy-validation/factor-data/US-VALUE-ROLE-V1-2026-08-22/VBR.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "PCX",
+        "instrument_type": "ETF",
+        "price_field": "adjusted_close_total_return_proxy",
+        "series_id": "VBR",
+        "source": "YAHOO",
+        "timezone": "America/New_York",
+        "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/<series>?period1=<start>&period2=<end>&interval=1d&includeAdjustedClose=true"
+      },
+      "role": "U.S. small-cap value",
+      "rows": 5676,
+      "sha256": "ac82f05a2eee22e4a748657c8bb5087816d711e6f87ce46fd3eee449b36cba89"
+    }
+  }
+}
