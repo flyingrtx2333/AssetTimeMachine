@@ -4123,6 +4123,26 @@ nonisolated enum BacktestEngine {
         return sorted[latestIndex].value - sorted[latestIndex - lookbackReleases].value
     }
 
+    /// Research-only accessor for the exact frozen C3/L3 stress state already used by V11.
+    /// No new threshold or lookback is introduced here.
+    static func frozenV11C3L3StressTriggeredForResearch(
+        creditPoints: [BacktestNFCIPoint],
+        leveragePoints: [BacktestNFCIPoint],
+        signalDate: String
+    ) -> Bool {
+        let creditTriggered = nfciReleaseChange(
+            points: creditPoints,
+            signalDate: signalDate,
+            lookbackReleases: 8
+        ).map { $0 <= -0.03 } ?? false
+        let leverageTriggered = nfciReleaseChange(
+            points: leveragePoints,
+            signalDate: signalDate,
+            lookbackReleases: 4
+        ).map { $0 <= -0.03 } ?? false
+        return creditTriggered || leverageTriggered
+    }
+
     private static func runNFCIC3L3SleeveWithTrace(
         baseRun: ResearchTargetStrategyRun,
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
