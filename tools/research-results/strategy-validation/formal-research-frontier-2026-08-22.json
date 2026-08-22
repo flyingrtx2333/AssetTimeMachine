@@ -1,28 +1,28 @@
 {
   "best_cagr_by_mdd_limit": {
     "10.0": {
-      "bootstrap_probability_cagr_gt_v11": 0.86595,
-      "bootstrap_probability_sharpe_gt_matched": 0.99295,
-      "cagr_percent": 14.607176,
-      "candidate_id": "F-MOVE",
-      "global_dsr_probability": 0.917480743580944,
-      "mdd_percent": 8.521421,
-      "robust_factor_pass": false,
-      "sharpe": 1.503521,
-      "status": "FAIL",
-      "trial_id": "ATM-SVP2-LIT-STRESS-001"
+      "bootstrap_probability_cagr_gt_v11": 0.937,
+      "bootstrap_probability_sharpe_gt_matched": null,
+      "cagr_percent": 14.660787,
+      "candidate_id": "S-VBR-PROD-SP500-ROLE",
+      "global_dsr_probability": 0.9717249958351852,
+      "mdd_percent": 7.689054,
+      "robust_factor_pass": null,
+      "sharpe": 1.540749,
+      "status": "PASS",
+      "trial_id": "ATM-SVP2-US-VALUE-PROD-001"
     },
     "12.0": {
-      "bootstrap_probability_cagr_gt_v11": 0.86595,
-      "bootstrap_probability_sharpe_gt_matched": 0.99295,
-      "cagr_percent": 14.607176,
-      "candidate_id": "F-MOVE",
-      "global_dsr_probability": 0.917480743580944,
-      "mdd_percent": 8.521421,
-      "robust_factor_pass": false,
-      "sharpe": 1.503521,
-      "status": "FAIL",
-      "trial_id": "ATM-SVP2-LIT-STRESS-001"
+      "bootstrap_probability_cagr_gt_v11": 0.937,
+      "bootstrap_probability_sharpe_gt_matched": null,
+      "cagr_percent": 14.660787,
+      "candidate_id": "S-VBR-PROD-SP500-ROLE",
+      "global_dsr_probability": 0.9717249958351852,
+      "mdd_percent": 7.689054,
+      "robust_factor_pass": null,
+      "sharpe": 1.540749,
+      "status": "PASS",
+      "trial_id": "ATM-SVP2-US-VALUE-PROD-001"
     },
     "15.0": {
       "bootstrap_probability_cagr_gt_v11": null,
@@ -49,21 +49,21 @@
       "trial_id": "ATM-SVP2-ORTHO-FACTOR-001"
     },
     "8.0": {
-      "bootstrap_probability_cagr_gt_v11": 0.95565,
+      "bootstrap_probability_cagr_gt_v11": 0.937,
       "bootstrap_probability_sharpe_gt_matched": null,
-      "cagr_percent": 14.422013,
-      "candidate_id": "F-QUAL-SP500-ROLE",
-      "global_dsr_probability": 0.8827105747017763,
+      "cagr_percent": 14.660787,
+      "candidate_id": "S-VBR-PROD-SP500-ROLE",
+      "global_dsr_probability": 0.9717249958351852,
       "mdd_percent": 7.689054,
       "robust_factor_pass": null,
-      "sharpe": 1.532266,
-      "status": "FAIL",
-      "trial_id": "ATM-SVP2-US-MQ-ROLE-002"
+      "sharpe": 1.540749,
+      "status": "PASS",
+      "trial_id": "ATM-SVP2-US-VALUE-PROD-001"
     }
   },
   "candidates_ge_18_cagr_and_le_10_mdd": [],
   "candidates_ge_20_cagr_and_le_10_mdd": [],
-  "formal_unique_candidates": 38,
+  "formal_unique_candidates": 40,
   "frozen_control": {
     "cagr_percent": 14.345615,
     "candidate_id": "V11-CONTROL",
@@ -86,65 +86,41 @@
     "trial_id": "ATM-SVP2-ORTHO-FACTOR-001"
   },
   "max_sharpe": {
-    "bootstrap_probability_cagr_gt_v11": 0.95565,
+    "bootstrap_probability_cagr_gt_v11": 0.90985,
     "bootstrap_probability_sharpe_gt_matched": null,
-    "cagr_percent": 14.422013,
-    "candidate_id": "F-QUAL-SP500-ROLE",
-    "global_dsr_probability": 0.8827105747017763,
+    "cagr_percent": 14.468031,
+    "candidate_id": "S-IWD-PROD-SP500-ROLE",
+    "global_dsr_probability": 0.9720150502468123,
     "mdd_percent": 7.689054,
     "robust_factor_pass": null,
-    "sharpe": 1.532266,
-    "status": "FAIL",
-    "trial_id": "ATM-SVP2-US-MQ-ROLE-002"
+    "sharpe": 1.542584,
+    "status": "PASS",
+    "trial_id": "ATM-SVP2-US-VALUE-PROD-001"
   },
   "pareto_frontier": [
     {
-      "bootstrap_probability_cagr_gt_v11": 0.95565,
+      "bootstrap_probability_cagr_gt_v11": 0.937,
       "bootstrap_probability_sharpe_gt_matched": null,
-      "cagr_percent": 14.422013,
-      "candidate_id": "F-QUAL-SP500-ROLE",
-      "global_dsr_probability": 0.8827105747017763,
+      "cagr_percent": 14.660787,
+      "candidate_id": "S-VBR-PROD-SP500-ROLE",
+      "global_dsr_probability": 0.9717249958351852,
       "mdd_percent": 7.689054,
       "robust_factor_pass": null,
-      "sharpe": 1.532266,
-      "status": "FAIL",
-      "trial_id": "ATM-SVP2-US-MQ-ROLE-002"
+      "sharpe": 1.540749,
+      "status": "PASS",
+      "trial_id": "ATM-SVP2-US-VALUE-PROD-001"
     },
     {
-      "bootstrap_probability_cagr_gt_v11": 0.8395,
+      "bootstrap_probability_cagr_gt_v11": 0.90985,
       "bootstrap_probability_sharpe_gt_matched": null,
-      "cagr_percent": 14.478703,
-      "candidate_id": "F-MTUM-SP500-ROLE",
-      "global_dsr_probability": 0.8559445511478739,
-      "mdd_percent": 8.402893,
+      "cagr_percent": 14.468031,
+      "candidate_id": "S-IWD-PROD-SP500-ROLE",
+      "global_dsr_probability": 0.9720150502468123,
+      "mdd_percent": 7.689054,
       "robust_factor_pass": null,
-      "sharpe": 1.516655,
-      "status": "FAIL",
-      "trial_id": "ATM-SVP2-US-MQ-ROLE-002"
-    },
-    {
-      "bootstrap_probability_cagr_gt_v11": 0.86595,
-      "bootstrap_probability_sharpe_gt_matched": 0.99295,
-      "cagr_percent": 14.607176,
-      "candidate_id": "F-MOVE",
-      "global_dsr_probability": 0.917480743580944,
-      "mdd_percent": 8.521421,
-      "robust_factor_pass": false,
-      "sharpe": 1.503521,
-      "status": "FAIL",
-      "trial_id": "ATM-SVP2-LIT-STRESS-001"
-    },
-    {
-      "bootstrap_probability_cagr_gt_v11": 0.8173,
-      "bootstrap_probability_sharpe_gt_matched": 0.85365,
-      "cagr_percent": 14.440021,
-      "candidate_id": "F-MARGIN-LEV-US",
-      "global_dsr_probability": 0.934554702736849,
-      "mdd_percent": 8.612794,
-      "robust_factor_pass": false,
-      "sharpe": 1.516685,
-      "status": "FAIL",
-      "trial_id": "ATM-SVP2-MARGIN-001"
+      "sharpe": 1.542584,
+      "status": "PASS",
+      "trial_id": "ATM-SVP2-US-VALUE-PROD-001"
     },
     {
       "bootstrap_probability_cagr_gt_v11": null,

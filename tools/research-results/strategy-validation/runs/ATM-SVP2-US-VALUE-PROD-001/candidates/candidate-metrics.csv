@@ -1,0 +1,4 @@
+candidate_id,kind,evaluation_cagr_percent,evaluation_mdd_percent,evaluation_sharpe,full_cagr_percent,full_mdd_percent,full_sharpe,folds_sharpe_ge_v11,worst_fold_sharpe,admit_for_robustness
+V11-CONTROL,CONTROL,14.594439,7.386487,1.533946,14.345615,7.689054,1.522263,CONTROL,0.703703,CONTROL
+S-IWD-PROD-SP500-ROLE,ASSET_ROLE_STRATEGY,14.727241,7.402337,1.555816,14.468031,7.689054,1.542584,5,0.694282,True
+S-VBR-PROD-SP500-ROLE,ASSET_ROLE_STRATEGY,14.944855,7.474188,1.554547,14.660787,7.689054,1.540749,4,0.651363,False

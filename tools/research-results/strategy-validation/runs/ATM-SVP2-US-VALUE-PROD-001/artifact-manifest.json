@@ -1,0 +1,137 @@
+{
+  "files": [
+    {
+      "bytes": 187175,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/S-IWD-PROD-SP500-ROLE-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "0cf753a17a8a275664aa61ef1935d612c6aa9e3933ae7900e7a96c99078fa1d5"
+    },
+    {
+      "bytes": 187168,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/S-VBR-PROD-SP500-ROLE-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "65952227b7659eab3ef20ae806dbccd50691b9313ab13d21c649ee51b263056a"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "212c431b9f56299971a56a552901c992f587ddacb0ae97316be5c42d6ed05fd3"
+    },
+    {
+      "bytes": 523,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "evaluation_cagr_percent",
+        "evaluation_mdd_percent",
+        "evaluation_sharpe",
+        "full_cagr_percent",
+        "full_mdd_percent",
+        "full_sharpe",
+        "folds_sharpe_ge_v11",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "e8738c16512f93c01976adf78c6ff5fc54fcb20fd64178c68a6f1f0358b62ea7"
+    },
+    {
+      "bytes": 5110,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/candidate-metrics.json",
+      "sha256": "8ff0fd4f40db2eaad42167242c44745f39f015e5751116752467d671dbb8ddc3"
+    },
+    {
+      "bytes": 373,
+      "columns": [
+        "candidate_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "global_dsr_probability",
+        "global_dsr_pass",
+        "robust_strategy_pass",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_v11",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/statistical-audit.csv",
+      "row_count": 2,
+      "sha256": "3d7df72d6e8f2ce582acd0f60422a7139946c025350056ced2aa56e1fbcf48c2"
+    },
+    {
+      "bytes": 5222,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/candidates/statistical-audit.json",
+      "sha256": "e14e0120df5b56b7a8225cb95634524b4479f0102f502f16e0535b0c5467b062"
+    },
+    {
+      "bytes": 1223,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/execution.json",
+      "sha256": "8dd5d2247295469422c880f59a878aea946163e7551cff4a4ad4e715e8f45b98"
+    },
+    {
+      "bytes": 440,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/run-authorization.json",
+      "sha256": "bcdf97b1abe8fa1db1ded4bf0358feac740cb700c523b1e87905cb1e32a211bf"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 3670,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-VALUE-PROD-001/stdout.txt",
+      "sha256": "c7be5434735b2ba075020fd3870bd06f0c5b2e847f89e2a57480d22f3c14619f"
+    }
+  ],
+  "generated_at": "2026-08-22T12:12:46+08:00",
+  "git_commit": "b23a21ca63fdd4366c2028a180418821915b08bb",
+  "kind": "run",
+  "metadata": {
+    "rejected_candidate": "S-VBR-PROD-SP500-ROLE",
+    "result_informed_continuation": true,
+    "robust_pass_candidate": "S-IWD-PROD-SP500-ROLE",
+    "status": "PASS_ONE_ROBUST_STRATEGY"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-US-VALUE-PROD-001"
+}

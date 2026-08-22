@@ -6,9 +6,9 @@
 
 ## 核心结论
 
-- 唯一正式候选数：**38**；另加冻结 V11 控制。
+- 唯一正式候选数：**40**；另加冻结 V11 控制。
 - 全部正式记录中最高 CAGR：**16.153%**（F-CURVE），对应 MDD **18.779%**、Sharpe **1.232**。
-- 最高 Sharpe：**1.532**（F-QUAL-SP500-ROLE），CAGR **14.422%**、MDD **7.689%**。
+- 最高 Sharpe：**1.543**（S-IWD-PROD-SP500-ROLE），CAGR **14.468%**、MDD **7.689%**。
 - `CAGR >=20% 且 MDD <=10%`：**0 个**。
 - `CAGR >=18% 且 MDD <=10%`：**0 个**。
 - 当前 formal result 中 `robust_factor_pass=true`：**0 个**。
@@ -17,9 +17,9 @@
 
 | MDD 上限 | 最高 CAGR | 候选 | MDD | Sharpe |
 |---:|---:|---|---:|---:|
-| 8% | 14.422% | F-QUAL-SP500-ROLE | 7.689% | 1.532 |
-| 10% | 14.607% | F-MOVE | 8.521% | 1.504 |
-| 12% | 14.607% | F-MOVE | 8.521% | 1.504 |
+| 8% | 14.661% | S-VBR-PROD-SP500-ROLE | 7.689% | 1.541 |
+| 10% | 14.661% | S-VBR-PROD-SP500-ROLE | 7.689% | 1.541 |
+| 12% | 14.661% | S-VBR-PROD-SP500-ROLE | 7.689% | 1.541 |
 | 15% | 16.067% | F-CREDITCASH | 12.777% | 1.378 |
 | 20% | 16.153% | F-CURVE | 18.779% | 1.232 |
 
@@ -27,10 +27,8 @@
 
 | 候选 | CAGR | MDD | Sharpe | Trial |
 |---|---:|---:|---:|---|
-| F-QUAL-SP500-ROLE | 14.422% | 7.689% | 1.532 | ATM-SVP2-US-MQ-ROLE-002 |
-| F-MTUM-SP500-ROLE | 14.479% | 8.403% | 1.517 | ATM-SVP2-US-MQ-ROLE-002 |
-| F-MOVE | 14.607% | 8.521% | 1.504 | ATM-SVP2-LIT-STRESS-001 |
-| F-MARGIN-LEV-US | 14.440% | 8.613% | 1.517 | ATM-SVP2-MARGIN-001 |
+| S-VBR-PROD-SP500-ROLE | 14.661% | 7.689% | 1.541 | ATM-SVP2-US-VALUE-PROD-001 |
+| S-IWD-PROD-SP500-ROLE | 14.468% | 7.689% | 1.543 | ATM-SVP2-US-VALUE-PROD-001 |
 | F-CREDITCASH | 16.067% | 12.777% | 1.378 | ATM-SVP2-ORTHO-FACTOR-006 |
 | F-VRP-PROXY | 14.768% | 13.380% | 1.412 | ATM-SVP2-VRP-001 |
 | F-CURVE | 16.153% | 18.779% | 1.232 | ATM-SVP2-ORTHO-FACTOR-001 |
@@ -46,9 +44,11 @@
 | F-VVIX | 15.318% | 19.096% | 1.276 | NO | ATM-SVP2-ORTHO-FACTOR-006 |
 | F-GROWTHBOND | 15.119% | 19.325% | 1.261 | NO | ATM-SVP2-ORTHO-FACTOR-005 |
 | F-VRP-PROXY | 14.768% | 13.380% | 1.412 | NO | ATM-SVP2-VRP-001 |
+| S-VBR-PROD-SP500-ROLE | 14.661% | 7.689% | 1.541 | NO | ATM-SVP2-US-VALUE-PROD-001 |
 | F-MOVE | 14.607% | 8.521% | 1.504 | NO | ATM-SVP2-LIT-STRESS-001 |
 | F-TRANSPORT | 14.505% | 17.190% | 1.242 | NO | ATM-SVP2-ORTHO-FACTOR-005 |
 | F-MTUM-SP500-ROLE | 14.479% | 8.403% | 1.517 | NO | ATM-SVP2-US-MQ-ROLE-002 |
+| S-IWD-PROD-SP500-ROLE | 14.468% | 7.689% | 1.543 | NO | ATM-SVP2-US-VALUE-PROD-001 |
 | F-MARGIN-LEV-US | 14.440% | 8.613% | 1.517 | NO | ATM-SVP2-MARGIN-001 |
 | F-TIC-FLOW-CONTRARIAN-US | 14.434% | 8.613% | 1.516 | NO | ATM-SVP2-TIC-001 |
 | F-BREADTH | 14.425% | 9.102% | 1.470 | NO | ATM-SVP2-ORTHO-FACTOR-003 |

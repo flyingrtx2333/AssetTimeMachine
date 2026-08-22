@@ -1,0 +1,101 @@
+{
+  "trial_id": "ATM-SVP2-PROSPECTIVE-IWD-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "PROSPECTIVE_DUALCORE_IWD_ROLE_V12",
+  "candidate_kind": "STRATEGY_ASSET_ROLE_NOT_FACTOR",
+  "strategy_lineage": "nfci-dual-core-iwd-v12 / dualcore-iwd-v12-2026-08-22; exact robust candidate S-IWD-PROD-SP500-ROLE from ATM-SVP2-US-VALUE-PROD-001",
+  "hypothesis": "The exact frozen IWD broad-U.S.-equity role implementation that passed the retrospective production-path deterministic, bootstrap, and 40-candidate DSR gates will continue to improve frozen V11 risk-adjusted performance on genuinely new post-freeze observations without changing V11 signals, target weights, event dates, gross exposure, financing policy, or any historical parameter.",
+  "evidence_class": "P3_PROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-PROSPECTIVE-IWD-001.json",
+  "freeze_date": "2026-08-22",
+  "first_eligible_market_session": "2026-08-24",
+  "historical_evidence": {
+    "source_trial": "ATM-SVP2-US-VALUE-PROD-001",
+    "source_trial_status": "PASS",
+    "candidate_id": "S-IWD-PROD-SP500-ROLE",
+    "historical_robust_strategy_pass": true,
+    "full_cagr_percent": 14.468031,
+    "full_sharpe": 1.542584,
+    "full_mdd_percent": 7.689054,
+    "v11_full_cagr_percent": 14.345615,
+    "v11_full_sharpe": 1.522263,
+    "v11_full_mdd_percent": 7.689054,
+    "bootstrap_probability_cagr_gt_v11": 0.90985,
+    "bootstrap_probability_sharpe_gt_v11": 0.98215,
+    "bootstrap_mdd_p975": 0.1319267369002894,
+    "global_dsr_probability": 0.9720150502468123,
+    "post_protocol_performance_candidate_count": 40
+  },
+  "allowed_changes": [
+    "append new market sessions after the 2026-08-22 freeze only",
+    "for the control, execute the immutable frozen V11 target/event path with the original broad-S&P realized-return role",
+    "for the candidate, execute the identical target/event path but realize IWD adjusted-close total-return proxy on the broad-U.S. sp500 role",
+    "on union-calendar dates without a new IWD quote, carry forward the last adjusted close so that day's IWD role return is zero and the next quoted session realizes the full close-to-close return",
+    "append immutable source hashes, target-identity proofs, and milestone statistics only"
+  ],
+  "candidate_ids": [
+    "S-IWD-PROD-SP500-ROLE-PROSPECTIVE"
+  ],
+  "candidate_count": 1,
+  "selection_metric": "One frozen candidate versus one frozen V11 control. No ETF replacement, blend, timing, parameter search, or alternative start is permitted. Every eligible post-freeze session is retained.",
+  "pass_fail_gates": [
+    "integrity: every prospective candidate execution-event target must exactly equal the V11 control target for that event and target gross must remain <=100% with no negative weights, shorting, or financing",
+    "integrity: only sessions strictly after the 2026-08-22 freeze may contribute prospective performance",
+    "milestone <63 new common sessions: integrity only, no performance claim",
+    "milestone 63 sessions: operational-health report only",
+    "milestone 126 sessions: early observation only, no final pass/fail",
+    "milestone 252 sessions: provisional report only, no product promotion based on this milestone alone",
+    "primary decision requires at least 504 new common market sessions",
+    "at primary decision at least 100 sessions must have positive frozen V11 sp500 target exposure; otherwise INCONCLUSIVE_LOW_ROLE_EXPOSURE",
+    "primary: candidate cumulative/annualized return > V11 control over the exact common prospective window",
+    "primary: candidate Sharpe >= V11 control Sharpe over the exact common prospective window",
+    "primary: paired circular moving-block bootstrap with 63-session blocks and 20000 replicates gives P(candidate CAGR > V11 CAGR) >=0.90",
+    "primary: bootstrap median candidate-minus-V11 CAGR delta >0",
+    "primary: candidate prospective MDD <=15%",
+    "ROBUST_PROSPECTIVE_PASS requires every applicable primary gate"
+  ],
+  "formal_run_budget": 1,
+  "follow_up_policy": "Do not change IWD, the broad-U.S. role, 100% substitution fraction, V11 signals/targets/events, calendar alignment, fee/slippage, gross limit, source policy, or gates before the 504-session primary decision. Weak 63/126/252-session evidence must be retained and cannot restart the clock. A failed or inconclusive 504-session result cannot be rescued by changing the ETF, blending S&P/IWD, adding timing, or selecting a later start.",
+  "swift_engine_entrypoint": "frozen V11 prospective forward target snapshot + exact dualcore-iwd-v12 role implementation using the calendar-alignment semantics frozen in ATM-SVP2-US-VALUE-PROD-001; append-only prospective ledger",
+  "expected_outputs": [
+    "zero-prospective-performance freeze record dated 2026-08-22",
+    "append-only per-session V11-control and IWD-candidate realized-return records with source hashes",
+    "execution-event target identity and gross/weight constraint proof",
+    "positive-sp500-role exposure session count",
+    "63/126/252/504 common-session milestone reports",
+    "504-session paired moving-block bootstrap and primary prospective decision or INCONCLUSIVE_LOW_ROLE_EXPOSURE"
+  ],
+  "candidate_rule": {
+    "strategy_version": "dualcore-iwd-v12-2026-08-22",
+    "base_strategy": "nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+    "instrument": "IWD",
+    "role": "replace realized return under frozen V11 sp500 portfolio role only",
+    "signal_use": "none",
+    "substitution_fraction": 1.0,
+    "target_path_changed": false,
+    "event_dates_changed": false,
+    "gross_limit": 1.0,
+    "financing": false,
+    "shorting": false
+  },
+  "milestones": {
+    "operational_health_sessions": 63,
+    "early_observation_sessions": 126,
+    "provisional_sessions": 252,
+    "primary_decision_sessions": 504,
+    "minimum_positive_sp500_exposure_sessions_at_primary": 100
+  },
+  "forbidden_changes": [
+    "IWD/S&P blend or partial substitution",
+    "VBR, QUAL, MTUM, or any other replacement ETF",
+    "value timing, moving average, momentum, valuation, volatility, macro, or regime gates",
+    "any V11 signal, target, event, band, or risk-parameter change",
+    "leverage, financing, shorting, or gross above 100%",
+    "using pre-freeze observations as prospective evidence",
+    "dropping weak sessions, changing the freeze date, or restarting the prospective clock"
+  ],
+  "factor_library_archival": {
+    "is_factor": false,
+    "policy": "This is a strategy-role prospective trial, not a factor-library factor. Preserve it in strategy-validation artifacts only."
+  }
+}
