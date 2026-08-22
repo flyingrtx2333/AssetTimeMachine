@@ -1,0 +1,30 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/C-CASH-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/C-PULLBACK-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/C-PULLBACK-GOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/C-PULLBACK-NASDAQ-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/C-PULLBACK-SP500-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/DKHS003-COMBINED-SLIP005-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/DKHS003-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/DKHS003-GOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/DKHS003-NASDAQ-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/DKHS003-SP500-portfolio.csv"
+  ],
+  "candidate_results": [],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-DAYK-HS-003.json",
+  "decision": "INVALID / NO_CANDIDATE_ADMITTED. The first formal 日K高速003 execution exposed a cross-calendar mark-to-market defect in the new daily swing simulator: when one held asset had no OHLC bar on a date supplied by another market, the combined path omitted that held asset's carried value instead of using its last valid close. This created a mechanically impossible 68.237158% combined drawdown relative to the standalone sleeves. All viewed performance metrics from this run are invalid and must not be used for selection. The run and raw outputs are permanently retained. The defect must be corrected and the same economic rule, if retried, must use a new preregistered trial identifier and formal-run budget.",
+  "execution_git_commit": "28f3ecc62207dbe43da1240b1b1b0215616e8f51",
+  "preregistration_record_hash": "dd626db75408e729f2ea79d0d2f77e07a61ebd9573ac4ba561e7e9db91c75b50",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/run-authorization.json",
+  "status": "INVALID",
+  "trial_id": "ATM-SVP2-DAYK-HS-003"
+}

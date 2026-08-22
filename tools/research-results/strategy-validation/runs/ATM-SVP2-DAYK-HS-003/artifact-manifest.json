@@ -1,0 +1,213 @@
+{
+  "files": [
+    {
+      "bytes": 70868,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2017-04-11",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/C-CASH-COMBINED-portfolio.csv",
+      "row_count": 2443,
+      "sha256": "6cb2f208f3c3637c49f62f6569403f56851219dd1565fbee223275e52bd85c60"
+    },
+    {
+      "bytes": 70313,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2017-04-11",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/C-PULLBACK-COMBINED-portfolio.csv",
+      "row_count": 2443,
+      "sha256": "f68d9d43888c96e1c5d04069cb2d5b7af838d5e7f630124d830d4f8fa91e92b9"
+    },
+    {
+      "bytes": 69901,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2017-04-11",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/C-PULLBACK-GOLD-portfolio.csv",
+      "row_count": 2443,
+      "sha256": "8add3cd31bdf37497610801311c0909eb3e69a2e1912c9d0c4720a83123f9c70"
+    },
+    {
+      "bytes": 67651,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2017-04-11",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/C-PULLBACK-NASDAQ-portfolio.csv",
+      "row_count": 2353,
+      "sha256": "122d37745da4015b0df0947db094e74d1f221f95a5b07921dbdf72e00545da98"
+    },
+    {
+      "bytes": 67997,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2017-04-11",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/C-PULLBACK-SP500-portfolio.csv",
+      "row_count": 2353,
+      "sha256": "1186914ac002e2b4b0dc9cce0cbeb96637a787bbcadb7e25eb85c00ecc8d789e"
+    },
+    {
+      "bytes": 70006,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2017-04-11",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/DKHS003-COMBINED-SLIP005-portfolio.csv",
+      "row_count": 2443,
+      "sha256": "b4843bcc1dba081df26ff3c9938ed9f3399c58115f97dceae0a825f6bde9eaaf"
+    },
+    {
+      "bytes": 70300,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2017-04-11",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/DKHS003-COMBINED-portfolio.csv",
+      "row_count": 2443,
+      "sha256": "1923270812d06392b70292185b26450092da90c5ab4b7e58846c333588cbece8"
+    },
+    {
+      "bytes": 69610,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2017-04-11",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/DKHS003-GOLD-portfolio.csv",
+      "row_count": 2443,
+      "sha256": "b956dbe5fca9a6b243466fb80e4c4104c52c21a962475fbc888693731afef80c"
+    },
+    {
+      "bytes": 67561,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2017-04-11",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/DKHS003-NASDAQ-portfolio.csv",
+      "row_count": 2353,
+      "sha256": "3ab63cf109f003c84a6c8e28d5a4e931fad58c63b95a4a42ebe03829cbfee892"
+    },
+    {
+      "bytes": 68083,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2017-04-11",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/DKHS003-SP500-portfolio.csv",
+      "row_count": 2353,
+      "sha256": "7a606c6f2a69ada47997f52d8ef893df6e9a0922a436cd16b8f859a14a16094b"
+    },
+    {
+      "bytes": 2245,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "round_trips",
+        "win_rate_percent",
+        "average_return_percent",
+        "profit_factor",
+        "max_gross",
+        "average_holding_sessions",
+        "maximum_holding_sessions",
+        "position_nights",
+        "final_open_positions",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/candidate-metrics.csv",
+      "row_count": 10,
+      "sha256": "f6735220e89b29220235082145c68ccc5d72c26740a0e6caec5b2b8f7b040184"
+    },
+    {
+      "bytes": 26303,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/candidate-metrics.json",
+      "sha256": "c0c1c1881e3a08c64da2801ef2c6d4bf393229f94ecaa8ee8a8fa4af1596edf8"
+    },
+    {
+      "bytes": 936,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/execution.json",
+      "sha256": "f224652b61681a44bcf1152c2d8bf2c28a8f16efb4198dd49620f56a4a6e3b4e"
+    },
+    {
+      "bytes": 434,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/run-authorization.json",
+      "sha256": "68cbb84bed06617918afc6f4a97addcf5ac483e5a18196d89c1623d4aa2875d0"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1108,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/stdout.txt",
+      "sha256": "70c99f6c24714c8a137998d7260c803df5e02d02124d01ae1b1ff95cbca7a702"
+    }
+  ],
+  "generated_at": "2026-08-22T19:38:46+08:00",
+  "git_commit": "28f3ecc62207dbe43da1240b1b1b0215616e8f51",
+  "kind": "result",
+  "metadata": {
+    "candidate_id": "S-DAYK-HIGH-SPEED-003",
+    "invalid_reason": "combined daily valuation omitted carried market value for an open position when that asset had no OHLC bar on a different market calendar date",
+    "performance_viewed": true,
+    "status": "INVALID"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-DAYK-HS-003"
+}
