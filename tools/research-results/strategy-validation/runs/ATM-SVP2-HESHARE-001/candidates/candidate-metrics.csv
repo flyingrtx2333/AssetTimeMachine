@@ -1,0 +1,4 @@
+candidate_id,kind,matched_control_id,cagr_percent,mdd_percent,sharpe,evaluation_cagr_percent,evaluation_mdd_percent,evaluation_sharpe,trades,average_cash_ratio,max_gross,min_weight,source_events,eligible_events,available_events,completed_events,folds_sharpe_ge_matched,worst_fold_sharpe,admit_for_robustness
+V11-CONTROL,CONTROL,,14.345615,7.689054,1.522263,14.455365,7.386487,1.515741,451,0.425368,1.0,0.0,166,0,0,0,CONTROL,0.740905,CONTROL
+C-HESHARE-US-ALWAYS,MATCHED_CONTROL,,16.248935,18.960753,1.362818,19.37944,18.960753,1.282121,441,0.317673,1.0,0.0,166,129,50,50,CONTROL,0.389375,CONTROL
+F-HESHARE-US-COMPLETION,FACTOR_STRATEGY,C-HESHARE-US-ALWAYS,14.343715,18.978179,1.402752,14.450514,18.978179,1.264025,451,0.394859,1.0,0.0,166,129,50,14,1,0.267569,False

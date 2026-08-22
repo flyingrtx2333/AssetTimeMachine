@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "e260185506b37adcb07ac3f7262f2fee5cbf6d19",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "ff602d41685d4a88181f0587a8ff6db90e2b76b9a2c2c6ceeeba7f4904bf2f88",
+  "preregistration_record_hash": "ff602d41685d4a88181f0587a8ff6db90e2b76b9a2c2c6ceeeba7f4904bf2f88",
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-HESHARE-001"
+}

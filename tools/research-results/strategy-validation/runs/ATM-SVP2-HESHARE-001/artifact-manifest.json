@@ -1,0 +1,150 @@
+{
+  "files": [
+    {
+      "bytes": 187335,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/candidates/C-HESHARE-US-ALWAYS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "f4f65b9c1578d6b4ffa40d88edf0eeb7352af4f539c590db6946d9201df678eb"
+    },
+    {
+      "bytes": 187112,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/candidates/F-HESHARE-US-COMPLETION-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "1054c25556ea7ac9665656b98d36d761050e607447553bd7f3195baf129aa123"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "79cfb775cc40a667044e9caded878704f67f257f0cefd70e4eed10abd6433882"
+    },
+    {
+      "bytes": 769,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "matched_control_id",
+        "cagr_percent",
+        "mdd_percent",
+        "sharpe",
+        "evaluation_cagr_percent",
+        "evaluation_mdd_percent",
+        "evaluation_sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "min_weight",
+        "source_events",
+        "eligible_events",
+        "available_events",
+        "completed_events",
+        "folds_sharpe_ge_matched",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "63b5bcd141bf7eb547c1696ed042bc6f68ab1e335fbaf3d13601384d70033b56"
+    },
+    {
+      "bytes": 4493,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/candidates/candidate-metrics.json",
+      "sha256": "12172728cd316f78c77a1bdc3332520020037e27b40baaf9f489f2acba70f232"
+    },
+    {
+      "bytes": 281,
+      "columns": [
+        "candidate_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "global_dsr_probability",
+        "global_dsr_pass",
+        "robust_factor_pass",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_matched",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/candidates/statistical-audit.csv",
+      "row_count": 1,
+      "sha256": "c62399c0a5e50da9a6ccc36d7fd108a6c4704451d0f6a902379a85cc97d8a89f"
+    },
+    {
+      "bytes": 3014,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/candidates/statistical-audit.json",
+      "sha256": "bbc00a2bd6790dd23c2b836d355e7c9a747ba72080a77928c3a9034f8a234cd0"
+    },
+    {
+      "bytes": 1124,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/execution.json",
+      "sha256": "3a48680a1e1f5a6110ffc2766b166b332c36bfc4ef32064a2aef95cf1f67cc0b"
+    },
+    {
+      "bytes": 434,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/run-authorization.json",
+      "sha256": "4e1f1782a4f9004f0bfa573ec7e2765ab37033f547abcff106352633779d822f"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 3447,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/stdout.txt",
+      "sha256": "3283adc62f26af23a3503d76e29028eabde5c18ea4faec79ac7685bf59074a8f"
+    }
+  ],
+  "generated_at": "2026-08-22T09:57:38+08:00",
+  "git_commit": "e260185506b37adcb07ac3f7262f2fee5cbf6d19",
+  "kind": "result",
+  "metadata": {
+    "campaign": "household-equity-share-v1",
+    "deterministic_admitted": [],
+    "evidence_class": "R1_RETROSPECTIVE",
+    "factor_library_published": false,
+    "formal_execution_commit": "e260185506b37adcb07ac3f7262f2fee5cbf6d19",
+    "global_dsr_trial_count": 32,
+    "primary_evaluation_start": "2017-01-01",
+    "robust_pass": []
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-HESHARE-001"
+}

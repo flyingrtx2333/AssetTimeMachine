@@ -1,0 +1,179 @@
+{
+  "admitted_candidates": [],
+  "candidate_results": [
+    {
+      "admission_checks": {
+        "constraints_pass": true,
+        "evaluation_cagr_gt_v11": false,
+        "evaluation_mdd_le_10pct": false,
+        "evaluation_sharpe_ge_v11": false,
+        "evaluation_sharpe_gt_matched_control": false,
+        "folds_sharpe_ge_matched_ge_4_of_5": false,
+        "worst_fold_sharpe_gt_0": true
+      },
+      "admit_for_robustness": false,
+      "candidate_id": "F-HESHARE-US-COMPLETION",
+      "constraints_pass": true,
+      "folds_sharpe_ge_matched": 1,
+      "matched_control_id": "C-HESHARE-US-ALWAYS",
+      "metrics": {
+        "available_events": 50,
+        "average_cash_ratio": 0.394859,
+        "cagr_percent": 14.343715,
+        "candidate_id": "F-HESHARE-US-COMPLETION",
+        "completed_events": 14,
+        "eligible_events": 129,
+        "evaluation_cagr_percent": 14.450514,
+        "evaluation_mdd_percent": 18.978179,
+        "evaluation_sharpe": 1.264025,
+        "fingerprint": "36a56891095bab68",
+        "fold_cagrs_percent": [
+          2.046372,
+          17.633859,
+          4.845379,
+          21.373553,
+          32.868242
+        ],
+        "fold_mdds_percent": [
+          14.643592,
+          18.978179,
+          3.319346,
+          6.232346,
+          6.077911
+        ],
+        "fold_names": [
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          0.267569,
+          1.164811,
+          1.186794,
+          1.698989,
+          2.220143
+        ],
+        "max_gross": 1.0,
+        "mdd_percent": 18.978179,
+        "min_weight": 0.0,
+        "sharpe": 1.402752,
+        "since2020_cagr_percent": 16.542705,
+        "since2020_sharpe": 1.336758,
+        "since2022_cagr_percent": 21.078444,
+        "since2022_sharpe": 1.785248,
+        "source_events": 166,
+        "trades": 451,
+        "vol_percent": 9.558346
+      },
+      "worst_fold_sharpe": 0.267569
+    }
+  ],
+  "evaluation_window_start": "2017-01-01",
+  "matched_control": {
+    "available_events": 50,
+    "average_cash_ratio": 0.317673,
+    "cagr_percent": 16.248935,
+    "candidate_id": "C-HESHARE-US-ALWAYS",
+    "completed_events": 50,
+    "eligible_events": 129,
+    "evaluation_cagr_percent": 19.37944,
+    "evaluation_mdd_percent": 18.960753,
+    "evaluation_sharpe": 1.282121,
+    "fingerprint": "7512f7e81c0b2a31",
+    "fold_cagrs_percent": [
+      6.16829,
+      28.516537,
+      4.967023,
+      24.180858,
+      41.868646
+    ],
+    "fold_mdds_percent": [
+      14.698192,
+      18.960753,
+      13.894249,
+      6.232603,
+      11.867564
+    ],
+    "fold_names": [
+      "2017-2018",
+      "2019-2020",
+      "2021-2022",
+      "2023-2024",
+      "2025-latest"
+    ],
+    "fold_sharpes": [
+      0.565761,
+      1.535679,
+      0.389375,
+      1.838205,
+      2.246453
+    ],
+    "max_gross": 1.0,
+    "mdd_percent": 18.960753,
+    "min_weight": 0.0,
+    "sharpe": 1.362818,
+    "since2020_cagr_percent": 22.432842,
+    "since2020_sharpe": 1.341251,
+    "since2022_cagr_percent": 22.733966,
+    "since2022_sharpe": 1.471476,
+    "source_events": 166,
+    "trades": 441,
+    "vol_percent": 11.129473
+  },
+  "protocol_id": "ATM-SVP-2",
+  "strategy_lineage": "household-equity-share-v1",
+  "trial_id": "ATM-SVP2-HESHARE-001",
+  "v11_control": {
+    "available_events": 0,
+    "average_cash_ratio": 0.425368,
+    "cagr_percent": 14.345615,
+    "candidate_id": "V11-CONTROL",
+    "completed_events": 0,
+    "eligible_events": 0,
+    "evaluation_cagr_percent": 14.455365,
+    "evaluation_mdd_percent": 7.386487,
+    "evaluation_sharpe": 1.515741,
+    "fingerprint": "ba67c8aa24bc7168",
+    "fold_cagrs_percent": [
+      4.768754,
+      14.593713,
+      4.769875,
+      21.373553,
+      32.868242
+    ],
+    "fold_mdds_percent": [
+      6.418819,
+      7.386487,
+      3.319346,
+      6.232346,
+      6.077911
+    ],
+    "fold_names": [
+      "2017-2018",
+      "2019-2020",
+      "2021-2022",
+      "2023-2024",
+      "2025-latest"
+    ],
+    "fold_sharpes": [
+      0.740905,
+      1.687674,
+      1.187752,
+      1.698989,
+      2.220143
+    ],
+    "max_gross": 1.0,
+    "mdd_percent": 7.689054,
+    "min_weight": 0.0,
+    "sharpe": 1.522263,
+    "since2020_cagr_percent": 17.621393,
+    "since2020_sharpe": 1.632712,
+    "since2022_cagr_percent": 21.078444,
+    "since2022_sharpe": 1.785248,
+    "source_events": 166,
+    "trades": 451,
+    "vol_percent": 8.760667
+  }
+}

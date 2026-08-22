@@ -1,0 +1,2 @@
+candidate_id,deterministic_admit,bootstrap_pass,global_dsr_probability,global_dsr_pass,robust_factor_pass,probability_cagr_gt_v11,probability_sharpe_gt_matched,candidate_mdd_p975
+F-HESHARE-US-COMPLETION,False,False,0.8536313508352309,False,False,0.52905,0.453,0.2573338616952514

@@ -1,0 +1,76 @@
+{
+  "trial_id": "ATM-SVP2-HESHARE-001",
+  "preregistration_record_hash": "ff602d41685d4a88181f0587a8ff6db90e2b76b9a2c2c6ceeeba7f4904bf2f88",
+  "execution_git_commit": "e260185506b37adcb07ac3f7262f2fee5cbf6d19",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/run-authorization.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-HESHARE-001.json",
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/artifact-manifest.json",
+  "status": "FAIL",
+  "candidate_results": [
+    {
+      "candidate_id": "F-HESHARE-US-COMPLETION",
+      "metrics": {
+        "cagr_percent": 14.343715,
+        "sharpe": 1.402752,
+        "mdd_percent": 18.978179,
+        "evaluation_start": "2017-01-01",
+        "evaluation_cagr_percent": 14.450514,
+        "evaluation_sharpe": 1.264025,
+        "evaluation_mdd_percent": 18.978179,
+        "since2020_cagr_percent": 16.542705,
+        "since2020_sharpe": 1.336758,
+        "since2022_cagr_percent": 21.078444,
+        "since2022_sharpe": 1.785248,
+        "eligible_events": 129,
+        "available_events": 50,
+        "completed_events": 14,
+        "folds_sharpe_ge_matched": 1,
+        "worst_fold_sharpe": 0.267569,
+        "deterministic_admit": false,
+        "bootstrap_probability_cagr_gt_v11": 0.52905,
+        "bootstrap_probability_sharpe_gt_matched": 0.453,
+        "bootstrap_median_candidate_minus_v11_cagr": 0.0008673326677402782,
+        "bootstrap_median_candidate_minus_matched_sharpe": -0.01980088419815207,
+        "bootstrap_mdd_p975": 0.2573338616952514,
+        "bootstrap_robust_pass": false,
+        "global_post_protocol_dsr_probability": 0.8536313508352309,
+        "global_post_protocol_dsr_trial_count": 32,
+        "robust_factor_pass": false
+      }
+    }
+  ],
+  "matched_control": {
+    "candidate_id": "C-HESHARE-US-ALWAYS",
+    "cagr_percent": 16.248935,
+    "sharpe": 1.362818,
+    "mdd_percent": 18.960753,
+    "evaluation_cagr_percent": 19.37944,
+    "evaluation_sharpe": 1.282121,
+    "evaluation_mdd_percent": 18.960753,
+    "available_events": 50,
+    "completed_events": 50
+  },
+  "v11_control": {
+    "cagr_percent": 14.345615,
+    "sharpe": 1.522263,
+    "mdd_percent": 7.689054,
+    "evaluation_cagr_percent": 14.455365,
+    "evaluation_sharpe": 1.515741,
+    "evaluation_mdd_percent": 7.386487,
+    "target_fingerprint": "ba67c8aa24bc7168"
+  },
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED / NO_ROBUST_FACTOR_PASS. The pre-performance stable-regime Household Equity Share candidate did not improve frozen V11 on the preregistered 2017+ window: CAGR 14.450514% was slightly below V11 14.455365%, Sharpe 1.264025 was far below V11 1.515741 and below the availability-matched unconditional U.S.-completion control 1.282121, and MDD rose to 18.978179% versus V11 7.386487%. The candidate beat the matched control in only 1/5 fixed post-stable folds. The matched control itself reached 19.379440% 2017+ CAGR but with 18.960753% MDD, demonstrating that mechanically spending V11 idle cash on more U.S. equity can raise return only by accepting a much worse risk profile. Paired 63-session moving-block bootstrap over 20,000 replicates gave P(CAGR candidate > V11)=52.905%, P(Sharpe candidate > matched)=45.300%, and candidate MDD P97.5=25.733%. Cumulative 32-trial DSR probability was 85.363%. Per the frozen stop rule, no stable-start, threshold, sign, transform, asset split, fill-fraction, or gross-target rescue is permitted. This HEShare factor and the associated U.S.-completion strategy mechanism are rejected for retrospective use.",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/candidates/statistical-audit.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/candidates/C-HESHARE-US-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-HESHARE-001/candidates/F-HESHARE-US-COMPLETION-portfolio.csv"
+  ]
+}

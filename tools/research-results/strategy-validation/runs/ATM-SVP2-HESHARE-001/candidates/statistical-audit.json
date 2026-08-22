@@ -1,0 +1,84 @@
+{
+  "candidate_results": [
+    {
+      "bootstrap": {
+        "bootstrap": {
+          "block_sessions": 63,
+          "candidate_cagr_p025": 0.07894311766645665,
+          "candidate_cagr_p50": 0.1384670510930235,
+          "candidate_cagr_p975": 0.20035118047879172,
+          "candidate_mdd_p975": 0.2573338616952514,
+          "candidate_sharpe_p025": 0.7244548143841331,
+          "candidate_sharpe_p50": 1.2791573591134215,
+          "candidate_sharpe_p975": 1.8592396972934513,
+          "median_candidate_minus_matched_sharpe": -0.01980088419815207,
+          "median_candidate_minus_v11_cagr": 0.0008673326677402782,
+          "probability_cagr_gt_v11": 0.52905,
+          "probability_sharpe_gt_matched_control": 0.453,
+          "replicates": 20000,
+          "rng_seed": 20260822
+        },
+        "bootstrap_robust_pass": false,
+        "candidate_id": "F-HESHARE-US-COMPLETION",
+        "checks": {
+          "candidate_mdd_p975_le_0_15": false,
+          "median_cagr_delta_gt_0": true,
+          "median_sharpe_delta_gt_0": false,
+          "probability_cagr_gt_v11_ge_0_90": false,
+          "probability_sharpe_gt_matched_ge_0_90": false
+        },
+        "observed": {
+          "candidate": {
+            "cagr": 0.1383770703272107,
+            "mdd": 0.18978178689287528,
+            "sharpe": 1.2640248748428626
+          },
+          "matched_control": {
+            "cagr": 0.18541263309384395,
+            "mdd": 0.18960753043714773,
+            "sharpe": 1.2821214218163244
+          },
+          "v11": {
+            "cagr": 0.13842340158422387,
+            "mdd": 0.07386487064698899,
+            "sharpe": 1.515741233588016
+          }
+        },
+        "sample": {
+          "aligned_portfolio_dates": 2523,
+          "daily_returns": 2522,
+          "evaluation_start": "2017-01-01",
+          "first_date": "2017-01-02",
+          "last_date": "2026-08-13"
+        }
+      },
+      "candidate_id": "F-HESHARE-US-COMPLETION",
+      "deterministic_admit": false,
+      "global_dsr_pass": false,
+      "global_post_protocol_dsr": {
+        "dsr_probability": 0.8536313508352309,
+        "dsr_z": 1.0521356928892642,
+        "expected_max_sharpe_annualized": 1.187462835035812,
+        "observations": 6397,
+        "observed_sharpe_annualized": 1.4027517800603548,
+        "pearson_kurtosis": 13.990150095830643,
+        "skewness": -0.42250971286879374,
+        "trial_count": 32
+      },
+      "robust_factor_pass": false
+    }
+  ],
+  "method": {
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260822,
+    "bootstrap_sample_start": "2017-01-01",
+    "bootstrap_sampling": "paired circular moving blocks",
+    "family_pbo": "not_applicable_single_candidate",
+    "global_dsr_sample": "full-history candidate returns for compatibility with prior post-protocol DSR accounting",
+    "global_post_protocol_dsr_trial_count": 32
+  },
+  "protocol_id": "ATM-SVP-2",
+  "robust_pass_candidates": [],
+  "trial_id": "ATM-SVP2-HESHARE-001"
+}
