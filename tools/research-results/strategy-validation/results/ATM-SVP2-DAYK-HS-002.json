@@ -1,0 +1,99 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/C-CASH-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/C-COMPRESSION-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/C-COMPRESSION-GOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/C-COMPRESSION-NASDAQ-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/C-COMPRESSION-SP500-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/DKHS002-COMBINED-SLIP005-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/DKHS002-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/DKHS002-GOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/DKHS002-NASDAQ-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/candidates/DKHS002-SP500-portfolio.csv"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-DAYK-HIGH-SPEED-002",
+      "metrics": {
+        "asset_paths": {
+          "gold_cny": {
+            "average_trade_return_percent": -0.061587957954434336,
+            "cagr_percent": 0.18888125360507768,
+            "mdd_percent": 6.545923875323326,
+            "profit_factor": 0.7825267706173804,
+            "round_trips": 112,
+            "sharpe": 0.1410495732146129,
+            "take_profit_hits": 64,
+            "win_rate_percent": 60.71428571428571
+          },
+          "nasdaq": {
+            "average_trade_return_percent": -0.026237081936957028,
+            "cagr_percent": -0.11687791090144728,
+            "mdd_percent": 17.517068835032244,
+            "profit_factor": 0.8821759766369779,
+            "round_trips": 526,
+            "sharpe": -0.031105666565919964,
+            "take_profit_hits": 287,
+            "win_rate_percent": 64.82889733840305
+          },
+          "sp500": {
+            "average_trade_return_percent": -0.02053371162663875,
+            "cagr_percent": 0.003008956436878485,
+            "mdd_percent": 20.919238019765853,
+            "profit_factor": 0.8856930425602458,
+            "round_trips": 540,
+            "sharpe": 0.012475603519601943,
+            "take_profit_hits": 300,
+            "win_rate_percent": 62.40740740740741
+          }
+        },
+        "cash_control_cagr_percent": 0.47884818454275724,
+        "combined": {
+          "average_trade_return_percent": -0.026983667799764507,
+          "cagr_percent": 0.043926417805351115,
+          "folds_with_positive_sharpe": 4,
+          "mdd_percent": 7.68594794889245,
+          "profit_factor": 0.8707075961860474,
+          "round_trips": 1178,
+          "sharpe": 0.038904188254749776,
+          "since2020_cagr_percent": -0.1190077883739371,
+          "since2022_cagr_percent": 0.001237634199546811,
+          "total_return_percent": 1.1019931658076798,
+          "win_rate_percent": 63.3276740237691
+        },
+        "constraints": {
+          "max_intraday_gross": 1,
+          "minimum_end_of_day_cash": 92857.39276512586,
+          "overnight_position_days": 0,
+          "pass": true
+        },
+        "matched_compression_control": {
+          "cagr_percent": -1.0048807428684414,
+          "mdd_percent": 31.29935619561382,
+          "sharpe": -0.3735204029553346
+        },
+        "preregistered_gate_pass": false,
+        "slippage_stress": {
+          "cagr_percent": -1.517272590280816,
+          "mdd_percent": 32.075414649018754,
+          "sharpe": -1.0846195346185936
+        }
+      }
+    }
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-DAYK-HS-002.json",
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED. The frozen 日K高速002 bullish volatility-compression continuation rule failed the preregistered all-gates decision. The fixed one-third combined path produced 0.043926% CAGR, 0.038904 Sharpe and 7.685948% MDD versus 0.478848% CAGR for CNY cash. Average net round-trip return was -0.026984% with profit factor 0.870708; only 4/7 fixed folds had positive Sharpe. No standalone asset outperformed cash and gold completed only 112 round trips. The matched compression control was materially worse (-1.004881% CAGR, -0.373520 Sharpe), showing that the SMA(50) trend gate helped but did not create a tradable edge. At 0.05% adverse slippage per fill, combined CAGR fell to -1.517273%, Sharpe to -1.084620 and MDD rose to 32.075415%. Gross exposure, nonnegative cash and zero-overnight-position invariants passed. Per the stop rule, no SMA/ATR/compression/close-location/take-profit tuning, asset deletion, factor addition, stop-loss, dynamic sizing or execution rescue is permitted in this trial. The index OHLC paths remain non-investable execution proxies.",
+  "execution_git_commit": "ad24794b6979557b595d47f84f2206140c772b96",
+  "preregistration_record_hash": "f5fa93f151914c3afed4c570fd5622e0acdf7b8c9d1522cd2403765bb036c74d",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-002/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP2-DAYK-HS-002"
+}
