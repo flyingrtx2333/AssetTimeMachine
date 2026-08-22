@@ -1,0 +1,79 @@
+{
+  "candidate_results": [
+    {
+      "bootstrap": {
+        "bootstrap": {
+          "block_sessions": 63,
+          "candidate_cagr_p025": 0.105209217936294,
+          "candidate_cagr_p50": 0.14208092429381536,
+          "candidate_cagr_p975": 0.18195722932027622,
+          "candidate_mdd_p975": 0.1460658789054459,
+          "candidate_sharpe_p025": 1.208276254706123,
+          "candidate_sharpe_p50": 1.5204197173442766,
+          "candidate_sharpe_p975": 1.8257994160716082,
+          "median_candidate_minus_v11_cagr": 0.004328869900119943,
+          "median_candidate_minus_v11_sharpe": 0.0015076133057218,
+          "probability_cagr_gt_v11": 0.9822,
+          "probability_sharpe_gt_v11": 0.5319,
+          "replicates": 20000,
+          "rng_seed": 20260822
+        },
+        "bootstrap_robust_pass": false,
+        "candidate_id": "S-V11-HIGHCORE-ONLY",
+        "checks": {
+          "candidate_mdd_p975_le_0_15": true,
+          "median_cagr_delta_gt_0": true,
+          "median_sharpe_delta_gt_0": true,
+          "probability_cagr_gt_v11_ge_0_90": true,
+          "probability_sharpe_gt_v11_ge_0_90": false
+        },
+        "control_id": "V11-CONTROL",
+        "observed": {
+          "candidate": {
+            "cagr": 0.14270343929454943,
+            "mdd": 0.07771319059886284,
+            "sharpe": 1.5239940096342997
+          },
+          "v11_control": {
+            "cagr": 0.13824639794201682,
+            "mdd": 0.07689054224818148,
+            "sharpe": 1.5222632417260855
+          }
+        },
+        "sample": {
+          "aligned_portfolio_dates": 6398,
+          "daily_returns": 6397,
+          "first_date": "2002-02-04",
+          "last_date": "2026-08-13"
+        }
+      },
+      "candidate_id": "S-V11-HIGHCORE-ONLY",
+      "deterministic_admit": false,
+      "global_dsr_pass": true,
+      "global_post_protocol_dsr": {
+        "dsr_probability": 0.9708548099127492,
+        "dsr_z": 1.8935077379066814,
+        "expected_max_sharpe_annualized": 1.139879022341408,
+        "observations": 6397,
+        "observed_sharpe_annualized": 1.5239940096342997,
+        "pearson_kurtosis": 9.464294554517195,
+        "skewness": -0.2600750932921183,
+        "trial_count": 43
+      },
+      "robust_strategy_pass": false
+    }
+  ],
+  "method": {
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260822,
+    "bootstrap_sampling": "paired circular moving blocks high-core versus frozen V11",
+    "family_pbo": "not_applicable_single_fixed_candidate",
+    "global_dsr_return_window": "full aligned history",
+    "global_post_protocol_dsr_prior_trial_count": 42,
+    "global_post_protocol_dsr_total_trial_count": 43
+  },
+  "protocol_id": "ATM-SVP-2",
+  "robust_pass_candidates": [],
+  "trial_id": "ATM-SVP2-V11-HIGHCORE-001"
+}

@@ -1,0 +1,128 @@
+{
+  "files": [
+    {
+      "bytes": 187283,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/S-V11-HIGHCORE-ONLY-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "e35709e3a61ae3aef7108cfe565e5beedace96ffd9c1d38a4925fcb64c03b5c4"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "41bc240e4bb71e608a0560c7f0d491e2534a89a3758e064fbd2db4920a617598"
+    },
+    {
+      "bytes": 423,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "vol_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "min_weight",
+        "fingerprint",
+        "folds_sharpe_ge_v11",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/candidate-metrics.csv",
+      "row_count": 2,
+      "sha256": "648f7a057bfea72ec0a251709c415c8a49b52775f405cf06d6d9b5aa3ad41f1a"
+    },
+    {
+      "bytes": 3142,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/candidate-metrics.json",
+      "sha256": "a922ef9816db1eb4d870ae809e456fa2f0d0bf5728d09bde072249fed5b37b63"
+    },
+    {
+      "bytes": 274,
+      "columns": [
+        "candidate_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "global_dsr_probability",
+        "global_dsr_pass",
+        "robust_strategy_pass",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_v11",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/statistical-audit.csv",
+      "row_count": 1,
+      "sha256": "a5b7e5c285e16a5a756c24aa31ee2b85251aa4bdc1b6d96bf10de38a28e63297"
+    },
+    {
+      "bytes": 2808,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/statistical-audit.json",
+      "sha256": "585c286241a3c6169a072b2ac1c4ddaa3c59399d234819ac1cfc2705f1c796a7"
+    },
+    {
+      "bytes": 985,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/execution.json",
+      "sha256": "97e13a02eb8d565afbd9402ad6a1985c3c1141a9dbe3f7e642425f5078ed40e1"
+    },
+    {
+      "bytes": 439,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/run-authorization.json",
+      "sha256": "20500f27ba91ac3a98d0b8c92b06f156f37d6868c02b520519403abf2566920c"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 2294,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/stdout.txt",
+      "sha256": "100aaf8282750b37648e7bd99bc80438efd6b01b7091294f2fe07e7d4624826f"
+    }
+  ],
+  "generated_at": "2026-08-22T15:57:05+08:00",
+  "git_commit": "133cfef52a3819f2669b52f3a2640c40735aba81",
+  "kind": "run",
+  "metadata": {
+    "cagr_bootstrap_pass": true,
+    "candidate": "S-V11-HIGHCORE-ONLY",
+    "global_dsr_pass": true,
+    "robust_strategy_pass": false,
+    "sharpe_bootstrap_pass": false,
+    "status": "FAIL_NO_ROBUST_STRATEGY_PASS"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-V11-HIGHCORE-001"
+}

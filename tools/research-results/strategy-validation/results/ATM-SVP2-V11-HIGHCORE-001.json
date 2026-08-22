@@ -1,0 +1,58 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/statistical-audit.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/candidates/S-V11-HIGHCORE-ONLY-portfolio.csv"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-V11-HIGHCORE-ONLY",
+      "metrics": {
+        "bootstrap_mdd_p975": 0.1460658789054459,
+        "bootstrap_median_candidate_minus_v11_cagr": 0.004328869900119943,
+        "bootstrap_median_candidate_minus_v11_sharpe": 0.0015076133057218,
+        "bootstrap_probability_cagr_gt_v11": 0.9822,
+        "bootstrap_probability_sharpe_gt_v11": 0.5319,
+        "bootstrap_robust_pass": false,
+        "cagr_percent": 14.809181,
+        "deterministic_admit": false,
+        "fee_invariant_target_fingerprint": true,
+        "folds_sharpe_ge_v11": 3,
+        "global_dsr_pass": true,
+        "global_post_protocol_dsr_probability": 0.9708548099127492,
+        "global_post_protocol_dsr_trial_count": 43,
+        "mdd_percent": 7.771319,
+        "robust_strategy_pass": false,
+        "sharpe": 1.523994,
+        "since2020_cagr_percent": 17.726621,
+        "since2020_sharpe": 1.619881,
+        "since2022_cagr_percent": 21.062466,
+        "since2022_sharpe": 1.762876,
+        "target_fingerprint": "094b1f53ad1153ac",
+        "worst_fold_sharpe": 0.780054
+      }
+    }
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-V11-HIGHCORE-001.json",
+  "decision": "FAIL / NO_ROBUST_STRATEGY_PASS. The exact current simplified-V11 high-return core raised full CAGR to 14.809181% versus V11 14.345615%, with Sharpe 1.523994 versus 1.522263 and MDD 7.771319% versus 7.689054%. It preserved 100% gross, nonnegative targets, no financing, and identical target fingerprints under 1.00% and 0.03% user fees. However, candidate Sharpe was at least V11 Sharpe in only 3/7 fixed folds, so deterministic admission failed. Paired 20,000-replicate 63-session bootstrap gave P(CAGR candidate > V11)=98.220% but P(Sharpe candidate > V11)=53.190%; median CAGR and Sharpe deltas were positive and candidate MDD P97.5=14.607% passed the 15% risk ceiling. Cumulative 43-candidate DSR=97.085% passed 95%. The evidence supports a higher-return research/aggressive-tier interpretation, not a robust all-around V11 replacement. Per the frozen stop rule, no blend-fraction, active-scale, band, C3/L3, LowNoise-profile, or other rescue tuning is permitted in this campaign.",
+  "execution_git_commit": "133cfef52a3819f2669b52f3a2640c40735aba81",
+  "preregistration_record_hash": "16fc4baadbee67d3bb722b708e0525771c59da922b0c17447b302a5be0487e20",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-V11-HIGHCORE-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP2-V11-HIGHCORE-001",
+  "v11_control": {
+    "cagr_percent": 14.345615,
+    "candidate_id": "V11-CONTROL",
+    "mdd_percent": 7.689054,
+    "sharpe": 1.522263,
+    "target_fingerprint": "ba67c8aa24bc7168"
+  }
+}

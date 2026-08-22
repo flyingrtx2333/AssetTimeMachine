@@ -1,0 +1,3 @@
+candidate_id,kind,cagr_percent,mdd_percent,vol_percent,sharpe,trades,average_cash_ratio,max_gross,min_weight,fingerprint,folds_sharpe_ge_v11,worst_fold_sharpe,admit_for_robustness
+V11-CONTROL,CONTROL,14.345615,7.689054,8.760667,1.522263,451,0.425368,1.0,0.0,ba67c8aa24bc7168,CONTROL,0.740905,CONTROL
+S-V11-HIGHCORE-ONLY,STRATEGY,14.809181,7.771319,9.02263,1.523994,424,0.406394,1.0,0.0,094b1f53ad1153ac,3,0.780054,False
