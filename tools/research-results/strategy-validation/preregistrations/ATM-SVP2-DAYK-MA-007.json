@@ -1,0 +1,92 @@
+{
+  "allowed_changes": [
+    "use one fixed daily-close candidate with exactly three roles: gold, one selected US index, and one selected China index",
+    "require previous close>SMA200 and positive 126-session return; rank within each role by 126-session return divided by max(63-session volatility,8%)",
+    "allocate selected roles by inverse max(63-session volatility,8%), cap one asset at 50%, and scale gross toward a fixed 10% forecast portfolio volatility without exceeding 100%",
+    "recompute every 20 common sessions, use a 10% hard rebalance band, decide on T-1 and execute on T close",
+    "compare against same-eligibility equal-role control, exact same-cost frozen V11, CNY cash, and 0.05% per-fill adverse-slippage stress"
+  ],
+  "candidate_count": 1,
+  "candidate_ids": [
+    "S-DAYK-MULTI-ASSET-007"
+  ],
+  "controls": {
+    "cash": "C-CASH-COMBINED uses CashYieldCNY over the identical evaluation window",
+    "matched_equal_eligible": "C-DKMA007-EQUAL-ELIGIBLE keeps the exact trend eligibility, role winner, cadence, band, costs and single-role 50% cap but equal-weights multiple active roles and omits inverse-volatility/10% portfolio-volatility scaling",
+    "v11": "V11-CONTROL runs frozen nfci-dual-core-v11 / dualcore-v11-2026-08-15 over the same market series, evaluation window and final execution costs; its frozen internal decision-cost semantics and point-in-time NFCI remain unchanged"
+  },
+  "cost_model": {
+    "fee_rate_per_fill": 5e-05,
+    "primary_slippage_rate_per_fill": 0.0,
+    "stress_slippage_rate_per_fill": 0.0005
+  },
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-DAYK-MA-007.json",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "expected_outputs": [
+    "candidate, matched equal-eligible control, same-cost V11 control, CNY cash and adverse-slippage metrics",
+    "common-window full CAGR/MDD/volatility/Sharpe, trade count, average cash and total return",
+    "2020+, 2022+ and seven fixed-fold CAGR/MDD/Sharpe",
+    "target-change count, per-symbol active-target sessions and target fingerprints",
+    "maximum gross, minimum weight, maximum asset weight, minimum cash and regional-role violation audits",
+    "one portfolio CSV per candidate/control/stress path",
+    "dataset hashes, run authorization receipt and SHA-256 result manifest",
+    "mechanical all-gates PASS/FAIL decision"
+  ],
+  "follow_up_policy": "After any formal 007 metric is viewed, do not modify the role mapping, SMA/momentum/volatility periods, score, volatility floor, risk allocation, target volatility, single-asset cap, cadence, band, cost or window inside this trial. No weak region or fold may be removed. Any alternative is a separately preregistered trial and 007 remains in trial accounting.",
+  "forbidden_changes": [
+    "using execution-session close or later data to form the target executed on that session",
+    "testing alternative SMA, momentum or volatility lookbacks or combining multiple lookbacks",
+    "testing alternative 5/10/20/40-session cadence, band, volatility target, floor or asset cap",
+    "holding both Nasdaq and S&P 500 or both CSI300 and Shanghai Composite simultaneously",
+    "top-N selection across all five assets, optimized role weights or post-result region deletion",
+    "adding NFCI or any macro/fundamental factor to the candidate",
+    "adding stops, take-profit, maximum hold, leverage, financing, shorting or negative cash",
+    "changing V11 internals, point-in-time NFCI history or frozen decision-cost calendar",
+    "changing the user fee or hiding the preregistered slippage stress",
+    "promoting retrospective results as completed prospective evidence"
+  ],
+  "formal_run_budget": 1,
+  "hypothesis": "A low-complexity three-role daily-close allocation that combines absolute trend eligibility, within-role risk-adjusted momentum, inverse-volatility diversification, a 10% portfolio-volatility target and cash should capture persistent gold/US/China risk premia with materially less noise than isolated trade triggers. It should match or exceed frozen V11 on same-cost common-window CAGR and Sharpe while not exceeding V11 drawdown.",
+  "pass_fail_gates": [
+    "candidate full-window CAGR >= same-cost V11 CAGR",
+    "candidate full-window Sharpe >= same-cost V11 Sharpe",
+    "candidate full-window MDD <= same-cost V11 MDD",
+    "candidate Sharpe > C-DKMA007-EQUAL-ELIGIBLE Sharpe",
+    "candidate CAGR >= CNY cash CAGR +5.00 percentage points, Sharpe >=1.00 and MDD <=15%",
+    "at least 6/7 fixed folds have Sharpe >0 and at least 4/7 have Sharpe >1.00",
+    "candidate 2020+ and 2022+ CAGR each exceed full-window CNY cash CAGR",
+    "with 0.05% adverse slippage per fill, CAGR >= CNY cash CAGR +3.00 percentage points and Sharpe >0.75",
+    "candidate target changes are 20-200 and executed trade count <=500",
+    "maximum gross <=100%, minimum target weight and cash >=0, maximum asset weight <=50%, and US/China regional-role violations =0"
+  ],
+  "protocol_component": "INDEPENDENT_DAILY_THREE_ROLE_TREND_RISK_ALLOCATOR_V1",
+  "protocol_id": "ATM-SVP-2",
+  "selection_metric": "No candidate selection. One frozen candidate must beat same-cost V11 on CAGR and Sharpe without greater MDD and pass every absolute, fold, stress, turnover and constraint gate. Matched equal-weight, V11 and cash paths are controls only.",
+  "shared_rules": {
+    "asset_cap": 0.5,
+    "candidate_nfci_use": false,
+    "evaluation_end": "2026-08-20",
+    "evaluation_start": "2012-07-05",
+    "execution": "T close from T-1 or earlier daily-close information",
+    "financing_allowed": false,
+    "hard_rebalance_band": 0.1,
+    "maximum_gross": 1.0,
+    "momentum_lookback_sessions": 126,
+    "rebalance_sessions": 20,
+    "role_groups": [
+      ["gold_cny"],
+      ["nasdaq", "sp500"],
+      ["csi300", "shanghai_composite"]
+    ],
+    "role_score": "return126 / max(annualized volatility63, 8%)",
+    "shorting_allowed": false,
+    "target_portfolio_volatility": 0.1,
+    "trend_lookback_sessions": 200,
+    "trend_rule": "previous close>SMA200 and return126>0",
+    "volatility_floor": 0.08,
+    "volatility_lookback_sessions": 63
+  },
+  "strategy_lineage": "dayk-multi-asset-007 / 日K多资产007; result-informed but structurally distinct successor to failed HR-A in ATM-SVP2-HR-ARCH-001 and to isolated-trade 日K高速001-006",
+  "swift_engine_entrypoint": "scripts/run_dayk_multi_asset_007.py -> tools/dayk_multi_asset_007.swiftpart + tools/dayk_multi_asset_007_logic.swift -> BacktestEngine.runResearchTargetProviderStrategyWithTrace plus exact runAdvancedRotationStrategyWithTrace V11 control using the shared App data/FX/metric stack",
+  "trial_id": "ATM-SVP2-DAYK-MA-007"
+}

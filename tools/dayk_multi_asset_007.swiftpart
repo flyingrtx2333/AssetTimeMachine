@@ -1,0 +1,371 @@
+        if ProcessInfo.processInfo.environment["ATM_DAYK_MULTI_ASSET_007"] == "1" {
+            func loadDayKMultiAsset007NFCIPoints(_ path: String) -> [BacktestNFCIPoint] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3,
+                          let value = Double(fields[2]), value.isFinite else { return nil }
+                    return BacktestNFCIPoint(
+                        releaseDate: String(fields[0]),
+                        referenceDate: String(fields[1]),
+                        availableAt: nil,
+                        value: value
+                    )
+                }
+            }
+
+            let formal = ProcessInfo.processInfo.environment["ATM_DAYK_MULTI_ASSET_007_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_DAYK_MULTI_ASSET_007_OUTPUT_DIR"]
+            let roleSymbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            let mode: AdvancedBacktestStrategyMode = .nfciDualCoreSimplifiedV11
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard inputs.count == mode.requiredSignalAssetSymbols.count else {
+                print("DAYK_MULTI_ASSET_007_INPUTS_MISSING")
+                return
+            }
+
+            let primarySettings = AdvancedBacktestRiskSettings(
+                feeRate: 0.005,
+                slippageRate: 0,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            let stressSettings = AdvancedBacktestRiskSettings(
+                feeRate: 0.005,
+                slippageRate: 0.05,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            let nfci = BacktestNFCIAsOfData(
+                source: "ALFRED initial-release fixture",
+                credit: loadDayKMultiAsset007NFCIPoints(
+                    "tools/research-results/NFCICREDIT_initial_release.csv"
+                ),
+                leverage: loadDayKMultiAsset007NFCIPoints(
+                    "tools/research-results/NFCILEVERAGE_initial_release.csv"
+                )
+            )
+            guard let v11 = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: primarySettings,
+                mode: mode,
+                nfciAsOf: nfci
+            ) else {
+                print("DAYK_MULTI_ASSET_007_V11_FAILED")
+                return
+            }
+
+            func config(_ id: String) -> ResearchTargetStrategyConfig {
+                ResearchTargetStrategyConfig(
+                    symbol: id,
+                    title: "日K多资产007",
+                    warmupSessions: DayKMultiAsset007Logic.trendLookback,
+                    rebalanceSessions: DayKMultiAsset007Logic.rebalanceSessions,
+                    rebalanceBand: 0.10,
+                    maxGrossExposure: 1,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "日K多资产007调仓"
+                )
+            }
+
+            func runResearch(
+                id: String,
+                settings: AdvancedBacktestRiskSettings,
+                target: @escaping (StrategyTargetContext, ResearchTargetDataContext) -> [String: Double]
+            ) -> ResearchTargetStrategyRun? {
+                BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config(id),
+                    targetWeights: target
+                )
+            }
+
+            guard let candidate = runResearch(
+                id: "DKMA007-RISK-BALANCED",
+                settings: primarySettings,
+                target: { context, data in
+                    DayKMultiAsset007Logic.candidateTarget(
+                        pricesBySymbol: data.pricesBySymbol,
+                        signalIndex: context.signalIndex
+                    )
+                }
+            ), let matched = runResearch(
+                id: "C-DKMA007-EQUAL-ELIGIBLE",
+                settings: primarySettings,
+                target: { context, data in
+                    DayKMultiAsset007Logic.matchedEqualWeightTarget(
+                        pricesBySymbol: data.pricesBySymbol,
+                        signalIndex: context.signalIndex
+                    )
+                }
+            ), let cash = runResearch(
+                id: "C-CASH-COMBINED",
+                settings: primarySettings,
+                target: { _, _ in [:] }
+            ), let stress = runResearch(
+                id: "DKMA007-RISK-BALANCED-SLIP005",
+                settings: stressSettings,
+                target: { context, data in
+                    DayKMultiAsset007Logic.candidateTarget(
+                        pricesBySymbol: data.pricesBySymbol,
+                        signalIndex: context.signalIndex
+                    )
+                }
+            ) else {
+                print("DAYK_MULTI_ASSET_007_RESEARCH_RUN_FAILED")
+                return
+            }
+
+            let evaluationStart = "2012-07-05"
+            let evaluationEnd = "2026-08-20"
+            let folds: [(String, String, String)] = [
+                ("2012-2014", "2012-07-05", "2014-12-31"),
+                ("2015-2016", "2015-01-01", "2016-12-31"),
+                ("2017-2018", "2017-01-01", "2018-12-31"),
+                ("2019-2020", "2019-01-01", "2020-12-31"),
+                ("2021-2022", "2021-01-01", "2022-12-31"),
+                ("2023-2024", "2023-01-01", "2024-12-31"),
+                ("2025-latest", "2025-01-01", "9999-12-31")
+            ]
+
+            func filteredPoints(_ report: AdvancedBacktestReport) -> [BacktestSeriesPoint] {
+                report.points.filter {
+                    let key = $0.date.recordDateString
+                    return key >= evaluationStart && key <= evaluationEnd
+                }
+            }
+
+            func filteredStates(_ states: [BacktestDailyState]) -> [BacktestDailyState] {
+                states.filter {
+                    let key = $0.date.recordDateString
+                    return key >= evaluationStart && key <= evaluationEnd
+                }
+            }
+
+            func targetDifference(_ lhs: [String: Double], _ rhs: [String: Double]) -> Double {
+                Set(lhs.keys).union(rhs.keys).reduce(0.0) { partial, symbol in
+                    partial + abs((lhs[symbol] ?? 0) - (rhs[symbol] ?? 0))
+                }
+            }
+
+            func targetFingerprint(_ states: [BacktestDailyState]) -> String {
+                var hash: UInt64 = 1469598103934665603
+                for state in states {
+                    for symbol in roleSymbols {
+                        var value = UInt64(bitPattern: Int64(
+                            ((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded()
+                        ))
+                        for _ in 0..<8 {
+                            hash ^= value & UInt64(0xff)
+                            hash &*= UInt64(1099511628211)
+                            value >>= 8
+                        }
+                    }
+                }
+                return String(format: "%016llx", hash)
+            }
+
+            func foldMetrics(_ points: [BacktestSeriesPoint]) -> [[String: Any]] {
+                folds.map { name, start, end in
+                    let slice = points.filter {
+                        let key = $0.date.recordDateString
+                        return key >= start && key <= end
+                    }
+                    let metrics = BacktestMetricsCalculator.performanceMetrics(from: slice)
+                    return [
+                        "name": name,
+                        "sessions": slice.count,
+                        "cagr_percent": (metrics?.annualizedReturn ?? 0) * 100,
+                        "mdd_percent": (metrics?.maxDrawdown ?? 0) * 100,
+                        "sharpe": metrics?.sharpeRatio ?? 0
+                    ]
+                }
+            }
+
+            func pathDocument(
+                id: String,
+                report: AdvancedBacktestReport,
+                states allStates: [BacktestDailyState]
+            ) -> [String: Any] {
+                let points = filteredPoints(report)
+                let states = filteredStates(allStates)
+                let metrics = BacktestMetricsCalculator.performanceMetrics(from: points)
+                let since2020 = BacktestMetricsCalculator.performanceMetrics(
+                    from: points.filter { $0.date.recordDateString >= "2020-01-01" }
+                )
+                let since2022 = BacktestMetricsCalculator.performanceMetrics(
+                    from: points.filter { $0.date.recordDateString >= "2022-01-01" }
+                )
+                let grosses = states.map { state in
+                    roleSymbols.reduce(0.0) { $0 + max(state.targetWeights[$1] ?? 0, 0) }
+                }
+                let weights = states.flatMap { state in
+                    roleSymbols.map { state.targetWeights[$0] ?? 0 }
+                }
+                let averageCash = states.isEmpty ? 0 : states.reduce(0.0) { partial, state in
+                    partial + (state.portfolioValue > 0 ? state.cash / state.portfolioValue : 0)
+                } / Double(states.count)
+                var targetChanges = 0
+                var previous: [String: Double] = [:]
+                for state in states {
+                    if targetDifference(previous, state.targetWeights) > 0.0000001 {
+                        targetChanges += 1
+                        previous = state.targetWeights
+                    }
+                }
+                let activeSessions = Dictionary(uniqueKeysWithValues: roleSymbols.map { symbol in
+                    (symbol, states.filter { ($0.targetWeights[symbol] ?? 0) > 0 }.count)
+                })
+                let usRoleViolations = states.filter {
+                    (($0.targetWeights["nasdaq"] ?? 0) > 0 ? 1 : 0)
+                    + (($0.targetWeights["sp500"] ?? 0) > 0 ? 1 : 0) > 1
+                }.count
+                let chinaRoleViolations = states.filter {
+                    (($0.targetWeights["csi300"] ?? 0) > 0 ? 1 : 0)
+                    + (($0.targetWeights["shanghai_composite"] ?? 0) > 0 ? 1 : 0) > 1
+                }.count
+                let startValue = points.first?.portfolioValue ?? 0
+                let endValue = points.last?.portfolioValue ?? 0
+                return [
+                    "id": id,
+                    "start": points.first?.date.recordDateString ?? "",
+                    "end": points.last?.date.recordDateString ?? "",
+                    "sessions": points.count,
+                    "cagr_percent": (metrics?.annualizedReturn ?? 0) * 100,
+                    "mdd_percent": (metrics?.maxDrawdown ?? 0) * 100,
+                    "volatility_percent": (metrics?.annualizedVolatility ?? 0) * 100,
+                    "sharpe": metrics?.sharpeRatio ?? 0,
+                    "total_return_percent": startValue > 0 ? (endValue / startValue - 1) * 100 : 0,
+                    "trades": report.trades.filter {
+                        let key = $0.date.recordDateString
+                        return key >= evaluationStart && key <= evaluationEnd
+                    }.count,
+                    "average_cash_ratio": averageCash,
+                    "max_gross": grosses.max() ?? 0,
+                    "minimum_target_weight": weights.min() ?? 0,
+                    "maximum_asset_weight": weights.max() ?? 0,
+                    "minimum_cash": states.map(\.cash).min() ?? 0,
+                    "target_change_count": targetChanges,
+                    "active_target_sessions_by_symbol": activeSessions,
+                    "us_role_violation_sessions": usRoleViolations,
+                    "china_role_violation_sessions": chinaRoleViolations,
+                    "since2020_cagr_percent": (since2020?.annualizedReturn ?? 0) * 100,
+                    "since2020_sharpe": since2020?.sharpeRatio ?? 0,
+                    "since2022_cagr_percent": (since2022?.annualizedReturn ?? 0) * 100,
+                    "since2022_sharpe": since2022?.sharpeRatio ?? 0,
+                    "folds": foldMetrics(points),
+                    "target_fingerprint": targetFingerprint(states)
+                ]
+            }
+
+            let candidateDocument = pathDocument(
+                id: "DKMA007-RISK-BALANCED",
+                report: candidate.report,
+                states: candidate.dailyStates
+            )
+            if !formal {
+                let states = filteredStates(candidate.dailyStates)
+                let usRoleViolations = states.filter {
+                    (($0.targetWeights["nasdaq"] ?? 0) > 0 ? 1 : 0)
+                    + (($0.targetWeights["sp500"] ?? 0) > 0 ? 1 : 0) > 1
+                }.count
+                let chinaRoleViolations = states.filter {
+                    (($0.targetWeights["csi300"] ?? 0) > 0 ? 1 : 0)
+                    + (($0.targetWeights["shanghai_composite"] ?? 0) > 0 ? 1 : 0) > 1
+                }.count
+                print("DAYK_MULTI_ASSET_007_SMOKE_START=\(candidateDocument["start"] ?? "")")
+                print("DAYK_MULTI_ASSET_007_SMOKE_END=\(candidateDocument["end"] ?? "")")
+                print("DAYK_MULTI_ASSET_007_SMOKE_SESSIONS=\(candidateDocument["sessions"] ?? 0)")
+                print("DAYK_MULTI_ASSET_007_SMOKE_TARGET_CHANGES=\(candidateDocument["target_change_count"] ?? 0)")
+                print("DAYK_MULTI_ASSET_007_SMOKE_MAX_GROSS=\(candidateDocument["max_gross"] ?? 0)")
+                print("DAYK_MULTI_ASSET_007_SMOKE_MIN_WEIGHT=\(candidateDocument["minimum_target_weight"] ?? 0)")
+                print("DAYK_MULTI_ASSET_007_SMOKE_MAX_ASSET_WEIGHT=\(candidateDocument["maximum_asset_weight"] ?? 0)")
+                print("DAYK_MULTI_ASSET_007_SMOKE_MIN_CASH=\(candidateDocument["minimum_cash"] ?? 0)")
+                print("DAYK_MULTI_ASSET_007_SMOKE_US_ROLE_VIOLATIONS=\(usRoleViolations)")
+                print("DAYK_MULTI_ASSET_007_SMOKE_CHINA_ROLE_VIOLATIONS=\(chinaRoleViolations)")
+                print("DAYK_MULTI_ASSET_007_SMOKE_V11_STATES=\(filteredStates(v11.dailyStates).count)")
+                print("DAYK_MULTI_ASSET_007_SMOKE_OK")
+                return
+            }
+
+            func writePortfolio(
+                id: String, report: AdvancedBacktestReport
+            ) {
+                guard let outputDir else { return }
+                try? FileManager.default.createDirectory(
+                    atPath: outputDir, withIntermediateDirectories: true
+                )
+                let path = URL(fileURLWithPath: outputDir)
+                    .appendingPathComponent("\(id)-portfolio.csv").path
+                var lines = ["date,portfolio_value"]
+                lines.append(contentsOf: filteredPoints(report).map {
+                    "\($0.date.recordDateString),\(String(format: "%.10f", $0.portfolioValue))"
+                })
+                try? (lines.joined(separator: "\n") + "\n").write(
+                    toFile: path, atomically: true, encoding: .utf8
+                )
+            }
+
+            let documents: [(String, AdvancedBacktestReport, [BacktestDailyState])] = [
+                ("DKMA007-RISK-BALANCED", candidate.report, candidate.dailyStates),
+                ("C-DKMA007-EQUAL-ELIGIBLE", matched.report, matched.dailyStates),
+                ("V11-CONTROL", v11.report, v11.dailyStates),
+                ("C-CASH-COMBINED", cash.report, cash.dailyStates),
+                ("DKMA007-RISK-BALANCED-SLIP005", stress.report, stress.dailyStates)
+            ]
+            for (id, report, _) in documents {
+                writePortfolio(id: id, report: report)
+            }
+            let output: [String: Any] = [
+                "trial_id": "ATM-SVP2-DAYK-MA-007",
+                "candidate_id": "S-DAYK-MULTI-ASSET-007",
+                "candidate": candidateDocument,
+                "matched_control": pathDocument(
+                    id: "C-DKMA007-EQUAL-ELIGIBLE",
+                    report: matched.report,
+                    states: matched.dailyStates
+                ),
+                "v11_control": pathDocument(
+                    id: "V11-CONTROL",
+                    report: v11.report,
+                    states: v11.dailyStates
+                ),
+                "cash_control": pathDocument(
+                    id: "C-CASH-COMBINED",
+                    report: cash.report,
+                    states: cash.dailyStates
+                ),
+                "slippage_stress": pathDocument(
+                    id: "DKMA007-RISK-BALANCED-SLIP005",
+                    report: stress.report,
+                    states: stress.dailyStates
+                ),
+                "fee_rate_per_fill": 0.00005,
+                "primary_slippage_rate_per_fill": 0.0,
+                "stress_slippage_rate_per_fill": 0.0005,
+                "evaluation_start": evaluationStart,
+                "evaluation_end": evaluationEnd
+            ]
+            guard JSONSerialization.isValidJSONObject(output),
+                  let json = try? JSONSerialization.data(withJSONObject: output, options: [.sortedKeys]),
+                  let text = String(data: json, encoding: .utf8) else {
+                print("DAYK_MULTI_ASSET_007_JSON_FAILED")
+                return
+            }
+            print("DAYK_MULTI_ASSET_007_FORMAL_JSON=" + text)
+            print("DAYK_MULTI_ASSET_007_FORMAL_OK")
+            return
+        }
