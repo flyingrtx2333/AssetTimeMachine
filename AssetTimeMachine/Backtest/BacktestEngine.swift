@@ -186,6 +186,35 @@ nonisolated struct ResearchIntradayRoundTripRun {
     let audit: ResearchIntradayRoundTripAudit
 }
 
+nonisolated struct ResearchDailySwingAudit {
+    let roundTripsBySymbol: [String: Int]
+    let takeProfitHitsBySymbol: [String: Int]
+    let timeExitCountsBySymbol: [String: Int]
+    let realizedReturnsBySymbol: [String: [Double]]
+    let holdingSessionsBySymbol: [String: [Int]]
+    let maxGrossExposure: Double
+    let minimumEndOfDayCash: Double
+    let maxConcurrentPositions: Int
+    let finalOpenPositions: Int
+}
+
+nonisolated struct ResearchDailySwingRun {
+    let report: AdvancedBacktestReport
+    let dailyStates: [BacktestDailyState]
+    let audit: ResearchDailySwingAudit
+}
+
+private nonisolated struct ResearchDailySwingPosition {
+    let symbol: String
+    let assetTitle: String
+    let units: Double
+    let investedCash: Double
+    let entryPrice: Double
+    let entryDate: Date
+    let takeProfitPrice: Double
+    var observedSessions: Int
+}
+
 nonisolated struct AdvancedRotationStrategyRun {
     let report: AdvancedBacktestReport
     let dailyStates: [BacktestDailyState]
@@ -5205,6 +5234,334 @@ nonisolated enum BacktestEngine {
                 maxIntradayGrossExposure: maxIntradayGrossExposure,
                 minimumEndOfDayCash: minimumEndOfDayCash,
                 overnightPositionDays: dailyStates.filter { !$0.holdingsBySymbol.isEmpty }.count
+            )
+        )
+    }
+
+    /// Research-only daily-bar swing path. Signals are evaluated from completed bars and
+    /// orders enter at the next real daily open. Profit limits become active only from the
+    /// following asset session, so every completed trade holds overnight at least once.
+    static func runResearchDailySwingStrategyWithTrace(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings,
+        config: ResearchTargetStrategyConfig,
+        dateBounds: ClosedRange<Date>? = nil,
+        maximumHoldingSessions: Int,
+        targetWeights: @escaping (StrategyTargetContext, ResearchIntradayDataContext) -> [String: Double],
+        takeProfitPrice: @escaping (String, Date, ResearchIntradayDataContext) -> Double?
+    ) -> ResearchDailySwingRun? {
+        let preparedSeries: [PreparedAdvancedSeries] = assetInputs.compactMap { input -> PreparedAdvancedSeries? in
+            guard input.assetSeries != nil,
+                  !input.assetOption.requiresHistoricalFX || input.fxSeries != nil else { return nil }
+            return preparedAdvancedSeries(
+                assetSeries: input.assetSeries,
+                assetOption: input.assetOption,
+                fxSeries: input.fxSeries
+            )
+        }
+        guard !preparedSeries.isEmpty, maximumHoldingSessions >= 2 else { return nil }
+
+        let normalizedInitialCash = max(initialCash, 0)
+        let normalizedFeeRate = max(settings.feeRate, 0) / 100
+        let normalizedSlippageRate = max(settings.slippageRate, 0) / 100
+        guard normalizedInitialCash > 0 else { return nil }
+
+        let aligned = alignedRotationPriceSeries(from: preparedSeries)
+        let commonDates = aligned.dates
+        let pricesBySymbol = aligned.pricesBySymbol
+        let optionBySymbol = Dictionary(uniqueKeysWithValues: preparedSeries.map { ($0.assetOption.symbol, $0.assetOption) })
+        let tradableSymbols = preparedSeries.map(\.assetOption.symbol)
+        guard commonDates.count > 2, !tradableSymbols.isEmpty else { return nil }
+
+        let barsBySymbol = Dictionary(uniqueKeysWithValues: preparedSeries.map { prepared in
+            let bars = prepared.ohlcPoints.map {
+                ResearchIntradayOHLCBar(date: $0.date, open: $0.open, high: $0.high, low: $0.low, close: $0.close)
+            }
+            return (prepared.assetOption.symbol, bars)
+        })
+        let barIndexByDateBySymbol = barsBySymbol.mapValues { bars in
+            Dictionary(uniqueKeysWithValues: bars.enumerated().map { ($0.element.date, $0.offset) })
+        }
+        let dataContext = ResearchIntradayDataContext(
+            dates: commonDates,
+            barsBySymbol: barsBySymbol,
+            barIndexByDateBySymbol: barIndexByDateBySymbol,
+            tradableSymbols: tradableSymbols
+        )
+
+        let requestedRange: ClosedRange<Int>
+        if let dateBounds {
+            guard let startIndex = commonDates.firstIndex(where: { $0 >= dateBounds.lowerBound }),
+                  let endIndex = commonDates.lastIndex(where: { $0 <= dateBounds.upperBound }),
+                  startIndex <= endIndex else { return nil }
+            requestedRange = startIndex...endIndex
+        } else {
+            requestedRange = 0...(commonDates.count - 1)
+        }
+        let firstExecutionIndex = max(requestedRange.lowerBound, max(config.warmupSessions, 1))
+        guard firstExecutionIndex < requestedRange.upperBound else { return nil }
+        let simulationRange = firstExecutionIndex...requestedRange.upperBound
+
+        let allowedSymbols = Set(tradableSymbols)
+        let maxGrossExposure = max(config.maxGrossExposure, 0)
+        let provider = StrategyTargetProvider { context in
+            var cleaned: [String: Double] = [:]
+            for (symbol, rawWeight) in targetWeights(context, dataContext) where allowedSymbols.contains(symbol) {
+                guard rawWeight.isFinite, rawWeight > 0 else { continue }
+                cleaned[symbol, default: 0] += rawWeight
+            }
+            let gross = positiveWeightSum(cleaned)
+            guard gross > 0, maxGrossExposure > 0 else { return [:] }
+            if gross <= maxGrossExposure { return cleaned }
+            return cleaned.mapValues { $0 * maxGrossExposure / gross }
+        }
+
+        var cash = normalizedInitialCash
+        var positions: [String: ResearchDailySwingPosition] = [:]
+        var cashInterestEarned = 0.0
+        var cashAnnualRateSum = 0.0
+        var cashAnnualRateSamples = 0
+        var cashRatioSum = 0.0
+        var points: [BacktestSeriesPoint] = []
+        var benchmarkPoints: [BacktestSeriesPoint] = []
+        var trades: [AdvancedBacktestTrade] = []
+        var dailyStates: [BacktestDailyState] = []
+        var portfolioValuesByIndex = Array(repeating: 0.0, count: commonDates.count)
+        var roundTripsBySymbol = Dictionary(uniqueKeysWithValues: tradableSymbols.map { ($0, 0) })
+        var takeProfitHitsBySymbol = Dictionary(uniqueKeysWithValues: tradableSymbols.map { ($0, 0) })
+        var timeExitCountsBySymbol = Dictionary(uniqueKeysWithValues: tradableSymbols.map { ($0, 0) })
+        var realizedReturnsBySymbol = Dictionary(uniqueKeysWithValues: tradableSymbols.map { ($0, [Double]()) })
+        var holdingSessionsBySymbol = Dictionary(uniqueKeysWithValues: tradableSymbols.map { ($0, [Int]()) })
+        var exposureRatioSum = 0.0
+        var exposureSamples = 0
+        var observedMaxGross = 0.0
+        var minimumEndOfDayCash = normalizedInitialCash
+        var maxConcurrentPositions = 0
+        let benchmarkStartIndex = simulationRange.lowerBound
+
+        func bar(_ symbol: String, on date: Date) -> ResearchIntradayOHLCBar? {
+            guard let index = barIndexByDateBySymbol[symbol]?[date],
+                  let bars = barsBySymbol[symbol], bars.indices.contains(index) else { return nil }
+            return bars[index]
+        }
+
+        for index in simulationRange {
+            guard !Task.isCancelled else { return nil }
+            let date = commonDates[index]
+            let occupiedAtOpen = Set(positions.keys)
+
+            if index > simulationRange.lowerBound {
+                let annualCashRate = CashYieldCNY.annualRate(on: commonDates[index - 1])
+                cashAnnualRateSum += annualCashRate
+                cashAnnualRateSamples += 1
+                if cash > 0 {
+                    let interest = cash * CashYieldCNY.dailyReturn(fromAnnualRate: annualCashRate)
+                    if interest.isFinite, interest > 0 {
+                        cash += interest
+                        cashInterestEarned += interest
+                    }
+                }
+            }
+
+            for symbol in occupiedAtOpen.sorted() {
+                guard var position = positions[symbol], let currentBar = bar(symbol, on: date) else { continue }
+                position.observedSessions += 1
+                positions[symbol] = position
+                let targetHit = currentBar.high >= position.takeProfitPrice
+                let timeExit = position.observedSessions >= maximumHoldingSessions
+                    || index == simulationRange.upperBound
+                guard targetHit || timeExit else { continue }
+
+                let rawExitPrice = targetHit ? position.takeProfitPrice : currentBar.close
+                let sellPrice = max(rawExitPrice * (1 - normalizedSlippageRate), 0)
+                let proceeds = position.units * sellPrice * (1 - normalizedFeeRate)
+                cash += proceeds
+                let realizedProfit = proceeds - position.investedCash
+                let realizedReturn = position.investedCash > 0 ? realizedProfit / position.investedCash : 0
+                trades.append(.init(
+                    assetSymbol: symbol,
+                    assetTitle: position.assetTitle,
+                    date: date,
+                    action: .sell,
+                    price: sellPrice,
+                    cashAmount: proceeds,
+                    units: position.units,
+                    reason: targetHit ? "日K快速波段止盈" : "日K快速波段到期退出",
+                    realizedProfit: realizedProfit,
+                    realizedReturn: realizedReturn,
+                    holdingDays: max(position.observedSessions - 1, 1)
+                ))
+                roundTripsBySymbol[symbol, default: 0] += 1
+                if targetHit {
+                    takeProfitHitsBySymbol[symbol, default: 0] += 1
+                } else {
+                    timeExitCountsBySymbol[symbol, default: 0] += 1
+                }
+                realizedReturnsBySymbol[symbol, default: []].append(realizedReturn)
+                holdingSessionsBySymbol[symbol, default: []].append(position.observedSessions)
+                positions.removeValue(forKey: symbol)
+            }
+
+            let openPortfolioValue = cash + positions.reduce(0.0) { partial, item in
+                guard let currentBar = bar(item.key, on: date) else { return partial }
+                return partial + item.value.units * currentBar.open
+            }
+            let signalIndex = max(index - 1, 0)
+            let context = StrategyTargetContext(
+                index: index,
+                signalIndex: signalIndex,
+                date: date,
+                signalDate: commonDates[signalIndex],
+                preRebalanceValue: openPortfolioValue,
+                points: points,
+                portfolioValuesByIndex: portfolioValuesByIndex,
+                refreshOverlay: false
+            )
+            let dailyTargets = index < simulationRange.upperBound ? provider.targetWeights(context) : [:]
+            for symbol in dailyTargets.keys.sorted() {
+                guard !occupiedAtOpen.contains(symbol), positions[symbol] == nil,
+                      let weight = dailyTargets[symbol], weight > 0,
+                      let currentBar = bar(symbol, on: date),
+                      let option = optionBySymbol[symbol],
+                      let rawTakeProfitPrice = takeProfitPrice(symbol, date, dataContext),
+                      rawTakeProfitPrice.isFinite, rawTakeProfitPrice > currentBar.open else { continue }
+                let requestedCash = openPortfolioValue * weight
+                let investedCash = min(max(requestedCash, 0), cash)
+                guard investedCash > 0 else { continue }
+                let buyPrice = currentBar.open * (1 + normalizedSlippageRate)
+                let units = buyPrice > 0 ? investedCash * (1 - normalizedFeeRate) / buyPrice : 0
+                guard units.isFinite, units > 0 else { continue }
+                cash -= investedCash
+                positions[symbol] = ResearchDailySwingPosition(
+                    symbol: symbol,
+                    assetTitle: option.title,
+                    units: units,
+                    investedCash: investedCash,
+                    entryPrice: buyPrice,
+                    entryDate: date,
+                    takeProfitPrice: rawTakeProfitPrice,
+                    observedSessions: 1
+                )
+                trades.append(.init(
+                    assetSymbol: symbol,
+                    assetTitle: option.title,
+                    date: date,
+                    action: .buy,
+                    price: buyPrice,
+                    cashAmount: investedCash,
+                    units: units,
+                    reason: config.buyReason,
+                    realizedProfit: nil,
+                    realizedReturn: nil,
+                    holdingDays: nil
+                ))
+            }
+
+            var holdingsBySymbol: [String: Double] = [:]
+            var holdingsValue = 0.0
+            for (symbol, position) in positions {
+                guard let currentBar = bar(symbol, on: date) else { continue }
+                let value = position.units * currentBar.close
+                holdingsBySymbol[symbol] = value
+                holdingsValue += value
+            }
+            let portfolioValue = cash + holdingsValue
+            let gross = portfolioValue > 0 ? holdingsValue / portfolioValue : 0
+            exposureRatioSum += gross
+            exposureSamples += 1
+            observedMaxGross = max(observedMaxGross, gross)
+            minimumEndOfDayCash = min(minimumEndOfDayCash, cash)
+            maxConcurrentPositions = max(maxConcurrentPositions, positions.count)
+            cashRatioSum += portfolioValue > 0 ? cash / portfolioValue : 0
+            points.append(.init(date: date, portfolioValue: portfolioValue, sequence: points.count))
+            portfolioValuesByIndex[index] = portfolioValue
+            let actualWeights = holdingsBySymbol.mapValues { portfolioValue > 0 ? $0 / portfolioValue : 0 }
+            dailyStates.append(.init(
+                date: date,
+                targetWeights: actualWeights,
+                cash: cash,
+                holdingsBySymbol: holdingsBySymbol,
+                portfolioValue: portfolioValue
+            ))
+
+            let benchmarkValue = tradableSymbols.reduce(0.0) { partial, symbol in
+                guard let prices = pricesBySymbol[symbol],
+                      prices.indices.contains(benchmarkStartIndex), prices.indices.contains(index),
+                      prices[benchmarkStartIndex] > 0 else { return partial }
+                return partial + normalizedInitialCash / Double(tradableSymbols.count)
+                    * prices[index] / prices[benchmarkStartIndex]
+            }
+            benchmarkPoints.append(.init(date: date, portfolioValue: benchmarkValue, sequence: benchmarkPoints.count))
+        }
+
+        guard positions.isEmpty, let last = points.last,
+              let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { return nil }
+        let averageCashRatio = exposureSamples > 0 ? cashRatioSum / Double(exposureSamples) : 1
+        let cashYieldSummary = CashYieldCNY.summary(
+            startDate: points.first?.date,
+            endDate: points.last?.date,
+            totalCashInterest: cashInterestEarned,
+            averageCashRatio: averageCashRatio,
+            averageAnnualRate: cashAnnualRateSamples > 0 ? cashAnnualRateSum / Double(cashAnnualRateSamples) : 0
+        )
+        let perAssetBenchmarks = tradableSymbols.compactMap { symbol -> AdvancedBacktestBenchmarkSeries? in
+            guard let prices = pricesBySymbol[symbol],
+                  prices.indices.contains(benchmarkStartIndex), prices[benchmarkStartIndex] > 0,
+                  let option = optionBySymbol[symbol] else { return nil }
+            let seriesPoints = simulationRange.enumerated().map { sequence, pointIndex in
+                BacktestSeriesPoint(
+                    date: commonDates[pointIndex],
+                    portfolioValue: normalizedInitialCash * prices[pointIndex] / prices[benchmarkStartIndex],
+                    sequence: sequence
+                )
+            }
+            return AdvancedBacktestBenchmarkSeries(id: symbol, title: option.title, points: seriesPoints)
+        }
+        let averageExposure = exposureSamples > 0 ? exposureRatioSum / Double(exposureSamples) : 0
+        let syntheticReport = AdvancedBacktestAssetReport(
+            symbol: config.symbol,
+            title: config.title,
+            points: points,
+            benchmarkPoints: benchmarkPoints,
+            pricePoints: [],
+            trades: trades,
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: cash,
+            finalUnits: 0,
+            exposureRatio: averageExposure
+        )
+        let report = AdvancedBacktestReport(
+            points: points,
+            benchmarkPoints: benchmarkPoints,
+            benchmarkSeries: perAssetBenchmarks,
+            trades: trades,
+            assetReports: [syntheticReport],
+            finalPortfolioValue: last.portfolioValue,
+            finalCash: cash,
+            finalUnits: 0,
+            totalReturn: metrics.totalReturn,
+            annualizedReturn: metrics.annualizedReturn,
+            maxDrawdown: metrics.maxDrawdown,
+            annualizedVolatility: metrics.annualizedVolatility,
+            sharpeRatio: metrics.sharpeRatio,
+            cashYieldSummary: cashYieldSummary,
+            riskSignalSummary: nil,
+            averageExposureRatio: averageExposure
+        )
+        return ResearchDailySwingRun(
+            report: report,
+            dailyStates: dailyStates,
+            audit: ResearchDailySwingAudit(
+                roundTripsBySymbol: roundTripsBySymbol,
+                takeProfitHitsBySymbol: takeProfitHitsBySymbol,
+                timeExitCountsBySymbol: timeExitCountsBySymbol,
+                realizedReturnsBySymbol: realizedReturnsBySymbol,
+                holdingSessionsBySymbol: holdingSessionsBySymbol,
+                maxGrossExposure: observedMaxGross,
+                minimumEndOfDayCash: minimumEndOfDayCash,
+                maxConcurrentPositions: maxConcurrentPositions,
+                finalOpenPositions: positions.count
             )
         )
     }

@@ -1,0 +1,60 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    }
+  ],
+  "generated_at": "2026-08-22T19:36:16+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "campaign": "dayk-high-speed-003",
+    "candidate_kind": "INDEPENDENT_DAILY_SWING_STRATEGY",
+    "evaluation_end": "2026-08-20",
+    "evaluation_start": "2017-04-11",
+    "evaluation_start_rule": "first common execution date after gold_cny has 200 prior complete real OHLC bars",
+    "performance_viewed_before_freeze": false,
+    "primary_cost": "0.005% fee per fill; zero additional slippage",
+    "real_ohlc_only": true,
+    "series": [
+      {
+        "currency": "CNY",
+        "end": "2026-08-22",
+        "ohlc_rows": 2586,
+        "source": "CME Group · COMEX",
+        "start": "2016-07-04",
+        "symbol": "gold_cny"
+      },
+      {
+        "currency": "USD",
+        "end": "2026-08-20",
+        "ohlc_rows": 6700,
+        "source": "Nasdaq · Yahoo Finance",
+        "start": "2000-01-03",
+        "symbol": "nasdaq_composite"
+      },
+      {
+        "currency": "USD",
+        "end": "2026-08-20",
+        "ohlc_rows": 6711,
+        "source": "S&P Dow Jones Indices · Yahoo Finance",
+        "start": "2000-01-03",
+        "symbol": "sp500"
+      },
+      {
+        "currency": "USD",
+        "end": "2026-08-21",
+        "rows": 6809,
+        "source": "Frankfurter · ECB reference rates",
+        "start": "2000-01-13",
+        "symbol": "usd_per_cny"
+      }
+    ],
+    "source_base_git_commit": "95ba2de78610cbe247eba846e8f8eb3f6af597ea",
+    "stress_cost": "0.005% fee plus 0.05% adverse slippage per fill"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-DAYK-HS-003"
+}

@@ -1,0 +1,88 @@
+{
+  "allowed_changes": [
+    "one fixed cross-asset rule: previous close above trailing SMA(200) and the two-session close-to-close decline is at least 1.00 times ATR(14)",
+    "enter at the next real daily open, with no same-session exit allowed",
+    "from the second held asset session, exit at entry open plus 0.75 times the frozen T-1 ATR when daily high reaches it; otherwise exit at the fifth held session close",
+    "standalone 100% sleeve runs for gold_cny, nasdaq and sp500 plus one fixed one-third-per-asset combined run",
+    "matched pullback controls that remove only the SMA(200) trend gate, a CNY demand-cash control and one preregistered 0.05% adverse-slippage execution stress"
+  ],
+  "candidate_count": 1,
+  "candidate_ids": [
+    "S-DAYK-HIGH-SPEED-003"
+  ],
+  "controls": {
+    "cash": "C-CASH-COMBINED uses the existing CashYieldCNY demand-deposit model over the identical evaluation window",
+    "matched_pullback": "C-PULLBACK keeps the same two-session ATR decline, profit target, five-session expiry, allocation and cost rules but ignores only previous-close > SMA(200)"
+  },
+  "cost_model": {
+    "fee_rate_per_fill": 5e-05,
+    "primary_slippage_rate_per_fill": 0.0,
+    "round_trip_nominal_fee_rate": 0.0001,
+    "stress_slippage_rate_per_fill": 0.0005
+  },
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-DAYK-HS-003.json",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "expected_outputs": [
+    "gold, Nasdaq, S&P 500 and fixed one-third combined candidate metrics",
+    "asset-matched pullback controls, CNY cash control and 0.05% per-fill adverse-slippage stress",
+    "full-period, 2020+, 2022+ and five fixed-fold CAGR/MDD/Sharpe",
+    "round-trip count, win rate, average net trade return, profit factor, take-profit hits and time exits",
+    "holding-session distribution, position-night count, concurrency, maximum gross, minimum end-of-day cash and final-open-position audit",
+    "portfolio CSV for every candidate, control and stress path",
+    "dataset hash, target fingerprint, run authorization receipt and SHA-256 artifact manifest",
+    "mechanical PASS/FAIL decision covering every preregistered gate"
+  ],
+  "follow_up_policy": "After any formal metric is viewed, do not tune or replace SMA/ATR lookbacks, two-session decline multiple, take-profit multiple, maximum holding sessions, allocation, asset set, fee, or slippage inside this trial. Do not add RSI, volume, calendar, stop-loss, asset-specific or dynamic-sizing rescue variants. Any such mechanism is a new trial and must be preregistered with the complete family counted before results.",
+  "forbidden_changes": [
+    "reading execution-session high, low or close before the opening buy decision",
+    "allowing a same-session take-profit exit on the entry bar",
+    "any SMA, ATR, pullback, take-profit or holding-period grid or post-result threshold change",
+    "using synthetic OHLC rows or close-only fallback rows as real OHLC",
+    "asset-specific parameters or dropping a weak gold, Nasdaq or S&P 500 component",
+    "adding RSI, MACD, volume, calendar or another factor after viewing this result",
+    "adding a stop-loss or changing the five-session liquidation rule",
+    "shorting, borrowing, financing, leverage, negative target weights, gross exposure above 100% or negative end-of-day cash",
+    "changing the user-specified 0.005% per-fill fee or hiding the preregistered slippage stress",
+    "representing index OHLC execution as directly investable product evidence"
+  ],
+  "formal_run_budget": 1,
+  "hypothesis": "When the prior close remains above SMA(200), a two-session decline of at least one ATR reflects temporary daily-scale price pressure rather than a broken long-term trend. Buying the next daily open, holding overnight, and exiting at a 0.75 ATR profit limit or the fifth session close should earn repeatable net returns across gold, Nasdaq and S&P 500 after the user-specified fee.",
+  "pass_fail_gates": [
+    "at least two of three standalone assets have full-period CAGR above the CNY cash control",
+    "at least two of three standalone assets have full-period Sharpe >0",
+    "each standalone asset has at least 75 completed round trips",
+    "fixed one-third combined CAGR >= CNY cash CAGR +2.00 percentage points",
+    "fixed one-third combined Sharpe >=1.00",
+    "fixed one-third combined MDD <=12%",
+    "fixed one-third combined Sharpe > C-PULLBACK-COMBINED Sharpe",
+    "fixed one-third combined average net round-trip return >0 and profit factor >=1.10",
+    "at least 4/5 fixed time folds have combined Sharpe >0",
+    "combined 2020+ CAGR and 2022+ CAGR are each greater than full-window CNY cash CAGR",
+    "with 0.05% adverse slippage per fill, combined CAGR remains above CNY cash CAGR and Sharpe >0.50",
+    "maximum gross <=100%, minimum end-of-day cash >=0, every trade holds 2-5 observed asset sessions and final open positions =0"
+  ],
+  "protocol_component": "INDEPENDENT_DAILY_TREND_PULLBACK_REVERSAL_V1",
+  "protocol_id": "ATM-SVP-2",
+  "selection_metric": "No within-family selection. There is exactly one daily-bar rule; all three standalone paths, the fixed one-third combined path, matched controls and execution stress are reported, and PASS requires every preregistered gate.",
+  "shared_rules": {
+    "atr_lookback_sessions": 14,
+    "entry": "buy current session real open after the T-1 close signal passes",
+    "evaluation_end": "2026-08-20",
+    "evaluation_start": "2017-04-11",
+    "exit": "no entry-day exit; from held session 2 sell at entry open + 0.75 * frozen T-1 ATR if daily high reaches it, otherwise sell held session 5 close",
+    "financing_allowed": false,
+    "max_gross": 1.0,
+    "maximum_holding_sessions": 5,
+    "minimum_holding_sessions": 2,
+    "overnight_required": true,
+    "pullback_atr_multiple": 1.0,
+    "pullback_window_sessions": 2,
+    "shorting_allowed": false,
+    "take_profit_atr_multiple": 0.75,
+    "trend_lookback_sessions": 200,
+    "trend_rule": "previous close > mean of the 200 closes ending at previous close"
+  },
+  "strategy_lineage": "dayk-high-speed-003 / 日K高速003; independent daily trend-conditioned two-session pullback reversal",
+  "swift_engine_entrypoint": "scripts/run_dayk_high_speed_003.py -> tools/dayk_high_speed_003.swiftpart + tools/dayk_high_speed_003_logic.swift -> BacktestEngine.runResearchDailySwingStrategyWithTrace using StrategyTargetProvider and the shared App metric/data stack",
+  "trial_id": "ATM-SVP2-DAYK-HS-003"
+}
