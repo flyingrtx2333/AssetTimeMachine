@@ -1,0 +1,23 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_sloos_standards_v1.py",
+    "--formal",
+    "--fixture",
+    "tools/fixtures/backtest-history/generalization_public_history.json",
+    "--factor-input",
+    "tools/research-results/strategy-validation/factor-data/SLOOS-DRTSCILM-FIRST-RELEASE-2026-08-22/DRTSCILM_FIRST_RELEASE.csv",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/candidates"
+  ],
+  "execution_git_commit": "c8d52f9f385135226d2466e2709996241f333153",
+  "finished_at": "2026-08-22T10:10:26+08:00",
+  "preregistration_record_hash": "714f651e7fbf1b7259cc0a05136ed75cd04587c06fd403d4d7a239e8b26dabf0",
+  "protocol_id": "ATM-SVP-2",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/run-authorization.json",
+  "started_at": "2026-08-22T10:09:19+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/stdout.txt",
+  "trial_id": "ATM-SVP2-SLOOS-001"
+}

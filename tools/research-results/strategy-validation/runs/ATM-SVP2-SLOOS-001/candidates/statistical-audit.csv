@@ -1,0 +1,2 @@
+candidate_id,deterministic_admit,bootstrap_pass,global_dsr_probability,global_dsr_pass,robust_factor_pass,probability_cagr_gt_v11,probability_sharpe_gt_matched,candidate_mdd_p975
+F-SLOOS-STANDARDS,False,False,0.9220352992357765,False,False,0.36025,0.77975,0.14946752762434534

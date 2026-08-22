@@ -1,0 +1,76 @@
+{
+  "trial_id": "ATM-SVP2-SLOOS-001",
+  "preregistration_record_hash": "714f651e7fbf1b7259cc0a05136ed75cd04587c06fd403d4d7a239e8b26dabf0",
+  "execution_git_commit": "c8d52f9f385135226d2466e2709996241f333153",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/run-authorization.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-SLOOS-001.json",
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/artifact-manifest.json",
+  "status": "FAIL",
+  "candidate_results": [
+    {
+      "candidate_id": "F-SLOOS-STANDARDS",
+      "metrics": {
+        "cagr_percent": 14.257161,
+        "sharpe": 1.468402,
+        "mdd_percent": 8.573895,
+        "evaluation_start": "2010-05-01",
+        "evaluation_cagr_percent": 11.881307,
+        "evaluation_sharpe": 1.295631,
+        "evaluation_mdd_percent": 8.573895,
+        "since2020_cagr_percent": 17.143378,
+        "since2020_sharpe": 1.5552,
+        "since2022_cagr_percent": 19.907902,
+        "since2022_sharpe": 1.664788,
+        "derisk_events": 134,
+        "available_derisk_events": 93,
+        "retained_events": 49,
+        "folds_sharpe_ge_matched": 4,
+        "worst_fold_sharpe": 0.655377,
+        "deterministic_admit": false,
+        "bootstrap_probability_cagr_gt_v11": 0.36025,
+        "bootstrap_probability_sharpe_gt_matched": 0.77975,
+        "bootstrap_median_candidate_minus_v11_cagr": -0.0014173972819698302,
+        "bootstrap_median_candidate_minus_matched_sharpe": 0.015741550550865013,
+        "bootstrap_mdd_p975": 0.14946752762434534,
+        "bootstrap_robust_pass": false,
+        "global_post_protocol_dsr_probability": 0.9220352992357765,
+        "global_post_protocol_dsr_trial_count": 33,
+        "robust_factor_pass": false
+      }
+    }
+  ],
+  "matched_control": {
+    "candidate_id": "C-SLOOS-ALWAYS",
+    "cagr_percent": 14.373082,
+    "sharpe": 1.455745,
+    "mdd_percent": 8.612735,
+    "evaluation_cagr_percent": 12.052322,
+    "evaluation_sharpe": 1.279036,
+    "evaluation_mdd_percent": 8.612735,
+    "available_derisk_events": 93,
+    "retained_events": 93
+  },
+  "v11_control": {
+    "cagr_percent": 14.345615,
+    "sharpe": 1.522263,
+    "mdd_percent": 7.689054,
+    "evaluation_cagr_percent": 12.032638,
+    "evaluation_sharpe": 1.379309,
+    "evaluation_mdd_percent": 7.386487,
+    "target_fingerprint": "ba67c8aa24bc7168"
+  },
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED / NO_ROBUST_FACTOR_PASS. F-SLOOS-STANDARDS showed some timing value relative to its availability-matched unconditional half-retention control: on the preregistered 2010-05-01+ window candidate Sharpe 1.295631 exceeded matched-control Sharpe 1.279036, candidate MDD 8.573895% stayed below 10%, and 4/6 fixed folds matched or beat the control. However, candidate CAGR 11.881307% was below V11 12.032638% and candidate Sharpe remained below V11 1.379309. Paired 63-session moving-block bootstrap over 20,000 replicates gave P(CAGR candidate > V11)=36.025% and P(Sharpe candidate > matched)=77.975%; median candidate-minus-V11 CAGR was negative while median candidate-minus-matched Sharpe was positive. Bootstrap MDD P97.5 was 14.947%, within the frozen 15% ceiling, but cumulative 33-trial DSR probability was only 92.204%. The factor therefore contains at most weak incremental timing information and does not qualify as a robust return source. Per the frozen stop rule, no threshold, sign, survey variant, persistence, retention-fraction, event-definition, asset-scope, or gross-target rescue is permitted.",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/candidates/statistical-audit.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/candidates/C-SLOOS-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/candidates/F-SLOOS-STANDARDS-portfolio.csv"
+  ]
+}

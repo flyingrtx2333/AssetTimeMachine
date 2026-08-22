@@ -1,0 +1,191 @@
+{
+  "admitted_candidates": [],
+  "candidate_results": [
+    {
+      "admission_checks": {
+        "constraints_pass": true,
+        "evaluation_cagr_gt_v11": false,
+        "evaluation_mdd_le_10pct": true,
+        "evaluation_sharpe_ge_v11": false,
+        "evaluation_sharpe_gt_matched_control": true,
+        "folds_sharpe_ge_matched_ge_4_of_6": true,
+        "worst_fold_sharpe_gt_0": true
+      },
+      "admit_for_robustness": false,
+      "candidate_id": "F-SLOOS-STANDARDS",
+      "constraints_pass": true,
+      "folds_sharpe_ge_matched": 4,
+      "matched_control_id": "C-SLOOS-ALWAYS",
+      "metrics": {
+        "available_derisk_events": 93,
+        "average_cash_ratio": 0.397172,
+        "cagr_percent": 14.257161,
+        "candidate_id": "F-SLOOS-STANDARDS",
+        "derisk_events": 134,
+        "evaluation_cagr_percent": 11.881307,
+        "evaluation_mdd_percent": 8.573895,
+        "evaluation_sharpe": 1.295631,
+        "fingerprint": "d9d4256497a1a473",
+        "fold_cagrs_percent": [
+          6.868779,
+          11.448533,
+          4.178167,
+          12.583672,
+          13.164027,
+          32.868242
+        ],
+        "fold_mdds_percent": [
+          8.573895,
+          7.3975,
+          8.060161,
+          7.386345,
+          6.232346,
+          6.077911
+        ],
+        "fold_names": [
+          "2010-2012",
+          "2013-2015",
+          "2016-2018",
+          "2019-2021",
+          "2022-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          0.738104,
+          1.470277,
+          0.655377,
+          1.569966,
+          1.267275,
+          2.220143
+        ],
+        "max_gross": 1.0,
+        "mdd_percent": 8.573895,
+        "min_weight": 0.0,
+        "retained_events": 49,
+        "sharpe": 1.468402,
+        "since2020_cagr_percent": 17.143378,
+        "since2020_sharpe": 1.5552,
+        "since2022_cagr_percent": 19.907902,
+        "since2022_sharpe": 1.664788,
+        "source_events": 166,
+        "trades": 455,
+        "vol_percent": 9.04857
+      },
+      "worst_fold_sharpe": 0.655377
+    }
+  ],
+  "evaluation_window_start": "2010-05-01",
+  "matched_control": {
+    "available_derisk_events": 93,
+    "average_cash_ratio": 0.386732,
+    "cagr_percent": 14.373082,
+    "candidate_id": "C-SLOOS-ALWAYS",
+    "derisk_events": 134,
+    "evaluation_cagr_percent": 12.052322,
+    "evaluation_mdd_percent": 8.612735,
+    "evaluation_sharpe": 1.279036,
+    "fingerprint": "a1bb034dd68ccfe6",
+    "fold_cagrs_percent": [
+      6.62843,
+      11.526975,
+      4.336701,
+      12.80778,
+      13.164025,
+      34.445049
+    ],
+    "fold_mdds_percent": [
+      8.573895,
+      7.3975,
+      8.060161,
+      8.612735,
+      6.232346,
+      8.138969
+    ],
+    "fold_names": [
+      "2010-2012",
+      "2013-2015",
+      "2016-2018",
+      "2019-2021",
+      "2022-2024",
+      "2025-latest"
+    ],
+    "fold_sharpes": [
+      0.713167,
+      1.473705,
+      0.676332,
+      1.473817,
+      1.267274,
+      2.1684
+    ],
+    "max_gross": 1.0,
+    "mdd_percent": 8.612735,
+    "min_weight": 0.0,
+    "retained_events": 93,
+    "sharpe": 1.455745,
+    "since2020_cagr_percent": 17.590396,
+    "since2020_sharpe": 1.523775,
+    "since2022_cagr_percent": 20.403156,
+    "since2022_sharpe": 1.650982,
+    "source_events": 166,
+    "trades": 454,
+    "vol_percent": 9.204395
+  },
+  "protocol_id": "ATM-SVP-2",
+  "strategy_lineage": "sloos-standards-v1",
+  "trial_id": "ATM-SVP2-SLOOS-001",
+  "v11_control": {
+    "available_derisk_events": 0,
+    "average_cash_ratio": 0.425368,
+    "cagr_percent": 14.345615,
+    "candidate_id": "V11-CONTROL",
+    "derisk_events": 0,
+    "evaluation_cagr_percent": 12.032638,
+    "evaluation_mdd_percent": 7.386487,
+    "evaluation_sharpe": 1.379309,
+    "fingerprint": "ba67c8aa24bc7168",
+    "fold_cagrs_percent": [
+      8.522533,
+      10.264679,
+      4.268447,
+      11.385957,
+      14.869531,
+      32.868242
+    ],
+    "fold_mdds_percent": [
+      6.955059,
+      5.601034,
+      6.418819,
+      7.386487,
+      6.232346,
+      6.077911
+    ],
+    "fold_names": [
+      "2010-2012",
+      "2013-2015",
+      "2016-2018",
+      "2019-2021",
+      "2022-2024",
+      "2025-latest"
+    ],
+    "fold_sharpes": [
+      0.981264,
+      1.496857,
+      0.703703,
+      1.497145,
+      1.466893,
+      2.220143
+    ],
+    "max_gross": 1.0,
+    "mdd_percent": 7.689054,
+    "min_weight": 0.0,
+    "retained_events": 0,
+    "sharpe": 1.522263,
+    "since2020_cagr_percent": 17.621393,
+    "since2020_sharpe": 1.632712,
+    "since2022_cagr_percent": 21.078444,
+    "since2022_sharpe": 1.785248,
+    "source_events": 166,
+    "trades": 451,
+    "vol_percent": 8.760667
+  }
+}

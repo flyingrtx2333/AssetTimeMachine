@@ -1,0 +1,4 @@
+candidate_id,kind,matched_control_id,cagr_percent,mdd_percent,sharpe,evaluation_cagr_percent,evaluation_mdd_percent,evaluation_sharpe,trades,average_cash_ratio,max_gross,min_weight,source_events,derisk_events,available_derisk_events,retained_events,folds_sharpe_ge_matched,worst_fold_sharpe,admit_for_robustness
+V11-CONTROL,CONTROL,,14.345615,7.689054,1.522263,12.032638,7.386487,1.379309,451,0.425368,1.0,0.0,166,0,0,0,CONTROL,0.703703,CONTROL
+C-SLOOS-ALWAYS,MATCHED_CONTROL,,14.373082,8.612735,1.455745,12.052322,8.612735,1.279036,454,0.386732,1.0,0.0,166,134,93,93,CONTROL,0.676332,CONTROL
+F-SLOOS-STANDARDS,FACTOR_STRATEGY,C-SLOOS-ALWAYS,14.257161,8.573895,1.468402,11.881307,8.573895,1.295631,455,0.397172,1.0,0.0,166,134,93,49,4,0.655377,False

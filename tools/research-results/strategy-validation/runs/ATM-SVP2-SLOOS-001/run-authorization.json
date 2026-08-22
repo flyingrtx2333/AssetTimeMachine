@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "c8d52f9f385135226d2466e2709996241f333153",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "714f651e7fbf1b7259cc0a05136ed75cd04587c06fd403d4d7a239e8b26dabf0",
+  "preregistration_record_hash": "714f651e7fbf1b7259cc0a05136ed75cd04587c06fd403d4d7a239e8b26dabf0",
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-SLOOS-001"
+}

@@ -1,0 +1,150 @@
+{
+  "files": [
+    {
+      "bytes": 187164,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/candidates/C-SLOOS-ALWAYS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "7fdf656a140071547dc3205db3e86ba48ca31a36882caf2c84d5b2ebc5d2755c"
+    },
+    {
+      "bytes": 187178,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/candidates/F-SLOOS-STANDARDS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "c2693c7bf54f32cd9ae750fcdf4f8ac128cafc073af2ce40c1052c1b7e367080"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "f502bb66df6ac46e995ac012dd244ba9838bdcf3f29f829aa381377316eadc13"
+    },
+    {
+      "bytes": 754,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "matched_control_id",
+        "cagr_percent",
+        "mdd_percent",
+        "sharpe",
+        "evaluation_cagr_percent",
+        "evaluation_mdd_percent",
+        "evaluation_sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "min_weight",
+        "source_events",
+        "derisk_events",
+        "available_derisk_events",
+        "retained_events",
+        "folds_sharpe_ge_matched",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "aae07e9a896b3925c30f67508ff3c4b6026cfb70083aedf88118d5593358ee20"
+    },
+    {
+      "bytes": 4671,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/candidates/candidate-metrics.json",
+      "sha256": "2bc0b04bd9ae95ff06d044023cf1a5ebbf085f5ea834778d76baa425918c50a6"
+    },
+    {
+      "bytes": 278,
+      "columns": [
+        "candidate_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "global_dsr_probability",
+        "global_dsr_pass",
+        "robust_factor_pass",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_matched",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/candidates/statistical-audit.csv",
+      "row_count": 1,
+      "sha256": "02e8a4eedfba091fbaf5ffebf8379c7fd4a6869aa8f4cf9efc9f46b87e1f334e"
+    },
+    {
+      "bytes": 3004,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/candidates/statistical-audit.json",
+      "sha256": "e82cb7820098b470ebead7eaa4c0026943c1c96710db92346f86e3f08353eac9"
+    },
+    {
+      "bytes": 1091,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/execution.json",
+      "sha256": "83e259a5b67c8039b7cd5c49b0768115197bbffb532c53035ba48014d0026998"
+    },
+    {
+      "bytes": 432,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/run-authorization.json",
+      "sha256": "2f3057e7230351a455b41accaff541ddfaa78a806e626849cff80c6da4ca324b"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 3530,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-SLOOS-001/stdout.txt",
+      "sha256": "fe05487a5ebe69afda3af3eb2b2e897d40083d14ac0bc7a04c096fa69070c88e"
+    }
+  ],
+  "generated_at": "2026-08-22T10:11:06+08:00",
+  "git_commit": "c8d52f9f385135226d2466e2709996241f333153",
+  "kind": "result",
+  "metadata": {
+    "campaign": "sloos-standards-v1",
+    "deterministic_admitted": [],
+    "evidence_class": "R1_RETROSPECTIVE",
+    "factor_library_published": false,
+    "formal_execution_commit": "c8d52f9f385135226d2466e2709996241f333153",
+    "global_dsr_trial_count": 33,
+    "primary_evaluation_start": "2010-05-01",
+    "robust_pass": []
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-SLOOS-001"
+}
