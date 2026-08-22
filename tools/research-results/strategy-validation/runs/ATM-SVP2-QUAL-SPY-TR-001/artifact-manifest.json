@@ -1,0 +1,139 @@
+{
+  "files": [
+    {
+      "bytes": 187158,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/C-SPY-TR-PROD-SP500-ROLE-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "b99f9168bc2d153d10514c9477cea2c00d4eb7608ef1a75ebdbf0df7da3fa2d3"
+    },
+    {
+      "bytes": 187172,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/S-QUAL-VS-SPY-TR-ROLE-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "e980acae4f0c07e4ca69a6f4b96e2d3b6f0e63acfb94f9f051d2f5f4fc4a742a"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "11377bd15af32fa694f01c874507f3d2663751904732448b543b72fcce74d21c"
+    },
+    {
+      "bytes": 549,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "evaluation_cagr_percent",
+        "evaluation_mdd_percent",
+        "evaluation_sharpe",
+        "full_cagr_percent",
+        "full_mdd_percent",
+        "full_sharpe",
+        "folds_sharpe_ge_matched",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "4efba6ee1807958f41d34ec11098a6644d410817defb082a85e5010510550b7e"
+    },
+    {
+      "bytes": 4534,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/candidate-metrics.json",
+      "sha256": "95207c0dd3592a0eb626caf1b9ffbcf060aba6cf8804f2d6469c894aaeb485d7"
+    },
+    {
+      "bytes": 329,
+      "columns": [
+        "candidate_id",
+        "matched_control_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "global_dsr_probability",
+        "global_dsr_pass",
+        "robust_strategy_pass",
+        "probability_cagr_gt_matched",
+        "probability_sharpe_gt_matched",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/statistical-audit.csv",
+      "row_count": 1,
+      "sha256": "5b0be79d2226b363d1cfec5b9daf917f89ad9664aa33612cf331706c701cc0d8"
+    },
+    {
+      "bytes": 3183,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/statistical-audit.json",
+      "sha256": "a09eaebb54eadcc371ea784782c7fe956246b1ba32838a8274b7f3d608df0d42"
+    },
+    {
+      "bytes": 1241,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/execution.json",
+      "sha256": "9fd24a6e338e6f0553897db524fff599c4b751aa11d3793dc66bed73e0a3c07e"
+    },
+    {
+      "bytes": 438,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/run-authorization.json",
+      "sha256": "687667682a4828e54344c5e82769a284fbf002fd1132436abb98590627f8a969"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 3395,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/stdout.txt",
+      "sha256": "659dadac5c83bd188d5a6132c56b4a2cd95dde363312ef2d6b1d90944f7e935b"
+    }
+  ],
+  "generated_at": "2026-08-22T15:23:04+08:00",
+  "git_commit": "328a0487c175b35b4e1a5f82ac3d2faea07579e6",
+  "kind": "run",
+  "metadata": {
+    "bootstrap_pass": false,
+    "candidate": "S-QUAL-VS-SPY-TR-ROLE",
+    "matched_control": "C-SPY-TR-PROD-SP500-ROLE",
+    "robust_strategy_pass": false,
+    "status": "FAIL_MATCHED_TOTAL_RETURN_AUDIT"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-QUAL-SPY-TR-001"
+}
