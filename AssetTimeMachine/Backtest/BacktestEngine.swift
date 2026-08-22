@@ -190,6 +190,8 @@ nonisolated struct ResearchDailySwingAudit {
     let roundTripsBySymbol: [String: Int]
     let takeProfitHitsBySymbol: [String: Int]
     let timeExitCountsBySymbol: [String: Int]
+    let stopExitCountsBySymbol: [String: Int]
+    let gapStopExitCountsBySymbol: [String: Int]
     let realizedReturnsBySymbol: [String: [Double]]
     let holdingSessionsBySymbol: [String: [Int]]
     let maxGrossExposure: Double
@@ -213,6 +215,8 @@ private nonisolated struct ResearchDailySwingPosition {
     let entryPrice: Double
     let entryDate: Date
     let takeProfitPrice: Double
+    var stopPrice: Double?
+    var highestClose: Double
     var lastMarkPrice: Double
     var observedSessions: Int
 }
@@ -5250,8 +5254,11 @@ nonisolated enum BacktestEngine {
         config: ResearchTargetStrategyConfig,
         dateBounds: ClosedRange<Date>? = nil,
         maximumHoldingSessions: Int,
+        liquidateAtEvaluationEnd: Bool = true,
         targetWeights: @escaping (StrategyTargetContext, ResearchIntradayDataContext) -> [String: Double],
-        takeProfitPrice: @escaping (String, Date, ResearchIntradayDataContext) -> Double?
+        takeProfitPrice: @escaping (String, Date, ResearchIntradayDataContext) -> Double?,
+        initialStopPrice: ((String, Date, ResearchIntradayDataContext) -> Double?)? = nil,
+        updatedStopPrice: ((String, Date, Double, Double, ResearchIntradayDataContext) -> Double?)? = nil
     ) -> ResearchDailySwingRun? {
         let preparedSeries: [PreparedAdvancedSeries] = assetInputs.compactMap { input -> PreparedAdvancedSeries? in
             guard input.assetSeries != nil,
@@ -5333,6 +5340,8 @@ nonisolated enum BacktestEngine {
         var roundTripsBySymbol = Dictionary(uniqueKeysWithValues: tradableSymbols.map { ($0, 0) })
         var takeProfitHitsBySymbol = Dictionary(uniqueKeysWithValues: tradableSymbols.map { ($0, 0) })
         var timeExitCountsBySymbol = Dictionary(uniqueKeysWithValues: tradableSymbols.map { ($0, 0) })
+        var stopExitCountsBySymbol = Dictionary(uniqueKeysWithValues: tradableSymbols.map { ($0, 0) })
+        var gapStopExitCountsBySymbol = Dictionary(uniqueKeysWithValues: tradableSymbols.map { ($0, 0) })
         var realizedReturnsBySymbol = Dictionary(uniqueKeysWithValues: tradableSymbols.map { ($0, [Double]()) })
         var holdingSessionsBySymbol = Dictionary(uniqueKeysWithValues: tradableSymbols.map { ($0, [Int]()) })
         var exposureRatioSum = 0.0
@@ -5371,13 +5380,33 @@ nonisolated enum BacktestEngine {
                 guard var position = positions[symbol], let currentBar = bar(symbol, on: date) else { continue }
                 position.observedSessions += 1
                 position.lastMarkPrice = currentBar.close
-                positions[symbol] = position
+                let gapStopHit = position.stopPrice.map { currentBar.open <= $0 } ?? false
+                let intradayStopHit = position.stopPrice.map { !gapStopHit && currentBar.low <= $0 } ?? false
                 let targetHit = currentBar.high >= position.takeProfitPrice
                 let timeExit = position.observedSessions >= maximumHoldingSessions
-                    || index == simulationRange.upperBound
-                guard targetHit || timeExit else { continue }
+                    || (liquidateAtEvaluationEnd && index == simulationRange.upperBound)
+                guard gapStopHit || intradayStopHit || targetHit || timeExit else {
+                    position.highestClose = max(position.highestClose, currentBar.close)
+                    if let updatedStopPrice,
+                       let proposed = updatedStopPrice(
+                        symbol, date, position.highestClose, position.stopPrice ?? 0, dataContext
+                       ), proposed.isFinite, proposed > 0 {
+                        position.stopPrice = max(position.stopPrice ?? 0, proposed)
+                    }
+                    positions[symbol] = position
+                    continue
+                }
 
-                let rawExitPrice = targetHit ? position.takeProfitPrice : currentBar.close
+                let rawExitPrice: Double
+                if gapStopHit {
+                    rawExitPrice = currentBar.open
+                } else if intradayStopHit {
+                    rawExitPrice = position.stopPrice ?? currentBar.close
+                } else if targetHit {
+                    rawExitPrice = position.takeProfitPrice
+                } else {
+                    rawExitPrice = currentBar.close
+                }
                 let sellPrice = max(rawExitPrice * (1 - normalizedSlippageRate), 0)
                 let proceeds = position.units * sellPrice * (1 - normalizedFeeRate)
                 cash += proceeds
@@ -5391,13 +5420,18 @@ nonisolated enum BacktestEngine {
                     price: sellPrice,
                     cashAmount: proceeds,
                     units: position.units,
-                    reason: targetHit ? "日K快速波段止盈" : "日K快速波段到期退出",
+                    reason: (gapStopHit || intradayStopHit)
+                        ? (gapStopHit ? "日K趋势跳空止损" : "日K趋势止损")
+                        : (targetHit ? "日K快速波段止盈" : "日K快速波段到期退出"),
                     realizedProfit: realizedProfit,
                     realizedReturn: realizedReturn,
                     holdingDays: max(position.observedSessions - 1, 1)
                 ))
                 roundTripsBySymbol[symbol, default: 0] += 1
-                if targetHit {
+                if gapStopHit || intradayStopHit {
+                    stopExitCountsBySymbol[symbol, default: 0] += 1
+                    if gapStopHit { gapStopExitCountsBySymbol[symbol, default: 0] += 1 }
+                } else if targetHit {
                     takeProfitHitsBySymbol[symbol, default: 0] += 1
                 } else {
                     timeExitCountsBySymbol[symbol, default: 0] += 1
@@ -5437,7 +5471,7 @@ nonisolated enum BacktestEngine {
                 let units = buyPrice > 0 ? investedCash * (1 - normalizedFeeRate) / buyPrice : 0
                 guard units.isFinite, units > 0 else { continue }
                 cash -= investedCash
-                positions[symbol] = ResearchDailySwingPosition(
+                var newPosition = ResearchDailySwingPosition(
                     symbol: symbol,
                     assetTitle: option.title,
                     units: units,
@@ -5445,9 +5479,18 @@ nonisolated enum BacktestEngine {
                     entryPrice: buyPrice,
                     entryDate: date,
                     takeProfitPrice: rawTakeProfitPrice,
+                    stopPrice: initialStopPrice?(symbol, date, dataContext),
+                    highestClose: currentBar.close,
                     lastMarkPrice: currentBar.close,
                     observedSessions: 1
                 )
+                if let updatedStopPrice,
+                   let proposed = updatedStopPrice(
+                    symbol, date, newPosition.highestClose, newPosition.stopPrice ?? 0, dataContext
+                   ), proposed.isFinite, proposed > 0 {
+                    newPosition.stopPrice = max(newPosition.stopPrice ?? 0, proposed)
+                }
+                positions[symbol] = newPosition
                 trades.append(.init(
                     assetSymbol: symbol,
                     assetTitle: option.title,
@@ -5502,7 +5545,7 @@ nonisolated enum BacktestEngine {
             benchmarkPoints.append(.init(date: date, portfolioValue: benchmarkValue, sequence: benchmarkPoints.count))
         }
 
-        guard positions.isEmpty, let last = points.last,
+        guard (!liquidateAtEvaluationEnd || positions.isEmpty), let last = points.last,
               let metrics = BacktestMetricsCalculator.performanceMetrics(from: points) else { return nil }
         let averageCashRatio = exposureSamples > 0 ? cashRatioSum / Double(exposureSamples) : 1
         let cashYieldSummary = CashYieldCNY.summary(
@@ -5563,6 +5606,8 @@ nonisolated enum BacktestEngine {
                 roundTripsBySymbol: roundTripsBySymbol,
                 takeProfitHitsBySymbol: takeProfitHitsBySymbol,
                 timeExitCountsBySymbol: timeExitCountsBySymbol,
+                stopExitCountsBySymbol: stopExitCountsBySymbol,
+                gapStopExitCountsBySymbol: gapStopExitCountsBySymbol,
                 realizedReturnsBySymbol: realizedReturnsBySymbol,
                 holdingSessionsBySymbol: holdingSessionsBySymbol,
                 maxGrossExposure: observedMaxGross,

@@ -1,0 +1,94 @@
+{
+  "allowed_changes": [
+    "require exactly three consecutive positive completed close-to-close moves: close[T-1]>close[T-2]>close[T-3]>close[T-4]",
+    "candidate additionally requires close[T-1]>SMA(200), while the single matched control removes only this SMA condition",
+    "buy at the next real daily open with initial stop entry open minus 2.00 times frozen T-1 ATR(14)",
+    "after each completed holding close, including the entry close, trail at highest completed close minus 2.00 times current ATR(14), never lower the prior stop, and make the update effective next asset session",
+    "use no profit target, no maximum holding period and no evaluation-end forced sale; mark any final open position to market",
+    "standalone 100% sleeve runs plus one fixed one-third-per-asset combined run, matched no-SMA controls, CNY cash and 0.05% per-fill adverse-slippage stress"
+  ],
+  "candidate_count": 1,
+  "candidate_ids": [
+    "S-DAYK-HIGH-SPEED-006"
+  ],
+  "controls": {
+    "cash": "C-CASH-COMBINED uses the existing CashYieldCNY demand-deposit model over the identical evaluation window",
+    "matched_no_sma": "C-CONSECUTIVE-NO-SMA keeps the same three-rise entry, ATR trailing stop, allocation, marking and cost rules but removes only close[T-1]>SMA(200)"
+  },
+  "cost_model": {
+    "fee_rate_per_fill": 5e-05,
+    "primary_slippage_rate_per_fill": 0.0,
+    "round_trip_nominal_fee_rate": 0.0001,
+    "stress_slippage_rate_per_fill": 0.0005
+  },
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-DAYK-HS-006.json",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "expected_outputs": [
+    "gold, Nasdaq, S&P 500 and fixed one-third combined candidate metrics",
+    "asset-matched three-rise controls without SMA200, CNY cash control and 0.05% per-fill adverse-slippage stress",
+    "full-period, 2020+, 2022+ and five fixed-fold CAGR/MDD/Sharpe",
+    "closed round-trip count, win rate, average net trade return and profit factor",
+    "stop exits, gap-stop exits, time exits, final open positions and holding-session distribution",
+    "cross-calendar marking, maximum gross, minimum cash and target fingerprints",
+    "portfolio CSV for every candidate, control and stress path",
+    "dataset hash, run authorization receipt and SHA-256 result artifact manifest",
+    "mechanical PASS/FAIL decision covering every preregistered gate"
+  ],
+  "follow_up_policy": "After any formal 006 metric is viewed, do not change the three-rise definition, SMA200 filter, ATR14 lookback, 2.00 ATR stop, next-open entry, stop execution order, no-time-exit rule, allocation, assets, fee, slippage or cross-calendar marking inside this trial. Any alternative rise count, trend period, stop distance, profit target, maximum hold, extra factor or sizing rule is a new trial.",
+  "forbidden_changes": [
+    "reading execution-session high, low or close before the opening buy decision",
+    "allowing the entry-session low to trigger the newly opened position's stop",
+    "testing or selecting among two, three or four consecutive rises or adding a minimum cumulative rise threshold",
+    "testing any moving-average lookback other than SMA200 or any ATR lookback/multiple other than ATR14 and 2.00",
+    "lowering a live trailing stop, using a close below stop instead of the frozen gap/intraday execution order, or rewriting gaps to fill at the stop",
+    "adding a take-profit, maximum holding period or evaluation-end forced liquidation",
+    "using synthetic OHLC or omitting carried value for a held asset on its non-session date",
+    "asset-specific parameters, pyramiding, dynamic sizing or dropping a weak gold, Nasdaq or S&P 500 component",
+    "adding RSI, MACD, volume, calendar, volatility regime, shorting, borrowing, financing, leverage or negative weights",
+    "changing the user-specified fee or hiding the preregistered slippage stress",
+    "representing index OHLC execution as directly investable product evidence"
+  ],
+  "formal_run_budget": 1,
+  "hypothesis": "Three consecutive completed daily gains contain short-horizon time-series trend persistence. Requiring the prior close above SMA200 should improve the risk-adjusted performance of a next-open long position managed only by a nondecreasing two-ATR daily trailing stop across gold, Nasdaq and S&P 500 versus the otherwise identical three-rise rule without SMA200.",
+  "pass_fail_gates": [
+    "at least two of three standalone assets have full-period CAGR above the CNY cash control",
+    "at least two of three standalone assets have full-period Sharpe >0",
+    "each standalone asset has at least 65 completed round trips",
+    "fixed one-third combined CAGR >= CNY cash CAGR +2.00 percentage points",
+    "fixed one-third combined Sharpe >=1.00",
+    "fixed one-third combined MDD <=20%",
+    "fixed one-third combined Sharpe > C-CONSECUTIVE-NO-SMA-COMBINED Sharpe",
+    "fixed one-third combined average net closed-round-trip return >0 and profit factor >=1.10",
+    "at least 4/5 fixed time folds have combined Sharpe >0",
+    "combined 2020+ CAGR and 2022+ CAGR are each greater than full-window CNY cash CAGR",
+    "with 0.05% adverse slippage per fill, combined CAGR remains above CNY cash CAGR and Sharpe >0.50",
+    "maximum gross <=100%, minimum end-of-day cash >=0, every completed trade holds at least 2 observed asset sessions, time-forced exits =0, every completed trade exits through the stop, and final open positions <=3"
+  ],
+  "protocol_component": "INDEPENDENT_DAILY_CONSECUTIVE_RISE_TREND_TRAILING_STOP_V1",
+  "protocol_id": "ATM-SVP-2",
+  "selection_metric": "No within-family selection. There is exactly one three-rise plus SMA200 candidate. All standalone paths, the fixed one-third combined path, matched no-SMA controls and execution stress are reported; PASS requires every preregistered gate.",
+  "shared_rules": {
+    "atr_lookback_sessions": 14,
+    "entry": "buy current real daily open after exactly three consecutive completed positive close-to-close moves; candidate also requires previous close>SMA200",
+    "evaluation_end": "2026-08-20",
+    "evaluation_end_liquidation": false,
+    "evaluation_start": "2017-04-11",
+    "exit": "initial two-ATR stop; then nondecreasing highest-completed-close minus current two-ATR trailing stop, gap fills at next open and other touches fill at stop",
+    "financing_allowed": false,
+    "max_gross": 1.0,
+    "maximum_holding_sessions": null,
+    "minimum_holding_sessions_for_completed_trades": 2,
+    "overnight_required": true,
+    "pyramiding_allowed": false,
+    "rise_sessions": 3,
+    "shorting_allowed": false,
+    "stop_atr_multiple": 2.0,
+    "take_profit": null,
+    "trailing_update_effective": "next asset session after each completed close, including entry-session close",
+    "trend_lookback_sessions": 200,
+    "trend_rule": "previous close > SMA200"
+  },
+  "strategy_lineage": "dayk-high-speed-006 / 日K高速006; independent result-informed daily consecutive-rise trend-following strategy replacing the 004/005 pullback-reversal premise",
+  "swift_engine_entrypoint": "scripts/run_dayk_high_speed_006.py -> tools/dayk_high_speed_006.swiftpart + tools/dayk_high_speed_006_logic.swift -> BacktestEngine.runResearchDailySwingStrategyWithTrace using StrategyTargetProvider and the shared App metric/data stack",
+  "trial_id": "ATM-SVP2-DAYK-HS-006"
+}
