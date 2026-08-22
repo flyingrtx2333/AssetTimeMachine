@@ -11,6 +11,28 @@ import requests
 
 from publish_factor_library_manifest import DEFAULT_BASE_URL, DEFAULT_TOKEN_ENV, require_success, resolve_token
 
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def resolve_strategy_token(token_env: str, agents_file: Path | None) -> str:
+    if agents_file is not None:
+        return resolve_token(token_env, agents_file)
+    candidates = [
+        ROOT / "AGENTS.md",
+        ROOT.parent / "FlyingrtxFast" / "AGENTS.md",
+    ]
+    last_error: Exception | None = None
+    for candidate in candidates:
+        if not candidate.is_file():
+            continue
+        try:
+            return resolve_token(token_env, candidate)
+        except ValueError as exc:
+            last_error = exc
+    if last_error is not None:
+        raise last_error
+    return resolve_token(token_env, None)
+
 
 def publish_manifest(*, manifest_path: Path, token: str, base_url: str, validate_only: bool, timeout: float) -> dict[str, Any]:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -62,7 +84,7 @@ def main() -> int:
     batch_key = str(manifest.get("batch_key") or "")
     if not batch_key:
         raise ValueError("manifest batch_key is missing")
-    token = resolve_token(
+    token = resolve_strategy_token(
         args.token_env,
         Path(args.agents_file).resolve() if args.agents_file else None,
     )

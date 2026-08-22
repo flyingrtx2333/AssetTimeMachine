@@ -20,7 +20,7 @@ def run(command: list[str]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="https://api.flyingrtx.com")
-    parser.add_argument("--agents-file", default="AGENTS.md")
+    parser.add_argument("--agents-file")
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--timeout", type=float, default=30.0)
     args = parser.parse_args()
@@ -36,22 +36,25 @@ def main() -> int:
             "scripts/publish_strategy_library_manifest.py",
             "--manifest", str(manifest.relative_to(ROOT)),
             "--base-url", args.base_url,
-            "--agents-file", args.agents_file,
             "--timeout", str(args.timeout),
         ]
+        if args.agents_file:
+            command.extend(["--agents-file", args.agents_file])
         if args.validate_only:
             command.append("--validate-only")
         run(command)
         if not args.validate_only:
-            run([
+            status_command = [
                 sys.executable,
                 "scripts/publish_strategy_library_manifest.py",
                 "--manifest", str(manifest.relative_to(ROOT)),
                 "--base-url", args.base_url,
-                "--agents-file", args.agents_file,
                 "--timeout", str(args.timeout),
                 "--status-only",
-            ])
+            ]
+            if args.agents_file:
+                status_command.extend(["--agents-file", args.agents_file])
+            run(status_command)
 
     mode = "validated" if args.validate_only else "published"
     print(f"STRATEGY_LIBRARY_SYNC_COMPLETE mode={mode} batches={len(manifests)}")
