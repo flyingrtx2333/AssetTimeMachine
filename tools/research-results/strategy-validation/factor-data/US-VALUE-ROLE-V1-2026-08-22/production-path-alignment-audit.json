@@ -1,0 +1,15 @@
+{
+  "purpose": "pre-performance production-path alignment audit for the IWD/VBR value-role continuation",
+  "performance_computed": false,
+  "prior_trial": "ATM-SVP2-US-VALUE-ROLE-001",
+  "prior_method": "restart all portfolios from cash on 2004-01-30 common window",
+  "new_method": "preserve the full frozen V11 path; use original S&P role returns before substitution and value-ETF adjusted-close returns afterward",
+  "IWD_first_adjusted_close_date": "2000-05-26",
+  "VBR_first_adjusted_close_date": "2004-01-30",
+  "substitution_start": "2004-02-02",
+  "substitution_start_reason": "a continuous hybrid realized-return path needs a prior VBR adjusted close; 2004-01-30 is the first VBR quote, so the next trading session is the first date on which a VBR close-to-close return is defined",
+  "calendar_alignment": "last ETF adjusted close is carried forward on union-calendar dates without a new ETF quote; the role return on such a date is zero and the next quoted session realizes the full close-to-close return",
+  "candidate_set_policy": "both IWD and VBR are retained because the predecessor trial preregistered both; no winner-only continuation is allowed",
+  "target_path_policy": "V11 source full target fingerprint must remain ba67c8aa24bc7168; candidate execution-event target fingerprints must equal the source execution-event target fingerprint",
+  "portfolio_constraints": "target gross <=1.0, non-negative weights, no financing, no shorting"
+}
