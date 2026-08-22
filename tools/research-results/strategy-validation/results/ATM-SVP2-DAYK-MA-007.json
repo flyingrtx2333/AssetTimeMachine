@@ -1,0 +1,89 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/C-CASH-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/C-DKMA007-EQUAL-ELIGIBLE-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/DKMA007-RISK-BALANCED-SLIP005-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/DKMA007-RISK-BALANCED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/V11-CONTROL-portfolio.csv"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-DAYK-MULTI-ASSET-007",
+      "metrics": {
+        "candidate": {
+          "average_cash_ratio": 0.22674965221189342,
+          "cagr_percent": 6.744752444272728,
+          "folds_sharpe_gt_1": 2,
+          "folds_with_positive_sharpe": 6,
+          "mdd_percent": 23.417924183832135,
+          "sharpe": 0.7040814363500046,
+          "since2020_cagr_percent": 5.354690184866162,
+          "since2022_cagr_percent": 4.479377433224263,
+          "target_change_count": 154,
+          "total_return_percent": 151.41007155698404,
+          "trades": 269,
+          "volatility_percent": 9.585192993451964
+        },
+        "cash_control_cagr_percent": 0.3640210285861256,
+        "constraints": {
+          "china_role_violation_sessions": 0,
+          "max_gross": 1.0000000000000002,
+          "maximum_asset_weight": 0.5,
+          "minimum_cash": 0.0,
+          "minimum_target_weight": 0.0,
+          "pass": true,
+          "us_role_violation_sessions": 0
+        },
+        "failed_preregistered_gates": [
+          "candidate full-window CAGR >= same-cost V11 CAGR",
+          "candidate full-window Sharpe >= same-cost V11 Sharpe",
+          "candidate full-window MDD <= same-cost V11 MDD",
+          "candidate Sharpe >=1.00",
+          "candidate MDD <=15%",
+          "at least 4/7 fixed folds have Sharpe >1.00",
+          "adverse-slippage Sharpe >0.75"
+        ],
+        "matched_equal_eligible_control": {
+          "cagr_percent": 6.939375356553246,
+          "mdd_percent": 27.864248105416134,
+          "sharpe": 0.6036208469866677,
+          "trades": 201
+        },
+        "preregistered_gate_pass": false,
+        "same_cost_v11_control": {
+          "average_cash_ratio": 0.4296444878570223,
+          "cagr_percent": 14.27469268000725,
+          "mdd_percent": 7.393120497995041,
+          "sharpe": 1.6529108055751296,
+          "trades": 275
+        },
+        "slippage_stress": {
+          "cagr_percent": 6.479474359606607,
+          "mdd_percent": 23.877258576666698,
+          "sharpe": 0.6790366493894981
+        },
+        "worst_fold": {
+          "cagr_percent": -8.882628323688358,
+          "mdd_percent": 22.549913854207617,
+          "name": "2021-2022",
+          "sharpe": -0.959697063624827
+        }
+      }
+    }
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-DAYK-MA-007.json",
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED. The frozen 日K多资产007 three-role trend/risk allocator produced 6.744752% CAGR, 0.704081 Sharpe and 23.417924% MDD over the exact 2012-07-05 to 2026-08-20 common window with the user-specified 0.005% fee and zero primary slippage. The same-cost frozen V11 control produced 14.274693% CAGR, 1.652911 Sharpe and 7.393120% MDD, so 007 missed all three direct V11 comparison gates by wide margins. Its inverse-volatility and 10% portfolio-volatility budget did add risk-adjusted value versus the same-eligibility equal-weight control: Sharpe improved from 0.603621 to 0.704081 and MDD fell from 27.864248% to 23.417924%, although CAGR was slightly lower than the control's 6.939375%. Six of seven folds had positive Sharpe, but only two exceeded 1.00; the 2021-2022 fold failed severely at -8.882628% CAGR, -0.959697 Sharpe and 22.549914% MDD. At 0.05% adverse slippage per fill, CAGR remained 6.479474% but Sharpe was only 0.679037 and MDD 23.877259%. Target cadence, trade count, gross, cash, single-asset cap and regional-role integrity checks passed. The result shows that simple role diversification plus volatility sizing is better than equal-weight trend allocation but is not a substitute for V11's state routing, recovery, risk-contribution and NFCI de-risk-retention architecture. No 200/126/63 period, cadence, band, role, volatility target or cap rescue is allowed inside 007.",
+  "execution_git_commit": "56f256fddc50853476b2f1152cf328ca0d24091a",
+  "preregistration_record_hash": "0664cafb0d04bea5ec2c8899ab49691e45c0c58c50dea7f30889145942966297",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP2-DAYK-MA-007"
+}

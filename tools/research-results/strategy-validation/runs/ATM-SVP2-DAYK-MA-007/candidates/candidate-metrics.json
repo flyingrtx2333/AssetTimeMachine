@@ -1,0 +1,457 @@
+{
+  "candidate": {
+    "active_target_sessions_by_symbol": {
+      "csi300": 1160,
+      "gold_cny": 2040,
+      "nasdaq": 1592,
+      "shanghai_composite": 920,
+      "sp500": 1644
+    },
+    "average_cash_ratio": 0.22674965221189342,
+    "cagr_percent": 6.744752444272728,
+    "china_role_violation_sessions": 0,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 7.076713773514176,
+        "mdd_percent": 8.778918292714577,
+        "name": "2012-2014",
+        "sessions": 648,
+        "sharpe": 0.8175069330485611
+      },
+      {
+        "cagr_percent": 5.098488481893049,
+        "mdd_percent": 18.035458060226205,
+        "name": "2015-2016",
+        "sessions": 520,
+        "sharpe": 0.533656108978063
+      },
+      {
+        "cagr_percent": 7.706453801035673,
+        "mdd_percent": 10.413818665663223,
+        "name": "2017-2018",
+        "sessions": 521,
+        "sharpe": 0.8868993344559032
+      },
+      {
+        "cagr_percent": 13.195972191813121,
+        "mdd_percent": 16.669363706225894,
+        "name": "2019-2020",
+        "sessions": 522,
+        "sharpe": 1.10894495222204
+      },
+      {
+        "cagr_percent": -8.882628323688358,
+        "mdd_percent": 22.549913854207617,
+        "name": "2021-2022",
+        "sessions": 520,
+        "sharpe": -0.959697063624827
+      },
+      {
+        "cagr_percent": 14.900922772907998,
+        "mdd_percent": 7.809119413183262,
+        "name": "2023-2024",
+        "sessions": 520,
+        "sharpe": 1.5135864649226443
+      },
+      {
+        "cagr_percent": 11.177714477256995,
+        "mdd_percent": 13.61927969555366,
+        "name": "2025-latest",
+        "sessions": 445,
+        "sharpe": 0.9721771876353998
+      }
+    ],
+    "id": "DKMA007-RISK-BALANCED",
+    "max_gross": 1.0000000000000002,
+    "maximum_asset_weight": 0.5,
+    "mdd_percent": 23.417924183832135,
+    "minimum_cash": 0,
+    "minimum_target_weight": 0,
+    "sessions": 3696,
+    "sharpe": 0.7040814363500046,
+    "since2020_cagr_percent": 5.354690184866162,
+    "since2020_sharpe": 0.532630529655022,
+    "since2022_cagr_percent": 4.479377433224263,
+    "since2022_sharpe": 0.4772220237192149,
+    "start": "2012-07-05",
+    "target_change_count": 154,
+    "target_fingerprint": "3f326c75705997fb",
+    "total_return_percent": 151.41007155698404,
+    "trades": 269,
+    "us_role_violation_sessions": 0,
+    "volatility_percent": 9.585192993451964
+  },
+  "candidate_id": "S-DAYK-MULTI-ASSET-007",
+  "cash_control": {
+    "active_target_sessions_by_symbol": {
+      "csi300": 0,
+      "gold_cny": 0,
+      "nasdaq": 0,
+      "shanghai_composite": 0,
+      "sp500": 0
+    },
+    "average_cash_ratio": 1,
+    "cagr_percent": 0.3640210285861256,
+    "china_role_violation_sessions": 0,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 0.3618857583939761,
+        "mdd_percent": 0,
+        "name": "2012-2014",
+        "sessions": 648,
+        "sharpe": 2001.0760590697105
+      },
+      {
+        "cagr_percent": 0.36230659916762775,
+        "mdd_percent": 0,
+        "name": "2015-2016",
+        "sessions": 520,
+        "sharpe": 2092552780750.466
+      },
+      {
+        "cagr_percent": 0.3630059506181782,
+        "mdd_percent": 0,
+        "name": "2017-2018",
+        "sessions": 521,
+        "sharpe": 2051177454067.2058
+      },
+      {
+        "cagr_percent": 0.3627070491279305,
+        "mdd_percent": 0,
+        "name": "2019-2020",
+        "sessions": 522,
+        "sharpe": 2070471259199.915
+      },
+      {
+        "cagr_percent": 0.36380852270214703,
+        "mdd_percent": 0,
+        "name": "2021-2022",
+        "sessions": 520,
+        "sharpe": 2086940817357.1152
+      },
+      {
+        "cagr_percent": 0.36230659916756114,
+        "mdd_percent": 0,
+        "name": "2023-2024",
+        "sessions": 520,
+        "sharpe": 2076256111055.5361
+      },
+      {
+        "cagr_percent": 0.3792651884670928,
+        "mdd_percent": 0,
+        "name": "2025-latest",
+        "sessions": 445,
+        "sharpe": 2130541637361.5056
+      }
+    ],
+    "id": "C-CASH-COMBINED",
+    "max_gross": 0,
+    "maximum_asset_weight": 0,
+    "mdd_percent": 0,
+    "minimum_cash": 106294.27871784342,
+    "minimum_target_weight": 0,
+    "sessions": 3696,
+    "sharpe": 4777.304306358694,
+    "since2020_cagr_percent": 0.3661591564060984,
+    "since2020_sharpe": 2094069548331.6226,
+    "since2022_cagr_percent": 0.3680844642552916,
+    "since2022_sharpe": 2097919433317.9521,
+    "start": "2012-07-05",
+    "target_change_count": 0,
+    "target_fingerprint": "c6e73905711f9583",
+    "total_return_percent": 5.266290769786486,
+    "trades": 0,
+    "us_role_violation_sessions": 0,
+    "volatility_percent": 7.326873926241629e-05
+  },
+  "evaluation_end": "2026-08-20",
+  "evaluation_start": "2012-07-05",
+  "fee_rate_per_fill": 5e-05,
+  "matched_control": {
+    "active_target_sessions_by_symbol": {
+      "csi300": 1160,
+      "gold_cny": 2040,
+      "nasdaq": 1592,
+      "shanghai_composite": 920,
+      "sp500": 1644
+    },
+    "average_cash_ratio": 0.14178416374254144,
+    "cagr_percent": 6.939375356553246,
+    "china_role_violation_sessions": 0,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 6.813391231556953,
+        "mdd_percent": 11.022981178442395,
+        "name": "2012-2014",
+        "sessions": 648,
+        "sharpe": 0.7239471729424051
+      },
+      {
+        "cagr_percent": 3.442791136729162,
+        "mdd_percent": 27.864248105416138,
+        "name": "2015-2016",
+        "sessions": 520,
+        "sharpe": 0.28737992985778704
+      },
+      {
+        "cagr_percent": 8.497146027798896,
+        "mdd_percent": 10.34243838379648,
+        "name": "2017-2018",
+        "sessions": 521,
+        "sharpe": 0.9367635428806002
+      },
+      {
+        "cagr_percent": 14.476876382107019,
+        "mdd_percent": 21.366765709284532,
+        "name": "2019-2020",
+        "sessions": 522,
+        "sharpe": 0.9532031155663204
+      },
+      {
+        "cagr_percent": -9.143086394035594,
+        "mdd_percent": 25.370816287653348,
+        "name": "2021-2022",
+        "sessions": 520,
+        "sharpe": -0.8163712843407841
+      },
+      {
+        "cagr_percent": 17.17552136638698,
+        "mdd_percent": 7.809121201418636,
+        "name": "2023-2024",
+        "sessions": 520,
+        "sharpe": 1.6646999452837803
+      },
+      {
+        "cagr_percent": 11.168628216906473,
+        "mdd_percent": 15.892217237024402,
+        "name": "2025-latest",
+        "sessions": 445,
+        "sharpe": 0.8214928637231782
+      }
+    ],
+    "id": "C-DKMA007-EQUAL-ELIGIBLE",
+    "max_gross": 1,
+    "maximum_asset_weight": 0.5,
+    "mdd_percent": 27.864248105416134,
+    "minimum_cash": 0,
+    "minimum_target_weight": 0,
+    "sessions": 3696,
+    "sharpe": 0.6036208469866677,
+    "since2020_cagr_percent": 6.440699153695495,
+    "since2020_sharpe": 0.5359344200470274,
+    "since2022_cagr_percent": 4.849202894334437,
+    "since2022_sharpe": 0.4656607408021796,
+    "start": "2012-07-05",
+    "target_change_count": 93,
+    "target_fingerprint": "14edc1ad76090ce3",
+    "total_return_percent": 157.96259838583276,
+    "trades": 201,
+    "us_role_violation_sessions": 0,
+    "volatility_percent": 11.883862287682572
+  },
+  "preregistered_gate_evaluation": {
+    "checks": {
+      "at_least_four_of_seven_folds_sharpe_gt_1": false,
+      "at_least_six_of_seven_positive_sharpe_folds": true,
+      "candidate_cagr_ge_cash_plus_5pp": true,
+      "candidate_cagr_ge_v11_same_cost": false,
+      "candidate_mdd_le_15pct": false,
+      "candidate_mdd_le_v11_same_cost": false,
+      "candidate_sharpe_ge_1": false,
+      "candidate_sharpe_ge_v11_same_cost": false,
+      "candidate_sharpe_gt_matched_equal_weight": true,
+      "executed_trade_count_le_500": true,
+      "max_gross_le_100pct": true,
+      "maximum_asset_weight_le_50pct": true,
+      "minimum_cash_nonnegative": true,
+      "minimum_target_weight_nonnegative": true,
+      "since2020_cagr_gt_cash": true,
+      "since2022_cagr_gt_cash": true,
+      "stress_cagr_ge_cash_plus_3pp": true,
+      "stress_sharpe_gt_0_75": false,
+      "target_change_count_between_20_and_200": true,
+      "zero_china_role_violations": true,
+      "zero_us_role_violations": true
+    },
+    "diagnostics": {
+      "candidate_minus_v11_cagr_pp": -7.529940235734522,
+      "candidate_minus_v11_sharpe": -0.948829369225125,
+      "cash_cagr_percent": 0.3640210285861256,
+      "folds_sharpe_gt_1_count": 2,
+      "positive_sharpe_fold_count": 6
+    },
+    "pass": false
+  },
+  "primary_slippage_rate_per_fill": 0,
+  "slippage_stress": {
+    "active_target_sessions_by_symbol": {
+      "csi300": 1160,
+      "gold_cny": 2040,
+      "nasdaq": 1592,
+      "shanghai_composite": 920,
+      "sp500": 1644
+    },
+    "average_cash_ratio": 0.22675633508590284,
+    "cagr_percent": 6.479474359606607,
+    "china_role_violation_sessions": 0,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 6.806796289096662,
+        "mdd_percent": 8.915779856381182,
+        "name": "2012-2014",
+        "sessions": 648,
+        "sharpe": 0.7891085982098262
+      },
+      {
+        "cagr_percent": 4.889259440567306,
+        "mdd_percent": 18.204879137638375,
+        "name": "2015-2016",
+        "sessions": 520,
+        "sharpe": 0.5141379447190881
+      },
+      {
+        "cagr_percent": 7.371655863788984,
+        "mdd_percent": 10.48036259956891,
+        "name": "2017-2018",
+        "sessions": 521,
+        "sharpe": 0.8512276884039878
+      },
+      {
+        "cagr_percent": 12.950805349786254,
+        "mdd_percent": 16.684587363322752,
+        "name": "2019-2020",
+        "sessions": 522,
+        "sharpe": 1.090973061988557
+      },
+      {
+        "cagr_percent": -9.127002642066461,
+        "mdd_percent": 22.961418096633828,
+        "name": "2021-2022",
+        "sessions": 520,
+        "sharpe": -0.9886383489884636
+      },
+      {
+        "cagr_percent": 14.615165129873088,
+        "mdd_percent": 7.923117832813682,
+        "name": "2023-2024",
+        "sessions": 520,
+        "sharpe": 1.487429009169605
+      },
+      {
+        "cagr_percent": 10.900734290819525,
+        "mdd_percent": 13.835676143232334,
+        "name": "2025-latest",
+        "sessions": 445,
+        "sharpe": 0.9499219573376048
+      }
+    ],
+    "id": "DKMA007-RISK-BALANCED-SLIP005",
+    "max_gross": 1,
+    "maximum_asset_weight": 0.5,
+    "mdd_percent": 23.877258576666698,
+    "minimum_cash": 0,
+    "minimum_target_weight": 0,
+    "sessions": 3696,
+    "sharpe": 0.6790366493894981,
+    "since2020_cagr_percent": 5.090882174507083,
+    "since2020_sharpe": 0.5095142258046539,
+    "since2022_cagr_percent": 4.213296512539144,
+    "since2022_sharpe": 0.4521242211638241,
+    "start": "2012-07-05",
+    "target_change_count": 154,
+    "target_fingerprint": "3f326c75705997fb",
+    "total_return_percent": 142.72759514731626,
+    "trades": 269,
+    "us_role_violation_sessions": 0,
+    "volatility_percent": 9.585729271447729
+  },
+  "stress_slippage_rate_per_fill": 0.0005,
+  "trial_id": "ATM-SVP2-DAYK-MA-007",
+  "v11_control": {
+    "active_target_sessions_by_symbol": {
+      "csi300": 1382,
+      "gold_cny": 3299,
+      "nasdaq": 3515,
+      "shanghai_composite": 1147,
+      "sp500": 2805
+    },
+    "average_cash_ratio": 0.4296444878570223,
+    "cagr_percent": 14.27469268000725,
+    "china_role_violation_sessions": 1147,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 12.052625970541285,
+        "mdd_percent": 4.072763749520549,
+        "name": "2012-2014",
+        "sessions": 648,
+        "sharpe": 1.8258454522375518
+      },
+      {
+        "cagr_percent": 8.499448135512822,
+        "mdd_percent": 5.377290361309594,
+        "name": "2015-2016",
+        "sessions": 520,
+        "sharpe": 1.377421282315339
+      },
+      {
+        "cagr_percent": 6.3886103430473185,
+        "mdd_percent": 5.938155353243373,
+        "name": "2017-2018",
+        "sessions": 521,
+        "sharpe": 0.9711329060771341
+      },
+      {
+        "cagr_percent": 16.68656848179355,
+        "mdd_percent": 7.3931204979950556,
+        "name": "2019-2020",
+        "sessions": 522,
+        "sharpe": 1.9046345350246339
+      },
+      {
+        "cagr_percent": 5.980182610678342,
+        "mdd_percent": 3.0393469508216624,
+        "name": "2021-2022",
+        "sessions": 520,
+        "sharpe": 1.5812349847938196
+      },
+      {
+        "cagr_percent": 22.640291325014907,
+        "mdd_percent": 6.254196041405537,
+        "name": "2023-2024",
+        "sessions": 520,
+        "sharpe": 1.7874619222442976
+      },
+      {
+        "cagr_percent": 34.99518013557912,
+        "mdd_percent": 6.070467838283915,
+        "name": "2025-latest",
+        "sessions": 445,
+        "sharpe": 2.3990758079885626
+      }
+    ],
+    "id": "V11-CONTROL",
+    "max_gross": 1,
+    "maximum_asset_weight": 0.9063385476473158,
+    "mdd_percent": 7.393120497995041,
+    "minimum_cash": 0,
+    "minimum_target_weight": 0,
+    "sessions": 3696,
+    "sharpe": 1.6529108055751296,
+    "since2020_cagr_percent": 19.476356078718737,
+    "since2020_sharpe": 1.8058537646239203,
+    "since2022_cagr_percent": 22.428616607293385,
+    "since2022_sharpe": 1.906234778102054,
+    "start": "2012-07-05",
+    "target_change_count": 116,
+    "target_fingerprint": "a4a266ea3e6c2c1c",
+    "total_return_percent": 558.4455023777105,
+    "trades": 275,
+    "us_role_violation_sessions": 2805,
+    "volatility_percent": 7.97056574792106
+  }
+}

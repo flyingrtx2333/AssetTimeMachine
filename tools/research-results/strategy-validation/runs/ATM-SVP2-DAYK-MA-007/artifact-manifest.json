@@ -1,0 +1,134 @@
+{
+  "files": [
+    {
+      "bytes": 107205,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2012-07-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/C-CASH-COMBINED-portfolio.csv",
+      "row_count": 3696,
+      "sha256": "2642420b39bb918e4647fc01b9a6addc416bbe06c4b8cb067a303982b0169680"
+    },
+    {
+      "bytes": 107205,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2012-07-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/C-DKMA007-EQUAL-ELIGIBLE-portfolio.csv",
+      "row_count": 3696,
+      "sha256": "7908aed0f2935b691e0a45eab58e81c0682e34bb722c235f8577ae632cbe127b"
+    },
+    {
+      "bytes": 107205,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2012-07-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/DKMA007-RISK-BALANCED-SLIP005-portfolio.csv",
+      "row_count": 3696,
+      "sha256": "ebccf7a74a2d5c0ba60209fddad9daa4a67470fe8a9550f5688af67102f71df9"
+    },
+    {
+      "bytes": 107205,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2012-07-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/DKMA007-RISK-BALANCED-portfolio.csv",
+      "row_count": 3696,
+      "sha256": "4f3e83359adb8628da6a63dcbc4efb8855d7bef2e543025adf57ad0879f208e8"
+    },
+    {
+      "bytes": 109999,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2012-07-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 3696,
+      "sha256": "e4f779d6c757eea2fe621d7dfdb36d8da24d5fe5f3f3342bc6e539e76992167e"
+    },
+    {
+      "bytes": 944,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "maximum_asset_weight",
+        "target_change_count",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/candidate-metrics.csv",
+      "row_count": 5,
+      "sha256": "033ee06c4965678f9fdb76b04e047ae37a99f058774b00ec014d03d958441ddf"
+    },
+    {
+      "bytes": 13463,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/candidates/candidate-metrics.json",
+      "sha256": "44ed3d5f588a7e13afc2fb43281c04c2180e0c01f717e07211393ef63831afc9"
+    },
+    {
+      "bytes": 937,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/execution.json",
+      "sha256": "8f94ee286c63d2f5e4dbde3935dfcfffc6564ec62bdc6f3ac8af42d80bae88ed"
+    },
+    {
+      "bytes": 434,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/run-authorization.json",
+      "sha256": "1022fa7f9f67801479f1df8268e8030c1cc3f1ee708df96a415ba632c6b95dd8"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1185,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-MA-007/stdout.txt",
+      "sha256": "2ed3615ce9f0a35c5e852f67e3df565c3955ba8f7bc0564b803cdcaf8a63e0a3"
+    }
+  ],
+  "generated_at": "2026-08-22T23:30:02+08:00",
+  "git_commit": "56f256fddc50853476b2f1152cf328ca0d24091a",
+  "kind": "result",
+  "metadata": {},
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-DAYK-MA-007"
+}
