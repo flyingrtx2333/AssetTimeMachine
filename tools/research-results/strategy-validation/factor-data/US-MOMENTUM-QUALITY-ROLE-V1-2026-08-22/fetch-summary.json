@@ -1,0 +1,49 @@
+{
+  "common_evaluation_start": "2013-07-19",
+  "common_substitution_start": "2013-07-19",
+  "performance_computed": false,
+  "purpose": "fixed MTUM/QUAL asset-role data construction only; no AssetTimeMachine strategy performance",
+  "selection_policy": "MTUM and QUAL are both frozen before either role-substitution result is viewed",
+  "series": {
+    "MTUM": {
+      "first_date": "2013-04-18",
+      "first_return_date": "2013-04-19",
+      "last_date": "2026-08-21",
+      "max_calendar_gap": 4,
+      "official_inception": "2013-04-16",
+      "path": "tools/research-results/strategy-validation/factor-data/US-MOMENTUM-QUALITY-ROLE-V1-2026-08-22/MTUM.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "BTS",
+        "instrument_type": "ETF",
+        "price_field": "adjusted_close_total_return_proxy",
+        "series_id": "MTUM",
+        "source": "YAHOO",
+        "timezone": "America/New_York"
+      },
+      "role": "U.S. momentum",
+      "rows": 3357,
+      "sha256": "764c800048102f674bf11f95858c9f8c10bf476417859818d1695af7e14d375b"
+    },
+    "QUAL": {
+      "first_date": "2013-07-18",
+      "first_return_date": "2013-07-19",
+      "last_date": "2026-08-21",
+      "max_calendar_gap": 4,
+      "official_inception": "2013-07-16",
+      "path": "tools/research-results/strategy-validation/factor-data/US-MOMENTUM-QUALITY-ROLE-V1-2026-08-22/QUAL.csv",
+      "provenance": {
+        "currency": "USD",
+        "exchange_name": "BTS",
+        "instrument_type": "ETF",
+        "price_field": "adjusted_close_total_return_proxy",
+        "series_id": "QUAL",
+        "source": "YAHOO",
+        "timezone": "America/New_York"
+      },
+      "role": "U.S. sector-neutral quality",
+      "rows": 3294,
+      "sha256": "f647ea7febfe06a48bb4639bbdfb2dd61b7cf36568c2efbb523119f7bcd88b3b"
+    }
+  }
+}
