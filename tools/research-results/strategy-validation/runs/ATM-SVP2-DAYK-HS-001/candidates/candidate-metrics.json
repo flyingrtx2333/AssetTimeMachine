@@ -1,0 +1,908 @@
+{
+  "candidate_id": "S-DAYK-HIGH-SPEED-001",
+  "candidate_paths": [
+    {
+      "average_intraday_gross": 0.019493790284546456,
+      "cagr_percent": 1.3831052437402125,
+      "end": "2026-08-20",
+      "folds": [
+        {
+          "cagr_percent": 0.749297116654235,
+          "mdd_percent": 0,
+          "name": "2001-2004",
+          "sessions": 826,
+          "sharpe": 129.79888310401535
+        },
+        {
+          "cagr_percent": 0.7215567330011385,
+          "mdd_percent": 0,
+          "name": "2005-2008",
+          "sessions": 1003,
+          "sharpe": 187.88803673482158
+        },
+        {
+          "cagr_percent": 0.4025052896673653,
+          "mdd_percent": 0,
+          "name": "2009-2012",
+          "sessions": 1006,
+          "sharpe": 99.89931314234902
+        },
+        {
+          "cagr_percent": 0.4165464308518496,
+          "mdd_percent": 0,
+          "name": "2013-2016",
+          "sessions": 1012,
+          "sharpe": 3.2432367275887297
+        },
+        {
+          "cagr_percent": 2.484382131818119,
+          "mdd_percent": 2.172422329134112,
+          "name": "2017-2020",
+          "sessions": 1040,
+          "sharpe": 1.646602418863105
+        },
+        {
+          "cagr_percent": 1.9644555588067103,
+          "mdd_percent": 0.7518488077993284,
+          "name": "2021-2022",
+          "sessions": 516,
+          "sharpe": 1.612973818491723
+        },
+        {
+          "cagr_percent": 3.270036096955975,
+          "mdd_percent": 2.1591089232400407,
+          "name": "2023-latest",
+          "sessions": 958,
+          "sharpe": 1.850900656609592
+        }
+      ],
+      "id": "DKHS001-GOLD",
+      "last10y_cagr_percent": 2.640919113347029,
+      "last10y_sharpe": 1.7249378318572808,
+      "max_intraday_gross": 1,
+      "mdd_percent": 2.172422329134131,
+      "minimum_end_of_day_cash": 100000,
+      "overnight_position_days": 0,
+      "round_trips_by_symbol": {
+        "gold_cny": 124
+      },
+      "sessions": 6361,
+      "sharpe": 1.449126765755323,
+      "since2020_cagr_percent": 2.503817857840862,
+      "since2020_sharpe": 1.4872438162624237,
+      "since2022_cagr_percent": 3.2654474568865943,
+      "since2022_sharpe": 1.8664146010737228,
+      "start": "2001-09-05",
+      "take_profit_hits_by_symbol": {
+        "gold_cny": 108
+      },
+      "target_fingerprint": "e26ec9f651b87eab",
+      "total_return_percent": 40.88810114002908,
+      "trade_stats": {
+        "average_return_percent": 0.18176591159776018,
+        "profit_factor": 3.256655789934396,
+        "round_trips": 124,
+        "win_rate_percent": 87.09677419354838
+      },
+      "volatility_percent": 0.9403754848167261
+    },
+    {
+      "average_intraday_gross": 0.14096846129340554,
+      "cagr_percent": -1.6039048471871653,
+      "end": "2026-08-20",
+      "folds": [
+        {
+          "cagr_percent": -6.6850274059641945,
+          "mdd_percent": 23.585619769454734,
+          "name": "2001-2004",
+          "sessions": 834,
+          "sharpe": -1.2973275025937618
+        },
+        {
+          "cagr_percent": -1.667496738020835,
+          "mdd_percent": 10.962085952015462,
+          "name": "2005-2008",
+          "sessions": 1007,
+          "sharpe": -0.5223386711789098
+        },
+        {
+          "cagr_percent": -2.6917185142109723,
+          "mdd_percent": 11.766096239728158,
+          "name": "2009-2012",
+          "sessions": 1006,
+          "sharpe": -0.5857658699480809
+        },
+        {
+          "cagr_percent": -0.061453004326861294,
+          "mdd_percent": 5.168443855159168,
+          "name": "2013-2016",
+          "sessions": 1010,
+          "sharpe": -0.0025968466793080615
+        },
+        {
+          "cagr_percent": 1.476753758688254,
+          "mdd_percent": 3.5539071366390993,
+          "name": "2017-2020",
+          "sessions": 1007,
+          "sharpe": 0.4207673081537202
+        },
+        {
+          "cagr_percent": -2.7768135198039334,
+          "mdd_percent": 9.324817656807257,
+          "name": "2021-2022",
+          "sessions": 503,
+          "sharpe": -0.5844823597489788
+        },
+        {
+          "cagr_percent": 0.6221737903330027,
+          "mdd_percent": 4.771420194278784,
+          "name": "2023-latest",
+          "sessions": 911,
+          "sharpe": 0.17888149412274937
+        }
+      ],
+      "id": "DKHS001-NASDAQ",
+      "last10y_cagr_percent": -0.09578797244347292,
+      "last10y_sharpe": -0.003949279111922888,
+      "max_intraday_gross": 1,
+      "mdd_percent": 37.1745556379096,
+      "minimum_end_of_day_cash": 63712.278331624955,
+      "overnight_position_days": 0,
+      "round_trips_by_symbol": {
+        "nasdaq": 885
+      },
+      "sessions": 6278,
+      "sharpe": -0.37997427687372637,
+      "since2020_cagr_percent": -0.03988657724597333,
+      "since2020_sharpe": 0.013058535467183986,
+      "since2022_cagr_percent": -0.5663517831414944,
+      "since2022_sharpe": -0.11809981299528474,
+      "start": "2001-09-05",
+      "take_profit_hits_by_symbol": {
+        "nasdaq": 584
+      },
+      "target_fingerprint": "4238216cb5a45166",
+      "total_return_percent": -33.20268428248264,
+      "trade_stats": {
+        "average_return_percent": -0.0565506707031113,
+        "profit_factor": 0.7913719507160342,
+        "round_trips": 885,
+        "win_rate_percent": 70.16949152542374
+      },
+      "volatility_percent": 4.0457778595996565
+    },
+    {
+      "average_intraday_gross": 0.07633587786259542,
+      "cagr_percent": -1.4966609681396958,
+      "end": "2026-08-20",
+      "folds": [
+        {
+          "cagr_percent": 1.1716131178678202,
+          "mdd_percent": 0.21658932864112107,
+          "name": "2001-2004",
+          "sessions": 835,
+          "sharpe": 3.0826437274845655
+        },
+        {
+          "cagr_percent": -1.3752432249149682,
+          "mdd_percent": 7.149476513236442,
+          "name": "2005-2008",
+          "sessions": 1009,
+          "sharpe": -0.6169287127198785
+        },
+        {
+          "cagr_percent": -1.4124871296828934,
+          "mdd_percent": 7.240749611828415,
+          "name": "2009-2012",
+          "sessions": 1014,
+          "sharpe": -0.5880744347215184
+        },
+        {
+          "cagr_percent": -3.3340798909886837,
+          "mdd_percent": 14.283799316321671,
+          "name": "2013-2016",
+          "sessions": 1009,
+          "sharpe": -1.456996460592225
+        },
+        {
+          "cagr_percent": 0.061294892482166574,
+          "mdd_percent": 11.325622665084705,
+          "name": "2017-2020",
+          "sessions": 1007,
+          "sharpe": 0.0353226762843006
+        },
+        {
+          "cagr_percent": -6.424734884318328,
+          "mdd_percent": 13.539451747694933,
+          "name": "2021-2022",
+          "sessions": 503,
+          "sharpe": -1.3872932639236837
+        },
+        {
+          "cagr_percent": -0.5784602820569473,
+          "mdd_percent": 6.705737067264157,
+          "name": "2023-latest",
+          "sessions": 911,
+          "sharpe": -0.19676546103326467
+        }
+      ],
+      "id": "DKHS001-SP500",
+      "last10y_cagr_percent": -1.6030653815425566,
+      "last10y_sharpe": -0.4336451369882466,
+      "max_intraday_gross": 1,
+      "mdd_percent": 35.54610580788736,
+      "minimum_end_of_day_cash": 68017.39871713278,
+      "overnight_position_days": 0,
+      "round_trips_by_symbol": {
+        "sp500": 480
+      },
+      "sessions": 6288,
+      "sharpe": -0.5309673056046408,
+      "since2020_cagr_percent": -3.3304684619934077,
+      "since2020_sharpe": -0.824810701083959,
+      "since2022_cagr_percent": -2.3185006785155893,
+      "since2022_sharpe": -0.6405363225780616,
+      "start": "2001-09-05",
+      "take_profit_hits_by_symbol": {
+        "sp500": 294
+      },
+      "target_fingerprint": "22fde142413fc603",
+      "total_return_percent": -31.361912286633554,
+      "trade_stats": {
+        "average_return_percent": -0.10091414324315115,
+        "profit_factor": 0.5871530280071396,
+        "round_trips": 480,
+        "win_rate_percent": 65.83333333333333
+      },
+      "volatility_percent": 2.767751509004758
+    },
+    {
+      "average_intraday_gross": 0.077685605467731,
+      "cagr_percent": -0.5531966641745156,
+      "end": "2026-08-20",
+      "folds": [
+        {
+          "cagr_percent": -1.620818722178774,
+          "mdd_percent": 6.937694512505993,
+          "name": "2001-2004",
+          "sessions": 836,
+          "sharpe": -0.9210707592606894
+        },
+        {
+          "cagr_percent": -0.7628688549588758,
+          "mdd_percent": 5.4567607046558395,
+          "name": "2005-2008",
+          "sessions": 1011,
+          "sharpe": -0.5020095749457542
+        },
+        {
+          "cagr_percent": -1.2140363823157752,
+          "mdd_percent": 6.240215553573243,
+          "name": "2009-2012",
+          "sessions": 1014,
+          "sharpe": -0.6538503651577531
+        },
+        {
+          "cagr_percent": -0.9899958377720952,
+          "mdd_percent": 5.593592815701022,
+          "name": "2013-2016",
+          "sessions": 1014,
+          "sharpe": -0.6727406983022892
+        },
+        {
+          "cagr_percent": 1.3715006286378228,
+          "mdd_percent": 2.7328993651931572,
+          "name": "2017-2020",
+          "sessions": 1040,
+          "sharpe": 0.670834437494382
+        },
+        {
+          "cagr_percent": -2.4263333837488243,
+          "mdd_percent": 7.088416900140427,
+          "name": "2021-2022",
+          "sessions": 516,
+          "sharpe": -0.9122108564416402
+        },
+        {
+          "cagr_percent": 1.1243857497726717,
+          "mdd_percent": 2.184645355291146,
+          "name": "2023-latest",
+          "sessions": 958,
+          "sharpe": 0.519634608063098
+        }
+      ],
+      "id": "DKHS001-COMBINED",
+      "last10y_cagr_percent": 0.3353544836093736,
+      "last10y_sharpe": 0.16010804052015068,
+      "max_intraday_gross": 1,
+      "mdd_percent": 18.48109402536427,
+      "minimum_end_of_day_cash": 82046.01207209098,
+      "overnight_position_days": 0,
+      "round_trips_by_symbol": {
+        "gold_cny": 124,
+        "nasdaq": 885,
+        "sp500": 480
+      },
+      "sessions": 6389,
+      "sharpe": -0.2815246271773915,
+      "since2020_cagr_percent": -0.27532320230894136,
+      "since2020_sharpe": -0.09669636123634176,
+      "since2022_cagr_percent": 0.1372465476012552,
+      "since2022_sharpe": 0.06843762639305462,
+      "start": "2001-09-05",
+      "take_profit_hits_by_symbol": {
+        "gold_cny": 108,
+        "nasdaq": 584,
+        "sp500": 294
+      },
+      "target_fingerprint": "ccb19dafb212da91",
+      "total_return_percent": -12.928129876970818,
+      "trade_stats": {
+        "average_return_percent": -0.051005479711781945,
+        "profit_factor": 0.7931746728961606,
+        "round_trips": 1489,
+        "win_rate_percent": 70.18132975151107
+      },
+      "volatility_percent": 1.8769627886608167
+    }
+  ],
+  "cash_control": {
+    "average_intraday_gross": 0,
+    "cagr_percent": 0.47884818454275724,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 0.75799508289216,
+        "mdd_percent": 0,
+        "name": "2001-2004",
+        "sessions": 836,
+        "sharpe": 129.52678033792316
+      },
+      {
+        "cagr_percent": 0.7273241758873894,
+        "mdd_percent": 0,
+        "name": "2005-2008",
+        "sessions": 1011,
+        "sharpe": 188.6329763996516
+      },
+      {
+        "cagr_percent": 0.40549757762518013,
+        "mdd_percent": 0,
+        "name": "2009-2012",
+        "sessions": 1014,
+        "sharpe": 99.9516390204631
+      },
+      {
+        "cagr_percent": 0.353079261829925,
+        "mdd_percent": 0,
+        "name": "2013-2016",
+        "sessions": 1014,
+        "sharpe": 2047746377547.7092
+      },
+      {
+        "cagr_percent": 0.3619092316659245,
+        "mdd_percent": 0,
+        "name": "2017-2020",
+        "sessions": 1040,
+        "sharpe": 2085680887830.7424
+      },
+      {
+        "cagr_percent": 0.36099954848700655,
+        "mdd_percent": 0,
+        "name": "2021-2022",
+        "sessions": 516,
+        "sharpe": 2119165450827.1
+      },
+      {
+        "cagr_percent": 0.3670680913262725,
+        "mdd_percent": 0,
+        "name": "2023-latest",
+        "sessions": 958,
+        "sharpe": 2157390959167.1846
+      }
+    ],
+    "id": "C-CASH-COMBINED",
+    "last10y_cagr_percent": 0.3631255114637133,
+    "last10y_sharpe": 2112949849807.7803,
+    "max_intraday_gross": 0,
+    "mdd_percent": 0,
+    "minimum_end_of_day_cash": 100000,
+    "overnight_position_days": 0,
+    "round_trips_by_symbol": {
+      "gold_cny": 0,
+      "nasdaq": 0,
+      "sp500": 0
+    },
+    "sessions": 6389,
+    "sharpe": 41.84426153270532,
+    "since2020_cagr_percent": 0.3634263723330644,
+    "since2020_sharpe": 2139731026877.0637,
+    "since2022_cagr_percent": 0.36537302245829295,
+    "since2022_sharpe": 2147089400395.2944,
+    "start": "2001-09-05",
+    "take_profit_hits_by_symbol": {
+      "gold_cny": 0,
+      "nasdaq": 0,
+      "sp500": 0
+    },
+    "target_fingerprint": "1d60481f1d345523",
+    "total_return_percent": 12.661076968723162,
+    "trade_stats": {
+      "average_return_percent": 0,
+      "profit_factor": 0,
+      "round_trips": 0,
+      "win_rate_percent": 0
+    },
+    "volatility_percent": 0.011239084015819537
+  },
+  "evaluation_end": "2026-08-20",
+  "evaluation_start": "2001-09-05",
+  "fee_rate_per_fill": 5e-05,
+  "matched_control_paths": [
+    {
+      "average_intraday_gross": 0.02986951737148247,
+      "cagr_percent": 1.9494791907479492,
+      "end": "2026-08-20",
+      "folds": [
+        {
+          "cagr_percent": 0.749297116654235,
+          "mdd_percent": 0,
+          "name": "2001-2004",
+          "sessions": 826,
+          "sharpe": 129.79888310401535
+        },
+        {
+          "cagr_percent": 0.7215567330011385,
+          "mdd_percent": 0,
+          "name": "2005-2008",
+          "sessions": 1003,
+          "sharpe": 187.88803673482158
+        },
+        {
+          "cagr_percent": 0.4025052896673653,
+          "mdd_percent": 0,
+          "name": "2009-2012",
+          "sessions": 1006,
+          "sharpe": 99.89931314234902
+        },
+        {
+          "cagr_percent": 0.4165464308518496,
+          "mdd_percent": 0,
+          "name": "2013-2016",
+          "sessions": 1012,
+          "sharpe": 3.2432367275887297
+        },
+        {
+          "cagr_percent": 4.401037426868304,
+          "mdd_percent": 4.384887737010498,
+          "name": "2017-2020",
+          "sessions": 1040,
+          "sharpe": 1.9912219023014577
+        },
+        {
+          "cagr_percent": 4.252364624309979,
+          "mdd_percent": 0.7518488077993571,
+          "name": "2021-2022",
+          "sessions": 516,
+          "sharpe": 2.7684053327718123
+        },
+        {
+          "cagr_percent": 3.868544151647324,
+          "mdd_percent": 2.1591089232400353,
+          "name": "2023-latest",
+          "sessions": 958,
+          "sharpe": 2.076592309450471
+        }
+      ],
+      "id": "C-GAP-GOLD",
+      "last10y_cagr_percent": 4.078844041961949,
+      "last10y_sharpe": 2.123134753803702,
+      "max_intraday_gross": 1,
+      "mdd_percent": 4.384887737010469,
+      "minimum_end_of_day_cash": 100000,
+      "overnight_position_days": 0,
+      "round_trips_by_symbol": {
+        "gold_cny": 190
+      },
+      "sessions": 6361,
+      "sharpe": 1.6322649277600645,
+      "since2020_cagr_percent": 3.8203256659546714,
+      "since2020_sharpe": 2.01246875806459,
+      "since2022_cagr_percent": 4.350077155605647,
+      "since2022_sharpe": 2.295610662544026,
+      "start": "2001-09-05",
+      "take_profit_hits_by_symbol": {
+        "gold_cny": 168
+      },
+      "target_fingerprint": "54fedd1392162157",
+      "total_return_percent": 61.90200918539386,
+      "trade_stats": {
+        "average_return_percent": 0.19213012887216122,
+        "profit_factor": 3.538650619624861,
+        "round_trips": 190,
+        "win_rate_percent": 88.42105263157895
+      },
+      "volatility_percent": 1.173884766433201
+    },
+    {
+      "average_intraday_gross": 0.2167887862376553,
+      "cagr_percent": -3.5324345156102166,
+      "end": "2026-08-20",
+      "folds": [
+        {
+          "cagr_percent": -9.622820087349737,
+          "mdd_percent": 35.375015022293475,
+          "name": "2001-2004",
+          "sessions": 834,
+          "sharpe": -1.3402585518191303
+        },
+        {
+          "cagr_percent": -5.299249181162901,
+          "mdd_percent": 27.727524680709674,
+          "name": "2005-2008",
+          "sessions": 1007,
+          "sharpe": -0.604270216529062
+        },
+        {
+          "cagr_percent": -4.635044721197024,
+          "mdd_percent": 19.1026026712623,
+          "name": "2009-2012",
+          "sessions": 1006,
+          "sharpe": -0.6984259532943004
+        },
+        {
+          "cagr_percent": 0.797895125843362,
+          "mdd_percent": 5.41377475656186,
+          "name": "2013-2016",
+          "sessions": 1010,
+          "sharpe": 0.21955939232086047
+        },
+        {
+          "cagr_percent": -0.49462471508042727,
+          "mdd_percent": 8.03248236757144,
+          "name": "2017-2020",
+          "sessions": 1007,
+          "sharpe": -0.04417002847601246
+        },
+        {
+          "cagr_percent": -8.917644878899244,
+          "mdd_percent": 19.455893329877476,
+          "name": "2021-2022",
+          "sessions": 503,
+          "sharpe": -1.1182813670417375
+        },
+        {
+          "cagr_percent": 1.0865444970870053,
+          "mdd_percent": 5.793067196163155,
+          "name": "2023-latest",
+          "sessions": 911,
+          "sharpe": 0.23590958350888117
+        }
+      ],
+      "id": "C-GAP-NASDAQ",
+      "last10y_cagr_percent": -2.046423891018434,
+      "last10y_sharpe": -0.2953179108643127,
+      "max_intraday_gross": 1,
+      "mdd_percent": 63.9524829503234,
+      "minimum_end_of_day_cash": 38868.71943019223,
+      "overnight_position_days": 0,
+      "round_trips_by_symbol": {
+        "nasdaq": 1361
+      },
+      "sessions": 6278,
+      "sharpe": -0.511289467951323,
+      "since2020_cagr_percent": -2.4060138080435167,
+      "since2020_sharpe": -0.3131036224003958,
+      "since2022_cagr_percent": -3.403088631427076,
+      "since2022_sharpe": -0.49360952897082333,
+      "start": "2001-09-05",
+      "take_profit_hits_by_symbol": {
+        "nasdaq": 901
+      },
+      "target_fingerprint": "b0f374ae6d02535e",
+      "total_return_percent": -59.24059461419438,
+      "trade_stats": {
+        "average_return_percent": -0.07051244356308384,
+        "profit_factor": 0.7940515106244097,
+        "round_trips": 1361,
+        "win_rate_percent": 69.80161645848641
+      },
+      "volatility_percent": 6.61242853639744
+    },
+    {
+      "average_intraday_gross": 0.10543893129770993,
+      "cagr_percent": -2.1175930574170554,
+      "end": "2026-08-20",
+      "folds": [
+        {
+          "cagr_percent": 1.3143573878703796,
+          "mdd_percent": 1.6390589409564744,
+          "name": "2001-2004",
+          "sessions": 835,
+          "sharpe": 1.039045257317635
+        },
+        {
+          "cagr_percent": 0.04012219567135489,
+          "mdd_percent": 10.499812569575033,
+          "name": "2005-2008",
+          "sessions": 1009,
+          "sharpe": 0.028752781834603468
+        },
+        {
+          "cagr_percent": -1.8153968276037546,
+          "mdd_percent": 10.45655464164141,
+          "name": "2009-2012",
+          "sessions": 1014,
+          "sharpe": -0.5922690623098954
+        },
+        {
+          "cagr_percent": -4.0522414002017175,
+          "mdd_percent": 16.26272302041388,
+          "name": "2013-2016",
+          "sessions": 1009,
+          "sharpe": -1.6127301312991253
+        },
+        {
+          "cagr_percent": -0.9768084502739249,
+          "mdd_percent": 24.257687675567293,
+          "name": "2017-2020",
+          "sessions": 1007,
+          "sharpe": -0.13218612455618856
+        },
+        {
+          "cagr_percent": -10.165158391598938,
+          "mdd_percent": 20.30956201772606,
+          "name": "2021-2022",
+          "sessions": 503,
+          "sharpe": -1.7532684261581255
+        },
+        {
+          "cagr_percent": -1.9567749028093218,
+          "mdd_percent": 13.170557719335957,
+          "name": "2023-latest",
+          "sessions": 911,
+          "sharpe": -0.43758152993742316
+        }
+      ],
+      "id": "C-GAP-SP500",
+      "last10y_cagr_percent": -3.4392067280680227,
+      "last10y_sharpe": -0.6238488506886438,
+      "max_intraday_gross": 1,
+      "mdd_percent": 45.88661552244942,
+      "minimum_end_of_day_cash": 57373.200257532735,
+      "overnight_position_days": 0,
+      "round_trips_by_symbol": {
+        "sp500": 663
+      },
+      "sessions": 6288,
+      "sharpe": -0.5154149228442512,
+      "since2020_cagr_percent": -7.576003877928528,
+      "since2020_sharpe": -1.2425831519324921,
+      "since2022_cagr_percent": -4.6003226343138355,
+      "since2022_sharpe": -0.8888023358064358,
+      "start": "2001-09-05",
+      "take_profit_hits_by_symbol": {
+        "sp500": 420
+      },
+      "target_fingerprint": "23002d7a2a5f2e7a",
+      "total_return_percent": -41.38219448584105,
+      "trade_stats": {
+        "average_return_percent": -0.09527184523298698,
+        "profit_factor": 0.6698220425676336,
+        "round_trips": 663,
+        "win_rate_percent": 67.42081447963801
+      },
+      "volatility_percent": 3.9965198055000317
+    },
+    {
+      "average_intraday_gross": 0.11551103459070249,
+      "cagr_percent": -1.1949269095228643,
+      "end": "2026-08-20",
+      "folds": [
+        {
+          "cagr_percent": -2.5884156026333316,
+          "mdd_percent": 11.770823300768946,
+          "name": "2001-2004",
+          "sessions": 836,
+          "sharpe": -1.0215145949982685
+        },
+        {
+          "cagr_percent": -1.4581409990031546,
+          "mdd_percent": 10.689767002562446,
+          "name": "2005-2008",
+          "sessions": 1011,
+          "sharpe": -0.450661813900445
+        },
+        {
+          "cagr_percent": -1.9830668536920726,
+          "mdd_percent": 8.306331732192577,
+          "name": "2009-2012",
+          "sessions": 1014,
+          "sharpe": -0.7712243594818879
+        },
+        {
+          "cagr_percent": -0.9466850364240886,
+          "mdd_percent": 5.062797319041641,
+          "name": "2013-2016",
+          "sessions": 1014,
+          "sharpe": -0.5478735828131595
+        },
+        {
+          "cagr_percent": 1.0426526607987041,
+          "mdd_percent": 8.954778694834722,
+          "name": "2017-2020",
+          "sessions": 1040,
+          "sharpe": 0.32859360184320663
+        },
+        {
+          "cagr_percent": -5.068769442337729,
+          "mdd_percent": 11.353186246664638,
+          "name": "2021-2022",
+          "sessions": 516,
+          "sharpe": -1.2383518145044987
+        },
+        {
+          "cagr_percent": 1.020715539995365,
+          "mdd_percent": 4.769318858571401,
+          "name": "2023-latest",
+          "sessions": 958,
+          "sharpe": 0.3475125112579436
+        }
+      ],
+      "id": "C-GAP-COMBINED",
+      "last10y_cagr_percent": -0.4462296664560217,
+      "last10y_sharpe": -0.11596038116350514,
+      "max_intraday_gross": 1,
+      "mdd_percent": 31.126492996972132,
+      "minimum_end_of_day_cash": 70755.00117215693,
+      "overnight_position_days": 0,
+      "round_trips_by_symbol": {
+        "gold_cny": 190,
+        "nasdaq": 1361,
+        "sp500": 663
+      },
+      "sessions": 6389,
+      "sharpe": -0.3992048014399037,
+      "since2020_cagr_percent": -2.0733477784309784,
+      "since2020_sharpe": -0.5334058255843365,
+      "since2022_cagr_percent": -1.2269144259838272,
+      "since2022_sharpe": -0.32012065462362144,
+      "start": "2001-09-05",
+      "take_profit_hits_by_symbol": {
+        "gold_cny": 168,
+        "nasdaq": 901,
+        "sp500": 420
+      },
+      "target_fingerprint": "fa6d21af859e3893",
+      "total_return_percent": -25.917886152606616,
+      "trade_stats": {
+        "average_return_percent": -0.05538750884964616,
+        "profit_factor": 0.8174266713872341,
+        "round_trips": 2214,
+        "win_rate_percent": 70.68654019873533
+      },
+      "volatility_percent": 2.861336796573969
+    }
+  ],
+  "preregistered_gate_evaluation": {
+    "checks": {
+      "at_least_five_of_seven_positive_sharpe_folds": false,
+      "at_least_two_assets_outperform_cash": false,
+      "at_least_two_assets_positive_sharpe": false,
+      "combined_average_trade_return_positive": false,
+      "combined_cagr_ge_cash_plus_2pp": false,
+      "combined_mdd_le_10pct": false,
+      "combined_profit_factor_ge_1_05": false,
+      "combined_sharpe_ge_1": false,
+      "combined_sharpe_gt_matched_gap_control": true,
+      "each_asset_at_least_150_round_trips": false,
+      "max_intraday_gross_le_100pct": true,
+      "minimum_end_of_day_cash_nonnegative": true,
+      "since2020_cagr_gt_cash_full_cagr": false,
+      "since2022_cagr_gt_cash_full_cagr": false,
+      "slippage_stress_cagr_gt_cash": false,
+      "slippage_stress_sharpe_gt_0_5": false,
+      "zero_overnight_position_days": true
+    },
+    "diagnostics": {
+      "cash_cagr_percent": 0.47884818454275724,
+      "minimum_asset_round_trips": 124,
+      "positive_sharpe_asset_count": 1,
+      "positive_sharpe_fold_count": 2,
+      "profitable_asset_count": 1
+    },
+    "pass": false
+  },
+  "primary_slippage_rate_per_fill": 0,
+  "slippage_stress": {
+    "average_intraday_gross": 0.077685605467731,
+    "cagr_percent": -2.5105790920440296,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": -2.5525038833165814,
+        "mdd_percent": 9.376466948029224,
+        "name": "2001-2004",
+        "sessions": 836,
+        "sharpe": -1.4276776513853884
+      },
+      {
+        "cagr_percent": -1.636478145345388,
+        "mdd_percent": 7.379650086355388,
+        "name": "2005-2008",
+        "sessions": 1011,
+        "sharpe": -1.0479798652229262
+      },
+      {
+        "cagr_percent": -2.7424144858892774,
+        "mdd_percent": 10.687994669031081,
+        "name": "2009-2012",
+        "sessions": 1014,
+        "sharpe": -1.4565680531733987
+      },
+      {
+        "cagr_percent": -2.9941901671067916,
+        "mdd_percent": 11.793176107353377,
+        "name": "2013-2016",
+        "sessions": 1014,
+        "sharpe": -1.9540696301652818
+      },
+      {
+        "cagr_percent": -1.9397014365804544,
+        "mdd_percent": 8.478322629694986,
+        "name": "2017-2020",
+        "sessions": 1040,
+        "sharpe": -0.934069420117752
+      },
+      {
+        "cagr_percent": -4.707368404064772,
+        "mdd_percent": 10.289403527502866,
+        "name": "2021-2022",
+        "sessions": 516,
+        "sharpe": -1.7705271619177556
+      },
+      {
+        "cagr_percent": -1.7515998696186252,
+        "mdd_percent": 7.545828207407747,
+        "name": "2023-latest",
+        "sessions": 958,
+        "sharpe": -0.7844246602437865
+      }
+    ],
+    "id": "DKHS001-COMBINED-SLIP005",
+    "last10y_cagr_percent": -2.572942266017464,
+    "last10y_sharpe": -1.134820998943319,
+    "max_intraday_gross": 1,
+    "mdd_percent": 47.2319186676048,
+    "minimum_end_of_day_cash": 53018.63578207275,
+    "overnight_position_days": 0,
+    "round_trips_by_symbol": {
+      "gold_cny": 124,
+      "nasdaq": 885,
+      "sp500": 480
+    },
+    "sessions": 6389,
+    "sharpe": -1.2928312382214753,
+    "since2020_cagr_percent": -2.9305387049282094,
+    "since2020_sharpe": -1.145580221901964,
+    "since2022_cagr_percent": -2.5099984576445467,
+    "since2022_sharpe": -1.0300165086510806,
+    "start": "2001-09-05",
+    "take_profit_hits_by_symbol": {
+      "gold_cny": 108,
+      "nasdaq": 584,
+      "sp500": 294
+    },
+    "target_fingerprint": "ccb19dafb212da91",
+    "total_return_percent": -46.981364217924536,
+    "trade_stats": {
+      "average_return_percent": -0.15090452470956078,
+      "profit_factor": 0.45594175321972985,
+      "round_trips": 1489,
+      "win_rate_percent": 68.23371390194761
+    },
+    "volatility_percent": 1.9217125103659294
+  },
+  "stress_slippage_rate_per_fill": 0.0005,
+  "trial_id": "ATM-SVP2-DAYK-HS-001"
+}

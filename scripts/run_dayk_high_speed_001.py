@@ -156,7 +156,7 @@ def write_outputs(output_dir: Path, document: dict, evaluation: dict) -> None:
             "round_trips", "win_rate_percent", "average_return_percent", "profit_factor",
             "max_intraday_gross", "overnight_position_days", "target_fingerprint",
         ]
-        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
         rows: list[tuple[str, dict]] = []
         rows.extend(("CANDIDATE", row) for row in document["candidate_paths"])
