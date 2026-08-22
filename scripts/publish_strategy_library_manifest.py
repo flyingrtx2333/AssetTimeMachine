@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -34,6 +35,19 @@ def resolve_strategy_token(token_env: str, agents_file: Path | None) -> str:
     return resolve_token(token_env, None)
 
 
+def request_with_retry(method: str, url: str, *, attempts: int = 3, **kwargs):
+    last_error = None
+    for attempt in range(1, attempts + 1):
+        try:
+            return requests.request(method, url, **kwargs)
+        except (requests.Timeout, requests.ConnectionError) as exc:
+            last_error = exc
+            if attempt >= attempts:
+                raise
+            time.sleep(float(attempt))
+    raise last_error or RuntimeError("request retry failed")
+
+
 def publish_manifest(*, manifest_path: Path, token: str, base_url: str, validate_only: bool, timeout: float) -> dict[str, Any]:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if not isinstance(manifest, dict):
@@ -41,13 +55,13 @@ def publish_manifest(*, manifest_path: Path, token: str, base_url: str, validate
     headers = {"X-API-Key": token, "Accept": "application/json", "Content-Type": "application/json"}
     api_root = base_url.rstrip("/") + "/api/v1/asset-time-machine/internal/strategy-imports"
     validation = require_success(
-        requests.post(api_root + "/validate", headers=headers, json=manifest, timeout=timeout),
+        request_with_retry("POST", api_root + "/validate", headers=headers, json=manifest, timeout=timeout),
         action="strategy manifest validation",
     )
     if validate_only:
         return {"mode": "validate_only", "validation": validation}
     batch = require_success(
-        requests.post(api_root, headers=headers, json=manifest, timeout=timeout),
+        request_with_retry("POST", api_root, headers=headers, json=manifest, timeout=timeout),
         action="strategy manifest import",
     )
     return {"mode": "publish", "validation": validation, "batch": batch}
@@ -56,8 +70,8 @@ def publish_manifest(*, manifest_path: Path, token: str, base_url: str, validate
 def get_status(*, batch_key: str, token: str, base_url: str, timeout: float) -> dict[str, Any]:
     api_root = base_url.rstrip("/") + "/api/v1/asset-time-machine/internal/strategy-imports"
     value = require_success(
-        requests.get(
-            f"{api_root}/{batch_key}",
+        request_with_retry(
+            "GET", f"{api_root}/{batch_key}",
             headers={"X-API-Key": token, "Accept": "application/json"},
             timeout=timeout,
         ),
