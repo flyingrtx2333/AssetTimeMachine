@@ -1,0 +1,48 @@
+{
+  "performance_computed": false,
+  "policy": "on union-calendar dates with no new style ETF adjusted-close print, carry forward the last available style price so the style-role return for that date is zero; next quoted session realizes the full close-to-close ETF return",
+  "purpose": "pre-performance calendar alignment audit for US-MQ repair trial",
+  "series": {
+    "MTUM": {
+      "first_date": "2013-04-18",
+      "last_date": "2026-08-21",
+      "missing_dates": [
+        "2016-11-24",
+        "2026-06-06",
+        "2026-06-13",
+        "2026-06-19",
+        "2026-06-27",
+        "2026-07-03",
+        "2026-07-11",
+        "2026-07-18",
+        "2026-07-25",
+        "2026-08-01",
+        "2026-08-08"
+      ],
+      "missing_same_date_print_count": 11,
+      "rows": 3357,
+      "union_calendar_dates": 3298
+    },
+    "QUAL": {
+      "first_date": "2013-07-18",
+      "last_date": "2026-08-21",
+      "missing_dates": [
+        "2016-11-24",
+        "2026-06-06",
+        "2026-06-13",
+        "2026-06-19",
+        "2026-06-27",
+        "2026-07-03",
+        "2026-07-11",
+        "2026-07-18",
+        "2026-07-25",
+        "2026-08-01",
+        "2026-08-08"
+      ],
+      "missing_same_date_print_count": 11,
+      "rows": 3294,
+      "union_calendar_dates": 3298
+    }
+  },
+  "substitution_start": "2013-07-19"
+}

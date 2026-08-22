@@ -60,7 +60,7 @@
   },
   "candidates_ge_18_cagr_and_le_10_mdd": [],
   "candidates_ge_20_cagr_and_le_10_mdd": [],
-  "formal_unique_candidates": 33,
+  "formal_unique_candidates": 36,
   "frozen_control": {
     "cagr_percent": 14.345615,
     "candidate_id": "V11-CONTROL",

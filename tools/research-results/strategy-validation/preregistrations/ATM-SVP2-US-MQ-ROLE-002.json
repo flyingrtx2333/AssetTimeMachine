@@ -1,0 +1,125 @@
+{
+  "trial_id": "ATM-SVP2-US-MQ-ROLE-002",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "US_MOMENTUM_QUALITY_PRODUCTION_PATH_ROLE_SUBSTITUTION_V1_CALENDAR_REPAIR",
+  "candidate_kind": "STRATEGY_ASSET_ROLE_NOT_FACTOR",
+  "strategy_lineage": "calendar-alignment repair of ATM-SVP2-US-MQ-ROLE-001; frozen production-path U.S. style-role substitution on nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "hypothesis": "The exact two frozen MTUM/QUAL broad-U.S.-equity role substitutions from ATM-SVP2-US-MQ-ROLE-001 can be evaluated after correcting only the union-calendar alignment bug that invalidated the predecessor before candidate performance was recorded. No economic candidate rule is changed.",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-US-MQ-ROLE-002.json",
+  "candidate_ids": [
+    "F-MTUM-SP500-ROLE",
+    "F-QUAL-SP500-ROLE"
+  ],
+  "candidate_count": 2,
+  "repair_scope": {
+    "invalid_predecessor": "ATM-SVP2-US-MQ-ROLE-001",
+    "predecessor_performance_recorded": false,
+    "bug": "the hybrid role constructor required a style ETF quote on every date in the multi-market union S&P role calendar and terminated on 11 holiday/weekend dates with no same-date MTUM/QUAL print",
+    "only_fix": "align the style ETF to the union calendar by carrying the last available adjusted close forward on dates with no new ETF quote; that union-calendar day's style-role return is zero, and the next quoted session realizes the full close-to-close ETF return",
+    "forbidden_as_repair": "no instrument, start date, substitution fraction, target path, cost, gate, fold, or statistical threshold change"
+  },
+  "allowed_changes": [
+    "replace only the predecessor's same-date-quote requirement with last-observation carry-forward for non-quote union-calendar dates",
+    "reuse the exact frozen MTUM and QUAL adjusted-close files and all original production V11/NFCI inputs",
+    "reuse exactly the 2013-07-19 substitution start and 100% sp500 realized-return role substitution",
+    "reuse the identical V11 signal dates, event dates, target weights, USD/CNY conversion, fees, slippage, rebalance band, cash treatment and risk reductions"
+  ],
+  "selection_metric": "No winner selection or survivor reporting. MTUM and QUAL are independently compared with the same production-path V11 over 2013-07-19+ and both remain in G3/global multiple-testing accounting regardless of outcome. The INVALID predecessor remains in the ledger as an attempted formal run but contributes no Sharpe value to DSR because no candidate performance was produced.",
+  "pass_fail_gates": [
+    "deterministic 2013-07-19+: candidate CAGR > V11 CAGR",
+    "deterministic 2013-07-19+: candidate Sharpe >= V11 Sharpe",
+    "deterministic 2013-07-19+: candidate MDD <=10%",
+    "deterministic: at least 5/7 fixed folds candidate Sharpe >= V11 Sharpe in the same fold",
+    "deterministic: worst fixed-fold Sharpe >0",
+    "deterministic: source production V11 full daily target fingerprint exactly equals ba67c8aa24bc7168; each candidate execution-event target fingerprint exactly equals the source execution-event target fingerprint; gross <=100%, min target weight >=0, no financing or shorting",
+    "bootstrap on 2013-07-19+ behavior: paired circular moving blocks versus V11, 63 sessions, 20000 replicates, seed 20260822",
+    "bootstrap: P(CAGR candidate > V11) >=0.90",
+    "bootstrap: P(Sharpe candidate > V11) >=0.90",
+    "bootstrap: median candidate-minus-V11 CAGR delta >0",
+    "bootstrap: median candidate-minus-V11 Sharpe delta >0",
+    "bootstrap: candidate MDD P97.5 <=15%",
+    "PBO/winner-selection test: not applicable because both preregistered roles are independently reported and no family winner is selected",
+    "global post-protocol DSR probability >=95% using the 36 prior performance-bearing formal return-seeking candidates plus both repair candidates, total DSR Sharpe vector 38; the invalid predecessor remains visible in G3 ledger accounting but has no performance value to insert",
+    "ROBUST_STRATEGY_PASS requires every applicable deterministic, bootstrap and global DSR gate"
+  ],
+  "formal_run_budget": 2,
+  "follow_up_policy": "After either repair result is opened, do not change the 2013-07-19 substitution start, ETF, role, carry-forward rule, substitution percentage, V11 target path, evaluation window, momentum/quality weighting, blend candidates with each other or S&P, add another style ETF, or introduce style timing. No second repair is allowed unless a new implementation defect is demonstrated independently of performance; any economic change is a new campaign and trial count.",
+  "swift_engine_entrypoint": "scripts/run_us_momentum_quality_role_v2.py -> tools/us_momentum_quality_role_v2.swiftpart -> full frozen V11 source target path + calendar-aligned hybrid sp500-role P&L series -> shared BacktestDailySimulator",
+  "expected_outputs": [
+    "full-history V11-CONTROL metrics and frozen target fingerprint ba67c8aa24bc7168",
+    "F-MTUM-SP500-ROLE and F-QUAL-SP500-ROLE full-history disclosure plus 2013-07-19+ primary metrics",
+    "seven fixed folds: 2013H2-2014, 2015-2016, 2017-2018, 2019-2020, 2021-2022, 2023-2024, 2025-latest",
+    "2020+ and 2022+ slices",
+    "identity replay and exact candidate target-fingerprint equality with production V11",
+    "one portfolio CSV per control/candidate",
+    "mechanical deterministic admission flags for both candidates",
+    "paired 20000-replicate bootstrap statistics for both candidates",
+    "cumulative 38-performance-candidate DSR for both candidates using post-substitution behavior",
+    "mechanical ROBUST_STRATEGY_PASS flags for both candidates",
+    "run authorization receipt, execution Git commit and SHA-256 result artifact manifest"
+  ],
+  "candidate_definitions": {
+    "F-MTUM-SP500-ROLE": {
+      "instrument": "MTUM",
+      "price_field": "Yahoo adjusted_close total-return proxy",
+      "substitution_start": "2013-07-19",
+      "signal_use": "none; MTUM returns affect only realized sp500-role P&L",
+      "calendar_alignment": "last adjusted close carried forward on union-calendar dates without a new MTUM quote"
+    },
+    "F-QUAL-SP500-ROLE": {
+      "instrument": "QUAL",
+      "price_field": "Yahoo adjusted_close total-return proxy",
+      "substitution_start": "2013-07-19",
+      "signal_use": "none; QUAL returns affect only realized sp500-role P&L",
+      "calendar_alignment": "last adjusted close carried forward on union-calendar dates without a new QUAL quote"
+    }
+  },
+  "fixed_folds": [
+    "2013H2-2014",
+    "2015-2016",
+    "2017-2018",
+    "2019-2020",
+    "2021-2022",
+    "2023-2024",
+    "2025-latest"
+  ],
+  "shared_rules": {
+    "production_v11_target_fingerprint": "ba67c8aa24bc7168",
+    "substitution_start": "2013-07-19",
+    "fee_rate": 0.01,
+    "slippage_rate": 0.0005,
+    "rebalance_band": 0.25,
+    "max_gross": 1.0,
+    "shorting_allowed": false,
+    "financing_allowed": false,
+    "sp500_role_substitution_fraction": 1.0
+  },
+  "forbidden_changes": [
+    "any frozen V11 signal, parameter, event date, target sizing, or target-path change",
+    "any substitution before or after the frozen 2013-07-19 start",
+    "any style/S&P blend or MTUM/QUAL blend",
+    "any substitution fraction other than exactly 100% of the sp500 realized-return role",
+    "any alternate momentum or quality ETF, third candidate, or winner-only reporting",
+    "any style timing, moving average, relative-strength gate, valuation gate, regime switch, or adaptive allocation",
+    "any leverage, financing, negative target weights, or gross above 100%",
+    "any calendar fill other than last-observation carry-forward on non-quote union-calendar dates",
+    "including pre-substitution identical returns in current-candidate DSR evidence"
+  ],
+  "statistical_audit": {
+    "bootstrap_sample_start": "2013-07-19",
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260822,
+    "family_pbo": "NOT_APPLICABLE_NO_WINNER_SELECTION_TWO_INDEPENDENT_PREREGISTERED_ROLES",
+    "global_dsr_prior_performance_candidate_count": 36,
+    "global_dsr_current_candidate_count": 2,
+    "global_dsr_total_performance_candidate_count_after_this_trial": 38,
+    "invalid_predecessor_g3_attempt_retained": true,
+    "current_candidate_dsr_return_window": "2013-07-19+ only"
+  },
+  "factor_library_archival": {
+    "is_factor": false,
+    "policy": "Do not upload MTUM/QUAL role substitutions as factor-library factors; preserve as strategy-validation artifacts/results only."
+  }
+}

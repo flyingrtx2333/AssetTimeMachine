@@ -1,0 +1,38 @@
+{
+  "files": [
+    {
+      "bytes": 1234,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/execution.json",
+      "sha256": "ed792a6d3a5caf6d2f09c8165eceb07f06d0c7cfc487ddda9cb61c039b393661"
+    },
+    {
+      "bytes": 437,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/run-authorization.json",
+      "sha256": "36c517cb5db0523e59636602dc78fca542df5578410a878dfc18fc8fc91ab2f4"
+    },
+    {
+      "bytes": 681,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/stderr.txt",
+      "sha256": "41ad0146a12c38262e349fa19eb0abb1490b2fb837b7c788bfc4f3fefac1eb2b"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "generated_at": "2026-08-22T11:30:02+08:00",
+  "git_commit": "7c28410579c2c4fd65b3dea7019c3ceaea095f85",
+  "kind": "run",
+  "metadata": {
+    "candidate_performance_recorded": false,
+    "reason": "hybrid style-return series required a quote on every union-calendar S&P date; 11 holiday/weekend dates had no MTUM/QUAL quote and caused pre-performance termination",
+    "status": "INVALID_IMPLEMENTATION"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-US-MQ-ROLE-001"
+}

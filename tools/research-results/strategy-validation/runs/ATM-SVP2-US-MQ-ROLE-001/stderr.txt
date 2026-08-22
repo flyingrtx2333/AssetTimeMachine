@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine-validation/scripts/run_us_momentum_quality_role_v1.py", line 160, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine-validation/scripts/run_us_momentum_quality_role_v1.py", line 153, in main
+    if "US_MQ_ROLE_V1_COMPLETE" not in stdout: raise RuntimeError("Swift momentum/quality role trial did not complete")
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Swift momentum/quality role trial did not complete

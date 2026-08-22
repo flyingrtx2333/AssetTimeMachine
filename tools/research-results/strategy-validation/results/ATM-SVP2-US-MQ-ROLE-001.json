@@ -1,0 +1,18 @@
+{
+  "trial_id": "ATM-SVP2-US-MQ-ROLE-001",
+  "preregistration_record_hash": "ac6e72ef9c2c8d50c846819234470fa981fd55e9ff8ce62a83ca0e507399857d",
+  "execution_git_commit": "de5cecf7ba0645e48d856054144a1992f57db339",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/run-authorization.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-US-MQ-ROLE-001.json",
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/artifact-manifest.json",
+  "status": "INVALID",
+  "candidate_results": [],
+  "decision": "INVALID_IMPLEMENTATION / NO PERFORMANCE CONCLUSION. The formal wrapper terminated before recording any candidate metrics because the preregistered hybrid style-role constructor incorrectly required an MTUM/QUAL quote on every date in the multi-market union S&P role calendar. A deterministic pre-performance calendar audit found 11 S&P-role dates after 2013-07-19 without a same-date style ETF print (one U.S. market holiday and later weekend/holiday union-calendar placeholders). The intended economic rule is daily adjusted-close role return; on a calendar date with no new ETF print the investable ETF price must carry forward and its return for that union-calendar date is zero. No candidate portfolio CSV, candidate metric block, bootstrap result, or performance conclusion was recorded by this formal run. The original trial remains permanently INVALID. A repair trial may reuse the exact frozen MTUM/QUAL instruments, 2013-07-19 start, 100% sp500-role substitution, costs, target path, and gates, changing only the calendar-alignment implementation so missing non-trading-day style prints carry the last available price forward. No performance-driven strategy change is permitted.",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/artifact-manifest.json"
+  ]
+}

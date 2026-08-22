@@ -1,0 +1,995 @@
+{
+  "artifacts": [
+    {
+      "artifact_key": "cot-lev-spx-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 6833,
+      "factor_key": "atm.formal.cot_lev_spx",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-COT-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-COT-001.json",
+      "sha256": "7abb787e60811114b57b389d18fb1eb1a2805bb51dc5699a353d5ec37b085288",
+      "version_key": "cot-lev-spx-v1"
+    },
+    {
+      "artifact_key": "cot-lev-spx-result",
+      "artifact_type": "formal_result",
+      "byte_size": 4255,
+      "factor_key": "atm.formal.cot_lev_spx",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-COT-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-COT-001.json",
+      "sha256": "2ca7170d3b9ecf554927a4ea9cef443f5e15ca8fd229ff483acfd0724cb67ab0",
+      "version_key": "cot-lev-spx-v1"
+    },
+    {
+      "artifact_key": "margin-lev-us-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 6779,
+      "factor_key": "atm.formal.finra_margin_leverage",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-MARGIN-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-MARGIN-001.json",
+      "sha256": "88cf38d3dc37354761bf0c66c4cc955ebc3ed499b8e16f373d24ed6cc6c0e084",
+      "version_key": "margin-lev-us-v1"
+    },
+    {
+      "artifact_key": "margin-lev-us-result",
+      "artifact_type": "formal_result",
+      "byte_size": 4439,
+      "factor_key": "atm.formal.finra_margin_leverage",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-MARGIN-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-MARGIN-001.json",
+      "sha256": "4b728b9a2bbe8fe41bbec633cd9749842b0891fd94cb63d19869ae43a8a0d5cd",
+      "version_key": "margin-lev-us-v1"
+    },
+    {
+      "artifact_key": "bdlev-annual-us-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 7505,
+      "factor_key": "atm.formal.broker_dealer_annual_leverage",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-BDLEV-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-BDLEV-001.json",
+      "sha256": "feb12ce79352d4740cd13cd0fc880a63b7ed2ea731e75efb82c29bacf4a6a9e8",
+      "version_key": "bdlev-annual-us-v1"
+    },
+    {
+      "artifact_key": "bdlev-annual-us-result",
+      "artifact_type": "formal_result",
+      "byte_size": 4330,
+      "factor_key": "atm.formal.broker_dealer_annual_leverage",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-BDLEV-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-BDLEV-001.json",
+      "sha256": "ff0eea1c1126948883179b1b4ecf203dec0eee5d4b3809c5668f822401c0e3ee",
+      "version_key": "bdlev-annual-us-v1"
+    },
+    {
+      "artifact_key": "sec-insider-buy-breadth-us-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 7464,
+      "factor_key": "atm.formal.sec_insider_buy_breadth",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-INSIDER-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-INSIDER-001.json",
+      "sha256": "a9da394f2236aa84d42c1cff5ca7f7a6feca79c100c77a559bc9d746f1b0a346",
+      "version_key": "sec-insider-buy-breadth-us-v1"
+    },
+    {
+      "artifact_key": "sec-insider-buy-breadth-us-result",
+      "artifact_type": "formal_result",
+      "byte_size": 4791,
+      "factor_key": "atm.formal.sec_insider_buy_breadth",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-INSIDER-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-INSIDER-001.json",
+      "sha256": "327c38c89fbc1b6be9c3b666777d98a05104256b28735c13a8735ab05e114de2",
+      "version_key": "sec-insider-buy-breadth-us-v1"
+    },
+    {
+      "artifact_key": "net-payout-yield-us-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 6778,
+      "factor_key": "atm.formal.net_payout_yield_us",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-NPY-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-NPY-001.json",
+      "sha256": "d67872bfc28011d887d1888b3237a04e278907300bd45240582f5ed2f051d951",
+      "version_key": "net-payout-yield-us-v1"
+    },
+    {
+      "artifact_key": "net-payout-yield-us-result",
+      "artifact_type": "formal_result",
+      "byte_size": 4592,
+      "factor_key": "atm.formal.net_payout_yield_us",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-NPY-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-NPY-001.json",
+      "sha256": "ff1319dc3759b66f3ad7f577900a0d1c9fb01592e5d79d494058469c07a9a478",
+      "version_key": "net-payout-yield-us-v1"
+    },
+    {
+      "artifact_key": "tic-flow-contrarian-us-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 6032,
+      "factor_key": "atm.formal.tic_equity_flow_contrarian",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-TIC-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-TIC-001.json",
+      "sha256": "e953ce331e81a2c1cca343f99603adc0b155298bf3112a01e083f6b31d8a6683",
+      "version_key": "tic-flow-contrarian-us-v1"
+    },
+    {
+      "artifact_key": "tic-flow-contrarian-us-result",
+      "artifact_type": "formal_result",
+      "byte_size": 4756,
+      "factor_key": "atm.formal.tic_equity_flow_contrarian",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-TIC-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-TIC-001.json",
+      "sha256": "84172a522fdd39f5914eb0628d62dfdfbf969a504d4970bc9516f5e6264d543f",
+      "version_key": "tic-flow-contrarian-us-v1"
+    },
+    {
+      "artifact_key": "sloos-standards-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 9101,
+      "factor_key": "atm.formal.sloos_standards",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-SLOOS-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-SLOOS-001.json",
+      "sha256": "6749ad93f9a2c29493401b609967a018ab4e517c723e4f8f9a827f1afd6484f3",
+      "version_key": "sloos-standards-v1"
+    },
+    {
+      "artifact_key": "sloos-standards-result",
+      "artifact_type": "formal_result",
+      "byte_size": 4739,
+      "factor_key": "atm.formal.sloos_standards",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-SLOOS-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-SLOOS-001.json",
+      "sha256": "277c9cfcf7218cb6d4a9f57a399d9a7733cd1aafe8cdee2a167813462efd87b4",
+      "version_key": "sloos-standards-v1"
+    },
+    {
+      "artifact_key": "cboe-pc-execution-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 9631,
+      "factor_key": "atm.formal.cboe_equity_put_call_execution",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-CBOE-PC-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-CBOE-PC-001.json",
+      "sha256": "1cb3abb65c90da2f479a450324bb76561db0f4450ae35874b1b9348757f46839",
+      "version_key": "cboe-pc-execution-v1"
+    },
+    {
+      "artifact_key": "cboe-pc-execution-result",
+      "artifact_type": "formal_result",
+      "byte_size": 5020,
+      "factor_key": "atm.formal.cboe_equity_put_call_execution",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-CBOE-PC-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-CBOE-PC-001.json",
+      "sha256": "ae63173d6b50f14f7f85c7b422fcc5c1a155c7af4c110db3c48c4d199f878dcd",
+      "version_key": "cboe-pc-execution-v1"
+    },
+    {
+      "artifact_key": "heshare-us-completion-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 9454,
+      "factor_key": "atm.formal.household_equity_share",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-HESHARE-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-HESHARE-001.json",
+      "sha256": "ab853964ec45079dd34d3e6b93b53e361837ae6771579bcb35e25ef22587a501",
+      "version_key": "heshare-us-completion-v1"
+    },
+    {
+      "artifact_key": "heshare-us-completion-result",
+      "artifact_type": "formal_result",
+      "byte_size": 4820,
+      "factor_key": "atm.formal.household_equity_share",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-HESHARE-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-HESHARE-001.json",
+      "sha256": "9b39a46714be8ad6bffbf52ba8da2f41159dfa7d20b648232d5c0bc875e4eccc",
+      "version_key": "heshare-us-completion-v1"
+    },
+    {
+      "artifact_key": "iwd-sp500-role-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 8292,
+      "factor_key": "atm.formal.iwd_sp500_role",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-US-VALUE-ROLE-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-US-VALUE-ROLE-001.json",
+      "sha256": "e5123f465ec02bbcfff57fe25a8b72e5793f305bed8bafd27c33cb2d99a13044",
+      "version_key": "iwd-sp500-role-v1"
+    },
+    {
+      "artifact_key": "iwd-sp500-role-result",
+      "artifact_type": "formal_result",
+      "byte_size": 5540,
+      "factor_key": "atm.formal.iwd_sp500_role",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-US-VALUE-ROLE-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-US-VALUE-ROLE-001.json",
+      "sha256": "7fa95209ad5778ab6070a1ccaa77964546a0b6d60850eb84ab0faf2d9f0467ae",
+      "version_key": "iwd-sp500-role-v1"
+    },
+    {
+      "artifact_key": "vbr-sp500-role-preregister",
+      "artifact_type": "preregistration",
+      "byte_size": 8292,
+      "factor_key": "atm.formal.vbr_sp500_role",
+      "local_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-US-VALUE-ROLE-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-US-VALUE-ROLE-001.json",
+      "sha256": "e5123f465ec02bbcfff57fe25a8b72e5793f305bed8bafd27c33cb2d99a13044",
+      "version_key": "vbr-sp500-role-v1"
+    },
+    {
+      "artifact_key": "vbr-sp500-role-result",
+      "artifact_type": "formal_result",
+      "byte_size": 5540,
+      "factor_key": "atm.formal.vbr_sp500_role",
+      "local_path": "tools/research-results/strategy-validation/results/ATM-SVP2-US-VALUE-ROLE-001.json",
+      "mime_type": "application/json",
+      "original_name": "ATM-SVP2-US-VALUE-ROLE-001.json",
+      "sha256": "7fa95209ad5778ab6070a1ccaa77964546a0b6d60850eb84ab0faf2d9f0467ae",
+      "version_key": "vbr-sp500-role-v1"
+    }
+  ],
+  "batch_key": "atm-svp2-postprotocol-rejected-sync-7c28410579c2",
+  "dataset_fingerprint": "e5e5b5a421dc24ba5da7c798dda47bba4b3e7c999f8a76cd627bd6839324ba74",
+  "dataset_spec": {
+    "dataset_manifests": {
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-BDLEV-001.json": {
+        "sha256": "31c1f724e90aaa203126aa9a6a25460a737b2392f84cfe3765940b5ba90d9370"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-CBOE-PC-001.json": {
+        "sha256": "71a800ce1b0755d359b2c42547d3da001db1cf623ff94f445633477d991bd9ca"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-COT-001.json": {
+        "sha256": "e82785c1214a7c2aea31d393a65e6708bab9fefae1df84d717acdc595b915ea2"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-HESHARE-001.json": {
+        "sha256": "61c53e9d5157cbb5a0a605162ccfdc9557ecb9fc17775e249a3ae4ddc8ef6a88"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-INSIDER-001.json": {
+        "sha256": "f8b17b82b3b3fcdad573aa9bdc86bf29ed18c043dda80e122dd3011fc7ffbe65"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-MARGIN-001.json": {
+        "sha256": "0ff178142881f298cf8f40dcbc8a2bb8b69af662d5c26653667d8ea9c0af4b98"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-NPY-001.json": {
+        "sha256": "561246d152c0e1180db374241114734663048d0ef3ce85dcc950b4b752f5d99c"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-SLOOS-001.json": {
+        "sha256": "881084c48227329a7e74b44efe670e3aa3b8c34727d1a2260968766168a6e2a2"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-TIC-001.json": {
+        "sha256": "91ed80b490cf0365b73e5294b74e94801311dca5011f5497d08c359622665525"
+      },
+      "tools/research-results/strategy-validation/datasets/ATM-SVP2-US-VALUE-ROLE-001.json": {
+        "sha256": "b203c4e8603d0ee15919be4680ad0c20974d6624a91447168e40bd67dea91903"
+      }
+    },
+    "kind": "formal_result_ledger_reconciliation"
+  },
+  "factors": [
+    {
+      "description": "ATM-SVP-2 正式候选 F-COT-LEV-SPX；正式结果未通过冻结 robust gate，按研究闭环规则以 rejected 状态永久归档。",
+      "display_name": "COT 杠杆资金 SPX 净多变化",
+      "factor_key": "atm.formal.cot_lev_spx",
+      "family": "positioning",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-cot-lev-spx"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 research"
+        ],
+        "code_sha256": "acaf3dc023c2377e7b118cd2ea2b931f9b7d57816222a4380ffe15aceef93f8b",
+        "formula_text": "delta_net_long_share > 0",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 0,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "factor_definition": {
+            "cftc_contract_market_code": "13874+",
+            "delta_rule": "current net share minus immediately previous point-in-time usable report net share",
+            "factor_id": "F-COT-LEV-SPX",
+            "market": "S&P 500 Consolidated",
+            "max_stale_calendar_days": 14,
+            "net_share_rule": "(Lev_Money_Positions_Long_All - Lev_Money_Positions_Short_All) / Open_Interest_All",
+            "raw_coverage": "2010-06-15..2026-08-11",
+            "risk_on_rule": "delta_net_long_share > 0",
+            "source": "CFTC Traders in Financial Futures, Futures Only"
+          },
+          "historical_trial_id": "ATM-SVP2-COT-001",
+          "shared_rules": {
+            "eligible_event": "current frozen V11 event reduces nasdaq and/or sp500 versus the prior frozen V11 event target",
+            "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "replay_rebalance_band": 0.25,
+            "retention_fraction": 0.5,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005
+          }
+        },
+        "required_inputs": [],
+        "source_path": "tools/cot_leveraged_money_spx_v1.swiftpart",
+        "version_key": "cot-lev-spx-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式候选 F-MARGIN-LEV-US；正式结果未通过冻结 robust gate，按研究闭环规则以 rejected 状态永久归档。",
+      "display_name": "FINRA 融资杠杆变化",
+      "factor_key": "atm.formal.finra_margin_leverage",
+      "family": "market_leverage",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-margin-lev-us"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 research"
+        ],
+        "code_sha256": "36092828a54c26d9d39f192b3a707ff9f88c11fa9d613481f3b04b8679b93000",
+        "formula_text": "delta_leverage_ratio > 0",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 0,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "factor_definition": {
+            "delta_rule": "current reference-month leverage ratio minus immediately previous reference-month leverage ratio",
+            "factor_id": "F-MARGIN-LEV-US",
+            "frozen_coverage": "2010-02..2026-07",
+            "leverage_rule": "Debit Balances / (Free Credit Balances in Cash Accounts + Free Credit Balances in Securities Margin Accounts)",
+            "max_stale_calendar_days": 35,
+            "risk_on_rule": "delta_leverage_ratio > 0",
+            "source": "FINRA Margin Statistics official rolling XLSX",
+            "unified_start_month": "2010-02"
+          },
+          "historical_trial_id": "ATM-SVP2-MARGIN-001",
+          "shared_rules": {
+            "eligible_event": "current frozen V11 event reduces nasdaq and/or sp500 versus prior frozen V11 event target",
+            "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "replay_rebalance_band": 0.25,
+            "retention_fraction": 0.5,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005
+          }
+        },
+        "required_inputs": [],
+        "source_path": "tools/finra_margin_leverage_v1.swiftpart",
+        "version_key": "margin-lev-us-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式候选 F-BDLEV-ANNUAL-US；正式结果未通过冻结 robust gate，按研究闭环规则以 rejected 状态永久归档。",
+      "display_name": "券商交易商年度账面杠杆",
+      "factor_key": "atm.formal.broker_dealer_annual_leverage",
+      "family": "dealer_leverage",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-bdlev-annual-us"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 research"
+        ],
+        "code_sha256": "b59683ffa9d1724da2e68470807b2992793fb5199672c0906e6e4bd10945cdb5",
+        "formula_text": "{\"annual_growth_rule\": \"log(current book leverage) - log(four-quarter-lag book leverage), both calculated from values in the same historical release table\", \"asset_series_code\": \"FL664090005\", \"availability_rule\": \"historical official Z.1 release date + 1 calendar day\", \"book_leverage_rule\": \"Total Financial Assets / (Total Financial Assets - Total Liabilities)\", \"factor_id\": \"F-BDLEV-ANNUAL-US\", \"favorable_rule\": \"annual_log_book_leverage_growth < 0\", \"frozen_coverage\": \"2012Q1..2026Q1\", \"liability_series_code\": \"FL664190005\", \"max_stale_calendar_days\": 150, \"maximum_observed_historical_release_gap_days\": 120, \"quarterly_change\": \"diagnostic only; forbidden as a return-seeking candidate\", \"raw_release_table_count\": 57, \"source\": \"Federal Reserve historical Financial Accounts of the United States Z.1 release archive\"}",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 0,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "factor_definition": {
+            "annual_growth_rule": "log(current book leverage) - log(four-quarter-lag book leverage), both calculated from values in the same historical release table",
+            "asset_series_code": "FL664090005",
+            "availability_rule": "historical official Z.1 release date + 1 calendar day",
+            "book_leverage_rule": "Total Financial Assets / (Total Financial Assets - Total Liabilities)",
+            "factor_id": "F-BDLEV-ANNUAL-US",
+            "favorable_rule": "annual_log_book_leverage_growth < 0",
+            "frozen_coverage": "2012Q1..2026Q1",
+            "liability_series_code": "FL664190005",
+            "max_stale_calendar_days": 150,
+            "maximum_observed_historical_release_gap_days": 120,
+            "quarterly_change": "diagnostic only; forbidden as a return-seeking candidate",
+            "raw_release_table_count": 57,
+            "source": "Federal Reserve historical Financial Accounts of the United States Z.1 release archive"
+          },
+          "historical_trial_id": "ATM-SVP2-BDLEV-001",
+          "shared_rules": {
+            "eligible_event": "current frozen V11 event reduces nasdaq and/or sp500 versus prior frozen V11 event target",
+            "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "replay_rebalance_band": 0.25,
+            "retention_fraction": 0.5,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005
+          }
+        },
+        "required_inputs": [],
+        "source_path": "tools/broker_dealer_leverage_v1.swiftpart",
+        "version_key": "bdlev-annual-us-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式候选 F-SEC-INSIDER-BUY-BREADTH-US；正式结果未通过冻结 robust gate，按研究闭环规则以 rejected 状态永久归档。",
+      "display_name": "SEC 内部人买入广度",
+      "factor_key": "atm.formal.sec_insider_buy_breadth",
+      "family": "insider_activity",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-sec-insider-buy-breadth-us"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 research"
+        ],
+        "code_sha256": "2b8decb5bf92a70a98f2ad6dc2dac6cb7821eda7df4285200536608a3fefcc75",
+        "formula_text": "delta_buy_issuer_count > 0",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 0,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "factor_definition": {
+            "availability_rule": "completed filing week usable on following Tuesday",
+            "breadth_rule": "count distinct ISSUERCIK values with at least one qualifying filing in each completed Monday-Friday filing week",
+            "delta_rule": "current weekly distinct-issuer count minus immediately previous completed-week count",
+            "document_type_rule": "DOCUMENT_TYPE=4 only; 4/A excluded",
+            "factor_id": "F-SEC-INSIDER-BUY-BREADTH-US",
+            "frozen_coverage": "2012Q1..2026Q2",
+            "max_stale_calendar_days": 10,
+            "qualifying_initial_form4_filings": 233821,
+            "risk_on_rule": "delta_buy_issuer_count > 0",
+            "source": "SEC Insider Transactions Data Sets",
+            "source_quarter_count": 58,
+            "transaction_rule": "NONDERIV_TRANS with TRANS_CODE=P and TRANS_ACQUIRED_DISP_CD=A",
+            "usable_delta_rows": 755,
+            "weekly_rows": 756
+          },
+          "historical_trial_id": "ATM-SVP2-INSIDER-001",
+          "shared_rules": {
+            "eligible_event": "current frozen V11 event reduces nasdaq and/or sp500 versus prior frozen V11 event target",
+            "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "replay_rebalance_band": 0.25,
+            "retention_fraction": 0.5,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005
+          }
+        },
+        "required_inputs": [],
+        "source_path": "tools/sec_insider_buy_breadth_v1.swiftpart",
+        "version_key": "sec-insider-buy-breadth-us-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式候选 F-NET-PAYOUT-YIELD-US；正式结果未通过冻结 robust gate，按研究闭环规则以 rejected 状态永久归档。",
+      "display_name": "企业净派息收益率",
+      "factor_key": "atm.formal.net_payout_yield_us",
+      "family": "corporate_payout",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-net-payout-yield-us"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 research"
+        ],
+        "code_sha256": "92572ddd1a958c3814f0edb97a2bbccc7ed1ac59dddeb2fba8c20a1f72680c59",
+        "formula_text": "latest available yield >= prior-only expanding median, excluding the latest observation from the median",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 0,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "factor_definition": {
+            "availability": "release_date + 1 calendar day",
+            "coverage": "2011Q1..2026Q1",
+            "dividend_series": "FA106121075",
+            "equity_level_series": "LM103164105",
+            "equity_transaction_series": "FA103164105",
+            "factor_id": "F-NET-PAYOUT-YIELD-US",
+            "formula": "(NetDividends - NetEquityIssuance) / EquityMarketValue",
+            "risk_on_rule": "latest available yield >= prior-only expanding median, excluding the latest observation from the median",
+            "source": "Federal Reserve Financial Accounts Z.1 original quarterly release archives"
+          },
+          "historical_trial_id": "ATM-SVP2-NPY-001",
+          "shared_rules": {
+            "eligible_event": "current frozen V11 event reduces nasdaq and/or sp500 versus the prior frozen V11 event target",
+            "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "replay_rebalance_band": 0.25,
+            "retention_fraction": 0.5,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005
+          }
+        },
+        "required_inputs": [],
+        "source_path": "tools/net_payout_yield_v1.swiftpart",
+        "version_key": "net-payout-yield-us-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式候选 F-TIC-FLOW-CONTRARIAN-US；正式结果未通过冻结 robust gate，按研究闭环规则以 rejected 状态永久归档。",
+      "display_name": "TIC 外资美股流向反向状态",
+      "factor_key": "atm.formal.tic_equity_flow_contrarian",
+      "family": "cross_border_flow",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-tic-flow-contrarian-us"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 research"
+        ],
+        "code_sha256": "7a8863d03c6072339e93ebf62418c9fdfbf986af7440ac86f09f743146d25c63",
+        "formula_text": "{\"allowed_changes\": [\"risk-on exactly when latest point-in-time-available TIC net foreign purchases of U.S. corporate stocks is <0\", \"latest observation must be no more than 45 calendar days old\", \"on factor-available frozen V11 U.S.-equity de-risk events retain exactly 50% of nasdaq/sp500 reductions when risk-on\"], \"candidate_id\": \"F-TIC-FLOW-CONTRARIAN-US\"}",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 0,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "factor_definition": {
+            "allowed_changes": [
+              "risk-on exactly when latest point-in-time-available TIC net foreign purchases of U.S. corporate stocks is <0",
+              "latest observation must be no more than 45 calendar days old",
+              "on factor-available frozen V11 U.S.-equity de-risk events retain exactly 50% of nasdaq/sp500 reductions when risk-on"
+            ],
+            "candidate_id": "F-TIC-FLOW-CONTRARIAN-US"
+          },
+          "historical_trial_id": "ATM-SVP2-TIC-001",
+          "shared_rules": {
+            "eligible_event": "current V11 event reduces nasdaq and/or sp500 versus prior V11 event target",
+            "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "replay_rebalance_band": 0.25,
+            "retention_fraction": 0.5,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005
+          }
+        },
+        "required_inputs": [],
+        "source_path": "tools/tic_foreign_equity_flow_v1.swiftpart",
+        "version_key": "tic-flow-contrarian-us-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式候选 F-SLOOS-STANDARDS；正式结果未通过冻结 robust gate，按研究闭环规则以 rejected 状态永久归档。",
+      "display_name": "SLOOS 银行信贷标准",
+      "factor_key": "atm.formal.sloos_standards",
+      "family": "credit_conditions",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-sloos-standards"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 research"
+        ],
+        "code_sha256": "d04d63a4e9684dbad4e0e93ee0bfecade704f25b9afe46c661d4d9a2568bd036",
+        "formula_text": "latest DRTSCILM <= 0",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 0,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "factor_definition": {
+            "availability": "release_date + 1 calendar day",
+            "factor_id": "F-SLOOS-STANDARDS",
+            "interpretation": "DRTSCILM is the net percentage of domestic banks tightening C&I standards for large and middle-market firms; values above zero indicate net tightening",
+            "risk_on_rule": "latest DRTSCILM <= 0",
+            "series_id": "DRTSCILM",
+            "source": "Federal Reserve Senior Loan Officer Opinion Survey via ALFRED release vintages",
+            "state_persistence": "the latest released quarterly survey value remains active until the next survey release",
+            "trusted_point_in_time_coverage": "2010Q2..2026Q3",
+            "trusted_start_reason": "the public ALFRED SLOOS release calendar begins 2010-04-20, so older observations are not relabeled as if their true historical first-release dates were known"
+          },
+          "historical_trial_id": "ATM-SVP2-SLOOS-001",
+          "shared_rules": {
+            "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "primary_evaluation_start": "2010-05-01",
+            "replay_rebalance_band": 0.25,
+            "retention_fraction": 0.5,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005
+          }
+        },
+        "required_inputs": [],
+        "source_path": "tools/sloos_standards_v1.swiftpart",
+        "version_key": "sloos-standards-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式候选 F-CBOE-PC-EXECUTION；正式结果未通过冻结 robust gate，按研究闭环规则以 rejected 状态永久归档。",
+      "display_name": "CBOE 股票 Put/Call 执行状态",
+      "factor_key": "atm.formal.cboe_equity_put_call_execution",
+      "family": "options_sentiment",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-cboe-pc-execution"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 research"
+        ],
+        "code_sha256": "71376a8a743f110336b9fad3d770f1df825c07b4bb34fa641d77a49d9209e9e5",
+        "formula_text": "{\"availability\": \"prior-close ratio is conservatively usable when available_date <= next execution date\", \"factor_id\": \"F-CBOE-PC-EXECUTION\", \"high_state_rule\": \"latest available Equity Put/Call Ratio > prior-only expanding median\", \"intervention_start\": \"2013-01-01\", \"legacy_segment\": \"equitypc.csv through 2019-10-04\", \"modern_segment\": \"explicit-date Cboe Daily Market Statistics from 2019-10-07 onward\", \"source\": \"Cboe official Equity Put/Call Ratio\", \"stable_definition_start\": \"2012-06-11\", \"stable_start_reason\": \"Cboe legacy file states that as of 2012-06-11 Equity Volume includes only equity option products and excludes exchange-traded products\"}",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 0,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "factor_definition": {
+            "availability": "prior-close ratio is conservatively usable when available_date <= next execution date",
+            "factor_id": "F-CBOE-PC-EXECUTION",
+            "high_state_rule": "latest available Equity Put/Call Ratio > prior-only expanding median",
+            "intervention_start": "2013-01-01",
+            "legacy_segment": "equitypc.csv through 2019-10-04",
+            "modern_segment": "explicit-date Cboe Daily Market Statistics from 2019-10-07 onward",
+            "source": "Cboe official Equity Put/Call Ratio",
+            "stable_definition_start": "2012-06-11",
+            "stable_start_reason": "Cboe legacy file states that as of 2012-06-11 Equity Volume includes only equity option products and excludes exchange-traded products"
+          },
+          "historical_trial_id": "ATM-SVP2-CBOE-PC-001",
+          "shared_rules": {
+            "delay_trading_sessions": 1,
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "primary_evaluation_start": "2013-01-01",
+            "replay_rebalance_band": 0.25,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005
+          }
+        },
+        "required_inputs": [],
+        "source_path": "tools/cboe_equity_put_call_execution_v1.swiftpart",
+        "version_key": "cboe-pc-execution-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式候选 F-HESHARE-US-COMPLETION；正式结果未通过冻结 robust gate，按研究闭环规则以 rejected 状态永久归档。",
+      "display_name": "家庭股票配置占比 HEShare",
+      "factor_key": "atm.formal.household_equity_share",
+      "family": "household_positioning",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "alpha_candidate",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-heshare-us-completion"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 research"
+        ],
+        "code_sha256": "db94ef6505e2b3d826ea84f59d7ae13d170f7c2f747a248193e45621f68813ee",
+        "formula_text": "latest stable-regime HEShare <= prior-only expanding median, excluding the latest observation from the median",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 0,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "factor_definition": {
+            "availability": "release_date + 1 calendar day",
+            "construction": "direct corporate equities + household mutual-fund shares allocated to fund equity holdings, divided by that equity amount plus debt securities, loans, and household mutual-fund shares allocated to bond holdings, all from the same archived Z.1 release",
+            "factor_id": "F-HESHARE-US-COMPLETION",
+            "paper_definition": "household equity assets / (household equity assets + household credit assets)",
+            "raw_coverage": "2011Q1..2026Q1",
+            "risk_on_rule": "latest stable-regime HEShare <= prior-only expanding median, excluding the latest observation from the median",
+            "source": "Federal Reserve Financial Accounts Z.1 original quarterly release archives",
+            "stable_signal_coverage": "2016Q3..2026Q1",
+            "stable_start_reason": "pre-performance first-release vintage audit; last >=2 percentage-point continuity break was 2016Q2"
+          },
+          "historical_trial_id": "ATM-SVP2-HESHARE-001",
+          "shared_rules": {
+            "event_scope": "unique execution dates on which frozen V11 report.trades is non-empty",
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "primary_evaluation_start": "2017-01-01",
+            "replay_rebalance_band": 0.25,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005,
+            "stable_start_quarter": "2016Q3"
+          }
+        },
+        "required_inputs": [],
+        "source_path": "tools/household_equity_share_v1.swiftpart",
+        "version_key": "heshare-us-completion-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式候选 F-IWD-SP500-ROLE；正式结果未通过冻结 robust gate，按研究闭环规则以 rejected 状态永久归档。",
+      "display_name": "IWD 美股价值角色替代",
+      "factor_key": "atm.formal.iwd_sp500_role",
+      "family": "role_substitution",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "diagnostic",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-iwd-sp500-role"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 research"
+        ],
+        "code_sha256": "d8bfa57f3c5ec76bd30c2e3d1f1050284c99f00d7eaf64a8141468c79e31d80c",
+        "formula_text": "{\"instrument\": \"IWD\", \"price_field\": \"Yahoo adjusted_close used as a total-return proxy\", \"role\": \"replace the realized-return series under V11 role key sp500\", \"signal_use\": \"none; IWD prices affect only realized portfolio P&L, not V11 signals or target weights\"}",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 0,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "factor_definition": {
+            "instrument": "IWD",
+            "price_field": "Yahoo adjusted_close used as a total-return proxy",
+            "role": "replace the realized-return series under V11 role key sp500",
+            "signal_use": "none; IWD prices affect only realized portfolio P&L, not V11 signals or target weights"
+          },
+          "historical_trial_id": "ATM-SVP2-US-VALUE-ROLE-001",
+          "shared_rules": {
+            "baseline_initial_cash": 100000,
+            "common_evaluation_start": "2004-01-30",
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "rebalance_band": 0.25,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005,
+            "sp500_role_substitution_fraction": 1.0,
+            "v11_signal_logic_changed": false,
+            "v11_target_weights_changed": false
+          }
+        },
+        "required_inputs": [],
+        "source_path": "tools/us_value_role_substitution_v1.swiftpart",
+        "version_key": "iwd-sp500-role-v1"
+      }
+    },
+    {
+      "description": "ATM-SVP-2 正式候选 F-VBR-SP500-ROLE；正式结果未通过冻结 robust gate，按研究闭环规则以 rejected 状态永久归档。",
+      "display_name": "VBR 小盘价值角色替代",
+      "factor_key": "atm.formal.vbr_sp500_role",
+      "family": "role_substitution",
+      "owner_name": "AssetTimeMachine Research",
+      "research_role": "diagnostic",
+      "results": [],
+      "source_project": "AssetTimeMachine",
+      "tags": [
+        "ATM-SVP-2",
+        "formal_trial",
+        "rejected",
+        "f-vbr-sp500-role"
+      ],
+      "version": {
+        "applicable_universe": [
+          "nfci-dual-core-v11 research"
+        ],
+        "code_sha256": "d8bfa57f3c5ec76bd30c2e3d1f1050284c99f00d7eaf64a8141468c79e31d80c",
+        "formula_text": "{\"instrument\": \"VBR\", \"price_field\": \"Yahoo adjusted_close used as a total-return proxy\", \"role\": \"replace the realized-return series under V11 role key sp500\", \"signal_use\": \"none; VBR prices affect only realized portfolio P&L, not V11 signals or target weights\"}",
+        "frequency": "daily",
+        "lifecycle_status": "rejected",
+        "lookback_sessions": 0,
+        "materialization_policy": "none",
+        "observation_lag_sessions": 1,
+        "parameters": {
+          "factor_definition": {
+            "instrument": "VBR",
+            "price_field": "Yahoo adjusted_close used as a total-return proxy",
+            "role": "replace the realized-return series under V11 role key sp500",
+            "signal_use": "none; VBR prices affect only realized portfolio P&L, not V11 signals or target weights"
+          },
+          "historical_trial_id": "ATM-SVP2-US-VALUE-ROLE-001",
+          "shared_rules": {
+            "baseline_initial_cash": 100000,
+            "common_evaluation_start": "2004-01-30",
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "rebalance_band": 0.25,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005,
+            "sp500_role_substitution_fraction": 1.0,
+            "v11_signal_logic_changed": false,
+            "v11_target_weights_changed": false
+          }
+        },
+        "required_inputs": [],
+        "source_path": "tools/us_value_role_substitution_v1.swiftpart",
+        "version_key": "vbr-sp500-role-v1"
+      }
+    }
+  ],
+  "methodology": {
+    "factor_catalog_after_batch": 33,
+    "factor_catalog_before_batch": 22,
+    "historical_decisions": {
+      "atm.formal.broker_dealer_annual_leverage": {
+        "candidate_id": "F-BDLEV-ANNUAL-US",
+        "formal_result_artifact": "tools/research-results/strategy-validation/results/ATM-SVP2-BDLEV-001.json",
+        "robust_factor_pass": false,
+        "trial_id": "ATM-SVP2-BDLEV-001",
+        "trial_status": "FAIL"
+      },
+      "atm.formal.cboe_equity_put_call_execution": {
+        "candidate_id": "F-CBOE-PC-EXECUTION",
+        "formal_result_artifact": "tools/research-results/strategy-validation/results/ATM-SVP2-CBOE-PC-001.json",
+        "robust_factor_pass": false,
+        "trial_id": "ATM-SVP2-CBOE-PC-001",
+        "trial_status": "FAIL"
+      },
+      "atm.formal.cot_lev_spx": {
+        "candidate_id": "F-COT-LEV-SPX",
+        "formal_result_artifact": "tools/research-results/strategy-validation/results/ATM-SVP2-COT-001.json",
+        "robust_factor_pass": false,
+        "trial_id": "ATM-SVP2-COT-001",
+        "trial_status": "FAIL"
+      },
+      "atm.formal.finra_margin_leverage": {
+        "candidate_id": "F-MARGIN-LEV-US",
+        "formal_result_artifact": "tools/research-results/strategy-validation/results/ATM-SVP2-MARGIN-001.json",
+        "robust_factor_pass": false,
+        "trial_id": "ATM-SVP2-MARGIN-001",
+        "trial_status": "FAIL"
+      },
+      "atm.formal.household_equity_share": {
+        "candidate_id": "F-HESHARE-US-COMPLETION",
+        "formal_result_artifact": "tools/research-results/strategy-validation/results/ATM-SVP2-HESHARE-001.json",
+        "robust_factor_pass": false,
+        "trial_id": "ATM-SVP2-HESHARE-001",
+        "trial_status": "FAIL"
+      },
+      "atm.formal.iwd_sp500_role": {
+        "candidate_id": "F-IWD-SP500-ROLE",
+        "formal_result_artifact": "tools/research-results/strategy-validation/results/ATM-SVP2-US-VALUE-ROLE-001.json",
+        "robust_factor_pass": false,
+        "trial_id": "ATM-SVP2-US-VALUE-ROLE-001",
+        "trial_status": "FAIL"
+      },
+      "atm.formal.net_payout_yield_us": {
+        "candidate_id": "F-NET-PAYOUT-YIELD-US",
+        "formal_result_artifact": "tools/research-results/strategy-validation/results/ATM-SVP2-NPY-001.json",
+        "robust_factor_pass": false,
+        "trial_id": "ATM-SVP2-NPY-001",
+        "trial_status": "FAIL"
+      },
+      "atm.formal.sec_insider_buy_breadth": {
+        "candidate_id": "F-SEC-INSIDER-BUY-BREADTH-US",
+        "formal_result_artifact": "tools/research-results/strategy-validation/results/ATM-SVP2-INSIDER-001.json",
+        "robust_factor_pass": false,
+        "trial_id": "ATM-SVP2-INSIDER-001",
+        "trial_status": "FAIL"
+      },
+      "atm.formal.sloos_standards": {
+        "candidate_id": "F-SLOOS-STANDARDS",
+        "formal_result_artifact": "tools/research-results/strategy-validation/results/ATM-SVP2-SLOOS-001.json",
+        "robust_factor_pass": false,
+        "trial_id": "ATM-SVP2-SLOOS-001",
+        "trial_status": "FAIL"
+      },
+      "atm.formal.tic_equity_flow_contrarian": {
+        "candidate_id": "F-TIC-FLOW-CONTRARIAN-US",
+        "formal_result_artifact": "tools/research-results/strategy-validation/results/ATM-SVP2-TIC-001.json",
+        "robust_factor_pass": false,
+        "trial_id": "ATM-SVP2-TIC-001",
+        "trial_status": "FAIL"
+      },
+      "atm.formal.vbr_sp500_role": {
+        "candidate_id": "F-VBR-SP500-ROLE",
+        "formal_result_artifact": "tools/research-results/strategy-validation/results/ATM-SVP2-US-VALUE-ROLE-001.json",
+        "robust_factor_pass": false,
+        "trial_id": "ATM-SVP2-US-VALUE-ROLE-001",
+        "trial_status": "FAIL"
+      }
+    },
+    "new_research_trial_created": false,
+    "structured_results_policy": "exact formal results attached as immutable artifacts; no survivorship filtering",
+    "sync_kind": "formal_result_ledger_reconciliation",
+    "this_batch_rejected_candidates": 11
+  },
+  "observations": [],
+  "run_key": "atm-svp2-postprotocol-rejected-sync-7c28410579c2",
+  "run_title": "ATM-SVP-2 后协议正式失败因子补档",
+  "runner_path": "scripts/export_factor_library_postprotocol_rejected_manifest.py",
+  "runner_sha256": "503a5ad911749b30ee2b91cd25e1a35aa8dc5f149c28ab747a48945eb900b59e",
+  "schema_version": "factor-library-v1",
+  "source_commit": "7c28410579c2c4fd65b3dea7019c3ceaea095f85",
+  "source_repository": "flyingrtx2333/AssetTimeMachine",
+  "summary": "对账 validation ledger 与生产因子库，补齐11个已有正式RESULT但尚未归档的失败因子/诊断候选。"
+}
