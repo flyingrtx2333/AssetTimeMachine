@@ -1,0 +1,4 @@
+candidate_id,kind,matched_control_id,cagr_percent,mdd_percent,sharpe,evaluation_cagr_percent,evaluation_mdd_percent,evaluation_sharpe,trades,average_cash_ratio,max_gross,min_weight,source_events,us_risk_increase_events,available_us_risk_increase_events,delayed_events,completed_delayed_events,cancelled_by_new_source_event,folds_sharpe_ge_matched,worst_fold_sharpe,admit_for_robustness
+V11-CONTROL,CONTROL,,14.345615,7.689054,1.522263,12.639383,7.386487,1.45045,451,0.425368,1.0,0.0,166,0,0,0,0,0,CONTROL,0.740905,CONTROL
+C-CBOE-PC-DELAY-ALWAYS,MATCHED_CONTROL,,14.32961,7.689054,1.523795,12.61098,7.385604,1.453601,454,0.4264,1.0,0.0,166,100,60,60,56,4,CONTROL,0.711696,CONTROL
+F-CBOE-PC-EXECUTION,FACTOR_STRATEGY,C-CBOE-PC-DELAY-ALWAYS,14.325604,7.689054,1.521743,12.60387,7.386487,1.449526,453,0.425725,1.0,0.0,166,100,60,23,20,3,4,0.710212,False

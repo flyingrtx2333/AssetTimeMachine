@@ -1,0 +1,152 @@
+{
+  "files": [
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/candidates/C-CBOE-PC-DELAY-ALWAYS-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "1a7d8c4a2790dceec684734d38644a66036fd4979af9f714ba964fe25df81df7"
+    },
+    {
+      "bytes": 187139,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/candidates/F-CBOE-PC-EXECUTION-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "b09202e53f8728c41d65e4e9b833598b1552c3337a5fe37076a507195006e165"
+    },
+    {
+      "bytes": 187148,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-02-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/candidates/V11-CONTROL-portfolio.csv",
+      "row_count": 6398,
+      "sha256": "2f06d13d42ae3e484833e3da737f5af95a2df97eafcd06bc97d1d854d3f60901"
+    },
+    {
+      "bytes": 854,
+      "columns": [
+        "candidate_id",
+        "kind",
+        "matched_control_id",
+        "cagr_percent",
+        "mdd_percent",
+        "sharpe",
+        "evaluation_cagr_percent",
+        "evaluation_mdd_percent",
+        "evaluation_sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "min_weight",
+        "source_events",
+        "us_risk_increase_events",
+        "available_us_risk_increase_events",
+        "delayed_events",
+        "completed_delayed_events",
+        "cancelled_by_new_source_event",
+        "folds_sharpe_ge_matched",
+        "worst_fold_sharpe",
+        "admit_for_robustness"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "57bcf86ae5c871d5e70f4fcb9065c59d10dc8ada1a0d898ed1e96a249c51e264"
+    },
+    {
+      "bytes": 5218,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/candidates/candidate-metrics.json",
+      "sha256": "742eeef430c08012d5e5a0ae98aec1b3c210a55aa65d1ac92d5aa6e302ad3693"
+    },
+    {
+      "bytes": 277,
+      "columns": [
+        "candidate_id",
+        "deterministic_admit",
+        "bootstrap_pass",
+        "global_dsr_probability",
+        "global_dsr_pass",
+        "robust_factor_pass",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_matched",
+        "candidate_mdd_p975"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/candidates/statistical-audit.csv",
+      "row_count": 1,
+      "sha256": "8bfeb51cf27ebc0529409c44b8850b973e699c779180e42e3ab7d2922f4cf80c"
+    },
+    {
+      "bytes": 2890,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/candidates/statistical-audit.json",
+      "sha256": "69517d73d86a4d9dd2f7b88879e60cd9bb44513ecbe5b4df6ebe921da314f9a7"
+    },
+    {
+      "bytes": 1114,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/execution.json",
+      "sha256": "5d48a83e8c7b04cea3d769c26471266dc5205d95c323227e6bdfd07ece52b4a3"
+    },
+    {
+      "bytes": 434,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/run-authorization.json",
+      "sha256": "baac22148883ac675b133e2d61b584a4c937fea6ef513b28d57500620fd95d42"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 3959,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/stdout.txt",
+      "sha256": "7433b0128f4afdf1fe856595419d07a6c366b4866aa7e1f25471464a45254c4c"
+    }
+  ],
+  "generated_at": "2026-08-22T10:41:37+08:00",
+  "git_commit": "bd631af68778b41b53a259df43d8b618203aa755",
+  "kind": "result",
+  "metadata": {
+    "campaign": "cboe-equity-put-call-execution-v1",
+    "deterministic_admitted": [],
+    "evidence_class": "R1_RETROSPECTIVE",
+    "factor_library_published": false,
+    "formal_execution_commit": "bd631af68778b41b53a259df43d8b618203aa755",
+    "global_dsr_trial_count": 34,
+    "primary_evaluation_start": "2013-01-01",
+    "robust_pass": []
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-CBOE-PC-001"
+}

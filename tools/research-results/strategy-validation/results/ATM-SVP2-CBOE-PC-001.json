@@ -1,0 +1,81 @@
+{
+  "trial_id": "ATM-SVP2-CBOE-PC-001",
+  "preregistration_record_hash": "2d2c669617e9a2b062e1c1786b18419a309e75b59f9c1c004d4a72e54b74d1e9",
+  "execution_git_commit": "bd631af68778b41b53a259df43d8b618203aa755",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/run-authorization.json",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-CBOE-PC-001.json",
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/artifact-manifest.json",
+  "status": "FAIL",
+  "candidate_results": [
+    {
+      "candidate_id": "F-CBOE-PC-EXECUTION",
+      "metrics": {
+        "cagr_percent": 14.325604,
+        "sharpe": 1.521743,
+        "mdd_percent": 7.689054,
+        "evaluation_start": "2013-01-01",
+        "evaluation_cagr_percent": 12.60387,
+        "evaluation_sharpe": 1.449526,
+        "evaluation_mdd_percent": 7.386487,
+        "since2020_cagr_percent": 17.599898,
+        "since2020_sharpe": 1.632836,
+        "since2022_cagr_percent": 21.064653,
+        "since2022_sharpe": 1.785938,
+        "source_events": 166,
+        "us_risk_increase_events": 100,
+        "available_us_risk_increase_events": 60,
+        "delayed_events": 23,
+        "completed_delayed_events": 20,
+        "cancelled_by_new_source_event": 3,
+        "folds_sharpe_ge_matched": 4,
+        "worst_fold_sharpe": 0.710212,
+        "deterministic_admit": false,
+        "bootstrap_probability_cagr_gt_v11": 0.20245,
+        "bootstrap_probability_sharpe_gt_matched": 0.3132,
+        "bootstrap_median_candidate_minus_v11_cagr": -0.0003184940259976926,
+        "bootstrap_median_candidate_minus_matched_sharpe": -0.004358538787958888,
+        "bootstrap_mdd_p975": 0.1255884552879703,
+        "bootstrap_robust_pass": false,
+        "global_post_protocol_dsr_probability": 0.9555206414394093,
+        "global_post_protocol_dsr_trial_count": 34,
+        "robust_factor_pass": false
+      }
+    }
+  ],
+  "matched_control": {
+    "candidate_id": "C-CBOE-PC-DELAY-ALWAYS",
+    "cagr_percent": 14.32961,
+    "sharpe": 1.523795,
+    "mdd_percent": 7.689054,
+    "evaluation_cagr_percent": 12.61098,
+    "evaluation_sharpe": 1.453601,
+    "evaluation_mdd_percent": 7.385604,
+    "available_us_risk_increase_events": 60,
+    "delayed_events": 60,
+    "completed_delayed_events": 56,
+    "cancelled_by_new_source_event": 4
+  },
+  "v11_control": {
+    "cagr_percent": 14.345615,
+    "sharpe": 1.522263,
+    "mdd_percent": 7.689054,
+    "evaluation_cagr_percent": 12.639383,
+    "evaluation_sharpe": 1.45045,
+    "evaluation_mdd_percent": 7.386487,
+    "target_fingerprint": "ba67c8aa24bc7168"
+  },
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED / NO_ROBUST_FACTOR_PASS. F-CBOE-PC-EXECUTION preserved frozen V11-like drawdown but did not add incremental execution alpha. On the preregistered 2013+ window candidate CAGR 12.603870% was below V11 12.639383%, candidate Sharpe 1.449526 was slightly below V11 1.450450 and below the availability-matched unconditional one-session delay control 1.453601, and the candidate beat the matched control in only 4/7 fixed folds. The matched control itself was also below V11 in 2013+ CAGR, so a one-session U.S.-increase delay is not a new return source. Paired 63-session moving-block bootstrap over 20,000 replicates gave P(CAGR candidate > V11)=20.245% and P(Sharpe candidate > matched)=31.320%; both median incremental deltas were negative. Candidate bootstrap MDD P97.5 was 12.559%, and cumulative 34-trial DSR probability was 95.552%, but DSR alone cannot override the failed incremental gates. Per the frozen stop rule, no threshold, sign, smoothing, delay-length, start-date, asset-scope, or execution-rule rescue is permitted. The Cboe Equity Put/Call signal is rejected for this retrospective V11 execution-timing use.",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/candidates/statistical-audit.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/candidates/C-CBOE-PC-DELAY-ALWAYS-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-CBOE-PC-001/candidates/F-CBOE-PC-EXECUTION-portfolio.csv"
+  ]
+}

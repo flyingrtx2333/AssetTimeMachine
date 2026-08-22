@@ -1,0 +1,2 @@
+candidate_id,deterministic_admit,bootstrap_pass,global_dsr_probability,global_dsr_pass,robust_factor_pass,probability_cagr_gt_v11,probability_sharpe_gt_matched,candidate_mdd_p975
+F-CBOE-PC-EXECUTION,False,False,0.9555206414394093,True,False,0.20245,0.3132,0.1255884552879703
