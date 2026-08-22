@@ -1,0 +1,117 @@
+{
+  "allowed_changes": [
+    "remove only the final 50/50 blend with the stable CashConfidence core and expose the exact current simplified-V11 high-return core as a standalone strategy",
+    "reuse CashConfidenceProfile.lowNoiseSimplifiedV11 exactly",
+    "reuse NFCI C3/L3 sleeve exactly with riskScale=1.0 and rebalanceBand=25%",
+    "reuse the same 1.00% frozen decision fee + 0.05% slippage semantics as V11 while allowing user fee to affect execution only",
+    "total target gross remains <=100%; no shorting, financing, or negative target weights"
+  ],
+  "candidate_count": 1,
+  "candidate_definition": {
+    "base_component": "exact highReturnCore inside runNFCIDualCoreV1WithTrace profile simplifiedV11",
+    "candidate_id": "S-V11-HIGHCORE-ONLY",
+    "cash_confidence_profile": "lowNoiseSimplifiedV11",
+    "final_dualcore_blend": "removed; standalone high-return core is 100% of strategy target",
+    "new_free_parameters": 0,
+    "nfci_risk_scale": 1.0,
+    "nfci_sleeve": "C3/L3 unchanged",
+    "rebalance_band": 0.25
+  },
+  "candidate_ids": [
+    "S-V11-HIGHCORE-ONLY"
+  ],
+  "candidate_kind": "STRATEGY_ARCHITECTURE_NOT_FACTOR",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-V11-HIGHCORE-001.json",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "expected_outputs": [
+    "exact V11-CONTROL metrics and fingerprint ba67c8aa24bc7168",
+    "S-V11-HIGHCORE-ONLY full metrics, 2020+, 2022+, seven fixed folds",
+    "candidate fingerprint equality under 1.00% and 0.03% user fee",
+    "gross/nonnegative-weight constraints",
+    "one portfolio CSV per control/candidate",
+    "deterministic admission flag",
+    "paired 20000-replicate block bootstrap candidate versus V11",
+    "cumulative 43-candidate DSR",
+    "mechanical ROBUST_STRATEGY_PASS flag",
+    "run authorization, execution commit and SHA-256 artifact manifest"
+  ],
+  "factor_library_archival": {
+    "is_factor": false,
+    "policy": "strategy architecture only; do not upload to factor library"
+  },
+  "fixed_folds": [
+    "2012-2014",
+    "2015-2016",
+    "2017-2018",
+    "2019-2020",
+    "2021-2022",
+    "2023-2024",
+    "2025-latest"
+  ],
+  "follow_up_policy": "This is a one-shot re-audit of an already exposed current component. After formal performance is opened, do not alter active scale, band, C3/L3 thresholds, LowNoise profile, stable-core blend fraction, costs, asset universe, start date, or add a second high-core-only variant. Failure closes this retrospective standalone-high-core campaign; success may support a separate aggressive product tier but does not retroactively make the old pre-protocol searches certified.",
+  "forbidden_changes": [
+    "any tuning or restoration of earlier Generic100/V9 parameters",
+    "any stable-core blend other than exactly zero in this candidate",
+    "any new active scale, band, threshold, ranking, factor, timing, asset or execution rule",
+    "leverage, financing, shorting, negative target weights or gross above 100%",
+    "dropping prior formal attempts from G3/DSR accounting",
+    "rerunning a modified high-core-only candidate after seeing this result"
+  ],
+  "formal_run_budget": 1,
+  "hypothesis": "The exact simplified-V11 high-return core, without the 50/50 stable CashConfidence core blend, forms a distinct aggressive product tier that can improve CAGR and Sharpe versus frozen V11 without adding parameters, leverage, shorting, financing, or changing the frozen high-return-core implementation.",
+  "pass_fail_gates": [
+    "deterministic: full CAGR > frozen V11 CAGR",
+    "deterministic: full Sharpe >= frozen V11 Sharpe",
+    "deterministic: full MDD <=10%",
+    "deterministic: at least 5/7 fixed folds candidate Sharpe >= V11 Sharpe",
+    "deterministic: worst fixed-fold candidate Sharpe >0",
+    "deterministic: target gross <=100%, min target weight >=0, no financing or shorting",
+    "deterministic: candidate target fingerprint is identical under 1.00% and 0.03% user fees",
+    "bootstrap: paired circular moving blocks candidate versus V11, 63 sessions, 20000 replicates, seed 20260822",
+    "bootstrap: P(CAGR candidate > V11) >=0.90",
+    "bootstrap: P(Sharpe candidate > V11) >=0.90",
+    "bootstrap: median candidate-minus-V11 CAGR delta >0",
+    "bootstrap: median candidate-minus-V11 Sharpe delta >0",
+    "bootstrap: candidate MDD P97.5 <=15%",
+    "PBO not applicable: one mechanically fixed candidate, no family winner selection",
+    "global post-protocol DSR probability >=95% using 42 prior performance-bearing formal candidates plus this candidate, total 43",
+    "ROBUST_STRATEGY_PASS requires every applicable deterministic, bootstrap, and global DSR gate"
+  ],
+  "prior_evidence_disclosure": {
+    "anti_selection_rule": "no old high-core parameter is restored or selected; candidate is mechanically the exact high-return component used inside current simplified V11",
+    "component_already_exposed": true,
+    "historical_generic100_reference": "pre-protocol Generic100 around 15.2086% CAGR / 1.5450 Sharpe / 7.9311% MDD; not reusable as validation evidence because it predates ATM-SVP-2 and had search history",
+    "historical_sources": [
+      "tools/research-results/2026-08-13-nfci-generic-c3-l3-champion.md",
+      "docs/strategies/active-scale-parameter-collapse-v9-2026-08-15.md",
+      "docs/strategies/dual-core-round25-v11-2026-08-15.md"
+    ],
+    "historical_v9_reference": "Unified122 simplified high-return core around 14.932% CAGR / 1.539 Sharpe / 7.670% MDD; exposed before this trial and therefore this trial is explicitly result-informed",
+    "independent_discovery": false
+  },
+  "protocol_component": "V11_SIMPLIFIED_HIGH_RETURN_CORE_ONLY_FORMAL_REAUDIT_V1",
+  "protocol_id": "ATM-SVP-2",
+  "selection_metric": "No model selection. There is one mechanically defined candidate: the exact current V11 high-return core before the 50/50 stable-core mix.",
+  "shared_rules": {
+    "fee_rate": 0.01,
+    "financing_allowed": false,
+    "frozen_v11_control_fingerprint": "ba67c8aa24bc7168",
+    "max_gross": 1.0,
+    "shorting_allowed": false,
+    "slippage_rate": 0.0005,
+    "user_fee_target_invariance_check": 0.0003
+  },
+  "statistical_audit": {
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260822,
+    "family_pbo": "NOT_APPLICABLE_SINGLE_MECHANICALLY_FIXED_RESULT_INFORMED_CANDIDATE",
+    "global_dsr_current_candidate_count": 1,
+    "global_dsr_prior_performance_candidate_count": 42,
+    "global_dsr_return_window": "full aligned history",
+    "global_dsr_total_performance_candidate_count_after_this_trial": 43
+  },
+  "strategy_lineage": "result-informed re-audit of the exact high-return core already embedded inside frozen nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "swift_engine_entrypoint": "scripts/run_v11_high_return_core_only_v1.py -> tools/v11_high_return_core_only_v1.swiftpart -> BacktestEngine.runSimplifiedV11HighReturnCoreForResearch -> exact current lowNoiseSimplifiedV11 high-return core + NFCI C3/L3 -> shared BacktestDailySimulator",
+  "trial_id": "ATM-SVP2-V11-HIGHCORE-001"
+}

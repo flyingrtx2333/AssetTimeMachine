@@ -4247,6 +4247,66 @@ nonisolated enum BacktestEngine {
         case simplifiedV11
     }
 
+    /// Research-only public surface for the exact simplified-V11 high-return core.
+    /// It intentionally reuses the same implementation and frozen decision-cost semantics that
+    /// `runNFCIDualCoreV1WithTrace(profile: .simplifiedV11)` uses before the 50/50 DualCore blend.
+    static func runSimplifiedV11HighReturnCoreForResearch(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings,
+        nfciAsOf: BacktestNFCIAsOfData,
+        dateBounds: ClosedRange<Date>? = nil
+    ) -> AdvancedRotationStrategyRun? {
+        guard nfciAsOf.isReadyForC3L3 else { return nil }
+        let highReturnProfile: CashConfidenceProfile = .lowNoiseSimplifiedV11
+        guard let lowNoiseBase = runRiskContributionCashConfidenceRouterWithTrace(
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            dateBounds: dateBounds,
+            profile: highReturnProfile
+        ) else { return nil }
+
+        let frozenDecisionSettings = AdvancedBacktestRiskSettings(
+            feeRate: 1.00,
+            slippageRate: 0.05,
+            maxPositionRatio: settings.maxPositionRatio,
+            cooldownDays: settings.cooldownDays,
+            stopLossRatio: settings.stopLossRatio,
+            takeProfitRatio: settings.takeProfitRatio
+        )
+        let decisionRun: ResearchTargetStrategyRun
+        if abs(settings.feeRate - 1.00) < 0.0000001,
+           abs(settings.slippageRate - 0.05) < 0.0000001 {
+            decisionRun = lowNoiseBase
+        } else {
+            guard let frozenRun = runRiskContributionCashConfidenceRouterWithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: frozenDecisionSettings,
+                dateBounds: dateBounds,
+                profile: highReturnProfile
+            ) else { return nil }
+            decisionRun = frozenRun
+        }
+        let decisionTradeDates = Set(decisionRun.report.trades.map { $0.date.recordDateString })
+        guard let core = runNFCIC3L3SleeveWithTrace(
+            baseRun: lowNoiseBase,
+            assetInputs: assetInputs,
+            initialCash: initialCash,
+            settings: settings,
+            creditPoints: nfciAsOf.credit,
+            leveragePoints: nfciAsOf.leverage,
+            riskScale: 1.0,
+            rebalanceBand: 0.25,
+            symbol: "nfci_v11_high_return_core_only",
+            title: AppLocalization.string("NFCI V11 高收益单核心（研究）"),
+            dateBounds: dateBounds,
+            baseDecisionTradeDates: decisionTradeDates
+        ) else { return nil }
+        return AdvancedRotationStrategyRun(report: core.report, dailyStates: core.dailyStates)
+    }
+
     private static func runNFCIDualCoreV1WithTrace(
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
         initialCash: Double,
