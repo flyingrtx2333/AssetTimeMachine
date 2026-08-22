@@ -1,0 +1,105 @@
+{
+  "files": [
+    {
+      "bytes": 5271408,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/generalization_public_history.json",
+      "sha256": "ab534219b08cdf417ee041be4322d512b29505439c8d0f2a469438d01730ac88"
+    },
+    {
+      "bytes": 24847,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCICREDIT_initial_release.csv",
+      "row_count": 732,
+      "sha256": "953198633f2f19cd42450c631bda3cc1d25bd23b40afc8bf58fa45ada0c4fc8c"
+    },
+    {
+      "bytes": 24762,
+      "columns": [
+        "release_date",
+        "observation_date",
+        "initial_value"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/NFCILEVERAGE_initial_release.csv",
+      "row_count": 732,
+      "sha256": "d198027125ca6b317258c2fb4725ed3e5b217356a6b8c549b68dbb18d237b486"
+    },
+    {
+      "bytes": 508502,
+      "columns": [
+        "trade_date",
+        "available_date",
+        "equity_put_call_ratio",
+        "source_segment",
+        "source_url"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/factor-data/CBOE-EQUITY-PC-STABLE-2026-08-22/CBOE_EQUITY_PUT_CALL_STABLE.csv",
+      "row_count": 3570,
+      "sha256": "480642f99b60cdfc1ab83ede6440fbc112f24793e227d6eb121e024f3313a5fc"
+    },
+    {
+      "bytes": 526167,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/CBOE-EQUITY-PC-STABLE-2026-08-22/daily-page-cache.json",
+      "sha256": "0f5c82a9f0c43474761436f02e8283795eaff69a86e8318ac9d0dc92a6663ec7"
+    },
+    {
+      "bytes": 135696,
+      "columns": [
+        "Cboe Volume and Put/Call Ratio data is compiled for the convenience of site visitors and is furnished without responsibility for accuracy and is accepted by the site visitor on the condition that transmission or omissions shall not be made the basis for any claim demand or cause for action.  As of June 11 2012 Equity Volume includes only the volume of equity option products and excludes that of exchange-traded products.  Historical index volume from November 1 2006 through May 31 2012 is based on cleared volume as reported by the OCC. The volume data reflected after May 31 2012 below is based upon preliminary reported volume rather than cleared volume. The information and data was obtained from sources believed to be reliable but accuracy is not guaranteed. Your use of Cboe Volume and Put/Call Ratio data is subject to the Terms and Conditions of Cboe Websites.",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/factor-data/CBOE-EQUITY-PC-STABLE-2026-08-22/equitypc.csv",
+      "row_count": 3255,
+      "sha256": "2e73b05586b558d6763c8ab110edf9ee8bc1989384bd2b568da93dc80aa29349"
+    },
+    {
+      "bytes": 2864,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/CBOE-EQUITY-PC-STABLE-2026-08-22/fetch-summary.json",
+      "sha256": "cd5b2715cb978de214e72e33dd8da147ccd0e223aff17da852689c9feeca73a6"
+    }
+  ],
+  "generated_at": "2026-08-22T10:36:50+08:00",
+  "git_commit": "acd64f4f15f5b32e87aa5e088ef30ff695610a5b",
+  "kind": "dataset",
+  "metadata": {
+    "action": "delay only positive Nasdaq/S&P increment of a genuine V11 source event by exactly one trading session; reductions and non-US changes execute immediately",
+    "campaign": "cboe-equity-put-call-execution-v1",
+    "cost": "1.00% fee + 0.05% slippage",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "formal_candidates": [
+      "F-CBOE-PC-EXECUTION"
+    ],
+    "intervention_start": "2013-01-01",
+    "performance_viewed_before_freeze": false,
+    "point_in_time": "Cboe prior-close Equity Put/Call Ratio; legacy stable-definition CSV through 2019-10-04 plus explicit-date Daily Market Statistics from 2019-10-07; usable when available_date <= execution date",
+    "signal": "latest available Equity P/C > prior-only expanding median",
+    "stable_definition_start": "2012-06-11"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-CBOE-PC-001"
+}

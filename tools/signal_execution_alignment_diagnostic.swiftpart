@@ -1,0 +1,85 @@
+        if ProcessInfo.processInfo.environment["ATM_SIGNAL_EXECUTION_ALIGNMENT_DIAGNOSTIC"] == "1" {
+            func loadSignalAlignmentNFCI(_ path: String) -> [BacktestNFCIPoint] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3, let value = Double(fields[2]), value.isFinite else { return nil }
+                    return BacktestNFCIPoint(
+                        releaseDate: String(fields[0]),
+                        referenceDate: String(fields[1]),
+                        availableAt: nil,
+                        value: value
+                    )
+                }
+            }
+
+            let mode: AdvancedBacktestStrategyMode = .nfciDualCoreSimplifiedV11
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+            }
+            let settings = AdvancedBacktestRiskSettings(
+                feeRate: 1.00,
+                slippageRate: 0.05,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            let nfci = BacktestNFCIAsOfData(
+                source: "ALFRED initial-release fixture",
+                credit: loadSignalAlignmentNFCI("tools/research-results/NFCICREDIT_initial_release.csv"),
+                leverage: loadSignalAlignmentNFCI("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            )
+            guard let source = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode,
+                nfciAsOf: nfci
+            ) else {
+                print("SIGNAL_ALIGNMENT_SOURCE_FAILED")
+                return
+            }
+            let sourceTargets = Dictionary(uniqueKeysWithValues: source.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            let sourceTradeDates = Set(source.report.trades.map { $0.date.recordDateString })
+            let config = ResearchTargetStrategyConfig(
+                symbol: "signal_alignment_diagnostic",
+                title: "Signal alignment diagnostic",
+                warmupSessions: 21,
+                rebalanceSessions: 1,
+                rebalanceBand: 0.25,
+                maxGrossExposure: 1,
+                allowsFinancedExposure: false,
+                financingAnnualRate: 0,
+                buyReason: "diagnostic"
+            )
+            var pending: [String: Double] = [:]
+            var printed = 0
+            _ = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                config: config,
+                rebalanceDecision: { index, signalIndex, data in
+                    guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    let executionDate = data.dates[index].recordDateString
+                    guard sourceTradeDates.contains(executionDate), let base = sourceTargets[executionDate] else {
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    }
+                    pending = base
+                    if printed < 12 {
+                        print("SIGNAL_ALIGNMENT execution=\(executionDate) signal=\(data.dates[signalIndex].recordDateString) index_gap=\(index - signalIndex)")
+                        printed += 1
+                    }
+                    return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                },
+                targetWeights: { _, _ in pending }
+            )
+            print("SIGNAL_EXECUTION_ALIGNMENT_DIAGNOSTIC_COMPLETE")
+            return
+        }

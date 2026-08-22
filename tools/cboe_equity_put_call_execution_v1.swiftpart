@@ -1,0 +1,322 @@
+        if ProcessInfo.processInfo.environment["ATM_CBOE_PC_EXECUTION_V1"] == "1" {
+            func loadCboePCPoints(_ path: String) -> [CboeEquityPutCallExecutionV1Logic.Point] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3, let value = Double(fields[2]), value.isFinite, value >= 0 else { return nil }
+                    return CboeEquityPutCallExecutionV1Logic.Point(
+                        tradeDate: String(fields[0]),
+                        availableDate: String(fields[1]),
+                        ratio: value
+                    )
+                }.sorted {
+                    if $0.availableDate == $1.availableDate { return $0.tradeDate < $1.tradeDate }
+                    return $0.availableDate < $1.availableDate
+                }
+            }
+
+            func loadCboePCNFCI(_ path: String) -> [BacktestNFCIPoint] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3, let value = Double(fields[2]), value.isFinite else { return nil }
+                    return BacktestNFCIPoint(
+                        releaseDate: String(fields[0]),
+                        referenceDate: String(fields[1]),
+                        availableAt: nil,
+                        value: value
+                    )
+                }
+            }
+
+            let formal = ProcessInfo.processInfo.environment["ATM_CBOE_PC_EXECUTION_V1_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_CBOE_PC_EXECUTION_V1_OUTPUT_DIR"]
+            let factorPath = ProcessInfo.processInfo.environment["ATM_CBOE_PC_EXECUTION_V1_FACTOR_PATH"] ?? ""
+            let factorPoints = loadCboePCPoints(factorPath)
+            guard !factorPoints.isEmpty else {
+                print("CBOE_PC_EXECUTION_V1_DATA_MISSING")
+                return
+            }
+
+            let roleSymbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            let mode: AdvancedBacktestStrategyMode = .nfciDualCoreSimplifiedV11
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = mode.requiredSignalAssetSymbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+            }
+            let settings = AdvancedBacktestRiskSettings(
+                feeRate: 1.00,
+                slippageRate: 0.05,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            let nfci = BacktestNFCIAsOfData(
+                source: "ALFRED initial-release fixture",
+                credit: loadCboePCNFCI("tools/research-results/NFCICREDIT_initial_release.csv"),
+                leverage: loadCboePCNFCI("tools/research-results/NFCILEVERAGE_initial_release.csv")
+            )
+            guard let source = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings,
+                mode: mode,
+                nfciAsOf: nfci
+            ) else {
+                print("CBOE_PC_EXECUTION_V1_SOURCE_FAILED")
+                return
+            }
+            let sourceTargets = Dictionary(uniqueKeysWithValues: source.dailyStates.map {
+                ($0.date.recordDateString, $0.targetWeights)
+            })
+            let sourceTradeDates = Set(source.report.trades.map { $0.date.recordDateString })
+            let sortedSourceEventDates = sourceTradeDates.sorted()
+
+            func targetFingerprint(_ states: [BacktestDailyState]) -> String {
+                var hash: UInt64 = 1469598103934665603
+                for state in states {
+                    for symbol in roleSymbols {
+                        var value = UInt64(bitPattern: Int64(((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded()))
+                        for _ in 0..<8 {
+                            hash ^= value & UInt64(0xff)
+                            hash &*= UInt64(1099511628211)
+                            value >>= 8
+                        }
+                    }
+                }
+                return String(format: "%016llx", hash)
+            }
+
+            func constraints(_ states: [BacktestDailyState]) -> (maxGross: Double, minWeight: Double) {
+                let maxGross = states.map { state in
+                    roleSymbols.reduce(0.0) { $0 + max(state.targetWeights[$1] ?? 0, 0) }
+                }.max() ?? 0
+                let values = states.flatMap { state in roleSymbols.map { state.targetWeights[$0] ?? 0 } }
+                return (maxGross, values.min() ?? 0)
+            }
+
+            let evaluationStart = CboeEquityPutCallExecutionV1Logic.interventionStartDate
+            let folds: [(String, String, String)] = [
+                ("2013-2014", "2013-01-01", "2014-12-31"),
+                ("2015-2016", "2015-01-01", "2016-12-31"),
+                ("2017-2018", "2017-01-01", "2018-12-31"),
+                ("2019-2020", "2019-01-01", "2020-12-31"),
+                ("2021-2022", "2021-01-01", "2022-12-31"),
+                ("2023-2024", "2023-01-01", "2024-12-31"),
+                ("2025-latest", "2025-01-01", "9999-12-31")
+            ]
+
+            func foldMetrics(_ points: [BacktestSeriesPoint]) -> [(String, Double, Double, Double)] {
+                folds.map { name, start, end in
+                    let sliced = points.filter {
+                        let key = $0.date.recordDateString
+                        return key >= start && key <= end
+                    }
+                    let metrics = BacktestMetricsCalculator.performanceMetrics(from: sliced)
+                    return (name, metrics?.annualizedReturn ?? 0, metrics?.maxDrawdown ?? 0, metrics?.sharpeRatio ?? 0)
+                }
+            }
+
+            func writePortfolio(_ id: String, _ points: [BacktestSeriesPoint]) {
+                guard formal, let outputDir else { return }
+                try? FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+                let path = URL(fileURLWithPath: outputDir).appendingPathComponent("\(id)-portfolio.csv").path
+                var lines = ["date,portfolio_value"]
+                lines.append(contentsOf: points.map {
+                    "\($0.date.recordDateString),\(String(format: "%.10f", $0.portfolioValue))"
+                })
+                try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            }
+
+            struct CboePCEventStats {
+                var sourceEvents = 0
+                var usRiskIncreaseEvents = 0
+                var availableUSRiskIncreaseEvents = 0
+                var delayedEvents = 0
+                var completedDelayedEvents = 0
+                var cancelledByNewSourceEvent = 0
+            }
+
+            let replayConfig = ResearchTargetStrategyConfig(
+                symbol: "cboe_equity_put_call_execution_v1",
+                title: "Cboe Equity Put/Call Execution V1",
+                warmupSessions: 21,
+                rebalanceSessions: 1,
+                rebalanceBand: 0.25,
+                maxGrossExposure: 1,
+                allowsFinancedExposure: false,
+                financingAnnualRate: 0,
+                buyReason: "Cboe Equity Put/Call execution timing V1"
+            )
+
+            func runReplay(
+                highState: @escaping (String) -> Bool?,
+                delayWheneverAvailable: Bool
+            ) -> (run: ResearchTargetStrategyRun, stats: CboePCEventStats)? {
+                var pendingTarget: [String: Double] = [:]
+                var priorBase: [String: Double]?
+                var completionIndex: Int?
+                var completionTarget: [String: Double]?
+                var stats = CboePCEventStats()
+
+                guard let replay = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: replayConfig,
+                    rebalanceDecision: { index, _, data in
+                        guard data.dates.indices.contains(index) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let executionDate = data.dates[index].recordDateString
+
+                        if sourceTradeDates.contains(executionDate), let currentBase = sourceTargets[executionDate] {
+                            if completionIndex == index {
+                                stats.cancelledByNewSourceEvent += 1
+                                completionIndex = nil
+                                completionTarget = nil
+                            }
+                            stats.sourceEvents += 1
+                            guard let prior = priorBase else {
+                                priorBase = currentBase
+                                pendingTarget = currentBase
+                                return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                            }
+
+                            var delay = false
+                            if CboeEquityPutCallExecutionV1Logic.hasUSRiskIncrease(priorBase: prior, currentBase: currentBase) {
+                                stats.usRiskIncreaseEvents += 1
+                                let state = highState(executionDate)
+                                if let state {
+                                    stats.availableUSRiskIncreaseEvents += 1
+                                    delay = delayWheneverAvailable ? true : state
+                                    if delay { stats.delayedEvents += 1 }
+                                }
+                            }
+
+                            pendingTarget = CboeEquityPutCallExecutionV1Logic.delayedUSIncreaseTarget(
+                                priorBase: prior,
+                                currentBase: currentBase,
+                                delay: delay
+                            )
+                            if delay, index + 1 < data.dates.count {
+                                completionIndex = index + 1
+                                completionTarget = currentBase
+                            } else {
+                                completionIndex = nil
+                                completionTarget = nil
+                            }
+                            priorBase = currentBase
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+
+                        if completionIndex == index, let completion = completionTarget {
+                            pendingTarget = completion
+                            completionIndex = nil
+                            completionTarget = nil
+                            stats.completedDelayedEvents += 1
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+                        return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pendingTarget }
+                ) else { return nil }
+                return (replay, stats)
+            }
+
+            func printPath(_ id: String, _ run: ResearchTargetStrategyRun, _ stats: CboePCEventStats) {
+                let constraint = constraints(run.dailyStates)
+                if !formal {
+                    print("SMOKE_CBOE_PC_PATH=\(id)")
+                    print("SMOKE_SOURCE_COUNT=\(stats.sourceEvents)")
+                    print("SMOKE_US_RISK_INCREASE_COUNT=\(stats.usRiskIncreaseEvents)")
+                    print("SMOKE_AVAILABLE_US_RISK_INCREASE_COUNT=\(stats.availableUSRiskIncreaseEvents)")
+                    print("SMOKE_DELAYED_COUNT=\(stats.delayedEvents)")
+                    print("SMOKE_COMPLETED_DELAY_COUNT=\(stats.completedDelayedEvents)")
+                    print("SMOKE_CANCELLED_DELAY_COUNT=\(stats.cancelledByNewSourceEvent)")
+                    print("SMOKE_MAX_GROSS=\(String(format: "%.10f", constraint.maxGross))")
+                    print("SMOKE_MIN_WEIGHT=\(String(format: "%.10f", constraint.minWeight))")
+                    print("SMOKE_END")
+                    return
+                }
+                let evaluation = BacktestMetricsCalculator.performanceMetrics(from: run.report.points.filter { $0.date.recordDateString >= evaluationStart })
+                let m2020 = BacktestMetricsCalculator.performanceMetrics(from: run.report.points.filter { $0.date.recordDateString >= "2020-01-01" })
+                let m2022 = BacktestMetricsCalculator.performanceMetrics(from: run.report.points.filter { $0.date.recordDateString >= "2022-01-01" })
+                let fs = foldMetrics(run.report.points)
+                print("candidate_id=\(id)")
+                print("cagr=\(String(format: "%.6f", (run.report.annualizedReturn ?? 0) * 100))")
+                print("mdd=\(String(format: "%.6f", run.report.maxDrawdown * 100))")
+                print("vol=\(String(format: "%.6f", (run.report.annualizedVolatility ?? 0) * 100))")
+                print("sharpe=\(String(format: "%.6f", run.report.sharpeRatio ?? 0))")
+                print("evaluation_cagr=\(String(format: "%.6f", (evaluation?.annualizedReturn ?? 0) * 100))")
+                print("evaluation_mdd=\(String(format: "%.6f", (evaluation?.maxDrawdown ?? 0) * 100))")
+                print("evaluation_sharpe=\(String(format: "%.6f", evaluation?.sharpeRatio ?? 0))")
+                print("trades=\(run.report.trades.count)")
+                print("average_cash=\(String(format: "%.6f", run.report.averageCashRatio))")
+                print("max_gross=\(String(format: "%.10f", constraint.maxGross))")
+                print("min_weight=\(String(format: "%.10f", constraint.minWeight))")
+                print("fingerprint=\(targetFingerprint(run.dailyStates))")
+                print("source_events=\(stats.sourceEvents)")
+                print("us_risk_increase_events=\(stats.usRiskIncreaseEvents)")
+                print("available_us_risk_increase_events=\(stats.availableUSRiskIncreaseEvents)")
+                print("delayed_events=\(stats.delayedEvents)")
+                print("completed_delayed_events=\(stats.completedDelayedEvents)")
+                print("cancelled_by_new_source_event=\(stats.cancelledByNewSourceEvent)")
+                print("since2020_cagr=\(String(format: "%.6f", (m2020?.annualizedReturn ?? 0) * 100))")
+                print("since2020_sharpe=\(String(format: "%.6f", m2020?.sharpeRatio ?? 0))")
+                print("since2022_cagr=\(String(format: "%.6f", (m2022?.annualizedReturn ?? 0) * 100))")
+                print("since2022_sharpe=\(String(format: "%.6f", m2022?.sharpeRatio ?? 0))")
+                print("fold_names=\(fs.map { $0.0 }.joined(separator: ";"))")
+                print("fold_sharpes=\(fs.map { String(format: "%.6f", $0.3) }.joined(separator: ";"))")
+                print("fold_cagrs=\(fs.map { String(format: "%.6f", $0.1 * 100) }.joined(separator: ";"))")
+                print("fold_mdds=\(fs.map { String(format: "%.6f", $0.2 * 100) }.joined(separator: ";"))")
+                print("END_CANDIDATE")
+                writePortfolio(id, run.report.points)
+            }
+
+            print("CBOE_PC_EXECUTION_V1")
+            print("source_target_fingerprint=\(targetFingerprint(source.dailyStates))")
+            print("source_unique_event_dates=\(sortedSourceEventDates.count)")
+            print("factor_point_count=\(factorPoints.count)")
+            print("evaluation_start=\(evaluationStart)")
+
+            guard let identity = runReplay(highState: { _ in nil }, delayWheneverAvailable: false) else {
+                print("CBOE_PC_EXECUTION_V1_IDENTITY_FAILED")
+                return
+            }
+            let sourceCAGR = source.report.annualizedReturn ?? 0
+            let sourceSharpe = source.report.sharpeRatio ?? 0
+            let identityMatch = abs((identity.run.report.annualizedReturn ?? 0) - sourceCAGR) <= 0.0002
+                && abs(identity.run.report.maxDrawdown - source.report.maxDrawdown) <= 0.0002
+                && abs((identity.run.report.sharpeRatio ?? 0) - sourceSharpe) <= 0.002
+            print("SMOKE_IDENTITY_MATCH=\(identityMatch ? "true" : "false")")
+            if !identityMatch {
+                print("CBOE_PC_EXECUTION_V1_IDENTITY_MISMATCH")
+                return
+            }
+
+            if formal {
+                printPath(
+                    "V11-CONTROL",
+                    ResearchTargetStrategyRun(report: source.report, dailyStates: source.dailyStates),
+                    CboePCEventStats(sourceEvents: sortedSourceEventDates.count)
+                )
+            }
+
+            let factorState: (String) -> Bool? = { executionDate in
+                CboeEquityPutCallExecutionV1Logic.highPutCallState(points: factorPoints, executionDate: executionDate)
+            }
+            guard let matched = runReplay(highState: factorState, delayWheneverAvailable: true) else {
+                print("CBOE_PC_EXECUTION_V1_MATCHED_FAILED")
+                return
+            }
+            guard let candidate = runReplay(highState: factorState, delayWheneverAvailable: false) else {
+                print("CBOE_PC_EXECUTION_V1_CANDIDATE_FAILED")
+                return
+            }
+            printPath("C-CBOE-PC-DELAY-ALWAYS", matched.run, matched.stats)
+            printPath("F-CBOE-PC-EXECUTION", candidate.run, candidate.stats)
+            print("CBOE_PC_EXECUTION_V1_COMPLETE")
+            return
+        }

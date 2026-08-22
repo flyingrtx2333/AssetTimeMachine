@@ -1,0 +1,122 @@
+{
+  "trial_id": "ATM-SVP2-CBOE-PC-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "CBOE_EQUITY_PUT_CALL_EXECUTION_TIMING_V1",
+  "strategy_lineage": "cboe-equity-put-call-execution-v1; frozen control nfci-dual-core-v11 / dualcore-v11-2026-08-15",
+  "hypothesis": "A high point-in-time Cboe Equity Put/Call Ratio contains short-horizon bearish information that can improve frozen V11 execution by postponing only positive U.S.-equity increments for one trading session, without changing V11 target sizing, risk reductions, non-U.S. trades, leverage, or long-run gross exposure.",
+  "literature_basis": {
+    "motivation": "Published option-market research reports that unsigned put/call ratios contain short-horizon predictive information for subsequent stock returns, with the economically relevant horizon concentrated at daily/near-daily frequency.",
+    "data_source": "Cboe official Volume and Put/Call Ratio history plus explicit-date Daily Market Statistics pages",
+    "direction": "higher put/call ratio is treated as a short-horizon bearish state; the candidate delays U.S. risk increases rather than increasing risk"
+  },
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-CBOE-PC-001.json",
+  "allowed_changes": [
+    "use the Cboe Equity Put/Call Ratio only from the stable equity-only definition beginning 2012-06-11; earlier observations are excluded because the official legacy file states that ETP exclusion begins on that date",
+    "use legacy Cboe equitypc.csv through 2019-10-04 and explicit-date Cboe Daily Market Statistics from 2019-10-07 onward, with every daily observation conservatively usable only when available_date <= execution date",
+    "begin interventions on 2013-01-01 after a fixed warm-up period that was chosen before strategy performance was viewed",
+    "high-put-call state iff the latest available ratio is greater than the expanding median of all strictly earlier stable-definition observations; the latest observation is excluded from its own threshold",
+    "on a genuine frozen V11 source event with a positive Nasdaq and/or S&P 500 target increment, a high-put-call state postpones only that positive U.S. increment by exactly one trading session; all reductions and all non-U.S. target changes execute immediately",
+    "on the next trading session, complete the delayed U.S. increment to the frozen V11 source-event target unless a new frozen V11 source event occurs first; a new source event cancels any stale delayed completion"
+  ],
+  "candidate_ids": [
+    "F-CBOE-PC-EXECUTION"
+  ],
+  "candidate_count": 1,
+  "selection_metric": "No within-family selection. Compare the single frozen execution-timing candidate with frozen V11 and C-CBOE-PC-DELAY-ALWAYS. Primary inference uses the preregistered 2013-01-01+ common window; full-history metrics are reported for disclosure and cumulative DSR compatibility.",
+  "pass_fail_gates": [
+    "deterministic 2013+: candidate CAGR > V11 CAGR",
+    "deterministic 2013+: candidate Sharpe >= V11 Sharpe",
+    "deterministic 2013+: candidate Sharpe > C-CBOE-PC-DELAY-ALWAYS Sharpe",
+    "deterministic 2013+: candidate MDD <=10%",
+    "deterministic: at least 5/7 fixed folds candidate Sharpe >= matched-control Sharpe",
+    "deterministic: worst fixed-fold Sharpe >0",
+    "deterministic: target gross <=100%, min target weight >=0, no financing or shorting",
+    "bootstrap on 2013+ common window: paired circular moving blocks, 63 sessions, 20000 replicates, seed 20260822",
+    "bootstrap: P(CAGR candidate > V11) >=0.90",
+    "bootstrap: P(Sharpe candidate > matched control) >=0.90",
+    "bootstrap: median candidate-minus-V11 CAGR delta >0",
+    "bootstrap: median candidate-minus-matched Sharpe delta >0",
+    "bootstrap: candidate MDD P97.5 <=15%",
+    "PBO: not applicable because the family contains exactly one preregistered candidate",
+    "global post-protocol DSR probability >=95% using all prior 33 formal return-seeking candidates plus F-CBOE-PC-EXECUTION, total trial count 34",
+    "ROBUST_FACTOR_PASS requires every applicable deterministic, bootstrap, and global DSR gate"
+  ],
+  "formal_run_budget": 1,
+  "follow_up_policy": "This campaign contains exactly one retrospective Cboe put/call execution candidate. After formal performance is viewed, do not change the 2012-06-11 stable-definition start, 2013-01-01 intervention start, sign, median definition, rolling window, percentile, z-score, delay length, Nasdaq/S&P scope, source-event definition, completion rule, cost assumptions, or matched control; do not open a second retrospective rescue family. A suggestive non-robust result may only enter a separately preregistered prospective shadow using this exact historical rule.",
+  "swift_engine_entrypoint": "scripts/run_cboe_equity_put_call_execution_v1.py -> tools/cboe_equity_put_call_execution_v1.swiftpart + tools/cboe_equity_put_call_execution_v1_logic.swift -> frozen V11 source run + BacktestEngine.runResearchTargetProviderStrategyWithTrace -> shared BacktestDailySimulator",
+  "expected_outputs": [
+    "V11-CONTROL full-history metrics and frozen target fingerprint",
+    "C-CBOE-PC-DELAY-ALWAYS availability-matched unconditional one-session-delay metrics",
+    "F-CBOE-PC-EXECUTION full-history and 2013+ metrics",
+    "seven fixed folds: 2013-2014, 2015-2016, 2017-2018, 2019-2020, 2021-2022, 2023-2024, 2025-latest",
+    "2020+ and 2022+ slices",
+    "source-event/U.S.-risk-increase/available/delayed/completed/cancelled counts and portfolio constraints",
+    "one portfolio CSV per control/candidate",
+    "mechanical deterministic ADMIT_FOR_ROBUSTNESS flag",
+    "paired 20000-replicate common-window moving-block bootstrap statistics",
+    "cumulative 34-trial Deflated Sharpe Ratio",
+    "mechanical ROBUST_FACTOR_PASS flag",
+    "factor-library archival with truthful lifecycle after the formal result",
+    "run authorization receipt, execution Git commit and SHA-256 result artifact manifest"
+  ],
+  "factor_definition": {
+    "factor_id": "F-CBOE-PC-EXECUTION",
+    "source": "Cboe official Equity Put/Call Ratio",
+    "stable_definition_start": "2012-06-11",
+    "stable_start_reason": "Cboe legacy file states that as of 2012-06-11 Equity Volume includes only equity option products and excludes exchange-traded products",
+    "legacy_segment": "equitypc.csv through 2019-10-04",
+    "modern_segment": "explicit-date Cboe Daily Market Statistics from 2019-10-07 onward",
+    "availability": "prior-close ratio is conservatively usable when available_date <= next execution date",
+    "intervention_start": "2013-01-01",
+    "high_state_rule": "latest available Equity Put/Call Ratio > prior-only expanding median"
+  },
+  "execution_action": {
+    "eligible_event": "a genuine frozen V11 source event whose current target increases Nasdaq and/or S&P 500 relative to the previous frozen V11 source-event target",
+    "high_state_action": "execute all V11 reductions and non-U.S. target changes immediately, keep only positive Nasdaq/S&P increments at their prior-event weights for exactly one trading session, then complete to the current frozen V11 target on the next session",
+    "normal_or_unavailable_action": "execute the current frozen V11 event target immediately",
+    "new_source_event_rule": "if a new frozen V11 source event arrives on the scheduled completion session, cancel the stale completion and process the new source event"
+  },
+  "matched_control": {
+    "control_id": "C-CBOE-PC-DELAY-ALWAYS",
+    "rule": "on every factor-available eligible U.S.-risk-increase V11 event, apply the identical one-trading-session U.S.-increment delay regardless of put/call state"
+  },
+  "shared_rules": {
+    "primary_evaluation_start": "2013-01-01",
+    "delay_trading_sessions": 1,
+    "replay_rebalance_band": 0.25,
+    "fee_rate": 0.01,
+    "slippage_rate": 0.0005,
+    "max_gross": 1.0,
+    "shorting_allowed": false,
+    "financing_allowed": false
+  },
+  "forbidden_changes": [
+    "any frozen V11 source, parameter, target sizing, or target path change",
+    "any pre-2012-06-11 ratio use",
+    "any intervention-start change after results",
+    "any sign reversal or alternate put/call family after results",
+    "any rolling-window, fixed-threshold, percentile, rank, z-score, persistence, smoothing, or multi-day confirmation search",
+    "any delay other than exactly one trading session",
+    "any delay of risk reductions or non-U.S. target changes",
+    "any asset scope other than positive Nasdaq/S&P increments",
+    "any leverage, financed exposure, or gross increase above frozen V11 target",
+    "candidate replacement or second retrospective Cboe P/C candidate after results",
+    "dropping failed prior formal candidates from cumulative DSR accounting"
+  ],
+  "statistical_audit": {
+    "bootstrap_sample_start": "2013-01-01",
+    "bootstrap_block_sessions": 63,
+    "bootstrap_replicates": 20000,
+    "bootstrap_rng_seed": 20260822,
+    "pbo": "NOT_APPLICABLE_SINGLE_CANDIDATE",
+    "global_dsr_prior_candidate_count": 33,
+    "global_dsr_total_candidate_count_after_this_trial": 34,
+    "global_dsr_return_window": "full history for consistency with prior post-protocol DSR accounting"
+  },
+  "factor_library_archival": {
+    "action_after_formal_result": "archive factor definition, preregistration, formal result and evidence in FlyingrtxFast with truthful lifecycle status",
+    "robust_pass_policy": "may advance only according to factor-library lifecycle and protocol gates",
+    "fail_policy": "archive as rejected research evidence; never hide the failed trial"
+  }
+}

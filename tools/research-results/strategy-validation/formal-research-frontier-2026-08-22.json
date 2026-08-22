@@ -1,0 +1,178 @@
+{
+  "best_cagr_by_mdd_limit": {
+    "10.0": {
+      "bootstrap_probability_cagr_gt_v11": 0.86595,
+      "bootstrap_probability_sharpe_gt_matched": 0.99295,
+      "cagr_percent": 14.607176,
+      "candidate_id": "F-MOVE",
+      "global_dsr_probability": 0.917480743580944,
+      "mdd_percent": 8.521421,
+      "robust_factor_pass": false,
+      "sharpe": 1.503521,
+      "status": "FAIL",
+      "trial_id": "ATM-SVP2-LIT-STRESS-001"
+    },
+    "12.0": {
+      "bootstrap_probability_cagr_gt_v11": 0.86595,
+      "bootstrap_probability_sharpe_gt_matched": 0.99295,
+      "cagr_percent": 14.607176,
+      "candidate_id": "F-MOVE",
+      "global_dsr_probability": 0.917480743580944,
+      "mdd_percent": 8.521421,
+      "robust_factor_pass": false,
+      "sharpe": 1.503521,
+      "status": "FAIL",
+      "trial_id": "ATM-SVP2-LIT-STRESS-001"
+    },
+    "15.0": {
+      "bootstrap_probability_cagr_gt_v11": null,
+      "bootstrap_probability_sharpe_gt_matched": null,
+      "cagr_percent": 16.067258,
+      "candidate_id": "F-CREDITCASH",
+      "global_dsr_probability": null,
+      "mdd_percent": 12.777213,
+      "robust_factor_pass": null,
+      "sharpe": 1.377913,
+      "status": "FAIL",
+      "trial_id": "ATM-SVP2-ORTHO-FACTOR-006"
+    },
+    "20.0": {
+      "bootstrap_probability_cagr_gt_v11": null,
+      "bootstrap_probability_sharpe_gt_matched": null,
+      "cagr_percent": 16.153293,
+      "candidate_id": "F-CURVE",
+      "global_dsr_probability": null,
+      "mdd_percent": 18.778858,
+      "robust_factor_pass": null,
+      "sharpe": 1.232041,
+      "status": "FAIL",
+      "trial_id": "ATM-SVP2-ORTHO-FACTOR-001"
+    },
+    "8.0": {
+      "cagr_percent": 14.345615,
+      "candidate_id": "V11-CONTROL",
+      "mdd_percent": 7.689054,
+      "robust_factor_pass": null,
+      "sharpe": 1.522263,
+      "status": "CONTROL",
+      "trial_id": "FROZEN-V11"
+    }
+  },
+  "candidates_ge_18_cagr_and_le_10_mdd": [],
+  "candidates_ge_20_cagr_and_le_10_mdd": [],
+  "formal_unique_candidates": 33,
+  "frozen_control": {
+    "cagr_percent": 14.345615,
+    "candidate_id": "V11-CONTROL",
+    "mdd_percent": 7.689054,
+    "robust_factor_pass": null,
+    "sharpe": 1.522263,
+    "status": "CONTROL",
+    "trial_id": "FROZEN-V11"
+  },
+  "max_cagr": {
+    "bootstrap_probability_cagr_gt_v11": null,
+    "bootstrap_probability_sharpe_gt_matched": null,
+    "cagr_percent": 16.153293,
+    "candidate_id": "F-CURVE",
+    "global_dsr_probability": null,
+    "mdd_percent": 18.778858,
+    "robust_factor_pass": null,
+    "sharpe": 1.232041,
+    "status": "FAIL",
+    "trial_id": "ATM-SVP2-ORTHO-FACTOR-001"
+  },
+  "max_sharpe": {
+    "cagr_percent": 14.345615,
+    "candidate_id": "V11-CONTROL",
+    "mdd_percent": 7.689054,
+    "robust_factor_pass": null,
+    "sharpe": 1.522263,
+    "status": "CONTROL",
+    "trial_id": "FROZEN-V11"
+  },
+  "pareto_frontier": [
+    {
+      "cagr_percent": 14.345615,
+      "candidate_id": "V11-CONTROL",
+      "mdd_percent": 7.689054,
+      "robust_factor_pass": null,
+      "sharpe": 1.522263,
+      "status": "CONTROL",
+      "trial_id": "FROZEN-V11"
+    },
+    {
+      "bootstrap_probability_cagr_gt_v11": 0.86595,
+      "bootstrap_probability_sharpe_gt_matched": 0.99295,
+      "cagr_percent": 14.607176,
+      "candidate_id": "F-MOVE",
+      "global_dsr_probability": 0.917480743580944,
+      "mdd_percent": 8.521421,
+      "robust_factor_pass": false,
+      "sharpe": 1.503521,
+      "status": "FAIL",
+      "trial_id": "ATM-SVP2-LIT-STRESS-001"
+    },
+    {
+      "bootstrap_probability_cagr_gt_v11": 0.76235,
+      "bootstrap_probability_sharpe_gt_matched": 0.86925,
+      "cagr_percent": 14.433724,
+      "candidate_id": "F-TIC-FLOW-CONTRARIAN-US",
+      "global_dsr_probability": 0.9434467224912781,
+      "mdd_percent": 8.612735,
+      "robust_factor_pass": false,
+      "sharpe": 1.516287,
+      "status": "FAIL",
+      "trial_id": "ATM-SVP2-TIC-001"
+    },
+    {
+      "bootstrap_probability_cagr_gt_v11": 0.8173,
+      "bootstrap_probability_sharpe_gt_matched": 0.85365,
+      "cagr_percent": 14.440021,
+      "candidate_id": "F-MARGIN-LEV-US",
+      "global_dsr_probability": 0.934554702736849,
+      "mdd_percent": 8.612794,
+      "robust_factor_pass": false,
+      "sharpe": 1.516685,
+      "status": "FAIL",
+      "trial_id": "ATM-SVP2-MARGIN-001"
+    },
+    {
+      "bootstrap_probability_cagr_gt_v11": null,
+      "bootstrap_probability_sharpe_gt_matched": null,
+      "cagr_percent": 16.067258,
+      "candidate_id": "F-CREDITCASH",
+      "global_dsr_probability": null,
+      "mdd_percent": 12.777213,
+      "robust_factor_pass": null,
+      "sharpe": 1.377913,
+      "status": "FAIL",
+      "trial_id": "ATM-SVP2-ORTHO-FACTOR-006"
+    },
+    {
+      "bootstrap_probability_cagr_gt_v11": 0.80485,
+      "bootstrap_probability_sharpe_gt_matched": 0.4659,
+      "cagr_percent": 14.76824,
+      "candidate_id": "F-VRP-PROXY",
+      "global_dsr_probability": 0.8336689736201125,
+      "mdd_percent": 13.380275,
+      "robust_factor_pass": false,
+      "sharpe": 1.411748,
+      "status": "FAIL",
+      "trial_id": "ATM-SVP2-VRP-001"
+    },
+    {
+      "bootstrap_probability_cagr_gt_v11": null,
+      "bootstrap_probability_sharpe_gt_matched": null,
+      "cagr_percent": 16.153293,
+      "candidate_id": "F-CURVE",
+      "global_dsr_probability": null,
+      "mdd_percent": 18.778858,
+      "robust_factor_pass": null,
+      "sharpe": 1.232041,
+      "status": "FAIL",
+      "trial_id": "ATM-SVP2-ORTHO-FACTOR-001"
+    }
+  ],
+  "robust_factor_passes": []
+}
