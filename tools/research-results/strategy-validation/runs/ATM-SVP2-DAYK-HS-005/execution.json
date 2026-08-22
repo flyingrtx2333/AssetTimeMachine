@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_dayk_high_speed_005.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "05fe50a05aae375d1988d2fe762387c7dc06bbb1",
+  "finished_at": "2026-08-22T20:38:40+08:00",
+  "preregistration_record_hash": "7e620ca181c510fd7bc745cfbd8e950c05055be3906302c363d506f8bece5bd0",
+  "protocol_id": "ATM-SVP-2",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/run-authorization.json",
+  "started_at": "2026-08-22T20:38:09+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/stdout.txt",
+  "trial_id": "ATM-SVP2-DAYK-HS-005"
+}

@@ -1,0 +1,133 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/C-BASE-PULLBACK-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/C-BASE-PULLBACK-GOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/C-BASE-PULLBACK-NASDAQ-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/C-BASE-PULLBACK-SP500-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/C-CASH-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/DKHS005-COMBINED-SLIP005-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/DKHS005-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/DKHS005-GOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/DKHS005-NASDAQ-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/candidates/DKHS005-SP500-portfolio.csv"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-DAYK-HIGH-SPEED-005",
+      "metrics": {
+        "asset_paths": {
+          "gold_cny": {
+            "average_holding_sessions": 3.7435897435897436,
+            "average_trade_return_percent": 0.06396393942589337,
+            "cagr_percent": 0.7324930948955588,
+            "mdd_percent": 9.13233772381775,
+            "profit_factor": 1.0996684187811918,
+            "round_trips": 78,
+            "sharpe": 0.15316777982068577,
+            "take_profit_hits": 43,
+            "time_exits": 35,
+            "win_rate_percent": 66.66666666666666
+          },
+          "nasdaq": {
+            "average_holding_sessions": 3.4511278195488724,
+            "average_trade_return_percent": 0.12925098401408544,
+            "cagr_percent": 1.9386236977986027,
+            "mdd_percent": 21.338611129156188,
+            "profit_factor": 1.2105927439837754,
+            "round_trips": 133,
+            "sharpe": 0.26674425404806057,
+            "take_profit_hits": 91,
+            "time_exits": 42,
+            "win_rate_percent": 74.43609022556392
+          },
+          "sp500": {
+            "average_holding_sessions": 3.2295081967213113,
+            "average_trade_return_percent": 0.2341036941595281,
+            "cagr_percent": 3.299186886772132,
+            "mdd_percent": 9.200215243267968,
+            "profit_factor": 1.6376095914618118,
+            "round_trips": 122,
+            "sharpe": 0.538871371367071,
+            "take_profit_hits": 92,
+            "time_exits": 30,
+            "win_rate_percent": 80.32786885245902
+          }
+        },
+        "cash_control_cagr_percent": 0.3630910680378685,
+        "combined": {
+          "average_holding_sessions": 3.4384384384384385,
+          "average_trade_return_percent": 0.1523730295392054,
+          "cagr_percent": 2.0753481035121535,
+          "folds_with_positive_sharpe": 3,
+          "mdd_percent": 7.7946487813821035,
+          "profit_factor": 1.2875130156703753,
+          "round_trips": 333,
+          "sharpe": 0.4260318144139877,
+          "since2020_cagr_percent": 3.067701671700762,
+          "since2022_cagr_percent": 1.9179811553055037,
+          "total_return_percent": 21.19404091860597,
+          "win_rate_percent": 74.77477477477478
+        },
+        "constraints": {
+          "carried_mark_valuation_count": 29,
+          "final_open_positions": 0,
+          "max_gross": 1,
+          "maximum_holding_sessions": 5,
+          "minimum_end_of_day_cash": 0,
+          "minimum_holding_sessions": 2,
+          "pass": true
+        },
+        "factor_vote_counts": {
+          "gold_cny": {
+            "1": 13,
+            "2": 61,
+            "3": 67
+          },
+          "nasdaq": {
+            "0": 1,
+            "1": 17,
+            "2": 118,
+            "3": 96,
+            "4": 18
+          },
+          "sp500": {
+            "0": 4,
+            "1": 22,
+            "2": 100,
+            "3": 90,
+            "4": 7
+          }
+        },
+        "matched_base_pullback_control": {
+          "average_trade_return_percent": 0.17382827878052873,
+          "cagr_percent": 2.51657519805657,
+          "mdd_percent": 7.258192657882824,
+          "profit_factor": 1.3370213089433878,
+          "round_trips": 363,
+          "sharpe": 0.49086470750979094
+        },
+        "preregistered_gate_pass": false,
+        "slippage_stress": {
+          "cagr_percent": 0.8718082767136259,
+          "mdd_percent": 9.25563396802733,
+          "sharpe": 0.1951895975518459
+        }
+      }
+    }
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-DAYK-HS-005.json",
+  "decision": "FAIL / NO_CANDIDATE_ADMITTED. The frozen 日K高速005 2-of-4 multifactor filter produced 2.075348% CAGR, 0.426032 Sharpe and 7.794649% MDD versus 0.363091% CNY cash. It completed 333 round trips with 74.774775% wins, 0.152373% average net return and profit factor 1.287513. The unfiltered base-pullback control was better on CAGR (2.516575%), Sharpe (0.490865), average trade (0.173828%) and profit factor (1.337021). Thus the preregistered trend-alignment, RSI3, volatility-expansion and bullish-rejection vote did not add incremental selection value; only 3/5 folds had positive Sharpe. At 0.05% adverse slippage per fill, candidate CAGR was 0.871808%, Sharpe 0.195190 and MDD 9.255634%. Exposure, cash, holding-period, cross-calendar marking and final-liquidation invariants passed. Per the stop rule, no alternative vote threshold, factor deletion, factor weighting or indicator tuning is permitted inside 005.",
+  "execution_git_commit": "05fe50a05aae375d1988d2fe762387c7dc06bbb1",
+  "preregistration_record_hash": "7e620ca181c510fd7bc745cfbd8e950c05055be3906302c363d506f8bece5bd0",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-005/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP2-DAYK-HS-005"
+}
