@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_china_us_relay_002.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "6317a167364f4eb0494df5cc48e1844a2dfc6833",
+  "finished_at": "2026-08-23T11:17:51+08:00",
+  "preregistration_record_hash": "7dd6b5d04e09e5cbe9c8102f00b39f741234035cbf51617c25060c2aed01b4de",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/run-authorization.json",
+  "started_at": "2026-08-23T11:17:18+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/stdout.txt",
+  "trial_id": "ATM-SVP3-CHINA-US-RELAY-002"
+}
