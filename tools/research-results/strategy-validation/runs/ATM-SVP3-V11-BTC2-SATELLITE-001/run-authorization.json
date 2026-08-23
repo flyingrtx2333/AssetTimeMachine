@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "c08346147ea423cc3f1f69378087fe83767a9aab",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "5d95c55ffb15b0b3577fe14b5cf189e1efa3e81edcc78138ffad7c4ab09f12bb",
+  "preregistration_record_hash": "5d95c55ffb15b0b3577fe14b5cf189e1efa3e81edcc78138ffad7c4ab09f12bb",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-V11-BTC2-SATELLITE-001"
+}

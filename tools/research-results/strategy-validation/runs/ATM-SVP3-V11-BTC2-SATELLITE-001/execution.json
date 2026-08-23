@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_v11_btc2_satellite_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "c08346147ea423cc3f1f69378087fe83767a9aab",
+  "finished_at": "2026-08-24T00:30:41+08:00",
+  "preregistration_record_hash": "5d95c55ffb15b0b3577fe14b5cf189e1efa3e81edcc78138ffad7c4ab09f12bb",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/run-authorization.json",
+  "started_at": "2026-08-24T00:29:34+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/stdout.txt",
+  "trial_id": "ATM-SVP3-V11-BTC2-SATELLITE-001"
+}

@@ -1,0 +1,165 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/candidates/C-V11-MATCHED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/candidates/S-V11-BTC2-SATELLITE-001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-V11-BTC2-SATELLITE-001",
+      "metrics": {
+        "average_cash_ratio": 0.3904757746782223,
+        "cagr_percent": 15.79852638547623,
+        "candidate_minus_v11_cagr_pp": 1.0778560424279817,
+        "candidate_minus_v11_mdd_pp": 0.763403329088038,
+        "candidate_minus_v11_sharpe": 0.06466517226125834,
+        "comparison_checks": {
+          "cagr_gt_matched_v11": true,
+          "mdd_le_matched_v11": false,
+          "sharpe_ge_matched_v11": true
+        },
+        "comparison_failures": [
+          "mdd_le_matched_v11"
+        ],
+        "constraints": {
+          "financing_allowed": false,
+          "max_realized_gross": 1.0000000000000002,
+          "max_target_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "fold_cagrs_percent": [
+          8.112956666695649,
+          19.50786921563541,
+          7.365773008604171,
+          1.463761808457531,
+          16.253390544470992,
+          31.329102679156474,
+          31.559819803916934
+        ],
+        "fold_mdds_percent": [
+          7.144289638349285,
+          8.144366516496683,
+          3.4013267775749667,
+          1.7169167791522137,
+          6.0778682469709,
+          6.600731048275812,
+          6.095914476358991
+        ],
+        "fold_names": [
+          "2017-2019",
+          "2020",
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.0535514658963698,
+          1.4377789352775836,
+          1.0570442042898134,
+          0.4259278291772887,
+          1.3280881713354913,
+          1.7498345542454918,
+          1.892095140475237
+        ],
+        "folds_with_positive_sharpe": 7,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 0.38570194449673956,
+        "global_post_protocol_dsr_trial_count": 78,
+        "matched_v11_control": {
+          "average_cash_ratio": 0.3971433510514053,
+          "cagr_percent": 14.720670343048248,
+          "max_gross": 1.0000000000000002,
+          "max_target_gross": 1,
+          "mdd_percent": 7.380963187408628,
+          "minimum_cash": 0,
+          "sharpe": 1.2902856425567937,
+          "target_fingerprint": "821e413cc801115f",
+          "trades": 162,
+          "v11_role_fingerprint": "e6206235083a3e1f"
+        },
+        "max_gross": 1.0000000000000002,
+        "max_target_gross": 1,
+        "mdd_percent": 8.144366516496666,
+        "measurement": {
+          "btc_driven_rebalances": false,
+          "btc_source": "Binance BTCUSDT",
+          "execution_calendar": "frozen V11 matched common dates",
+          "usdt_as_usd_equivalent": true
+        },
+        "minimum_cash": 0,
+        "objective_checks": {
+          "cagr_ge_16pct": false,
+          "mdd_le_10pct": true,
+          "sharpe_ge_1_45": false,
+          "since2020_cagr_positive": true,
+          "since2022_cagr_positive": true
+        },
+        "objective_failures": [
+          "cagr_ge_16pct",
+          "sharpe_ge_1_45"
+        ],
+        "sharpe": 1.354950814818052,
+        "since2020_cagr_percent": 18.6794826489759,
+        "since2020_sharpe": 1.4503592072729383,
+        "since2022_cagr_percent": 21.082683743918196,
+        "since2022_sharpe": 1.5279131313144367,
+        "strategy_library_validation": {
+          "comparative_failures": [
+            "mdd_le_matched_v11"
+          ],
+          "comparison_status": "FAIL",
+          "evidence_missing": [],
+          "note": "All intrinsic ATM-SVP-3 gates pass. The fixed external 2% BTC satellite raises matched-window CAGR and Sharpe versus V11 but increases MDD by about 0.76 percentage points, so strict comparison fails. Global DSR is below 90%, therefore final validation evidence is WEAK.",
+          "objective_failures": [
+            "cagr_ge_16pct",
+            "sharpe_ge_1_45"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "WEAK",
+          "trial_status": "PASS",
+          "validation_failures": [],
+          "validation_warnings": [
+            "global_dsr_below_project_pass_threshold",
+            "BTCUSDT_as_USD_equivalent_measurement"
+          ]
+        },
+        "target_fingerprint": "96721191571c538c",
+        "trades": 182,
+        "v11_role_fingerprint": "6a7ef7f951fe6550",
+        "validation_checks": {
+          "actual_trades_gt_0": true,
+          "cash_nonnegative": true,
+          "full_cagr_gt_0": true,
+          "full_mdd_le_25pct": true,
+          "full_sharpe_gt_0": true,
+          "max_realized_gross_le_1": true,
+          "max_target_gross_le_1": true,
+          "positive_sharpe_folds_ge_70pct": true
+        }
+      }
+    }
+  ],
+  "comparison_status": "FAIL",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-V11-BTC2-SATELLITE-001.json",
+  "decision": "PASS ON FROZEN INTRINSIC VALIDATION GATES / ATM-SVP-3 EVIDENCE WEAK. The externally anchored fixed 2% BTC satellite on 98% frozen V11 produced 15.798526% CAGR, 1.354951 Sharpe and 8.144367% MDD with 7/7 positive-Sharpe folds and all no-leverage/cash constraints satisfied. The matched V11 replay produced 14.720670% CAGR, 1.290286 Sharpe and 7.380963% MDD. Candidate improves CAGR by 1.077856 pp and Sharpe by 0.064665, but MDD is 0.763403 pp higher, therefore the frozen all-three comparison gate FAILS. The 16%/1.45 objective also fails. Global DSR probability is 0.385701944 across 78 performance-bearing candidates, so final validation evidence is WEAK rather than strong PASS. No BTC-weight or timing rescue is permitted; the next allowed work is statistical robustness auditing of this exact frozen candidate.",
+  "execution_git_commit": "c08346147ea423cc3f1f69378087fe83767a9aab",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "5d95c55ffb15b0b3577fe14b5cf189e1efa3e81edcc78138ffad7c4ab09f12bb",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/run-authorization.json",
+  "status": "PASS",
+  "trial_id": "ATM-SVP3-V11-BTC2-SATELLITE-001",
+  "validation_status": "WEAK"
+}
