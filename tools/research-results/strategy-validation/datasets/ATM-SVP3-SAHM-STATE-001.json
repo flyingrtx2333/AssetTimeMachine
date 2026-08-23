@@ -1,0 +1,36 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    },
+    {
+      "bytes": 13090,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/external-data/ATM-SVP3-SAHM-STATE-001/SAHMREALTIME.csv",
+      "sha256": "ba5e67096738bfd055c91fe0564d28e32816422a21175d8bb1abd77e24eaf296"
+    }
+  ],
+  "generated_at": "2026-08-23T14:05:57+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "base_cost": "1.00% fee +0.05% slippage per trade",
+    "campaign": "sahm-state-001",
+    "candidate_kind": "INDEPENDENT_REALTIME_LABOR_RECESSION_STATE",
+    "causal_rule": "review only on first U.S. execution session on/after calendar day 15; use only SAHMREALTIME observations whose observation month is strictly before execution month",
+    "evaluation_end": "2026-08-20",
+    "evaluation_start": "2002-07-15",
+    "factor": "FRED SAHMREALTIME",
+    "owners": {
+      "sahm_ge_0_50": "gold_cny",
+      "sahm_lt_0_50": "nasdaq"
+    },
+    "performance_viewed_before_freeze": false,
+    "source_definition": "three-month average U3 unemployment rises >=0.50 percentage points above the minimum three-month average of the previous 12 months",
+    "source_url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=SAHMREALTIME"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-SAHM-STATE-001"
+}
