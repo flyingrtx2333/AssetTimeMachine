@@ -1,0 +1,116 @@
+{
+  "files": [
+    {
+      "bytes": 178197,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-08-01",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/C-CASH-portfolio.csv",
+      "row_count": 6144,
+      "sha256": "bee7aeadb28ee84f3501ace70a48c76386fc6b506d54a20a561961a2879c3780"
+    },
+    {
+      "bytes": 178039,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-08-01",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/C-SPY-BUYHOLD-portfolio.csv",
+      "row_count": 6144,
+      "sha256": "82efbbda0a7d47159f2960fdf25fc5a09b8c7a00abd896228c298fe85d66084d"
+    },
+    {
+      "bytes": 178192,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-08-01",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/PERM001-portfolio.csv",
+      "row_count": 6144,
+      "sha256": "8b5eb6c670ad1d3362205dd8d69d4c0ba144ea85fb84c4012166263bfe3ba1ea"
+    },
+    {
+      "bytes": 529,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "25da9a55b7f5e076a23d24faf35b37665183fbea67a539e53071ce71e74e7ec1"
+    },
+    {
+      "bytes": 7755,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/candidate-metrics.json",
+      "sha256": "6247618ce77b4761fa8533ec56db43e14717f4eacc70f9bf81ab66fc5e32cf65"
+    },
+    {
+      "bytes": 543,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/statistical-audit.json",
+      "sha256": "74f7af10a16d8d9a5b305ec49da35cd2a221be43ec048a6c0a0c6a908e364eb4"
+    },
+    {
+      "bytes": 1000,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/execution.json",
+      "sha256": "2572181ec778b0c325a2066a70a69672d6f73fec9bd9b083f9de27fb2997d196"
+    },
+    {
+      "bytes": 446,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/run-authorization.json",
+      "sha256": "3b8d5b464948b77a20ca691bd556f1ceef2a26a50a54070a35d8d00c132a0903"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1243,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/stdout.txt",
+      "sha256": "a1ec1dc3653319932687798c725289a21147a80fd18694db2d1f931221eedeff"
+    }
+  ],
+  "generated_at": "2026-08-23T18:00:00+08:00",
+  "git_commit": "9920e3450a951c7d3a2b7678ef402c85050bc76c",
+  "kind": "result",
+  "metadata": {
+    "absolute_validation": "PASS",
+    "comparison_status": "PASS",
+    "objective_status": "FAIL",
+    "validation_status": "WEAK"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-PERMANENT-PORTFOLIO-001"
+}

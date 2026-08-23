@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "9920e3450a951c7d3a2b7678ef402c85050bc76c",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "3f47fa55e80558dee8e8b15a15c405ba4a7dafffec908b03c135e055f26b722a",
+  "preregistration_record_hash": "3f47fa55e80558dee8e8b15a15c405ba4a7dafffec908b03c135e055f26b722a",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-PERMANENT-PORTFOLIO-001"
+}

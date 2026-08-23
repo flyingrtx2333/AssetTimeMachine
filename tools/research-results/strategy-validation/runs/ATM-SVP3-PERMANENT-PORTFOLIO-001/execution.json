@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_permanent_portfolio_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "9920e3450a951c7d3a2b7678ef402c85050bc76c",
+  "finished_at": "2026-08-23T17:58:51+08:00",
+  "preregistration_record_hash": "3f47fa55e80558dee8e8b15a15c405ba4a7dafffec908b03c135e055f26b722a",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/run-authorization.json",
+  "started_at": "2026-08-23T17:58:23+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/stdout.txt",
+  "trial_id": "ATM-SVP3-PERMANENT-PORTFOLIO-001"
+}

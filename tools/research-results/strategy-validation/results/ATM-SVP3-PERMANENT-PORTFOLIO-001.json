@@ -1,0 +1,146 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/C-SPY-BUYHOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/PERM001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-PERMANENT-PORTFOLIO-001",
+      "metrics": {
+        "average_cash_ratio": 0.24346496536855075,
+        "cagr_percent": 6.655242522614069,
+        "cash_control_cagr_percent": 0.46391492760153863,
+        "comparison_checks": {
+          "mdd_le_spy_buy_hold": true,
+          "sharpe_gt_spy_buy_hold": true
+        },
+        "comparison_failures": [],
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 0.7907416821868399,
+          "minimum_cash": 25000,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "fold_cagrs_percent": [
+          8.986197871191838,
+          2.575920221530703,
+          8.50341824820806,
+          3.8624282758636275,
+          5.649316727618148,
+          7.952329733378183,
+          7.928354616923716
+        ],
+        "fold_mdds_percent": [
+          6.40854038498013,
+          17.05195268179704,
+          7.938947878928005,
+          10.3071906269375,
+          6.241328254904143,
+          11.912750361521054,
+          8.534247477236963
+        ],
+        "fold_names": [
+          "2002-2005",
+          "2006-2008",
+          "2009-2011",
+          "2012-2014",
+          "2015-2017",
+          "2018-2021",
+          "2022-latest"
+        ],
+        "fold_sharpes": [
+          1.572694659030233,
+          0.36050393710142237,
+          1.1030644947079542,
+          0.6822196530460591,
+          0.9723712328096936,
+          1.1105296386557941,
+          0.9056685176314409
+        ],
+        "folds_with_positive_sharpe": 7,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 0.005072797318457223,
+        "global_post_protocol_dsr_trial_count": 71,
+        "max_gross": 0.7907416821868399,
+        "mdd_percent": 17.051952681797136,
+        "minimum_cash": 25000,
+        "objective_checks": {
+          "cagr_ge_12pct": false,
+          "cagr_gt_cash": true,
+          "mdd_le_20pct": true,
+          "sharpe_ge_1": false,
+          "since2020_cagr_positive": true,
+          "since2022_cagr_positive": true
+        },
+        "objective_failures": [
+          "cagr_ge_10pct",
+          "sharpe_ge_1",
+          "mdd_le_15pct"
+        ],
+        "sharpe": 0.9357670759726382,
+        "since2020_cagr_percent": 7.218255936764462,
+        "since2020_sharpe": 0.8416705283496664,
+        "since2022_cagr_percent": 7.928354616923716,
+        "since2022_sharpe": 0.9056685176314409,
+        "spy_buy_hold_control": {
+          "cagr_percent": 10.517353560807653,
+          "mdd_percent": 59.22518004355237,
+          "sharpe": 0.621496792005207,
+          "target_fingerprint": "f57c4ce213543383",
+          "trades": 1
+        },
+        "strategy_library_validation": {
+          "comparative_failures": [],
+          "comparison_status": "PASS",
+          "evidence_missing": [],
+          "note": "All frozen absolute validation gates pass at product-level costs and all seven folds are positive, but global DSR is below 90%, so final evidence is WEAK.",
+          "objective_failures": [
+            "cagr_ge_10pct",
+            "sharpe_ge_1",
+            "mdd_le_15pct"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "WEAK",
+          "trial_status": "PASS",
+          "validation_failures": [],
+          "validation_warnings": [
+            "global_dsr_below_project_pass_threshold"
+          ]
+        },
+        "target_fingerprint": "826e5fe2fcce8383",
+        "trades": 75,
+        "validation_checks": {
+          "actual_trades_gt_0": true,
+          "cash_nonnegative": true,
+          "full_cagr_gt_0": true,
+          "full_mdd_le_25pct": true,
+          "full_sharpe_gt_0": true,
+          "max_gross_le_1": true,
+          "positive_sharpe_folds_ge_70pct": true
+        }
+      }
+    }
+  ],
+  "comparison_status": "PASS",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-PERMANENT-PORTFOLIO-001.json",
+  "decision": "PASS ON FROZEN ABSOLUTE VALIDATION GATES / ATM-SVP-3 EVIDENCE WEAK. The fixed 25/25/25/25 Permanent Portfolio produced 6.655243% CAGR, 0.935767 Sharpe and 17.051953% MDD after product-level costs, with 7/7 positive-Sharpe folds. It improves Sharpe and drawdown versus SPY buy-and-hold (0.621497 Sharpe, 59.225180% MDD), so comparison=PASS. The high-return objective fails, and global DSR=0.00507279732 over 71 candidates, therefore validation evidence is WEAK rather than strong PASS. No weight or rebalance rescue is permitted.",
+  "execution_git_commit": "9920e3450a951c7d3a2b7678ef402c85050bc76c",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "3f47fa55e80558dee8e8b15a15c405ba4a7dafffec908b03c135e055f26b722a",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/run-authorization.json",
+  "status": "PASS",
+  "trial_id": "ATM-SVP3-PERMANENT-PORTFOLIO-001",
+  "validation_status": "WEAK"
+}
