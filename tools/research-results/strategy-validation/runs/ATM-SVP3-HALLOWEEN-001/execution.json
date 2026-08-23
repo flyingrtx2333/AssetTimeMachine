@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_halloween_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "74600a810675e057d8bb743ef74685c63e6a4b16",
+  "finished_at": "2026-08-23T14:57:47+08:00",
+  "preregistration_record_hash": "11d5e112cdb56e39fcbbbea904cad183f3c53ec974af849d80313e48f7021380",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/run-authorization.json",
+  "started_at": "2026-08-23T14:57:19+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/stdout.txt",
+  "trial_id": "ATM-SVP3-HALLOWEEN-001"
+}

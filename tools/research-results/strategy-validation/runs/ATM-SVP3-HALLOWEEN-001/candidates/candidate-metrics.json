@@ -1,0 +1,261 @@
+{
+  "buy_hold_control": {
+    "active_target_sessions": 6703,
+    "average_cash_ratio": 0,
+    "cagr_percent": 5.607545513311862,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": -6.582583582757328,
+        "mdd_percent": 49.146949838293594,
+        "name": "2000-2003",
+        "sessions": 995,
+        "sharpe": -0.20228272350513277
+      },
+      {
+        "cagr_percent": 3.985651838413573,
+        "mdd_percent": 11.61256390673687,
+        "name": "2004-2007",
+        "sessions": 1009,
+        "sharpe": 0.37625945776770514
+      },
+      {
+        "cagr_percent": -6.912442591566171,
+        "mdd_percent": 56.15750728422426,
+        "name": "2008-2011",
+        "sessions": 1015,
+        "sharpe": -0.10644575822922077
+      },
+      {
+        "cagr_percent": 13.34146477695597,
+        "mdd_percent": 10.919987705295584,
+        "name": "2012-2015",
+        "sessions": 1010,
+        "sharpe": 1.0318810570629706
+      },
+      {
+        "cagr_percent": 14.399877336137369,
+        "mdd_percent": 19.254051034035065,
+        "name": "2016-2019",
+        "sessions": 1007,
+        "sharpe": 1.1089026177289647
+      },
+      {
+        "cagr_percent": 5.312039153355541,
+        "mdd_percent": 33.10523528638532,
+        "name": "2020-2022",
+        "sessions": 756,
+        "sharpe": 0.3318467622463913
+      },
+      {
+        "cagr_percent": 20.116247245628372,
+        "mdd_percent": 18.310031550560563,
+        "name": "2023-latest",
+        "sessions": 911,
+        "sharpe": 1.2918436959432569
+      }
+    ],
+    "id": "C-SP500-BUYHOLD",
+    "max_gross": 1,
+    "mdd_percent": 63.39833353800067,
+    "minimum_cash": 0,
+    "sessions": 6703,
+    "sharpe": 0.3799233981089765,
+    "since2020_cagr_percent": 13.118442124010121,
+    "since2020_sharpe": 0.7112709548922334,
+    "since2022_cagr_percent": 11.939231105820802,
+    "since2022_sharpe": 0.7338443656848467,
+    "start": "2000-01-18",
+    "target_fingerprint": "93db1a14a5e8284a",
+    "trades": 1,
+    "volatility_percent": 19.23184851268846
+  },
+  "candidate": {
+    "active_target_sessions": 3288,
+    "average_cash_ratio": 0.5094733701327764,
+    "cagr_percent": 1.718114389059977,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": -2.6366150500797936,
+        "mdd_percent": 27.400815355230932,
+        "name": "2000-2003",
+        "sessions": 995,
+        "sharpe": -0.10285541290653612
+      },
+      {
+        "cagr_percent": 1.3346608336447519,
+        "mdd_percent": 9.725024973579915,
+        "name": "2004-2007",
+        "sessions": 1009,
+        "sharpe": 0.19924313475147967
+      },
+      {
+        "cagr_percent": 0.7424629281106876,
+        "mdd_percent": 35.78744993029554,
+        "name": "2008-2011",
+        "sessions": 1015,
+        "sharpe": 0.13438327875019654
+      },
+      {
+        "cagr_percent": 6.517585618592214,
+        "mdd_percent": 8.171583530108633,
+        "name": "2012-2015",
+        "sessions": 1010,
+        "sharpe": 0.7676593491316575
+      },
+      {
+        "cagr_percent": 3.8628370218871666,
+        "mdd_percent": 22.539302836738635,
+        "name": "2016-2019",
+        "sessions": 1007,
+        "sharpe": 0.4264958364646684
+      },
+      {
+        "cagr_percent": -3.61001399760148,
+        "mdd_percent": 33.10523528638536,
+        "name": "2020-2022",
+        "sessions": 756,
+        "sharpe": -0.07135609222693647
+      },
+      {
+        "cagr_percent": 5.369111894493961,
+        "mdd_percent": 19.81984595250349,
+        "name": "2023-latest",
+        "sessions": 911,
+        "sharpe": 0.4879019965883439
+      }
+    ],
+    "id": "HALLOWEEN001",
+    "max_gross": 1,
+    "mdd_percent": 43.06083159338656,
+    "minimum_cash": 0,
+    "sessions": 6703,
+    "sharpe": 0.1916600727814927,
+    "since2020_cagr_percent": 1.172291434799333,
+    "since2020_sharpe": 0.15366568395876495,
+    "since2022_cagr_percent": 0.1892377175695792,
+    "since2022_sharpe": 0.08010907966583752,
+    "start": "2000-01-18",
+    "target_fingerprint": "e046aeab91eb0cd3",
+    "trades": 54,
+    "volatility_percent": 14.018849496960645
+  },
+  "candidate_id": "S-HALLOWEEN-001",
+  "cash_control": {
+    "active_target_sessions": 0,
+    "average_cash_ratio": 1,
+    "cagr_percent": 0.5053058655630105,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 0.8652133160773845,
+        "mdd_percent": 0,
+        "name": "2000-2003",
+        "sessions": 995,
+        "sharpe": 101.58686305124994
+      },
+      {
+        "cagr_percent": 0.7333080915663537,
+        "mdd_percent": 0,
+        "name": "2004-2007",
+        "sessions": 1009,
+        "sharpe": 415.8914241406004
+      },
+      {
+        "cagr_percent": 0.4737510217106111,
+        "mdd_percent": 0,
+        "name": "2008-2011",
+        "sessions": 1015,
+        "sharpe": 51.09550938883744
+      },
+      {
+        "cagr_percent": 0.36909197399102034,
+        "mdd_percent": 0,
+        "name": "2012-2015",
+        "sessions": 1010,
+        "sharpe": 124.22199829358952
+      },
+      {
+        "cagr_percent": 0.35087622969254273,
+        "mdd_percent": 0,
+        "name": "2016-2019",
+        "sessions": 1007,
+        "sharpe": 2082261942025.0037
+      },
+      {
+        "cagr_percent": 0.351028710392276,
+        "mdd_percent": 0,
+        "name": "2020-2022",
+        "sessions": 756,
+        "sharpe": 2066943854604.302
+      },
+      {
+        "cagr_percent": 0.3490092926662802,
+        "mdd_percent": 0,
+        "name": "2023-latest",
+        "sessions": 911,
+        "sharpe": 2090750923341.7302
+      }
+    ],
+    "id": "C-CASH",
+    "max_gross": 0,
+    "mdd_percent": 0,
+    "minimum_cash": 100000,
+    "sessions": 6703,
+    "sharpe": 37.46197535073603,
+    "since2020_cagr_percent": 0.34955338559512494,
+    "since2020_sharpe": 2079607552168.138,
+    "since2022_cagr_percent": 0.3491059098463589,
+    "since2022_sharpe": 2098777741011.7192,
+    "start": "2000-01-18",
+    "target_fingerprint": "ef9c3f28038ed323",
+    "trades": 0,
+    "volatility_percent": 0.01345066262010121
+  },
+  "evaluation_end": "2026-08-20",
+  "evaluation_start": "2000-01-04",
+  "fee_percent_per_trade": 1,
+  "rule": "post-close state is 100% S&P500 for execution dates in November-April and 100% CNY cash for execution dates in May-October; state changes only at the first observed session of May and November",
+  "slippage_percent_per_trade": 0.05,
+  "three_axis_evaluation": {
+    "comparison_checks": {
+      "mdd_le_buy_hold": true,
+      "sharpe_gt_buy_hold": false
+    },
+    "comparison_status": "FAIL",
+    "diagnostics": {
+      "buy_hold_cagr_percent": 5.607545513311862,
+      "buy_hold_mdd_percent": 63.39833353800067,
+      "buy_hold_sharpe": 0.3799233981089765,
+      "cash_cagr_percent": 0.5053058655630105,
+      "fold_count": 7,
+      "positive_fold_count": 5,
+      "positive_fold_fraction": 0.7142857142857143
+    },
+    "objective_checks": {
+      "cagr_ge_12pct": false,
+      "cagr_gt_cash": true,
+      "mdd_le_20pct": false,
+      "sharpe_ge_1": false,
+      "since2020_cagr_positive": true,
+      "since2022_cagr_positive": true
+    },
+    "objective_status": "FAIL",
+    "status": "FAIL",
+    "validation_checks": {
+      "actual_trades_gt_0": true,
+      "cash_nonnegative": true,
+      "full_cagr_gt_0": true,
+      "full_mdd_le_25pct": false,
+      "full_sharpe_gt_0": true,
+      "max_gross_le_1": true,
+      "positive_sharpe_folds_ge_70pct": true
+    },
+    "validation_status": "FAIL",
+    "validation_warnings": [
+      "execution_stress_not_in_this_R1_trial; base run already uses product 1.00% fee plus 0.05% slippage"
+    ]
+  },
+  "trial_id": "ATM-SVP3-HALLOWEEN-001"
+}

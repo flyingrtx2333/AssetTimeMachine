@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "74600a810675e057d8bb743ef74685c63e6a4b16",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "11d5e112cdb56e39fcbbbea904cad183f3c53ec974af849d80313e48f7021380",
+  "preregistration_record_hash": "11d5e112cdb56e39fcbbbea904cad183f3c53ec974af849d80313e48f7021380",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-HALLOWEEN-001"
+}

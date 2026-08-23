@@ -1,0 +1,116 @@
+{
+  "files": [
+    {
+      "bytes": 194408,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2000-01-18",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/C-CASH-portfolio.csv",
+      "row_count": 6703,
+      "sha256": "b04c80ffc089d3fdbd4c7b5305761f2c2aeda287eb8a38ae8aaa3ef5b0bfc775"
+    },
+    {
+      "bytes": 190783,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2000-01-18",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/C-SP500-BUYHOLD-portfolio.csv",
+      "row_count": 6703,
+      "sha256": "1f5f85425811ff91243cbc06bd59e95a32a42409755dd6333810d75c698ffc9c"
+    },
+    {
+      "bytes": 191383,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2000-01-18",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/HALLOWEEN001-portfolio.csv",
+      "row_count": 6703,
+      "sha256": "5cfa391c72c30d3be98f2fc7ff968ce6f754f5598428f2b91cfec34fac1ab9f7"
+    },
+    {
+      "bytes": 542,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "active_target_sessions",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "9e876647bbbd899343677cbf4fcf479e517fe96a0c5988ba1a09d1c8e860d29f"
+    },
+    {
+      "bytes": 7616,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/candidate-metrics.json",
+      "sha256": "7b39884cda7ff9cee34ce77885cf69e28f99d3131fbe3b8d036784f96b8194eb"
+    },
+    {
+      "bytes": 547,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/statistical-audit.json",
+      "sha256": "a86f679c96d32411bdcb579a9d7abcd503cb3dd6a9eb9340633016e58f3c3799"
+    },
+    {
+      "bytes": 940,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/execution.json",
+      "sha256": "9aad1bc5d6f1ffec9daef6e9cd318b9d5922eed338a59b7bcbfab7fc1c66bcad"
+    },
+    {
+      "bytes": 436,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/run-authorization.json",
+      "sha256": "9145df625da08212d13a4c8a532aa355f4158eb3d9a1930ab451140f98d5fb74"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1083,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/stdout.txt",
+      "sha256": "e55f314e6adc9f4d682f197ae14cf98a7c62cfd5071a1669cc2f0a5336784628"
+    }
+  ],
+  "generated_at": "2026-08-23T14:58:18+08:00",
+  "git_commit": "74600a810675e057d8bb743ef74685c63e6a4b16",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "FAIL",
+    "objective_status": "FAIL",
+    "validation_status": "FAIL"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-HALLOWEEN-001"
+}

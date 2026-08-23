@@ -1,0 +1,156 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/C-SP500-BUYHOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/HALLOWEEN001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-HALLOWEEN-001",
+      "metrics": {
+        "active_target_sessions": 3288,
+        "average_cash_ratio": 0.5094733701327764,
+        "buy_hold_control": {
+          "cagr_percent": 5.607545513311862,
+          "mdd_percent": 63.39833353800067,
+          "sharpe": 0.3799233981089765,
+          "target_fingerprint": "93db1a14a5e8284a",
+          "trades": 1
+        },
+        "cagr_percent": 1.718114389059977,
+        "cash_control_cagr_percent": 0.5053058655630105,
+        "comparison_checks": {
+          "mdd_le_buy_hold": true,
+          "sharpe_gt_buy_hold": false
+        },
+        "comparison_failures": [
+          "sharpe_gt_buy_hold"
+        ],
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "failed_preregistered_gates": [
+          "full_mdd_le_25pct"
+        ],
+        "fold_cagrs_percent": [
+          -2.6366150500797936,
+          1.3346608336447519,
+          0.7424629281106876,
+          6.517585618592214,
+          3.8628370218871666,
+          -3.61001399760148,
+          5.369111894493961
+        ],
+        "fold_mdds_percent": [
+          27.400815355230932,
+          9.725024973579915,
+          35.78744993029554,
+          8.171583530108633,
+          22.539302836738635,
+          33.10523528638536,
+          19.81984595250349
+        ],
+        "fold_names": [
+          "2000-2003",
+          "2004-2007",
+          "2008-2011",
+          "2012-2015",
+          "2016-2019",
+          "2020-2022",
+          "2023-latest"
+        ],
+        "fold_sharpes": [
+          -0.10285541290653612,
+          0.19924313475147967,
+          0.13438327875019654,
+          0.7676593491316575,
+          0.4264958364646684,
+          -0.07135609222693647,
+          0.4879019965883439
+        ],
+        "folds_with_positive_sharpe": 5,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 1.6703194383183018e-11,
+        "global_post_protocol_dsr_trial_count": 68,
+        "max_gross": 1,
+        "mdd_percent": 43.06083159338656,
+        "minimum_cash": 0,
+        "objective_checks": {
+          "cagr_ge_12pct": false,
+          "cagr_gt_cash": true,
+          "mdd_le_20pct": false,
+          "sharpe_ge_1": false,
+          "since2020_cagr_positive": true,
+          "since2022_cagr_positive": true
+        },
+        "objective_failures": [
+          "cagr_ge_12pct",
+          "mdd_le_20pct",
+          "sharpe_ge_1"
+        ],
+        "sharpe": 0.1916600727814927,
+        "since2020_cagr_percent": 1.172291434799333,
+        "since2020_sharpe": 0.15366568395876495,
+        "since2022_cagr_percent": 0.1892377175695792,
+        "since2022_sharpe": 0.08010907966583752,
+        "strategy_library_validation": {
+          "comparative_failures": [
+            "sharpe_gt_buy_hold"
+          ],
+          "comparison_status": "FAIL",
+          "evidence_missing": [],
+          "note": "The fixed November-April S&P500 seasonal strategy fails intrinsic drawdown validation despite lower drawdown than buy-and-hold.",
+          "objective_failures": [
+            "cagr_ge_12pct",
+            "mdd_le_20pct",
+            "sharpe_ge_1"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_mdd_le_25pct"
+          ],
+          "validation_warnings": [
+            "execution_stress_not_in_this_R1_trial; base run already uses product 1.00% fee plus 0.05% slippage"
+          ]
+        },
+        "target_fingerprint": "e046aeab91eb0cd3",
+        "trades": 54,
+        "validation_checks": {
+          "actual_trades_gt_0": true,
+          "cash_nonnegative": true,
+          "full_cagr_gt_0": true,
+          "full_mdd_le_25pct": false,
+          "full_sharpe_gt_0": true,
+          "max_gross_le_1": true,
+          "positive_sharpe_folds_ge_70pct": true
+        }
+      }
+    }
+  ],
+  "comparison_status": "FAIL",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-HALLOWEEN-001.json",
+  "decision": "FAIL / VALIDATION_FAIL. The frozen S&P500 November-April / cash May-October calendar strategy produced 1.718114% CAGR, 0.191660 Sharpe and 43.060832% MDD after the product-level 1.00% fee plus 0.05% slippage, with 5/7 positive-Sharpe folds. 2020+ CAGR was 1.172291% and 2022+ 0.189238%. Buy-and-hold S&P500 had 5.607546% CAGR, 0.379923 Sharpe and 63.398334% MDD. The seasonal rule lowers drawdown but still breaches the intrinsic <=25% MDD validation floor and does not improve Sharpe, so validation/objective/comparison all FAIL. Global DSR probability is 1.67031944e-11 over 68 performance-bearing candidates. No calendar-window rescue is permitted.",
+  "execution_git_commit": "74600a810675e057d8bb743ef74685c63e6a4b16",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "11d5e112cdb56e39fcbbbea904cad183f3c53ec974af849d80313e48f7021380",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-HALLOWEEN-001",
+  "validation_status": "FAIL"
+}
