@@ -1,0 +1,94 @@
+{
+  "allowed_changes": [
+    "run the frozen V11 source path nfciDualCoreSimplifiedV11 with the existing ALFRED initial-release NFCI fixtures",
+    "use exact frozen Binance BTCUSDT data and the same BTCUSDT≈USD historical USD/CNY conversion already frozen for BTC-SMA200/HALVING research",
+    "on each eligible replay event scale every nonnegative frozen V11 target weight by exactly 0.98 and add exactly 0.02 btc_cny",
+    "initialize candidate/control on the first common simulator point in the BTC-available matched window",
+    "after initialization rebalance only on frozen V11 source trade dates; BTC may not create a trade date",
+    "compare against a pure frozen-V11 matched-window replay using identical replay inputs, execution calendar and costs",
+    "use product-level 1.00% fee plus 0.05% slippage"
+  ],
+  "candidate_count": 1,
+  "candidate_ids": [
+    "S-V11-BTC2-SATELLITE-001"
+  ],
+  "candidate_kind": "STRATEGY_ARCHITECTURE_NOT_FACTOR",
+  "comparison_gates": [
+    "candidate CAGR > matched V11 CAGR",
+    "candidate Sharpe >= matched V11 Sharpe",
+    "candidate MDD <= matched V11 MDD"
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-V11-BTC2-SATELLITE-001.json",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "expected_outputs": [
+    "candidate and matched-V11 portfolio CSVs",
+    "full, 2020+, 2022+ and seven-fold CAGR/MDD/Sharpe",
+    "source V11 event count, trades, max target gross, realized gross, minimum cash, target fingerprints",
+    "ATM-SVP-3 validation/objective/comparison",
+    "global post-protocol DSR after formal run",
+    "run authorization, execution commit and SHA artifact manifest"
+  ],
+  "external_references": [
+    "https://www.blackrock.com/us/individual/insights/bitcoin-sizing"
+  ],
+  "follow_up_policy": "After formal performance is viewed, do not change BTC weight, add timing, change rebalance cadence or alter V11. If this candidate fails comparison or objective, 1/3/5% BTC variants are forbidden rescue tuning. A genuinely different crypto risk-budget method such as externally specified volatility dilution requires a separate preregistered lineage.",
+  "forbidden_changes": [
+    "1%, 3%, 5%, 10% or any other BTC weight search",
+    "dynamic BTC weight, volatility target, risk-parity sizing or cash dilution after results",
+    "BTC SMA, halving, momentum, RSI, ATR, drawdown, MVRV, funding or any BTC timing rule",
+    "BTC-driven rebalance dates between frozen V11 events",
+    "changing any V11 target-path parameter, NFCI rule, role, band or strategy mode",
+    "replacing BTC with ETH or a crypto basket after results",
+    "weekend-only execution or alternate BTC data source after results",
+    "changing fee/slippage after results",
+    "shorting, borrowing, financing, leverage, gross exposure above 100% or negative cash"
+  ],
+  "formal_run_budget": 1,
+  "hypothesis": "Bitcoin is a high-return but high-tail-risk independent asset source. A very small permanent satellite can potentially add secular crypto exposure without allowing crypto to control the portfolio risk regime. Scaling every frozen V11 target weight by exactly 98% and adding exactly 2% BTC only on the original V11 rebalance dates should preserve V11 risk-off behavior and gross<=100% while testing whether a risk-budget-sized crypto sleeve can improve matched-window return without materially degrading Sharpe or drawdown.",
+  "objective_gates": [
+    "CAGR >=16%",
+    "Sharpe >=1.45",
+    "MDD <=10%",
+    "2020+ CAGR >0",
+    "2022+ CAGR >0"
+  ],
+  "pass_fail_gates": [
+    "actual trades >0",
+    "full CAGR >0",
+    "full Sharpe >0",
+    "full MDD <=25%",
+    "at least 70% of seven fixed folds have Sharpe >0",
+    "max target gross <=100%",
+    "max realized gross <=100% within floating-point tolerance",
+    "minimum cash >=0"
+  ],
+  "protocol_id": "ATM-SVP-3",
+  "research_basis": [
+    "BlackRock, Sizing bitcoin in portfolios, 2024: a 1-2% bitcoin allocation is described as a reasonable range from a risk-budget perspective in a traditional multi-asset portfolio; exactly 2% is used as the frozen upper-bound anchor, not selected by backtest",
+    "This trial is economically independent of BTC-SMA200-001 and BTC-HALVING-001: BTC has no timing rule and causes no rebalance dates",
+    "The V11 source strategy is immutable; the candidate is a portfolio architecture overlay, not a V11 parameter modification"
+  ],
+  "selection_metric": "No BTC weight search. Exact external 2% satellite: candidate target = 0.98 * frozen V11 source target + 0.02 BTC. Re-target only at initial matched point and frozen V11 source trade dates. Validation, campaign objective and matched-V11 comparison are independent ATM-SVP-3 axes.",
+  "shared_rules": {
+    "base_strategy_mode": "nfciDualCoreSimplifiedV11",
+    "btc_rebalance_rule": "initial matched point + frozen V11 source trade dates only",
+    "btc_timing_rule": null,
+    "btc_weight": 0.02,
+    "core_scale": 0.98,
+    "evaluation_end": "2026-08-20",
+    "evaluation_start_bound": "2017-08-17",
+    "fee_percent_per_trade": 1.0,
+    "financing_allowed": false,
+    "max_gross": 1.0,
+    "shorting_allowed": false,
+    "slippage_percent_per_trade": 0.05
+  },
+  "strategy_lineage": "v11-btc2-satellite-001 / 冻结V11+2%比特币卫星001; externally risk-budgeted permanent crypto satellite on immutable V11 events",
+  "swift_engine_entrypoint": "scripts/run_v11_btc2_satellite_001.py -> tools/v11_btc2_satellite_001.swiftpart + immutable tools/v11_btc2_satellite_001_logic.swift -> frozen V11 source run + matched target replay + 2% BTC satellite",
+  "trial_id": "ATM-SVP3-V11-BTC2-SATELLITE-001",
+  "validation_gates": [
+    "same intrinsic gates as pass_fail_gates",
+    "BTC measurement warning USDT≈USD remains explicit",
+    "no BTC-driven rebalance dates by construction"
+  ]
+}

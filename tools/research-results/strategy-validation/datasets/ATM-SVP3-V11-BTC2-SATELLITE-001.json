@@ -1,0 +1,59 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    },
+    {
+      "bytes": 609715,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/BTCUSDT-BINANCE-2026-08-23/BTCUSDT-1d.json",
+      "sha256": "818060656d7d3170715bc34ca5b64d34bbed642958a7c24515efa4a9c93c1ca6"
+    },
+    {
+      "bytes": 344,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/BTCUSDT-BINANCE-2026-08-23/fetch-summary.json",
+      "sha256": "02ebbd55788769bfd856ae9a1446b980ae2e93db5c73c1a5185dc3141a01954f"
+    },
+    {
+      "bytes": 24847,
+      "format": "csv",
+      "path": "tools/research-results/NFCICREDIT_initial_release.csv",
+      "sha256": "953198633f2f19cd42450c631bda3cc1d25bd23b40afc8bf58fa45ada0c4fc8c"
+    },
+    {
+      "bytes": 24762,
+      "format": "csv",
+      "path": "tools/research-results/NFCILEVERAGE_initial_release.csv",
+      "sha256": "d198027125ca6b317258c2fb4725ed3e5b217356a6b8c549b68dbb18d237b486"
+    }
+  ],
+  "generated_at": "2026-08-24T00:48:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "base_cost": "1.00% fee plus 0.05% slippage per trade; no cost grid",
+    "base_strategy": "nfci-dual-core-v11 / dualcore-v11-2026-08-15 / nfciDualCoreSimplifiedV11",
+    "btc_source": "frozen Binance BTCUSDT daily close, treated as USD-equivalent then converted with historical usd_per_cny",
+    "campaign": "v11-btc2-satellite-001",
+    "candidate_kind": "FROZEN_V11_PLUS_EXTERNALLY_ANCHORED_CRYPTO_SATELLITE",
+    "combined_performance_viewed_before_freeze": false,
+    "evaluation_end": "2026-08-20",
+    "evaluation_start_bound": "2017-08-17",
+    "observed_first_simulator_point_in_smoke": "2017-08-18",
+    "performance_metrics_viewed_before_freeze": false,
+    "rebalance_scope": "initial matched simulator point plus frozen V11 source trade dates only; no BTC-driven events",
+    "smoke_metrics_viewed_before_freeze": [
+      "first_common_simulator_point",
+      "trade_record_count",
+      "max_realized_gross",
+      "minimum_cash",
+      "max_target_gross"
+    ],
+    "weight_basis": "BlackRock risk-budget discussion identifies 1-2% bitcoin allocation as a reasonable range for a traditional multi-asset portfolio; exactly 2% is frozen as the external upper-bound anchor, with no weight search"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-V11-BTC2-SATELLITE-001"
+}
