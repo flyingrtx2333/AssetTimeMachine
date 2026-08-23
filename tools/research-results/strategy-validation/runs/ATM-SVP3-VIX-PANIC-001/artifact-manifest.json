@@ -1,0 +1,115 @@
+{
+  "files": [
+    {
+      "bytes": 179484,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-07-03",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/candidates/C-BARBELL-portfolio.csv",
+      "row_count": 6173,
+      "sha256": "0c3f0e18a8999f80023954b8def19c9a447a278857fea8fa5406f8031ba17912"
+    },
+    {
+      "bytes": 179038,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-07-03",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/candidates/C-CASH-portfolio.csv",
+      "row_count": 6173,
+      "sha256": "ffb2809f6a7faa2f73b4d8925c26f8c5fbd748825d6f130eaac0b5b34e7e0090"
+    },
+    {
+      "bytes": 172867,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-07-03",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/candidates/VIXP001-portfolio.csv",
+      "row_count": 6173,
+      "sha256": "bc5ecc79b0a85a1e549a24ea492745de160415fa79d714d2fe7c9121c80dfb03"
+    },
+    {
+      "bytes": 487,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "0ced57768bcb8a2c8e986ab39dba378085b89b5f574d9bf6325321ddb45fa695"
+    },
+    {
+      "bytes": 8662,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/candidates/candidate-metrics.json",
+      "sha256": "fcd9f71029f4ccdb019ae75b821ea37667f3c41effb36c34e594a383bcc62414"
+    },
+    {
+      "bytes": 545,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/candidates/statistical-audit.json",
+      "sha256": "5074f8133dda63b3b9ba6efded11933d5c36083231e8d301d074e5c8c8979c18"
+    },
+    {
+      "bytes": 940,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/execution.json",
+      "sha256": "0b01cd81bdd9194de7f87ba0e80314386ae5de6805008b2cc3cfa3c461fe8f57"
+    },
+    {
+      "bytes": 436,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/run-authorization.json",
+      "sha256": "9ed9e28b36bc7a3cca41c8c851e5c963377a6d672064c922582b6ea0e3818893"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 978,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/stdout.txt",
+      "sha256": "e336c7ab5480b1b210c8913c4f022670bef2fbbce1f9425de5e35d645a2d109f"
+    }
+  ],
+  "generated_at": "2026-08-23T14:33:21+08:00",
+  "git_commit": "72f22737d165d50e5be4918b5b1005e5a68f3ad1",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "FAIL",
+    "objective_status": "FAIL",
+    "validation_status": "FAIL"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-VIX-PANIC-001"
+}

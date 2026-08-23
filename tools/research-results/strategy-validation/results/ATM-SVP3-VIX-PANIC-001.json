@@ -1,0 +1,167 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/candidates/C-BARBELL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/candidates/VIXP001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-VIX-PANIC-001",
+      "metrics": {
+        "average_cash_ratio": 0,
+        "barbell_control": {
+          "cagr_percent": 12.062881133465254,
+          "mdd_percent": 37.71662775385042,
+          "sharpe": 0.8805036045356769,
+          "target_fingerprint": "a9e2847057499963",
+          "trades": 50
+        },
+        "cagr_percent": -0.9926492458096847,
+        "cash_control_cagr_percent": 0.4649150587163975,
+        "comparison_checks": {
+          "mdd_lt_barbell": false,
+          "sharpe_gt_barbell": false
+        },
+        "comparison_failures": [
+          "mdd_lt_barbell",
+          "sharpe_gt_barbell"
+        ],
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "failed_preregistered_gates": [
+          "full_cagr_gt_0",
+          "full_mdd_le_25pct",
+          "positive_sharpe_folds_ge_70pct"
+        ],
+        "fold_cagrs_percent": [
+          -5.443929965187245,
+          -9.174889304957379,
+          -18.472857500102492,
+          20.853927834140485,
+          9.311184160653374,
+          3.047175205493491,
+          -2.8901374348321407
+        ],
+        "fold_mdds_percent": [
+          51.1203458901999,
+          47.30063187090302,
+          53.83857331079257,
+          12.04406268869397,
+          26.575338760736084,
+          27.090722371943006,
+          59.84367184236006
+        ],
+        "fold_names": [
+          "2002-2005",
+          "2006-2008",
+          "2009-2011",
+          "2012-2014",
+          "2015-2017",
+          "2018-2021",
+          "2022-latest"
+        ],
+        "fold_sharpes": [
+          -0.2017065661139112,
+          -0.3223356872792673,
+          -0.7965977554639168,
+          1.4230995167467209,
+          0.6782446240030722,
+          0.24847828286849716,
+          -0.024541070437224116
+        ],
+        "folds_with_positive_sharpe": 3,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 4.931943742292333e-12,
+        "global_post_protocol_dsr_trial_count": 65,
+        "max_gross": 1,
+        "mdd_percent": 68.64909125116468,
+        "minimum_cash": 0,
+        "objective_checks": {
+          "cagr_ge_12pct": false,
+          "cagr_gt_cash": false,
+          "mdd_le_20pct": false,
+          "sharpe_ge_1": false,
+          "since2020_cagr_positive": false,
+          "since2022_cagr_positive": false
+        },
+        "objective_failures": [
+          "cagr_ge_12pct",
+          "cagr_gt_cash",
+          "mdd_le_20pct",
+          "sharpe_ge_1",
+          "since2020_cagr_positive",
+          "since2022_cagr_positive"
+        ],
+        "sharpe": 0.046088458407824634,
+        "since2020_cagr_percent": -2.389878588619365,
+        "since2020_sharpe": -0.004817414332006298,
+        "since2022_cagr_percent": -2.8901374348321407,
+        "since2022_sharpe": -0.024541070437224116,
+        "strategy_library_validation": {
+          "comparative_failures": [
+            "mdd_lt_barbell",
+            "sharpe_gt_barbell"
+          ],
+          "comparison_status": "FAIL",
+          "evidence_missing": [],
+          "note": "The fixed VIX>30 panic rotation fails intrinsic absolute validation; failure is not caused merely by comparison to the barbell control.",
+          "objective_failures": [
+            "cagr_ge_12pct",
+            "cagr_gt_cash",
+            "mdd_le_20pct",
+            "sharpe_ge_1",
+            "since2020_cagr_positive",
+            "since2022_cagr_positive"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_cagr_gt_0",
+            "full_mdd_le_25pct",
+            "positive_sharpe_folds_ge_70pct"
+          ],
+          "validation_warnings": [
+            "execution_stress_not_in_this_R1_trial"
+          ]
+        },
+        "target_fingerprint": "2cb0fe3466619c56",
+        "trades": 257,
+        "validation_checks": {
+          "actual_trades_gt_0": true,
+          "cash_nonnegative": true,
+          "full_cagr_gt_0": false,
+          "full_mdd_le_25pct": false,
+          "full_sharpe_gt_0": true,
+          "max_gross_le_1": true,
+          "positive_sharpe_folds_ge_70pct": false
+        }
+      }
+    }
+  ],
+  "comparison_status": "FAIL",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-VIX-PANIC-001.json",
+  "decision": "FAIL / VALIDATION_FAIL. The frozen VIX>30 panic rotation produced -0.992649% CAGR, 0.046088 Sharpe and 68.649091% MDD with only 3/7 positive-Sharpe folds. Recent returns were also negative (2020+ CAGR -2.389879%, 2022+ -2.890137%). The fixed annual 50/50 Nasdaq-gold barbell control produced 12.062881% CAGR, 0.880504 Sharpe and 37.716628% MDD. Intrinsic validation, objective attainment and comparison therefore all FAIL. Global DSR probability is 4.93194374e-12 over 65 performance-bearing candidates. No VIX threshold/persistence/asset rescue is permitted inside this lineage.",
+  "execution_git_commit": "72f22737d165d50e5be4918b5b1005e5a68f3ad1",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "c008b2e7e49db2eb53a6b7bd628bacde487b973230d50cb2ec722ab72808b8fc",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-VIX-PANIC-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-VIX-PANIC-001",
+  "validation_status": "FAIL"
+}

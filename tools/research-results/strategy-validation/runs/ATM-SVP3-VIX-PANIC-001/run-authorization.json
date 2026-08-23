@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "72f22737d165d50e5be4918b5b1005e5a68f3ad1",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "c008b2e7e49db2eb53a6b7bd628bacde487b973230d50cb2ec722ab72808b8fc",
+  "preregistration_record_hash": "c008b2e7e49db2eb53a6b7bd628bacde487b973230d50cb2ec722ab72808b8fc",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-VIX-PANIC-001"
+}
