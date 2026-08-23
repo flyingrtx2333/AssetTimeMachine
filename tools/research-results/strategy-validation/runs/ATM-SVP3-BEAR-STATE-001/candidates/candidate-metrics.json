@@ -1,0 +1,276 @@
+{
+  "barbell_control": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 12.062881133465254,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 14.429359378820795,
+        "mdd_percent": 12.320566808879928,
+        "name": "2002-2005",
+        "sessions": 882,
+        "sharpe": 1.1648526050380015
+      },
+      {
+        "cagr_percent": -1.6017175076662449,
+        "mdd_percent": 37.71662775385041,
+        "name": "2006-2008",
+        "sessions": 757,
+        "sharpe": -0.006298420172823681
+      },
+      {
+        "cagr_percent": 16.196116438500518,
+        "mdd_percent": 10.26076435806628,
+        "name": "2009-2011",
+        "sessions": 756,
+        "sharpe": 1.0198981046033442
+      },
+      {
+        "cagr_percent": 5.945031744393714,
+        "mdd_percent": 14.759126329547257,
+        "name": "2012-2014",
+        "sessions": 756,
+        "sharpe": 0.5631533465039537
+      },
+      {
+        "cagr_percent": 10.144906208340965,
+        "mdd_percent": 7.319370556162512,
+        "name": "2015-2017",
+        "sessions": 768,
+        "sharpe": 1.0697740042802082
+      },
+      {
+        "cagr_percent": 15.206377912452584,
+        "mdd_percent": 18.213072554352173,
+        "name": "2018-2021",
+        "sessions": 1038,
+        "sharpe": 1.073052888846272
+      },
+      {
+        "cagr_percent": 19.120440966948472,
+        "mdd_percent": 15.56969165698536,
+        "name": "2022-latest",
+        "sessions": 1216,
+        "sharpe": 1.1976168907766205
+      }
+    ],
+    "id": "C-BARBELL",
+    "max_gross": 1,
+    "mdd_percent": 37.71662775385042,
+    "minimum_cash": 0,
+    "owner_by_month": {},
+    "sessions": 6173,
+    "sharpe": 0.8805036045356769,
+    "since2020_cagr_percent": 17.80985202069443,
+    "since2020_sharpe": 1.096917226905872,
+    "since2022_cagr_percent": 19.120440966948472,
+    "since2022_sharpe": 1.1976168907766205,
+    "start": "2002-07-03",
+    "target_fingerprint": "a9e2847057499963",
+    "trades": 50,
+    "volatility_percent": 13.835453786012861
+  },
+  "bear_drawdown_threshold": 0.2,
+  "candidate": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 10.221320526967826,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 13.849602895797908,
+        "mdd_percent": 18.620984731984656,
+        "name": "2002-2005",
+        "sessions": 882,
+        "sharpe": 0.8672825765777232
+      },
+      {
+        "cagr_percent": -14.315684343401447,
+        "mdd_percent": 57.32077649373797,
+        "name": "2006-2008",
+        "sessions": 757,
+        "sharpe": -0.5886230746056708
+      },
+      {
+        "cagr_percent": 8.587544563118833,
+        "mdd_percent": 20.30005271281746,
+        "name": "2009-2011",
+        "sessions": 756,
+        "sharpe": 0.47816262723274255
+      },
+      {
+        "cagr_percent": 20.85392783414044,
+        "mdd_percent": 12.044062688693991,
+        "name": "2012-2014",
+        "sessions": 756,
+        "sharpe": 1.423099516746726
+      },
+      {
+        "cagr_percent": 15.310963385855448,
+        "mdd_percent": 15.37321241532327,
+        "name": "2015-2017",
+        "sessions": 768,
+        "sharpe": 1.0346350138498315
+      },
+      {
+        "cagr_percent": 18.006355629344938,
+        "mdd_percent": 29.38330808480626,
+        "name": "2018-2021",
+        "sessions": 1038,
+        "sharpe": 0.8225747106104675
+      },
+      {
+        "cagr_percent": 9.517929162683568,
+        "mdd_percent": 33.32948910518496,
+        "name": "2022-latest",
+        "sessions": 1216,
+        "sharpe": 0.5296834334599594
+      }
+    ],
+    "id": "BEAR001",
+    "max_gross": 1,
+    "mdd_percent": 57.32077649373798,
+    "minimum_cash": 0,
+    "owner_by_month": {
+      "2002-07": "gold_cny",
+      "2003-05": "nasdaq",
+      "2008-03": "gold_cny",
+      "2008-06": "nasdaq",
+      "2008-07": "gold_cny",
+      "2009-08": "nasdaq",
+      "2020-04": "gold_cny",
+      "2020-05": "nasdaq",
+      "2022-05": "gold_cny",
+      "2022-08": "nasdaq",
+      "2022-09": "gold_cny",
+      "2022-12": "nasdaq",
+      "2023-01": "gold_cny",
+      "2023-02": "nasdaq"
+    },
+    "sessions": 6173,
+    "sharpe": 0.5898997252946784,
+    "since2020_cagr_percent": 12.005917883069506,
+    "since2020_sharpe": 0.5995542738539729,
+    "since2022_cagr_percent": 9.517929162683568,
+    "since2022_sharpe": 0.5296834334599594,
+    "start": "2002-07-03",
+    "target_fingerprint": "17ea365bc69f3c36",
+    "trades": 27,
+    "volatility_percent": 19.477671030961194
+  },
+  "candidate_id": "S-BEAR-STATE-001",
+  "cash_control": {
+    "average_cash_ratio": 1,
+    "cagr_percent": 0.4649150587163975,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 0.7231139194048941,
+        "mdd_percent": 0,
+        "name": "2002-2005",
+        "sessions": 882,
+        "sharpe": 5910449180432.934
+      },
+      {
+        "cagr_percent": 0.7268165758746337,
+        "mdd_percent": 0,
+        "name": "2006-2008",
+        "sessions": 757,
+        "sharpe": 163.3309610598898
+      },
+      {
+        "cagr_percent": 0.3979926249369381,
+        "mdd_percent": 0,
+        "name": "2009-2011",
+        "sessions": 756,
+        "sharpe": 105.35115014109928
+      },
+      {
+        "cagr_percent": 0.3742523216277105,
+        "mdd_percent": 0,
+        "name": "2012-2014",
+        "sessions": 756,
+        "sharpe": 111.7226835854067
+      },
+      {
+        "cagr_percent": 0.3569450666091045,
+        "mdd_percent": 0,
+        "name": "2015-2017",
+        "sessions": 768,
+        "sharpe": 2061086026835.6184
+      },
+      {
+        "cagr_percent": 0.3609634748429347,
+        "mdd_percent": 0,
+        "name": "2018-2021",
+        "sessions": 1038,
+        "sharpe": 2066827536652.0046
+      },
+      {
+        "cagr_percent": 0.3653730224579599,
+        "mdd_percent": 0,
+        "name": "2022-latest",
+        "sessions": 1216,
+        "sharpe": 2063118384977.4778
+      }
+    ],
+    "id": "C-CASH",
+    "max_gross": 0,
+    "mdd_percent": 0,
+    "minimum_cash": 100000,
+    "owner_by_month": {},
+    "sessions": 6173,
+    "sharpe": 44.30315177059206,
+    "since2020_cagr_percent": 0.36342637233279795,
+    "since2020_sharpe": 2069156523305.229,
+    "since2022_cagr_percent": 0.3653730224579599,
+    "since2022_sharpe": 2063118384977.4778,
+    "start": "2002-07-03",
+    "target_fingerprint": "e297ac15b833c143",
+    "trades": 0,
+    "volatility_percent": 0.010315571136824846
+  },
+  "evaluation_end": "2026-08-20",
+  "evaluation_start": "2002-07-03",
+  "fee_percent_per_trade": 1,
+  "lookback_sessions": 252,
+  "slippage_percent_per_trade": 0.05,
+  "three_axis_evaluation": {
+    "comparison_checks": {
+      "mdd_lt_barbell": false,
+      "sharpe_gt_barbell": false
+    },
+    "comparison_status": "FAIL",
+    "diagnostics": {
+      "barbell_cagr_percent": 12.062881133465254,
+      "barbell_mdd_percent": 37.71662775385042,
+      "barbell_sharpe": 0.8805036045356769,
+      "cash_cagr_percent": 0.4649150587163975,
+      "fold_count": 7,
+      "positive_fold_count": 6
+    },
+    "objective_checks": {
+      "cagr_ge_12pct": false,
+      "cagr_gt_cash": true,
+      "mdd_le_20pct": false,
+      "sharpe_ge_1": false,
+      "since2020_cagr_positive": true,
+      "since2022_cagr_positive": true
+    },
+    "objective_status": "FAIL",
+    "status": "FAIL",
+    "validation_checks": {
+      "actual_trades_gt_0": true,
+      "cash_nonnegative": true,
+      "full_cagr_gt_0": true,
+      "full_mdd_le_25pct": false,
+      "full_sharpe_gt_0": true,
+      "max_gross_le_1": true,
+      "positive_sharpe_folds_ge_70pct": true
+    },
+    "validation_status": "FAIL",
+    "validation_warnings": [
+      "execution_stress_not_in_this_R1_trial"
+    ]
+  },
+  "trial_id": "ATM-SVP3-BEAR-STATE-001"
+}

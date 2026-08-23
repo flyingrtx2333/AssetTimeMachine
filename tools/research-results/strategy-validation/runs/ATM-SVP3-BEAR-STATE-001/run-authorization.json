@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "1850a192a3b3ddfd4c273b23f414a9edb07e0943",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "20de338c27c89df82cc2214899478692e0e1a6d962aff9fd2988acb62f0fd050",
+  "preregistration_record_hash": "20de338c27c89df82cc2214899478692e0e1a6d962aff9fd2988acb62f0fd050",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-BEAR-STATE-001"
+}

@@ -1,0 +1,115 @@
+{
+  "files": [
+    {
+      "bytes": 178979,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-07-03",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/candidates/BEAR001-portfolio.csv",
+      "row_count": 6173,
+      "sha256": "36c3969ebd918a724ec02abeb4f4bd2211a376cd83de473d1a5b4747036269d1"
+    },
+    {
+      "bytes": 179484,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-07-03",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/candidates/C-BARBELL-portfolio.csv",
+      "row_count": 6173,
+      "sha256": "0c3f0e18a8999f80023954b8def19c9a447a278857fea8fa5406f8031ba17912"
+    },
+    {
+      "bytes": 179038,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-07-03",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/candidates/C-CASH-portfolio.csv",
+      "row_count": 6173,
+      "sha256": "ffb2809f6a7faa2f73b4d8925c26f8c5fbd748825d6f130eaac0b5b34e7e0090"
+    },
+    {
+      "bytes": 483,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "03a20bfb851ca92ce7743bd6552210e1335cb1a7da09d48225f7afaf486072e2"
+    },
+    {
+      "bytes": 7686,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/candidates/candidate-metrics.json",
+      "sha256": "1aa332c3eac7d13ab962ba6fa5f433bfb2fa9dcf2fecb5b43304b110f6cfda2d"
+    },
+    {
+      "bytes": 506,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/candidates/statistical-audit.json",
+      "sha256": "fbd2493dcf8b2700153350e202071310ec43a3e4bfa4172b825e0ef8d4992e42"
+    },
+    {
+      "bytes": 946,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/execution.json",
+      "sha256": "223c0c9ad221390badee4adaec93a8f3e08a52810d1699fbb09a43b88b69bf37"
+    },
+    {
+      "bytes": 437,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/run-authorization.json",
+      "sha256": "956e948e2e9df8894b07f4c61ca082abcf0fd5c6051160fa4d122b15312a29da"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 976,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/stdout.txt",
+      "sha256": "b8717e321f45a28da837cdb0ee13f3253b43242e55f6c1b1d49240103bd07f4c"
+    }
+  ],
+  "generated_at": "2026-08-23T14:02:57+08:00",
+  "git_commit": "1850a192a3b3ddfd4c273b23f414a9edb07e0943",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "FAIL",
+    "objective_status": "FAIL",
+    "validation_status": "FAIL"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-BEAR-STATE-001"
+}

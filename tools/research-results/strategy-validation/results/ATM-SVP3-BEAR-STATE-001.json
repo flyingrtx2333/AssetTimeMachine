@@ -1,0 +1,103 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/candidates/BEAR001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/candidates/C-BARBELL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-BEAR-STATE-001",
+      "metrics": {
+        "average_cash_ratio": 0,
+        "barbell_control": {
+          "cagr_percent": 12.062881133465254,
+          "mdd_percent": 37.71662775385042,
+          "sharpe": 0.8805036045356769
+        },
+        "cagr_percent": 10.221320526967826,
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "fold_names": [
+          "2002-2005",
+          "2006-2008",
+          "2009-2011",
+          "2012-2014",
+          "2015-2017",
+          "2018-2021",
+          "2022-latest"
+        ],
+        "fold_sharpes": [
+          0.8672825765777232,
+          -0.5886230746056708,
+          0.47816262723274255,
+          1.423099516746726,
+          1.0346350138498315,
+          0.8225747106104675,
+          0.5296834334599594
+        ],
+        "folds_with_positive_sharpe": 6,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 2.9870032915046973e-05,
+        "global_post_protocol_dsr_trial_count": 63,
+        "max_gross": 1,
+        "mdd_percent": 57.32077649373798,
+        "minimum_cash": 0,
+        "sharpe": 0.5898997252946784,
+        "since2020_cagr_percent": 12.005917883069506,
+        "since2020_sharpe": 0.5995542738539729,
+        "since2022_cagr_percent": 9.517929162683568,
+        "since2022_sharpe": 0.5296834334599594,
+        "strategy_library_validation": {
+          "comparative_failures": [
+            "mdd_lt_barbell",
+            "sharpe_gt_barbell"
+          ],
+          "comparison_status": "FAIL",
+          "evidence_missing": [],
+          "objective_failures": [
+            "cagr_ge_12pct",
+            "mdd_le_20pct",
+            "sharpe_ge_1"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_mdd_le_25pct"
+          ],
+          "validation_warnings": [
+            "execution_stress_not_in_this_R1_trial",
+            "global_dsr_below_project_pass_threshold"
+          ]
+        },
+        "target_fingerprint": "17ea365bc69f3c36",
+        "trades": 27
+      }
+    }
+  ],
+  "comparison_status": "FAIL",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-BEAR-STATE-001.json",
+  "decision": "FAIL / VALIDATION_FAIL. Canonical 20% Nasdaq bear-state switching produced 10.221321% CAGR, 0.589900 Sharpe and 57.320776% MDD. The signal was too late to control the 2006-08 crash and the fixed barbell remained stronger. No drawdown threshold/lookback/hysteresis rescue is allowed.",
+  "execution_git_commit": "1850a192a3b3ddfd4c273b23f414a9edb07e0943",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "20de338c27c89df82cc2214899478692e0e1a6d962aff9fd2988acb62f0fd050",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-BEAR-STATE-001",
+  "validation_status": "FAIL"
+}

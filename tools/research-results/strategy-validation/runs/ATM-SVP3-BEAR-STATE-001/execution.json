@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_bear_state_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "1850a192a3b3ddfd4c273b23f414a9edb07e0943",
+  "finished_at": "2026-08-23T14:01:00+08:00",
+  "preregistration_record_hash": "20de338c27c89df82cc2214899478692e0e1a6d962aff9fd2988acb62f0fd050",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/run-authorization.json",
+  "started_at": "2026-08-23T14:00:32+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-BEAR-STATE-001/stdout.txt",
+  "trial_id": "ATM-SVP3-BEAR-STATE-001"
+}
