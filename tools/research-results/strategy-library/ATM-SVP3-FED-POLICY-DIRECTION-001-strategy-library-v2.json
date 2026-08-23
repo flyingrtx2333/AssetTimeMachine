@@ -1,0 +1,320 @@
+{
+  "batch_key": "ATM-SVP3-FED-POLICY-DIRECTION-001-strategy-library-v2",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-FED-POLICY-DIRECTION-001.json",
+    "decision": "FAIL / VALIDATION_FAIL. The frozen last-Fed-target-change-direction rule produced 4.521309% CAGR, 0.312282 Sharpe and 74.503404% MDD with only 5/7 positive-Sharpe folds. It fails the intrinsic <=25% MDD floor; both 2001-2004 and 2005-2008 folds were negative because easing states began before/down through major equity drawdowns. QQQ buy-and-hold was also high-drawdown but still had higher CAGR/Sharpe. Global DSR=4.03412281e-09 over 74 candidates. No waiting-period, policy-level, magnitude, QQQ substitution or trend-confirmation rescue is permitted in this lineage.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "25300531a88ebf6b5e5e6a608a257a36a5488d8c",
+    "methodology": {
+      "follow_up_policy": "After any formal performance is viewed, do not alter policy-state definition, direction mapping, QQQ asset, event dates, cost, or add a filter in this lineage. A policy-level or surprise-based strategy is a different economic hypothesis and must be separately preregistered.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "actual trades >0",
+        "full CAGR >0",
+        "full Sharpe >0",
+        "full MDD <=25%",
+        "at least 70% of seven fixed folds have Sharpe >0",
+        "max realized gross <=100% and minimum cash >=0"
+      ],
+      "selection_metric": "No threshold, lookback, persistence or asset search. Exactly one state variable: direction of the most recent official Fed target change strictly before execution date. Down=easing=QQQ, up=tightening=cash. Validation, objective and QQQ comparison are separate ATM-SVP-3 axes."
+    },
+    "preregistration_hash": "628c22dbf063b768ac15dc47a65f210f30d50f7b93dc5bfc26a83799028efb52",
+    "protocol_id": "ATM-SVP-3",
+    "run_key": "ATM-SVP3-FED-POLICY-DIRECTION-001",
+    "status": "FAIL",
+    "title": "fed-policy-direction-001 / Fed政策方向001; low-turnover easing-versus-tightening QQQ allocation"
+  },
+  "schema_version": "strategy-library-v2",
+  "source_commit": "25300531a88ebf6b5e5e6a608a257a36a5488d8c",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "Equity discount rates and liquidity conditions respond asymmetrically to the direction of Federal Reserve policy. A deliberately slow rule that owns a growth-equity total-return proxy only after the most recent official federal-funds target change was a cut, and otherwise holds CNY cash after the most recent target change was a hike, may capture the long monetary easing/tightening cycle with only a handful of trades and without forecasting the magnitude or timing of future policy moves.",
+      "display_name": "fed-policy-direction-001 / Fed政策方向001",
+      "family": "策略研究",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/candidates/C-CASH-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/candidates/C-QQQ-BUYHOLD-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/candidates/FEDPOL001-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/candidates/statistical-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/stdout.txt"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": 4.521309241784555,
+        "candidate_id": "S-FED-POLICY-DIRECTION-001",
+        "conclusion": "FAIL / VALIDATION_FAIL. The frozen last-Fed-target-change-direction rule produced 4.521309% CAGR, 0.312282 Sharpe and 74.503404% MDD with only 5/7 positive-Sharpe folds. It fails the intrinsic <=25% MDD floor; both 2001-2004 and 2005-2008 folds were negative because easing states began before/down through major equity drawdowns. QQQ buy-and-hold was also high-drawdown but still had higher CAGR/Sharpe. Global DSR=4.03412281e-09 over 74 candidates. No waiting-period, policy-level, magnitude, QQQ substitution or trend-confirmation rescue is permitted in this lineage.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "dsr_probability": 4.034122813578733e-09,
+        "folds": {
+          "cagrs_percent": [
+            -12.007560515229098,
+            -14.065135479224022,
+            18.768493533901843,
+            15.08624623519288,
+            12.338533415766362,
+            3.8400114217753467,
+            15.402918747700479
+          ],
+          "mdds_percent": [
+            70.39798063567791,
+            57.328110621738524,
+            18.211931477733522,
+            11.724928959953491,
+            28.26989270600535,
+            21.482196509887412,
+            22.204371347589614
+          ],
+          "names": [
+            "2001-2004",
+            "2005-2008",
+            "2009-2012",
+            "2013-2016",
+            "2017-2020",
+            "2021-2023",
+            "2024-latest"
+          ],
+          "sharpes": [
+            -0.17825513512634153,
+            -0.6190195494787126,
+            0.917871385686065,
+            1.1580764543104152,
+            0.7331590549901021,
+            0.3461679909944317,
+            0.8591850168822189
+          ]
+        },
+        "folds_total": 7,
+        "folds_won": 5,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 74.50340374979714,
+        "metrics": {
+          "average_cash_ratio": 0.36496350364963503,
+          "cagr_percent": 4.521309241784555,
+          "cash_control_cagr_percent": 0.4857338090256791,
+          "comparison_checks": {
+            "mdd_le_qqq_buy_hold": false,
+            "sharpe_gt_qqq_buy_hold": false
+          },
+          "comparison_failures": [
+            "mdd_le_qqq_buy_hold",
+            "sharpe_gt_qqq_buy_hold"
+          ],
+          "constraints": {
+            "financing_allowed": false,
+            "max_gross": 1,
+            "minimum_cash": 0,
+            "pass": true,
+            "shorting_allowed": false
+          },
+          "failed_preregistered_gates": [
+            "full_mdd_le_25pct"
+          ],
+          "fold_cagrs_percent": [
+            -12.007560515229098,
+            -14.065135479224022,
+            18.768493533901843,
+            15.08624623519288,
+            12.338533415766362,
+            3.8400114217753467,
+            15.402918747700479
+          ],
+          "fold_mdds_percent": [
+            70.39798063567791,
+            57.328110621738524,
+            18.211931477733522,
+            11.724928959953491,
+            28.26989270600535,
+            21.482196509887412,
+            22.204371347589614
+          ],
+          "fold_names": [
+            "2001-2004",
+            "2005-2008",
+            "2009-2012",
+            "2013-2016",
+            "2017-2020",
+            "2021-2023",
+            "2024-latest"
+          ],
+          "fold_sharpes": [
+            -0.17825513512634153,
+            -0.6190195494787126,
+            0.917871385686065,
+            1.1580764543104152,
+            0.7331590549901021,
+            0.3461679909944317,
+            0.8591850168822189
+          ],
+          "folds_with_positive_sharpe": 5,
+          "global_dsr_pass": false,
+          "global_post_protocol_dsr_probability": 4.034122813578733e-09,
+          "global_post_protocol_dsr_trial_count": 74,
+          "max_gross": 1,
+          "mdd_percent": 74.50340374979714,
+          "minimum_cash": 0,
+          "objective_checks": {
+            "cagr_ge_12pct": false,
+            "cagr_gt_cash": true,
+            "mdd_le_20pct": false,
+            "sharpe_ge_1": false,
+            "since2020_cagr_positive": true,
+            "since2022_cagr_positive": true
+          },
+          "objective_failures": [
+            "cagr_ge_12pct",
+            "mdd_le_20pct",
+            "sharpe_ge_1"
+          ],
+          "qqq_buy_hold_control": {
+            "cagr_percent": 10.02484351249393,
+            "mdd_percent": 70.39798063567791,
+            "sharpe": 0.5135475571324444,
+            "target_fingerprint": "89383aa753074dda",
+            "trades": 1
+          },
+          "sharpe": 0.3122822022068948,
+          "since2020_cagr_percent": 12.454583642775297,
+          "since2020_sharpe": 0.6855909831701708,
+          "since2022_cagr_percent": 5.284615765801326,
+          "since2022_sharpe": 0.40739514585689957,
+          "strategy_library_validation": {
+            "comparative_failures": [
+              "mdd_le_qqq_buy_hold",
+              "sharpe_gt_qqq_buy_hold"
+            ],
+            "comparison_status": "FAIL",
+            "evidence_missing": [],
+            "legacy_robust_strategy_pass": false,
+            "level": "R1_RETROSPECTIVE",
+            "note": "The low-turnover Fed last-change-direction rule fails intrinsic drawdown validation. Easing begins too early in major downturns; this is not merely comparison underperformance.",
+            "objective_failures": [
+              "cagr_ge_12pct",
+              "mdd_le_20pct",
+              "sharpe_ge_1"
+            ],
+            "objective_status": "FAIL",
+            "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+            "status": "FAIL",
+            "trial_status": "FAIL",
+            "validation_failures": [
+              "full_mdd_le_25pct"
+            ],
+            "validation_warnings": [
+              "execution_stress_not_in_this_R1_trial; base run already uses product 1.00% fee plus 0.05% slippage"
+            ]
+          },
+          "target_fingerprint": "6a50ba38afe4ec2e",
+          "trades": 7,
+          "validation_checks": {
+            "actual_trades_gt_0": true,
+            "cash_nonnegative": true,
+            "full_cagr_gt_0": true,
+            "full_mdd_le_25pct": false,
+            "full_sharpe_gt_0": true,
+            "max_gross_le_1": true,
+            "positive_sharpe_folds_ge_70pct": true
+          }
+        },
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "sharpe": 0.3122822022068948,
+        "since2020_cagr_percent": 12.454583642775297,
+        "since2022_cagr_percent": 5.284615765801326,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-FED-POLICY-DIRECTION-001",
+      "strategy_kind": "strategy_architecture_not_factor",
+      "tags": [
+        "ATM-SVP3-FED-POLICY-DIRECTION-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "70f8e5fb5e9ab5b9069421cbbe2600eecb85dfaebb97a130159cc6387b3ee701",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "Equity discount rates and liquidity conditions respond asymmetrically to the direction of Federal Reserve policy. A deliberately slow rule that owns a growth-equity total-return proxy only after the most recent official federal-funds target change was a cut, and otherwise holds CNY cash after the most recent target change was a hike, may capture the long monetary easing/tightening cycle with only a handful of trades and without forecasting the magnitude or timing of future policy moves.",
+        "parameters": {
+          "allowed_changes": [
+            "use exact frozen 71-event Federal Reserve policy-change file",
+            "same-day policy event is unavailable; event must be strictly earlier than execution date",
+            "easing state holds 100% QQQ adjusted-close total-return proxy",
+            "tightening state holds 100% CashYieldCNY",
+            "trade only when easing/tightening state changes",
+            "use product-level 1.00% fee plus 0.05% slippage"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "using policy-rate level, magnitude, moving average or months-since-change thresholds",
+            "3/6/12-month lookbacks or persistence rules",
+            "using FOMC surprise, futures-implied changes or forward guidance",
+            "changing QQQ to SPY/MTUM/other asset after results",
+            "adding VIX, trend, yield-curve, Sahm, credit or volatility confirmation",
+            "changing fee/slippage after results",
+            "shorting, borrowing, financing, leverage or gross exposure above 100%"
+          ],
+          "shared_rules": {
+            "easing_owner": "qqq_tr",
+            "evaluation_end": "2026-08-13",
+            "evaluation_start": "2001-01-04",
+            "fee_percent_per_trade": 1.0,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "policy_event_count": 71,
+            "policy_state": "direction of latest official target change strictly before execution date",
+            "shorting_allowed": false,
+            "slippage_percent_per_trade": 0.05,
+            "tightening_owner": "CashYieldCNY"
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "tools/fed_policy_direction_001_logic.swift",
+        "target_fingerprint": "6a50ba38afe4ec2e",
+        "version_key": "S-FED-POLICY-DIRECTION-001"
+      }
+    }
+  ]
+}
