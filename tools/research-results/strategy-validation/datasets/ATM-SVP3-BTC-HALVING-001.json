@@ -1,0 +1,51 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    },
+    {
+      "bytes": 609715,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/BTCUSDT-BINANCE-2026-08-23/BTCUSDT-1d.json",
+      "sha256": "818060656d7d3170715bc34ca5b64d34bbed642958a7c24515efa4a9c93c1ca6"
+    },
+    {
+      "bytes": 344,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/BTCUSDT-BINANCE-2026-08-23/fetch-summary.json",
+      "sha256": "02ebbd55788769bfd856ae9a1446b980ae2e93db5c73c1a5185dc3141a01954f"
+    },
+    {
+      "bytes": 113,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/BTC-HALVING-OFFICIAL-2026-08-24/halvings.csv",
+      "sha256": "123c2f9060f5537798045acce7814f062881c0ea329a8ee51a18a5ae791e6f9e"
+    },
+    {
+      "bytes": 309,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/BTC-HALVING-OFFICIAL-2026-08-24/sources.json",
+      "sha256": "98bc95f71df4518f4f673d5820e06a3894d8346bbe9ca6bcf639149736e49bea"
+    }
+  ],
+  "generated_at": "2026-08-24T00:20:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "base_cost": "1.00% fee plus 0.05% slippage per trade",
+    "btc_source": "Binance official BTCUSDT daily spot klines",
+    "campaign": "btc-halving-001",
+    "candidate_kind": "INDEPENDENT_CRYPTO_SUPPLY_SHOCK_EVENT_WINDOW",
+    "evaluation_end": "2026-08-20",
+    "evaluation_start": "2017-08-17",
+    "event_source": "SEC filing lists Bitcoin halvings at block 210k/420k/630k/840k and corresponding dates",
+    "measurement": "BTCUSDT treated as USD-equivalent then converted using latest historical usd_per_cny; execution restricted to BTC x SP500 common sessions",
+    "observed_historical_halvings": 4,
+    "performance_viewed_before_freeze": false,
+    "tradeable_complete_halving_windows_in_sample": 2
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-BTC-HALVING-001"
+}
