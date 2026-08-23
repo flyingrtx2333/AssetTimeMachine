@@ -1,0 +1,50 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    },
+    {
+      "bytes": 194667,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-005/QQQ.csv",
+      "sha256": "06e77ba2f29880f5d634c6863d7160eaf046fb219255cce9b46452a64102aec5"
+    },
+    {
+      "bytes": 193864,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-003/SPY.csv",
+      "sha256": "48dbf8b82f64ab03d445dba62fb7f47c87c4141cb7feeb1ee3082b192bbc1c14"
+    },
+    {
+      "bytes": 2930,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/FED-POLICY-DIRECTION-OFFICIAL-2026-08-23/policy_changes.csv",
+      "sha256": "619fdfa27117f7839e338e9661035d66f1d3f34ba9db7253127445d1fdc752cf"
+    },
+    {
+      "bytes": 654,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/FED-POLICY-DIRECTION-OFFICIAL-2026-08-23/sources.json",
+      "sha256": "7f91bd8dbaddad84bc595ea0903d09e6e8eccaa204a591528989bde7739dc4ae"
+    }
+  ],
+  "generated_at": "2026-08-23T22:40:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "base_cost": "1.00% fee plus 0.05% slippage; trade only when easing/tightening direction regime changes",
+    "campaign": "fed-policy-direction-001",
+    "candidate_kind": "INDEPENDENT_MONETARY_POLICY_DIRECTION_REGIME",
+    "causality": "a policy change may affect the strategy only when official event date is strictly earlier than execution date; same-day policy change is unavailable",
+    "evaluation_end": "2026-08-13",
+    "evaluation_start": "2001-01-04",
+    "performance_viewed_before_freeze": false,
+    "policy_events": 71,
+    "policy_source": "Federal Reserve Board official historical target-change tables; no third-party rate history",
+    "risk_asset": "QQQ Yahoo adjusted-close total-return proxy converted through historical USD/CNY"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-FED-POLICY-DIRECTION-001"
+}

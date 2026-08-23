@@ -1,0 +1,7 @@
+{
+  "FED_OMO_ARCHIVE": "https://www.federalreserve.gov/monetarypolicy/openmarket_archive.htm",
+  "FED_FEDS_2009_49": "https://www.federalreserve.gov/PUBS/feds/2009/200949/figure_data.html",
+  "FED_EXPLAINED": "https://www.federalreserve.gov/aboutthefed/fedexplained/accessible-version.htm",
+  "current_2026_confirmation": "https://www.federalreserve.gov/economy-at-a-glance-policy-rate.htm",
+  "rule_note": "Only actual policy target changes are retained. Strategy may use a change only when its official date is strictly earlier than the execution date; unchanged meetings are irrelevant because state persists from the most recent change direction."
+}
