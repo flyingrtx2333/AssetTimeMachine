@@ -1,0 +1,38 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    },
+    {
+      "bytes": 193864,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-003/SPY.csv",
+      "sha256": "48dbf8b82f64ab03d445dba62fb7f47c87c4141cb7feeb1ee3082b192bbc1c14"
+    },
+    {
+      "bytes": 181651,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-005/TLT.csv",
+      "sha256": "34e66f005f09bae79c4f3b3eb376657d12ef7d676629719cf52d491d345e4967"
+    }
+  ],
+  "generated_at": "2026-08-23T18:03:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "base_cost": "1.00% fee plus 0.05% slippage on external asset trades; annual rebalance only",
+    "campaign": "permanent-portfolio-001",
+    "candidate_kind": "INDEPENDENT_STATIC_FOUR_REGIME_DIVERSIFICATION",
+    "cash": "CashYieldCNY",
+    "evaluation_end": "2026-08-13",
+    "evaluation_start": "2002-07-30",
+    "gold": "existing CNY gold series from public_history",
+    "long_bond": "TLT Yahoo adjusted-close total-return proxy",
+    "performance_viewed_before_freeze": false,
+    "stock": "SPY Yahoo adjusted-close total-return proxy"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-PERMANENT-PORTFOLIO-001"
+}
