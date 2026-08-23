@@ -1,0 +1,83 @@
+        if ProcessInfo.processInfo.environment["ATM_GOLDEN_BUTTERFLY_002"] == "1" {
+            let formal = ProcessInfo.processInfo.environment["ATM_GOLDEN_BUTTERFLY_002_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_GOLDEN_BUTTERFLY_002_OUTPUT_DIR"]
+            let symbols = ["spy_tr", "vbr_tr", "tlt_tr", "tbill3m_total_return_usd", "gold_cny"]
+
+            func loadAdjustedCloseSeries(path: String, symbol: String, label: String) -> PublicHistorySeries? {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return nil }
+                var dates: [String] = []; var prices: [Double] = []
+                for line in text.split(whereSeparator: \.isNewline).dropFirst() {
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 2, let value = Double(fields[1]), value.isFinite, value > 0 else { continue }
+                    dates.append(String(fields[0])); prices.append(value)
+                }
+                guard dates.count >= 500, dates.count == prices.count else { return nil }
+                return PublicHistorySeries(symbol: symbol, category: "us_etf_total_return_proxy", label: label, currency: "USD", unit: "adjusted_close", source: "Frozen Yahoo adjusted close", dates: dates, prices: prices, hasOHLC: false, ohlcSource: nil, ohlcCoverageRatio: nil, openPrices: nil, highPrices: nil, lowPrices: nil, closePrices: nil, volumes: nil)
+            }
+
+            func syntheticTBillAccrualSeries(endDateText: String) -> PublicHistorySeries? {
+                let macroPath = ProcessInfo.processInfo.environment["ATM_MACRO_RISK_FIXTURE"] ?? "tools/fixtures/macro-risk/macro_risk_public.json"
+                guard let data = FileManager.default.contents(atPath: macroPath),
+                      let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let rawSeries = root["series"] as? [String: Any],
+                      let rows = rawSeries["tbill3m"] as? [[String: Any]] else { return nil }
+                let formatter = DateFormatter(); formatter.calendar = BacktestSeriesAlignment.historicalSeriesCalendar; formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.timeZone = BacktestSeriesAlignment.historicalSeriesCalendar.timeZone; formatter.dateFormat = "yyyy-MM-dd"
+                let calendar = Calendar(identifier: .gregorian)
+                let parsed = rows.compactMap { row -> (String, Date, Double)? in
+                    guard let dateText = row["date"] as? String, dateText <= endDateText,
+                          let date = formatter.date(from: dateText), let number = row["value"] as? NSNumber else { return nil }
+                    return (dateText, date, number.doubleValue)
+                }.sorted { $0.1 < $1.1 }
+                guard let first = parsed.first else { return nil }
+                var dates=[first.0], prices=[100.0], previousDate=first.1, previousRate=max(first.2,0), value=100.0
+                for row in parsed.dropFirst() {
+                    let days=max(calendar.dateComponents([.day],from:previousDate,to:row.1).day ?? 1,1)
+                    value *= pow(1 + previousRate / 100 / 365, Double(days))
+                    dates.append(row.0); prices.append(value); previousDate=row.1; previousRate=max(row.2,0)
+                }
+                return PublicHistorySeries(symbol:"tbill3m_total_return_usd",category:"cash_plus",label:"3M US Treasury Bill Total Return",currency:"USD",unit:"index",source:"FRED DTB3 synthetic accrual",dates:dates,prices:prices,hasOHLC:false,ohlcSource:nil,ohlcCoverageRatio:nil,openPrices:nil,highPrices:nil,lowPrices:nil,closePrices:nil,volumes:nil)
+            }
+
+            guard let spy = loadAdjustedCloseSeries(path:"tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-003/SPY.csv",symbol:"spy_tr",label:"SPY adjusted-close TR"),
+                  let vbr = loadAdjustedCloseSeries(path:"tools/research-results/strategy-validation/factor-data/US-VALUE-ROLE-V1-2026-08-22/VBR.csv",symbol:"vbr_tr",label:"VBR adjusted-close TR"),
+                  let tlt = loadAdjustedCloseSeries(path:"tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-005/TLT.csv",symbol:"tlt_tr",label:"TLT adjusted-close TR"),
+                  let fx = seriesBySymbol["usd_per_cny"],
+                  let goldOption = BacktestDefaults.strategyAssetOptions.first(where:{$0.symbol=="gold_cny"}),
+                  let gold = seriesBySymbol[normalizedHistorySymbol("gold_cny")],
+                  let tbill = syntheticTBillAccrualSeries(endDateText:"2026-08-13") else { print("GOLDEN_BUTTERFLY_002_INPUTS_MISSING"); return }
+            let spyOption=BacktestAssetOption(symbol:spy.symbol,title:"SPY TR",color:AssetTheme.accentRed,requiresHistoricalFX:true,historicalFXSymbol:"usd_per_cny",currency:"USD")
+            let vbrOption=BacktestAssetOption(symbol:vbr.symbol,title:"VBR TR",color:AssetTheme.accentOrange,requiresHistoricalFX:true,historicalFXSymbol:"usd_per_cny",currency:"USD")
+            let tltOption=BacktestAssetOption(symbol:tlt.symbol,title:"TLT TR",color:AssetTheme.accentBlue,requiresHistoricalFX:true,historicalFXSymbol:"usd_per_cny",currency:"USD")
+            let tbillOption=BacktestAssetOption(symbol:tbill.symbol,title:"3M TBill",color:AssetTheme.textSecondary,requiresHistoricalFX:true,historicalFXSymbol:"usd_per_cny",currency:"USD")
+            let inputs=[
+                (assetSeries:Optional(spy),assetOption:spyOption,fxSeries:Optional(fx)),
+                (assetSeries:Optional(vbr),assetOption:vbrOption,fxSeries:Optional(fx)),
+                (assetSeries:Optional(tlt),assetOption:tltOption,fxSeries:Optional(fx)),
+                (assetSeries:Optional(tbill),assetOption:tbillOption,fxSeries:Optional(fx)),
+                (assetSeries:Optional(gold),assetOption:goldOption,fxSeries:Optional<PublicHistorySeries>.none)
+            ]
+            let settings=AdvancedBacktestRiskSettings(feeRate:1.00,slippageRate:0.05,maxPositionRatio:100,cooldownDays:0,stopLossRatio:0,takeProfitRatio:0)
+            let formatter=DateFormatter();formatter.calendar=BacktestSeriesAlignment.historicalSeriesCalendar;formatter.locale=Locale(identifier:"en_US_POSIX");formatter.timeZone=BacktestSeriesAlignment.historicalSeriesCalendar.timeZone;formatter.dateFormat="yyyy-MM-dd"
+            guard let start=formatter.date(from:"2004-01-30"),let end=formatter.date(from:"2026-08-13") else {print("GOLDEN_BUTTERFLY_002_DATE_FAILED");return}
+            let bounds=start...end
+            let folds:[(String,String,String)]=[("2004-2006","2004-01-30","2006-12-31"),("2007-2009","2007-01-01","2009-12-31"),("2010-2012","2010-01-01","2012-12-31"),("2013-2015","2013-01-01","2015-12-31"),("2016-2018","2016-01-01","2018-12-31"),("2019-2021","2019-01-01","2021-12-31"),("2022-latest","2022-01-01","9999-12-31")]
+            enum Mode{case butterfly,spy,cash}
+            func config(_ id:String)->ResearchTargetStrategyConfig{ResearchTargetStrategyConfig(symbol:id,title:"Golden Butterfly 001",warmupSessions:2,rebalanceSessions:1,rebalanceBand:0,maxGrossExposure:1,allowsFinancedExposure:false,financingAnnualRate:0,buyReason:"固定五袖20%年度再平衡")}
+            func runPath(_ id:String,_ mode:Mode)->ResearchTargetStrategyRun?{var first=true;return BacktestEngine.runResearchTargetProviderStrategyWithTrace(assetInputs:inputs,initialCash:100_000,settings:settings,config:config(id),dateBounds:bounds,rebalanceDecision:{index,signalIndex,data in
+                guard data.dates.indices.contains(index) else{return BacktestRebalanceDecision(shouldRebalance:false,refreshOverlay:false)}
+                if first{first=false;return BacktestRebalanceDecision(shouldRebalance:true,refreshOverlay:false)}
+                guard mode == .butterfly,data.dates.indices.contains(signalIndex) else{return BacktestRebalanceDecision(shouldRebalance:false,refreshOverlay:false)}
+                return BacktestRebalanceDecision(shouldRebalance:GoldenButterfly001Logic.shouldRebalance(current:data.dates[index].recordDateString,previous:data.dates[signalIndex].recordDateString),refreshOverlay:false)
+            },targetWeights:{_,_ in switch mode{case .butterfly:return GoldenButterfly001Logic.targetWeights;case .spy:return ["spy_tr":1.0];case .cash:return [:]}})}
+            guard let candidate=runPath("GB002",.butterfly),let control=runPath("C-SPY-BUYHOLD",.spy),let cash=runPath("C-CASH",.cash) else{print("GOLDEN_BUTTERFLY_002_RUN_FAILED");return}
+            func pts(_ r:ResearchTargetStrategyRun)->[BacktestSeriesPoint]{r.report.points.filter{$0.date>=start && $0.date<=end}}
+            func sts(_ r:ResearchTargetStrategyRun)->[BacktestDailyState]{r.dailyStates.filter{$0.date>=start && $0.date<=end}}
+            func fp(_ ss:[BacktestDailyState])->String{var h:UInt64=1469598103934665603;for s in ss{for sym in symbols{var v=UInt64(bitPattern:Int64(((s.targetWeights[sym] ?? 0)*1_000_000).rounded()));for _ in 0..<8{h ^= v & UInt64(0xff);h &*= UInt64(1099511628211);v >>= 8}}};return String(format:"%016llx",h)}
+            func foldMetrics(_ p:[BacktestSeriesPoint])->[[String:Any]]{folds.map{name,a,b in let x=p.filter{$0.date.recordDateString>=a && $0.date.recordDateString<=b};let m=BacktestMetricsCalculator.performanceMetrics(from:x);return ["name":name,"sessions":x.count,"cagr_percent":(m?.annualizedReturn ?? 0)*100,"mdd_percent":(m?.maxDrawdown ?? 0)*100,"sharpe":m?.sharpeRatio ?? 0]}}
+            func doc(_ id:String,_ r:ResearchTargetStrategyRun)->[String:Any]{let p=pts(r),s=sts(r),m=BacktestMetricsCalculator.performanceMetrics(from:p),m20=BacktestMetricsCalculator.performanceMetrics(from:p.filter{$0.date.recordDateString>="2020-01-01"}),m22=BacktestMetricsCalculator.performanceMetrics(from:p.filter{$0.date.recordDateString>="2022-01-01"});let g=s.map{x in x.portfolioValue>0 ? x.holdingsBySymbol.values.reduce(0,+)/x.portfolioValue:0};return ["id":id,"start":p.first?.date.recordDateString ?? "","end":p.last?.date.recordDateString ?? "","sessions":p.count,"cagr_percent":(m?.annualizedReturn ?? 0)*100,"mdd_percent":(m?.maxDrawdown ?? 0)*100,"volatility_percent":(m?.annualizedVolatility ?? 0)*100,"sharpe":m?.sharpeRatio ?? 0,"trades":r.report.trades.count,"average_cash_ratio":r.report.averageCashRatio,"max_gross":g.max() ?? 0,"minimum_cash":s.map(\.cash).min() ?? 0,"target_fingerprint":fp(s),"since2020_cagr_percent":(m20?.annualizedReturn ?? 0)*100,"since2020_sharpe":m20?.sharpeRatio ?? 0,"since2022_cagr_percent":(m22?.annualizedReturn ?? 0)*100,"since2022_sharpe":m22?.sharpeRatio ?? 0,"folds":foldMetrics(p)]}
+            let cdoc=doc("GB002",candidate),sdoc=doc("C-SPY-BUYHOLD",control),cashdoc=doc("C-CASH",cash)
+            if !formal{let t=cdoc["trades"] as? Int ?? 0,g=cdoc["max_gross"] as? Double ?? 0,mc=cdoc["minimum_cash"] as? Double ?? -1;print("GOLDEN_BUTTERFLY_002_SMOKE_TRADES=\(t)");print("GOLDEN_BUTTERFLY_002_SMOKE_MAX_GROSS=\(g)");print("GOLDEN_BUTTERFLY_002_SMOKE_MIN_CASH=\(mc)");guard t>0,g<=1.000000001,mc >= -1e-6 else{print("GOLDEN_BUTTERFLY_002_SMOKE_INVALID");return};print("GOLDEN_BUTTERFLY_002_SMOKE_OK");return}
+            if let outputDir{try? FileManager.default.createDirectory(atPath:outputDir,withIntermediateDirectories:true);for(id,r) in [("GB002",candidate),("C-SPY-BUYHOLD",control),("C-CASH",cash)]{var lines=["date,portfolio_value"];lines.append(contentsOf:pts(r).map{"\($0.date.recordDateString),\(String(format:"%.10f",$0.portfolioValue))"});let path=URL(fileURLWithPath:outputDir).appendingPathComponent("\(id)-portfolio.csv").path;try?(lines.joined(separator:"\n")+"\n").write(toFile:path,atomically:true,encoding:.utf8)}}
+            let out:[String:Any]=["trial_id":"ATM-SVP3-GOLDEN-BUTTERFLY-002","candidate_id":"S-GOLDEN-BUTTERFLY-002","candidate":cdoc,"spy_buy_hold_control":sdoc,"cash_control":cashdoc,"sleeve_weight":0.20,"fee_percent_per_trade":1.0,"slippage_percent_per_trade":0.05,"evaluation_start":"2004-01-30","evaluation_end":"2026-08-13","rule":"fixed annual 20% SPY total-return proxy + 20% VBR total-return proxy + 20% TLT total-return proxy + 20% synthetic 3M T-bill total return + 20% CNY gold"]
+            guard JSONSerialization.isValidJSONObject(out),let json=try?JSONSerialization.data(withJSONObject:out,options:[.sortedKeys]),let text=String(data:json,encoding:.utf8) else{print("GOLDEN_BUTTERFLY_002_JSON_FAILED");return};print("GOLDEN_BUTTERFLY_002_FORMAL_JSON="+text);print("GOLDEN_BUTTERFLY_002_FORMAL_OK");return
+        }

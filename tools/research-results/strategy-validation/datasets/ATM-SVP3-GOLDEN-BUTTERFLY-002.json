@@ -1,0 +1,54 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    },
+    {
+      "bytes": 1965934,
+      "format": "json",
+      "path": "tools/fixtures/macro-risk/macro_risk_public.json",
+      "sha256": "ba30b8a5f96a648a20597a04d4f4b5bbbe8725b741fa08af79ac34cdc5daac02"
+    },
+    {
+      "bytes": 193864,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-003/SPY.csv",
+      "sha256": "48dbf8b82f64ab03d445dba62fb7f47c87c4141cb7feeb1ee3082b192bbc1c14"
+    },
+    {
+      "bytes": 171936,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/US-VALUE-ROLE-V1-2026-08-22/VBR.csv",
+      "sha256": "ac82f05a2eee22e4a748657c8bb5087816d711e6f87ce46fd3eee449b36cba89"
+    },
+    {
+      "bytes": 181651,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-005/TLT.csv",
+      "sha256": "34e66f005f09bae79c4f3b3eb376657d12ef7d676629719cf52d491d345e4967"
+    }
+  ],
+  "generated_at": "2026-08-23T19:20:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "base_cost": "1.00% fee plus 0.05% slippage on external asset trades; annual rebalance only",
+    "campaign": "golden-butterfly-002",
+    "candidate_kind": "INDEPENDENT_FIXED_FIVE_SLEEVE_DIVERSIFICATION",
+    "evaluation_end": "2026-08-13",
+    "evaluation_start": "2004-01-30",
+    "external_architecture_performance_known_before_freeze": true,
+    "gold": "CNY gold from public_history",
+    "implementation_fix_only": true,
+    "internal_performance_viewed_before_freeze": false,
+    "long_bond": "TLT adjusted-close total-return proxy",
+    "predecessor_invalid_trial": "ATM-SVP3-GOLDEN-BUTTERFLY-001",
+    "short_bond": "FRED DTB3 synthetic 3M Treasury accrual",
+    "small_value": "VBR adjusted-close total-return proxy",
+    "stock": "SPY adjusted-close total-return proxy"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-GOLDEN-BUTTERFLY-002"
+}

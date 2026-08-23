@@ -1,0 +1,84 @@
+{
+  "allowed_changes": [
+    "implementation-only correction: remove stale Permanent Portfolio gold_weight/cash_weight validation from Python formal wrapper",
+    "identity-only successor fields 001 -> 002; reuse exact GoldenButterfly001Logic and exact frozen economic target path"
+  ],
+  "candidate_count": 1,
+  "candidate_ids": [
+    "S-GOLDEN-BUTTERFLY-002"
+  ],
+  "candidate_kind": "STRATEGY_ARCHITECTURE_NOT_FACTOR",
+  "comparison_gates": [
+    "Sharpe > SPY buy-and-hold on matched total-return/FX window",
+    "MDD <= SPY buy-and-hold MDD"
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-GOLDEN-BUTTERFLY-002.json",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "expected_outputs": [
+    "Golden Butterfly, SPY buy-hold and cash CSVs",
+    "full/recent/seven-fold CAGR/MDD/Sharpe",
+    "trade count, actual gross, minimum cash and fingerprint",
+    "ATM-SVP-3 validation/objective/comparison",
+    "global post-protocol DSR",
+    "run authorization and artifact manifest"
+  ],
+  "follow_up_policy": "This is the one implementation-corrected successor allowed after ATM-SVP3-GOLDEN-BUTTERFLY-001 was recorded INVALID_IMPLEMENTATION. After 002 performance is viewed, no weight/cadence/asset/filter rescue is permitted.",
+  "forbidden_changes": [
+    "any asset, weight, rebalance, dataset, evaluation-date, fee or slippage change",
+    "any trend/momentum/macro/volatility filter",
+    "any use of generated 001 performance to alter economic logic",
+    "shorting, borrowing, financing, leverage or gross exposure above 100%"
+  ],
+  "formal_run_budget": 1,
+  "hypothesis": "A fixed equal-weight mix of broad U.S. equity, small-cap value, long Treasuries, short Treasury bills and gold can combine the Permanent Portfolio all-regime defense with a dedicated small-cap-value return premium. Annual rebalancing should preserve low turnover while harvesting cross-asset diversification and the long-only value premium, potentially improving CAGR versus the Permanent Portfolio without sacrificing drawdown control.",
+  "invalid_fix_boundary": "Only Python formal-wrapper validation/identity plumbing may change. Five 20% sleeves, annual rebalance, source data, date window and costs are unchanged.",
+  "objective_gates": [
+    "CAGR >=10%",
+    "Sharpe >=1.00",
+    "MDD <=15%",
+    "2020+ CAGR >0",
+    "2022+ CAGR >0",
+    "CAGR > CNY cash"
+  ],
+  "pass_fail_gates": [
+    "actual trades >0",
+    "full CAGR >0",
+    "full Sharpe >0",
+    "full MDD <=25%",
+    "at least 70% of seven fixed folds have Sharpe >0",
+    "max realized gross <=100% and minimum cash >=0"
+  ],
+  "predecessor_invalid_trial": "ATM-SVP3-GOLDEN-BUTTERFLY-001",
+  "protocol_id": "ATM-SVP-3",
+  "research_basis": [
+    "Portfolio Charts Golden Butterfly: 20% large-cap/total-market stocks, 20% small-cap value, 20% long Treasuries, 20% short Treasuries, 20% gold",
+    "Fama-French-style small/value premium provides the extra growth sleeve; this trial uses the published fixed architecture rather than fitting weights"
+  ],
+  "selection_metric": "No weight or cadence search. Exactly five 20% sleeves and annual rebalance. External published performance is known, but no internal CNY/cost result has been viewed. Validation, objective and SPY comparison remain separate ATM-SVP-3 axes.",
+  "shared_rules": {
+    "evaluation_end": "2026-08-13",
+    "evaluation_start": "2004-01-30",
+    "fee_percent_per_trade": 1.0,
+    "financing_allowed": false,
+    "gold_weight": 0.2,
+    "max_gross": 1.0,
+    "rebalance": "first common session each calendar year",
+    "shorting_allowed": false,
+    "slippage_percent_per_trade": 0.05,
+    "spy_weight": 0.2,
+    "tbill_weight": 0.2,
+    "tlt_weight": 0.2,
+    "vbr_weight": 0.2
+  },
+  "strategy_lineage": "golden-butterfly-002 / Golden Butterfly 五袖002; implementation-corrected successor to INVALID 001 with identical economic rule",
+  "swift_engine_entrypoint": "scripts/run_golden_butterfly_002.py -> identity-only tools/golden_butterfly_002.swiftpart + immutable tools/golden_butterfly_001_logic.swift -> same five-sleeve BacktestEngine path",
+  "trial_id": "ATM-SVP3-GOLDEN-BUTTERFLY-002",
+  "validation_gates": [
+    "full CAGR >0",
+    "full Sharpe >0",
+    "full MDD <=25%",
+    "positive-Sharpe fixed-fold fraction >=70%",
+    "gross/cash/no-short/no-financing constraints pass",
+    "base run already includes product-level trading cost"
+  ]
+}
