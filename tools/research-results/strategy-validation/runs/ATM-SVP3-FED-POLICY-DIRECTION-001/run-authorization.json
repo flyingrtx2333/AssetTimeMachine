@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "25300531a88ebf6b5e5e6a608a257a36a5488d8c",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "628c22dbf063b768ac15dc47a65f210f30d50f7b93dc5bfc26a83799028efb52",
+  "preregistration_record_hash": "628c22dbf063b768ac15dc47a65f210f30d50f7b93dc5bfc26a83799028efb52",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-FED-POLICY-DIRECTION-001"
+}

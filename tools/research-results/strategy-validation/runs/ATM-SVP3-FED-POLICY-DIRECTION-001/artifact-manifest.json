@@ -1,0 +1,115 @@
+{
+  "files": [
+    {
+      "bytes": 186752,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-01-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/candidates/C-CASH-portfolio.csv",
+      "row_count": 6439,
+      "sha256": "ff1bb0097b7375d96b1e2e860423255840a481fed62a83cd5a60ffaf68c14991"
+    },
+    {
+      "bytes": 183703,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-01-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/candidates/C-QQQ-BUYHOLD-portfolio.csv",
+      "row_count": 6439,
+      "sha256": "024ae8af39f1fe4b7645d49b65401e3b7819ceb8dedd706c1f09ad05abe6e946"
+    },
+    {
+      "bytes": 183353,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-01-04",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/candidates/FEDPOL001-portfolio.csv",
+      "row_count": 6439,
+      "sha256": "52b352ccb04d767aff4c59a53c331d819f561eebaac7a621ee804201d2b3f07d"
+    },
+    {
+      "bytes": 508,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "58cf385cb4c66f5c9be9b968d34f1c6655da28ab118d330c9c6842e33dadb51a"
+    },
+    {
+      "bytes": 7590,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/candidates/candidate-metrics.json",
+      "sha256": "0b62a6a69c5049a470bf445386bd3eaec58b2edaf3e369047addd472fa4bfe72"
+    },
+    {
+      "bytes": 545,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/candidates/statistical-audit.json",
+      "sha256": "5b6b7fdaab73cfa4d3df86f99ff1f8cbf5422decdefe1628d09c47f10a90672d"
+    },
+    {
+      "bytes": 1006,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/execution.json",
+      "sha256": "3caf1b3b547d8df6dbfa04f7c10102f852af5d962ecbf451b0445d646a95a369"
+    },
+    {
+      "bytes": 447,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/run-authorization.json",
+      "sha256": "34c37e95efbebeede2ae91ad34e1472d692aa1b52dae80f2478cb29909c32ea3"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1137,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FED-POLICY-DIRECTION-001/stdout.txt",
+      "sha256": "ccfb94b5e1de780b227308b6cd88f85662cdcc92ea73b6892be0f54d58ba0bf7"
+    }
+  ],
+  "generated_at": "2026-08-23T22:44:06+08:00",
+  "git_commit": "25300531a88ebf6b5e5e6a608a257a36a5488d8c",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "FAIL",
+    "objective_status": "FAIL",
+    "validation_status": "FAIL"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-FED-POLICY-DIRECTION-001"
+}
