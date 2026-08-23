@@ -1,0 +1,37 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/candidates/C-V11-MATCHED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/candidates/S-V11-BTC2-SATELLITE-002-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-V11-BTC2-SATELLITE-002",
+      "metrics": {
+        "economic_rule_changed": false,
+        "invalid_measurement_repair": true,
+        "invalid_reason": "Pre-registered exact portfolio path identity versus 001 failed. Re-executing the unchanged engine produced floating-point path drift: candidate max relative difference about 1.33e-15 and control about 1.0e-15. Although economically negligible, the frozen exact-identity gate is binary and cannot be relaxed after formal execution. Corrected performance metrics emitted by this run are not used.",
+        "max_candidate_relative_path_drift": 1.3322676295501878e-15,
+        "max_control_relative_path_drift": 9.992007221626409e-16,
+        "performance_used": false
+      }
+    }
+  ],
+  "comparison_status": "UNKNOWN",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-V11-BTC2-SATELLITE-002.json",
+  "decision": "INVALID_PATH_IDENTITY. This trial was allowed to change metrics only and required exact candidate/control portfolio path equality to predecessor 001. Re-executing the same engine introduced machine-level floating-point drift, so the exact gate failed even though the maximum relative difference is about 1e-15. No corrected performance metric from 002 is accepted or inspected. The next allowed repair is measurement-only computation directly from the immutable 001 portfolio CSVs, with no strategy re-execution.",
+  "execution_git_commit": "55663c545ab9134609962240cc761639817ad126",
+  "objective_status": "INCONCLUSIVE",
+  "preregistration_record_hash": "6a3b573b58e9bb35b5b763c9ecbd6a531af94513af205b37b484a39edebbe9e6",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/run-authorization.json",
+  "status": "INVALID",
+  "trial_id": "ATM-SVP3-V11-BTC2-SATELLITE-002",
+  "validation_status": "FAIL"
+}

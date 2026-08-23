@@ -1,0 +1,97 @@
+{
+  "files": [
+    {
+      "bytes": 95397,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2017-08-18",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/candidates/C-V11-MATCHED-portfolio.csv",
+      "row_count": 3290,
+      "sha256": "f3f03cb4c50eb484227c808593f944ddbec30a530443789a7c32e40040987d05"
+    },
+    {
+      "bytes": 95402,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2017-08-18",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/candidates/S-V11-BTC2-SATELLITE-002-portfolio.csv",
+      "row_count": 3290,
+      "sha256": "683a0128ae70cad48042c7e3b85f9e8c7595524f437850ab5df649e9dbdc1644"
+    },
+    {
+      "bytes": 541,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "max_target_gross",
+        "target_fingerprint",
+        "v11_role_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/candidates/candidate-metrics.csv",
+      "row_count": 2,
+      "sha256": "e6768bf5bb7b177011c469b0ffda561a842e881050548709b59930c0d83a2b99"
+    },
+    {
+      "bytes": 7290,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/candidates/candidate-metrics.json",
+      "sha256": "dcbf16c11260de167ff8e3ee1bfa6b9cc25d52a0a8341ae42b0a36b8754a25d6"
+    },
+    {
+      "bytes": 994,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/execution.json",
+      "sha256": "b6d5c7b613a7b446267edd50c353bb8cfdfe2d46536320aee91ea6824055d18e"
+    },
+    {
+      "bytes": 445,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/run-authorization.json",
+      "sha256": "6e8a6b1f7b006da8e41e413ed676ad365d923fc0ac85d6dd33080d51ed66f36f"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1391,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/stdout.txt",
+      "sha256": "10ce67beb6504481bb8c8bd961f77bdb9f31de8e58cf66f80ca30deffe7a3c92"
+    }
+  ],
+  "generated_at": "2026-08-24T00:44:29+08:00",
+  "git_commit": "55663c545ab9134609962240cc761639817ad126",
+  "kind": "result",
+  "metadata": {
+    "max_relative_path_drift": 1.3322676295501878e-15,
+    "performance_used": false,
+    "status": "INVALID_PATH_IDENTITY"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-V11-BTC2-SATELLITE-002"
+}
