@@ -1,0 +1,37 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    },
+    {
+      "bytes": 104005,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-LIT-STRESS-001/BAA.csv",
+      "sha256": "01b665d946343d240f1025aa5d2a6a9c7d96ee3f16424f66be38641f204635aa"
+    }
+  ],
+  "generated_at": "2026-08-23T14:10:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "availability": "strict observation_date < signal_date; max stale 7 calendar days",
+    "base_cost": "1.00% fee +0.05% slippage per trade",
+    "campaign": "credit-trend-switch-001",
+    "candidate_kind": "INDEPENDENT_CREDIT_CONDITIONS_REGIME_SWITCH",
+    "evaluation_end": "2026-08-20",
+    "evaluation_start": "2002-07-03",
+    "factor": "FRED BAA10Y",
+    "factor_semantics": "reuse exact ATM-SVP2-LIT-STRESS-001 F-BAA falling-over-20-source-observations state",
+    "owners": {
+      "credit_spread_falling": "nasdaq",
+      "credit_spread_not_falling_or_unavailable": "gold_cny"
+    },
+    "performance_viewed_before_freeze": false,
+    "review": "first execution session of each month",
+    "trade_only_on_owner_change": true
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-CREDIT-TREND-SWITCH-001"
+}
