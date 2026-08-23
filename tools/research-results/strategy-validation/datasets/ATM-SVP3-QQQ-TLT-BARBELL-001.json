@@ -1,0 +1,39 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    },
+    {
+      "bytes": 194667,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-005/QQQ.csv",
+      "sha256": "06e77ba2f29880f5d634c6863d7160eaf046fb219255cce9b46452a64102aec5"
+    },
+    {
+      "bytes": 181651,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-005/TLT.csv",
+      "sha256": "34e66f005f09bae79c4f3b3eb376657d12ef7d676629719cf52d491d345e4967"
+    }
+  ],
+  "generated_at": "2026-08-23T15:08:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "base_cost": "1.00% fee plus 0.05% slippage per trade; annual rebalance only",
+    "campaign": "qqq-tlt-barbell-001",
+    "candidate_kind": "INDEPENDENT_STATIC_GROWTH_DURATION_DIVERSIFICATION",
+    "evaluation_end": "2026-08-13",
+    "evaluation_start": "2002-07-30",
+    "measurement_match": "QQQ and TLT both use frozen Yahoo adjusted-close total-return proxies from ATM-SVP2-ORTHO-FACTOR-005; both are converted with the same public_history usd_per_cny path",
+    "performance_viewed_before_freeze": false,
+    "qqq_rows": 6441,
+    "qqq_sha256": "06e77ba2f29880f5d634c6863d7160eaf046fb219255cce9b46452a64102aec5",
+    "tlt_rows": 6049,
+    "tlt_sha256": "34e66f005f09bae79c4f3b3eb376657d12ef7d676629719cf52d491d345e4967"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-QQQ-TLT-BARBELL-001"
+}

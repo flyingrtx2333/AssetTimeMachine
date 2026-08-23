@@ -1,0 +1,273 @@
+        if ProcessInfo.processInfo.environment["ATM_QQQ_TLT_BARBELL_001"] == "1" {
+            let formal = ProcessInfo.processInfo.environment["ATM_QQQ_TLT_BARBELL_001_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_QQQ_TLT_BARBELL_001_OUTPUT_DIR"]
+            let symbols = ["qqq_tr", "tlt_tr"]
+
+            func loadAdjustedCloseSeries(path: String, symbol: String, label: String) -> PublicHistorySeries? {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return nil }
+                var dates: [String] = []
+                var prices: [Double] = []
+                for line in text.split(whereSeparator: \.isNewline).dropFirst() {
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 2,
+                          let value = Double(fields[1]), value.isFinite, value > 0 else { continue }
+                    dates.append(String(fields[0]))
+                    prices.append(value)
+                }
+                guard dates.count >= 500, dates.count == prices.count else { return nil }
+                return PublicHistorySeries(
+                    symbol: symbol,
+                    category: "us_etf_total_return_proxy",
+                    label: label,
+                    currency: "USD",
+                    unit: "adjusted_close",
+                    source: "Yahoo Finance adjusted close · frozen ATM-SVP2-ORTHO-FACTOR-005",
+                    dates: dates,
+                    prices: prices,
+                    hasOHLC: false,
+                    ohlcSource: nil,
+                    ohlcCoverageRatio: nil,
+                    openPrices: nil,
+                    highPrices: nil,
+                    lowPrices: nil,
+                    closePrices: nil,
+                    volumes: nil
+                )
+            }
+
+            guard let qqq = loadAdjustedCloseSeries(
+                    path: "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-005/QQQ.csv",
+                    symbol: "qqq_tr",
+                    label: "QQQ adjusted-close total-return proxy"
+                  ),
+                  let tlt = loadAdjustedCloseSeries(
+                    path: "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-005/TLT.csv",
+                    symbol: "tlt_tr",
+                    label: "TLT adjusted-close total-return proxy"
+                  ),
+                  let fx = seriesBySymbol["usd_per_cny"] else {
+                print("QQQ_TLT_BARBELL_001_INPUTS_MISSING")
+                return
+            }
+            let qqqOption = BacktestAssetOption(
+                symbol: qqq.symbol, title: "QQQ总收益代理", color: AssetTheme.accentRed,
+                requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny", currency: "USD"
+            )
+            let tltOption = BacktestAssetOption(
+                symbol: tlt.symbol, title: "TLT总收益代理", color: AssetTheme.accentBlue,
+                requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny", currency: "USD"
+            )
+            let inputs = [
+                (assetSeries: Optional(qqq), assetOption: qqqOption, fxSeries: Optional(fx)),
+                (assetSeries: Optional(tlt), assetOption: tltOption, fxSeries: Optional(fx))
+            ]
+
+            let settings = AdvancedBacktestRiskSettings(
+                feeRate: 1.00,
+                slippageRate: 0.05,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            let formatter = DateFormatter()
+            formatter.calendar = BacktestSeriesAlignment.historicalSeriesCalendar
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = BacktestSeriesAlignment.historicalSeriesCalendar.timeZone
+            formatter.dateFormat = "yyyy-MM-dd"
+            guard let evaluationStart = formatter.date(from: "2002-07-30"),
+                  let evaluationEnd = formatter.date(from: "2026-08-13") else {
+                print("QQQ_TLT_BARBELL_001_DATE_PARSE_FAILED")
+                return
+            }
+            let bounds = evaluationStart...evaluationEnd
+            let folds: [(String, String, String)] = [
+                ("2002-2005", "2002-07-30", "2005-12-31"),
+                ("2006-2008", "2006-01-01", "2008-12-31"),
+                ("2009-2011", "2009-01-01", "2011-12-31"),
+                ("2012-2014", "2012-01-01", "2014-12-31"),
+                ("2015-2017", "2015-01-01", "2017-12-31"),
+                ("2018-2021", "2018-01-01", "2021-12-31"),
+                ("2022-latest", "2022-01-01", "9999-12-31")
+            ]
+
+            enum BarbellMode { case barbell, qqqBuyHold, cash }
+
+            func config(_ id: String) -> ResearchTargetStrategyConfig {
+                ResearchTargetStrategyConfig(
+                    symbol: id,
+                    title: "QQQ/TLT增长久期杠铃001",
+                    warmupSessions: 2,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0,
+                    maxGrossExposure: 1,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "固定50/50增长-久期年度再平衡"
+                )
+            }
+
+            func runPath(id: String, mode: BarbellMode) -> ResearchTargetStrategyRun? {
+                var firstDecision = true
+                return BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config(id),
+                    dateBounds: bounds,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        if firstDecision {
+                            firstDecision = false
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+                        guard mode == .barbell,
+                              data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let current = data.dates[index].recordDateString
+                        let previous = data.dates[signalIndex].recordDateString
+                        return BacktestRebalanceDecision(
+                            shouldRebalance: QQQTLTBarbell001Logic.shouldAnnualRebalance(
+                                currentDateKey: current,
+                                previousDateKey: previous
+                            ),
+                            refreshOverlay: false
+                        )
+                    },
+                    targetWeights: { _, _ in
+                        switch mode {
+                        case .cash: return [:]
+                        case .qqqBuyHold: return ["qqq_tr": 1.0]
+                        case .barbell: return QQQTLTBarbell001Logic.targetWeights
+                        }
+                    }
+                )
+            }
+
+            guard let candidate = runPath(id: "QQQTLT001", mode: .barbell),
+                  let qqqControl = runPath(id: "C-QQQ-BUYHOLD", mode: .qqqBuyHold),
+                  let cash = runPath(id: "C-CASH", mode: .cash) else {
+                print("QQQ_TLT_BARBELL_001_RUN_FAILED")
+                return
+            }
+
+            func points(_ run: ResearchTargetStrategyRun) -> [BacktestSeriesPoint] {
+                run.report.points.filter { $0.date >= evaluationStart && $0.date <= evaluationEnd }
+            }
+            func states(_ run: ResearchTargetStrategyRun) -> [BacktestDailyState] {
+                run.dailyStates.filter { $0.date >= evaluationStart && $0.date <= evaluationEnd }
+            }
+            func targetFingerprint(_ dailyStates: [BacktestDailyState]) -> String {
+                var hash: UInt64 = 1469598103934665603
+                for state in dailyStates {
+                    for symbol in symbols {
+                        var value = UInt64(bitPattern: Int64(((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded()))
+                        for _ in 0..<8 {
+                            hash ^= value & UInt64(0xff)
+                            hash &*= UInt64(1099511628211)
+                            value >>= 8
+                        }
+                    }
+                }
+                return String(format: "%016llx", hash)
+            }
+            func foldMetrics(_ source: [BacktestSeriesPoint]) -> [[String: Any]] {
+                folds.map { name, start, end in
+                    let slice = source.filter { $0.date.recordDateString >= start && $0.date.recordDateString <= end }
+                    let metrics = BacktestMetricsCalculator.performanceMetrics(from: slice)
+                    return [
+                        "name": name, "sessions": slice.count,
+                        "cagr_percent": (metrics?.annualizedReturn ?? 0) * 100,
+                        "mdd_percent": (metrics?.maxDrawdown ?? 0) * 100,
+                        "sharpe": metrics?.sharpeRatio ?? 0
+                    ]
+                }
+            }
+            func pathDocument(_ id: String, _ run: ResearchTargetStrategyRun) -> [String: Any] {
+                let p = points(run)
+                let s = states(run)
+                let m = BacktestMetricsCalculator.performanceMetrics(from: p)
+                let m20 = BacktestMetricsCalculator.performanceMetrics(from: p.filter { $0.date.recordDateString >= "2020-01-01" })
+                let m22 = BacktestMetricsCalculator.performanceMetrics(from: p.filter { $0.date.recordDateString >= "2022-01-01" })
+                let gross = s.map { state -> Double in
+                    guard state.portfolioValue > 0 else { return 0 }
+                    return state.holdingsBySymbol.values.reduce(0,+) / state.portfolioValue
+                }
+                return [
+                    "id": id,
+                    "start": p.first?.date.recordDateString ?? "",
+                    "end": p.last?.date.recordDateString ?? "",
+                    "sessions": p.count,
+                    "cagr_percent": (m?.annualizedReturn ?? 0) * 100,
+                    "mdd_percent": (m?.maxDrawdown ?? 0) * 100,
+                    "volatility_percent": (m?.annualizedVolatility ?? 0) * 100,
+                    "sharpe": m?.sharpeRatio ?? 0,
+                    "trades": run.report.trades.count,
+                    "average_cash_ratio": run.report.averageCashRatio,
+                    "max_gross": gross.max() ?? 0,
+                    "minimum_cash": s.map(\.cash).min() ?? 0,
+                    "target_fingerprint": targetFingerprint(s),
+                    "since2020_cagr_percent": (m20?.annualizedReturn ?? 0) * 100,
+                    "since2020_sharpe": m20?.sharpeRatio ?? 0,
+                    "since2022_cagr_percent": (m22?.annualizedReturn ?? 0) * 100,
+                    "since2022_sharpe": m22?.sharpeRatio ?? 0,
+                    "folds": foldMetrics(p)
+                ]
+            }
+
+            let candidateDoc = pathDocument("QQQTLT001", candidate)
+            let qqqDoc = pathDocument("C-QQQ-BUYHOLD", qqqControl)
+            let cashDoc = pathDocument("C-CASH", cash)
+
+            if !formal {
+                let trades = candidateDoc["trades"] as? Int ?? 0
+                let maxGross = candidateDoc["max_gross"] as? Double ?? 0
+                let minCash = candidateDoc["minimum_cash"] as? Double ?? -1
+                print("QQQ_TLT_BARBELL_001_SMOKE_TRADES=\(trades)")
+                print("QQQ_TLT_BARBELL_001_SMOKE_MAX_GROSS=\(String(format: "%.10f", maxGross))")
+                print("QQQ_TLT_BARBELL_001_SMOKE_MIN_CASH=\(String(format: "%.6f", minCash))")
+                guard trades > 0, maxGross <= 1.000000001, minCash >= -1e-6 else {
+                    print("QQQ_TLT_BARBELL_001_SMOKE_INVALID")
+                    return
+                }
+                print("QQQ_TLT_BARBELL_001_SMOKE_OK")
+                return
+            }
+
+            if let outputDir {
+                try? FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+                for (id, run) in [("QQQTLT001", candidate), ("C-QQQ-BUYHOLD", qqqControl), ("C-CASH", cash)] {
+                    var lines = ["date,portfolio_value"]
+                    lines.append(contentsOf: points(run).map { "\($0.date.recordDateString),\(String(format: "%.10f", $0.portfolioValue))" })
+                    let path = URL(fileURLWithPath: outputDir).appendingPathComponent("\(id)-portfolio.csv").path
+                    try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+                }
+            }
+
+            let document: [String: Any] = [
+                "trial_id": "ATM-SVP3-QQQ-TLT-BARBELL-001",
+                "candidate_id": "S-QQQ-TLT-BARBELL-001",
+                "candidate": candidateDoc,
+                "qqq_buy_hold_control": qqqDoc,
+                "cash_control": cashDoc,
+                "qqq_weight": 0.5,
+                "tlt_weight": 0.5,
+                "fee_percent_per_trade": 1.00,
+                "slippage_percent_per_trade": 0.05,
+                "evaluation_start": "2002-07-30",
+                "evaluation_end": "2026-08-13",
+                "rule": "fixed 50% QQQ adjusted-close total-return proxy plus 50% TLT adjusted-close total-return proxy, both converted through the same historical USD/CNY path and rebalanced only at the first common session of each calendar year"
+            ]
+            guard JSONSerialization.isValidJSONObject(document),
+                  let json = try? JSONSerialization.data(withJSONObject: document, options: [.sortedKeys]),
+                  let text = String(data: json, encoding: .utf8) else {
+                print("QQQ_TLT_BARBELL_001_JSON_FAILED")
+                return
+            }
+            print("QQQ_TLT_BARBELL_001_FORMAL_JSON=" + text)
+            print("QQQ_TLT_BARBELL_001_FORMAL_OK")
+            return
+        }
