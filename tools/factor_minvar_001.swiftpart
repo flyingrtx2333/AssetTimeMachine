@@ -1,0 +1,333 @@
+        if ProcessInfo.processInfo.environment["ATM_FACTOR_MINVAR_001"] == "1" {
+            let formal = ProcessInfo.processInfo.environment["ATM_FACTOR_MINVAR_001_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_FACTOR_MINVAR_001_OUTPUT_DIR"]
+            let schedulePath = ProcessInfo.processInfo.environment["ATM_FACTOR_MINVAR_001_SCHEDULE"] ?? ""
+            let symbols = ["vbr_tr", "mtum_tr", "qual_tr", "splv_tr"]
+
+            func loadAdjustedCloseSeries(path: String, symbol: String, label: String) -> PublicHistorySeries? {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return nil }
+                var dates: [String] = []
+                var prices: [Double] = []
+                for line in text.split(whereSeparator: \.isNewline).dropFirst() {
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 2,
+                          let value = Double(fields[1]), value.isFinite, value > 0 else { continue }
+                    dates.append(String(fields[0]))
+                    prices.append(value)
+                }
+                guard dates.count >= 500, dates.count == prices.count else { return nil }
+                return PublicHistorySeries(
+                    symbol: symbol,
+                    category: "long_only_factor_total_return_proxy",
+                    label: label,
+                    currency: "USD",
+                    unit: "adjusted_close",
+                    source: "Frozen Yahoo adjusted close",
+                    dates: dates,
+                    prices: prices,
+                    hasOHLC: false,
+                    ohlcSource: nil,
+                    ohlcCoverageRatio: nil,
+                    openPrices: nil,
+                    highPrices: nil,
+                    lowPrices: nil,
+                    closePrices: nil,
+                    volumes: nil
+                )
+            }
+
+            func loadSchedule(path: String) -> [(date: String, signalEnd: String, weights: [String: Double])]? {
+                guard let data = FileManager.default.contents(atPath: path),
+                      let rows = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return nil }
+                var result: [(String, String, [String: Double])] = []
+                for row in rows {
+                    guard let date = row["date"] as? String,
+                          let signalEnd = row["signal_end_date"] as? String,
+                          let rawWeights = row["weights"] as? [String: Any] else { return nil }
+                    var weights: [String: Double] = [:]
+                    for symbol in symbols {
+                        guard let number = rawWeights[symbol] as? NSNumber else { return nil }
+                        let weight = number.doubleValue
+                        guard weight.isFinite, weight >= -1e-10 else { return nil }
+                        weights[symbol] = max(weight, 0)
+                    }
+                    let gross = weights.values.reduce(0, +)
+                    guard abs(gross - 1.0) <= 1e-8, signalEnd < date else { return nil }
+                    result.append((date, signalEnd, weights))
+                }
+                result.sort { $0.0 < $1.0 }
+                return result.isEmpty ? nil : result
+            }
+
+            guard let vbr = loadAdjustedCloseSeries(
+                    path: "tools/research-results/strategy-validation/factor-data/US-VALUE-ROLE-V1-2026-08-22/VBR.csv",
+                    symbol: "vbr_tr", label: "VBR value total return"
+                  ),
+                  let mtum = loadAdjustedCloseSeries(
+                    path: "tools/research-results/strategy-validation/factor-data/US-MOMENTUM-QUALITY-ROLE-V1-2026-08-22/MTUM.csv",
+                    symbol: "mtum_tr", label: "MTUM momentum total return"
+                  ),
+                  let qual = loadAdjustedCloseSeries(
+                    path: "tools/research-results/strategy-validation/factor-data/US-MOMENTUM-QUALITY-ROLE-V1-2026-08-22/QUAL.csv",
+                    symbol: "qual_tr", label: "QUAL quality total return"
+                  ),
+                  let splv = loadAdjustedCloseSeries(
+                    path: "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-004/SPLV.csv",
+                    symbol: "splv_tr", label: "SPLV low-volatility total return"
+                  ),
+                  let fx = seriesBySymbol["usd_per_cny"],
+                  let schedule = loadSchedule(path: schedulePath),
+                  schedule.count == 12 else {
+                print("FACTOR_MINVAR_001_INPUTS_MISSING")
+                return
+            }
+
+            func option(_ series: PublicHistorySeries, _ title: String, _ color: Color) -> BacktestAssetOption {
+                BacktestAssetOption(
+                    symbol: series.symbol,
+                    title: title,
+                    color: color,
+                    requiresHistoricalFX: true,
+                    historicalFXSymbol: "usd_per_cny",
+                    currency: "USD"
+                )
+            }
+            let inputs = [
+                (assetSeries: Optional(vbr), assetOption: option(vbr, "VBR", AssetTheme.accentOrange), fxSeries: Optional(fx)),
+                (assetSeries: Optional(mtum), assetOption: option(mtum, "MTUM", AssetTheme.accentRed), fxSeries: Optional(fx)),
+                (assetSeries: Optional(qual), assetOption: option(qual, "QUAL", AssetTheme.positive), fxSeries: Optional(fx)),
+                (assetSeries: Optional(splv), assetOption: option(splv, "SPLV", AssetTheme.accentBlue), fxSeries: Optional(fx))
+            ]
+            let settings = AdvancedBacktestRiskSettings(
+                feeRate: 1.00,
+                slippageRate: 0.05,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            let formatter = DateFormatter()
+            formatter.calendar = BacktestSeriesAlignment.historicalSeriesCalendar
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = BacktestSeriesAlignment.historicalSeriesCalendar.timeZone
+            formatter.dateFormat = "yyyy-MM-dd"
+            guard let evaluationStart = formatter.date(from: "2015-01-02"),
+                  let evaluationEnd = formatter.date(from: "2026-08-13") else {
+                print("FACTOR_MINVAR_001_DATE_FAILED")
+                return
+            }
+            let bounds = evaluationStart...evaluationEnd
+            let folds: [(String, String, String)] = [
+                ("2015-2016", "2015-01-02", "2016-12-31"),
+                ("2017-2018", "2017-01-01", "2018-12-31"),
+                ("2019-2020", "2019-01-01", "2020-12-31"),
+                ("2021-2022", "2021-01-01", "2022-12-31"),
+                ("2023-2024", "2023-01-01", "2024-12-31"),
+                ("2025", "2025-01-01", "2025-12-31"),
+                ("2026-latest", "2026-01-01", "9999-12-31")
+            ]
+            let scheduleByDate = Dictionary(uniqueKeysWithValues: schedule.map { ($0.date, $0.weights) })
+
+            enum Mode { case minVariance, equalWeight, cash }
+
+            func config(_ id: String) -> ResearchTargetStrategyConfig {
+                ResearchTargetStrategyConfig(
+                    symbol: id,
+                    title: "Factor MinVar 001",
+                    warmupSessions: 2,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0,
+                    maxGrossExposure: 1,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "上一年252共同CNY收益的long-only最小方差"
+                )
+            }
+
+            func annualBoundary(index: Int, signalIndex: Int, data: ResearchTargetDataContext) -> Bool {
+                guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else { return false }
+                return String(data.dates[index].recordDateString.prefix(4)) != String(data.dates[signalIndex].recordDateString.prefix(4))
+            }
+
+            func runPath(_ id: String, mode: Mode) -> ResearchTargetStrategyRun? {
+                var firstDecision = true
+                var latestWeights: [String: Double] = [:]
+                return BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config(id),
+                    dateBounds: bounds,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let dateKey = data.dates[index].recordDateString
+                        switch mode {
+                        case .cash:
+                            if firstDecision { firstDecision = false }
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        case .equalWeight:
+                            if firstDecision {
+                                firstDecision = false
+                                return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                            }
+                            return BacktestRebalanceDecision(
+                                shouldRebalance: annualBoundary(index: index, signalIndex: signalIndex, data: data),
+                                refreshOverlay: false
+                            )
+                        case .minVariance:
+                            if let scheduled = scheduleByDate[dateKey] {
+                                latestWeights = scheduled
+                                firstDecision = false
+                                return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                            }
+                            if firstDecision {
+                                firstDecision = false
+                                return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                            }
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                    },
+                    targetWeights: { context, _ in
+                        switch mode {
+                        case .cash:
+                            return [:]
+                        case .equalWeight:
+                            return Dictionary(uniqueKeysWithValues: symbols.map { ($0, 0.25) })
+                        case .minVariance:
+                            if let scheduled = scheduleByDate[context.date.recordDateString] {
+                                latestWeights = scheduled
+                            }
+                            return latestWeights
+                        }
+                    }
+                )
+            }
+
+            guard let candidate = runPath("FMINVAR001", mode: .minVariance),
+                  let equalControl = runPath("C-FACTOR-EQUAL", mode: .equalWeight),
+                  let cashControl = runPath("C-CASH", mode: .cash) else {
+                print("FACTOR_MINVAR_001_RUN_FAILED")
+                return
+            }
+
+            func points(_ run: ResearchTargetStrategyRun) -> [BacktestSeriesPoint] {
+                run.report.points.filter { $0.date >= evaluationStart && $0.date <= evaluationEnd }
+            }
+            func states(_ run: ResearchTargetStrategyRun) -> [BacktestDailyState] {
+                run.dailyStates.filter { $0.date >= evaluationStart && $0.date <= evaluationEnd }
+            }
+            func fingerprint(_ dailyStates: [BacktestDailyState]) -> String {
+                var hash: UInt64 = 1469598103934665603
+                for state in dailyStates {
+                    for symbol in symbols {
+                        var value = UInt64(bitPattern: Int64(((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded()))
+                        for _ in 0..<8 {
+                            hash ^= value & UInt64(0xff)
+                            hash &*= UInt64(1099511628211)
+                            value >>= 8
+                        }
+                    }
+                }
+                return String(format: "%016llx", hash)
+            }
+            func foldMetrics(_ source: [BacktestSeriesPoint]) -> [[String: Any]] {
+                folds.map { name, start, end in
+                    let slice = source.filter { $0.date.recordDateString >= start && $0.date.recordDateString <= end }
+                    let metrics = BacktestMetricsCalculator.performanceMetrics(from: slice)
+                    return [
+                        "name": name,
+                        "sessions": slice.count,
+                        "cagr_percent": (metrics?.annualizedReturn ?? 0) * 100,
+                        "mdd_percent": (metrics?.maxDrawdown ?? 0) * 100,
+                        "sharpe": metrics?.sharpeRatio ?? 0
+                    ]
+                }
+            }
+            func document(_ id: String, _ run: ResearchTargetStrategyRun) -> [String: Any] {
+                let p = points(run)
+                let s = states(run)
+                let metrics = BacktestMetricsCalculator.performanceMetrics(from: p)
+                let since2020 = BacktestMetricsCalculator.performanceMetrics(from: p.filter { $0.date.recordDateString >= "2020-01-01" })
+                let since2022 = BacktestMetricsCalculator.performanceMetrics(from: p.filter { $0.date.recordDateString >= "2022-01-01" })
+                let gross = s.map { state -> Double in
+                    guard state.portfolioValue > 0 else { return 0 }
+                    return state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue
+                }
+                return [
+                    "id": id,
+                    "start": p.first?.date.recordDateString ?? "",
+                    "end": p.last?.date.recordDateString ?? "",
+                    "sessions": p.count,
+                    "cagr_percent": (metrics?.annualizedReturn ?? 0) * 100,
+                    "mdd_percent": (metrics?.maxDrawdown ?? 0) * 100,
+                    "volatility_percent": (metrics?.annualizedVolatility ?? 0) * 100,
+                    "sharpe": metrics?.sharpeRatio ?? 0,
+                    "trades": run.report.trades.count,
+                    "average_cash_ratio": run.report.averageCashRatio,
+                    "max_gross": gross.max() ?? 0,
+                    "minimum_cash": s.map(\.cash).min() ?? 0,
+                    "target_fingerprint": fingerprint(s),
+                    "since2020_cagr_percent": (since2020?.annualizedReturn ?? 0) * 100,
+                    "since2020_sharpe": since2020?.sharpeRatio ?? 0,
+                    "since2022_cagr_percent": (since2022?.annualizedReturn ?? 0) * 100,
+                    "since2022_sharpe": since2022?.sharpeRatio ?? 0,
+                    "folds": foldMetrics(p)
+                ]
+            }
+
+            let candidateDoc = document("FMINVAR001", candidate)
+            let equalDoc = document("C-FACTOR-EQUAL", equalControl)
+            let cashDoc = document("C-CASH", cashControl)
+
+            if !formal {
+                let trades = candidateDoc["trades"] as? Int ?? 0
+                let maxGross = candidateDoc["max_gross"] as? Double ?? 0
+                let minCash = candidateDoc["minimum_cash"] as? Double ?? -1
+                print("FACTOR_MINVAR_001_SMOKE_SCHEDULE=\(schedule.count)")
+                print("FACTOR_MINVAR_001_SMOKE_TRADES=\(trades)")
+                print("FACTOR_MINVAR_001_SMOKE_MAX_GROSS=\(maxGross)")
+                print("FACTOR_MINVAR_001_SMOKE_MIN_CASH=\(minCash)")
+                guard schedule.count == 12, trades > 0, maxGross <= 1.000000001, minCash >= -1e-6 else {
+                    print("FACTOR_MINVAR_001_SMOKE_INVALID")
+                    return
+                }
+                print("FACTOR_MINVAR_001_SMOKE_OK")
+                return
+            }
+
+            if let outputDir {
+                try? FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+                for (id, run) in [("FMINVAR001", candidate), ("C-FACTOR-EQUAL", equalControl), ("C-CASH", cashControl)] {
+                    var lines = ["date,portfolio_value"]
+                    lines.append(contentsOf: points(run).map { "\($0.date.recordDateString),\(String(format: "%.10f", $0.portfolioValue))" })
+                    let path = URL(fileURLWithPath: outputDir).appendingPathComponent("\(id)-portfolio.csv").path
+                    try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+                }
+            }
+
+            let output: [String: Any] = [
+                "trial_id": "ATM-SVP3-FACTOR-MINVAR-001",
+                "candidate_id": "S-FACTOR-MINVAR-001",
+                "candidate": candidateDoc,
+                "equal_factor_control": equalDoc,
+                "cash_control": cashDoc,
+                "lookback_returns": 252,
+                "schedule_entries": schedule.count,
+                "fee_percent_per_trade": 1.00,
+                "slippage_percent_per_trade": 0.05,
+                "evaluation_start": "2015-01-02",
+                "evaluation_end": "2026-08-13",
+                "rule": "annual long-only fully-invested minimum-variance weights across VBR/MTUM/QUAL/SPLV using covariance of the previous 252 common CNY daily returns ending strictly before the rebalance date; exact active-set solution, no shrinkage/caps/floors/return forecasts"
+            ]
+            guard JSONSerialization.isValidJSONObject(output),
+                  let json = try? JSONSerialization.data(withJSONObject: output, options: [.sortedKeys]),
+                  let text = String(data: json, encoding: .utf8) else {
+                print("FACTOR_MINVAR_001_JSON_FAILED")
+                return
+            }
+            print("FACTOR_MINVAR_001_FORMAL_JSON=" + text)
+            print("FACTOR_MINVAR_001_FORMAL_OK")
+            return
+        }
