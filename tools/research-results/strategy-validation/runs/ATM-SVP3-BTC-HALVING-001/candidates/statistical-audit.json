@@ -1,0 +1,18 @@
+{
+  "candidate_sharpe": 0.7388435538796311,
+  "event_count_cap": "WEAK even if absolute gates pass because only two complete active halving windows",
+  "global_dsr_pass": false,
+  "global_dsr_weak_or_better": false,
+  "global_post_protocol_dsr": {
+    "dsr_probability": 0.004727070059294569,
+    "dsr_z": -2.595179969010573,
+    "expected_max_sharpe_annualized": 1.4384367201765684,
+    "observations": 3288,
+    "observed_sharpe_annualized": 0.7388435538796507,
+    "pearson_kurtosis": 29.41438171154492,
+    "skewness": 1.4503593349597064,
+    "trial_count": 77
+  },
+  "prior_performance_bearing_candidates": 76,
+  "total_with_candidate": 77
+}

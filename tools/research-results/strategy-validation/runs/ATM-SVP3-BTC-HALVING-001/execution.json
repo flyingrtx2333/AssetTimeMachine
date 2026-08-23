@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_btc_halving_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "27e7a56f0433bb9626990e895bbdbf4110eae71e",
+  "finished_at": "2026-08-24T00:15:22+08:00",
+  "preregistration_record_hash": "4ba555b2379daa9d7f8b5197a6644f1972b6117c2bfe5f8f786c35e52c5d1c1b",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/run-authorization.json",
+  "started_at": "2026-08-24T00:14:55+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/stdout.txt",
+  "trial_id": "ATM-SVP3-BTC-HALVING-001"
+}

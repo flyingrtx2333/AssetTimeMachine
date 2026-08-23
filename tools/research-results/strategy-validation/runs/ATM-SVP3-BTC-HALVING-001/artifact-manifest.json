@@ -1,0 +1,116 @@
+{
+  "files": [
+    {
+      "bytes": 95401,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2017-08-19",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/candidates/BTCHALV001-portfolio.csv",
+      "row_count": 3289,
+      "sha256": "0ccef2c56d1eaf37ae85167cefb3fefe62d5cc3e920239ac99469358370ae4e8"
+    },
+    {
+      "bytes": 96504,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2017-08-19",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/candidates/C-BTC-BUYHOLD-portfolio.csv",
+      "row_count": 3289,
+      "sha256": "a6ad79231fd77d314f9fd7c05512f7b85d3ab53f8bc596ff0c64711da677ace8"
+    },
+    {
+      "bytes": 95402,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2017-08-19",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/candidates/C-CASH-portfolio.csv",
+      "row_count": 3289,
+      "sha256": "ad23230e79855ad36e1379c29ddde65f2aa7276cac778743554ff26c4cc61f01"
+    },
+    {
+      "bytes": 510,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "727bfad96154eced8d691acbb733add28c4f3a392d714c3fd844f31ed5b42afb"
+    },
+    {
+      "bytes": 8405,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/candidates/candidate-metrics.json",
+      "sha256": "25402dc705b5dc9d18c5133b5cf021162ef431eee93f80047716a9212a6f5eb0"
+    },
+    {
+      "bytes": 647,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/candidates/statistical-audit.json",
+      "sha256": "9aefd53b71224c148fbb3c76ab21d9ae5c2380f398657939804aab5c11cfc972"
+    },
+    {
+      "bytes": 952,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/execution.json",
+      "sha256": "91794d5e66f56c62bf1522d8127cbc300621164b1abdd93c39d7846efe693161"
+    },
+    {
+      "bytes": 438,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/run-authorization.json",
+      "sha256": "657424d5e96454eb9d68604cc2f0ed839c6557874a29d90d1cc6d5225fe488f3"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1452,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/stdout.txt",
+      "sha256": "99500e7d75dc1a01e2664acf53234198a6fe53cf4646d03f4f8d795d33a4cbf6"
+    }
+  ],
+  "generated_at": "2026-08-24T00:16:12+08:00",
+  "git_commit": "27e7a56f0433bb9626990e895bbdbf4110eae71e",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "PASS",
+    "event_windows": 2,
+    "objective_status": "FAIL",
+    "validation_status": "FAIL"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-BTC-HALVING-001"
+}

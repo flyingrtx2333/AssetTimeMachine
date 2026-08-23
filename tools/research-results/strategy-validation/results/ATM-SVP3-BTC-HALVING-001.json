@@ -1,0 +1,169 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/candidates/BTCHALV001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/candidates/C-BTC-BUYHOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-BTC-HALVING-001",
+      "metrics": {
+        "average_cash_ratio": 0.7780480389176041,
+        "btc_buy_hold_control": {
+          "cagr_percent": 37.66890231143611,
+          "mdd_percent": 82.44283855337545,
+          "sharpe": 0.6777560221569177,
+          "target_fingerprint": "4b4e3fd4c94c842e",
+          "trades": 1
+        },
+        "cagr_percent": 23.948520943631845,
+        "cash_control_cagr_percent": 0.5085770286770597,
+        "comparison_checks": {
+          "mdd_lt_btc_buy_hold": true,
+          "sharpe_gt_btc_buy_hold": true
+        },
+        "comparison_failures": [],
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "event_window_returns": [
+          {
+            "halving_date": "2020-05-11",
+            "net_return_percent_including_entry_exit_cost": 401.37634772577815,
+            "window_end_date": "2021-05-11"
+          },
+          {
+            "halving_date": "2024-04-20",
+            "net_return_percent_including_entry_exit_cost": 32.9788001940811,
+            "window_end_date": "2025-04-20"
+          }
+        ],
+        "failed_preregistered_gates": [
+          "full_mdd_le_25pct"
+        ],
+        "fold_cagrs_percent": [
+          0.5085770286771041,
+          200.5001458385374,
+          65.7710717894463,
+          0.5085770286772595,
+          43.986938858528,
+          -8.177843118316163,
+          0.508577028676771
+        ],
+        "fold_mdds_percent": [
+          0,
+          18.684680718264595,
+          25.073137496486623,
+          0,
+          26.032132304543076,
+          27.558091536419887,
+          0
+        ],
+        "fold_names": [
+          "2017-2019",
+          "2020",
+          "2021",
+          "2022-2023",
+          "2024",
+          "2025",
+          "2026-latest"
+        ],
+        "fold_sharpes": [
+          2078064447354.4077,
+          2.271594723873688,
+          1.0012516159251668,
+          2104920660425.9023,
+          0.888983032609377,
+          -0.12745026017759392,
+          2027742213689.2373
+        ],
+        "folds_with_positive_sharpe": 6,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 0.004727070059294569,
+        "global_post_protocol_dsr_trial_count": 77,
+        "max_gross": 1,
+        "mdd_percent": 37.96908768606677,
+        "measurement": {
+          "btc_source": "Binance BTCUSDT",
+          "execution_calendar": "SP500 common sessions",
+          "usdt_as_usd_equivalent": true
+        },
+        "minimum_cash": 0,
+        "objective_checks": {
+          "cagr_ge_20pct": true,
+          "cagr_gt_cash": true,
+          "mdd_le_25pct": false,
+          "sharpe_ge_1": false,
+          "since2020_cagr_positive": true,
+          "since2022_cagr_positive": true
+        },
+        "objective_failures": [
+          "mdd_le_25pct",
+          "sharpe_ge_1"
+        ],
+        "sharpe": 0.7388435538796311,
+        "since2020_cagr_percent": 33.58004381239581,
+        "since2020_sharpe": 0.8564561449952606,
+        "since2022_cagr_percent": 6.769527720729163,
+        "since2022_sharpe": 0.326657281117937,
+        "strategy_library_validation": {
+          "comparative_failures": [],
+          "comparison_status": "PASS",
+          "evidence_missing": [],
+          "note": "Both complete halving windows are profitable and the strategy improves Sharpe/MDD versus BTC buy-and-hold, but full MDD remains far above the project-wide <=25% intrinsic validation floor. Only two active events are available.",
+          "objective_failures": [
+            "mdd_le_25pct",
+            "sharpe_ge_1"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_mdd_le_25pct"
+          ],
+          "validation_warnings": [
+            "only_two_observed_halving_windows_in_tradeable_sample; evidence capped at WEAK even if absolute gates pass",
+            "BTCUSDT quote treated as USD-equivalent before historical USD/CNY conversion",
+            "execution restricted to SP500 common sessions; weekends intentionally excluded for metric comparability",
+            "base run already uses conservative 1.00% fee plus 0.05% slippage"
+          ]
+        },
+        "target_fingerprint": "739d7bfb1ca3c63f",
+        "trades": 4,
+        "validation_checks": {
+          "active_halving_windows_both_positive": true,
+          "actual_trades_gt_0": true,
+          "cash_nonnegative": true,
+          "full_cagr_gt_0": true,
+          "full_mdd_le_25pct": false,
+          "full_sharpe_gt_0": true,
+          "max_gross_le_1": true
+        }
+      }
+    }
+  ],
+  "comparison_status": "PASS",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-BTC-HALVING-001.json",
+  "decision": "FAIL / VALIDATION_FAIL, COMPARISON_PASS. The frozen one-year post-halving strategy produced 23.948521% CAGR, 0.738844 Sharpe and 37.969088% MDD after conservative product-level costs. Both complete tradeable event windows were positive after entry/exit costs: 2020 401.376348% and 2024 32.978800%. It improves Sharpe and MDD versus BTC buy-and-hold (0.677756, 82.442839%), therefore comparison=PASS. But 37.97% MDD breaches the <=25% intrinsic floor and Sharpe<1, so validation/objective FAIL. Global DSR=0.00472707006; only two complete active halving windows exist. No event-window or technical rescue is permitted.",
+  "execution_git_commit": "27e7a56f0433bb9626990e895bbdbf4110eae71e",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "4ba555b2379daa9d7f8b5197a6644f1972b6117c2bfe5f8f786c35e52c5d1c1b",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-HALVING-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-BTC-HALVING-001",
+  "validation_status": "FAIL"
+}
