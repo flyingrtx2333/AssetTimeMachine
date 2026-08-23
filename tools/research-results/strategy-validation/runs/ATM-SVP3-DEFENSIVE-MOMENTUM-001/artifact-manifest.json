@@ -1,0 +1,115 @@
+{
+  "files": [
+    {
+      "bytes": 97142,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2013-04-22",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/candidates/C-CASH-portfolio.csv",
+      "row_count": 3349,
+      "sha256": "f2f95041e7f6b2e9212bf924e2240e76bdb993271911f80adbe4620835e63674"
+    },
+    {
+      "bytes": 97137,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2013-04-22",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/candidates/C-SPY-BUYHOLD-portfolio.csv",
+      "row_count": 3349,
+      "sha256": "127e55434912e7251e33692784030a91b46fde5d8fc393b4a6b058a9f9590c75"
+    },
+    {
+      "bytes": 97089,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2013-04-22",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/candidates/DEFMOM001-portfolio.csv",
+      "row_count": 3349,
+      "sha256": "48912be958f73fa352c4039e9459319dfbb6bd9d8b4fb1d8888a0e5d4e845d27"
+    },
+    {
+      "bytes": 492,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "7124e95fbd75cc19e211ed4a00062d0e7467b1db8f3d5b1df27e4f63d2511a7e"
+    },
+    {
+      "bytes": 7584,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/candidates/candidate-metrics.json",
+      "sha256": "e8ad7ce914a8d4751d06c7dd4d16f5d3847e5cb961b13243332719095bbd4257"
+    },
+    {
+      "bytes": 540,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/candidates/statistical-audit.json",
+      "sha256": "099dfe9f4d2ad2831f8debc66310b9110328023897bd0a42e7ca5f92da2a53c9"
+    },
+    {
+      "bytes": 994,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/execution.json",
+      "sha256": "0a947bebe411d9619d6a9939583a7ced25f1ed0d76fde9ea4b5be5981468bbaf"
+    },
+    {
+      "bytes": 445,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/run-authorization.json",
+      "sha256": "7feb382dc37f5068c1f19b6099e4e5c5688d9a889079c0940986cd8f526b9c59"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1230,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/stdout.txt",
+      "sha256": "5f00abceea1f0ef521409e4934f6bb6e84298e89c93510facb7930f6ebf04074"
+    }
+  ],
+  "generated_at": "2026-08-23T22:48:57+08:00",
+  "git_commit": "7d7aed69bf6318d238f41b964d85cc1805bb4e72",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "FAIL",
+    "objective_status": "FAIL",
+    "validation_status": "FAIL"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-DEFENSIVE-MOMENTUM-001"
+}

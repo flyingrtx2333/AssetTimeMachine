@@ -1,0 +1,156 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/candidates/C-SPY-BUYHOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/candidates/DEFMOM001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-DEFENSIVE-MOMENTUM-001",
+      "metrics": {
+        "average_cash_ratio": 0,
+        "cagr_percent": 13.473678941738566,
+        "cash_control_cagr_percent": 0.3500043639319328,
+        "comparison_checks": {
+          "mdd_le_spy_buy_hold": false,
+          "sharpe_gt_spy_buy_hold": false
+        },
+        "comparison_failures": [
+          "mdd_le_spy_buy_hold",
+          "sharpe_gt_spy_buy_hold"
+        ],
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "failed_preregistered_gates": [
+          "full_mdd_le_25pct"
+        ],
+        "fold_cagrs_percent": [
+          17.331211959688943,
+          13.219134234113916,
+          11.607153519527147,
+          18.510072959365907,
+          6.370669508605231,
+          17.4888610529123,
+          13.383530732441073
+        ],
+        "fold_mdds_percent": [
+          7.06951630190834,
+          10.448458015072736,
+          15.679528142885472,
+          34.30156980305527,
+          17.051093926403684,
+          9.06438181694978,
+          13.184703283187996
+        ],
+        "fold_names": [
+          "2013-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.4587523025571247,
+          0.9768136080149361,
+          0.9300080332741403,
+          0.8064305060027713,
+          0.4459355760275546,
+          1.3501712271029755,
+          0.889005875718743
+        ],
+        "folds_with_positive_sharpe": 7,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 0.019353416709428584,
+        "global_post_protocol_dsr_trial_count": 75,
+        "max_gross": 1,
+        "mdd_percent": 34.3015698030553,
+        "minimum_cash": 0,
+        "objective_checks": {
+          "cagr_ge_12pct": true,
+          "cagr_gt_cash": true,
+          "mdd_le_20pct": false,
+          "sharpe_ge_1": false,
+          "since2020_cagr_positive": true,
+          "since2022_cagr_positive": true
+        },
+        "objective_failures": [
+          "mdd_le_20pct",
+          "sharpe_ge_1"
+        ],
+        "sharpe": 0.86839292821164,
+        "since2020_cagr_percent": 10.969091030415079,
+        "since2020_sharpe": 0.6422351096560508,
+        "since2022_cagr_percent": 10.97116279758139,
+        "since2022_sharpe": 0.7545969924675731,
+        "spy_buy_hold_control": {
+          "cagr_percent": 15.506812824510451,
+          "mdd_percent": 32.875249228236484,
+          "sharpe": 0.9392202807481749,
+          "target_fingerprint": "8bb6821a05da4546",
+          "trades": 1
+        },
+        "strategy_library_validation": {
+          "comparative_failures": [
+            "mdd_le_spy_buy_hold",
+            "sharpe_gt_spy_buy_hold"
+          ],
+          "comparison_status": "FAIL",
+          "evidence_missing": [],
+          "note": "The fixed 50/50 low-volatility plus momentum portfolio clears the CAGR objective but fails intrinsic drawdown validation; all folds are positive, but the 2019-2020 drawdown remains too large.",
+          "objective_failures": [
+            "mdd_le_20pct",
+            "sharpe_ge_1"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_mdd_le_25pct"
+          ],
+          "validation_warnings": [
+            "execution_stress_not_in_this_R1_trial; base run already uses product 1.00% fee plus 0.05% slippage",
+            "SPLV, MTUM and SPY use frozen adjusted-close total-return proxies with the same historical USD/CNY conversion"
+          ]
+        },
+        "target_fingerprint": "5d437d925f9fca43",
+        "trades": 28,
+        "validation_checks": {
+          "actual_trades_gt_0": true,
+          "cash_nonnegative": true,
+          "full_cagr_gt_0": true,
+          "full_mdd_le_25pct": false,
+          "full_sharpe_gt_0": true,
+          "max_gross_le_1": true,
+          "positive_sharpe_folds_ge_70pct": true
+        }
+      }
+    }
+  ],
+  "comparison_status": "FAIL",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-DEFENSIVE-MOMENTUM-001.json",
+  "decision": "FAIL / VALIDATION_FAIL. The frozen 50/50 SPLV+MTUM annual portfolio produced 13.473679% CAGR, 0.868393 Sharpe and 34.301570% MDD after product-level costs, with 7/7 positive-Sharpe folds. CAGR clears the 12% campaign target, but intrinsic MDD breaches the <=25% validation ceiling and the 20% objective; the 2019-2020 fold reached 34.301570% MDD. SPY buy-and-hold also has large drawdown but higher Sharpe. Global DSR=0.0193534167. No 60/40 weighting, bond/cash sleeve, factor removal or timing overlay is permitted in this lineage.",
+  "execution_git_commit": "7d7aed69bf6318d238f41b964d85cc1805bb4e72",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "0e7531de406322a209d52ac06b0f2d64b3abcd5328913440349bddd8b3930c00",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-DEFENSIVE-MOMENTUM-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-DEFENSIVE-MOMENTUM-001",
+  "validation_status": "FAIL"
+}

@@ -1,0 +1,260 @@
+{
+  "candidate": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 13.473678941738566,
+    "end": "2026-08-13",
+    "folds": [
+      {
+        "cagr_percent": 17.331211959688943,
+        "mdd_percent": 7.06951630190834,
+        "name": "2013-2014",
+        "sessions": 429,
+        "sharpe": 1.4587523025571247
+      },
+      {
+        "cagr_percent": 13.219134234113916,
+        "mdd_percent": 10.448458015072736,
+        "name": "2015-2016",
+        "sessions": 504,
+        "sharpe": 0.9768136080149361
+      },
+      {
+        "cagr_percent": 11.607153519527147,
+        "mdd_percent": 15.679528142885472,
+        "name": "2017-2018",
+        "sessions": 502,
+        "sharpe": 0.9300080332741403
+      },
+      {
+        "cagr_percent": 18.510072959365907,
+        "mdd_percent": 34.30156980305527,
+        "name": "2019-2020",
+        "sessions": 505,
+        "sharpe": 0.8064305060027713
+      },
+      {
+        "cagr_percent": 6.370669508605231,
+        "mdd_percent": 17.051093926403684,
+        "name": "2021-2022",
+        "sessions": 503,
+        "sharpe": 0.4459355760275546
+      },
+      {
+        "cagr_percent": 17.4888610529123,
+        "mdd_percent": 9.06438181694978,
+        "name": "2023-2024",
+        "sessions": 502,
+        "sharpe": 1.3501712271029755
+      },
+      {
+        "cagr_percent": 13.383530732441073,
+        "mdd_percent": 13.184703283187996,
+        "name": "2025-latest",
+        "sessions": 404,
+        "sharpe": 0.889005875718743
+      }
+    ],
+    "id": "DEFMOM001",
+    "max_gross": 1,
+    "mdd_percent": 34.3015698030553,
+    "minimum_cash": 0,
+    "sessions": 3349,
+    "sharpe": 0.86839292821164,
+    "since2020_cagr_percent": 10.969091030415079,
+    "since2020_sharpe": 0.6422351096560508,
+    "since2022_cagr_percent": 10.97116279758139,
+    "since2022_sharpe": 0.7545969924675731,
+    "start": "2013-04-22",
+    "target_fingerprint": "5d437d925f9fca43",
+    "trades": 28,
+    "volatility_percent": 16.0773522402143
+  },
+  "candidate_id": "S-DEFENSIVE-MOMENTUM-001",
+  "cash_control": {
+    "average_cash_ratio": 1,
+    "cagr_percent": 0.3500043639319328,
+    "end": "2026-08-13",
+    "folds": [
+      {
+        "cagr_percent": 0.3519436418724542,
+        "mdd_percent": 0,
+        "name": "2013-2014",
+        "sessions": 429,
+        "sharpe": 2099050825057.0208
+      },
+      {
+        "cagr_percent": 0.35111763869275503,
+        "mdd_percent": 0,
+        "name": "2015-2016",
+        "sessions": 504,
+        "sharpe": 2059487434508.5254
+      },
+      {
+        "cagr_percent": 0.350200991837335,
+        "mdd_percent": 0,
+        "name": "2017-2018",
+        "sessions": 502,
+        "sharpe": 2062530493344.9792
+      },
+      {
+        "cagr_percent": 0.3513334633219234,
+        "mdd_percent": 0,
+        "name": "2019-2020",
+        "sessions": 505,
+        "sharpe": 2051182692209.717
+      },
+      {
+        "cagr_percent": 0.3518709252270158,
+        "mdd_percent": 0,
+        "name": "2021-2022",
+        "sessions": 503,
+        "sharpe": 2093081879618.5457
+      },
+      {
+        "cagr_percent": 0.3497191063448257,
+        "mdd_percent": 0,
+        "name": "2023-2024",
+        "sessions": 502,
+        "sharpe": 2086274453593.0173
+      },
+      {
+        "cagr_percent": 0.3482872957996319,
+        "mdd_percent": 0,
+        "name": "2025-latest",
+        "sessions": 404,
+        "sharpe": 2093591740118.009
+      }
+    ],
+    "id": "C-CASH",
+    "max_gross": 0,
+    "mdd_percent": 0,
+    "minimum_cash": 100000,
+    "sessions": 3349,
+    "sharpe": 2078554665194.0051,
+    "since2020_cagr_percent": 0.34951439527404204,
+    "since2020_sharpe": 2086496083084.8032,
+    "since2022_cagr_percent": 0.3490481002686785,
+    "since2022_sharpe": 2082799412349.3503,
+    "start": "2013-04-22",
+    "target_fingerprint": "27ba442e1d257923",
+    "trades": 0,
+    "volatility_percent": 1.6838623773585222e-13
+  },
+  "evaluation_end": "2026-08-13",
+  "evaluation_start": "2013-04-18",
+  "fee_percent_per_trade": 1,
+  "rule": "fixed 50% SPLV low-volatility adjusted-close total-return proxy + 50% MTUM momentum adjusted-close total-return proxy, annual rebalance only",
+  "sleeve_weight": 0.5,
+  "slippage_percent_per_trade": 0.05,
+  "spy_buy_hold_control": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 15.506812824510451,
+    "end": "2026-08-13",
+    "folds": [
+      {
+        "cagr_percent": 20.36699421784025,
+        "mdd_percent": 7.545437316515313,
+        "name": "2013-2014",
+        "sessions": 429,
+        "sharpe": 1.6882541378876406
+      },
+      {
+        "cagr_percent": 12.698278478203417,
+        "mdd_percent": 10.824417430660624,
+        "name": "2015-2016",
+        "sessions": 504,
+        "sharpe": 0.9098710294231208
+      },
+      {
+        "cagr_percent": 6.754482102373749,
+        "mdd_percent": 18.821850950274065,
+        "name": "2017-2018",
+        "sessions": 502,
+        "sharpe": 0.5596653023824684
+      },
+      {
+        "cagr_percent": 21.64948301581646,
+        "mdd_percent": 32.87524922823649,
+        "name": "2019-2020",
+        "sessions": 505,
+        "sharpe": 0.9204091217794301
+      },
+      {
+        "cagr_percent": 6.806434517853299,
+        "mdd_percent": 18.8903622992768,
+        "name": "2021-2022",
+        "sessions": 503,
+        "sharpe": 0.4331186690420867
+      },
+      {
+        "cagr_percent": 29.407101044728435,
+        "mdd_percent": 10.292819176879119,
+        "name": "2023-2024",
+        "sessions": 502,
+        "sharpe": 1.9846360052006404
+      },
+      {
+        "cagr_percent": 14.875438401244988,
+        "mdd_percent": 18.161971659418125,
+        "name": "2025-latest",
+        "sessions": 404,
+        "sharpe": 0.8834512474941142
+      }
+    ],
+    "id": "C-SPY-BUYHOLD",
+    "max_gross": 1,
+    "mdd_percent": 32.875249228236484,
+    "minimum_cash": 0,
+    "sessions": 3349,
+    "sharpe": 0.9392202807481749,
+    "since2020_cagr_percent": 15.164951452030362,
+    "since2020_sharpe": 0.8039388379521157,
+    "since2022_cagr_percent": 14.094113795496721,
+    "since2022_sharpe": 0.8353226413903364,
+    "start": "2013-04-22",
+    "target_fingerprint": "8bb6821a05da4546",
+    "trades": 1,
+    "volatility_percent": 16.903616821309964
+  },
+  "three_axis_evaluation": {
+    "comparison_checks": {
+      "mdd_le_spy_buy_hold": false,
+      "sharpe_gt_spy_buy_hold": false
+    },
+    "comparison_status": "FAIL",
+    "diagnostics": {
+      "cash_cagr_percent": 0.3500043639319328,
+      "fold_count": 7,
+      "positive_fold_count": 7,
+      "positive_fold_fraction": 1.0,
+      "spy_buy_hold_cagr_percent": 15.506812824510451,
+      "spy_buy_hold_mdd_percent": 32.875249228236484,
+      "spy_buy_hold_sharpe": 0.9392202807481749
+    },
+    "objective_checks": {
+      "cagr_ge_12pct": true,
+      "cagr_gt_cash": true,
+      "mdd_le_20pct": false,
+      "sharpe_ge_1": false,
+      "since2020_cagr_positive": true,
+      "since2022_cagr_positive": true
+    },
+    "objective_status": "FAIL",
+    "status": "FAIL",
+    "validation_checks": {
+      "actual_trades_gt_0": true,
+      "cash_nonnegative": true,
+      "full_cagr_gt_0": true,
+      "full_mdd_le_25pct": false,
+      "full_sharpe_gt_0": true,
+      "max_gross_le_1": true,
+      "positive_sharpe_folds_ge_70pct": true
+    },
+    "validation_status": "FAIL",
+    "validation_warnings": [
+      "execution_stress_not_in_this_R1_trial; base run already uses product 1.00% fee plus 0.05% slippage",
+      "SPLV, MTUM and SPY use frozen adjusted-close total-return proxies with the same historical USD/CNY conversion"
+    ]
+  },
+  "trial_id": "ATM-SVP3-DEFENSIVE-MOMENTUM-001"
+}

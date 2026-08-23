@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "7d7aed69bf6318d238f41b964d85cc1805bb4e72",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "0e7531de406322a209d52ac06b0f2d64b3abcd5328913440349bddd8b3930c00",
+  "preregistration_record_hash": "0e7531de406322a209d52ac06b0f2d64b3abcd5328913440349bddd8b3930c00",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-DEFENSIVE-MOMENTUM-001"
+}
