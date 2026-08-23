@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_factor_duration_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "8a830ccbb05be174a8a1a24da94778f15c4caa20",
+  "finished_at": "2026-08-23T19:25:34+08:00",
+  "preregistration_record_hash": "0fe4105fe2263cd70bc76cd10cf55039bd6c48a0f03f59cc436e393001277437",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/run-authorization.json",
+  "started_at": "2026-08-23T19:25:05+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/stdout.txt",
+  "trial_id": "ATM-SVP3-FACTOR-DURATION-001"
+}

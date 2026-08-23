@@ -1,0 +1,150 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/candidates/C-SPY-BUYHOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/candidates/FD001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-FACTOR-DURATION-001",
+      "metrics": {
+        "average_cash_ratio": 0,
+        "cagr_percent": 11.196127996176596,
+        "cash_control_cagr_percent": 0.3499697852375583,
+        "comparison_checks": {
+          "mdd_le_spy_buy_hold": true,
+          "sharpe_gt_spy_buy_hold": false
+        },
+        "comparison_failures": [
+          "sharpe_gt_spy_buy_hold"
+        ],
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1.0000000000000004,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "fold_cagrs_percent": [
+          17.30425829407478,
+          11.91885657113354,
+          5.775821086717436,
+          18.220838206772605,
+          0.10281530966167463,
+          18.116036810774073,
+          11.088793459801561
+        ],
+        "fold_mdds_percent": [
+          5.3158886745544205,
+          7.573557883656333,
+          15.267887139166861,
+          24.128421697626536,
+          21.553210347675343,
+          10.118204241174952,
+          14.047661268706477
+        ],
+        "fold_names": [
+          "2013-2014",
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          1.8738695380605142,
+          1.1730915693575248,
+          0.5979536281072632,
+          1.1192160713351784,
+          0.08857843497335395,
+          1.407845994398241,
+          0.7968928787039002
+        ],
+        "folds_with_positive_sharpe": 7,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 0.021053019974308196,
+        "global_post_protocol_dsr_trial_count": 73,
+        "max_gross": 1.0000000000000004,
+        "mdd_percent": 24.128421697626518,
+        "minimum_cash": 0,
+        "objective_checks": {
+          "cagr_ge_12pct": false,
+          "cagr_gt_cash": true,
+          "mdd_le_20pct": false,
+          "sharpe_ge_1": false,
+          "since2020_cagr_positive": true,
+          "since2022_cagr_positive": true
+        },
+        "objective_failures": [
+          "cagr_ge_12pct",
+          "sharpe_ge_1",
+          "mdd_le_20pct"
+        ],
+        "sharpe": 0.8783570073365284,
+        "since2020_cagr_percent": 9.081515327007917,
+        "since2020_sharpe": 0.6324716390328532,
+        "since2022_cagr_percent": 8.233387221796672,
+        "since2022_sharpe": 0.6038821058257228,
+        "spy_buy_hold_control": {
+          "cagr_percent": 15.112183065056527,
+          "mdd_percent": 32.87524922823645,
+          "sharpe": 0.9156238157141152,
+          "target_fingerprint": "48d63ec4bca815e7",
+          "trades": 1
+        },
+        "strategy_library_validation": {
+          "comparative_failures": [
+            "sharpe_gt_spy_buy_hold"
+          ],
+          "comparison_status": "FAIL",
+          "evidence_missing": [],
+          "note": "All frozen absolute validation gates pass and all seven folds are positive-Sharpe. Global post-protocol DSR is below 90%, so final evidence is WEAK. Objective and comparison are separate and do not invalidate the strategy.",
+          "objective_failures": [
+            "cagr_ge_12pct",
+            "sharpe_ge_1",
+            "mdd_le_20pct"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "WEAK",
+          "trial_status": "PASS",
+          "validation_failures": [],
+          "validation_warnings": [
+            "global_dsr_below_project_pass_threshold"
+          ]
+        },
+        "target_fingerprint": "3513ec9466d61343",
+        "trades": 56,
+        "validation_checks": {
+          "actual_trades_gt_0": true,
+          "cash_nonnegative": true,
+          "full_cagr_gt_0": true,
+          "full_mdd_le_25pct": true,
+          "full_sharpe_gt_0": true,
+          "max_gross_le_1": true,
+          "positive_sharpe_folds_ge_70pct": true
+        }
+      }
+    }
+  ],
+  "comparison_status": "FAIL",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-FACTOR-DURATION-001.json",
+  "decision": "PASS ON FROZEN ABSOLUTE VALIDATION GATES / ATM-SVP-3 EVIDENCE WEAK. Factor-Duration 001 produced 11.196128% CAGR, 0.878357 Sharpe and 24.128422% MDD after product-level costs, with 7/7 positive-Sharpe folds. It therefore passes intrinsic validation. The campaign objective fails (CAGR<12%, Sharpe<1, MDD>20%), and comparison against matched-window SPY fails only because Sharpe is 0.878357 versus SPY 0.915624, while candidate MDD is lower (24.128422% versus 32.875249%). Global DSR probability is 0.02105302 across 73 performance-bearing candidates, so final validation evidence is WEAK rather than strong PASS. No factor-membership, weighting, cadence or timing rescue is permitted.",
+  "execution_git_commit": "8a830ccbb05be174a8a1a24da94778f15c4caa20",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "0fe4105fe2263cd70bc76cd10cf55039bd6c48a0f03f59cc436e393001277437",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-DURATION-001/run-authorization.json",
+  "status": "PASS",
+  "trial_id": "ATM-SVP3-FACTOR-DURATION-001",
+  "validation_status": "WEAK"
+}

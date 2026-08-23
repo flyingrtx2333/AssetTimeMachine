@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "8a830ccbb05be174a8a1a24da94778f15c4caa20",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "0fe4105fe2263cd70bc76cd10cf55039bd6c48a0f03f59cc436e393001277437",
+  "preregistration_record_hash": "0fe4105fe2263cd70bc76cd10cf55039bd6c48a0f03f59cc436e393001277437",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-FACTOR-DURATION-001"
+}

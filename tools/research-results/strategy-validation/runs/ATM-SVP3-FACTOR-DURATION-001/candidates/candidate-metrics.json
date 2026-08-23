@@ -1,0 +1,260 @@
+{
+  "candidate": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 11.196127996176596,
+    "end": "2026-08-13",
+    "folds": [
+      {
+        "cagr_percent": 17.30425829407478,
+        "mdd_percent": 5.3158886745544205,
+        "name": "2013-2014",
+        "sessions": 366,
+        "sharpe": 1.8738695380605142
+      },
+      {
+        "cagr_percent": 11.91885657113354,
+        "mdd_percent": 7.573557883656333,
+        "name": "2015-2016",
+        "sessions": 504,
+        "sharpe": 1.1730915693575248
+      },
+      {
+        "cagr_percent": 5.775821086717436,
+        "mdd_percent": 15.267887139166861,
+        "name": "2017-2018",
+        "sessions": 502,
+        "sharpe": 0.5979536281072632
+      },
+      {
+        "cagr_percent": 18.220838206772605,
+        "mdd_percent": 24.128421697626536,
+        "name": "2019-2020",
+        "sessions": 505,
+        "sharpe": 1.1192160713351784
+      },
+      {
+        "cagr_percent": 0.10281530966167463,
+        "mdd_percent": 21.553210347675343,
+        "name": "2021-2022",
+        "sessions": 503,
+        "sharpe": 0.08857843497335395
+      },
+      {
+        "cagr_percent": 18.116036810774073,
+        "mdd_percent": 10.118204241174952,
+        "name": "2023-2024",
+        "sessions": 502,
+        "sharpe": 1.407845994398241
+      },
+      {
+        "cagr_percent": 11.088793459801561,
+        "mdd_percent": 14.047661268706477,
+        "name": "2025-latest",
+        "sessions": 404,
+        "sharpe": 0.7968928787039002
+      }
+    ],
+    "id": "FD001",
+    "max_gross": 1.0000000000000004,
+    "mdd_percent": 24.128421697626518,
+    "minimum_cash": 0,
+    "sessions": 3286,
+    "sharpe": 0.8783570073365284,
+    "since2020_cagr_percent": 9.081515327007917,
+    "since2020_sharpe": 0.6324716390328532,
+    "since2022_cagr_percent": 8.233387221796672,
+    "since2022_sharpe": 0.6038821058257228,
+    "start": "2013-07-22",
+    "target_fingerprint": "3513ec9466d61343",
+    "trades": 56,
+    "volatility_percent": 13.082588191929293
+  },
+  "candidate_id": "S-FACTOR-DURATION-001",
+  "cash_control": {
+    "average_cash_ratio": 1,
+    "cagr_percent": 0.3499697852375583,
+    "end": "2026-08-13",
+    "folds": [
+      {
+        "cagr_percent": 0.3519655250051157,
+        "mdd_percent": 0,
+        "name": "2013-2014",
+        "sessions": 366,
+        "sharpe": 2106381705790.6707
+      },
+      {
+        "cagr_percent": 0.3511176386927328,
+        "mdd_percent": 0,
+        "name": "2015-2016",
+        "sessions": 504,
+        "sharpe": 2057140599156.3118
+      },
+      {
+        "cagr_percent": 0.350200991837446,
+        "mdd_percent": 0,
+        "name": "2017-2018",
+        "sessions": 502,
+        "sharpe": 2086274453593.0173
+      },
+      {
+        "cagr_percent": 0.35133346332179016,
+        "mdd_percent": 0,
+        "name": "2019-2020",
+        "sessions": 505,
+        "sharpe": 2027566091568.2231
+      },
+      {
+        "cagr_percent": 0.3518709252270824,
+        "mdd_percent": 0,
+        "name": "2021-2022",
+        "sessions": 503,
+        "sharpe": 2111744381820.9937
+      },
+      {
+        "cagr_percent": 0.3497191063448257,
+        "mdd_percent": 0,
+        "name": "2023-2024",
+        "sessions": 502,
+        "sharpe": 2089148162001.4617
+      },
+      {
+        "cagr_percent": 0.3482872957995875,
+        "mdd_percent": 0,
+        "name": "2025-latest",
+        "sessions": 404,
+        "sharpe": 2086333514406.641
+      }
+    ],
+    "id": "C-CASH",
+    "max_gross": 0,
+    "mdd_percent": 0,
+    "minimum_cash": 100000,
+    "sessions": 3286,
+    "sharpe": 2078883067294.9688,
+    "since2020_cagr_percent": 0.34951439527401984,
+    "since2020_sharpe": 2081452309777.3809,
+    "since2022_cagr_percent": 0.3490481002686785,
+    "since2022_sharpe": 2085219586066.1233,
+    "start": "2013-07-22",
+    "target_fingerprint": "fad87f26f6241cc3",
+    "trades": 0,
+    "volatility_percent": 1.6835963768551057e-13
+  },
+  "evaluation_end": "2026-08-13",
+  "evaluation_start": "2013-07-18",
+  "fee_percent_per_trade": 1,
+  "rule": "fixed annual 25% VBR value + 25% MTUM momentum + 25% QUAL quality + 25% TLT duration, all matched adjusted-close total-return proxies",
+  "sleeve_weight": 0.25,
+  "slippage_percent_per_trade": 0.05,
+  "spy_buy_hold_control": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 15.112183065056527,
+    "end": "2026-08-13",
+    "folds": [
+      {
+        "cagr_percent": 17.52907931248504,
+        "mdd_percent": 7.54543731651535,
+        "name": "2013-2014",
+        "sessions": 366,
+        "sharpe": 1.4985927970657615
+      },
+      {
+        "cagr_percent": 12.698278478203395,
+        "mdd_percent": 10.824417430660638,
+        "name": "2015-2016",
+        "sessions": 504,
+        "sharpe": 0.9098710294231283
+      },
+      {
+        "cagr_percent": 6.754482102373727,
+        "mdd_percent": 18.821850950274058,
+        "name": "2017-2018",
+        "sessions": 502,
+        "sharpe": 0.5596653023824657
+      },
+      {
+        "cagr_percent": 21.649483015816685,
+        "mdd_percent": 32.875249228236484,
+        "name": "2019-2020",
+        "sessions": 505,
+        "sharpe": 0.9204091217794327
+      },
+      {
+        "cagr_percent": 6.806434517853299,
+        "mdd_percent": 18.890362299276735,
+        "name": "2021-2022",
+        "sessions": 503,
+        "sharpe": 0.43311866904208784
+      },
+      {
+        "cagr_percent": 29.407101044728435,
+        "mdd_percent": 10.292819176879116,
+        "name": "2023-2024",
+        "sessions": 502,
+        "sharpe": 1.9846360052006435
+      },
+      {
+        "cagr_percent": 14.8754384012451,
+        "mdd_percent": 18.16197165941811,
+        "name": "2025-latest",
+        "sessions": 404,
+        "sharpe": 0.8834512474941167
+      }
+    ],
+    "id": "C-SPY-BUYHOLD",
+    "max_gross": 1,
+    "mdd_percent": 32.87524922823645,
+    "minimum_cash": 0,
+    "sessions": 3286,
+    "sharpe": 0.9156238157141152,
+    "since2020_cagr_percent": 15.16495145203045,
+    "since2020_sharpe": 0.803938837952119,
+    "since2022_cagr_percent": 14.094113795496789,
+    "since2022_sharpe": 0.8353226413903386,
+    "start": "2013-07-22",
+    "target_fingerprint": "48d63ec4bca815e7",
+    "trades": 1,
+    "volatility_percent": 16.98030749262195
+  },
+  "three_axis_evaluation": {
+    "comparison_checks": {
+      "mdd_le_spy_buy_hold": true,
+      "sharpe_gt_spy_buy_hold": false
+    },
+    "comparison_status": "FAIL",
+    "diagnostics": {
+      "cash_cagr_percent": 0.3499697852375583,
+      "fold_count": 7,
+      "positive_fold_count": 7,
+      "positive_fold_fraction": 1.0,
+      "spy_buy_hold_cagr_percent": 15.112183065056527,
+      "spy_buy_hold_mdd_percent": 32.87524922823645,
+      "spy_buy_hold_sharpe": 0.9156238157141152
+    },
+    "objective_checks": {
+      "cagr_ge_12pct": false,
+      "cagr_gt_cash": true,
+      "mdd_le_20pct": false,
+      "sharpe_ge_1": false,
+      "since2020_cagr_positive": true,
+      "since2022_cagr_positive": true
+    },
+    "objective_status": "FAIL",
+    "status": "PASS",
+    "validation_checks": {
+      "actual_trades_gt_0": true,
+      "cash_nonnegative": true,
+      "full_cagr_gt_0": true,
+      "full_mdd_le_25pct": true,
+      "full_sharpe_gt_0": true,
+      "max_gross_le_1": true,
+      "positive_sharpe_folds_ge_70pct": true
+    },
+    "validation_status": "PASS",
+    "validation_warnings": [
+      "execution_stress_not_in_this_R1_trial; base run already uses product 1.00% fee plus 0.05% slippage",
+      "VBR, MTUM, QUAL, TLT and SPY use frozen adjusted-close total-return proxies with the same historical USD/CNY conversion"
+    ]
+  },
+  "trial_id": "ATM-SVP3-FACTOR-DURATION-001"
+}
