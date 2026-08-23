@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "05e8634d7b339f520b5fbbd6f57c817a181086c6",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "0ca87332d38bfc03e006746eae85fe49054802fe0bdad940483a145f448acf7f",
+  "preregistration_record_hash": "0ca87332d38bfc03e006746eae85fe49054802fe0bdad940483a145f448acf7f",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-GOLDEN-BUTTERFLY-002"
+}

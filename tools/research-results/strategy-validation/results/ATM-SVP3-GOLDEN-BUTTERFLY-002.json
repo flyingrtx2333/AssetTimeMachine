@@ -1,0 +1,152 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/candidates/C-SPY-BUYHOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/candidates/GB002-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-GOLDEN-BUTTERFLY-002",
+      "metrics": {
+        "average_cash_ratio": 0,
+        "cagr_percent": 7.009125653527271,
+        "cash_control_cagr_percent": 0.4473135258857397,
+        "comparison_checks": {
+          "mdd_le_spy_buy_hold": true,
+          "sharpe_gt_spy_buy_hold": true
+        },
+        "comparison_failures": [],
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1.0000000000000004,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "failed_preregistered_gates": [
+          "full_mdd_le_25pct"
+        ],
+        "fold_cagrs_percent": [
+          8.096247788979705,
+          -0.18499636903728245,
+          7.179026595199534,
+          4.75620414159279,
+          7.444022731110023,
+          10.67546701921611,
+          9.592566188675477
+        ],
+        "fold_mdds_percent": [
+          7.705058000083849,
+          25.91298031210877,
+          5.55585059553588,
+          6.357765344092983,
+          6.803608321520124,
+          16.12091755015241,
+          7.803756745485326
+        ],
+        "fold_names": [
+          "2004-2006",
+          "2007-2009",
+          "2010-2012",
+          "2013-2015",
+          "2016-2018",
+          "2019-2021",
+          "2022-latest"
+        ],
+        "fold_sharpes": [
+          1.1341413036896788,
+          0.04109266046413747,
+          0.9129751144195208,
+          0.7471551206465342,
+          1.1893573894021274,
+          1.1400691232436657,
+          0.9632182962210432
+        ],
+        "folds_with_positive_sharpe": 7,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 0.0014120822133351085,
+        "global_post_protocol_dsr_trial_count": 72,
+        "max_gross": 1.0000000000000004,
+        "mdd_percent": 25.91298031210874,
+        "minimum_cash": 0,
+        "objective_checks": {
+          "cagr_ge_10pct": false,
+          "cagr_gt_cash": true,
+          "mdd_le_20pct": false,
+          "sharpe_ge_1": false,
+          "since2020_cagr_positive": true,
+          "since2022_cagr_positive": true
+        },
+        "objective_failures": [
+          "cagr_ge_10pct",
+          "mdd_le_20pct",
+          "sharpe_ge_1"
+        ],
+        "sharpe": 0.8254575186433751,
+        "since2020_cagr_percent": 8.51962669855466,
+        "since2020_sharpe": 0.8530335115611606,
+        "since2022_cagr_percent": 9.592566188675477,
+        "since2022_sharpe": 0.9632182962210432,
+        "spy_buy_hold_control": {
+          "cagr_percent": 9.897042839741466,
+          "mdd_percent": 59.22518004355227,
+          "sharpe": 0.5936028643494461,
+          "target_fingerprint": "98f9e9fbee50c613",
+          "trades": 1
+        },
+        "strategy_library_validation": {
+          "comparative_failures": [],
+          "comparison_status": "PASS",
+          "evidence_missing": [],
+          "note": "Golden Butterfly has stable positive folds and improves Sharpe/MDD versus SPY, but its full MDD exceeds the frozen 25% intrinsic validation ceiling.",
+          "objective_failures": [
+            "cagr_ge_10pct",
+            "mdd_le_20pct",
+            "sharpe_ge_1"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_mdd_le_25pct"
+          ],
+          "validation_warnings": [
+            "execution_stress_not_in_this_R1_trial; base run already uses product 1.00% fee plus 0.05% slippage",
+            "SPY, VBR and TLT use frozen total-return proxies; short Treasury is DTB3 synthetic accrual; gold is CNY"
+          ]
+        },
+        "target_fingerprint": "610748d441840d03",
+        "trades": 115,
+        "validation_checks": {
+          "actual_trades_gt_0": true,
+          "cash_nonnegative": true,
+          "full_cagr_gt_0": true,
+          "full_mdd_le_25pct": false,
+          "full_sharpe_gt_0": true,
+          "max_gross_le_1": true,
+          "positive_sharpe_folds_ge_70pct": true
+        }
+      }
+    }
+  ],
+  "comparison_status": "PASS",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-GOLDEN-BUTTERFLY-002.json",
+  "decision": "FAIL / VALIDATION_FAIL, COMPARISON_PASS. The fixed five-sleeve 20% Golden Butterfly produced 7.009126% CAGR, 0.825458 Sharpe and 25.912980% MDD after product-level costs, with 7/7 positive-Sharpe folds. It materially improves risk-adjusted behavior versus SPY buy-and-hold (0.593603 Sharpe, 59.225180% MDD), so comparison=PASS. However full MDD exceeds the frozen <=25% intrinsic ceiling and objective CAGR/Sharpe/MDD targets are not met. Global DSR=0.00141208221. No weight, asset or rebalance rescue is permitted.",
+  "execution_git_commit": "05e8634d7b339f520b5fbbd6f57c817a181086c6",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "0ca87332d38bfc03e006746eae85fe49054802fe0bdad940483a145f448acf7f",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-GOLDEN-BUTTERFLY-002",
+  "validation_status": "FAIL"
+}

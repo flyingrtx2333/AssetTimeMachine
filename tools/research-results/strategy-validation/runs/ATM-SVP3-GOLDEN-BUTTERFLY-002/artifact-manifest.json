@@ -1,0 +1,115 @@
+{
+  "files": [
+    {
+      "bytes": 167293,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2004-02-03",
+      "format": "csv",
+      "last_date": "2026-08-08",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/candidates/C-CASH-portfolio.csv",
+      "row_count": 5768,
+      "sha256": "962123fba5e7fa7c30d41c1a84f4d8360efe7f0bf4841dd27a0929b5218912e4"
+    },
+    {
+      "bytes": 166408,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2004-02-03",
+      "format": "csv",
+      "last_date": "2026-08-08",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/candidates/C-SPY-BUYHOLD-portfolio.csv",
+      "row_count": 5768,
+      "sha256": "9f741e2c9a662ef0ea1deb77ce8777e32ca35490a53071219f69876adf13fba0"
+    },
+    {
+      "bytes": 167162,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2004-02-03",
+      "format": "csv",
+      "last_date": "2026-08-08",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/candidates/GB002-portfolio.csv",
+      "row_count": 5768,
+      "sha256": "394b169183392a60463ae73d2f564edee82eae5f986b1c712748edeee4245676"
+    },
+    {
+      "bytes": 503,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "49147fca9e3bc9a5416fa925adc6679768d2a407d1205eaf2151f1d7acb0eb91"
+    },
+    {
+      "bytes": 7590,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/candidates/candidate-metrics.json",
+      "sha256": "6ac3e7a27a2357f0d464fbf802d0bc740c4939ae7a48f036e2bc40f06b401e39"
+    },
+    {
+      "bytes": 507,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/candidates/statistical-audit.json",
+      "sha256": "b6e96c5a24f0ff5b40e3b59c4e18e4c7eaa68fa0237d994d0bb0d0b76869affe"
+    },
+    {
+      "bytes": 982,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/execution.json",
+      "sha256": "09b9ebde15d766987d5249dd6ed6d0832713c91ae29a8eb43ae83cd14de55594"
+    },
+    {
+      "bytes": 443,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/run-authorization.json",
+      "sha256": "494526bf3999db536796700453c3cd4915805dd844d69c67daaf31c19f5f321b"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1215,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-002/stdout.txt",
+      "sha256": "584a975acc0d677cac37c3b61b37911c585a73e83b4f6dbd481f687e1d5b7e6e"
+    }
+  ],
+  "generated_at": "2026-08-23T19:19:53+08:00",
+  "git_commit": "05e8634d7b339f520b5fbbd6f57c817a181086c6",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "PASS",
+    "objective_status": "FAIL",
+    "validation_status": "FAIL"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-GOLDEN-BUTTERFLY-002"
+}

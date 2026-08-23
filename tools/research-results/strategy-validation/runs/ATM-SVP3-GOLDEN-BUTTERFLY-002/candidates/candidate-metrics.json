@@ -1,0 +1,260 @@
+{
+  "candidate": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 7.009125653527271,
+    "end": "2026-08-08",
+    "folds": [
+      {
+        "cagr_percent": 8.096247788979705,
+        "mdd_percent": 7.705058000083849,
+        "name": "2004-2006",
+        "sessions": 735,
+        "sharpe": 1.1341413036896788
+      },
+      {
+        "cagr_percent": -0.18499636903728245,
+        "mdd_percent": 25.91298031210877,
+        "name": "2007-2009",
+        "sessions": 758,
+        "sharpe": 0.04109266046413747
+      },
+      {
+        "cagr_percent": 7.179026595199534,
+        "mdd_percent": 5.55585059553588,
+        "name": "2010-2012",
+        "sessions": 757,
+        "sharpe": 0.9129751144195208
+      },
+      {
+        "cagr_percent": 4.75620414159279,
+        "mdd_percent": 6.357765344092983,
+        "name": "2013-2015",
+        "sessions": 757,
+        "sharpe": 0.7471551206465342
+      },
+      {
+        "cagr_percent": 7.444022731110023,
+        "mdd_percent": 6.803608321520124,
+        "name": "2016-2018",
+        "sessions": 777,
+        "sharpe": 1.1893573894021274
+      },
+      {
+        "cagr_percent": 10.67546701921611,
+        "mdd_percent": 16.12091755015241,
+        "name": "2019-2021",
+        "sessions": 778,
+        "sharpe": 1.1400691232436657
+      },
+      {
+        "cagr_percent": 9.592566188675477,
+        "mdd_percent": 7.803756745485326,
+        "name": "2022-latest",
+        "sessions": 1206,
+        "sharpe": 0.9632182962210432
+      }
+    ],
+    "id": "GB002",
+    "max_gross": 1.0000000000000004,
+    "mdd_percent": 25.91298031210874,
+    "minimum_cash": 0,
+    "sessions": 5768,
+    "sharpe": 0.8254575186433751,
+    "since2020_cagr_percent": 8.51962669855466,
+    "since2020_sharpe": 0.8530335115611606,
+    "since2022_cagr_percent": 9.592566188675477,
+    "since2022_sharpe": 0.9632182962210432,
+    "start": "2004-02-03",
+    "target_fingerprint": "610748d441840d03",
+    "trades": 115,
+    "volatility_percent": 8.512904097798685
+  },
+  "candidate_id": "S-GOLDEN-BUTTERFLY-002",
+  "cash_control": {
+    "average_cash_ratio": 1,
+    "cagr_percent": 0.4473135258857397,
+    "end": "2026-08-08",
+    "folds": [
+      {
+        "cagr_percent": 0.725230818938627,
+        "mdd_percent": 0,
+        "name": "2004-2006",
+        "sessions": 735,
+        "sharpe": 5925561036370.282
+      },
+      {
+        "cagr_percent": 0.6061200585106175,
+        "mdd_percent": 0,
+        "name": "2007-2009",
+        "sessions": 758,
+        "sharpe": 51.63648292696521
+      },
+      {
+        "cagr_percent": 0.4187692859533243,
+        "mdd_percent": 0,
+        "name": "2010-2012",
+        "sessions": 757,
+        "sharpe": 96.88664905756465
+      },
+      {
+        "cagr_percent": 0.3514944652434293,
+        "mdd_percent": 0,
+        "name": "2013-2015",
+        "sessions": 757,
+        "sharpe": 2085200411310.0508
+      },
+      {
+        "cagr_percent": 0.3611410242457591,
+        "mdd_percent": 0,
+        "name": "2016-2018",
+        "sessions": 777,
+        "sharpe": 2083301467935.2354
+      },
+      {
+        "cagr_percent": 0.36061476362097,
+        "mdd_percent": 0,
+        "name": "2019-2021",
+        "sessions": 778,
+        "sharpe": 2105009967397.2583
+      },
+      {
+        "cagr_percent": 0.36495649173713396,
+        "mdd_percent": 0,
+        "name": "2022-latest",
+        "sessions": 1206,
+        "sharpe": 2065512848597.2349
+      }
+    ],
+    "id": "C-CASH",
+    "max_gross": 0,
+    "mdd_percent": 0,
+    "minimum_cash": 100000,
+    "sessions": 5768,
+    "sharpe": 45.37984423123381,
+    "since2020_cagr_percent": 0.3633379266225534,
+    "since2020_sharpe": 2082826508133.4214,
+    "since2022_cagr_percent": 0.36495649173713396,
+    "since2022_sharpe": 2065512848597.2349,
+    "start": "2004-02-03",
+    "target_fingerprint": "206ab2756b2a0283",
+    "trades": 0,
+    "volatility_percent": 0.00967434541220625
+  },
+  "evaluation_end": "2026-08-13",
+  "evaluation_start": "2004-01-30",
+  "fee_percent_per_trade": 1,
+  "rule": "fixed annual 20% SPY total-return proxy + 20% VBR total-return proxy + 20% TLT total-return proxy + 20% synthetic 3M T-bill total return + 20% CNY gold",
+  "sleeve_weight": 0.2,
+  "slippage_percent_per_trade": 0.05,
+  "spy_buy_hold_control": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 9.897042839741466,
+    "end": "2026-08-08",
+    "folds": [
+      {
+        "cagr_percent": 7.688121029290618,
+        "mdd_percent": 7.62113248849508,
+        "name": "2004-2006",
+        "sessions": 735,
+        "sharpe": 0.7282313870602474
+      },
+      {
+        "cagr_percent": -9.790073106854337,
+        "mdd_percent": 59.225180043552214,
+        "name": "2007-2009",
+        "sessions": 758,
+        "sharpe": -0.1970029098725127
+      },
+      {
+        "cagr_percent": 6.885779008120774,
+        "mdd_percent": 20.047664929156177,
+        "name": "2010-2012",
+        "sessions": 757,
+        "sharpe": 0.45302523375977993
+      },
+      {
+        "cagr_percent": 15.566220993328228,
+        "mdd_percent": 10.82441743066065,
+        "name": "2013-2015",
+        "sessions": 757,
+        "sharpe": 1.1906407093094435
+      },
+      {
+        "cagr_percent": 11.607962078362322,
+        "mdd_percent": 18.82185095027408,
+        "name": "2016-2018",
+        "sessions": 777,
+        "sharpe": 0.8896201716497555
+      },
+      {
+        "cagr_percent": 22.69290755088793,
+        "mdd_percent": 32.875249228236534,
+        "name": "2019-2021",
+        "sessions": 778,
+        "sharpe": 1.045953540449905
+      },
+      {
+        "cagr_percent": 14.007952787182676,
+        "mdd_percent": 18.890362299276784,
+        "name": "2022-latest",
+        "sessions": 1206,
+        "sharpe": 0.8119031977122344
+      }
+    ],
+    "id": "C-SPY-BUYHOLD",
+    "max_gross": 1,
+    "mdd_percent": 59.22518004355227,
+    "minimum_cash": 0,
+    "sessions": 5768,
+    "sharpe": 0.5936028643494461,
+    "since2020_cagr_percent": 15.106621409494746,
+    "since2020_sharpe": 0.7854743683054308,
+    "since2022_cagr_percent": 14.007952787182676,
+    "since2022_sharpe": 0.8119031977122344,
+    "start": "2004-02-03",
+    "target_fingerprint": "98f9e9fbee50c613",
+    "trades": 1,
+    "volatility_percent": 18.536862829036963
+  },
+  "three_axis_evaluation": {
+    "comparison_checks": {
+      "mdd_le_spy_buy_hold": true,
+      "sharpe_gt_spy_buy_hold": true
+    },
+    "comparison_status": "PASS",
+    "diagnostics": {
+      "cash_cagr_percent": 0.4473135258857397,
+      "fold_count": 7,
+      "positive_fold_count": 7,
+      "positive_fold_fraction": 1.0,
+      "spy_buy_hold_cagr_percent": 9.897042839741466,
+      "spy_buy_hold_mdd_percent": 59.22518004355227,
+      "spy_buy_hold_sharpe": 0.5936028643494461
+    },
+    "objective_checks": {
+      "cagr_ge_10pct": false,
+      "cagr_gt_cash": true,
+      "mdd_le_20pct": false,
+      "sharpe_ge_1": false,
+      "since2020_cagr_positive": true,
+      "since2022_cagr_positive": true
+    },
+    "objective_status": "FAIL",
+    "status": "FAIL",
+    "validation_checks": {
+      "actual_trades_gt_0": true,
+      "cash_nonnegative": true,
+      "full_cagr_gt_0": true,
+      "full_mdd_le_25pct": false,
+      "full_sharpe_gt_0": true,
+      "max_gross_le_1": true,
+      "positive_sharpe_folds_ge_70pct": true
+    },
+    "validation_status": "FAIL",
+    "validation_warnings": [
+      "execution_stress_not_in_this_R1_trial; base run already uses product 1.00% fee plus 0.05% slippage",
+      "SPY, VBR and TLT use frozen total-return proxies; short Treasury is DTB3 synthetic accrual; gold is CNY"
+    ]
+  },
+  "trial_id": "ATM-SVP3-GOLDEN-BUTTERFLY-002"
+}
