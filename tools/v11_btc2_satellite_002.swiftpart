@@ -1,0 +1,124 @@
+        if ProcessInfo.processInfo.environment["ATM_V11_BTC2_SATELLITE_002"] == "1" {
+            let formal = ProcessInfo.processInfo.environment["ATM_V11_BTC2_SATELLITE_002_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_V11_BTC2_SATELLITE_002_OUTPUT_DIR"]
+            let roleSymbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            let accountingSymbols = roleSymbols + ["btc_cny"]
+
+            func loadNFCI(_ path: String) -> [BacktestNFCIPoint] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 3, let value = Double(fields[2]), value.isFinite else { return nil }
+                    return BacktestNFCIPoint(releaseDate: String(fields[0]), referenceDate: String(fields[1]), availableAt: nil, value: value)
+                }
+            }
+
+            func loadBTCCNY(path: String, fx: PublicHistorySeries) -> PublicHistorySeries? {
+                guard let data = FileManager.default.contents(atPath: path),
+                      let rows = try? JSONSerialization.jsonObject(with: data) as? [[Any]] else { return nil }
+                let fxPairs = Array(zip(fx.dates, fx.prices)).sorted { $0.0 < $1.0 }
+                guard !fxPairs.isEmpty else { return nil }
+                var dates: [String] = []; var prices: [Double] = []; var fxIndex = 0; var latestFX: Double? = nil
+                let f = DateFormatter(); f.calendar = Calendar(identifier: .gregorian); f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = TimeZone(secondsFromGMT: 0); f.dateFormat = "yyyy-MM-dd"
+                for row in rows {
+                    guard row.count >= 5, let ts=(row[0] as? NSNumber)?.doubleValue, let closeText=row[4] as? String, let usdtClose=Double(closeText), usdtClose.isFinite, usdtClose>0 else { continue }
+                    let key=f.string(from:Date(timeIntervalSince1970:ts/1000.0))
+                    while fxIndex<fxPairs.count, fxPairs[fxIndex].0<=key { let x=fxPairs[fxIndex].1; if x.isFinite,x>0 { latestFX=x }; fxIndex += 1 }
+                    guard let latestFX else { continue }
+                    dates.append(key); prices.append(usdtClose/latestFX)
+                }
+                guard dates.count>=2000, dates.count==prices.count else { return nil }
+                return PublicHistorySeries(symbol:"btc_cny",category:"crypto",label:"Bitcoin CNY proxy",currency:"CNY",unit:"BTC",source:"Binance BTCUSDT close · USDT≈USD · historical USD/CNY",dates:dates,prices:prices,hasOHLC:false,ohlcSource:nil,ohlcCoverageRatio:nil,openPrices:nil,highPrices:nil,lowPrices:nil,closePrices:nil,volumes:nil)
+            }
+
+            let mode: AdvancedBacktestStrategyMode = .nfciDualCoreSimplifiedV11
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol,$0) })
+            let calculationOptions = mode.requiredSignalAssetSymbols.compactMap { options[$0] }
+            let originalInputs = calculationOptions.map { option in BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] } }
+            guard let fx = seriesBySymbol["usd_per_cny"],
+                  let btc = loadBTCCNY(path:"tools/research-results/strategy-validation/factor-data/BTCUSDT-BINANCE-2026-08-23/BTCUSDT-1d.json",fx:fx) else { print("V11_BTC2_SATELLITE_002_BTC_MISSING"); return }
+            let btcOption=BacktestAssetOption(symbol:"btc_cny",title:"Bitcoin 2% satellite",color:AssetTheme.accentOrange,requiresHistoricalFX:false,historicalFXSymbol:nil,category:"crypto",currency:"CNY")
+            var replayInputs=originalInputs
+            replayInputs.append((assetSeries:Optional(btc),assetOption:btcOption,fxSeries:Optional<PublicHistorySeries>.none))
+
+            let settings=AdvancedBacktestRiskSettings(feeRate:1.00,slippageRate:0.05,maxPositionRatio:100,cooldownDays:0,stopLossRatio:0,takeProfitRatio:0)
+            let nfci=BacktestNFCIAsOfData(source:"ALFRED initial-release fixture",credit:loadNFCI("tools/research-results/NFCICREDIT_initial_release.csv"),leverage:loadNFCI("tools/research-results/NFCILEVERAGE_initial_release.csv"))
+            guard let source=BacktestEngine.runAdvancedRotationStrategyWithTrace(assetInputs:originalInputs,initialCash:100_000,settings:settings,mode:mode,nfciAsOf:nfci) else { print("V11_BTC2_SATELLITE_002_SOURCE_FAILED"); return }
+            let sourceTargets=Dictionary(uniqueKeysWithValues:source.dailyStates.map{($0.date.recordDateString,$0.targetWeights)})
+            let sourceTradeDates=Set(source.report.trades.map{$0.date.recordDateString})
+            let formatter=DateFormatter();formatter.calendar=BacktestSeriesAlignment.historicalSeriesCalendar;formatter.locale=Locale(identifier:"en_US_POSIX");formatter.timeZone=BacktestSeriesAlignment.historicalSeriesCalendar.timeZone;formatter.dateFormat="yyyy-MM-dd"
+            guard let start=formatter.date(from:"2017-08-17"),let end=formatter.date(from:"2026-08-20") else{print("V11_BTC2_SATELLITE_002_DATE_FAILED");return}
+            let bounds=start...end
+            let config=ResearchTargetStrategyConfig(symbol:"v11_btc2_satellite_001",title:"V11 + 2% BTC Satellite",warmupSessions:1,rebalanceSessions:1,rebalanceBand:0.25,maxGrossExposure:1,allowsFinancedExposure:false,financingAnnualRate:0,buyReason:"98% frozen V11 target + 2% permanent BTC satellite on V11 events")
+            enum ReplayMode{case control,satellite}
+            func runReplay(_ replayMode:ReplayMode)->ResearchTargetStrategyRun?{
+                var pending:[String:Double]=[:];var initialized=false
+                return BacktestEngine.runResearchTargetProviderStrategyWithTrace(assetInputs:replayInputs,initialCash:100_000,settings:settings,config:config,dateBounds:bounds,rebalanceDecision:{index,_,data in
+                    guard data.dates.indices.contains(index) else{return BacktestRebalanceDecision(shouldRebalance:false,refreshOverlay:false)}
+                    let day=data.dates[index].recordDateString
+                    let first = !initialized
+                    if first { initialized=true }
+                    guard (first || sourceTradeDates.contains(day)), let base=sourceTargets[day] else{return BacktestRebalanceDecision(shouldRebalance:false,refreshOverlay:false)}
+                    switch replayMode { case .control: pending=base; case .satellite: guard let over=V11BTC2Satellite001Logic.overlay(base:base) else{return BacktestRebalanceDecision(shouldRebalance:false,refreshOverlay:false)};pending=over }
+                    return BacktestRebalanceDecision(shouldRebalance:true,refreshOverlay:false)
+                },targetWeights:{_,_ in pending})
+            }
+            guard let control=runReplay(.control),let candidate=runReplay(.satellite) else{print("V11_BTC2_SATELLITE_002_REPLAY_FAILED");return}
+            func pts(_ r:ResearchTargetStrategyRun)->[BacktestSeriesPoint]{r.report.points.filter{$0.date>=start && $0.date<=end}}
+            func sts(_ r:ResearchTargetStrategyRun)->[BacktestDailyState]{r.dailyStates.filter{$0.date>=start && $0.date<=end}}
+            func fp(_ ss:[BacktestDailyState], symbols:[String])->String{var h:UInt64=1469598103934665603;for s in ss{for sym in symbols{var v=UInt64(bitPattern:Int64(((s.targetWeights[sym] ?? 0)*1_000_000).rounded()));for _ in 0..<8{h ^= v & UInt64(0xff);h &*= UInt64(1099511628211);v >>= 8}}};return String(format:"%016llx",h)}
+            func constraints(_ r:ResearchTargetStrategyRun)->(Double,Double,Double){let s=sts(r);let gross=s.map{x in x.portfolioValue>0 ? x.holdingsBySymbol.values.reduce(0,+)/x.portfolioValue:0};let targetGross=s.map{x in accountingSymbols.reduce(0.0){$0+max(x.targetWeights[$1] ?? 0,0)}};return(gross.max() ?? 0,s.map(\.cash).min() ?? 0,targetGross.max() ?? 0)}
+            let folds:[(String,String,String)]=[("2017-2019","2017-08-17","2019-12-31"),("2020","2020-01-01","2020-12-31"),("2021","2021-01-01","2021-12-31"),("2022","2022-01-01","2022-12-31"),("2023","2023-01-01","2023-12-31"),("2024","2024-01-01","2024-12-31"),("2025-latest","2025-01-01","9999-12-31")]
+            func calendarMetrics(_ p:[BacktestSeriesPoint])->[String:Double]{
+                guard let first=p.first,let last=p.last,p.count>=2,first.portfolioValue>0 else{return ["cagr":0,"mdd":0,"vol":0,"sharpe":0,"periods_per_year":0]}
+                var previous=first.portfolioValue
+                var normalized=1.0
+                var peak=1.0
+                var mdd=0.0
+                var returns:[Double]=[]
+                for point in p.dropFirst(){
+                    guard previous>0,point.portfolioValue>0 else{previous=point.portfolioValue;continue}
+                    let r=point.portfolioValue/previous-1.0
+                    returns.append(r)
+                    normalized *= 1.0+r
+                    peak=max(peak,normalized)
+                    if peak>0{mdd=max(mdd,1.0-normalized/peak)}
+                    previous=point.portfolioValue
+                }
+                let daySpan=max(BacktestSeriesAlignment.historicalSeriesCalendar.dateComponents([.day],from:first.date,to:last.date).day ?? 0,1)
+                let years=Double(daySpan)/365.25
+                let periodsPerYear=years>0 ? Double(returns.count)/years : 0
+                let cagr=years>0 ? pow(normalized,1.0/years)-1.0 : 0
+                let mean=returns.isEmpty ? 0 : returns.reduce(0,+)/Double(returns.count)
+                let variance=returns.count>1 ? returns.reduce(0){$0+pow($1-mean,2)}/Double(returns.count-1) : 0
+                let sd=sqrt(max(variance,0))
+                let vol=sd*sqrt(max(periodsPerYear,0))
+                let sharpe=sd>0 ? mean/sd*sqrt(max(periodsPerYear,0)) : 0
+                return ["cagr":cagr,"mdd":mdd,"vol":vol,"sharpe":sharpe,"periods_per_year":periodsPerYear]
+            }
+            func foldMetrics(_ p:[BacktestSeriesPoint])->[[String:Any]]{folds.map{name,a,b in let x=p.filter{$0.date.recordDateString>=a && $0.date.recordDateString<=b};let m=calendarMetrics(x);return["name":name,"sessions":x.count,"cagr_percent":(m["cagr"] ?? 0)*100,"mdd_percent":(m["mdd"] ?? 0)*100,"sharpe":m["sharpe"] ?? 0,"periods_per_year":m["periods_per_year"] ?? 0]}}
+            func doc(_ id:String,_ r:ResearchTargetStrategyRun)->[String:Any]{let p=pts(r),m=calendarMetrics(p),m20=calendarMetrics(p.filter{$0.date.recordDateString>="2020-01-01"}),m22=calendarMetrics(p.filter{$0.date.recordDateString>="2022-01-01"});let c=constraints(r);return["id":id,"start":p.first?.date.recordDateString ?? "","end":p.last?.date.recordDateString ?? "","sessions":p.count,"metric_method":"observed_periods_per_calendar_year","periods_per_year":m["periods_per_year"] ?? 0,"cagr_percent":(m["cagr"] ?? 0)*100,"mdd_percent":(m["mdd"] ?? 0)*100,"volatility_percent":(m["vol"] ?? 0)*100,"sharpe":m["sharpe"] ?? 0,"trades":r.report.trades.count,"average_cash_ratio":r.report.averageCashRatio,"max_gross":c.0,"minimum_cash":c.1,"max_target_gross":c.2,"target_fingerprint":fp(sts(r),symbols:accountingSymbols),"v11_role_fingerprint":fp(sts(r),symbols:roleSymbols),"since2020_cagr_percent":(m20["cagr"] ?? 0)*100,"since2020_sharpe":m20["sharpe"] ?? 0,"since2022_cagr_percent":(m22["cagr"] ?? 0)*100,"since2022_sharpe":m22["sharpe"] ?? 0,"folds":foldMetrics(p)]}
+            let cdoc=doc("S-V11-BTC2-SATELLITE-002",candidate),vdoc=doc("C-V11-MATCHED",control)
+            if !formal {
+                print("V11_BTC2_SATELLITE_002_SMOKE_START=\(cdoc["start"] ?? "")")
+                print("V11_BTC2_SATELLITE_002_SMOKE_TRADES=\(cdoc["trades"] ?? 0)")
+                print("V11_BTC2_SATELLITE_002_SMOKE_MAX_GROSS=\(cdoc["max_gross"] ?? 0)")
+                print("V11_BTC2_SATELLITE_002_SMOKE_MIN_CASH=\(cdoc["minimum_cash"] ?? 0)")
+                print("V11_BTC2_SATELLITE_002_SMOKE_MAX_TARGET_GROSS=\(cdoc["max_target_gross"] ?? 0)")
+                print("V11_BTC2_SATELLITE_002_SMOKE_PERIODS_PER_YEAR=\(cdoc["periods_per_year"] ?? 0)")
+                let smokeTrades = cdoc["trades"] as? Int ?? 0
+                let smokeMaxTargetGross = cdoc["max_target_gross"] as? Double ?? 2
+                let smokeMinCash = cdoc["minimum_cash"] as? Double ?? -1
+                guard smokeTrades > 0,
+                      smokeMaxTargetGross <= 1.000000001,
+                      smokeMinCash >= -1e-6 else {
+                    print("V11_BTC2_SATELLITE_002_SMOKE_INVALID")
+                    return
+                }
+                print("V11_BTC2_SATELLITE_002_SMOKE_OK")
+                return
+            }
+            if let outputDir{try?FileManager.default.createDirectory(atPath:outputDir,withIntermediateDirectories:true);for(id,r) in [("S-V11-BTC2-SATELLITE-002",candidate),("C-V11-MATCHED",control)]{var lines=["date,portfolio_value"];lines.append(contentsOf:pts(r).map{"\($0.date.recordDateString),\(String(format:"%.10f",$0.portfolioValue))"});let path=URL(fileURLWithPath:outputDir).appendingPathComponent("\(id)-portfolio.csv").path;try?(lines.joined(separator:"\n")+"\n").write(toFile:path,atomically:true,encoding:.utf8)}}
+            let out:[String:Any]=["trial_id":"ATM-SVP3-V11-BTC2-SATELLITE-002","candidate_id":"S-V11-BTC2-SATELLITE-002","candidate":cdoc,"v11_matched_control":vdoc,"btc_weight":0.02,"core_scale":0.98,"source_v11_mode":"nfciDualCoreSimplifiedV11","source_event_count":sourceTradeDates.count,"metric_method":"observed_periods_per_calendar_year","measurement_repair":"mixed BTC/V11 daily calendar keeps weekend BTC marks; Sharpe/volatility annualize by actual observations per calendar year instead of fixed 252","fee_percent_per_trade":1.0,"slippage_percent_per_trade":0.05,"evaluation_start":"2017-08-17","evaluation_end":"2026-08-20","measurement":"frozen V11 source targets replayed on BTC-available common window; BTC from Binance BTCUSDT treated as USD-equivalent and converted to CNY","rule":"on initial matched date and every frozen V11 source trade date, candidate target = 0.98 * frozen V11 target + 0.02 BTC; no BTC-driven rebalance dates"]
+            guard JSONSerialization.isValidJSONObject(out),let json=try?JSONSerialization.data(withJSONObject:out,options:[.sortedKeys]),let text=String(data:json,encoding:.utf8) else{print("V11_BTC2_SATELLITE_002_JSON_FAILED");return};print("V11_BTC2_SATELLITE_002_FORMAL_JSON="+text);print("V11_BTC2_SATELLITE_002_FORMAL_OK");return
+        }

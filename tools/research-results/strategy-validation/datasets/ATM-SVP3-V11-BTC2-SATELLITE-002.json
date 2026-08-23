@@ -1,0 +1,66 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    },
+    {
+      "bytes": 609715,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/BTCUSDT-BINANCE-2026-08-23/BTCUSDT-1d.json",
+      "sha256": "818060656d7d3170715bc34ca5b64d34bbed642958a7c24515efa4a9c93c1ca6"
+    },
+    {
+      "bytes": 344,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/BTCUSDT-BINANCE-2026-08-23/fetch-summary.json",
+      "sha256": "02ebbd55788769bfd856ae9a1446b980ae2e93db5c73c1a5185dc3141a01954f"
+    },
+    {
+      "bytes": 24847,
+      "format": "csv",
+      "path": "tools/research-results/NFCICREDIT_initial_release.csv",
+      "sha256": "953198633f2f19cd42450c631bda3cc1d25bd23b40afc8bf58fa45ada0c4fc8c"
+    },
+    {
+      "bytes": 24762,
+      "format": "csv",
+      "path": "tools/research-results/NFCILEVERAGE_initial_release.csv",
+      "sha256": "d198027125ca6b317258c2fb4725ed3e5b217356a6b8c549b68dbb18d237b486"
+    },
+    {
+      "bytes": 7507,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/results/ATM-SVP3-V11-BTC2-SATELLITE-001.json",
+      "sha256": "c6d8079ca741f62c25a47ce295c2c72ab69c8266d8b4cc2c870226e478ea2086"
+    },
+    {
+      "bytes": 5190,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/results/ATM-SVP3-V11-BTC2-ROBUST-001.json",
+      "sha256": "c351a108a1c60d7f928d8318b3cb75bf1f40cfd5cea30f43744e0cc65e4bc3d8"
+    }
+  ],
+  "generated_at": "2026-08-24T01:10:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "campaign": "v11-btc2-satellite-002",
+    "candidate_kind": "MEASUREMENT_CORRECTED_SUCCESSOR_SAME_ECONOMIC_TARGET_PATH",
+    "economic_rule_changed": false,
+    "evaluation_end": "2026-08-20",
+    "evaluation_start_bound": "2017-08-17",
+    "expected_periods_per_year": 365.25,
+    "metric_method": "observed_periods_per_calendar_year",
+    "observed_first_simulator_point_in_smoke": "2017-08-18",
+    "performance_viewed_before_freeze": false,
+    "predecessor_bootstrap_audit": "ATM-SVP3-V11-BTC2-ROBUST-001 INVALID_MEASUREMENT for the same 252-period assumption",
+    "predecessor_issue": "mixed BTC/V11 daily calendar was measured with BacktestMetricsCalculator hard-coded 252-period Sharpe/volatility annualization",
+    "predecessor_point_estimates_known": true,
+    "predecessor_trial": "ATM-SVP3-V11-BTC2-SATELLITE-001",
+    "smoke_periods_per_year": 365.25
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-V11-BTC2-SATELLITE-002"
+}

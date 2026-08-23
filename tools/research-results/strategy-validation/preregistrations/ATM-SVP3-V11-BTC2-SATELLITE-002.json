@@ -1,0 +1,90 @@
+{
+  "allowed_changes": [
+    "reuse immutable V11BTC2Satellite001Logic without modification",
+    "reuse the exact 001 V11 source path, BTC source, 98% core scale, 2% BTC weight, costs, date bounds and V11-only rebalance events",
+    "retain the mixed daily calendar including weekend BTC mark-to-market observations",
+    "replace only metric computation for full/recent/fold volatility and Sharpe with observed periods per calendar year; CAGR remains date-span annualized and MDD remains path based",
+    "require candidate and matched-control portfolio value paths to equal 001 exactly after formal run"
+  ],
+  "candidate_count": 1,
+  "candidate_ids": [
+    "S-V11-BTC2-SATELLITE-002"
+  ],
+  "candidate_kind": "STRATEGY_ARCHITECTURE_NOT_FACTOR",
+  "comparison_gates": [
+    "candidate CAGR > matched V11 CAGR",
+    "candidate Sharpe >= matched V11 Sharpe",
+    "candidate MDD <= matched V11 MDD"
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-V11-BTC2-SATELLITE-002.json",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "expected_outputs": [
+    "candidate and matched-V11 portfolio CSVs identical to 001 values",
+    "calendar-frequency-aware full/2020+/2022+/fold CAGR/MDD/volatility/Sharpe",
+    "periods_per_year and metric_method metadata",
+    "path-identity SHA/value audit versus 001",
+    "ATM-SVP-3 validation/objective/comparison",
+    "calendar-aware global post-protocol DSR",
+    "run authorization, execution commit and artifact manifest"
+  ],
+  "follow_up_policy": "After corrected formal metrics are viewed, no BTC weight, calendar policy, timing, cost or V11 change is allowed. If comparison still fails on MDD, a smaller BTC weight is not an allowed rescue. Statistical robustness may only be rerun with the same 63-session/20k/seed standard but corrected observation-frequency annualization.",
+  "forbidden_changes": [
+    "changing BTC weight or V11 core scale",
+    "dropping weekend BTC marks or restricting to weekdays",
+    "changing any target weight, source event, rebalance band, NFCI input, cost, date or BTC data source",
+    "changing objective/comparison thresholds after seeing corrected metrics",
+    "using corrected metrics to introduce BTC timing, weight search or dynamic risk budget",
+    "shorting, borrowing, financing, leverage, gross exposure above100% or negative cash"
+  ],
+  "formal_run_budget": 1,
+  "hypothesis": "The economic target path of V11-BTC2-SATELLITE-001 may still provide useful incremental return once the mixed 24/7 BTC plus traditional-asset calendar is measured correctly. The repair must preserve every portfolio target and trade event from 001, keep weekend BTC mark-to-market risk, and change only annualized volatility/Sharpe from a hard-coded 252-period convention to the observed number of return periods per actual calendar year.",
+  "objective_gates": [
+    "CAGR >=16%",
+    "Sharpe >=1.45",
+    "MDD <=10%",
+    "2020+ CAGR >0",
+    "2022+ CAGR >0"
+  ],
+  "pass_fail_gates": [
+    "actual trades >0",
+    "full CAGR >0",
+    "full Sharpe >0",
+    "full MDD <=25%",
+    "at least70% of seven fixed folds have Sharpe >0",
+    "max target gross <=100%",
+    "max realized gross <=100% within floating tolerance",
+    "minimum cash >=0",
+    "candidate and control portfolio paths exactly equal predecessor 001 paths"
+  ],
+  "protocol_id": "ATM-SVP-3",
+  "research_basis": [
+    "BacktestMetricsCalculator annualizes volatility and Sharpe with fixed 252, which is appropriate for trading-session series but not a mixed daily BTC calendar containing weekend marks",
+    "CAGR and MDD are date/path based and should remain unchanged; Sharpe/volatility must use periods_per_year=(number of returns)/(calendar years)",
+    "Throwing away weekends is forbidden because a permanent BTC satellite is exposed to real weekend price risk"
+  ],
+  "selection_metric": "No strategy selection or weight change. Exact 98% frozen V11 + 2% BTC architecture from 001; only metric annualization is repaired. Validation, objective and matched-V11 comparison retain the same thresholds as 001.",
+  "shared_rules": {
+    "base_strategy_mode": "nfciDualCoreSimplifiedV11",
+    "btc_rebalance_rule": "initial matched point + frozen V11 source trade dates only",
+    "btc_timing_rule": null,
+    "btc_weight": 0.02,
+    "core_scale": 0.98,
+    "evaluation_end": "2026-08-20",
+    "evaluation_start_bound": "2017-08-17",
+    "fee_percent_per_trade": 1.0,
+    "financing_allowed": false,
+    "max_gross": 1.0,
+    "metric_method": "observed_periods_per_calendar_year",
+    "predecessor_trial": "ATM-SVP3-V11-BTC2-SATELLITE-001",
+    "shorting_allowed": false,
+    "slippage_percent_per_trade": 0.05,
+    "weekend_btc_marks_retained": true
+  },
+  "strategy_lineage": "v11-btc2-satellite-002 / V11+2%BTC measurement-corrected successor; exact same target path as 001",
+  "swift_engine_entrypoint": "scripts/run_v11_btc2_satellite_002.py -> tools/v11_btc2_satellite_002.swiftpart + immutable tools/v11_btc2_satellite_001_logic.swift -> exact 001 target replay; custom calendar-frequency-aware metric layer only",
+  "trial_id": "ATM-SVP3-V11-BTC2-SATELLITE-002",
+  "validation_gates": [
+    "same intrinsic strategy gates as 001 plus exact path-identity measurement-repair gate",
+    "calendar periods/year must be between360 and370 for candidate and control"
+  ]
+}
