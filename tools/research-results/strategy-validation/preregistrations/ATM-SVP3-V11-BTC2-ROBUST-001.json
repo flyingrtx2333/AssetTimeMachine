@@ -57,6 +57,7 @@
     "strategy_mutation_allowed": false
   },
   "strategy_lineage": "v11-btc2-satellite-001 robustness audit; no strategy or weight changes",
+  "swift_engine_entrypoint": "NOT_APPLICABLE_STATISTICAL_AUDIT: scripts/run_v11_btc2_robust_001.py reads only immutable source-trial portfolio CSVs; no strategy engine execution or target mutation occurs in this audit",
   "trial_id": "ATM-SVP3-V11-BTC2-ROBUST-001",
   "validation_gates": [
     "bootstrap incremental evidence only; all five frozen gates must pass for bootstrap_incremental_pass",
