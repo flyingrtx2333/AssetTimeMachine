@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "a9d5649761aec651e823888f55ff6827f197d997",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "a4295efa0c4ae258d1590d561cb2125925a3ecc237dbda84c36620c593e865ad",
+  "preregistration_record_hash": "a4295efa0c4ae258d1590d561cb2125925a3ecc237dbda84c36620c593e865ad",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-CURVE-CYCLE-001"
+}

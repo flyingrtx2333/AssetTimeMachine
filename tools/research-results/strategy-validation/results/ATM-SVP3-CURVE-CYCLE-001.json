@@ -1,0 +1,158 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/candidates/C-ALWAYS-RISK-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/candidates/CURVE001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-CURVE-CYCLE-001",
+      "metrics": {
+        "always_risk_control": {
+          "cagr_percent": 9.048311457773073,
+          "mdd_percent": 53.61771732401128,
+          "sharpe": 0.7025872176275999
+        },
+        "average_cash_ratio": 0.16069760199314856,
+        "cagr_percent": 0.9491245854563068,
+        "comparison_checks": {
+          "mdd_lt_always_risk": true,
+          "sharpe_gt_always_risk": false
+        },
+        "comparison_failures": [
+          "sharpe_gt_always_risk"
+        ],
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1.0000000000000004,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "failed_preregistered_gates": [
+          "full_mdd_le_25pct"
+        ],
+        "fold_cagrs_percent": [
+          1.5210025252007764,
+          3.362644245729207,
+          -3.7799946489455727,
+          -0.12422788882402447,
+          11.648187051062099,
+          5.506822370381603,
+          -5.508552686193102
+        ],
+        "fold_mdds_percent": [
+          15.929467634607244,
+          10.738490615268248,
+          50.42662602908558,
+          15.744150851075132,
+          25.455783524176535,
+          26.988198516206552,
+          37.14859821730815
+        ],
+        "fold_names": [
+          "2002-2004",
+          "2005-2007",
+          "2008-2010",
+          "2011-2013",
+          "2014-2016",
+          "2017-2020",
+          "2021-latest"
+        ],
+        "fold_sharpes": [
+          0.18533436784586377,
+          0.35909983881754093,
+          -0.10214055812420471,
+          0.04770074726685606,
+          0.8685514855933172,
+          0.5142986527266034,
+          -0.5703646588617791
+        ],
+        "folds_with_positive_sharpe": 5,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 2.837842183467387e-10,
+        "global_post_protocol_dsr_trial_count": 59,
+        "max_gross": 1.0000000000000004,
+        "mdd_percent": 52.78637568507142,
+        "minimum_cash": 0,
+        "objective_checks": {
+          "cagr_ge_12pct": false,
+          "cagr_gt_cash": true,
+          "mdd_le_20pct": false,
+          "sharpe_ge_1": false,
+          "since2020_cagr_positive": false,
+          "since2022_cagr_positive": false
+        },
+        "objective_failures": [
+          "cagr_ge_12pct",
+          "mdd_le_20pct",
+          "sharpe_ge_1",
+          "since2020_cagr_positive",
+          "since2022_cagr_positive"
+        ],
+        "risk_on_sessions": 5390,
+        "sharpe": 0.1359057516355644,
+        "since2020_cagr_percent": -2.6838154934051173,
+        "since2020_sharpe": -0.19555608971720018,
+        "since2022_cagr_percent": -8.121443125824223,
+        "since2022_sharpe": -0.8921424021440232,
+        "strategy_library_validation": {
+          "comparative_failures": [
+            "sharpe_gt_always_risk"
+          ],
+          "comparison_status": "FAIL",
+          "evidence_missing": [],
+          "note": "The exact frozen T10Y3M zero-spread regime switch fails the intrinsic drawdown floor and recent-period positivity tests.",
+          "objective_failures": [
+            "cagr_ge_12pct",
+            "mdd_le_20pct",
+            "sharpe_ge_1",
+            "since2020_cagr_positive",
+            "since2022_cagr_positive"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_mdd_le_25pct"
+          ],
+          "validation_warnings": [
+            "execution_stress_not_in_this_R1_trial",
+            "global_dsr_below_project_pass_threshold"
+          ]
+        },
+        "target_fingerprint": "e15fef6ea4e368a3",
+        "trades": 450,
+        "validation_checks": {
+          "actual_trades_gt_0": true,
+          "cash_nonnegative": true,
+          "full_cagr_gt_0": true,
+          "full_mdd_le_25pct": false,
+          "full_sharpe_gt_0": true,
+          "max_gross_le_1": true,
+          "positive_sharpe_folds_ge_70pct": true
+        }
+      }
+    }
+  ],
+  "comparison_status": "FAIL",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-CURVE-CYCLE-001.json",
+  "decision": "FAIL / VALIDATION_FAIL. Exact causal T10Y3M>0 slow-cycle gating produced 0.949125% CAGR, 0.135906 Sharpe and 52.786376% MDD under 1.00% fee + 0.05% slippage. Five of seven folds were positive-Sharpe, but MDD exceeded the 25% validation ceiling and 2020+/2022+ CAGR were negative. The always-risk annual-rebalanced basket produced 9.048311% CAGR and 0.702587 Sharpe; the curve gate reduced MDD only marginally while destroying return, so comparison=FAIL. Global DSR over 59 candidates is 2.83784218e-10. No alternate spread, threshold, delay, persistence or confirmation rescue is allowed.",
+  "execution_git_commit": "a9d5649761aec651e823888f55ff6827f197d997",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "a4295efa0c4ae258d1590d561cb2125925a3ecc237dbda84c36620c593e865ad",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-CURVE-CYCLE-001",
+  "validation_status": "FAIL"
+}

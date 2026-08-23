@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_curve_cycle_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "a9d5649761aec651e823888f55ff6827f197d997",
+  "finished_at": "2026-08-23T13:39:50+08:00",
+  "preregistration_record_hash": "a4295efa0c4ae258d1590d561cb2125925a3ecc237dbda84c36620c593e865ad",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/run-authorization.json",
+  "started_at": "2026-08-23T13:39:15+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/stdout.txt",
+  "trial_id": "ATM-SVP3-CURVE-CYCLE-001"
+}

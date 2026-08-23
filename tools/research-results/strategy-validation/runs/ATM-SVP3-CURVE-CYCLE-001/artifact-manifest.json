@@ -1,0 +1,116 @@
+{
+  "files": [
+    {
+      "bytes": 185570,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-01-08",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/candidates/C-ALWAYS-RISK-portfolio.csv",
+      "row_count": 6422,
+      "sha256": "e31dea4b5fcdd1e32232a5f0069b5ed6db3292a00fba12224eb07b1005fbaf25"
+    },
+    {
+      "bytes": 186259,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-01-08",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/candidates/C-CASH-portfolio.csv",
+      "row_count": 6422,
+      "sha256": "14176305bbb33a3c5283483348c66c668f139ecd95048cd140dd49f3be365385"
+    },
+    {
+      "bytes": 184311,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-01-08",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/candidates/CURVE001-portfolio.csv",
+      "row_count": 6422,
+      "sha256": "bfa5bb5d93b483d5f5074c5ff4b0fb36a0f3b67fe1ad4c2c05a517a993620116"
+    },
+    {
+      "bytes": 574,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "risk_on_sessions",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "d564f5b7374b5fa1c0dfcbf29f0fe23cb62b4c46db9799ac39b15fbe1c4985f7"
+    },
+    {
+      "bytes": 7478,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/candidates/candidate-metrics.json",
+      "sha256": "bb125ba5396a2fd30378fdb7ae86ba61a557f091dc25187256119e329dbabb03"
+    },
+    {
+      "bytes": 543,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/candidates/statistical-audit.json",
+      "sha256": "e038c794f622a03bdd6feb028ea456b4aeee24140b3b2e3482dbe50d592e66f1"
+    },
+    {
+      "bytes": 952,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/execution.json",
+      "sha256": "7a0a9c83d97fa600b00b52aeab344efd251929def42ff468c77794c370a9baf6"
+    },
+    {
+      "bytes": 438,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/run-authorization.json",
+      "sha256": "29f6029fb2c6a1dc740f8a5fb85b4d4772e9a198b2f1423430a4f7482dbbcf5d"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1000,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CURVE-CYCLE-001/stdout.txt",
+      "sha256": "40b745e49655db1ab08b10c23d1a5975c4476cbbe2c732e8b1cb6bf81e9d5348"
+    }
+  ],
+  "generated_at": "2026-08-23T13:40:37+08:00",
+  "git_commit": "a9d5649761aec651e823888f55ff6827f197d997",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "FAIL",
+    "objective_status": "FAIL",
+    "validation_status": "FAIL"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-CURVE-CYCLE-001"
+}

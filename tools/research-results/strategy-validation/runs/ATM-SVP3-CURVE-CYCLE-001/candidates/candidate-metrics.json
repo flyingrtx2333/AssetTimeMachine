@@ -1,0 +1,261 @@
+{
+  "always_risk_control": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 9.048311457773073,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 1.5210025252007764,
+        "mdd_percent": 15.929467634607244,
+        "name": "2002-2004",
+        "sessions": 775,
+        "sharpe": 0.18533436784586377
+      },
+      {
+        "cagr_percent": 35.335471736423685,
+        "mdd_percent": 13.743932517153281,
+        "name": "2005-2007",
+        "sessions": 778,
+        "sharpe": 2.121971901141651
+      },
+      {
+        "cagr_percent": -3.8044285753960905,
+        "mdd_percent": 50.455084763063994,
+        "name": "2008-2010",
+        "sessions": 781,
+        "sharpe": -0.10343031505824508
+      },
+      {
+        "cagr_percent": -0.12422789888879571,
+        "mdd_percent": 15.744150880596708,
+        "name": "2011-2013",
+        "sessions": 780,
+        "sharpe": 0.04770074641983609
+      },
+      {
+        "cagr_percent": 11.648187051061987,
+        "mdd_percent": 25.455783524176706,
+        "name": "2014-2016",
+        "sessions": 780,
+        "sharpe": 0.8685514855933161
+      },
+      {
+        "cagr_percent": 12.471893355509556,
+        "mdd_percent": 18.531746721252624,
+        "name": "2017-2020",
+        "sessions": 1043,
+        "sharpe": 1.0249674603745436
+      },
+      {
+        "cagr_percent": 9.723308118869944,
+        "mdd_percent": 16.069708895433372,
+        "name": "2021-latest",
+        "sessions": 1485,
+        "sharpe": 0.8571473589226516
+      }
+    ],
+    "id": "C-ALWAYS-RISK",
+    "max_gross": 1.0000000000000004,
+    "mdd_percent": 53.61771732401128,
+    "minimum_cash": 0,
+    "risk_on_sessions": 6422,
+    "sessions": 6422,
+    "sharpe": 0.7025872176275999,
+    "since2020_cagr_percent": 11.007144604918828,
+    "since2020_sharpe": 0.8768728818924638,
+    "since2022_cagr_percent": 10.180113346958631,
+    "since2022_sharpe": 0.8710295136889403,
+    "start": "2002-01-08",
+    "target_fingerprint": "433af8043217c723",
+    "trades": 125,
+    "volatility_percent": 13.14280751018655
+  },
+  "candidate": {
+    "average_cash_ratio": 0.16069760199314856,
+    "cagr_percent": 0.9491245854563068,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 1.5210025252007764,
+        "mdd_percent": 15.929467634607244,
+        "name": "2002-2004",
+        "sessions": 775,
+        "sharpe": 0.18533436784586377
+      },
+      {
+        "cagr_percent": 3.362644245729207,
+        "mdd_percent": 10.738490615268248,
+        "name": "2005-2007",
+        "sessions": 778,
+        "sharpe": 0.35909983881754093
+      },
+      {
+        "cagr_percent": -3.7799946489455727,
+        "mdd_percent": 50.42662602908558,
+        "name": "2008-2010",
+        "sessions": 781,
+        "sharpe": -0.10214055812420471
+      },
+      {
+        "cagr_percent": -0.12422788882402447,
+        "mdd_percent": 15.744150851075132,
+        "name": "2011-2013",
+        "sessions": 780,
+        "sharpe": 0.04770074726685606
+      },
+      {
+        "cagr_percent": 11.648187051062099,
+        "mdd_percent": 25.455783524176535,
+        "name": "2014-2016",
+        "sessions": 780,
+        "sharpe": 0.8685514855933172
+      },
+      {
+        "cagr_percent": 5.506822370381603,
+        "mdd_percent": 26.988198516206552,
+        "name": "2017-2020",
+        "sessions": 1043,
+        "sharpe": 0.5142986527266034
+      },
+      {
+        "cagr_percent": -5.508552686193102,
+        "mdd_percent": 37.14859821730815,
+        "name": "2021-latest",
+        "sessions": 1485,
+        "sharpe": -0.5703646588617791
+      }
+    ],
+    "id": "CURVE001",
+    "max_gross": 1.0000000000000004,
+    "mdd_percent": 52.78637568507142,
+    "minimum_cash": 0,
+    "risk_on_sessions": 5390,
+    "sessions": 6422,
+    "sharpe": 0.1359057516355644,
+    "since2020_cagr_percent": -2.6838154934051173,
+    "since2020_sharpe": -0.19555608971720018,
+    "since2022_cagr_percent": -8.121443125824223,
+    "since2022_sharpe": -0.8921424021440232,
+    "start": "2002-01-08",
+    "target_fingerprint": "e15fef6ea4e368a3",
+    "trades": 450,
+    "volatility_percent": 12.20557155117429
+  },
+  "candidate_id": "S-CURVE-CYCLE-001",
+  "cash_control": {
+    "average_cash_ratio": 1,
+    "cagr_percent": 0.48205402809551323,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 0.7567415532772293,
+        "mdd_percent": 0,
+        "name": "2002-2004",
+        "sessions": 775,
+        "sharpe": 215.79127125956245
+      },
+      {
+        "cagr_percent": 0.7585328047734485,
+        "mdd_percent": 0,
+        "name": "2005-2007",
+        "sessions": 778,
+        "sharpe": 370.5019940209945
+      },
+      {
+        "cagr_percent": 0.48623361255184516,
+        "mdd_percent": 0,
+        "name": "2008-2010",
+        "sessions": 781,
+        "sharpe": 44.97472981475214
+      },
+      {
+        "cagr_percent": 0.4276804787377575,
+        "mdd_percent": 0,
+        "name": "2011-2013",
+        "sessions": 780,
+        "sharpe": 92.24004715596723
+      },
+      {
+        "cagr_percent": 0.36220742346435575,
+        "mdd_percent": 0,
+        "name": "2014-2016",
+        "sessions": 780,
+        "sharpe": 2088854685931.8887
+      },
+      {
+        "cagr_percent": 0.362956099496925,
+        "mdd_percent": 0,
+        "name": "2017-2020",
+        "sessions": 1043,
+        "sharpe": 2107386062823.1929
+      },
+      {
+        "cagr_percent": 0.3671844557619153,
+        "mdd_percent": 0,
+        "name": "2021-latest",
+        "sessions": 1485,
+        "sharpe": 2059926372832.3176
+      }
+    ],
+    "id": "C-CASH",
+    "max_gross": 0,
+    "mdd_percent": 0,
+    "minimum_cash": 100000,
+    "risk_on_sessions": 0,
+    "sessions": 6422,
+    "sharpe": 43.459458196968335,
+    "since2020_cagr_percent": 0.3661591564060096,
+    "since2020_sharpe": 2071848773664.7053,
+    "since2022_cagr_percent": 0.368084464255114,
+    "since2022_sharpe": 2059479456346.746,
+    "start": "2002-01-08",
+    "target_fingerprint": "176156dc3d9714c3",
+    "trades": 0,
+    "volatility_percent": 0.010689037797131548
+  },
+  "curve_points": 6406,
+  "curve_rule": "latest usable T-1 FRED T10Y3M observation within seven calendar days > 0; otherwise cash",
+  "evaluation_end": "2026-08-20",
+  "evaluation_start": "2002-01-04",
+  "fee_percent_per_trade": 1,
+  "slippage_percent_per_trade": 0.05,
+  "three_axis_evaluation": {
+    "comparison_checks": {
+      "mdd_lt_always_risk": true,
+      "sharpe_gt_always_risk": false
+    },
+    "comparison_status": "FAIL",
+    "diagnostics": {
+      "always_risk_cagr_percent": 9.048311457773073,
+      "always_risk_mdd_percent": 53.61771732401128,
+      "always_risk_sharpe": 0.7025872176275999,
+      "cash_cagr_percent": 0.48205402809551323,
+      "fold_count": 7,
+      "positive_fold_count": 5
+    },
+    "objective_checks": {
+      "cagr_ge_12pct": false,
+      "cagr_gt_cash": true,
+      "mdd_le_20pct": false,
+      "sharpe_ge_1": false,
+      "since2020_cagr_positive": false,
+      "since2022_cagr_positive": false
+    },
+    "objective_status": "FAIL",
+    "status": "FAIL",
+    "validation_checks": {
+      "actual_trades_gt_0": true,
+      "cash_nonnegative": true,
+      "full_cagr_gt_0": true,
+      "full_mdd_le_25pct": false,
+      "full_sharpe_gt_0": true,
+      "max_gross_le_1": true,
+      "positive_sharpe_folds_ge_70pct": true
+    },
+    "validation_status": "FAIL",
+    "validation_warnings": [
+      "execution_stress_not_in_this_R1_trial"
+    ]
+  },
+  "trial_id": "ATM-SVP3-CURVE-CYCLE-001"
+}
