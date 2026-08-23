@@ -1,0 +1,131 @@
+{
+  "files": [
+    {
+      "bytes": 194408,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2000-01-18",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/candidates/C-CASH-COMBINED-portfolio.csv",
+      "row_count": 6703,
+      "sha256": "b04c80ffc089d3fdbd4c7b5305761f2c2aeda287eb8a38ae8aaa3ef5b0bfc775"
+    },
+    {
+      "bytes": 189708,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2000-01-18",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/candidates/C-REST-OF-MONTH-portfolio.csv",
+      "row_count": 6703,
+      "sha256": "5cd1ca26c5cf5f952fb1cacde0de0fbdeb4e89bf866af66223791d5c2c5201d9"
+    },
+    {
+      "bytes": 194407,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2000-01-18",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/candidates/USTOM001-COMBINED-SLIP005-portfolio.csv",
+      "row_count": 6703,
+      "sha256": "c9f70489b1a7ce1b6c2fdd6776422f7cda4f0400b6d5511382ba6697ef97a6de"
+    },
+    {
+      "bytes": 194408,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2000-01-18",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/candidates/USTOM001-COMBINED-portfolio.csv",
+      "row_count": 6703,
+      "sha256": "bce3f3765413cb1f6d6a42c58c665e1432dcff8cbeafe177cec176d140b4ba29"
+    },
+    {
+      "bytes": 751,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "active_target_sessions",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/candidates/candidate-metrics.csv",
+      "row_count": 4,
+      "sha256": "37cecd3a92b55bb26444cbd2c2dfe381e0234106d4283ea9e8655c43902c742d"
+    },
+    {
+      "bytes": 34290,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/candidates/candidate-metrics.json",
+      "sha256": "d398dffdab46f25831eaa6df97d637f420f739cc2e6c6e1cc9a3e44e0b2c4bc8"
+    },
+    {
+      "bytes": 545,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/candidates/statistical-audit.json",
+      "sha256": "13198f575fb17332259e1d709f96c16902e9d37fc3b10b0d6e06473d3ab20724"
+    },
+    {
+      "bytes": 964,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/execution.json",
+      "sha256": "65c3ef66339992a0d4346d076a389b812f8ac815887fa5c49c193cdf959649b3"
+    },
+    {
+      "bytes": 440,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/run-authorization.json",
+      "sha256": "21800d8517e33d3e898bdb14d2e4b7349232e7319ef8fa46927122af6352dd58"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1148,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/stdout.txt",
+      "sha256": "27be6f1fcf0731b9368aff4bdb0f31652f65dd805e00a20def414d13ec67a981"
+    }
+  ],
+  "generated_at": "2026-08-23T13:21:21+08:00",
+  "git_commit": "b276c7232ba3048a51895fd9cb48cc7401f46e03",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "PASS",
+    "objective_status": "FAIL",
+    "protocol_selection_risk": "WEAK",
+    "validation_gate_result": "PASS"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-US-TURN-MONTH-001"
+}

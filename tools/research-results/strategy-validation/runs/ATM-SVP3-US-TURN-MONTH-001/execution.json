@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_us_turn_month_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "b276c7232ba3048a51895fd9cb48cc7401f46e03",
+  "finished_at": "2026-08-23T13:19:21+08:00",
+  "preregistration_record_hash": "5c47120a117fce89f98fbca0cb41595b0aacbcfeac3f40e611c8d38bba4b890e",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/run-authorization.json",
+  "started_at": "2026-08-23T13:18:50+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/stdout.txt",
+  "trial_id": "ATM-SVP3-US-TURN-MONTH-001"
+}
