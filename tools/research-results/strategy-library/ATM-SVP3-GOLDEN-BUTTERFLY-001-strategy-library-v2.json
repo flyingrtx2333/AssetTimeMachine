@@ -1,0 +1,175 @@
+{
+  "batch_key": "ATM-SVP3-GOLDEN-BUTTERFLY-001-strategy-library-v2",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-GOLDEN-BUTTERFLY-001.json",
+    "decision": "INVALID_IMPLEMENTATION. The Golden Butterfly 001 formal run was authorized on the frozen economic implementation, but the Python wrapper rejected its own output because a stale Permanent Portfolio gold_weight/cash_weight validator remained after the conversion to a single 20% sleeve field. No Golden Butterfly performance metric from this failed attempt was inspected or used. A successor may change only this wrapper-validation plumbing; five 20% sleeves, annual rebalance, data files, evaluation window and 1.00%+0.05% product cost must remain unchanged.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "55ea20427fb5c4dcdfb07a7bd22724d120107fb2",
+    "methodology": {
+      "follow_up_policy": "After any formal metric is viewed, do not alter the 20% sleeves, asset identities, rebalance cadence or add timing filters. Other fixed portfolios or factor mixes require separate preregistered economic hypotheses.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "actual trades >0",
+        "full CAGR >0",
+        "full Sharpe >0",
+        "full MDD <=25%",
+        "at least 70% of seven fixed folds have Sharpe >0",
+        "max realized gross <=100% and minimum cash >=0"
+      ],
+      "selection_metric": "No weight or cadence search. Exactly five 20% sleeves and annual rebalance. External published performance is known, but no internal CNY/cost result has been viewed. Validation, objective and SPY comparison remain separate ATM-SVP-3 axes."
+    },
+    "preregistration_hash": "fe1426376786d10918313e8acb24fe6c11c54c6f8a957b48498e6af445eab154",
+    "protocol_id": "ATM-SVP-3",
+    "run_key": "ATM-SVP3-GOLDEN-BUTTERFLY-001",
+    "status": "INVALID",
+    "title": "golden-butterfly-001 / Golden Butterfly 五袖001; fixed growth-value-bond-gold diversification"
+  },
+  "schema_version": "strategy-library-v2",
+  "source_commit": "55ea20427fb5c4dcdfb07a7bd22724d120107fb2",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "A fixed equal-weight mix of broad U.S. equity, small-cap value, long Treasuries, short Treasury bills and gold can combine the Permanent Portfolio all-regime defense with a dedicated small-cap-value return premium. Annual rebalancing should preserve low turnover while harvesting cross-asset diversification and the long-only value premium, potentially improving CAGR versus the Permanent Portfolio without sacrificing drawdown control.",
+      "display_name": "golden-butterfly-001 / Golden Butterfly 五袖001",
+      "family": "策略研究",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/candidates/C-CASH-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/candidates/C-SPY-BUYHOLD-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/candidates/GB001-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/stdout.txt"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": null,
+        "candidate_id": "S-GOLDEN-BUTTERFLY-001",
+        "conclusion": "INVALID_IMPLEMENTATION. The Golden Butterfly 001 formal run was authorized on the frozen economic implementation, but the Python wrapper rejected its own output because a stale Permanent Portfolio gold_weight/cash_weight validator remained after the conversion to a single 20% sleeve field. No Golden Butterfly performance metric from this failed attempt was inspected or used. A successor may change only this wrapper-validation plumbing; five 20% sleeves, annual rebalance, data files, evaluation window and 1.00%+0.05% product cost must remain unchanged.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "pass": false,
+          "shorting_allowed": false
+        },
+        "dsr_probability": null,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": null,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": null,
+        "metrics": {
+          "constraints": {
+            "financing_allowed": false,
+            "pass": false,
+            "shorting_allowed": false
+          },
+          "implementation_audit": {
+            "defect": "Python formal wrapper retained stale Permanent Portfolio gold_weight/cash_weight validation although Golden Butterfly manifest exposes one sleeve_weight=0.20. The economic rule itself was not changed. No generated performance metric from this failed formal attempt was inspected or used.",
+            "invalid": true
+          },
+          "strategy_library_validation": {
+            "comparative_failures": [],
+            "comparison_status": "UNKNOWN",
+            "evidence_missing": [],
+            "legacy_robust_strategy_pass": false,
+            "level": "R1_RETROSPECTIVE",
+            "note": "Implementation-invalid formal wrapper; no performance conclusion.",
+            "objective_failures": [],
+            "objective_status": "INCONCLUSIVE",
+            "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+            "status": "FAIL",
+            "trial_status": "INVALID",
+            "validation_failures": [
+              "invalid_formal_wrapper_validation"
+            ],
+            "validation_warnings": []
+          }
+        },
+        "result_status": "INVALID",
+        "robust_strategy_pass": false,
+        "sharpe": null,
+        "since2020_cagr_percent": null,
+        "since2022_cagr_percent": null,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-GOLDEN-BUTTERFLY-001",
+      "strategy_kind": "strategy_architecture_not_factor",
+      "tags": [
+        "ATM-SVP3-GOLDEN-BUTTERFLY-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "f8b4763acf14dbeeb2a8033f7408673a3e0665442fd7e82d242c18975ca71a74",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "A fixed equal-weight mix of broad U.S. equity, small-cap value, long Treasuries, short Treasury bills and gold can combine the Permanent Portfolio all-regime defense with a dedicated small-cap-value return premium. Annual rebalancing should preserve low turnover while harvesting cross-asset diversification and the long-only value premium, potentially improving CAGR versus the Permanent Portfolio without sacrificing drawdown control.",
+        "parameters": {
+          "allowed_changes": [
+            "use exact frozen SPY, VBR and TLT adjusted-close total-return proxy files",
+            "construct the short-Treasury sleeve only from the frozen FRED DTB3 macro fixture",
+            "use existing CNY gold series",
+            "target exactly 20% each SPY/VBR/TLT/T-bill/gold",
+            "rebalance only at first common session of each calendar year",
+            "use product-level 1.00% fee plus 0.05% slippage"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "15/25/30% sleeve alternatives or any weight optimization",
+            "monthly/quarterly/semiannual rebalance rescue",
+            "substituting QQQ, IWD, QUAL, MTUM or another factor after results",
+            "replacing T-bill with IEF/SHY after results",
+            "adding momentum/trend/VIX/NFCI/curve/drawdown filters",
+            "changing fee/slippage after results",
+            "shorting, borrowing, financing, leverage or gross exposure above 100%"
+          ],
+          "shared_rules": {
+            "evaluation_end": "2026-08-13",
+            "evaluation_start": "2004-01-30",
+            "fee_percent_per_trade": 1.0,
+            "financing_allowed": false,
+            "gold_weight": 0.2,
+            "max_gross": 1.0,
+            "rebalance": "first common session each calendar year",
+            "shorting_allowed": false,
+            "slippage_percent_per_trade": 0.05,
+            "spy_weight": 0.2,
+            "tbill_weight": 0.2,
+            "tlt_weight": 0.2,
+            "vbr_weight": 0.2
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "scripts/run_golden_butterfly_001.py",
+        "target_fingerprint": null,
+        "version_key": "S-GOLDEN-BUTTERFLY-001"
+      }
+    }
+  ]
+}

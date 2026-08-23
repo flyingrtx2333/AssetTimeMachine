@@ -1,0 +1,54 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    },
+    {
+      "bytes": 171936,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/US-VALUE-ROLE-V1-2026-08-22/VBR.csv",
+      "sha256": "ac82f05a2eee22e4a748657c8bb5087816d711e6f87ce46fd3eee449b36cba89"
+    },
+    {
+      "bytes": 101722,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/US-MOMENTUM-QUALITY-ROLE-V1-2026-08-22/MTUM.csv",
+      "sha256": "764c800048102f674bf11f95858c9f8c10bf476417859818d1695af7e14d375b"
+    },
+    {
+      "bytes": 99551,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/US-MOMENTUM-QUALITY-ROLE-V1-2026-08-22/QUAL.csv",
+      "sha256": "f647ea7febfe06a48bb4639bbdfb2dd61b7cf36568c2efbb523119f7bcd88b3b"
+    },
+    {
+      "bytes": 181651,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-005/TLT.csv",
+      "sha256": "34e66f005f09bae79c4f3b3eb376657d12ef7d676629719cf52d491d345e4967"
+    },
+    {
+      "bytes": 193864,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-003/SPY.csv",
+      "sha256": "48dbf8b82f64ab03d445dba62fb7f47c87c4141cb7feeb1ee3082b192bbc1c14"
+    }
+  ],
+  "generated_at": "2026-08-23T19:35:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "base_cost": "1.00% fee plus 0.05% slippage; annual rebalance only",
+    "campaign": "factor-duration-001",
+    "candidate_kind": "LONG_ONLY_MULTI_PREMIA_DURATION",
+    "combined_performance_viewed_before_freeze": false,
+    "component_factor_performance_previously_studied": true,
+    "evaluation_end": "2026-08-13",
+    "evaluation_start": "2013-07-18",
+    "measurement": "all VBR/MTUM/QUAL/TLT/SPY legs are frozen adjusted-close total-return proxies and use identical historical USD/CNY conversion"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-FACTOR-DURATION-001"
+}

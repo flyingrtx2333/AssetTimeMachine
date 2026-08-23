@@ -1,0 +1,87 @@
+{
+  "allowed_changes": [
+    "use exact frozen VBR, MTUM, QUAL, TLT and SPY adjusted-close total-return proxy files",
+    "target exactly 25% each VBR/MTUM/QUAL/TLT",
+    "rebalance only at first common session of each calendar year",
+    "use identical historical USD/CNY conversion for every leg",
+    "use product-level 1.00% fee plus 0.05% slippage"
+  ],
+  "candidate_count": 1,
+  "candidate_ids": [
+    "S-FACTOR-DURATION-001"
+  ],
+  "candidate_kind": "STRATEGY_ARCHITECTURE_NOT_FACTOR",
+  "comparison_gates": [
+    "Sharpe > SPY buy-and-hold on identical total-return/FX window",
+    "MDD <= SPY buy-and-hold MDD"
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-FACTOR-DURATION-001.json",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "expected_outputs": [
+    "Factor-Duration, SPY buy-hold and cash CSVs",
+    "full/recent/seven-fold CAGR/MDD/Sharpe",
+    "trade count, actual gross, minimum cash and fingerprint",
+    "ATM-SVP-3 validation/objective/comparison",
+    "global post-protocol DSR",
+    "run authorization and artifact manifest"
+  ],
+  "follow_up_policy": "After formal performance is viewed, do not alter factor membership, 25% weights, rebalance cadence or add timing filters inside this lineage. Any factor rotation or fifth asset is a new independent preregistered hypothesis.",
+  "forbidden_changes": [
+    "dropping a weak factor after results",
+    "adding SPY, gold, cash or another fifth sleeve after results",
+    "20/30/40% weighting variants or any optimization",
+    "monthly/quarterly/semiannual rebalance rescue",
+    "momentum/trend/macro/VIX/volatility timing overlays",
+    "changing fee/slippage after results",
+    "shorting, borrowing, financing, leverage or gross exposure above 100%"
+  ],
+  "formal_run_budget": 1,
+  "hypothesis": "Long-only value, momentum and quality equity factor exposures represent distinct structural return premia, while long-duration Treasuries provide a macro duration source that can offset equity-factor stress. A fixed equal-weight annual portfolio of VBR, MTUM, QUAL and TLT may retain a materially higher growth rate than defensive all-weather portfolios while reducing the drawdown and improving the Sharpe ratio of a single broad-equity holding, without shorting, leverage, timing thresholds or frequent trading.",
+  "objective_gates": [
+    "CAGR >=12%",
+    "Sharpe >=1.00",
+    "MDD <=20%",
+    "2020+ CAGR >0",
+    "2022+ CAGR >0",
+    "CAGR > CNY cash"
+  ],
+  "pass_fail_gates": [
+    "actual trades >0",
+    "full CAGR >0",
+    "full Sharpe >0",
+    "full MDD <=25%",
+    "at least 70% of seven fixed folds have Sharpe >0",
+    "max realized gross <=100% and minimum cash >=0"
+  ],
+  "protocol_id": "ATM-SVP-3",
+  "research_basis": [
+    "AQR Understanding Alternative Risk Premia: diversification across value, momentum and defensive/risk premia can improve risk-adjusted outcomes because premia and asset-group correlations are imperfect",
+    "This implementation is deliberately long-only because project policy forbids shorting and leverage; it is not claimed to reproduce market-neutral AQR factors"
+  ],
+  "selection_metric": "No factor weighting or rebalance search. Exactly four 25% sleeves and annual rebalance. Individual component factors were studied previously, but this combined portfolio performance has not been viewed. Validation, objective and SPY comparison are separate ATM-SVP-3 axes.",
+  "shared_rules": {
+    "evaluation_end": "2026-08-13",
+    "evaluation_start": "2013-07-18",
+    "fee_percent_per_trade": 1.0,
+    "financing_allowed": false,
+    "max_gross": 1.0,
+    "mtum_weight": 0.25,
+    "qual_weight": 0.25,
+    "rebalance": "first common session each calendar year",
+    "shorting_allowed": false,
+    "slippage_percent_per_trade": 0.05,
+    "tlt_weight": 0.25,
+    "vbr_weight": 0.25
+  },
+  "strategy_lineage": "factor-duration-001 / 多因子久期001; long-only value-momentum-quality-duration diversification",
+  "swift_engine_entrypoint": "scripts/run_factor_duration_001.py -> frozen VBR/MTUM/QUAL/TLT/SPY adjusted-close total-return proxies + common USD/CNY FX -> BacktestEngine.runResearchTargetProviderStrategyWithTrace",
+  "trial_id": "ATM-SVP3-FACTOR-DURATION-001",
+  "validation_gates": [
+    "full CAGR >0",
+    "full Sharpe >0",
+    "full MDD <=25%",
+    "positive-Sharpe fixed-fold fraction >=70%",
+    "gross/cash/no-short/no-financing constraints pass",
+    "base run already includes product-level transaction cost"
+  ]
+}
