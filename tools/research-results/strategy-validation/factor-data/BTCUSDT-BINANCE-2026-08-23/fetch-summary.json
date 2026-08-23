@@ -1,0 +1,11 @@
+{
+  "bytes": 609715,
+  "endpoint": "https://api.binance.com/api/v3/klines",
+  "first_date": "2017-08-17",
+  "last_date": "2026-08-22",
+  "price_values_logged": false,
+  "quote_currency": "USDT",
+  "rows": 3293,
+  "sha256": "818060656d7d3170715bc34ca5b64d34bbed642958a7c24515efa4a9c93c1ca6",
+  "source": "Binance official spot API BTCUSDT 1d"
+}

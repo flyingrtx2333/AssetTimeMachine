@@ -1,0 +1,39 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    },
+    {
+      "bytes": 609715,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/BTCUSDT-BINANCE-2026-08-23/BTCUSDT-1d.json",
+      "sha256": "818060656d7d3170715bc34ca5b64d34bbed642958a7c24515efa4a9c93c1ca6"
+    },
+    {
+      "bytes": 344,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/BTCUSDT-BINANCE-2026-08-23/fetch-summary.json",
+      "sha256": "02ebbd55788769bfd856ae9a1446b980ae2e93db5c73c1a5185dc3141a01954f"
+    }
+  ],
+  "generated_at": "2026-08-23T23:30:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "base_cost": "1.00% fee plus 0.05% slippage per trade; intentionally conservative relative to typical crypto spot fees",
+    "campaign": "btc-sma200-001",
+    "candidate_kind": "INDEPENDENT_CRYPTO_TIME_SERIES_TREND",
+    "evaluation_end": "2026-08-20",
+    "evaluation_start": "2018-06-05",
+    "first_common_date": "2017-08-17",
+    "first_eligible_execution": "2018-06-05",
+    "measurement": "BTCUSDT close treated as USD-equivalent, converted with latest available historical usd_per_cny; execution restricted to SP500 common sessions",
+    "performance_viewed_before_freeze": false,
+    "raw_btc_source": "Binance official spot BTCUSDT daily klines, 2017-08-17..2026-08-22",
+    "signal_200_date": "2018-06-04"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-BTC-SMA200-001"
+}
