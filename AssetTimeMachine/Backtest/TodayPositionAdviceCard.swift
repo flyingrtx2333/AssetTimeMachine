@@ -73,9 +73,7 @@ struct TodayPositionAdviceCard: View {
 
     private var relevantHistorySymbols: Set<String> {
         guard let selectedTemplate else { return [] }
-        return StrategyAdviceProjectionStore.historySymbols(
-            for: StrategyRebalanceDefaults.assetOptions(for: selectedTemplate)
-        )
+        return StrategyRebalanceDefaults.historySymbols(for: selectedTemplate)
     }
 
     private var adviceTaskID: String {

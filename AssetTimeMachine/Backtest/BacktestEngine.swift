@@ -4415,6 +4415,171 @@ nonisolated enum BacktestEngine {
         return AdvancedRotationStrategyRun(report: finalRun.report, dailyStates: finalRun.dailyStates)
     }
 
+    private static func runNFCIDualCoreSimplifiedV11QualRoleWithTrace(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        initialCash: Double,
+        settings: AdvancedBacktestRiskSettings,
+        nfciAsOf: BacktestNFCIAsOfData,
+        dateBounds: ClosedRange<Date>? = nil
+    ) -> AdvancedRotationStrategyRun? {
+        let normalizedQUAL = "qual"
+        guard let qualInput = assetInputs.first(where: { BacktestAssetSymbol.normalized($0.assetOption.symbol) == normalizedQUAL }),
+              let qualSeries = qualInput.assetSeries else { return nil }
+        let baseInputs = assetInputs.filter { BacktestAssetSymbol.normalized($0.assetOption.symbol) != normalizedQUAL }
+        guard let originalSP500Input = baseInputs.first(where: { BacktestAssetSymbol.normalized($0.assetOption.symbol) == "sp500" }),
+              let originalSP500 = originalSP500Input.assetSeries else { return nil }
+
+        func hybridQUALRoleSeries() -> PublicHistorySeries? {
+            guard originalSP500.dates.count == originalSP500.prices.count,
+                  qualSeries.dates.count == qualSeries.prices.count,
+                  !originalSP500.dates.isEmpty,
+                  qualSeries.dates.count >= 2 else { return nil }
+            let style = zip(qualSeries.dates, qualSeries.prices)
+                .filter { $0.1.isFinite && $0.1 > 0 }
+                .sorted { $0.0 < $1.0 }
+            guard style.count >= 2 else { return nil }
+            let substitutionStart = "2013-07-19"
+            var styleIndex = 0
+            var lastStylePrice: Double?
+            var previousAlignedStylePrice: Double?
+            var previousHybrid: Double?
+            var prices: [Double] = []
+            prices.reserveCapacity(originalSP500.prices.count)
+
+            for (date, originalPrice) in zip(originalSP500.dates, originalSP500.prices) {
+                guard originalPrice.isFinite, originalPrice > 0 else { return nil }
+                while styleIndex < style.count, style[styleIndex].0 <= date {
+                    lastStylePrice = style[styleIndex].1
+                    styleIndex += 1
+                }
+                let nextPrice: Double
+                if date < substitutionStart {
+                    nextPrice = originalPrice
+                } else {
+                    guard let priorHybrid = previousHybrid,
+                          let currentStylePrice = lastStylePrice,
+                          let priorStylePrice = previousAlignedStylePrice,
+                          priorStylePrice > 0 else { return nil }
+                    let ratio = currentStylePrice / priorStylePrice
+                    guard ratio.isFinite, ratio > 0 else { return nil }
+                    nextPrice = priorHybrid * ratio
+                }
+                prices.append(nextPrice)
+                previousHybrid = nextPrice
+                if let lastStylePrice {
+                    previousAlignedStylePrice = lastStylePrice
+                }
+            }
+
+            return PublicHistorySeries(
+                symbol: originalSP500.symbol,
+                category: originalSP500.category,
+                label: AppLocalization.string("QUAL美国质量因子"),
+                currency: originalSP500.currency,
+                unit: originalSP500.unit,
+                source: "V11 signal path + QUAL adjusted-close realized-return role",
+                dates: originalSP500.dates,
+                prices: prices,
+                hasOHLC: false,
+                ohlcSource: nil,
+                ohlcCoverageRatio: nil,
+                openPrices: nil,
+                highPrices: nil,
+                lowPrices: nil,
+                closePrices: nil,
+                volumes: nil
+            )
+        }
+
+        guard let hybridSP500 = hybridQUALRoleSeries() else { return nil }
+        let qualRoleOption = BacktestAssetOption(
+            symbol: originalSP500Input.assetOption.symbol,
+            title: AppLocalization.string("QUAL美国质量因子"),
+            color: originalSP500Input.assetOption.color,
+            requiresHistoricalFX: originalSP500Input.assetOption.requiresHistoricalFX,
+            historicalFXSymbol: originalSP500Input.assetOption.historicalFXSymbol,
+            category: "etf",
+            iconName: "chart.line.uptrend.xyaxis",
+            currency: "USD",
+            unit: "share"
+        )
+        let candidateInputs = baseInputs.map { input in
+            if BacktestAssetSymbol.normalized(input.assetOption.symbol) == "sp500" {
+                return (assetSeries: Optional(hybridSP500), assetOption: qualRoleOption, fxSeries: input.fxSeries)
+            }
+            return input
+        }
+
+        guard let source = runNFCIDualCoreV1WithTrace(
+            assetInputs: baseInputs,
+            initialCash: initialCash,
+            settings: settings,
+            nfciAsOf: nfciAsOf,
+            dateBounds: dateBounds,
+            profile: .simplifiedV11
+        ) else { return nil }
+
+        let frozenSettings = AdvancedBacktestRiskSettings(
+            feeRate: 1.00,
+            slippageRate: 0.05,
+            maxPositionRatio: settings.maxPositionRatio,
+            cooldownDays: settings.cooldownDays,
+            stopLossRatio: settings.stopLossRatio,
+            takeProfitRatio: settings.takeProfitRatio
+        )
+        let decisionSource: AdvancedRotationStrategyRun
+        if abs(settings.feeRate - 1.00) < 0.0000001,
+           abs(settings.slippageRate - 0.05) < 0.0000001 {
+            decisionSource = source
+        } else {
+            guard let frozenSource = runNFCIDualCoreV1WithTrace(
+                assetInputs: baseInputs,
+                initialCash: initialCash,
+                settings: frozenSettings,
+                nfciAsOf: nfciAsOf,
+                dateBounds: dateBounds,
+                profile: .simplifiedV11
+            ) else { return nil }
+            decisionSource = frozenSource
+        }
+        let sourceTargets = Dictionary(uniqueKeysWithValues: decisionSource.dailyStates.map {
+            ($0.date.recordDateString, $0.targetWeights)
+        })
+        let sourceTradeDates = Set(decisionSource.report.trades.map { $0.date.recordDateString })
+        let config = ResearchTargetStrategyConfig(
+            symbol: "nfci_dual_core_v11_qual_role",
+            title: AppLocalization.string("NFCI 双核心·质量增强（研究）"),
+            warmupSessions: 21,
+            rebalanceSessions: 1,
+            rebalanceBand: 0.25,
+            maxGrossExposure: 1,
+            allowsFinancedExposure: false,
+            financingAnnualRate: 0,
+            buyReason: AppLocalization.string("V11 质量因子角色调仓")
+        )
+        var pendingTarget: [String: Double] = [:]
+        guard let candidate = runResearchTargetProviderStrategyWithTrace(
+            assetInputs: candidateInputs,
+            initialCash: initialCash,
+            settings: settings,
+            config: config,
+            dateBounds: dateBounds,
+            rebalanceDecision: { index, _, data in
+                guard data.dates.indices.contains(index) else {
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                }
+                let key = data.dates[index].recordDateString
+                guard sourceTradeDates.contains(key), let target = sourceTargets[key] else {
+                    return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                }
+                pendingTarget = target
+                return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+            },
+            targetWeights: { _, _ in pendingTarget }
+        ) else { return nil }
+        return AdvancedRotationStrategyRun(report: candidate.report, dailyStates: candidate.dailyStates)
+    }
+
     static func runAdvancedRotationStrategy(
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
         initialCash: Double,
@@ -4423,6 +4588,18 @@ nonisolated enum BacktestEngine {
         nfciAsOf: BacktestNFCIAsOfData? = nil,
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedBacktestReport? {
+        if mode == .nfciDualCoreSimplifiedV11QualRole {
+            guard let resolvedNFCIAsOf = nfciAsOf ?? BacktestMacroSnapshotStore.shared.nfciAsOfSnapshot() else {
+                return nil
+            }
+            return runNFCIDualCoreSimplifiedV11QualRoleWithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                nfciAsOf: resolvedNFCIAsOf,
+                dateBounds: dateBounds
+            )?.report
+        }
         if mode == .nfciDualCoreV1 || mode == .nfciDualCoreSimplifiedV11 {
             guard let resolvedNFCIAsOf = nfciAsOf ?? BacktestMacroSnapshotStore.shared.nfciAsOfSnapshot() else {
                 return nil
@@ -4519,6 +4696,18 @@ nonisolated enum BacktestEngine {
         nfciAsOf: BacktestNFCIAsOfData? = nil,
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedRotationStrategyRun? {
+        if mode == .nfciDualCoreSimplifiedV11QualRole {
+            guard let resolvedNFCIAsOf = nfciAsOf ?? BacktestMacroSnapshotStore.shared.nfciAsOfSnapshot() else {
+                return nil
+            }
+            return runNFCIDualCoreSimplifiedV11QualRoleWithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                nfciAsOf: resolvedNFCIAsOf,
+                dateBounds: dateBounds
+            )
+        }
         if mode == .nfciDualCoreV1 || mode == .nfciDualCoreSimplifiedV11 {
             guard let resolvedNFCIAsOf = nfciAsOf ?? BacktestMacroSnapshotStore.shared.nfciAsOfSnapshot() else {
                 return nil
@@ -5955,7 +6144,8 @@ nonisolated enum BacktestEngine {
              .riskContributionCashConfidenceRouter,
              .riskContributionCashConfidenceLowNoise,
              .nfciDualCoreV1,
-             .nfciDualCoreSimplifiedV11:
+             .nfciDualCoreSimplifiedV11,
+             .nfciDualCoreSimplifiedV11QualRole:
             return nil
         case .ultraDefensiveRotation:
             return .init(
@@ -7746,9 +7936,12 @@ nonisolated enum BacktestEngine {
         let allocations = latestState.targetWeights
             .filter { $0.value > 0.0001 }
             .compactMap { symbol, weight -> StrategyRebalanceAllocation? in
-                guard let option = optionsBySymbol[symbol] else { return nil }
+                let outputSymbol = mode == .nfciDualCoreSimplifiedV11QualRole && symbol == "sp500"
+                    ? "qual"
+                    : symbol
+                guard let option = optionsBySymbol[outputSymbol] ?? optionsBySymbol[symbol] else { return nil }
                 return StrategyRebalanceAllocation(
-                    symbol: symbol,
+                    symbol: outputSymbol,
                     title: option.title,
                     targetWeight: weight,
                     momentum: nil,

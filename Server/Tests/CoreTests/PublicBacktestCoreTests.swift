@@ -530,4 +530,154 @@ final class PublicBacktestCoreTests: XCTestCase {
         XCTAssertNil(inheritedSale.realizedReturn)
         XCTAssertNil(inheritedSale.holdingDays)
     }
+
+    func testIncrementalHistoryMergePreservesEarlyRowsAndRevisesOverlap() throws {
+        let existing = historySeries(
+            dates: ["2026-07-01", "2026-07-02", "2026-07-03"],
+            prices: [100, 101, 102],
+            opens: [99, 100, 101],
+            highs: [101, 102, 103],
+            lows: [98, 99, 100],
+            closes: [100, 101, 102],
+            volumes: [10, 11, 12]
+        )
+        let incoming = historySeries(
+            dates: ["2026-07-03", "2026-07-04"],
+            prices: [202, 203],
+            opens: [201, 202],
+            highs: [203, 204],
+            lows: [200, 201],
+            closes: [202, 203],
+            volumes: [22, 23]
+        )
+
+        let merged = MarketHistorySeriesMerger.merge(existing: existing, incoming: incoming)
+
+        XCTAssertEqual(merged.dates, ["2026-07-01", "2026-07-02", "2026-07-03", "2026-07-04"])
+        XCTAssertEqual(merged.prices, [100, 101, 202, 203])
+        XCTAssertEqual(merged.openPrices ?? [], [99, 100, 201, 202])
+        XCTAssertEqual(merged.volumes ?? [], [10, 11, 22, 23])
+        XCTAssertEqual(merged.ohlcCoverageRatio, 1)
+    }
+
+    func testIncrementalHistoryMergeDoesNotEraseExistingOHLCWithCloseOnlyOverlap() throws {
+        let existing = historySeries(
+            dates: ["2026-07-01"],
+            prices: [100],
+            opens: [99],
+            highs: [101],
+            lows: [98],
+            closes: [100],
+            volumes: [10]
+        )
+        let incoming = historySeries(dates: ["2026-07-01", "2026-07-02"], prices: [105, 106])
+
+        let merged = MarketHistorySeriesMerger.merge(existing: existing, incoming: incoming)
+
+        XCTAssertEqual(merged.prices, [105, 106])
+        XCTAssertEqual(merged.openPrices ?? [], [99, nil])
+        XCTAssertEqual(merged.closePrices ?? [], [100, nil])
+        XCTAssertEqual(merged.ohlcCoverageRatio, 0.5)
+    }
+
+    func testHistoryRefreshPlannerUsesOverlapOnlyWhenEverySymbolHasCache() throws {
+        let cached = [
+            "nasdaq": historySeries(
+                symbol: "nasdaq",
+                dates: (1...30).map { String(format: "2026-07-%02d", $0) },
+                prices: (1...30).map(Double.init)
+            ),
+            "gold_cny": historySeries(
+                symbol: "gold_cny",
+                dates: (1...31).map { String(format: "2026-07-%02d", $0) },
+                prices: (1...31).map(Double.init)
+            ),
+        ]
+
+        XCTAssertEqual(
+            MarketHistoryRefreshPlanner.startDate(
+                symbols: ["nasdaq", "gold_cny"],
+                seriesBySymbol: cached,
+                overlapCalendarDays: 45
+            ),
+            "2026-06-15"
+        )
+        XCTAssertEqual(
+            MarketHistoryRefreshPlanner.startDate(
+                symbols: ["nasdaq", "qual"],
+                seriesBySymbol: cached,
+                overlapCalendarDays: 45
+            ),
+            "2000-01-01"
+        )
+    }
+
+    func testStrategyHistorySymbolsFollowSelectedTemplateDependencies() throws {
+        let standard = try XCTUnwrap(StrategyRebalanceDefaults.template(for: "nfci-dual-core-v1"))
+        let quality = try XCTUnwrap(StrategyRebalanceDefaults.template(for: "nfci-dual-core-v11-qual-role"))
+
+        XCTAssertEqual(
+            StrategyRebalanceDefaults.historySymbols(for: standard),
+            Set(["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite", "usd_per_cny"])
+        )
+        XCTAssertFalse(StrategyRebalanceDefaults.historySymbols(for: standard).contains("qual"))
+        XCTAssertTrue(StrategyRebalanceDefaults.historySymbols(for: quality).contains("qual"))
+    }
+
+    func testHistoryRefreshPlannerUsesPerSymbolFreshness() throws {
+        let now = try XCTUnwrap(
+            Calendar(identifier: .gregorian).date(
+                from: DateComponents(year: 2026, month: 8, day: 23)
+            )
+        )
+        let dates = (1...30).map { String(format: "2026-07-%02d", $0) }
+        let cached = [
+            "nasdaq": historySeries(symbol: "nasdaq", dates: dates, prices: (1...30).map(Double.init)),
+            "qual": historySeries(symbol: "qual", dates: dates, prices: (1...30).map(Double.init)),
+        ]
+
+        XCTAssertEqual(
+            MarketHistoryRefreshPlanner.symbolsNeedingRefresh(
+                requestedSymbols: Set(["nasdaq", "qual"]),
+                seriesBySymbol: cached,
+                refreshedAtBySymbol: [
+                    "nasdaq": now,
+                    "qual": now.addingTimeInterval(-13 * 60 * 60),
+                ],
+                now: now,
+                refreshInterval: 12 * 60 * 60
+            ),
+            ["qual"]
+        )
+    }
+
+    private func historySeries(
+        symbol: String = "nasdaq",
+        dates: [String],
+        prices: [Double],
+        opens: [Double?]? = nil,
+        highs: [Double?]? = nil,
+        lows: [Double?]? = nil,
+        closes: [Double?]? = nil,
+        volumes: [Double?]? = nil
+    ) -> PublicHistorySeries {
+        PublicHistorySeries(
+            symbol: symbol,
+            category: "index",
+            label: symbol,
+            currency: "USD",
+            unit: "point",
+            source: "fixture",
+            dates: dates,
+            prices: prices,
+            hasOHLC: opens != nil,
+            ohlcSource: opens == nil ? nil : "fixture",
+            ohlcCoverageRatio: opens == nil ? nil : 1,
+            openPrices: opens,
+            highPrices: highs,
+            lowPrices: lows,
+            closePrices: closes,
+            volumes: volumes
+        )
+    }
 }

@@ -154,10 +154,9 @@ extension ContentView {
             return (template.title, nil)
         }
 
-        await marketStore.refreshHistoryIfNeeded(force: false)
-
         let assetOptions = StrategyRebalanceDefaults.assetOptions(for: template)
-        let historySymbols = StrategyAdviceProjectionStore.historySymbols(for: assetOptions)
+        let historySymbols = StrategyRebalanceDefaults.historySymbols(for: assetOptions)
+        _ = await marketStore.refreshHistory(for: historySymbols)
         let historyBySymbol = Dictionary(uniqueKeysWithValues: historySymbols.compactMap { symbol in
             marketStore.history(for: symbol).map { (symbol, $0) }
         })

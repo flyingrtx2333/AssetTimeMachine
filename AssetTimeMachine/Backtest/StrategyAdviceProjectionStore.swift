@@ -62,6 +62,7 @@ final class StrategyAdviceProjectionStore: ObservableObject {
         }
 
         let assetOptions = StrategyRebalanceDefaults.assetOptions(for: template)
+        let historySymbols = StrategyRebalanceDefaults.historySymbols(for: assetOptions)
         let shouldForceHistoryRefresh = force || isMissingRequiredHistory(
             for: assetOptions,
             marketStore: marketStore
@@ -73,7 +74,7 @@ final class StrategyAdviceProjectionStore: ObservableObject {
                 template.title
             )
         )
-        await marketStore.refreshHistoryIfNeeded(force: shouldForceHistoryRefresh)
+        _ = await marketStore.refreshHistory(for: historySymbols, force: force)
         guard !Task.isCancelled, calculationGeneration == generation else { return }
 
         if isMissingRequiredHistory(for: assetOptions, marketStore: marketStore) {
@@ -90,7 +91,6 @@ final class StrategyAdviceProjectionStore: ObservableObject {
             fraction: 0.54,
             message: AppLocalization.format("正在整理%@行情", template.title)
         )
-        let historySymbols = Self.historySymbols(for: assetOptions)
         let historyBySymbol = Dictionary(uniqueKeysWithValues: historySymbols.compactMap { symbol in
             marketStore.history(for: symbol).map { (symbol, $0) }
         })
@@ -194,18 +194,6 @@ final class StrategyAdviceProjectionStore: ObservableObject {
         resetProgress()
     }
 
-    static func historySymbols(for assetOptions: [BacktestAssetOption]) -> Set<String> {
-        Set(assetOptions.flatMap { option -> [String] in
-            var symbols = [option.symbol]
-            if let fxSymbol = option.historicalFXSymbol {
-                symbols.append(fxSymbol)
-            }
-            if option.symbol == "usd_cash" {
-                symbols.append("usd_per_cny")
-            }
-            return symbols
-        })
-    }
 
     private func waitForRequiredHistory(
         _ assetOptions: [BacktestAssetOption],
@@ -230,7 +218,10 @@ final class StrategyAdviceProjectionStore: ObservableObject {
             try? await Task.sleep(nanoseconds: 300_000_000)
             guard !Task.isCancelled else { return }
             guard isMissingRequiredHistory(for: assetOptions, marketStore: marketStore) else { return }
-            await marketStore.refreshHistoryIfNeeded(force: true)
+            _ = await marketStore.refreshHistory(
+                for: StrategyRebalanceDefaults.historySymbols(for: assetOptions),
+                force: true
+            )
         }
     }
 

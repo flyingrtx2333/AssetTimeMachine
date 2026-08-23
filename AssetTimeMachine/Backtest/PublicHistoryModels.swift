@@ -168,3 +168,170 @@ nonisolated struct PublicHistoryResponse: Codable, Equatable, Sendable {
         case catalog
     }
 }
+
+nonisolated enum MarketHistorySeriesMerger {
+    private struct Point {
+        var price: Double
+        var open: Double?
+        var high: Double?
+        var low: Double?
+        var close: Double?
+        var volume: Double?
+    }
+
+    static func merge(existing: PublicHistorySeries, incoming: PublicHistorySeries) -> PublicHistorySeries {
+        var points: [String: Point] = [:]
+        add(series: existing, to: &points, preservingMissingFields: false)
+        add(series: incoming, to: &points, preservingMissingFields: true)
+
+        let dates = points.keys.sorted()
+        guard !dates.isEmpty else { return incoming }
+
+        let mergedPoints = dates.compactMap { points[$0] }
+        let hasAnyOHLC = mergedPoints.contains {
+            $0.open != nil || $0.high != nil || $0.low != nil || $0.close != nil
+        }
+        let hasAnyVolume = mergedPoints.contains { $0.volume != nil }
+        let completeOHLCCount = mergedPoints.reduce(into: 0) { count, point in
+            if point.open != nil, point.high != nil, point.low != nil, point.close != nil {
+                count += 1
+            }
+        }
+
+        return PublicHistorySeries(
+            symbol: incoming.symbol,
+            category: incoming.category,
+            label: incoming.label,
+            currency: incoming.currency,
+            unit: incoming.unit,
+            source: incoming.source.isEmpty ? existing.source : incoming.source,
+            dates: dates,
+            prices: mergedPoints.map(\.price),
+            hasOHLC: completeOHLCCount > 0,
+            ohlcSource: incoming.ohlcSource ?? existing.ohlcSource,
+            ohlcCoverageRatio: hasAnyOHLC ? Double(completeOHLCCount) / Double(mergedPoints.count) : nil,
+            openPrices: hasAnyOHLC ? mergedPoints.map(\.open) : nil,
+            highPrices: hasAnyOHLC ? mergedPoints.map(\.high) : nil,
+            lowPrices: hasAnyOHLC ? mergedPoints.map(\.low) : nil,
+            closePrices: hasAnyOHLC ? mergedPoints.map(\.close) : nil,
+            volumes: hasAnyVolume ? mergedPoints.map(\.volume) : nil
+        )
+    }
+
+    private static func add(
+        series: PublicHistorySeries,
+        to points: inout [String: Point],
+        preservingMissingFields: Bool
+    ) {
+        for index in series.dates.indices where series.prices.indices.contains(index) {
+            let date = series.dates[index]
+            let previous = preservingMissingFields ? points[date] : nil
+            points[date] = Point(
+                price: series.prices[index],
+                open: optionalValue(series.openPrices, at: index) ?? previous?.open,
+                high: optionalValue(series.highPrices, at: index) ?? previous?.high,
+                low: optionalValue(series.lowPrices, at: index) ?? previous?.low,
+                close: optionalValue(series.closePrices, at: index) ?? previous?.close,
+                volume: optionalValue(series.volumes, at: index) ?? previous?.volume
+            )
+        }
+    }
+
+    private static func optionalValue(_ values: [Double?]?, at index: Int) -> Double? {
+        guard let values, values.indices.contains(index) else { return nil }
+        return values[index]
+    }
+}
+
+nonisolated enum MarketHistoryRefreshPlanner {
+    static let fullHistoryStartDate = "2000-01-01"
+    static let minimumCachedPoints = 30
+
+    static func startDate(
+        symbols: [String],
+        seriesBySymbol: [String: PublicHistorySeries],
+        overlapCalendarDays: Int = 45
+    ) -> String {
+        guard !symbols.isEmpty else { return fullHistoryStartDate }
+
+        var lastDates: [Date] = []
+        for symbol in symbols {
+            guard
+                let series = seriesBySymbol[symbol],
+                series.dates.count >= minimumCachedPoints,
+                let lastDateText = series.dates.last,
+                let lastDate = parseDay(lastDateText)
+            else {
+                return fullHistoryStartDate
+            }
+            lastDates.append(lastDate)
+        }
+
+        guard
+            let earliestLastDate = lastDates.min(),
+            let overlapStart = calendar.date(
+                byAdding: .day,
+                value: -max(0, overlapCalendarDays),
+                to: earliestLastDate
+            ),
+            let fullStart = parseDay(fullHistoryStartDate)
+        else {
+            return fullHistoryStartDate
+        }
+        return formatDay(max(overlapStart, fullStart))
+    }
+
+    static func symbolsNeedingRefresh(
+        requestedSymbols: Set<String>,
+        seriesBySymbol: [String: PublicHistorySeries],
+        refreshedAtBySymbol: [String: Date],
+        now: Date = Date(),
+        refreshInterval: TimeInterval,
+        force: Bool = false
+    ) -> [String] {
+        requestedSymbols.filter { symbol in
+            if force { return true }
+            guard
+                let series = seriesBySymbol[symbol],
+                series.dates.count >= minimumCachedPoints,
+                series.prices.count >= minimumCachedPoints,
+                let refreshedAt = refreshedAtBySymbol[symbol]
+            else {
+                return true
+            }
+            return now.timeIntervalSince(refreshedAt) >= refreshInterval
+        }.sorted()
+    }
+
+    private static var calendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar
+    }
+
+    private static func parseDay(_ text: String) -> Date? {
+        let parts = text.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        let requested = DateComponents(year: parts[0], month: parts[1], day: parts[2])
+        guard let date = calendar.date(from: requested) else { return nil }
+        let resolved = calendar.dateComponents([.year, .month, .day], from: date)
+        guard
+            resolved.year == requested.year,
+            resolved.month == requested.month,
+            resolved.day == requested.day
+        else {
+            return nil
+        }
+        return date
+    }
+
+    private static func formatDay(_ date: Date) -> String {
+        let components = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(
+            format: "%04d-%02d-%02d",
+            components.year ?? 0,
+            components.month ?? 0,
+            components.day ?? 0
+        )
+    }
+}

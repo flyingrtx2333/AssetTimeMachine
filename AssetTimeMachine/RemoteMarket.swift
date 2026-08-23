@@ -569,17 +569,12 @@ nonisolated private enum MarketHistoryMergeProcessor {
             if index.isMultiple(of: 8) { try Task.checkCancellation() }
             let normalizedSymbol = RemoteMarketStore.normalizedHistorySymbol(series.symbol)
             if let current = normalizedSeries[normalizedSymbol] {
-                let currentLastDate = current.dates.last ?? ""
-                let nextLastDate = series.dates.last ?? ""
-                if currentLastDate > nextLastDate {
-                    continue
-                }
-                if currentLastDate == nextLastDate, current.dates.count > series.dates.count {
-                    continue
-                }
-                if current == series { continue }
+                let merged = MarketHistorySeriesMerger.merge(existing: current, incoming: series)
+                if current == merged { continue }
+                normalizedSeries[normalizedSymbol] = merged
+            } else {
+                normalizedSeries[normalizedSymbol] = series
             }
-            normalizedSeries[normalizedSymbol] = series
             didChange = true
         }
 
@@ -906,6 +901,7 @@ final class RemoteMarketStore: ObservableObject {
     private var isRefreshingLiveData = false
     private var isRefreshingHistory = false
     private var lastHistoryRefreshAt: Date?
+    private var historyRefreshAtBySymbol: [String: Date] = [:]
     private var lastHistoryAttemptAt: Date?
     private var didLoadHistoryDiskCache = false
     private var historyDiskCacheLoadTask: Task<MarketHistoryCacheEntry?, Never>?
@@ -1394,9 +1390,14 @@ final class RemoteMarketStore: ObservableObject {
         }
 
         let normalizedRequestedSymbols = Set(requestedSymbols.map(Self.normalizedHistorySymbol))
-        let symbols = normalizedRequestedSymbols
-            .filter { $0 != "usd_cash" && (force || needsFullHistory(for: $0)) }
-            .sorted()
+        let refreshableSymbols = Set(normalizedRequestedSymbols.filter { $0 != "usd_cash" })
+        let symbols = MarketHistoryRefreshPlanner.symbolsNeedingRefresh(
+            requestedSymbols: refreshableSymbols,
+            seriesBySymbol: historySeries,
+            refreshedAtBySymbol: historyRefreshAtBySymbol,
+            refreshInterval: Self.historyRefreshInterval,
+            force: force
+        )
         guard !symbols.isEmpty else {
             return normalizedRequestedSymbols.allSatisfy { symbol in
                 symbol == "usd_cash" || history(for: symbol)?.prices.isEmpty == false
@@ -1416,10 +1417,6 @@ final class RemoteMarketStore: ObservableObject {
         return didRefresh
     }
 
-    private func needsFullHistory(for symbol: String) -> Bool {
-        guard let series = history(for: symbol) else { return true }
-        return series.dates.count < 30 || series.prices.count < 30
-    }
 
     private func loadHistoryDiskCacheIfNeeded() async {
         if didLoadHistoryDiskCache { return }
@@ -1495,13 +1492,24 @@ final class RemoteMarketStore: ObservableObject {
             updateLoadingState()
         }
 
-        let historyBatches: [(symbols: [String], includeOHLC: Bool)] = [
-            (["gold_cny", "nasdaq", "sp500", "usd_per_cny"], true),
+        let historyBatchDefinitions: [(symbols: [String], includeOHLC: Bool)] = [
+            (["gold_cny", "nasdaq", "sp500", "qual", "usd_per_cny"], true),
             (["hang_seng", "csi300", "shanghai_composite", "dow_jones"], true),
             (["shenzhen_component", "chinext", "nikkei225", "oil_wti_cny"], true),
             (Self.treasuryYieldSignalSymbols, false)
         ]
-        let fullHistoryStartDate = "2000-01-01"
+        let cachedSeries = historySeries
+        let historyBatches = historyBatchDefinitions.map { batch in
+            let normalizedSymbols = batch.symbols.map(Self.normalizedHistorySymbol)
+            return (
+                symbols: batch.symbols,
+                includeOHLC: batch.includeOHLC,
+                startDate: MarketHistoryRefreshPlanner.startDate(
+                    symbols: normalizedSymbols,
+                    seriesBySymbol: cachedSeries
+                )
+            )
+        }
         let fullHistoryEndDate = MarketDay.string(from: .now)
 
         var mergedSeries: [PublicHistorySeries] = []
@@ -1512,7 +1520,7 @@ final class RemoteMarketStore: ObservableObject {
                     do {
                         let response = try await RemoteMarketClient.fetchHistory(
                             symbols: batch.symbols,
-                            startDate: fullHistoryStartDate,
+                            startDate: batch.startDate,
                             endDate: fullHistoryEndDate,
                             includeOHLC: batch.includeOHLC
                         )
@@ -1567,7 +1575,11 @@ final class RemoteMarketStore: ObservableObject {
             }
 
             if batchErrorMessages.isEmpty {
-                lastHistoryRefreshAt = .now
+                let refreshedAt = Date()
+                lastHistoryRefreshAt = refreshedAt
+                for symbol in historyBatchDefinitions.flatMap(\.symbols) {
+                    historyRefreshAtBySymbol[Self.normalizedHistorySymbol(symbol)] = refreshedAt
+                }
                 historyErrorMessage = nil
             } else {
                 lastHistoryRefreshAt = nil
@@ -1604,9 +1616,13 @@ final class RemoteMarketStore: ObservableObject {
         }
 
         do {
+            let incrementalStartDate = MarketHistoryRefreshPlanner.startDate(
+                symbols: symbols.map(Self.normalizedHistorySymbol),
+                seriesBySymbol: historySeries
+            )
             let response = try await RemoteMarketClient.fetchHistory(
                 symbols: symbols,
-                startDate: "2000-01-01",
+                startDate: incrementalStartDate,
                 endDate: MarketDay.string(from: .now),
                 includeOHLC: true,
                 forceRemote: forceRemote
@@ -1639,6 +1655,10 @@ final class RemoteMarketStore: ObservableObject {
             }
 
             historyErrorMessage = nil
+            let refreshedAt = Date()
+            for symbol in symbols {
+                historyRefreshAtBySymbol[Self.normalizedHistorySymbol(symbol)] = refreshedAt
+            }
             updateErrorMessage()
             let cachedSeries = historySeries
             _ = Task.detached(priority: .utility) {

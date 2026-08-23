@@ -143,7 +143,6 @@ struct BacktestDCACard: View {
                         .padding(.vertical, 14)
                     }
                 }
-                .onboardingAnchor(.backtestStart)
             }
         }
         .background(
@@ -1774,8 +1773,9 @@ extension AdvancedBacktestStrategyTemplate {
              .riskContributionCashConfidenceLowNoise:
             growth = 1.00; stability = 1.00; defense = 1.00; flexibility = 1.00
         case .nfciDualCoreV1,
-             .nfciDualCoreSimplifiedV11:
-            growth = 0.96; stability = 1.00; defense = 1.00; flexibility = 0.98
+             .nfciDualCoreSimplifiedV11,
+             .nfciDualCoreSimplifiedV11QualRole:
+            growth = 0.97; stability = 1.00; defense = 1.00; flexibility = 0.98
         case .strongVolControlledRotation:
             growth = 0.78; stability = 0.66; defense = 0.66; flexibility = 0.78
         case .momentumRotation:

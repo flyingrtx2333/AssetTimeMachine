@@ -341,6 +341,7 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
     case riskContributionCashConfidenceLowNoise
     case nfciDualCoreV1
     case nfciDualCoreSimplifiedV11
+    case nfciDualCoreSimplifiedV11QualRole
     case strongVolControlledRotation
     case momentumRotation
 
@@ -454,6 +455,8 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
             return AppLocalization.string("NFCI 双核心（前瞻）")
         case .nfciDualCoreSimplifiedV11:
             return AppLocalization.string("NFCI 双核心·简化（前瞻）")
+        case .nfciDualCoreSimplifiedV11QualRole:
+            return AppLocalization.string("NFCI 双核心·质量增强（研究）")
         case .strongVolControlledRotation:
             return AppLocalization.string("强势控波轮动")
         case .momentumRotation:
@@ -571,6 +574,8 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
             return AppLocalization.string("前瞻观察中的冻结策略 V1：50% 低噪增强+C3/L3 与 50% 无融资置信度恢复+C3/L3+1.30×风险预算在目标仓位层等权融合；NFCI Credit 采用8次发布变化≤-0.03，Leverage采用4次发布变化≤-0.03，仅使用服务器 first-seen/initial-release 点时数据。总仓位≤100%，不融资、不做空，25%偏离带统一成交。用户手续费只影响成交，不改变策略目标。")
         case .nfciDualCoreSimplifiedV11:
             return AppLocalization.string("简化冻结前瞻候选：保持 DualCore 50/50 与 NFCI C3/L3 不变，高收益核心把美股/中国特例倍率折叠为统一1.22，删除A股5%退出哨兵，并把高收益核心交易带从24.4%圆整为25%。稳健核心仍为无融资置信度恢复+C3/L3+1.30×风险预算。总仓位≤100%，不融资、不做空；用户手续费只影响成交，不改变策略目标。")
+        case .nfciDualCoreSimplifiedV11QualRole:
+            return AppLocalization.string("研究实验策略：完整保留 V11 的 NFCI 信号、目标仓位与调仓事件，仅把标普500投资角色替换为 QUAL 美国质量因子 ETF。它相对原 S&P 价格指数回测曾表现更好，但进一步使用同口径 SPY 总收益控制审计后，2万次成对区块Bootstrap仅得到 P(CAGR>SPY)=75.19%、P(Sharpe>SPY)=83.95%，未通过冻结的90%门槛，累计DSR也未达到95%。因此仅供策略研究与对比，不代表已验证优于宽基。总仓位≤100%，不融资、不做空。")
         case .strongVolControlledRotation:
             return AppLocalization.string("20日强弱排序，每20个交易日持有最强资产；目标波动12%，最高投入90%")
         case .momentumRotation:
@@ -634,6 +639,8 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
              .nfciDualCoreV1,
              .nfciDualCoreSimplifiedV11:
             return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+        case .nfciDualCoreSimplifiedV11QualRole:
+            return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite", "qual"]
         default:
             return []
         }
@@ -647,7 +654,8 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
              .riskContributionCashConfidenceRouter,
              .riskContributionCashConfidenceLowNoise,
              .nfciDualCoreV1,
-             .nfciDualCoreSimplifiedV11:
+             .nfciDualCoreSimplifiedV11,
+             .nfciDualCoreSimplifiedV11QualRole:
             return ["gold_cny", "nasdaq"]
         case .convexCrashHedgeComposite,
              .onlineStrategyAllocator,
@@ -664,7 +672,9 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
     }
 
     nonisolated var requiresNFCIAsOf: Bool {
-        self == .nfciDualCoreV1 || self == .nfciDualCoreSimplifiedV11
+        self == .nfciDualCoreV1
+            || self == .nfciDualCoreSimplifiedV11
+            || self == .nfciDualCoreSimplifiedV11QualRole
     }
 }
 
@@ -1590,6 +1600,8 @@ enum StrategyRebalanceActionBuilder {
             return ["创业板", "创业板指", "chinext", "399006"]
         case "usd_cash":
             return ["美元现金", "美元", "usd", "us dollar", "dollar"]
+        case "qual":
+            return ["qual", "美国质量", "质量因子", "usa quality", "msci usa quality"]
         default:
             return [symbol.lowercased()]
         }
@@ -2004,6 +2016,23 @@ struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
             takeProfitRatio: 0
         ),
         .init(
+            id: "nfci-dual-core-v11-qual-role",
+            mode: .nfciDualCoreSimplifiedV11QualRole,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite", "qual"],
+            categoryLocalizationKey: "实验策略",
+            titleLocalizationKey: "NFCI 双核心·质量增强（研究）",
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1,
+            maxPositionRatio: 100,
+            cooldownDays: 0,
+            stopLossRatio: 0,
+            takeProfitRatio: 0
+        ),
+        .init(
             id: "gold-nasdaq-dual-trend-barbell",
             mode: .goldNasdaqDualTrendBarbell,
             selectedAssetSymbols: ["gold_cny", "nasdaq"],
@@ -2153,7 +2182,9 @@ enum BacktestProductStrategyCatalog {
         "gold-nasdaq-dual-trend-barbell",
     ]
 
-    static let experimentalTemplateIDs: [String] = []
+    static let experimentalTemplateIDs: [String] = [
+        "nfci-dual-core-v11-qual-role",
+    ]
 
     static let basicTemplateIDs = [
         "basic-ma60-trend",
@@ -3205,6 +3236,7 @@ enum BacktestDefaults {
     static var internalStrategyAssetOptions: [BacktestAssetOption] { [
         .init(symbol: "usd_cash", title: AppLocalization.string("美元现金"), color: AssetTheme.textSecondary, requiresHistoricalFX: false, historicalFXSymbol: nil),
         .init(symbol: "oil_wti_cny", title: AppLocalization.string("WTI原油"), color: AssetTheme.accentOrange, requiresHistoricalFX: false, historicalFXSymbol: nil),
+        .init(symbol: "qual", title: AppLocalization.string("QUAL美国质量因子"), color: AssetTheme.accentBlue, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny", category: "etf", iconName: "chart.line.uptrend.xyaxis", currency: "USD", unit: "share"),
     ] }
     static var strategyAssetOptions: [BacktestAssetOption] { dcaAssetOptions + internalStrategyAssetOptions }
 
@@ -3260,6 +3292,23 @@ enum StrategyRebalanceDefaults {
         selectedSymbols.formUnion(template.mode.requiredSignalAssetSymbols)
         let options = BacktestDefaults.strategyAssetOptions.filter { selectedSymbols.contains($0.symbol) }
         return options.isEmpty ? BacktestDefaults.dcaAssetOptions : options
+    }
+
+    static func historySymbols(for template: AdvancedBacktestStrategyTemplate) -> Set<String> {
+        historySymbols(for: assetOptions(for: template))
+    }
+
+    static func historySymbols(for assetOptions: [BacktestAssetOption]) -> Set<String> {
+        Set(assetOptions.flatMap { option -> [String] in
+            var symbols = [option.symbol]
+            if let fxSymbol = option.historicalFXSymbol {
+                symbols.append(fxSymbol)
+            }
+            if option.symbol == "usd_cash" {
+                symbols.append("usd_per_cny")
+            }
+            return symbols
+        })
     }
 }
 

@@ -428,7 +428,6 @@ struct BacktestView: View {
                                                 startStandardBacktest()
                                             }
                                         )
-                                        .onboardingAnchor(.backtestConfiguration)
                                     } else {
                                         BacktestDCACard(
                                             assetTitle: AppLocalization.string(selectedDCAAssetOption?.title ?? "未选择资产"),
@@ -453,7 +452,6 @@ struct BacktestView: View {
                                                 startStandardBacktest()
                                             }
                                         )
-                                        .onboardingAnchor(.backtestConfiguration)
                                     }
 
                                     if !isBacktestLoading, hasActiveReport {
@@ -645,8 +643,6 @@ struct BacktestView: View {
                 lastObservedRelevantHistoryToken = relevantHistoryToken
                 await marketStore.refreshAssetCatalogIfNeeded()
                 guard !Task.isCancelled else { return }
-                await marketStore.refreshHistoryIfNeeded()
-                guard !Task.isCancelled else { return }
                 await marketStore.refreshHistory(for: relevantBacktestHistorySymbols)
                 guard !Task.isCancelled else { return }
                 scheduleBacktestDataRefresh(delayNanoseconds: 0)
@@ -673,7 +669,6 @@ struct BacktestView: View {
             guard isActive, !isRestoringBacktestRecord else { return }
             if newValue == .standard {
                 Task {
-                    await marketStore.refreshHistoryIfNeeded()
                     await marketStore.refreshHistory(for: relevantBacktestHistorySymbols)
                 }
             }
@@ -862,8 +857,6 @@ struct BacktestView: View {
         isBacktestLoading = true
         backtestRunStage = .loadingHistory
         Task {
-            await marketStore.refreshHistoryIfNeeded()
-            guard !Task.isCancelled else { return }
             await marketStore.refreshHistory(for: relevantBacktestHistorySymbols)
             guard !Task.isCancelled else { return }
             await MainActor.run {
@@ -1580,7 +1573,6 @@ struct BacktestAllocationCard: View {
                         .padding(.vertical, 14)
                     }
                 }
-                .onboardingAnchor(.backtestStart)
             }
         }
         .background(

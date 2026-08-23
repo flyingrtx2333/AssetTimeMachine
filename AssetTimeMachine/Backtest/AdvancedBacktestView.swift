@@ -366,8 +366,6 @@ struct AdvancedBacktestView: View {
                 if shouldForceHistoryRefresh {
                     await MainActor.run { isLoadingRequiredHistory = true }
                 }
-                await marketStore.refreshHistoryIfNeeded()
-                guard !Task.isCancelled else { return }
                 await marketStore.refreshHistory(for: relevantHistorySymbols)
                 guard !Task.isCancelled else { return }
                 if shouldForceHistoryRefresh {
@@ -582,8 +580,6 @@ struct AdvancedBacktestView: View {
         isLoadingRequiredHistory = true
         backtestRunStage = .loadingHistory
         Task {
-            await marketStore.refreshHistoryIfNeeded()
-            guard !Task.isCancelled else { return }
             await marketStore.refreshHistory(for: relevantHistorySymbols)
             await MainActor.run { isLoadingRequiredHistory = false }
             guard !Task.isCancelled else { return }
