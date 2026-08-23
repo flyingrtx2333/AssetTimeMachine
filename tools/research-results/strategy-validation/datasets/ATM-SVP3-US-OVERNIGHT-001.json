@@ -1,0 +1,44 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    }
+  ],
+  "generated_at": "2026-08-23T11:25:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "campaign": "us-overnight-001",
+    "candidate_kind": "INDEPENDENT_SESSION_PREMIUM_STRATEGY",
+    "evaluation_end": "2026-08-20",
+    "evaluation_start": "2000-01-04",
+    "performance_viewed_before_freeze": false,
+    "primary_cost": "0.005% fee per fill; zero additional slippage",
+    "real_ohlc_only": true,
+    "series": [
+      {
+        "currency": "USD",
+        "end": "2026-08-20",
+        "ohlc_rows": 6700,
+        "source": "Nasdaq · Yahoo Finance",
+        "start": "2000-01-03",
+        "symbol": "nasdaq_composite"
+      },
+      {
+        "currency": "USD",
+        "end": "2026-08-20",
+        "ohlc_rows": 6711,
+        "source": "S&P Dow Jones Indices · Yahoo Finance",
+        "start": "2000-01-03",
+        "symbol": "sp500"
+      }
+    ],
+    "stress_cost": "0.005% fee plus 0.05% adverse slippage per fill",
+    "transformation": "For each real U.S. session t after the first valid OHLC row, the overnight synthetic bar is previous real close[t-1] -> current real open[t]. The synthetic USD open is FX-adjusted so the existing current-date CNY conversion reconstructs previous-close CNY value exactly; the synthetic close is current open. The daytime control is current real open -> current real close.",
+    "timing_note": "The candidate represents economic exposure from U.S. close[t-1] until U.S. open[t], with no daytime equity exposure."
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-US-OVERNIGHT-001"
+}

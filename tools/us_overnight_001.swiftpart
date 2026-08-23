@@ -1,0 +1,367 @@
+        if ProcessInfo.processInfo.environment["ATM_US_OVERNIGHT_001"] == "1" {
+            let formal = ProcessInfo.processInfo.environment["ATM_US_OVERNIGHT_001_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_US_OVERNIGHT_001_OUTPUT_DIR"]
+            let tradeSymbols = ["nasdaq", "sp500"]
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let baseInputs = tradeSymbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard baseInputs.count == tradeSymbols.count else {
+                print("US_OVERNIGHT_001_INPUTS_MISSING")
+                return
+            }
+
+            enum SessionSlice {
+                case overnight
+                case daytime
+            }
+
+            func syntheticSeries(
+                from input: (assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?),
+                slice: SessionSlice
+            ) -> PublicHistorySeries? {
+                guard let series = input.assetSeries,
+                      let opens = series.openPrices,
+                      let closes = series.closePrices,
+                      opens.count == series.dates.count,
+                      closes.count == series.dates.count,
+                      series.dates.count >= 2 else { return nil }
+
+                let fxLookup: BacktestHistoricalLookup?
+                if input.assetOption.requiresHistoricalFX {
+                    guard let lookup = BacktestSeriesAlignment.makeHistoricalLookup(from: input.fxSeries), !lookup.points.isEmpty else {
+                        return nil
+                    }
+                    fxLookup = lookup
+                } else {
+                    fxLookup = nil
+                }
+
+                var dates: [String] = []
+                var prices: [Double] = []
+                var syntheticOpens: [Double?] = []
+                var highs: [Double?] = []
+                var lows: [Double?] = []
+                var syntheticCloses: [Double?] = []
+
+                for index in 1..<series.dates.count {
+                    guard let currentDate = BacktestSeriesAlignment.historicalSeriesDate(from: series.dates[index]),
+                          let previousDate = BacktestSeriesAlignment.historicalSeriesDate(from: series.dates[index - 1]),
+                          let currentOpen = opens[index],
+                          let currentClose = closes[index],
+                          currentOpen.isFinite, currentOpen > 0,
+                          currentClose.isFinite, currentClose > 0 else { continue }
+
+                    let syntheticOpen: Double
+                    let syntheticClose: Double
+                    switch slice {
+                    case .overnight:
+                        guard let previousClose = closes[index - 1],
+                              previousClose.isFinite, previousClose > 0,
+                              let previousMultiplier = BacktestFXConverter.cnyMultiplier(
+                                on: previousDate,
+                                assetOption: input.assetOption,
+                                fxLookup: fxLookup
+                              ),
+                              let currentMultiplier = BacktestFXConverter.cnyMultiplier(
+                                on: currentDate,
+                                assetOption: input.assetOption,
+                                fxLookup: fxLookup
+                              ),
+                              let adjustedOpen = USOvernight001Logic.fxAdjustedSyntheticOpen(
+                                previousClose: previousClose,
+                                previousCNYMultiplier: previousMultiplier,
+                                currentCNYMultiplier: currentMultiplier
+                              ) else { continue }
+                        syntheticOpen = adjustedOpen
+                        syntheticClose = currentOpen
+                    case .daytime:
+                        syntheticOpen = currentOpen
+                        syntheticClose = currentClose
+                    }
+                    guard let bounds = USOvernight001Logic.syntheticHighLow(open: syntheticOpen, close: syntheticClose) else {
+                        continue
+                    }
+                    dates.append(series.dates[index])
+                    prices.append(syntheticClose)
+                    syntheticOpens.append(syntheticOpen)
+                    highs.append(bounds.high)
+                    lows.append(bounds.low)
+                    syntheticCloses.append(syntheticClose)
+                }
+                guard dates.count >= 2 else { return nil }
+                let suffix = slice == .overnight ? "overnight close-to-open" : "daytime open-to-close"
+                return PublicHistorySeries(
+                    symbol: series.symbol,
+                    category: series.category,
+                    label: series.label + " · " + suffix,
+                    currency: series.currency,
+                    unit: series.unit,
+                    source: series.source + " · ATM synthetic " + suffix,
+                    dates: dates,
+                    prices: prices,
+                    hasOHLC: true,
+                    ohlcSource: "derived from real daily OHLC",
+                    ohlcCoverageRatio: 1.0,
+                    openPrices: syntheticOpens,
+                    highPrices: highs,
+                    lowPrices: lows,
+                    closePrices: syntheticCloses,
+                    volumes: nil
+                )
+            }
+
+            func transformedInputs(_ slice: SessionSlice) -> [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)]? {
+                let transformed = baseInputs.compactMap { input -> (assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)? in
+                    guard let series = syntheticSeries(from: input, slice: slice) else { return nil }
+                    return (assetSeries: series, assetOption: input.assetOption, fxSeries: input.fxSeries)
+                }
+                return transformed.count == baseInputs.count ? transformed : nil
+            }
+            guard let overnightInputs = transformedInputs(.overnight),
+                  let daytimeInputs = transformedInputs(.daytime) else {
+                print("US_OVERNIGHT_001_SYNTHETIC_SERIES_FAILED")
+                return
+            }
+
+            let dateFormatter = DateFormatter()
+            dateFormatter.calendar = BacktestSeriesAlignment.historicalSeriesCalendar
+            dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+            dateFormatter.timeZone = BacktestSeriesAlignment.historicalSeriesCalendar.timeZone
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            guard let evaluationStart = dateFormatter.date(from: "2000-01-04"),
+                  let evaluationEnd = dateFormatter.date(from: "2026-08-20") else {
+                print("US_OVERNIGHT_001_DATE_PARSE_FAILED")
+                return
+            }
+            let evaluationBounds = evaluationStart...evaluationEnd
+            let folds: [(String, String, String)] = [
+                ("2000-2003", "2000-01-04", "2003-12-31"),
+                ("2004-2007", "2004-01-01", "2007-12-31"),
+                ("2008-2011", "2008-01-01", "2011-12-31"),
+                ("2012-2015", "2012-01-01", "2015-12-31"),
+                ("2016-2019", "2016-01-01", "2019-12-31"),
+                ("2020-2022", "2020-01-01", "2022-12-31"),
+                ("2023-latest", "2023-01-01", "9999-12-31")
+            ]
+
+            enum PathMode { case candidate, daytimeControl, cash }
+
+            func makeSettings(slippagePercent: Double) -> AdvancedBacktestRiskSettings {
+                AdvancedBacktestRiskSettings(
+                    feeRate: 0.005,
+                    slippageRate: slippagePercent,
+                    maxPositionRatio: 100,
+                    cooldownDays: 0,
+                    stopLossRatio: 0,
+                    takeProfitRatio: 0
+                )
+            }
+
+            func runPath(
+                id: String,
+                selectedSymbols: [String],
+                mode: PathMode,
+                slippagePercent: Double
+            ) -> ResearchIntradayRoundTripRun? {
+                let sourceInputs = mode == .daytimeControl ? daytimeInputs : overnightInputs
+                let selected = sourceInputs.filter { selectedSymbols.contains($0.assetOption.symbol) }
+                guard selected.count == selectedSymbols.count else { return nil }
+                let fixedWeight = 1.0 / Double(max(1, selectedSymbols.count))
+                var sentinelTakeProfitBySymbolAndDate: [String: Double] = [:]
+                func cacheKey(_ symbol: String, _ date: Date) -> String { symbol + "|" + date.recordDateString }
+                let config = ResearchTargetStrategyConfig(
+                    symbol: id,
+                    title: "美股纯隔夜001",
+                    warmupSessions: 2,
+                    rebalanceSessions: 1,
+                    maxGrossExposure: 1,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: mode == .daytimeControl ? "日内互补控制" : "收盘到次日开盘隔夜持有"
+                )
+                return BacktestEngine.runResearchIntradayRoundTripStrategyWithTrace(
+                    assetInputs: selected,
+                    initialCash: 100_000,
+                    settings: makeSettings(slippagePercent: slippagePercent),
+                    config: config,
+                    dateBounds: evaluationBounds,
+                    targetWeights: { context, data in
+                        guard mode != .cash else { return [:] }
+                        var weights: [String: Double] = [:]
+                        for symbol in selectedSymbols {
+                            guard let bars = data.barsBySymbol[symbol],
+                                  let index = data.barIndexByDateBySymbol[symbol]?[context.date],
+                                  bars.indices.contains(index) else { continue }
+                            let open = bars[index].open
+                            guard open.isFinite, open > 0 else { continue }
+                            weights[symbol] = fixedWeight
+                            sentinelTakeProfitBySymbolAndDate[cacheKey(symbol, context.date)] = open * 1_000_000
+                        }
+                        guard weights.count == selectedSymbols.count else { return [:] }
+                        return weights
+                    },
+                    takeProfitPrice: { symbol, date, _ in
+                        sentinelTakeProfitBySymbolAndDate[cacheKey(symbol, date)]
+                    }
+                )
+            }
+
+            func foldMetrics(_ points: [BacktestSeriesPoint]) -> [[String: Any]] {
+                folds.map { name, start, end in
+                    let slice = points.filter { $0.date.recordDateString >= start && $0.date.recordDateString <= end }
+                    let metrics = BacktestMetricsCalculator.performanceMetrics(from: slice)
+                    return [
+                        "name": name,
+                        "cagr_percent": (metrics?.annualizedReturn ?? 0) * 100,
+                        "mdd_percent": (metrics?.maxDrawdown ?? 0) * 100,
+                        "sharpe": metrics?.sharpeRatio ?? 0,
+                        "sessions": slice.count
+                    ]
+                }
+            }
+
+            func tradeStats(_ returns: [Double]) -> [String: Any] {
+                let gains = returns.filter { $0 > 0 }
+                let losses = returns.filter { $0 < 0 }
+                let grossProfit = gains.reduce(0, +)
+                let grossLoss = abs(losses.reduce(0, +))
+                return [
+                    "round_trips": returns.count,
+                    "win_rate_percent": returns.isEmpty ? 0 : Double(gains.count) / Double(returns.count) * 100,
+                    "average_return_percent": returns.isEmpty ? 0 : returns.reduce(0, +) / Double(returns.count) * 100,
+                    "profit_factor": grossLoss > 0 ? grossProfit / grossLoss : (grossProfit > 0 ? 999.0 : 0.0)
+                ]
+            }
+
+            func pathDocument(_ id: String, _ sessionKind: String, _ run: ResearchIntradayRoundTripRun) -> [String: Any] {
+                let points = run.report.points
+                let since2020 = BacktestMetricsCalculator.performanceMetrics(from: points.filter { $0.date.recordDateString >= "2020-01-01" })
+                let since2022 = BacktestMetricsCalculator.performanceMetrics(from: points.filter { $0.date.recordDateString >= "2022-01-01" })
+                let allReturns = tradeSymbols.flatMap { run.audit.realizedReturnsBySymbol[$0] ?? [] }
+                let activeSessions = run.dailyStates.filter { state in
+                    tradeSymbols.contains { (state.targetWeights[$0] ?? 0) > 0 }
+                }.count
+                var hash: UInt64 = 1469598103934665603
+                for state in run.dailyStates {
+                    for symbol in tradeSymbols {
+                        var value = UInt64(bitPattern: Int64(((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded()))
+                        for _ in 0..<8 {
+                            hash ^= value & UInt64(0xff)
+                            hash &*= UInt64(1099511628211)
+                            value >>= 8
+                        }
+                    }
+                }
+                return [
+                    "id": id,
+                    "session_kind": sessionKind,
+                    "start": points.first?.date.recordDateString ?? "",
+                    "end": points.last?.date.recordDateString ?? "",
+                    "sessions": points.count,
+                    "active_sessions": activeSessions,
+                    "cagr_percent": (run.report.annualizedReturn ?? 0) * 100,
+                    "mdd_percent": run.report.maxDrawdown * 100,
+                    "volatility_percent": (run.report.annualizedVolatility ?? 0) * 100,
+                    "sharpe": run.report.sharpeRatio ?? 0,
+                    "total_return_percent": run.report.totalReturn * 100,
+                    "average_session_gross": run.report.averageExposureRatio,
+                    "max_session_gross": run.audit.maxIntradayGrossExposure,
+                    "minimum_end_of_session_cash": run.audit.minimumEndOfDayCash,
+                    "round_trips_by_symbol": run.audit.roundTripsBySymbol,
+                    "take_profit_hits_by_symbol": run.audit.takeProfitHitsBySymbol,
+                    "trade_stats": tradeStats(allReturns),
+                    "since2020_cagr_percent": (since2020?.annualizedReturn ?? 0) * 100,
+                    "since2020_sharpe": since2020?.sharpeRatio ?? 0,
+                    "since2022_cagr_percent": (since2022?.annualizedReturn ?? 0) * 100,
+                    "since2022_sharpe": since2022?.sharpeRatio ?? 0,
+                    "folds": foldMetrics(points),
+                    "target_fingerprint": String(format: "%016llx", hash)
+                ]
+            }
+
+            let candidateSpecs: [(String, [String])] = [
+                ("USOVN001-NASDAQ", ["nasdaq"]),
+                ("USOVN001-SP500", ["sp500"]),
+                ("USOVN001-COMBINED", tradeSymbols)
+            ]
+            let controlSpecs: [(String, [String])] = [
+                ("C-DAYTIME-NASDAQ", ["nasdaq"]),
+                ("C-DAYTIME-SP500", ["sp500"]),
+                ("C-DAYTIME-COMBINED", tradeSymbols)
+            ]
+            var candidateRuns: [(String, ResearchIntradayRoundTripRun)] = []
+            var controlRuns: [(String, ResearchIntradayRoundTripRun)] = []
+            for spec in candidateSpecs {
+                guard let run = runPath(id: spec.0, selectedSymbols: spec.1, mode: .candidate, slippagePercent: 0) else {
+                    print("US_OVERNIGHT_001_CANDIDATE_RUN_FAILED=\(spec.0)")
+                    return
+                }
+                candidateRuns.append((spec.0, run))
+            }
+            for spec in controlSpecs {
+                guard let run = runPath(id: spec.0, selectedSymbols: spec.1, mode: .daytimeControl, slippagePercent: 0) else {
+                    print("US_OVERNIGHT_001_CONTROL_RUN_FAILED=\(spec.0)")
+                    return
+                }
+                controlRuns.append((spec.0, run))
+            }
+            guard let cashRun = runPath(id: "C-CASH-COMBINED", selectedSymbols: tradeSymbols, mode: .cash, slippagePercent: 0),
+                  let stressRun = runPath(id: "USOVN001-COMBINED-SLIP005", selectedSymbols: tradeSymbols, mode: .candidate, slippagePercent: 0.05) else {
+                print("US_OVERNIGHT_001_AUDIT_RUN_FAILED")
+                return
+            }
+
+            let candidateCombined = candidateRuns.first { $0.0 == "USOVN001-COMBINED" }!.1
+            if !formal {
+                let trades = candidateCombined.audit.roundTripsBySymbol.values.reduce(0, +)
+                let takeProfitHits = candidateCombined.audit.takeProfitHitsBySymbol.values.reduce(0, +)
+                let maxGross = candidateCombined.audit.maxIntradayGrossExposure
+                print("US_OVERNIGHT_001_SMOKE_TRADE_COUNT=\(trades)")
+                print("US_OVERNIGHT_001_SMOKE_TAKE_PROFIT_HITS=\(takeProfitHits)")
+                print("US_OVERNIGHT_001_SMOKE_MAX_GROSS=\(String(format: "%.10f", maxGross))")
+                print("US_OVERNIGHT_001_SMOKE_MIN_CASH=\(String(format: "%.6f", candidateCombined.audit.minimumEndOfDayCash))")
+                guard trades > 0, maxGross > 0, takeProfitHits == 0 else {
+                    print("US_OVERNIGHT_001_SMOKE_EXECUTION_INVALID")
+                    return
+                }
+                print("US_OVERNIGHT_001_SMOKE_OK")
+                return
+            }
+
+            if let outputDir {
+                try? FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+                for (id, run) in candidateRuns + controlRuns + [("C-CASH-COMBINED", cashRun), ("USOVN001-COMBINED-SLIP005", stressRun)] {
+                    var lines = ["date,portfolio_value"]
+                    lines.append(contentsOf: run.report.points.map { "\($0.date.recordDateString),\(String(format: "%.10f", $0.portfolioValue))" })
+                    let path = URL(fileURLWithPath: outputDir).appendingPathComponent("\(id)-portfolio.csv").path
+                    try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+                }
+            }
+
+            let document: [String: Any] = [
+                "trial_id": "ATM-SVP3-US-OVERNIGHT-001",
+                "candidate_id": "S-US-OVERNIGHT-001",
+                "candidate_paths": candidateRuns.map { pathDocument($0.0, "overnight_close_to_next_open", $0.1) },
+                "daytime_control_paths": controlRuns.map { pathDocument($0.0, "daytime_open_to_close", $0.1) },
+                "cash_control": pathDocument("C-CASH-COMBINED", "cash", cashRun),
+                "slippage_stress": pathDocument("USOVN001-COMBINED-SLIP005", "overnight_close_to_next_open_stress", stressRun),
+                "fee_rate_per_fill": 0.00005,
+                "primary_slippage_rate_per_fill": 0.0,
+                "stress_slippage_rate_per_fill": 0.0005,
+                "evaluation_start": "2000-01-04",
+                "evaluation_end": "2026-08-20",
+                "fx_alignment": "synthetic overnight open is adjusted so current-date FX conversion exactly reproduces prior-close CNY value"
+            ]
+            guard JSONSerialization.isValidJSONObject(document),
+                  let json = try? JSONSerialization.data(withJSONObject: document, options: [.sortedKeys]),
+                  let text = String(data: json, encoding: .utf8) else {
+                print("US_OVERNIGHT_001_JSON_FAILED")
+                return
+            }
+            print("US_OVERNIGHT_001_FORMAL_JSON=" + text)
+            print("US_OVERNIGHT_001_FORMAL_OK")
+            return
+        }
