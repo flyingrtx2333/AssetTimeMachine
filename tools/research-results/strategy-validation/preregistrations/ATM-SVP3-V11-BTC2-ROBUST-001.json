@@ -1,0 +1,65 @@
+{
+  "allowed_changes": [
+    "read only the immutable portfolio CSVs produced by ATM-SVP3-V11-BTC2-SATELLITE-001",
+    "paired circular moving-block resampling with block length exactly 63 sessions",
+    "exactly 20,000 replicates, RNG seed 20260822, 252 sessions/year",
+    "compute probability candidate CAGR > matched V11 CAGR, probability candidate Sharpe > matched V11 Sharpe, median deltas, and candidate MDD 97.5th percentile"
+  ],
+  "candidate_count": 1,
+  "candidate_ids": [
+    "A-V11-BTC2-ROBUST-001"
+  ],
+  "candidate_kind": "STATISTICAL_AUDIT_NOT_STRATEGY",
+  "comparison_gates": [
+    "same frozen paired V11 comparison probabilities used in prior project robustness audits"
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-V11-BTC2-ROBUST-001.json",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "expected_outputs": [
+    "bootstrap-audit.json",
+    "bootstrap-audit.csv",
+    "run authorization and execution receipt",
+    "immutable RESULT entry for this statistical audit"
+  ],
+  "follow_up_policy": "No failed bootstrap gate may trigger a different block size, seed, BTC weight, or strategy rescue. A failure closes the incremental robustness claim for this exact candidate. A pass supports a stronger incremental-evidence statement but does not overwrite source-trial WEAK validation.",
+  "forbidden_changes": [
+    "changing BTC weight, V11 scale, strategy implementation, costs, dates or rebalance rules",
+    "trying alternate block sizes, seeds, replicate counts or bootstrap families after results",
+    "dropping unfavorable return periods or folds",
+    "using this audit to rewrite the immutable R1 deterministic comparison result",
+    "using this audit to upgrade source validation to strong PASS while source global DSR remains below threshold"
+  ],
+  "formal_run_budget": 1,
+  "hypothesis": "The positive observed incremental CAGR and Sharpe of the immutable 98% V11 + 2% BTC candidate versus its matched V11 control may be stable under dependence-preserving resampling even though the deterministic comparison failed on slightly higher maximum drawdown and the cumulative global DSR remains below the strong-validation threshold.",
+  "objective_gates": [
+    "quantify stability of incremental CAGR/Sharpe without altering the strategy"
+  ],
+  "pass_fail_gates": [
+    "P(CAGR candidate > matched V11) >= 0.90",
+    "P(Sharpe candidate > matched V11) >= 0.90",
+    "median candidate-minus-V11 CAGR >0",
+    "median candidate-minus-V11 Sharpe >0",
+    "candidate bootstrap MDD p97.5 <=15%"
+  ],
+  "protocol_id": "ATM-SVP-3",
+  "python_entrypoint": "scripts/run_v11_btc2_robust_001.py",
+  "selection_metric": "No strategy selection and no parameter search. Apply the project-existing V11 paired circular moving-block bootstrap standard unchanged to the immutable candidate/control return pair.",
+  "shared_rules": {
+    "block_sessions": 63,
+    "candidate_mdd_p975_limit": 0.15,
+    "known_source_global_dsr_probability": 0.38570194449673956,
+    "probability_gate": 0.9,
+    "replicates": 20000,
+    "rng_seed": 20260822,
+    "sampling": "paired circular moving blocks",
+    "sessions_per_year": 252,
+    "source_trial_id": "ATM-SVP3-V11-BTC2-SATELLITE-001",
+    "strategy_mutation_allowed": false
+  },
+  "strategy_lineage": "v11-btc2-satellite-001 robustness audit; no strategy or weight changes",
+  "trial_id": "ATM-SVP3-V11-BTC2-ROBUST-001",
+  "validation_gates": [
+    "bootstrap incremental evidence only; all five frozen gates must pass for bootstrap_incremental_pass",
+    "source strategy validation remains WEAK regardless because known global DSR=0.38570194449673956"
+  ]
+}
