@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "d71089e1085e8609f3fdb4f439531eb735cce05b",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "a094c583a3816e51f912eca0c481780ea93d52679eacb79459462d0ce15c35a9",
+  "preregistration_record_hash": "a094c583a3816e51f912eca0c481780ea93d52679eacb79459462d0ce15c35a9",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-VOLATILITY-SWITCH-001"
+}

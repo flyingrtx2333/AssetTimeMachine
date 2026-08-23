@@ -1,0 +1,115 @@
+{
+  "files": [
+    {
+      "bytes": 179484,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-07-03",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/candidates/C-BARBELL-portfolio.csv",
+      "row_count": 6173,
+      "sha256": "0c3f0e18a8999f80023954b8def19c9a447a278857fea8fa5406f8031ba17912"
+    },
+    {
+      "bytes": 179038,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-07-03",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/candidates/C-CASH-portfolio.csv",
+      "row_count": 6173,
+      "sha256": "ffb2809f6a7faa2f73b4d8925c26f8c5fbd748825d6f130eaac0b5b34e7e0090"
+    },
+    {
+      "bytes": 177581,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-07-03",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/candidates/VOLSW001-portfolio.csv",
+      "row_count": 6173,
+      "sha256": "88b985276bf953944edbb87fd0e33cd8034d7bb18b9d0cc2418b167e47bfc7cd"
+    },
+    {
+      "bytes": 486,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "e0bb84a0ac134547f12d47ef924ea9ef13b9643ad1f891727333a616a597d6d3"
+    },
+    {
+      "bytes": 9711,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/candidates/candidate-metrics.json",
+      "sha256": "e636b4caf3a5d2e8ec8ab9647c38009a875ce6c912b709654f3c75f00d68427d"
+    },
+    {
+      "bytes": 509,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/candidates/statistical-audit.json",
+      "sha256": "936b6f19a92b0f7b3bd144400156e90319308f083a57c5bb215fd69300ad87aa"
+    },
+    {
+      "bytes": 988,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/execution.json",
+      "sha256": "695a07292dfb0ab1dfdf6ffa31fba1ff861e1c6db9c526f3cc759cc85e4873ca"
+    },
+    {
+      "bytes": 444,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/run-authorization.json",
+      "sha256": "9169238afa6986181a3e7ef0dece1ea748aea0395cdaf9dcd603c40761866c4e"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 997,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/stdout.txt",
+      "sha256": "5b1f31b8f9d60b06d6d9de968ecc082cd27f2715e3883a02f84134b75c46069e"
+    }
+  ],
+  "generated_at": "2026-08-23T13:52:47+08:00",
+  "git_commit": "d71089e1085e8609f3fdb4f439531eb735cce05b",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "FAIL",
+    "objective_status": "FAIL",
+    "validation_status": "FAIL"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-VOLATILITY-SWITCH-001"
+}

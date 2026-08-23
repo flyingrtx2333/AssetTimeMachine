@@ -1,0 +1,103 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/candidates/C-BARBELL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/candidates/VOLSW001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-VOLATILITY-SWITCH-001",
+      "metrics": {
+        "average_cash_ratio": 0,
+        "barbell_control": {
+          "cagr_percent": 12.062881133465254,
+          "mdd_percent": 37.71662775385042,
+          "sharpe": 0.8805036045356769
+        },
+        "cagr_percent": 5.5714806931699945,
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "fold_names": [
+          "2002-2005",
+          "2006-2008",
+          "2009-2011",
+          "2012-2014",
+          "2015-2017",
+          "2018-2021",
+          "2022-latest"
+        ],
+        "fold_sharpes": [
+          0.12016769677934401,
+          -0.4904747342506757,
+          0.9777883434209663,
+          0.09325237393959268,
+          -0.11285275392092131,
+          0.8490000796668263,
+          0.9010569436077278
+        ],
+        "folds_with_positive_sharpe": 5,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 4.390202759108064e-07,
+        "global_post_protocol_dsr_trial_count": 61,
+        "max_gross": 1,
+        "mdd_percent": 62.71945312707998,
+        "minimum_cash": 0,
+        "sharpe": 0.37817008723631257,
+        "since2020_cagr_percent": 17.96339388731778,
+        "since2020_sharpe": 0.9419236225648779,
+        "since2022_cagr_percent": 16.33797122962828,
+        "since2022_sharpe": 0.9010569436077278,
+        "strategy_library_validation": {
+          "comparative_failures": [
+            "mdd_lt_barbell",
+            "sharpe_gt_barbell"
+          ],
+          "comparison_status": "FAIL",
+          "evidence_missing": [],
+          "objective_failures": [
+            "cagr_ge_12pct",
+            "mdd_le_20pct",
+            "sharpe_ge_1"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_mdd_le_25pct"
+          ],
+          "validation_warnings": [
+            "execution_stress_not_in_this_R1_trial",
+            "global_dsr_below_project_pass_threshold"
+          ]
+        },
+        "target_fingerprint": "92050dc65d68e9d6",
+        "trades": 171
+      }
+    }
+  ],
+  "comparison_status": "FAIL",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-VOLATILITY-SWITCH-001.json",
+  "decision": "FAIL / VALIDATION_FAIL. The frozen 21-vs-252 Nasdaq realized-volatility switch produced 5.571481% CAGR, 0.378170 Sharpe and 62.719453% MDD under product costs. It failed the 25% drawdown floor and had only five of seven positive-Sharpe folds; the fixed 50/50 barbell was stronger on both Sharpe and MDD. No volatility-window or threshold rescue is allowed.",
+  "execution_git_commit": "d71089e1085e8609f3fdb4f439531eb735cce05b",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "a094c583a3816e51f912eca0c481780ea93d52679eacb79459462d0ce15c35a9",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-VOLATILITY-SWITCH-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-VOLATILITY-SWITCH-001",
+  "validation_status": "FAIL"
+}
