@@ -1,0 +1,37 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    },
+    {
+      "bytes": 194040,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-006/VIX.csv",
+      "sha256": "7b3bfb8bfedb700213d4a62576937bed427b66bc3f1f15ae3798fdbf195caa96"
+    }
+  ],
+  "generated_at": "2026-08-23T14:13:21+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "base_cost": "1.00% fee +0.05% slippage per trade",
+    "campaign": "vix-panic-001",
+    "candidate_kind": "INDEPENDENT_OPTION_IMPLIED_PANIC_STATE",
+    "evaluation_end": "2026-08-20",
+    "evaluation_start": "2002-07-03",
+    "factor": "CBOE VIX close via frozen Yahoo/CBOE factor-data file",
+    "owners": {
+      "unavailable": "cash",
+      "vix_gt_30": "gold_cny",
+      "vix_le_30": "nasdaq"
+    },
+    "performance_viewed_before_freeze": false,
+    "review": "daily state observation; execute only when owner changes",
+    "signal": "latest usable VIX close dated <= T-1 signal date, max stale 7 calendar days",
+    "threshold": "VIX >30 panic state; externally motivated canonical high-volatility threshold, not project grid-selected"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-VIX-PANIC-001"
+}
