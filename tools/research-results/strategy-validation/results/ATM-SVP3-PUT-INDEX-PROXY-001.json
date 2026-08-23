@@ -1,0 +1,158 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/candidates/C-SPY-TR-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/candidates/PUT001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-PUT-INDEX-PROXY-001",
+      "metrics": {
+        "average_cash_ratio": 0,
+        "cagr_percent": 6.377165815120112,
+        "cash_control_cagr_percent": 0.3986758641031596,
+        "comparison_checks": {
+          "mdd_le_spy_tr": true,
+          "sharpe_gt_spy_tr": false
+        },
+        "comparison_failures": [
+          "sharpe_gt_spy_tr"
+        ],
+        "constraints": {
+          "borrowed_exposure_allowed": false,
+          "financing_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true
+        },
+        "failed_preregistered_gates": [
+          "full_mdd_le_25pct"
+        ],
+        "fold_cagrs_percent": [
+          -2.6096448074788836,
+          4.373733302422078,
+          9.382864968041883,
+          6.0019286941085825,
+          9.209104007846713,
+          12.58260174277237,
+          5.18991083247482
+        ],
+        "fold_mdds_percent": [
+          41.15399647912131,
+          15.913254736282179,
+          8.516079603785599,
+          15.120489363244285,
+          28.31845099001798,
+          8.765181149581085,
+          14.424287974890577
+        ],
+        "fold_names": [
+          "2007-2009",
+          "2010-2012",
+          "2013-2015",
+          "2016-2018",
+          "2019-2021",
+          "2022-2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          -0.017486431417417864,
+          0.3970861496793121,
+          1.0327777795159265,
+          0.6515390185511187,
+          0.6163032527712086,
+          1.0904052504037949,
+          0.47741991810898365
+        ],
+        "folds_with_positive_sharpe": 6,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 1.4994209005636527e-05,
+        "global_post_protocol_dsr_trial_count": 70,
+        "max_gross": 1,
+        "mdd_percent": 41.15399647912131,
+        "minimum_cash": 0,
+        "objective_checks": {
+          "cagr_ge_12pct": false,
+          "cagr_gt_cash": true,
+          "mdd_le_20pct": false,
+          "sharpe_ge_1": false,
+          "since2020_cagr_positive": true,
+          "since2022_cagr_positive": true
+        },
+        "objective_failures": [
+          "cagr_ge_12pct",
+          "mdd_le_20pct",
+          "sharpe_ge_1"
+        ],
+        "sharpe": 0.513029145836057,
+        "since2020_cagr_percent": 8.82320745902514,
+        "since2020_sharpe": 0.6598981680713579,
+        "since2022_cagr_percent": 9.87454468835014,
+        "since2022_sharpe": 0.8635794029491501,
+        "spy_total_return_control": {
+          "cagr_percent": 10.184583984152184,
+          "mdd_percent": 59.225175612880534,
+          "sharpe": 0.5940882056260256,
+          "target_fingerprint": "a4786feb2e13187f",
+          "trades": 1
+        },
+        "strategy_library_validation": {
+          "comparative_failures": [
+            "sharpe_gt_spy_tr"
+          ],
+          "comparison_status": "FAIL",
+          "evidence_missing": [
+            "real_monthly_SPX_option_execution_costs"
+          ],
+          "note": "Cboe PUT index proxy fails the absolute MDD validation floor; in addition, internal option-roll execution costs are not modeled.",
+          "objective_failures": [
+            "cagr_ge_12pct",
+            "mdd_le_20pct",
+            "sharpe_ge_1"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_mdd_le_25pct"
+          ],
+          "validation_warnings": [
+            "index_proxy_execution_cost_incomplete",
+            "Cboe PUT embeds monthly option rolls but historical index excludes actual investor commissions/slippage"
+          ]
+        },
+        "target_fingerprint": "a1c73e629820a2ff",
+        "trades": 1,
+        "validation_checks": {
+          "actual_trades_gt_0": true,
+          "cash_nonnegative": true,
+          "full_cagr_gt_0": true,
+          "full_mdd_le_25pct": false,
+          "full_sharpe_gt_0": true,
+          "max_gross_le_1": true,
+          "positive_sharpe_folds_ge_70pct": true
+        }
+      }
+    }
+  ],
+  "comparison_status": "FAIL",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-PUT-INDEX-PROXY-001.json",
+  "decision": "FAIL / VALIDATION_FAIL. The official Cboe PUT cash-secured put-write index proxy produced 6.377166% CAGR, 0.513029 Sharpe and 41.153996% MDD over the continuous 2007-2026 window, with 6/7 positive-Sharpe folds. Matched SPY total return produced 10.184584% CAGR, 0.594088 Sharpe and 59.225176% MDD. PUT lowers drawdown but still breaches the <=25% absolute MDD floor and does not improve Sharpe, so validation/objective/comparison all FAIL. Global DSR=1.4994209e-05. Actual monthly SPX option commission/slippage evidence is also missing, so this proxy could not have exceeded WEAK even if absolute gates had passed. No option-parameter rescue is allowed.",
+  "execution_git_commit": "692035a2e19a2e31e98348dffd7bb0be0b11bb43",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "f8c7c5ae6179048dd0b44ed46190e3cd65fd0b628c8cb5c33ac368d58e5f52ba",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-PUT-INDEX-PROXY-001",
+  "validation_status": "FAIL"
+}

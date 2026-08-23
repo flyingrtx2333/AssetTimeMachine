@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "692035a2e19a2e31e98348dffd7bb0be0b11bb43",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "f8c7c5ae6179048dd0b44ed46190e3cd65fd0b628c8cb5c33ac368d58e5f52ba",
+  "preregistration_record_hash": "f8c7c5ae6179048dd0b44ed46190e3cd65fd0b628c8cb5c33ac368d58e5f52ba",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-PUT-INDEX-PROXY-001"
+}

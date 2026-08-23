@@ -1,0 +1,116 @@
+{
+  "files": [
+    {
+      "bytes": 143223,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2007-01-05",
+      "format": "csv",
+      "last_date": "2026-08-21",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/candidates/C-CASH-portfolio.csv",
+      "row_count": 4938,
+      "sha256": "7ef08c6e7ccd6d1fb2aa80b70436696e1365925bfa11a52ad4a3ba73f7ed7f82"
+    },
+    {
+      "bytes": 141829,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2007-01-05",
+      "format": "csv",
+      "last_date": "2026-08-21",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/candidates/C-SPY-TR-portfolio.csv",
+      "row_count": 4938,
+      "sha256": "f6299f0d3ec9e570c15a758020f8c988573a97767585cc263a5f078894f38579"
+    },
+    {
+      "bytes": 142115,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2007-01-05",
+      "format": "csv",
+      "last_date": "2026-08-21",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/candidates/PUT001-portfolio.csv",
+      "row_count": 4938,
+      "sha256": "4b32d972a6050c28f65af8406cbbb88432e5aed2b83f346b5b369af0bb4b323a"
+    },
+    {
+      "bytes": 476,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "41c1c17db0bf5c42c99b916a23b949c9277e74121a36571c7e1b2e0703d3411c"
+    },
+    {
+      "bytes": 7627,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/candidates/candidate-metrics.json",
+      "sha256": "abc30661303b29259ce94e6b9d7f43012422a2b664421dc4857f8857be41070c"
+    },
+    {
+      "bytes": 504,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/candidates/statistical-audit.json",
+      "sha256": "bfc6c69763a0ae038af0e103a0eadca3de5eb6da365de2ab9be30dcdb203fdd4"
+    },
+    {
+      "bytes": 976,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/execution.json",
+      "sha256": "2b35e329b1a44125aeda17344090f0262a1f429f64392131d841b1ecde5bd956"
+    },
+    {
+      "bytes": 442,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/run-authorization.json",
+      "sha256": "e6cbbaeb31a7b08c08dd0655a481766c151780430e9522ce2fc66e38025f3dc3"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1177,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/stdout.txt",
+      "sha256": "dffb4712cde5cb3b8b55e401fc6446e389fc392c893ce12580096a72b20edd4a"
+    }
+  ],
+  "generated_at": "2026-08-23T17:52:04+08:00",
+  "git_commit": "692035a2e19a2e31e98348dffd7bb0be0b11bb43",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "FAIL",
+    "execution_complete": false,
+    "objective_status": "FAIL",
+    "validation_status": "FAIL"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-PUT-INDEX-PROXY-001"
+}

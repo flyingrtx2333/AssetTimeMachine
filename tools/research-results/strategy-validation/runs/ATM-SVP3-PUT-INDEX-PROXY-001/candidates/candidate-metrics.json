@@ -1,0 +1,260 @@
+{
+  "candidate": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 6.377165815120112,
+    "end": "2026-08-21",
+    "folds": [
+      {
+        "cagr_percent": -2.6096448074788836,
+        "mdd_percent": 41.15399647912131,
+        "name": "2007-2009",
+        "sessions": 754,
+        "sharpe": -0.017486431417417864
+      },
+      {
+        "cagr_percent": 4.373733302422078,
+        "mdd_percent": 15.913254736282179,
+        "name": "2010-2012",
+        "sessions": 754,
+        "sharpe": 0.3970861496793121
+      },
+      {
+        "cagr_percent": 9.382864968041883,
+        "mdd_percent": 8.516079603785599,
+        "name": "2013-2015",
+        "sessions": 756,
+        "sharpe": 1.0327777795159265
+      },
+      {
+        "cagr_percent": 6.0019286941085825,
+        "mdd_percent": 15.120489363244285,
+        "name": "2016-2018",
+        "sessions": 754,
+        "sharpe": 0.6515390185511187
+      },
+      {
+        "cagr_percent": 9.209104007846713,
+        "mdd_percent": 28.31845099001798,
+        "name": "2019-2021",
+        "sessions": 757,
+        "sharpe": 0.6163032527712086
+      },
+      {
+        "cagr_percent": 12.58260174277237,
+        "mdd_percent": 8.765181149581085,
+        "name": "2022-2024",
+        "sessions": 753,
+        "sharpe": 1.0904052504037949
+      },
+      {
+        "cagr_percent": 5.18991083247482,
+        "mdd_percent": 14.424287974890577,
+        "name": "2025-latest",
+        "sessions": 410,
+        "sharpe": 0.47741991810898365
+      }
+    ],
+    "id": "PUT001",
+    "max_gross": 1,
+    "mdd_percent": 41.15399647912131,
+    "minimum_cash": 0,
+    "sessions": 4938,
+    "sharpe": 0.513029145836057,
+    "since2020_cagr_percent": 8.82320745902514,
+    "since2020_sharpe": 0.6598981680713579,
+    "since2022_cagr_percent": 9.87454468835014,
+    "since2022_sharpe": 0.8635794029491501,
+    "start": "2007-01-05",
+    "target_fingerprint": "a1c73e629820a2ff",
+    "trades": 1,
+    "volatility_percent": 13.98787409987535
+  },
+  "candidate_id": "S-PUT-INDEX-PROXY-001",
+  "cash_control": {
+    "average_cash_ratio": 1,
+    "cagr_percent": 0.3986758641031596,
+    "end": "2026-08-21",
+    "folds": [
+      {
+        "cagr_percent": 0.6039425686876765,
+        "mdd_percent": 0,
+        "name": "2007-2009",
+        "sessions": 754,
+        "sharpe": 51.501473031671566
+      },
+      {
+        "cagr_percent": 0.4171565612175909,
+        "mdd_percent": 0,
+        "name": "2010-2012",
+        "sessions": 754,
+        "sharpe": 96.90736916129232
+      },
+      {
+        "cagr_percent": 0.3510287103922094,
+        "mdd_percent": 0,
+        "name": "2013-2015",
+        "sessions": 756,
+        "sharpe": 2049851878090.1372
+      },
+      {
+        "cagr_percent": 0.350418370082517,
+        "mdd_percent": 0,
+        "name": "2016-2018",
+        "sessions": 754,
+        "sharpe": 2094767271332.6177
+      },
+      {
+        "cagr_percent": 0.35117260882673307,
+        "mdd_percent": 0,
+        "name": "2019-2021",
+        "sessions": 757,
+        "sharpe": 2085200411310.0508
+      },
+      {
+        "cagr_percent": 0.34963145880915203,
+        "mdd_percent": 0,
+        "name": "2022-2024",
+        "sessions": 753,
+        "sharpe": 2086350219662.2534
+      },
+      {
+        "cagr_percent": 0.34872888213914877,
+        "mdd_percent": 0,
+        "name": "2025-latest",
+        "sessions": 410,
+        "sharpe": 2069974435498.5757
+      }
+    ],
+    "id": "C-CASH",
+    "max_gross": 0,
+    "mdd_percent": 0,
+    "minimum_cash": 100000,
+    "sessions": 4938,
+    "sharpe": 53.56979051337975,
+    "since2020_cagr_percent": 0.3496189645574965,
+    "since2020_sharpe": 2084870658802.9817,
+    "since2022_cagr_percent": 0.3492001408426759,
+    "since2022_sharpe": 2081722363849.0903,
+    "start": "2007-01-05",
+    "target_fingerprint": "b668522daf557b03",
+    "trades": 0,
+    "volatility_percent": 0.007440200492685516
+  },
+  "evaluation_end": "2026-08-21",
+  "evaluation_start": "2007-01-03",
+  "fee_percent_per_external_trade": 1,
+  "implementation_scope": "Cboe PUT index proxy embeds monthly cash-secured SPX put writing but excludes actual investor commissions/implementation slippage; this run applies product cost only to acquiring the proxy and is not execution-complete",
+  "slippage_percent_per_external_trade": 0.05,
+  "spy_total_return_control": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 10.184583984152184,
+    "end": "2026-08-21",
+    "folds": [
+      {
+        "cagr_percent": -9.582540672766427,
+        "mdd_percent": 59.225175612880534,
+        "name": "2007-2009",
+        "sessions": 754,
+        "sharpe": -0.1889506231227822
+      },
+      {
+        "cagr_percent": 6.885762938821771,
+        "mdd_percent": 20.04771440528955,
+        "name": "2010-2012",
+        "sessions": 754,
+        "sharpe": 0.45392591685366024
+      },
+      {
+        "cagr_percent": 15.566209180966627,
+        "mdd_percent": 10.824450360663315,
+        "name": "2013-2015",
+        "sessions": 756,
+        "sharpe": 1.1914301834304992
+      },
+      {
+        "cagr_percent": 11.607951073872535,
+        "mdd_percent": 18.821835493432598,
+        "name": "2016-2018",
+        "sessions": 754,
+        "sharpe": 0.9031297698730822
+      },
+      {
+        "cagr_percent": 22.789205693569016,
+        "mdd_percent": 32.87525254643682,
+        "name": "2019-2021",
+        "sessions": 757,
+        "sharpe": 1.063227345921159
+      },
+      {
+        "cagr_percent": 13.796375946128903,
+        "mdd_percent": 18.89038597818322,
+        "name": "2022-2024",
+        "sessions": 753,
+        "sharpe": 0.8147132690587261
+      },
+      {
+        "cagr_percent": 13.328793885239154,
+        "mdd_percent": 18.16197994831007,
+        "name": "2025-latest",
+        "sessions": 410,
+        "sharpe": 0.8079069814998275
+      }
+    ],
+    "id": "C-SPY-TR",
+    "max_gross": 1,
+    "mdd_percent": 59.225175612880534,
+    "minimum_cash": 0,
+    "sessions": 4938,
+    "sharpe": 0.5940882056260256,
+    "since2020_cagr_percent": 14.780655248462526,
+    "since2020_sharpe": 0.7878979500362326,
+    "since2022_cagr_percent": 13.553993693950982,
+    "since2022_sharpe": 0.8092758072017191,
+    "start": "2007-01-05",
+    "target_fingerprint": "a4786feb2e13187f",
+    "trades": 1,
+    "volatility_percent": 19.586586007788426
+  },
+  "three_axis_evaluation": {
+    "absolute_validation_status": "FAIL",
+    "comparison_checks": {
+      "mdd_le_spy_tr": true,
+      "sharpe_gt_spy_tr": false
+    },
+    "comparison_status": "FAIL",
+    "diagnostics": {
+      "cash_cagr_percent": 0.3986758641031596,
+      "fold_count": 7,
+      "positive_fold_count": 6,
+      "positive_fold_fraction": 0.8571428571428571,
+      "spy_tr_cagr_percent": 10.184583984152184,
+      "spy_tr_mdd_percent": 59.225175612880534,
+      "spy_tr_sharpe": 0.5940882056260256
+    },
+    "objective_checks": {
+      "cagr_ge_12pct": false,
+      "cagr_gt_cash": true,
+      "mdd_le_20pct": false,
+      "sharpe_ge_1": false,
+      "since2020_cagr_positive": true,
+      "since2022_cagr_positive": true
+    },
+    "objective_status": "FAIL",
+    "status": "FAIL",
+    "validation_checks": {
+      "actual_trades_gt_0": true,
+      "cash_nonnegative": true,
+      "full_cagr_gt_0": true,
+      "full_mdd_le_25pct": false,
+      "full_sharpe_gt_0": true,
+      "max_gross_le_1": true,
+      "positive_sharpe_folds_ge_70pct": true
+    },
+    "validation_status": "FAIL",
+    "validation_warnings": [
+      "index_proxy_execution_cost_incomplete",
+      "Cboe PUT embeds monthly option rolls but historical index excludes actual investor commissions/slippage"
+    ]
+  },
+  "trial_id": "ATM-SVP3-PUT-INDEX-PROXY-001"
+}

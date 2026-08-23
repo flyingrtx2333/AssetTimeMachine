@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_put_index_proxy_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "692035a2e19a2e31e98348dffd7bb0be0b11bb43",
+  "finished_at": "2026-08-23T17:51:28+08:00",
+  "preregistration_record_hash": "f8c7c5ae6179048dd0b44ed46190e3cd65fd0b628c8cb5c33ac368d58e5f52ba",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/run-authorization.json",
+  "started_at": "2026-08-23T17:51:00+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-PUT-INDEX-PROXY-001/stdout.txt",
+  "trial_id": "ATM-SVP3-PUT-INDEX-PROXY-001"
+}
