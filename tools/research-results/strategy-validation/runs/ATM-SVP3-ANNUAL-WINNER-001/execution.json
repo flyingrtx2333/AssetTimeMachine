@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_annual_winner_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "7d054c1a0a58e86569eacf9a0feaf2a0a94cbaac",
+  "finished_at": "2026-08-23T13:32:13+08:00",
+  "preregistration_record_hash": "fd55612b9d86ae5657d4dd7a0feb78c5b4f30424e14e105825dbc788ce82f0de",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/run-authorization.json",
+  "started_at": "2026-08-23T13:31:42+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/stdout.txt",
+  "trial_id": "ATM-SVP3-ANNUAL-WINNER-001"
+}

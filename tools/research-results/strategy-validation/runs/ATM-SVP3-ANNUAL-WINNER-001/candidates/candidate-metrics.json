@@ -1,0 +1,287 @@
+{
+  "annual_equal_control": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 10.083000530592635,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 6.1692699587514666,
+        "mdd_percent": 18.151697154641052,
+        "name": "2003-2005",
+        "sessions": 780,
+        "sharpe": 0.6283236200677786
+      },
+      {
+        "cagr_percent": 10.699304515573104,
+        "mdd_percent": 53.61771732400919,
+        "name": "2006-2008",
+        "sessions": 779,
+        "sharpe": 0.6169725681668333
+      },
+      {
+        "cagr_percent": 12.274450643628644,
+        "mdd_percent": 16.02642743342069,
+        "name": "2009-2011",
+        "sessions": 780,
+        "sharpe": 0.8021619871666902
+      },
+      {
+        "cagr_percent": 11.979359169176096,
+        "mdd_percent": 12.244243428161965,
+        "name": "2012-2014",
+        "sessions": 780,
+        "sharpe": 1.1407790019892448
+      },
+      {
+        "cagr_percent": 7.388352596702563,
+        "mdd_percent": 25.455783524176574,
+        "name": "2015-2017",
+        "sessions": 780,
+        "sharpe": 0.6058177486453103
+      },
+      {
+        "cagr_percent": 10.892808629326334,
+        "mdd_percent": 18.531746721252684,
+        "name": "2018-2021",
+        "sessions": 1043,
+        "sharpe": 0.8678520736308346
+      },
+      {
+        "cagr_percent": 10.180113346958674,
+        "mdd_percent": 15.876220069467506,
+        "name": "2022-latest",
+        "sessions": 1225,
+        "sharpe": 0.8710295136889448
+      }
+    ],
+    "id": "C-ANNUAL-EQUAL",
+    "max_gross": 1.0000000000000004,
+    "mdd_percent": 53.61771732400916,
+    "minimum_cash": 0,
+    "owner_by_year": {},
+    "sessions": 6167,
+    "sharpe": 0.7724142180893253,
+    "since2020_cagr_percent": 11.007144604918896,
+    "since2020_sharpe": 0.876872881892467,
+    "since2022_cagr_percent": 10.180113346958674,
+    "since2022_sharpe": 0.8710295136889448,
+    "start": "2003-01-02",
+    "target_fingerprint": "ed8222e9393db067",
+    "trades": 120,
+    "volatility_percent": 13.131686758408229
+  },
+  "candidate": {
+    "average_cash_ratio": 0.04215988324955408,
+    "cagr_percent": 4.923364703763666,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 7.707703701153545,
+        "mdd_percent": 18.62098473198453,
+        "name": "2003-2005",
+        "sessions": 780,
+        "sharpe": 0.5503774446924157
+      },
+      {
+        "cagr_percent": -9.62552374211163,
+        "mdd_percent": 74.38403747865901,
+        "name": "2006-2008",
+        "sessions": 779,
+        "sharpe": -0.08633347884065014
+      },
+      {
+        "cagr_percent": -3.5970491462694487,
+        "mdd_percent": 30.46597888319194,
+        "name": "2009-2011",
+        "sessions": 780,
+        "sharpe": -0.09838561166421798
+      },
+      {
+        "cagr_percent": 15.870523180753837,
+        "mdd_percent": 13.81234060606168,
+        "name": "2012-2014",
+        "sessions": 780,
+        "sharpe": 1.081670060422352
+      },
+      {
+        "cagr_percent": 8.484446702642323,
+        "mdd_percent": 45.305611482321076,
+        "name": "2015-2017",
+        "sessions": 780,
+        "sharpe": 0.4459466963605749
+      },
+      {
+        "cagr_percent": 7.92904290871892,
+        "mdd_percent": 39.22407249232393,
+        "name": "2018-2021",
+        "sessions": 1043,
+        "sharpe": 0.43893736708642994
+      },
+      {
+        "cagr_percent": 8.726127347625967,
+        "mdd_percent": 28.754018066977466,
+        "name": "2022-latest",
+        "sessions": 1225,
+        "sharpe": 0.47455428740438066
+      }
+    ],
+    "id": "ANWIN001",
+    "max_gross": 1,
+    "mdd_percent": 80.24530841659934,
+    "minimum_cash": 0,
+    "owner_by_year": {
+      "2003": "gold_cny",
+      "2004": "nasdaq",
+      "2005": "sp500",
+      "2006": "gold_cny",
+      "2007": "shanghai_composite",
+      "2008": "csi300",
+      "2009": "cash",
+      "2010": "csi300",
+      "2011": "gold_cny",
+      "2012": "gold_cny",
+      "2013": "nasdaq",
+      "2014": "nasdaq",
+      "2015": "shanghai_composite",
+      "2016": "nasdaq",
+      "2017": "sp500",
+      "2018": "csi300",
+      "2019": "gold_cny",
+      "2020": "nasdaq",
+      "2021": "nasdaq",
+      "2022": "sp500",
+      "2023": "gold_cny",
+      "2024": "nasdaq",
+      "2025": "nasdaq",
+      "2026": "gold_cny"
+    },
+    "sessions": 6167,
+    "sharpe": 0.31800732163174467,
+    "since2020_cagr_percent": 13.322989103003868,
+    "since2020_sharpe": 0.6271148267351611,
+    "since2022_cagr_percent": 8.726127347625967,
+    "since2022_sharpe": 0.47455428740438066,
+    "start": "2003-01-02",
+    "target_fingerprint": "33568b399197fbd2",
+    "trades": 37,
+    "volatility_percent": 22.848023502644555
+  },
+  "candidate_id": "S-ANNUAL-WINNER-001",
+  "cash_control": {
+    "average_cash_ratio": 1,
+    "cagr_percent": 0.4697157002296226,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 0.7465335477948143,
+        "mdd_percent": 0,
+        "name": "2003-2005",
+        "sessions": 780,
+        "sharpe": 5907141717170.629
+      },
+      {
+        "cagr_percent": 0.7477357853537425,
+        "mdd_percent": 0,
+        "name": "2006-2008",
+        "sessions": 779,
+        "sharpe": 162.45394739130086
+      },
+      {
+        "cagr_percent": 0.410679450397633,
+        "mdd_percent": 0,
+        "name": "2009-2011",
+        "sessions": 780,
+        "sharpe": 105.3284703260479
+      },
+      {
+        "cagr_percent": 0.38629888483565633,
+        "mdd_percent": 0,
+        "name": "2012-2014",
+        "sessions": 780,
+        "sharpe": 111.5603033475596
+      },
+      {
+        "cagr_percent": 0.3625397157763999,
+        "mdd_percent": 0,
+        "name": "2015-2017",
+        "sessions": 780,
+        "sharpe": 2104339091125.0474
+      },
+      {
+        "cagr_percent": 0.36270704912813034,
+        "mdd_percent": 0,
+        "name": "2018-2021",
+        "sessions": 1043,
+        "sharpe": 2124979096827.8135
+      },
+      {
+        "cagr_percent": 0.3680844642551584,
+        "mdd_percent": 0,
+        "name": "2022-latest",
+        "sessions": 1225,
+        "sharpe": 2064394529278.6018
+      }
+    ],
+    "id": "C-CASH",
+    "max_gross": 0,
+    "mdd_percent": 0,
+    "minimum_cash": 100000,
+    "owner_by_year": {},
+    "sessions": 6167,
+    "sharpe": 44.5159956596123,
+    "since2020_cagr_percent": 0.366159156406054,
+    "since2020_sharpe": 2083370366047.1077,
+    "since2022_cagr_percent": 0.3680844642551584,
+    "since2022_sharpe": 2064394529278.6018,
+    "start": "2003-01-02",
+    "target_fingerprint": "9f12944484997ca3",
+    "trades": 0,
+    "volatility_percent": 0.010166543172982323
+  },
+  "evaluation_end": "2026-08-20",
+  "evaluation_start": "2003-01-01",
+  "fee_percent_per_trade": 1,
+  "rule": "on the first execution session of each calendar year, own 100% of the single asset with the highest positive prior-complete-calendar-year CNY return; if none is positive, own cash for the year",
+  "slippage_percent_per_trade": 0.05,
+  "three_axis_evaluation": {
+    "comparison_checks": {
+      "cagr_gt_annual_equal": false,
+      "mdd_le_annual_equal": false,
+      "sharpe_gt_annual_equal": false
+    },
+    "comparison_status": "FAIL",
+    "diagnostics": {
+      "annual_equal_cagr_percent": 10.083000530592635,
+      "annual_equal_mdd_percent": 53.61771732400916,
+      "annual_equal_sharpe": 0.7724142180893253,
+      "cash_cagr_percent": 0.4697157002296226,
+      "fold_count": 7,
+      "positive_fold_count": 5,
+      "positive_fold_fraction": 0.7142857142857143
+    },
+    "objective_checks": {
+      "cagr_ge_12pct": false,
+      "cagr_gt_cash": true,
+      "mdd_le_20pct": false,
+      "sharpe_ge_1": false,
+      "since2020_cagr_positive": true,
+      "since2022_cagr_positive": true
+    },
+    "objective_status": "FAIL",
+    "status": "FAIL",
+    "validation_checks": {
+      "actual_trades_gt_0": true,
+      "cash_nonnegative": true,
+      "full_cagr_gt_0": true,
+      "full_mdd_le_25pct": false,
+      "full_sharpe_gt_0": true,
+      "max_gross_le_1": true,
+      "positive_sharpe_folds_ge_70pct": true
+    },
+    "validation_status": "FAIL",
+    "validation_warnings": [
+      "execution_stress_not_in_this_R1_trial"
+    ]
+  },
+  "trial_id": "ATM-SVP3-ANNUAL-WINNER-001"
+}

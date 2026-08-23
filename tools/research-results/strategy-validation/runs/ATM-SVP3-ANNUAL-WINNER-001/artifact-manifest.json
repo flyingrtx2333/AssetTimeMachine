@@ -1,0 +1,115 @@
+{
+  "files": [
+    {
+      "bytes": 177513,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2003-01-02",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/candidates/ANWIN001-portfolio.csv",
+      "row_count": 6167,
+      "sha256": "64cf83c07040658d6d96d06ea57f6cdc55d436e626cd3cc9b992c44514064f31"
+    },
+    {
+      "bytes": 178859,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2003-01-02",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/candidates/C-ANNUAL-EQUAL-portfolio.csv",
+      "row_count": 6167,
+      "sha256": "da7cb427ceb61e6ece218ce79e799c1a1ae8e8772f6df0802d6bfe643e5d16d1"
+    },
+    {
+      "bytes": 178864,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2003-01-02",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/candidates/C-CASH-portfolio.csv",
+      "row_count": 6167,
+      "sha256": "03204e9f4c519a5ef5739b044f83b4fd13d45344c5b369747ce9b3e5fd5d74d9"
+    },
+    {
+      "bytes": 529,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "71b87b03fa91fecbb913161bc6f40b922e4a99f74e3281ada720c0c95685577b"
+    },
+    {
+      "bytes": 8212,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/candidates/candidate-metrics.json",
+      "sha256": "49a1fa08509eb5767f548a93bea63157e052e8f0ee7652bad4aa1abe099b9ef7"
+    },
+    {
+      "bytes": 546,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/candidates/statistical-audit.json",
+      "sha256": "d6a54fb330455456a622ce654ed7e674dbfec84a334d22504ccf12b09eaf8c02"
+    },
+    {
+      "bytes": 964,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/execution.json",
+      "sha256": "a0906d1cbe07d4263ce80315a8af29013673c1c32b5fb0a1b850639eb76cc703"
+    },
+    {
+      "bytes": 440,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/run-authorization.json",
+      "sha256": "13cdc082d812645f9b1fbe20803568f36faee20e42e7169efa8ba5a205430cf1"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1087,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/stdout.txt",
+      "sha256": "a5b05ca14768dd42e481e10cad9d9009c785fdb9a564b7d2a6092a0c2a1fc27a"
+    }
+  ],
+  "generated_at": "2026-08-23T13:33:51+08:00",
+  "git_commit": "7d054c1a0a58e86569eacf9a0feaf2a0a94cbaac",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "FAIL",
+    "objective_status": "FAIL",
+    "validation_status": "FAIL"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-ANNUAL-WINNER-001"
+}

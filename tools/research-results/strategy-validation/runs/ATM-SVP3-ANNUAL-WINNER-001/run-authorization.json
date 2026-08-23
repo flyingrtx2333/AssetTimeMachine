@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "7d054c1a0a58e86569eacf9a0feaf2a0a94cbaac",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "fd55612b9d86ae5657d4dd7a0feb78c5b4f30424e14e105825dbc788ce82f0de",
+  "preregistration_record_hash": "fd55612b9d86ae5657d4dd7a0feb78c5b4f30424e14e105825dbc788ce82f0de",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-ANNUAL-WINNER-001"
+}

@@ -1,0 +1,184 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/candidates/ANWIN001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/candidates/C-ANNUAL-EQUAL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-ANNUAL-WINNER-001",
+      "metrics": {
+        "annual_equal_control": {
+          "cagr_percent": 10.083000530592635,
+          "mdd_percent": 53.61771732400916,
+          "sharpe": 0.7724142180893253
+        },
+        "average_cash_ratio": 0.04215988324955408,
+        "cagr_percent": 4.923364703763666,
+        "comparison_checks": {
+          "cagr_gt_annual_equal": false,
+          "mdd_le_annual_equal": false,
+          "sharpe_gt_annual_equal": false
+        },
+        "comparison_failures": [
+          "cagr_gt_annual_equal",
+          "mdd_le_annual_equal",
+          "sharpe_gt_annual_equal"
+        ],
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "failed_preregistered_gates": [
+          "full_mdd_le_25pct"
+        ],
+        "fold_cagrs_percent": [
+          7.707703701153545,
+          -9.62552374211163,
+          -3.5970491462694487,
+          15.870523180753837,
+          8.484446702642323,
+          7.92904290871892,
+          8.726127347625967
+        ],
+        "fold_mdds_percent": [
+          18.62098473198453,
+          74.38403747865901,
+          30.46597888319194,
+          13.81234060606168,
+          45.305611482321076,
+          39.22407249232393,
+          28.754018066977466
+        ],
+        "fold_names": [
+          "2003-2005",
+          "2006-2008",
+          "2009-2011",
+          "2012-2014",
+          "2015-2017",
+          "2018-2021",
+          "2022-latest"
+        ],
+        "fold_sharpes": [
+          0.5503774446924157,
+          -0.08633347884065014,
+          -0.09838561166421798,
+          1.081670060422352,
+          0.4459466963605749,
+          0.43893736708642994,
+          0.47455428740438066
+        ],
+        "folds_with_positive_sharpe": 5,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 2.2895376283749158e-07,
+        "global_post_protocol_dsr_trial_count": 58,
+        "max_gross": 1,
+        "mdd_percent": 80.24530841659934,
+        "minimum_cash": 0,
+        "objective_checks": {
+          "cagr_ge_12pct": false,
+          "cagr_gt_cash": true,
+          "mdd_le_20pct": false,
+          "sharpe_ge_1": false,
+          "since2020_cagr_positive": true,
+          "since2022_cagr_positive": true
+        },
+        "objective_failures": [
+          "cagr_ge_12pct",
+          "mdd_le_20pct",
+          "sharpe_ge_1"
+        ],
+        "owner_by_year": {
+          "2003": "gold_cny",
+          "2004": "nasdaq",
+          "2005": "sp500",
+          "2006": "gold_cny",
+          "2007": "shanghai_composite",
+          "2008": "csi300",
+          "2009": "cash",
+          "2010": "csi300",
+          "2011": "gold_cny",
+          "2012": "gold_cny",
+          "2013": "nasdaq",
+          "2014": "nasdaq",
+          "2015": "shanghai_composite",
+          "2016": "nasdaq",
+          "2017": "sp500",
+          "2018": "csi300",
+          "2019": "gold_cny",
+          "2020": "nasdaq",
+          "2021": "nasdaq",
+          "2022": "sp500",
+          "2023": "gold_cny",
+          "2024": "nasdaq",
+          "2025": "nasdaq",
+          "2026": "gold_cny"
+        },
+        "sharpe": 0.31800732163174467,
+        "since2020_cagr_percent": 13.322989103003868,
+        "since2020_sharpe": 0.6271148267351611,
+        "since2022_cagr_percent": 8.726127347625967,
+        "since2022_sharpe": 0.47455428740438066,
+        "strategy_library_validation": {
+          "comparative_failures": [
+            "cagr_gt_annual_equal",
+            "mdd_le_annual_equal",
+            "sharpe_gt_annual_equal"
+          ],
+          "comparison_status": "FAIL",
+          "evidence_missing": [],
+          "note": "The annual winner architecture is low-turnover but fails the absolute drawdown validation floor and underperforms the annual equal-weight control.",
+          "objective_failures": [
+            "cagr_ge_12pct",
+            "mdd_le_20pct",
+            "sharpe_ge_1"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_mdd_le_25pct"
+          ],
+          "validation_warnings": [
+            "execution_stress_not_in_this_R1_trial",
+            "global_dsr_below_project_pass_threshold"
+          ]
+        },
+        "target_fingerprint": "33568b399197fbd2",
+        "trades": 37,
+        "validation_checks": {
+          "actual_trades_gt_0": true,
+          "cash_nonnegative": true,
+          "full_cagr_gt_0": true,
+          "full_mdd_le_25pct": false,
+          "full_sharpe_gt_0": true,
+          "max_gross_le_1": true,
+          "positive_sharpe_folds_ge_70pct": true
+        }
+      }
+    }
+  ],
+  "comparison_status": "FAIL",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-ANNUAL-WINNER-001.json",
+  "decision": "FAIL / VALIDATION_FAIL. The one-decision-per-year cross-asset winner strategy produced 4.923365% CAGR, 0.318007 Sharpe and 80.245308% MDD with only 37 trades under the product-level 1.00% fee + 0.05% slippage assumptions. Five of seven fixed folds had positive Sharpe, but the full MDD breached the 25% validation ceiling and reached 80.245%. The annually rebalanced equal-weight five-asset control was materially stronger at 10.083001% CAGR and 0.772414 Sharpe with 53.617717% MDD, so comparison=FAIL. Global DSR across 58 performance-bearing candidates is 2.28953763e-07. Per preregistration, no half-year/monthly cadence, Top2/Top3, alternate lookback, volatility sizing or trend-filter rescue is allowed in this lineage.",
+  "execution_git_commit": "7d054c1a0a58e86569eacf9a0feaf2a0a94cbaac",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "fd55612b9d86ae5657d4dd7a0feb78c5b4f30424e14e105825dbc788ce82f0de",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-ANNUAL-WINNER-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-ANNUAL-WINNER-001",
+  "validation_status": "FAIL"
+}
