@@ -1,0 +1,210 @@
+{
+  "batch_key": "ATM-SVP3-CHINA-US-RELAY-001-strategy-library-v2",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-CHINA-US-RELAY-001.json",
+    "decision": "INVALID_IMPLEMENTATION. The frozen China-to-U.S. relay rule emitted nonzero U.S. target weights on 2452 combined sessions, but the actual intraday execution audit recorded zero round trips, zero realized intraday gross and unchanged initial cash. The formal performance series therefore represents only the cash path and cannot support any conclusion about the economic hypothesis. The defect is implementation plumbing: signal-only CSI300/Shanghai inputs were passed as execution assetInputs. No signal direction, threshold, asset, timing, allocation, fee, slippage or validation gate may be changed. A corrected successor may change only the plumbing so China series are read as external causal signals while execution assetInputs contain only Nasdaq and S&P 500.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "d8bf3b746d00c81c7acc096b14df6e128a2f1045",
+    "methodology": {
+      "follow_up_policy": "After any formal performance metric is viewed, do not invert the China sign, change the two-index AND rule, add a return threshold, change signal lag, switch China or U.S. indices, add trend/volatility filters, change holding period, allocation, fee, slippage, or asset deletion inside this trial. Any such idea is a new independent preregistered strategy lineage.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "full combined CAGR > 0",
+        "full combined Sharpe > 0",
+        "full combined MDD <= 25%",
+        "at least 70% of seven fixed folds have combined Sharpe > 0",
+        "with 0.05% adverse slippage per fill, combined CAGR > 0 and Sharpe > 0",
+        "stress MDD <= 2 times base MDD",
+        "maximum intraday gross <=100%, minimum end-of-day cash >=0 and overnight position days =0"
+      ],
+      "selection_metric": "No within-family selection. There is exactly one China-breadth continuation rule. Strategy validation, objective attainment and matched-control comparison are reported separately under ATM-SVP-3."
+    },
+    "preregistration_hash": "426d83ca881bfa06edef7c115054666705e2e4b34264bbfdb861a6521fb1ddb3",
+    "protocol_id": "ATM-SVP-3",
+    "run_key": "ATM-SVP3-CHINA-US-RELAY-001",
+    "status": "INVALID",
+    "title": "INDEPENDENT_CHINA_TO_US_INTRADAY_RISK_ON_RELAY_V1"
+  },
+  "schema_version": "strategy-library-v2",
+  "source_commit": "d8bf3b746d00c81c7acc096b14df6e128a2f1045",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "A broad positive China cash-session close, observed before the U.S. cash open on the same calendar date, reflects globally persistent risk-on information and capital-flow sentiment that carries into the subsequent U.S. cash session. Buying Nasdaq and S&P 500 at the U.S. open only after both CSI300 and Shanghai Composite close higher should produce a repeatable positive open-to-close return without overnight exposure.",
+      "display_name": "china-us-relay-001 / 中美接力001",
+      "family": "策略研究",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/C-CASH-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/C-CHINA-AVAILABLE-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/C-CHINA-AVAILABLE-NASDAQ-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/C-CHINA-AVAILABLE-SP500-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/CUS001-COMBINED-SLIP005-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/CUS001-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/CUS001-NASDAQ-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/CUS001-SP500-portfolio.csv"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": null,
+        "candidate_id": "S-CHINA-US-RELAY-001",
+        "conclusion": "INVALID_IMPLEMENTATION. The frozen China-to-U.S. relay rule emitted nonzero U.S. target weights on 2452 combined sessions, but the actual intraday execution audit recorded zero round trips, zero realized intraday gross and unchanged initial cash. The formal performance series therefore represents only the cash path and cannot support any conclusion about the economic hypothesis. The defect is implementation plumbing: signal-only CSI300/Shanghai inputs were passed as execution assetInputs. No signal direction, threshold, asset, timing, allocation, fee, slippage or validation gate may be changed. A corrected successor may change only the plumbing so China series are read as external causal signals while execution assetInputs contain only Nasdaq and S&P 500.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 0.0,
+          "pass": false,
+          "shorting_allowed": false
+        },
+        "dsr_probability": null,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": null,
+        "gates": {},
+        "max_gross": 0.0,
+        "mdd_percent": null,
+        "metrics": {
+          "constraints": {
+            "financing_allowed": false,
+            "max_gross": 0.0,
+            "pass": false,
+            "shorting_allowed": false
+          },
+          "implementation_audit": {
+            "candidate_combined_active_target_sessions": 2452,
+            "candidate_combined_max_intraday_gross": 0.0,
+            "candidate_combined_minimum_end_of_day_cash": 100000.0,
+            "candidate_combined_round_trips": 0,
+            "candidate_combined_target_fingerprint": "809e9df935b7e503",
+            "defect": "Signal-only China assets were incorrectly included in runResearchIntradayRoundTripStrategyWithTrace assetInputs. Nonzero intended target states were emitted, but the execution path produced zero U.S. trades and zero realized gross, so all reported performance is cash-path contamination and is not strategy evidence.",
+            "invalid": true
+          },
+          "strategy_library_validation": {
+            "comparative_failures": [],
+            "comparison_status": "NOT_APPLICABLE",
+            "evidence_missing": [],
+            "legacy_robust_strategy_pass": false,
+            "level": "R1_RETROSPECTIVE",
+            "note": "Validation, campaign objective attainment and peer-strategy comparison are independent axes.",
+            "objective_failures": [],
+            "objective_status": "INVALID",
+            "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+            "status": "FAIL",
+            "trial_status": "INVALID",
+            "validation_failures": [
+              "full_cagr_gt_0",
+              "full_sharpe_gt_0",
+              "full_mdd_le_25pct",
+              "portfolio_constraints_pass",
+              "formal_trial_invalid"
+            ],
+            "validation_warnings": [
+              "fold_robustness_evidence_unavailable",
+              "execution_stress_not_in_this_trial"
+            ]
+          }
+        },
+        "result_status": "INVALID",
+        "robust_strategy_pass": false,
+        "sharpe": null,
+        "since2020_cagr_percent": null,
+        "since2022_cagr_percent": null,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-CHINA-US-RELAY-001",
+      "strategy_kind": "strategy_architecture_not_factor",
+      "tags": [
+        "ATM-SVP3-CHINA-US-RELAY-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "09412cec27868e69533103ec315cb1928b9a81cdf73c6246bdfe086ad72c2254",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 0.0,
+        "mechanism_text": "A broad positive China cash-session close, observed before the U.S. cash open on the same calendar date, reflects globally persistent risk-on information and capital-flow sentiment that carries into the subsequent U.S. cash session. Buying Nasdaq and S&P 500 at the U.S. open only after both CSI300 and Shanghai Composite close higher should produce a repeatable positive open-to-close return without overnight exposure.",
+        "parameters": {
+          "allowed_changes": [
+            "one fixed cross-market rule: if both same-calendar-date completed CSI300 and Shanghai Composite closes are above their immediately preceding real-session closes, enter U.S. equity exposure at that date's U.S. cash open",
+            "trade Nasdaq and S&P 500 as standalone 100% sleeves and as one fixed 50/50 combined portfolio",
+            "exit every U.S. position at the same U.S. session close; hold no overnight position",
+            "matched availability controls trade the identical U.S. open-to-close paths on every date where the two China signal bars and U.S. execution bars exist, but ignore the sign of China returns",
+            "one fixed 0.05% adverse-slippage-per-fill stress in addition to the 0.005% per-fill fee"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "reading current U.S. session high, low or close before the U.S. open entry decision",
+            "using any China observation timestamped after the U.S. cash open",
+            "testing positive, negative, thresholded or weighted China-return variants and selecting the best",
+            "changing same-day China breadth from the fixed CSI300 AND Shanghai Composite positive-close rule",
+            "adding SMA, ATR, RSI, MACD, volume, VIX, NFCI or any other filter after viewing the result",
+            "changing same-day U.S. close exit to overnight or multi-day holding",
+            "asset-specific parameters or dropping a weak Nasdaq or S&P 500 path",
+            "shorting, borrowing, financing, leverage, negative target weights, gross exposure above 100% or negative end-of-day cash",
+            "changing the 0.005% per-fill fee or hiding the preregistered adverse-slippage stress"
+          ],
+          "shared_rules": {
+            "china_signal": "same calendar date CSI300 close > prior real CSI300 close AND Shanghai Composite close > prior real Shanghai close",
+            "entry": "buy current U.S. session real open after the completed same-date China cash closes are known",
+            "evaluation_end": "2026-08-20",
+            "evaluation_start": "2005-01-05",
+            "exit": "sell current U.S. session close",
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "nasdaq_weight_combined": 0.5,
+            "overnight_positions_allowed": false,
+            "shorting_allowed": false,
+            "sp500_weight_combined": 0.5,
+            "time_causality": "China cash close precedes U.S. cash open on the same calendar date"
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "tools/china_us_relay_001_logic.swift",
+        "target_fingerprint": null,
+        "version_key": "S-CHINA-US-RELAY-001"
+      }
+    }
+  ]
+}

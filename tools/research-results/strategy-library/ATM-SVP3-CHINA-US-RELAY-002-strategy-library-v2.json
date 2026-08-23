@@ -1,0 +1,651 @@
+{
+  "batch_key": "ATM-SVP3-CHINA-US-RELAY-002-strategy-library-v2",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-CHINA-US-RELAY-002.json",
+    "decision": "FAIL / VALIDATION_FAIL. The implementation-corrected China-to-U.S. intraday relay produced 1.800829% CAGR, 0.216042 Sharpe and 39.254802% MDD with 4904 actual round trips, 100% max gross, nonnegative cash, zero overnight positions and zero sentinel take-profit hits. Only 4/7 fixed folds had positive Sharpe. Under 0.05% adverse slippage per fill, CAGR fell to -9.109524%, Sharpe to -0.803816, and MDD rose to 87.340945%. The China filter did beat the matched China-availability control on CAGR/Sharpe/MDD, so comparison=PASS, but intrinsic validation=FAIL and the high-return objective=FAIL. Per preregistration, no sign inversion, threshold, filter, lag, asset, allocation, holding-period or cost rescue is allowed in this lineage.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "6317a167364f4eb0494df5cc48e1844a2dfc6833",
+    "methodology": {
+      "follow_up_policy": "This is the one implementation-corrected rerun permitted after ATM-SVP3-CHINA-US-RELAY-001 was recorded INVALID_IMPLEMENTATION. After any 002 formal performance metric is viewed, no sign inversion, threshold, China/U.S. asset replacement, lag, filter, holding-period, allocation, fee, stress or rescue variant is allowed inside this lineage.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "full combined CAGR > 0",
+        "full combined Sharpe > 0",
+        "full combined MDD <= 25%",
+        "at least 70% of seven fixed folds have combined Sharpe > 0",
+        "with 0.05% adverse slippage per fill, combined CAGR > 0 and Sharpe > 0",
+        "stress MDD <= 2 times base MDD",
+        "maximum intraday gross <=100%, minimum end-of-day cash >=0 and overnight position days =0"
+      ],
+      "selection_metric": "No within-family selection. There is exactly one China-breadth continuation rule. Strategy validation, objective attainment and matched-control comparison are reported separately under ATM-SVP-3."
+    },
+    "preregistration_hash": "7dd6b5d04e09e5cbe9c8102f00b39f741234035cbf51617c25060c2aed01b4de",
+    "protocol_id": "ATM-SVP-3",
+    "run_key": "ATM-SVP3-CHINA-US-RELAY-002",
+    "status": "FAIL",
+    "title": "INDEPENDENT_CHINA_TO_US_INTRADAY_RISK_ON_RELAY_V1"
+  },
+  "schema_version": "strategy-library-v2",
+  "source_commit": "6317a167364f4eb0494df5cc48e1844a2dfc6833",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "A broad positive China cash-session close, observed before the U.S. cash open on the same calendar date, reflects globally persistent risk-on information and capital-flow sentiment that carries into the subsequent U.S. cash session. Buying Nasdaq and S&P 500 at the U.S. open only after both CSI300 and Shanghai Composite close higher should produce a repeatable positive open-to-close return without overnight exposure.",
+      "display_name": "china-us-relay-002 / 中美接力002",
+      "family": "策略研究",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/candidates/C-CASH-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/candidates/C-CHINA-AVAILABLE-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/candidates/C-CHINA-AVAILABLE-NASDAQ-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/candidates/C-CHINA-AVAILABLE-SP500-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/candidates/CUS002-COMBINED-SLIP005-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/candidates/CUS002-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/candidates/CUS002-NASDAQ-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/candidates/CUS002-SP500-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-002/stdout.txt"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": 1.800828632574203,
+        "candidate_id": "S-CHINA-US-RELAY-002",
+        "conclusion": "FAIL / VALIDATION_FAIL. The implementation-corrected China-to-U.S. intraday relay produced 1.800829% CAGR, 0.216042 Sharpe and 39.254802% MDD with 4904 actual round trips, 100% max gross, nonnegative cash, zero overnight positions and zero sentinel take-profit hits. Only 4/7 fixed folds had positive Sharpe. Under 0.05% adverse slippage per fill, CAGR fell to -9.109524%, Sharpe to -0.803816, and MDD rose to 87.340945%. The China filter did beat the matched China-availability control on CAGR/Sharpe/MDD, so comparison=PASS, but intrinsic validation=FAIL and the high-return objective=FAIL. Per preregistration, no sign inversion, threshold, filter, lag, asset, allocation, holding-period or cost rescue is allowed in this lineage.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1,
+          "minimum_end_of_day_cash": 73241.15049885886,
+          "overnight_position_days": 0,
+          "pass": true,
+          "shorting_allowed": false,
+          "take_profit_hits": 0
+        },
+        "dsr_probability": null,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": null,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 39.254802065248896,
+        "metrics": {
+          "cash_control_cagr_percent": 0.4294856943458436,
+          "combined": {
+            "active_sessions": 2452,
+            "average_intraday_gross": 0.44966073720887584,
+            "cagr_percent": 1.800828632574203,
+            "end": "2026-08-20",
+            "folds": [
+              {
+                "cagr_percent": -2.247257617390175,
+                "mdd_percent": 34.0242262169427,
+                "name": "2005-2008",
+                "sessions": 1007,
+                "sharpe": -0.09279028882190218
+              },
+              {
+                "cagr_percent": 6.477950420153333,
+                "mdd_percent": 19.909032316076114,
+                "name": "2009-2012",
+                "sessions": 1014,
+                "sharpe": 0.5432587833539985
+              },
+              {
+                "cagr_percent": 8.012812518504964,
+                "mdd_percent": 6.782731735070101,
+                "name": "2013-2016",
+                "sessions": 1011,
+                "sharpe": 1.0748301028221852
+              },
+              {
+                "cagr_percent": 0.0009831613090538482,
+                "mdd_percent": 11.80487627679532,
+                "name": "2017-2020",
+                "sessions": 1007,
+                "sharpe": 0.04632960842718357
+              },
+              {
+                "cagr_percent": -7.201416763800228,
+                "mdd_percent": 19.145911359617337,
+                "name": "2021-2022",
+                "sessions": 503,
+                "sharpe": -0.583103675946909
+              },
+              {
+                "cagr_percent": 8.286554868177554,
+                "mdd_percent": 7.059099511945691,
+                "name": "2023-2024",
+                "sessions": 502,
+                "sharpe": 1.075157271185228
+              },
+              {
+                "cagr_percent": -3.7891750498041388,
+                "mdd_percent": 9.64015855552377,
+                "name": "2025-latest",
+                "sessions": 409,
+                "sharpe": -0.2513774514365025
+              }
+            ],
+            "id": "CUS002-COMBINED",
+            "max_intraday_gross": 1,
+            "mdd_percent": 39.254802065248896,
+            "minimum_end_of_day_cash": 73241.15049885886,
+            "overnight_position_days": 0,
+            "round_trips_by_symbol": {
+              "nasdaq": 2452,
+              "sp500": 2452
+            },
+            "sessions": 5453,
+            "sharpe": 0.21604217908417356,
+            "since2020_cagr_percent": -0.9607448436224852,
+            "since2020_sharpe": -0.032588178942104334,
+            "since2022_cagr_percent": -0.4008801168464693,
+            "since2022_sharpe": 0.018477468869007134,
+            "start": "2005-01-05",
+            "take_profit_hits_by_symbol": {
+              "nasdaq": 0,
+              "sp500": 0
+            },
+            "target_fingerprint": "0a4d45bc6ad8b9c3",
+            "total_return_percent": 47.09220178002844,
+            "trade_stats": {
+              "average_return_percent": 0.017187315034803762,
+              "profit_factor": 1.0493791768061334,
+              "round_trips": 4904,
+              "win_rate_percent": 54.07830342577488
+            },
+            "volatility_percent": 11.099203881657505
+          },
+          "comparison_failures": [],
+          "constraints": {
+            "financing_allowed": false,
+            "max_gross": 1,
+            "minimum_end_of_day_cash": 73241.15049885886,
+            "overnight_position_days": 0,
+            "pass": true,
+            "shorting_allowed": false,
+            "take_profit_hits": 0
+          },
+          "failed_preregistered_gates": [
+            "full_mdd_le_25pct",
+            "positive_sharpe_folds_ge_70pct",
+            "stress_cagr_gt_0",
+            "stress_mdd_le_2x_base",
+            "stress_sharpe_gt_0"
+          ],
+          "matched_availability_control": {
+            "active_sessions": 5078,
+            "average_intraday_gross": 0.9312305153126719,
+            "cagr_percent": 1.2091215093285257,
+            "end": "2026-08-20",
+            "folds": [
+              {
+                "cagr_percent": -6.449719951301603,
+                "mdd_percent": 41.95747035230596,
+                "name": "2005-2008",
+                "sessions": 1007,
+                "sharpe": -0.24055411131936844
+              },
+              {
+                "cagr_percent": 5.389586580554329,
+                "mdd_percent": 19.184911419418757,
+                "name": "2009-2012",
+                "sessions": 1014,
+                "sharpe": 0.38936598244333503
+              },
+              {
+                "cagr_percent": 5.3967759192687925,
+                "mdd_percent": 18.127754565042444,
+                "name": "2013-2016",
+                "sessions": 1011,
+                "sharpe": 0.5382445732445653
+              },
+              {
+                "cagr_percent": 2.192697002756705,
+                "mdd_percent": 22.569531499129422,
+                "name": "2017-2020",
+                "sessions": 1007,
+                "sharpe": 0.22182427193377696
+              },
+              {
+                "cagr_percent": -9.643575139977878,
+                "mdd_percent": 27.312668376955852,
+                "name": "2021-2022",
+                "sessions": 503,
+                "sharpe": -0.4727921029051754
+              },
+              {
+                "cagr_percent": 9.243814467584999,
+                "mdd_percent": 12.062957855855414,
+                "name": "2023-2024",
+                "sessions": 502,
+                "sharpe": 0.8069825123974832
+              },
+              {
+                "cagr_percent": 5.046305100093651,
+                "mdd_percent": 12.201693998794903,
+                "name": "2025-latest",
+                "sessions": 409,
+                "sharpe": 0.3884231800975305
+              }
+            ],
+            "id": "C-CHINA-AVAILABLE-COMBINED",
+            "max_intraday_gross": 1,
+            "mdd_percent": 43.0409809445039,
+            "minimum_end_of_day_cash": 62026.52817619343,
+            "overnight_position_days": 0,
+            "round_trips_by_symbol": {
+              "nasdaq": 5078,
+              "sp500": 5078
+            },
+            "sessions": 5453,
+            "sharpe": 0.1550438801081829,
+            "since2020_cagr_percent": 0.9185393685736454,
+            "since2020_sharpe": 0.13766664514531282,
+            "since2022_cagr_percent": -0.5412140871153603,
+            "since2022_sharpe": 0.04646704710617506,
+            "start": "2005-01-05",
+            "take_profit_hits_by_symbol": {
+              "nasdaq": 0,
+              "sp500": 0
+            },
+            "target_fingerprint": "d69edf02c5c08503",
+            "total_return_percent": 29.674075838276327,
+            "trade_stats": {
+              "average_return_percent": 0.008503533437710582,
+              "profit_factor": 1.0237956953705707,
+              "round_trips": 10156,
+              "win_rate_percent": 53.564395431272146
+            },
+            "volatility_percent": 15.775194133531883
+          },
+          "nasdaq": {
+            "active_sessions": 2453,
+            "average_intraday_gross": 0.45075339948548326,
+            "cagr_percent": -0.39553028636095666,
+            "end": "2026-08-20",
+            "folds": [
+              {
+                "cagr_percent": -5.391923206133842,
+                "mdd_percent": 38.94459101368648,
+                "name": "2005-2008",
+                "sessions": 1005,
+                "sharpe": -0.3196903692882616
+              },
+              {
+                "cagr_percent": 2.3013503170788097,
+                "mdd_percent": 17.495595705762547,
+                "name": "2009-2012",
+                "sessions": 1006,
+                "sharpe": 0.241843220652176
+              },
+              {
+                "cagr_percent": 6.473832989116324,
+                "mdd_percent": 9.509204293114228,
+                "name": "2013-2016",
+                "sessions": 1010,
+                "sharpe": 0.8320555046890988
+              },
+              {
+                "cagr_percent": -1.0275017508062145,
+                "mdd_percent": 12.68817418543626,
+                "name": "2017-2020",
+                "sessions": 1007,
+                "sharpe": -0.05359834474051067
+              },
+              {
+                "cagr_percent": -9.60332896641809,
+                "mdd_percent": 24.120450083884844,
+                "name": "2021-2022",
+                "sessions": 503,
+                "sharpe": -0.6745499108018937
+              },
+              {
+                "cagr_percent": 9.076245332729439,
+                "mdd_percent": 10.433147887242045,
+                "name": "2023-2024",
+                "sessions": 502,
+                "sharpe": 1.0179669546613637
+              },
+              {
+                "cagr_percent": -6.010696462915311,
+                "mdd_percent": 11.744796473959115,
+                "name": "2025-latest",
+                "sessions": 409,
+                "sharpe": -0.3711676065235502
+              }
+            ],
+            "id": "CUS002-NASDAQ",
+            "max_intraday_gross": 1,
+            "mdd_percent": 42.34844949629743,
+            "minimum_end_of_day_cash": 66434.7390191994,
+            "overnight_position_days": 0,
+            "round_trips_by_symbol": {
+              "nasdaq": 2453
+            },
+            "sessions": 5442,
+            "sharpe": 0.02455903568117968,
+            "since2020_cagr_percent": -2.641493409579032,
+            "since2020_sharpe": -0.1525061832250198,
+            "since2022_cagr_percent": -1.289245531144445,
+            "since2022_sharpe": -0.03895647187161478,
+            "start": "2005-01-05",
+            "take_profit_hits_by_symbol": {
+              "nasdaq": 0
+            },
+            "target_fingerprint": "77745e8896c2b746",
+            "total_return_percent": -8.21179773586378,
+            "trade_stats": {
+              "average_return_percent": -0.0014679264640556871,
+              "profit_factor": 0.9960973059326284,
+              "round_trips": 2453,
+              "win_rate_percent": 53.4447615165104
+            },
+            "volatility_percent": 11.711438037316887
+          },
+          "objective_failures": [
+            "combined_cagr_ge_8pct",
+            "combined_mdd_le_15pct",
+            "combined_profit_factor_ge_1_1",
+            "combined_sharpe_ge_1",
+            "since2020_cagr_positive",
+            "since2022_cagr_positive"
+          ],
+          "slippage_stress": {
+            "active_sessions": 2452,
+            "average_intraday_gross": 0.44966073720887584,
+            "cagr_percent": -9.109524397447021,
+            "end": "2026-08-20",
+            "folds": [
+              {
+                "cagr_percent": -13.467159195308188,
+                "mdd_percent": 49.63144212150915,
+                "name": "2005-2008",
+                "sessions": 1007,
+                "sharpe": -0.9617313676530191
+              },
+              {
+                "cagr_percent": -5.31768935841721,
+                "mdd_percent": 23.29153072745037,
+                "name": "2009-2012",
+                "sessions": 1014,
+                "sharpe": -0.3513420954623413
+              },
+              {
+                "cagr_percent": -3.6714482235964407,
+                "mdd_percent": 18.2622669801284,
+                "name": "2013-2016",
+                "sessions": 1011,
+                "sharpe": -0.46805579513482803
+              },
+              {
+                "cagr_percent": -10.72718811021247,
+                "mdd_percent": 39.21384584049899,
+                "name": "2017-2020",
+                "sessions": 1007,
+                "sharpe": -1.1825096573748763
+              },
+              {
+                "cagr_percent": -16.053764791007897,
+                "mdd_percent": 32.07954661772217,
+                "name": "2021-2022",
+                "sessions": 503,
+                "sharpe": -1.4359910950598016
+              },
+              {
+                "cagr_percent": -2.0027613423104773,
+                "mdd_percent": 15.292622046401563,
+                "name": "2023-2024",
+                "sessions": 502,
+                "sharpe": -0.22603193399631713
+              },
+              {
+                "cagr_percent": -14.11778699106806,
+                "mdd_percent": 21.960425944797162,
+                "name": "2025-latest",
+                "sessions": 409,
+                "sharpe": -1.164862750953085
+              }
+            ],
+            "id": "CUS002-COMBINED-SLIP005",
+            "max_intraday_gross": 1,
+            "mdd_percent": 87.34094512662149,
+            "minimum_end_of_day_cash": 12608.391678049044,
+            "overnight_position_days": 0,
+            "round_trips_by_symbol": {
+              "nasdaq": 2452,
+              "sp500": 2452
+            },
+            "sessions": 5453,
+            "sharpe": -0.803816177117613,
+            "since2020_cagr_percent": -10.90964447098578,
+            "since2020_sharpe": -0.99008225928734,
+            "since2022_cagr_percent": -10.234784041266975,
+            "since2022_sharpe": -0.9204477143787675,
+            "start": "2005-01-05",
+            "take_profit_hits_by_symbol": {
+              "nasdaq": 0,
+              "sp500": 0
+            },
+            "target_fingerprint": "0a4d45bc6ad8b9c3",
+            "total_return_percent": -87.31957572148181,
+            "trade_stats": {
+              "average_return_percent": -0.08277988867836378,
+              "profit_factor": 0.7914776679132416,
+              "round_trips": 4904,
+              "win_rate_percent": 47.57340946166394
+            },
+            "volatility_percent": 11.106410040970864
+          },
+          "sp500": {
+            "active_sessions": 2457,
+            "average_intraday_gross": 0.4507429829389103,
+            "cagr_percent": 3.9074016471166706,
+            "end": "2026-08-20",
+            "folds": [
+              {
+                "cagr_percent": 0.8664441514876886,
+                "mdd_percent": 29.46897338225472,
+                "name": "2005-2008",
+                "sessions": 1007,
+                "sharpe": 0.13134255202833198
+              },
+              {
+                "cagr_percent": 10.132753577980246,
+                "mdd_percent": 22.290109671312912,
+                "name": "2009-2012",
+                "sessions": 1014,
+                "sharpe": 0.7375141400863415
+              },
+              {
+                "cagr_percent": 9.750597310361586,
+                "mdd_percent": 5.752165215775324,
+                "name": "2013-2016",
+                "sessions": 1009,
+                "sharpe": 1.2541586644391083
+              },
+              {
+                "cagr_percent": 0.9951572457689517,
+                "mdd_percent": 11.031488354082954,
+                "name": "2017-2020",
+                "sessions": 1007,
+                "sharpe": 0.15590426582119782
+              },
+              {
+                "cagr_percent": -4.809680455095888,
+                "mdd_percent": 15.23049842635579,
+                "name": "2021-2022",
+                "sessions": 503,
+                "sharpe": -0.43704001384786667
+              },
+              {
+                "cagr_percent": 7.468179787380391,
+                "mdd_percent": 6.0881907932061,
+                "name": "2023-2024",
+                "sessions": 502,
+                "sharpe": 1.1114724320832212
+              },
+              {
+                "cagr_percent": -1.563633582478452,
+                "mdd_percent": 7.506171814983312,
+                "name": "2025-latest",
+                "sessions": 409,
+                "sharpe": -0.09184689799604877
+              }
+            ],
+            "id": "CUS002-SP500",
+            "max_intraday_gross": 1,
+            "mdd_percent": 36.38014799996395,
+            "minimum_end_of_day_cash": 80273.6068264281,
+            "overnight_position_days": 0,
+            "round_trips_by_symbol": {
+              "sp500": 2457
+            },
+            "sessions": 5451,
+            "sharpe": 0.3966511425169221,
+            "since2020_cagr_percent": 0.6883495737940226,
+            "since2020_sharpe": 0.11842634942322856,
+            "since2022_cagr_percent": 0.44495798559371913,
+            "since2022_sharpe": 0.09387121736976542,
+            "start": "2005-01-05",
+            "take_profit_hits_by_symbol": {
+              "sp500": 0
+            },
+            "target_fingerprint": "ea04c8bb638c570e",
+            "total_return_percent": 129.03953129395595,
+            "trade_stats": {
+              "average_return_percent": 0.03535440590628708,
+              "profit_factor": 1.1104932017124083,
+              "round_trips": 2457,
+              "win_rate_percent": 54.66015466015466
+            },
+            "volatility_percent": 11.249579164313388
+          },
+          "strategy_library_validation": {
+            "comparative_failures": [],
+            "comparison_status": "NOT_APPLICABLE",
+            "evidence_missing": [],
+            "legacy_robust_strategy_pass": false,
+            "level": "R1_RETROSPECTIVE",
+            "note": "Validation, campaign objective attainment and peer-strategy comparison are independent axes.",
+            "objective_failures": [
+              "full_mdd_le_25pct",
+              "positive_sharpe_folds_ge_70pct",
+              "stress_cagr_gt_0",
+              "stress_mdd_le_2x_base",
+              "stress_sharpe_gt_0"
+            ],
+            "objective_status": "FAIL",
+            "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+            "status": "FAIL",
+            "trial_status": "FAIL",
+            "validation_failures": [
+              "full_mdd_le_25pct",
+              "stress_cagr_gt_0",
+              "stress_sharpe_gt_0",
+              "stress_mdd_le_2x_base"
+            ],
+            "validation_warnings": [
+              "fold_robustness_evidence_unavailable"
+            ]
+          }
+        },
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "sharpe": 0.21604217908417356,
+        "since2020_cagr_percent": -0.9607448436224852,
+        "since2022_cagr_percent": -0.4008801168464693,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-CHINA-US-RELAY-002",
+      "strategy_kind": "strategy_architecture_not_factor",
+      "tags": [
+        "ATM-SVP3-CHINA-US-RELAY-002",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "293d3d4ec1ce741f99d9d06daf56d19cae63d918dcbc74e7fb847ed2d6ee159c",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "A broad positive China cash-session close, observed before the U.S. cash open on the same calendar date, reflects globally persistent risk-on information and capital-flow sentiment that carries into the subsequent U.S. cash session. Buying Nasdaq and S&P 500 at the U.S. open only after both CSI300 and Shanghai Composite close higher should produce a repeatable positive open-to-close return without overnight exposure.",
+        "parameters": {
+          "allowed_changes": [
+            "implementation-only correction from INVALID trial 001: China CSI300/Shanghai series are read outside the intraday execution engine into a same-date risk-on map, while execution assetInputs contain only Nasdaq and S&P 500",
+            "all economic rules, dates, signal direction, AND breadth rule, U.S. assets, 50/50 combined allocation, same-day close exit, fee, slippage stress, validation gates, objective gates and comparison gates remain byte-for-byte conceptually identical to trial 001"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "reading current U.S. session high, low or close before the U.S. open entry decision",
+            "using any China observation timestamped after the U.S. cash open",
+            "testing positive, negative, thresholded or weighted China-return variants and selecting the best",
+            "changing same-day China breadth from the fixed CSI300 AND Shanghai Composite positive-close rule",
+            "adding SMA, ATR, RSI, MACD, volume, VIX, NFCI or any other filter after viewing the result",
+            "changing same-day U.S. close exit to overnight or multi-day holding",
+            "asset-specific parameters or dropping a weak Nasdaq or S&P 500 path",
+            "shorting, borrowing, financing, leverage, negative target weights, gross exposure above 100% or negative end-of-day cash",
+            "changing the 0.005% per-fill fee or hiding the preregistered adverse-slippage stress"
+          ],
+          "shared_rules": {
+            "china_signal": "same calendar date CSI300 close > prior real CSI300 close AND Shanghai Composite close > prior real Shanghai close",
+            "entry": "buy current U.S. session real open after the completed same-date China cash closes are known",
+            "evaluation_end": "2026-08-20",
+            "evaluation_start": "2005-01-05",
+            "exit": "sell current U.S. session close",
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "nasdaq_weight_combined": 0.5,
+            "overnight_positions_allowed": false,
+            "shorting_allowed": false,
+            "sp500_weight_combined": 0.5,
+            "time_causality": "China cash close precedes U.S. cash open on the same calendar date"
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "tools/china_us_relay_002_logic.swift",
+        "target_fingerprint": null,
+        "version_key": "S-CHINA-US-RELAY-002"
+      }
+    }
+  ]
+}

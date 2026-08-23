@@ -603,7 +603,7 @@ def main() -> int:
     if bool(args.result) == bool(args.all):
         raise SystemExit("choose exactly one of --result or --all")
     output_dir = ROOT / args.output_dir
-    paths = [ROOT / args.result] if args.result else sorted(RESULTS_DIR.glob("ATM-SVP2-*.json"))
+    paths = [ROOT / args.result] if args.result else sorted(RESULTS_DIR.glob("ATM-SVP*-*.json"))
     exported: list[Path] = []
     skipped: list[str] = []
     for path in paths:
