@@ -1,0 +1,116 @@
+{
+  "files": [
+    {
+      "bytes": 86612,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2018-06-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/candidates/BTCSMA001-portfolio.csv",
+      "row_count": 2999,
+      "sha256": "81f03d3b212e23a2316888f2c0509aacd70107078e34484ec01ddb01caafdd77"
+    },
+    {
+      "bytes": 87189,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2018-06-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/candidates/C-BTC-BUYHOLD-portfolio.csv",
+      "row_count": 2999,
+      "sha256": "c281d52c87d194ff6acc0a9d4fb2833abca852a09ff025c4bc4937b184fef2b0"
+    },
+    {
+      "bytes": 86992,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2018-06-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/candidates/C-CASH-portfolio.csv",
+      "row_count": 2999,
+      "sha256": "be27c1897eb6022f1d88d69ad83343525267957a453bf52a08dd02dc57c39ebe"
+    },
+    {
+      "bytes": 505,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "23ec0e48680ed9f20d049f1c35027fe9ea17be58818a6a5be348d718f31676c3"
+    },
+    {
+      "bytes": 7760,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/candidates/candidate-metrics.json",
+      "sha256": "10b8c606d98639fba1a35192ddad7eeeaff9821e2b421b2f418a84e5fd2afc5e"
+    },
+    {
+      "bytes": 543,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/candidates/statistical-audit.json",
+      "sha256": "0ee50185f7f6b9a8eb5128f42ae528c8f5dc69efff7977e999fbf0be417f745b"
+    },
+    {
+      "bytes": 946,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/execution.json",
+      "sha256": "09ef9217dce47bed00e393c540fb1773c7538aa0fd84c7cc20041e82f3beb1ea"
+    },
+    {
+      "bytes": 437,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/run-authorization.json",
+      "sha256": "7eca231569396a102349c6ad29d00788deea0a270e6b147ac22bec56b178257e"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1259,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/stdout.txt",
+      "sha256": "74976c83903e97a48899f09c9fd35f74ce5550a69fddd8e21c099fe7d27befe8"
+    }
+  ],
+  "generated_at": "2026-08-24T00:09:37+08:00",
+  "git_commit": "9b19b3fb7c252f4de3c0c95050dcdaaa20c3aea1",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "FAIL",
+    "measurement": "BTCUSDT~USD proxy; SP500 common-session execution",
+    "objective_status": "FAIL",
+    "validation_status": "FAIL"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-BTC-SMA200-001"
+}

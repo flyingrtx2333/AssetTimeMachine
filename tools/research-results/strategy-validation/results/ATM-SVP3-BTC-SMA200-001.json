@@ -1,0 +1,163 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/candidates/BTCSMA001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/candidates/C-BTC-BUYHOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-BTC-SMA200-001",
+      "metrics": {
+        "average_cash_ratio": 0.46648882960987,
+        "btc_buy_hold_control": {
+          "cagr_percent": 32.470446465704626,
+          "mdd_percent": 73.8131628591632,
+          "sharpe": 0.6381898783387698,
+          "target_fingerprint": "7c891694f65c005a",
+          "trades": 1
+        },
+        "cagr_percent": 19.8244146579311,
+        "cash_control_cagr_percent": 0.5085770286770153,
+        "comparison_checks": {
+          "mdd_lt_btc_buy_hold": true,
+          "sharpe_gt_btc_buy_hold": false
+        },
+        "comparison_failures": [
+          "sharpe_gt_btc_buy_hold"
+        ],
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "failed_preregistered_gates": [
+          "full_mdd_le_25pct"
+        ],
+        "fold_cagrs_percent": [
+          15.237556810378106,
+          129.95213233270312,
+          -17.860821168784224,
+          0.5085770286768376,
+          56.636506591054456,
+          45.59897885658872,
+          -15.294695717024753
+        ],
+        "fold_mdds_percent": [
+          48.258484563008224,
+          33.437147256953786,
+          62.14257016143673,
+          0,
+          32.27950197669369,
+          39.51916208467695,
+          33.54194124094938
+        ],
+        "fold_names": [
+          "2018-2019",
+          "2020",
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025-latest"
+        ],
+        "fold_sharpes": [
+          0.44763934739491007,
+          1.6025814704706525,
+          0.04037454680408798,
+          2035492773983.8525,
+          1.0667420559759704,
+          0.8448252182530298,
+          -0.4114193731172327
+        ],
+        "folds_with_positive_sharpe": 6,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 0.0007269203886097753,
+        "global_post_protocol_dsr_trial_count": 76,
+        "max_gross": 1,
+        "mdd_percent": 62.53928318111007,
+        "measurement": {
+          "btc_source": "Binance BTCUSDT",
+          "execution_calendar": "SP500 common sessions",
+          "usdt_as_usd_equivalent": true,
+          "warning": "USDT/USD basis and weekend execution are not modeled"
+        },
+        "minimum_cash": 0,
+        "objective_checks": {
+          "cagr_ge_20pct": false,
+          "cagr_gt_cash": true,
+          "mdd_le_25pct": false,
+          "sharpe_ge_1": false,
+          "since2020_cagr_positive": true,
+          "since2022_cagr_positive": true
+        },
+        "objective_failures": [
+          "cagr_ge_20pct",
+          "mdd_le_25pct",
+          "sharpe_ge_1"
+        ],
+        "sharpe": 0.5254275360452156,
+        "since2020_cagr_percent": 20.946281195315763,
+        "since2020_sharpe": 0.5450975530982917,
+        "since2022_cagr_percent": 14.111782635877756,
+        "since2022_sharpe": 0.46489830003294813,
+        "strategy_library_validation": {
+          "comparative_failures": [
+            "sharpe_gt_btc_buy_hold"
+          ],
+          "comparison_status": "FAIL",
+          "evidence_missing": [],
+          "note": "BTC SMA200 retains high headline return but fails the project-wide <=25% MDD floor, has lower Sharpe than BTC buy-and-hold, and global DSR is very weak.",
+          "objective_failures": [
+            "cagr_ge_20pct",
+            "mdd_le_25pct",
+            "sharpe_ge_1"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_mdd_le_25pct"
+          ],
+          "validation_warnings": [
+            "BTCUSDT quote treated as USD-equivalent before historical USD/CNY conversion",
+            "execution restricted to SP500 common sessions; weekends intentionally excluded for metric comparability",
+            "base run already uses conservative 1.00% fee plus 0.05% slippage"
+          ]
+        },
+        "target_fingerprint": "23c1a81dd0c55443",
+        "trades": 80,
+        "validation_checks": {
+          "actual_trades_gt_0": true,
+          "cash_nonnegative": true,
+          "full_cagr_gt_0": true,
+          "full_mdd_le_25pct": false,
+          "full_sharpe_gt_0": true,
+          "max_gross_le_1": true,
+          "positive_sharpe_folds_ge_70pct": true
+        }
+      }
+    }
+  ],
+  "comparison_status": "FAIL",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-BTC-SMA200-001.json",
+  "decision": "FAIL / VALIDATION_FAIL. The frozen 200-common-session BTC trend rule produced 19.824415% CAGR, 0.525428 Sharpe and 62.539283% MDD after 1.00% fee + 0.05% slippage, with 6/7 positive-Sharpe folds. BTC buy-and-hold delivered 32.470446% CAGR, 0.638190 Sharpe and 73.813163% MDD. The rule lowers drawdown but remains far above the project-wide <=25% floor and has lower Sharpe than buy-and-hold. Global DSR=0.000726920389 over 76 candidates. Measurement uses Binance BTCUSDT as a USD-equivalent proxy and weekday/common-session execution. No SMA-horizon, confirmation, hysteresis, weekend, stop-loss or multi-asset rescue is permitted.",
+  "execution_git_commit": "9b19b3fb7c252f4de3c0c95050dcdaaa20c3aea1",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "ed8f83157b6a8772d14f2405e3fe7b8ab80c4e2b1ec2dd38771f7a24bcdb41ab",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-BTC-SMA200-001",
+  "validation_status": "FAIL"
+}

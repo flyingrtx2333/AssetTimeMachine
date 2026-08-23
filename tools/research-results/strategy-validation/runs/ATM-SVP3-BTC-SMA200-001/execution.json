@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_btc_sma200_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "9b19b3fb7c252f4de3c0c95050dcdaaa20c3aea1",
+  "finished_at": "2026-08-24T00:07:03+08:00",
+  "preregistration_record_hash": "ed8f83157b6a8772d14f2405e3fe7b8ab80c4e2b1ec2dd38771f7a24bcdb41ab",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/run-authorization.json",
+  "started_at": "2026-08-24T00:06:36+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-BTC-SMA200-001/stdout.txt",
+  "trial_id": "ATM-SVP3-BTC-SMA200-001"
+}

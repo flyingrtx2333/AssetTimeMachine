@@ -1,0 +1,262 @@
+{
+  "btc_buy_hold_control": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 32.470446465704626,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 1.6301807013450853,
+        "mdd_percent": 61.16405575217853,
+        "name": "2018-2019",
+        "sessions": 575,
+        "sharpe": 0.3023600668029057
+      },
+      {
+        "cagr_percent": 277.5645101496561,
+        "mdd_percent": 53.397967973595314,
+        "name": "2020",
+        "sessions": 366,
+        "sharpe": 1.8101276815160754
+      },
+      {
+        "cagr_percent": 53.32250248207551,
+        "mdd_percent": 53.63151087350679,
+        "name": "2021",
+        "sessions": 365,
+        "sharpe": 0.7729749666175931
+      },
+      {
+        "cagr_percent": -62.48142193190145,
+        "mdd_percent": 62.69800129191137,
+        "name": "2022",
+        "sessions": 365,
+        "sharpe": -1.0223089783764014
+      },
+      {
+        "cagr_percent": 162.9380892769983,
+        "mdd_percent": 18.726133209927777,
+        "name": "2023",
+        "sessions": 365,
+        "sharpe": 2.0182515053882857
+      },
+      {
+        "cagr_percent": 117.72208059385369,
+        "mdd_percent": 27.26719451146899,
+        "name": "2024",
+        "sessions": 366,
+        "sharpe": 1.4279944093215218
+      },
+      {
+        "cagr_percent": -18.855274638242058,
+        "mdd_percent": 55.1780941450997,
+        "name": "2025-latest",
+        "sessions": 597,
+        "sharpe": -0.21828307017351334
+      }
+    ],
+    "id": "C-BTC-BUYHOLD",
+    "max_gross": 1,
+    "mdd_percent": 73.8131628591632,
+    "minimum_cash": 0,
+    "sessions": 2999,
+    "sharpe": 0.6381898783387698,
+    "since2020_cagr_percent": 41.05360373384252,
+    "since2020_sharpe": 0.7293193336019225,
+    "since2022_cagr_percent": 10.96998181680564,
+    "since2022_sharpe": 0.3810411260422786,
+    "start": "2018-06-05",
+    "target_fingerprint": "7c891694f65c005a",
+    "trades": 1,
+    "volatility_percent": 51.39509987217761
+  },
+  "candidate": {
+    "average_cash_ratio": 0.46648882960987,
+    "cagr_percent": 19.8244146579311,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 15.237556810378106,
+        "mdd_percent": 48.258484563008224,
+        "name": "2018-2019",
+        "sessions": 575,
+        "sharpe": 0.44763934739491007
+      },
+      {
+        "cagr_percent": 129.95213233270312,
+        "mdd_percent": 33.437147256953786,
+        "name": "2020",
+        "sessions": 366,
+        "sharpe": 1.6025814704706525
+      },
+      {
+        "cagr_percent": -17.860821168784224,
+        "mdd_percent": 62.14257016143673,
+        "name": "2021",
+        "sessions": 365,
+        "sharpe": 0.04037454680408798
+      },
+      {
+        "cagr_percent": 0.5085770286768376,
+        "mdd_percent": 0,
+        "name": "2022",
+        "sessions": 365,
+        "sharpe": 2035492773983.8525
+      },
+      {
+        "cagr_percent": 56.636506591054456,
+        "mdd_percent": 32.27950197669369,
+        "name": "2023",
+        "sessions": 365,
+        "sharpe": 1.0667420559759704
+      },
+      {
+        "cagr_percent": 45.59897885658872,
+        "mdd_percent": 39.51916208467695,
+        "name": "2024",
+        "sessions": 366,
+        "sharpe": 0.8448252182530298
+      },
+      {
+        "cagr_percent": -15.294695717024753,
+        "mdd_percent": 33.54194124094938,
+        "name": "2025-latest",
+        "sessions": 597,
+        "sharpe": -0.4114193731172327
+      }
+    ],
+    "id": "BTCSMA001",
+    "max_gross": 1,
+    "mdd_percent": 62.53928318111007,
+    "minimum_cash": 0,
+    "sessions": 2999,
+    "sharpe": 0.5254275360452156,
+    "since2020_cagr_percent": 20.946281195315763,
+    "since2020_sharpe": 0.5450975530982917,
+    "since2022_cagr_percent": 14.111782635877756,
+    "since2022_sharpe": 0.46489830003294813,
+    "start": "2018-06-05",
+    "target_fingerprint": "23c1a81dd0c55443",
+    "trades": 80,
+    "volatility_percent": 36.11820064808105
+  },
+  "candidate_id": "S-BTC-SMA200-001",
+  "cash_control": {
+    "average_cash_ratio": 1,
+    "cagr_percent": 0.5085770286770153,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 0.5085770286771929,
+        "mdd_percent": 0,
+        "name": "2018-2019",
+        "sessions": 575,
+        "sharpe": 2097336632490.2915
+      },
+      {
+        "cagr_percent": 0.5085770286769487,
+        "mdd_percent": 0,
+        "name": "2020",
+        "sessions": 366,
+        "sharpe": 2050866906345.6526
+      },
+      {
+        "cagr_percent": 0.5085770286771707,
+        "mdd_percent": 0,
+        "name": "2021",
+        "sessions": 365,
+        "sharpe": 2084288353214.704
+      },
+      {
+        "cagr_percent": 0.5085770286768598,
+        "mdd_percent": 0,
+        "name": "2022",
+        "sessions": 365,
+        "sharpe": 2038184646788.5454
+      },
+      {
+        "cagr_percent": 0.5085770286770597,
+        "mdd_percent": 0,
+        "name": "2023",
+        "sessions": 365,
+        "sharpe": 2065941142124.997
+      },
+      {
+        "cagr_percent": 0.5085770286772373,
+        "mdd_percent": 0,
+        "name": "2024",
+        "sessions": 366,
+        "sharpe": 2097801703872.4475
+      },
+      {
+        "cagr_percent": 0.5085770286770597,
+        "mdd_percent": 0,
+        "name": "2025-latest",
+        "sessions": 597,
+        "sharpe": 2072409710591.629
+      }
+    ],
+    "id": "C-CASH",
+    "max_gross": 0,
+    "mdd_percent": 0,
+    "minimum_cash": 100000,
+    "sessions": 2999,
+    "sharpe": 2074854683075.256,
+    "since2020_cagr_percent": 0.5085770286769931,
+    "since2020_sharpe": 2069407271475.499,
+    "since2022_cagr_percent": 0.5085770286770375,
+    "since2022_sharpe": 2068869517932.679,
+    "start": "2018-06-05",
+    "target_fingerprint": "fe2f87b48f04c623",
+    "trades": 0,
+    "volatility_percent": 1.6868651229181642e-13
+  },
+  "evaluation_end": "2026-08-20",
+  "evaluation_start": "2018-06-05",
+  "fee_percent_per_trade": 1,
+  "lookback_common_sessions": 200,
+  "measurement": "Binance BTCUSDT daily close treated as USD-equivalent then converted with latest available historical USD/CNY; execution calendar restricted by SP500 common sessions",
+  "rule": "hold 100% BTC only when T-1 BTC/CNY close is strictly above the SMA of the latest 200 completed common execution-session closes; otherwise CNY cash",
+  "slippage_percent_per_trade": 0.05,
+  "three_axis_evaluation": {
+    "comparison_checks": {
+      "mdd_lt_btc_buy_hold": true,
+      "sharpe_gt_btc_buy_hold": false
+    },
+    "comparison_status": "FAIL",
+    "diagnostics": {
+      "btc_buy_hold_cagr_percent": 32.470446465704626,
+      "btc_buy_hold_mdd_percent": 73.8131628591632,
+      "btc_buy_hold_sharpe": 0.6381898783387698,
+      "cash_cagr_percent": 0.5085770286770153,
+      "fold_count": 7,
+      "positive_fold_count": 6,
+      "positive_fold_fraction": 0.8571428571428571
+    },
+    "objective_checks": {
+      "cagr_ge_20pct": false,
+      "cagr_gt_cash": true,
+      "mdd_le_25pct": false,
+      "sharpe_ge_1": false,
+      "since2020_cagr_positive": true,
+      "since2022_cagr_positive": true
+    },
+    "objective_status": "FAIL",
+    "status": "FAIL",
+    "validation_checks": {
+      "actual_trades_gt_0": true,
+      "cash_nonnegative": true,
+      "full_cagr_gt_0": true,
+      "full_mdd_le_25pct": false,
+      "full_sharpe_gt_0": true,
+      "max_gross_le_1": true,
+      "positive_sharpe_folds_ge_70pct": true
+    },
+    "validation_status": "FAIL",
+    "validation_warnings": [
+      "BTCUSDT quote treated as USD-equivalent before historical USD/CNY conversion",
+      "execution restricted to SP500 common sessions; weekends intentionally excluded for metric comparability",
+      "base run already uses conservative 1.00% fee plus 0.05% slippage"
+    ]
+  },
+  "trial_id": "ATM-SVP3-BTC-SMA200-001"
+}
