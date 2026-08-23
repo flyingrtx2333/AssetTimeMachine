@@ -1,0 +1,310 @@
+{
+  "batch_key": "ATM-SVP3-PERMANENT-PORTFOLIO-001-strategy-library-v2",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-PERMANENT-PORTFOLIO-001.json",
+    "decision": "PASS ON FROZEN ABSOLUTE VALIDATION GATES / ATM-SVP-3 EVIDENCE WEAK. The fixed 25/25/25/25 Permanent Portfolio produced 6.655243% CAGR, 0.935767 Sharpe and 17.051953% MDD after product-level costs, with 7/7 positive-Sharpe folds. It improves Sharpe and drawdown versus SPY buy-and-hold (0.621497 Sharpe, 59.225180% MDD), so comparison=PASS. The high-return objective fails, and global DSR=0.00507279732 over 71 candidates, therefore validation evidence is WEAK rather than strong PASS. No weight or rebalance rescue is permitted.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "9920e3450a951c7d3a2b7678ef402c85050bc76c",
+    "methodology": {
+      "follow_up_policy": "After any formal metric is viewed, do not alter the 25/25/25/25 weights, rebalance cadence, or add timing filters. Any Golden Butterfly/risk-parity/QQQ variant is a separately motivated architecture, not rescue tuning.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "actual trades >0",
+        "full CAGR >0",
+        "full Sharpe >0",
+        "full MDD <=25%",
+        "at least 70% of seven fixed folds have Sharpe >0",
+        "max realized gross <=100% and minimum cash >=0"
+      ],
+      "selection_metric": "No allocation or rebalance search. Exactly 25/25/25/25 and annual rebalance. Validation, objective and SPY comparison are independent ATM-SVP-3 axes."
+    },
+    "preregistration_hash": "3f47fa55e80558dee8e8b15a15c405ba4a7dafffec908b03c135e055f26b722a",
+    "protocol_id": "ATM-SVP-3",
+    "run_key": "ATM-SVP3-PERMANENT-PORTFOLIO-001",
+    "status": "PASS",
+    "title": "permanent-portfolio-001 / 四象限永久组合001; static stock-longbond-gold-cash diversification"
+  },
+  "schema_version": "strategy-library-v2",
+  "source_commit": "9920e3450a951c7d3a2b7678ef402c85050bc76c",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "A fixed 25% allocation to broad U.S. equities, 25% long-duration U.S. Treasuries, 25% gold and 25% cash spans growth, deflation, inflation/stress and liquidity regimes without forecasting which regime comes next. Annual rebalancing can harvest cross-asset mean reversion at very low turnover while the permanently reserved cash sleeve constrains drawdown, all without leverage or shorting.",
+      "display_name": "permanent-portfolio-001 / 四象限永久组合001",
+      "family": "策略研究",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/C-CASH-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/C-SPY-BUYHOLD-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/PERM001-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/candidates/statistical-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-PERMANENT-PORTFOLIO-001/stdout.txt"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": 6.655242522614069,
+        "candidate_id": "S-PERMANENT-PORTFOLIO-001",
+        "conclusion": "PASS ON FROZEN ABSOLUTE VALIDATION GATES / ATM-SVP-3 EVIDENCE WEAK. The fixed 25/25/25/25 Permanent Portfolio produced 6.655243% CAGR, 0.935767 Sharpe and 17.051953% MDD after product-level costs, with 7/7 positive-Sharpe folds. It improves Sharpe and drawdown versus SPY buy-and-hold (0.621497 Sharpe, 59.225180% MDD), so comparison=PASS. The high-return objective fails, and global DSR=0.00507279732 over 71 candidates, therefore validation evidence is WEAK rather than strong PASS. No weight or rebalance rescue is permitted.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 0.7907416821868399,
+          "minimum_cash": 25000,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "dsr_probability": 0.005072797318457223,
+        "folds": {
+          "cagrs_percent": [
+            8.986197871191838,
+            2.575920221530703,
+            8.50341824820806,
+            3.8624282758636275,
+            5.649316727618148,
+            7.952329733378183,
+            7.928354616923716
+          ],
+          "mdds_percent": [
+            6.40854038498013,
+            17.05195268179704,
+            7.938947878928005,
+            10.3071906269375,
+            6.241328254904143,
+            11.912750361521054,
+            8.534247477236963
+          ],
+          "names": [
+            "2002-2005",
+            "2006-2008",
+            "2009-2011",
+            "2012-2014",
+            "2015-2017",
+            "2018-2021",
+            "2022-latest"
+          ],
+          "sharpes": [
+            1.572694659030233,
+            0.36050393710142237,
+            1.1030644947079542,
+            0.6822196530460591,
+            0.9723712328096936,
+            1.1105296386557941,
+            0.9056685176314409
+          ]
+        },
+        "folds_total": 7,
+        "folds_won": 7,
+        "gates": {},
+        "max_gross": 0.7907416821868399,
+        "mdd_percent": 17.051952681797136,
+        "metrics": {
+          "average_cash_ratio": 0.24346496536855075,
+          "cagr_percent": 6.655242522614069,
+          "cash_control_cagr_percent": 0.46391492760153863,
+          "comparison_checks": {
+            "mdd_le_spy_buy_hold": true,
+            "sharpe_gt_spy_buy_hold": true
+          },
+          "comparison_failures": [],
+          "constraints": {
+            "financing_allowed": false,
+            "max_gross": 0.7907416821868399,
+            "minimum_cash": 25000,
+            "pass": true,
+            "shorting_allowed": false
+          },
+          "fold_cagrs_percent": [
+            8.986197871191838,
+            2.575920221530703,
+            8.50341824820806,
+            3.8624282758636275,
+            5.649316727618148,
+            7.952329733378183,
+            7.928354616923716
+          ],
+          "fold_mdds_percent": [
+            6.40854038498013,
+            17.05195268179704,
+            7.938947878928005,
+            10.3071906269375,
+            6.241328254904143,
+            11.912750361521054,
+            8.534247477236963
+          ],
+          "fold_names": [
+            "2002-2005",
+            "2006-2008",
+            "2009-2011",
+            "2012-2014",
+            "2015-2017",
+            "2018-2021",
+            "2022-latest"
+          ],
+          "fold_sharpes": [
+            1.572694659030233,
+            0.36050393710142237,
+            1.1030644947079542,
+            0.6822196530460591,
+            0.9723712328096936,
+            1.1105296386557941,
+            0.9056685176314409
+          ],
+          "folds_with_positive_sharpe": 7,
+          "global_dsr_pass": false,
+          "global_post_protocol_dsr_probability": 0.005072797318457223,
+          "global_post_protocol_dsr_trial_count": 71,
+          "max_gross": 0.7907416821868399,
+          "mdd_percent": 17.051952681797136,
+          "minimum_cash": 25000,
+          "objective_checks": {
+            "cagr_ge_12pct": false,
+            "cagr_gt_cash": true,
+            "mdd_le_20pct": true,
+            "sharpe_ge_1": false,
+            "since2020_cagr_positive": true,
+            "since2022_cagr_positive": true
+          },
+          "objective_failures": [
+            "cagr_ge_10pct",
+            "sharpe_ge_1",
+            "mdd_le_15pct"
+          ],
+          "sharpe": 0.9357670759726382,
+          "since2020_cagr_percent": 7.218255936764462,
+          "since2020_sharpe": 0.8416705283496664,
+          "since2022_cagr_percent": 7.928354616923716,
+          "since2022_sharpe": 0.9056685176314409,
+          "spy_buy_hold_control": {
+            "cagr_percent": 10.517353560807653,
+            "mdd_percent": 59.22518004355237,
+            "sharpe": 0.621496792005207,
+            "target_fingerprint": "f57c4ce213543383",
+            "trades": 1
+          },
+          "strategy_library_validation": {
+            "comparative_failures": [],
+            "comparison_status": "PASS",
+            "evidence_missing": [],
+            "legacy_robust_strategy_pass": false,
+            "level": "R1_RETROSPECTIVE",
+            "note": "All frozen absolute validation gates pass at product-level costs and all seven folds are positive, but global DSR is below 90%, so final evidence is WEAK.",
+            "objective_failures": [
+              "cagr_ge_10pct",
+              "sharpe_ge_1",
+              "mdd_le_15pct"
+            ],
+            "objective_status": "FAIL",
+            "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+            "status": "WEAK",
+            "trial_status": "PASS",
+            "validation_failures": [],
+            "validation_warnings": [
+              "global_dsr_below_project_pass_threshold"
+            ]
+          },
+          "target_fingerprint": "826e5fe2fcce8383",
+          "trades": 75,
+          "validation_checks": {
+            "actual_trades_gt_0": true,
+            "cash_nonnegative": true,
+            "full_cagr_gt_0": true,
+            "full_mdd_le_25pct": true,
+            "full_sharpe_gt_0": true,
+            "max_gross_le_1": true,
+            "positive_sharpe_folds_ge_70pct": true
+          }
+        },
+        "result_status": "PASS",
+        "robust_strategy_pass": false,
+        "sharpe": 0.9357670759726382,
+        "since2020_cagr_percent": 7.218255936764462,
+        "since2022_cagr_percent": 7.928354616923716,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-PERMANENT-PORTFOLIO-001",
+      "strategy_kind": "strategy_architecture_not_factor",
+      "tags": [
+        "ATM-SVP3-PERMANENT-PORTFOLIO-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "62acf9e96e94890aec12af1684838fc388f0da4b13833d6b823f4f30907bac58",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "candidate",
+        "max_gross_limit": 0.7907416821868399,
+        "mechanism_text": "A fixed 25% allocation to broad U.S. equities, 25% long-duration U.S. Treasuries, 25% gold and 25% cash spans growth, deflation, inflation/stress and liquidity regimes without forecasting which regime comes next. Annual rebalancing can harvest cross-asset mean reversion at very low turnover while the permanently reserved cash sleeve constrains drawdown, all without leverage or shorting.",
+        "parameters": {
+          "allowed_changes": [
+            "use exact frozen SPY adjusted-close and TLT adjusted-close total-return proxies",
+            "use existing CNY gold and CashYieldCNY",
+            "target 25% SPY, 25% TLT, 25% gold and leave 25% cash",
+            "rebalance only at first common session of each calendar year",
+            "use product-level 1.00% fee plus 0.05% slippage"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "30/30/20/20, 40/20/20/20 or any weight search",
+            "monthly/quarterly/semiannual rebalance rescue",
+            "substituting QQQ for SPY after results",
+            "adding trend/momentum/VIX/NFCI/curve/Sahm filters",
+            "replacing TLT or gold after results",
+            "changing cash sleeve or fee/slippage",
+            "shorting, borrowing, financing, leverage or gross exposure above 100%"
+          ],
+          "shared_rules": {
+            "cash_weight": 0.25,
+            "evaluation_end": "2026-08-13",
+            "evaluation_start": "2002-07-30",
+            "fee_percent_per_trade": 1.0,
+            "financing_allowed": false,
+            "gold_weight": 0.25,
+            "max_gross": 1.0,
+            "rebalance": "first common session each calendar year",
+            "shorting_allowed": false,
+            "slippage_percent_per_trade": 0.05,
+            "spy_weight": 0.25,
+            "target_gross": 0.75,
+            "tlt_weight": 0.25
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "scripts/run_permanent_portfolio_001.py",
+        "target_fingerprint": "826e5fe2fcce8383",
+        "version_key": "S-PERMANENT-PORTFOLIO-001"
+      }
+    }
+  ]
+}
