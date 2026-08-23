@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "9211486a1802b53fe67df5078f7dc5e74f469294",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "6594f5c93f7ac4ef9996d1f1ff399adf7aeb5ee53c6b2657ba3fd878e6a46980",
+  "preregistration_record_hash": "6594f5c93f7ac4ef9996d1f1ff399adf7aeb5ee53c6b2657ba3fd878e6a46980",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-V11-BTC2-ROBUST-001"
+}

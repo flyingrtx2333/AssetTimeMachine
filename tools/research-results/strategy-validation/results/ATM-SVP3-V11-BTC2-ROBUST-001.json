@@ -1,0 +1,89 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/audit/bootstrap-audit.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/audit/bootstrap-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "A-V11-BTC2-ROBUST-001",
+      "metrics": {
+        "invalid_measurement": true,
+        "invalid_reason": "The immutable candidate/control portfolio paths contain 3290 daily marks over 2017-08-18..2026-08-20 (~365 observations/year), but this audit preregistered the traditional 252 sessions/year standard. The raw bootstrap gates mechanically pass, but their Sharpe/CAGR annualization is not the correct mixed-calendar method and cannot support an incremental robustness conclusion.",
+        "raw_bootstrap_output": {
+          "audit_id": "A-V11-BTC2-ROBUST-001",
+          "bootstrap": {
+            "candidate_cagr_p025": 0.06928333471432153,
+            "candidate_cagr_p50": 0.10600923217152367,
+            "candidate_cagr_p975": 0.14702563802851146,
+            "candidate_mdd_p975": 0.136576678019924,
+            "candidate_sharpe_p025": 0.9405950102481277,
+            "candidate_sharpe_p50": 1.3571028071264135,
+            "candidate_sharpe_p975": 1.779622217197068,
+            "median_candidate_minus_v11_cagr": 0.006912027601304077,
+            "median_candidate_minus_v11_sharpe": 0.06292576935004934,
+            "probability_cagr_gt_v11": 0.95345,
+            "probability_sharpe_gt_v11": 0.9014
+          },
+          "bootstrap_incremental_pass": true,
+          "candidate_id": "S-V11-BTC2-SATELLITE-001",
+          "checks": {
+            "candidate_mdd_p975_le_0_15": true,
+            "median_cagr_delta_gt_0": true,
+            "median_sharpe_delta_gt_0": true,
+            "probability_cagr_gt_v11_ge_0_90": true,
+            "probability_sharpe_gt_v11_ge_0_90": true
+          },
+          "control_id": "C-V11-MATCHED",
+          "known_source_global_dsr_probability": 0.38570194449673956,
+          "method": {
+            "block_sessions": 63,
+            "replicates": 20000,
+            "rng_seed": 20260822,
+            "sampling": "paired circular moving blocks",
+            "sessions_per_year": 252
+          },
+          "observed": {
+            "candidate": {
+              "cagr": 0.1064993633352739,
+              "mdd": 0.0814436651649667,
+              "sharpe": 1.3549508148180587
+            },
+            "matched_v11": {
+              "cagr": 0.09938316541110136,
+              "mdd": 0.07380963187408662,
+              "sharpe": 1.2902856425567921
+            }
+          },
+          "sample": {
+            "aligned_portfolio_dates": 3290,
+            "daily_returns": 3289,
+            "first_date": "2017-08-18",
+            "last_date": "2026-08-20"
+          },
+          "source_trial_id": "ATM-SVP3-V11-BTC2-SATELLITE-001",
+          "strong_validation_upgrade_allowed": false,
+          "strong_validation_upgrade_blocker": "source-trial global DSR remains below the project threshold; this audit cannot rewrite the immutable R1 validation status",
+          "trial_id": "ATM-SVP3-V11-BTC2-ROBUST-001"
+        },
+        "source_trial_id": "ATM-SVP3-V11-BTC2-SATELLITE-001",
+        "strategy_mutation": false
+      }
+    }
+  ],
+  "comparison_status": "UNKNOWN",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-V11-BTC2-ROBUST-001.json",
+  "decision": "INVALID_MEASUREMENT. The frozen paired bootstrap mechanically passed all five gates, but the audit assumed 252 sessions/year while the source candidate/control paths are daily mixed-calendar series with roughly 365 marks/year after BTC was added. Because Sharpe and CAGR resampling annualization are therefore inconsistent with the data frequency, no bootstrap incremental PASS is accepted. This does not change the strategy. A successor statistical audit may only replace the annualization convention with an observation-frequency-aware method after the source strategy measurement itself is repaired; block size, candidate weight and strategy logic may not be rescue-tuned.",
+  "execution_git_commit": "9211486a1802b53fe67df5078f7dc5e74f469294",
+  "objective_status": "INCONCLUSIVE",
+  "preregistration_record_hash": "6594f5c93f7ac4ef9996d1f1ff399adf7aeb5ee53c6b2657ba3fd878e6a46980",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/run-authorization.json",
+  "status": "INVALID",
+  "trial_id": "ATM-SVP3-V11-BTC2-ROBUST-001",
+  "validation_status": "FAIL"
+}

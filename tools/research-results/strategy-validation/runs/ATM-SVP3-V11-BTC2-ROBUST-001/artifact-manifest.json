@@ -1,0 +1,63 @@
+{
+  "files": [
+    {
+      "bytes": 328,
+      "columns": [
+        "audit_id",
+        "bootstrap_incremental_pass",
+        "probability_cagr_gt_v11",
+        "probability_sharpe_gt_v11",
+        "median_candidate_minus_v11_cagr",
+        "median_candidate_minus_v11_sharpe",
+        "candidate_mdd_p975",
+        "known_source_global_dsr_probability"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/audit/bootstrap-audit.csv",
+      "row_count": 1,
+      "sha256": "107eb43bc70334ddce213e216e678e87eba47e715d3db383ce9e0a8c65ef106c"
+    },
+    {
+      "bytes": 1914,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/audit/bootstrap-audit.json",
+      "sha256": "3a991de2243c164a2317c94542a22be149b762e1dd9cfe1598597fa1e3005b98"
+    },
+    {
+      "bytes": 1178,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/execution.json",
+      "sha256": "e9bade4aa08e203eef0e57cd158c81b3c850a00c5285a8305a0adc97f461d6a8"
+    },
+    {
+      "bytes": 442,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/run-authorization.json",
+      "sha256": "25bcbe911c7e21771d927985a7f0cf80184a400dd983bbaa50b047cc5d6e331c"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 29,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/stdout.txt",
+      "sha256": "8fa4a1e71f4048752274536cb4cf004e5cffc86a56f0b38216165069eaab61b7"
+    }
+  ],
+  "generated_at": "2026-08-24T00:37:54+08:00",
+  "git_commit": "9211486a1802b53fe67df5078f7dc5e74f469294",
+  "kind": "result",
+  "metadata": {
+    "reason": "365-day mixed calendar resampled with frozen 252-sessions/year bootstrap annualization",
+    "status": "INVALID_MEASUREMENT"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-V11-BTC2-ROBUST-001"
+}

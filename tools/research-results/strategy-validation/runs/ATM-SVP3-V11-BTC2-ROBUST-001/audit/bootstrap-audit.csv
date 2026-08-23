@@ -1,0 +1,2 @@
+audit_id,bootstrap_incremental_pass,probability_cagr_gt_v11,probability_sharpe_gt_v11,median_candidate_minus_v11_cagr,median_candidate_minus_v11_sharpe,candidate_mdd_p975,known_source_global_dsr_probability
+A-V11-BTC2-ROBUST-001,True,0.95345,0.9014,0.006912027601304077,0.06292576935004934,0.136576678019924,0.38570194449673956
