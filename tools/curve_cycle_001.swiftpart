@@ -1,0 +1,254 @@
+        if ProcessInfo.processInfo.environment["ATM_CURVE_CYCLE_001"] == "1" {
+            func loadCurvePoints(_ path: String) -> [OrthogonalFactorFamilyV1Logic.Point] {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+                return text.split(whereSeparator: \.isNewline).dropFirst().compactMap { line in
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 2, let value = Double(fields[1]), value.isFinite else { return nil }
+                    return OrthogonalFactorFamilyV1Logic.Point(date: String(fields[0]), value: value)
+                }.sorted { $0.date < $1.date }
+            }
+
+            let formal = ProcessInfo.processInfo.environment["ATM_CURVE_CYCLE_001_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_CURVE_CYCLE_001_OUTPUT_DIR"]
+            let curvePath = ProcessInfo.processInfo.environment["ATM_CURVE_CYCLE_001_CURVE"] ?? ""
+            let curvePoints = loadCurvePoints(curvePath)
+            guard !curvePoints.isEmpty else {
+                print("CURVE_CYCLE_001_FACTOR_MISSING")
+                return
+            }
+            let symbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = symbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard inputs.count == symbols.count else {
+                print("CURVE_CYCLE_001_INPUTS_MISSING")
+                return
+            }
+            let settings = AdvancedBacktestRiskSettings(
+                feeRate: 1.00,
+                slippageRate: 0.05,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            let formatter = DateFormatter()
+            formatter.calendar = BacktestSeriesAlignment.historicalSeriesCalendar
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = BacktestSeriesAlignment.historicalSeriesCalendar.timeZone
+            formatter.dateFormat = "yyyy-MM-dd"
+            guard let evaluationStart = formatter.date(from: "2002-01-04"),
+                  let evaluationEnd = formatter.date(from: "2026-08-20") else {
+                print("CURVE_CYCLE_001_DATE_PARSE_FAILED")
+                return
+            }
+            let evaluationBounds = evaluationStart...evaluationEnd
+            let folds: [(String, String, String)] = [
+                ("2002-2004", "2002-01-04", "2004-12-31"),
+                ("2005-2007", "2005-01-01", "2007-12-31"),
+                ("2008-2010", "2008-01-01", "2010-12-31"),
+                ("2011-2013", "2011-01-01", "2013-12-31"),
+                ("2014-2016", "2014-01-01", "2016-12-31"),
+                ("2017-2020", "2017-01-01", "2020-12-31"),
+                ("2021-latest", "2021-01-01", "9999-12-31")
+            ]
+            enum CurveCycleMode { case curve, alwaysRisk, cash }
+            let riskWeights = Dictionary(uniqueKeysWithValues: symbols.map { ($0, 1.0 / Double(symbols.count)) })
+
+            func config(_ id: String) -> ResearchTargetStrategyConfig {
+                ResearchTargetStrategyConfig(
+                    symbol: id,
+                    title: "收益率曲线周期001",
+                    warmupSessions: 2,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0,
+                    maxGrossExposure: 1,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "10Y-3M 正斜率风险周期"
+                )
+            }
+
+            func riskOn(_ signalDate: Date) -> Bool {
+                OrthogonalFactorFamilyV1Logic.curveRiskOn(
+                    points: curvePoints,
+                    signalDate: signalDate.recordDateString
+                ) ?? false
+            }
+
+            func runPath(_ id: String, mode: CurveCycleMode) -> ResearchTargetStrategyRun? {
+                var firstDecision = true
+                return BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config(id),
+                    dateBounds: evaluationBounds,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        if firstDecision {
+                            firstDecision = false
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+                        guard data.dates.indices.contains(signalIndex), signalIndex > 0 else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let currentYear = Int(data.dates[index].recordDateString.prefix(4))
+                        let signalYear = Int(data.dates[signalIndex].recordDateString.prefix(4))
+                        let yearBoundary = currentYear != nil && currentYear != signalYear
+                        switch mode {
+                        case .cash:
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        case .alwaysRisk:
+                            return BacktestRebalanceDecision(shouldRebalance: yearBoundary, refreshOverlay: false)
+                        case .curve:
+                            let currentState = riskOn(data.dates[signalIndex])
+                            let priorState = riskOn(data.dates[signalIndex - 1])
+                            return BacktestRebalanceDecision(
+                                shouldRebalance: yearBoundary || currentState != priorState,
+                                refreshOverlay: false
+                            )
+                        }
+                    },
+                    targetWeights: { context, _ in
+                        switch mode {
+                        case .cash: return [:]
+                        case .alwaysRisk: return riskWeights
+                        case .curve: return riskOn(context.signalDate) ? riskWeights : [:]
+                        }
+                    }
+                )
+            }
+
+            guard let candidate = runPath("CURVE001", mode: .curve),
+                  let always = runPath("C-ALWAYS-RISK", mode: .alwaysRisk),
+                  let cash = runPath("C-CASH", mode: .cash) else {
+                print("CURVE_CYCLE_001_RUN_FAILED")
+                return
+            }
+
+            func points(_ run: ResearchTargetStrategyRun) -> [BacktestSeriesPoint] {
+                run.report.points.filter { $0.date >= evaluationStart && $0.date <= evaluationEnd }
+            }
+            func states(_ run: ResearchTargetStrategyRun) -> [BacktestDailyState] {
+                run.dailyStates.filter { $0.date >= evaluationStart && $0.date <= evaluationEnd }
+            }
+            func fingerprint(_ states: [BacktestDailyState]) -> String {
+                var hash: UInt64 = 1469598103934665603
+                for state in states {
+                    for symbol in symbols {
+                        var value = UInt64(bitPattern: Int64(((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded()))
+                        for _ in 0..<8 {
+                            hash ^= value & UInt64(0xff)
+                            hash &*= UInt64(1099511628211)
+                            value >>= 8
+                        }
+                    }
+                }
+                return String(format: "%016llx", hash)
+            }
+            func foldMetrics(_ source: [BacktestSeriesPoint]) -> [[String: Any]] {
+                folds.map { name, start, end in
+                    let slice = source.filter {
+                        let key = $0.date.recordDateString
+                        return key >= start && key <= end
+                    }
+                    let m = BacktestMetricsCalculator.performanceMetrics(from: slice)
+                    return [
+                        "name": name,
+                        "sessions": slice.count,
+                        "cagr_percent": (m?.annualizedReturn ?? 0) * 100,
+                        "mdd_percent": (m?.maxDrawdown ?? 0) * 100,
+                        "sharpe": m?.sharpeRatio ?? 0
+                    ]
+                }
+            }
+            func document(_ id: String, _ run: ResearchTargetStrategyRun) -> [String: Any] {
+                let ps = points(run)
+                let ss = states(run)
+                let m = BacktestMetricsCalculator.performanceMetrics(from: ps)
+                let m2020 = BacktestMetricsCalculator.performanceMetrics(from: ps.filter { $0.date.recordDateString >= "2020-01-01" })
+                let m2022 = BacktestMetricsCalculator.performanceMetrics(from: ps.filter { $0.date.recordDateString >= "2022-01-01" })
+                let gross = ss.map { state -> Double in
+                    guard state.portfolioValue > 0 else { return 0 }
+                    return state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue
+                }
+                let riskOnSessions = ss.filter { state in symbols.contains { (state.targetWeights[$0] ?? 0) > 0 } }.count
+                return [
+                    "id": id,
+                    "start": ps.first?.date.recordDateString ?? "",
+                    "end": ps.last?.date.recordDateString ?? "",
+                    "sessions": ps.count,
+                    "risk_on_sessions": riskOnSessions,
+                    "cagr_percent": (m?.annualizedReturn ?? 0) * 100,
+                    "mdd_percent": (m?.maxDrawdown ?? 0) * 100,
+                    "volatility_percent": (m?.annualizedVolatility ?? 0) * 100,
+                    "sharpe": m?.sharpeRatio ?? 0,
+                    "trades": run.report.trades.count,
+                    "average_cash_ratio": run.report.averageCashRatio,
+                    "max_gross": gross.max() ?? 0,
+                    "minimum_cash": ss.map(\.cash).min() ?? 0,
+                    "target_fingerprint": fingerprint(ss),
+                    "since2020_cagr_percent": (m2020?.annualizedReturn ?? 0) * 100,
+                    "since2020_sharpe": m2020?.sharpeRatio ?? 0,
+                    "since2022_cagr_percent": (m2022?.annualizedReturn ?? 0) * 100,
+                    "since2022_sharpe": m2022?.sharpeRatio ?? 0,
+                    "folds": foldMetrics(ps)
+                ]
+            }
+
+            let candidateDoc = document("CURVE001", candidate)
+            let controlDoc = document("C-ALWAYS-RISK", always)
+            let cashDoc = document("C-CASH", cash)
+            if !formal {
+                let trades = candidateDoc["trades"] as? Int ?? 0
+                let maxGross = candidateDoc["max_gross"] as? Double ?? 0
+                let minCash = candidateDoc["minimum_cash"] as? Double ?? -1
+                print("CURVE_CYCLE_001_SMOKE_FACTOR_COUNT=\(curvePoints.count)")
+                print("CURVE_CYCLE_001_SMOKE_TRADES=\(trades)")
+                print("CURVE_CYCLE_001_SMOKE_MAX_GROSS=\(String(format: "%.10f", maxGross))")
+                print("CURVE_CYCLE_001_SMOKE_MIN_CASH=\(String(format: "%.6f", minCash))")
+                guard trades > 0, maxGross <= 1.000000001, minCash >= -1e-6 else {
+                    print("CURVE_CYCLE_001_SMOKE_INVALID")
+                    return
+                }
+                print("CURVE_CYCLE_001_SMOKE_OK")
+                return
+            }
+            if let outputDir {
+                try? FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+                for (id, run) in [("CURVE001", candidate), ("C-ALWAYS-RISK", always), ("C-CASH", cash)] {
+                    var lines = ["date,portfolio_value"]
+                    lines.append(contentsOf: points(run).map { "\($0.date.recordDateString),\(String(format: "%.10f", $0.portfolioValue))" })
+                    let path = URL(fileURLWithPath: outputDir).appendingPathComponent("\(id)-portfolio.csv").path
+                    try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+                }
+            }
+            let out: [String: Any] = [
+                "trial_id": "ATM-SVP3-CURVE-CYCLE-001",
+                "candidate_id": "S-CURVE-CYCLE-001",
+                "candidate": candidateDoc,
+                "always_risk_control": controlDoc,
+                "cash_control": cashDoc,
+                "curve_points": curvePoints.count,
+                "fee_percent_per_trade": 1.00,
+                "slippage_percent_per_trade": 0.05,
+                "evaluation_start": "2002-01-04",
+                "evaluation_end": "2026-08-20",
+                "curve_rule": "latest usable T-1 FRED T10Y3M observation within seven calendar days > 0; otherwise cash"
+            ]
+            guard JSONSerialization.isValidJSONObject(out),
+                  let json = try? JSONSerialization.data(withJSONObject: out, options: [.sortedKeys]),
+                  let text = String(data: json, encoding: .utf8) else {
+                print("CURVE_CYCLE_001_JSON_FAILED")
+                return
+            }
+            print("CURVE_CYCLE_001_FORMAL_JSON=" + text)
+            print("CURVE_CYCLE_001_FORMAL_OK")
+            return
+        }

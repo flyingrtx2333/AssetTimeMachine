@@ -1,0 +1,33 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    },
+    {
+      "bytes": 109296,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/ATM-SVP2-ORTHO-FACTOR-001/T10Y3M.csv",
+      "sha256": "30b25e55f93a6785aef5bda530b0d5c5723a5789fd828614f9e5e37185cf0df8"
+    }
+  ],
+  "generated_at": "2026-08-23T13:40:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "base_cost": "1.00% fee + 0.05% slippage per trade; no fee grid",
+    "campaign": "curve-cycle-001",
+    "candidate_kind": "INDEPENDENT_SLOW_MACRO_REGIME_STRATEGY",
+    "evaluation_end": "2026-08-20",
+    "evaluation_start": "2002-01-04",
+    "factor_data_first": "2001-01-02",
+    "factor_data_last": "2026-08-13",
+    "factor_rule": "latest usable T-1 T10Y3M within 7 calendar days > 0 means risk-on; otherwise cash",
+    "factor_source": "FRED T10Y3M already frozen/exposed under ATM-SVP2-ORTHO-FACTOR-001",
+    "performance_viewed_before_freeze": false,
+    "risk_basket": "20% each gold_cny, Nasdaq, S&P 500, CSI300, Shanghai Composite; annual rebalance while risk-on plus immediate state-change transitions"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-CURVE-CYCLE-001"
+}
