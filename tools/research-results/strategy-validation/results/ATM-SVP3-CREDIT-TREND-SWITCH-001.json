@@ -1,0 +1,107 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-CREDIT-TREND-SWITCH-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CREDIT-TREND-SWITCH-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CREDIT-TREND-SWITCH-001/candidates/C-BARBELL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CREDIT-TREND-SWITCH-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CREDIT-TREND-SWITCH-001/candidates/CRSW001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CREDIT-TREND-SWITCH-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CREDIT-TREND-SWITCH-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CREDIT-TREND-SWITCH-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CREDIT-TREND-SWITCH-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CREDIT-TREND-SWITCH-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CREDIT-TREND-SWITCH-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CREDIT-TREND-SWITCH-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-CREDIT-TREND-SWITCH-001",
+      "metrics": {
+        "average_cash_ratio": 0,
+        "barbell_control": {
+          "cagr_percent": 12.062881133465254,
+          "mdd_percent": 37.71662775385042,
+          "sharpe": 0.8805036045356769
+        },
+        "cagr_percent": -2.624870766297227,
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "fold_names": [
+          "2002-2005",
+          "2006-2008",
+          "2009-2011",
+          "2012-2014",
+          "2015-2017",
+          "2018-2021",
+          "2022-latest"
+        ],
+        "fold_sharpes": [
+          -0.32374779094981115,
+          -0.17290466864786508,
+          -0.5309380563248677,
+          -0.01624656553336331,
+          -0.05235689887081526,
+          0.41132220857121254,
+          0.31725335626377577
+        ],
+        "folds_with_positive_sharpe": 2,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 3.788080960021034e-13,
+        "global_post_protocol_dsr_trial_count": 62,
+        "max_gross": 1,
+        "mdd_percent": 74.52687911008724,
+        "minimum_cash": 0,
+        "sharpe": -0.04193510239139562,
+        "since2020_cagr_percent": 7.518787691720541,
+        "since2020_sharpe": 0.4633214875259795,
+        "since2022_cagr_percent": 4.474406887669513,
+        "since2022_sharpe": 0.31725335626377577,
+        "strategy_library_validation": {
+          "comparative_failures": [
+            "mdd_lt_barbell",
+            "sharpe_gt_barbell"
+          ],
+          "comparison_status": "FAIL",
+          "evidence_missing": [],
+          "objective_failures": [
+            "cagr_ge_12pct",
+            "cagr_gt_cash",
+            "mdd_le_20pct",
+            "sharpe_ge_1"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_cagr_gt_0",
+            "full_mdd_le_25pct",
+            "full_sharpe_gt_0",
+            "positive_sharpe_folds_ge_70pct"
+          ],
+          "validation_warnings": [
+            "execution_stress_not_in_this_R1_trial",
+            "global_dsr_below_project_pass_threshold"
+          ]
+        },
+        "target_fingerprint": "758c358a204938d6",
+        "trades": 265
+      }
+    }
+  ],
+  "comparison_status": "FAIL",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-CREDIT-TREND-SWITCH-001.json",
+  "decision": "FAIL / VALIDATION_FAIL. Frozen strictly-prior BAA10Y 20-observation credit-trend switching produced -2.624871% CAGR, -0.041935 Sharpe and 74.526879% MDD; only two of seven folds had positive Sharpe. The fixed barbell was far stronger. No BAA lookback/source/threshold rescue is allowed.",
+  "execution_git_commit": "689aa7ce1ac780b279b097354c575243d0bfb4c6",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "b81e8678a14681397aaebce3fbf78194bb50ca9b1d2034a5ea7f2cb80b63565d",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-CREDIT-TREND-SWITCH-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-CREDIT-TREND-SWITCH-001",
+  "validation_status": "FAIL"
+}

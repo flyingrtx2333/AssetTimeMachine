@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "689aa7ce1ac780b279b097354c575243d0bfb4c6",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "b81e8678a14681397aaebce3fbf78194bb50ca9b1d2034a5ea7f2cb80b63565d",
+  "preregistration_record_hash": "b81e8678a14681397aaebce3fbf78194bb50ca9b1d2034a5ea7f2cb80b63565d",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-CREDIT-TREND-SWITCH-001"
+}
