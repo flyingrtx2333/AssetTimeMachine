@@ -1,0 +1,44 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    },
+    {
+      "bytes": 112916,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/CBOE-PUT-OFFICIAL-2026-08-23/PUT_History.csv",
+      "sha256": "b2f0368629499e8d148cf56839932d1f8c6b7a6185be21b18898420ac287286a"
+    },
+    {
+      "bytes": 345,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/factor-data/CBOE-PUT-OFFICIAL-2026-08-23/fetch-summary.json",
+      "sha256": "820aafe09a1ca9eb3ba4c64444673c61887fb697bddd678013ec2e958169291a"
+    },
+    {
+      "bytes": 254372,
+      "format": "csv",
+      "path": "tools/research-results/strategy-validation/factor-data/US-TOTAL-RETURN-CONTROL-V1-2026-08-22/SPY.csv",
+      "sha256": "9da956fdcec7fe20edd9c1f8fe9401e01000c97700697320be2e52bf50b9ef24"
+    }
+  ],
+  "generated_at": "2026-08-23T17:50:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "campaign": "put-index-proxy-001",
+    "candidate_kind": "CBOE_OPTION_STRATEGY_INDEX_PROXY",
+    "cboe_source_url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/PUT_History.csv",
+    "control": "SPY Yahoo adjusted-close total-return proxy, same window and same historical USD/CNY conversion",
+    "evaluation_end": "2026-08-21",
+    "evaluation_start": "2007-01-03",
+    "external_acquisition_cost": "1.00% fee + 0.05% slippage applied equally to acquiring PUT proxy and SPY proxy",
+    "implementation_limit": "Cboe PUT is hypothetical benchmark evidence. It embeds monthly cash-secured SPX ATM put writing but does not include actual investor commissions/slippage; no product promotion from this R1 proxy alone.",
+    "performance_viewed_before_freeze": false,
+    "put_source": "Cboe official PUT total-return benchmark; continuous daily segment only from 2007-01-03"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-PUT-INDEX-PROXY-001"
+}

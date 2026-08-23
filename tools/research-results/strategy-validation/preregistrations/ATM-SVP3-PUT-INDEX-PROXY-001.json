@@ -1,0 +1,83 @@
+{
+  "allowed_changes": [
+    "use only official Cboe PUT_History.csv frozen SHA",
+    "ignore pre-2007 sparse anchor rows and use continuous daily segment beginning 2007-01-03",
+    "use matched SPY adjusted-close total-return proxy over exact common evaluation window",
+    "convert both USD series with the same historical usd_per_cny path",
+    "apply identical external acquisition cost of 1.00% fee +0.05% slippage to both proxy series"
+  ],
+  "candidate_count": 1,
+  "candidate_ids": [
+    "S-PUT-INDEX-PROXY-001"
+  ],
+  "candidate_kind": "STRATEGY_INDEX_PROXY_NOT_EXECUTION_COMPLETE",
+  "comparison_gates": [
+    "Sharpe > matched-window SPY adjusted-close total-return Sharpe",
+    "MDD <= matched-window SPY adjusted-close total-return MDD"
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-PUT-INDEX-PROXY-001.json",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "evidence_limit": "INDEX_PROXY_ONLY_EXECUTION_INCOMPLETE_VALIDATION_CAPPED_AT_WEAK",
+  "expected_outputs": [
+    "PUT proxy, SPY total-return control and cash portfolio CSVs",
+    "full/recent/seven-fold CAGR/MDD/Sharpe",
+    "wrapper gross/cash/fingerprint",
+    "ATM-SVP-3 absolute status + capped WEAK validation + objective/comparison",
+    "global DSR",
+    "run authorization and SHA artifact manifest"
+  ],
+  "follow_up_policy": "After any formal metric is viewed, do not switch option benchmark, moneyness, maturity, dynamic condition or blend weights. A promising PUT result may proceed only to a separately preregistered execution study using real historical option quotes/cost assumptions.",
+  "forbidden_changes": [
+    "BXM, BXMD, PUTW, PUTR, conditional or dynamic option index substitution after results",
+    "changing put delta, moneyness, expiration, roll schedule or adding VIX timing",
+    "blending PUT with SPY/TLT/gold after results",
+    "treating Cboe index as proof of real execution costs",
+    "using pre-2007 sparse observations to extend headline history",
+    "changing SPY control to S&P price index",
+    "shorting beyond the cash-secured official index construction, borrowed exposure, financing or synthetic exposure above funded capital"
+  ],
+  "formal_run_budget": 1,
+  "hypothesis": "Selling fully cash-secured one-month ATM SPX put options against a Treasury-bill/cash collateral account can harvest the volatility risk premium and may deliver better risk-adjusted returns and lower drawdown than long-only SPY total return without borrowed exposure. The Cboe PUT benchmark provides a clean structural proxy for this economic rule, but because the benchmark omits actual investor implementation costs this trial can establish only index-proxy evidence, not product execution validity.",
+  "objective_gates": [
+    "CAGR >=12%",
+    "Sharpe >=1.00",
+    "MDD <=20%",
+    "2020+ CAGR >0",
+    "2022+ CAGR >0",
+    "CAGR > CNY cash"
+  ],
+  "pass_fail_gates": [
+    "proxy CAGR >0",
+    "proxy Sharpe >0",
+    "proxy MDD <=25%",
+    "at least 70% of seven fixed folds have Sharpe >0",
+    "external wrapper max gross <=100% and cash >=0"
+  ],
+  "protocol_id": "ATM-SVP-3",
+  "research_basis": [
+    "Cboe S&P 500 PutWrite Index methodology/benchmark: T-bill collateral plus short ATM SPX puts, sized so portfolio value is not designed to become negative at rebalance",
+    "Cboe published volatility-risk-premium research comparing PUT and PPUT; option-selling strategies are the targeted independent return source"
+  ],
+  "selection_metric": "No option-parameter search. Exact official Cboe PUT index only. Compare to matched-window SPY adjusted-close total-return proxy. Absolute historical gates, high-return objective and SPY comparison are separate; even an absolute PASS is capped at validation=WEAK because execution costs inside monthly option rolls are not modeled.",
+  "shared_rules": {
+    "borrowed_exposure_allowed": false,
+    "candidate": "Cboe PUT official total-return index proxy",
+    "control": "SPY adjusted-close total-return proxy",
+    "evaluation_end": "2026-08-21",
+    "evaluation_start": "2007-01-03",
+    "execution_complete": false,
+    "external_fee_percent": 1.0,
+    "external_slippage_percent": 0.05,
+    "external_wrapper_weight": 1.0,
+    "financing_allowed": false,
+    "max_gross": 1.0,
+    "underlying_option_rule": "official Cboe cash-secured ATM monthly SPX put-write"
+  },
+  "strategy_lineage": "put-index-proxy-001 / Cboe现金担保PutWrite001; option volatility-risk-premium index proxy",
+  "swift_engine_entrypoint": "scripts/run_put_index_proxy_001.py -> official Cboe PUT + frozen SPY adjusted-close + common USD/CNY FX -> BacktestEngine.runResearchTargetProviderStrategyWithTrace",
+  "trial_id": "ATM-SVP3-PUT-INDEX-PROXY-001",
+  "validation_gates": [
+    "absolute proxy history gates above may mechanically PASS",
+    "final strategy-library validation cannot exceed WEAK in this trial because actual monthly SPX option commission/slippage evidence is missing"
+  ]
+}

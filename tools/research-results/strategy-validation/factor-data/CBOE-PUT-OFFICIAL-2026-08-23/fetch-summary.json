@@ -1,0 +1,12 @@
+{
+  "bytes": 112916,
+  "first_date": "03/04/1991",
+  "last_date": "08/21/2026",
+  "rows": 4947,
+  "sha256": "b2f0368629499e8d148cf56839932d1f8c6b7a6185be21b18898420ac287286a",
+  "source": "Cboe Global Indices official CDN",
+  "url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/PUT_History.csv",
+  "value_columns": [
+    "PUT"
+  ]
+}

@@ -1,0 +1,88 @@
+        if ProcessInfo.processInfo.environment["ATM_PUT_INDEX_PROXY_001"] == "1" {
+            let formal = ProcessInfo.processInfo.environment["ATM_PUT_INDEX_PROXY_001_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_PUT_INDEX_PROXY_001_OUTPUT_DIR"]
+            let symbols = ["cboe_put_tr", "spy_tr"]
+
+            func loadCboePUT(path: String) -> PublicHistorySeries? {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return nil }
+                var dates: [String] = []
+                var prices: [Double] = []
+                for line in text.split(whereSeparator: \.isNewline).dropFirst() {
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 2 else { continue }
+                    let parts = fields[0].split(separator: "/")
+                    guard parts.count == 3,
+                          let month = Int(parts[0]), let day = Int(parts[1]), let year = Int(parts[2]),
+                          year >= 2007,
+                          let value = Double(fields[1]), value.isFinite, value > 0 else { continue }
+                    dates.append(String(format: "%04d-%02d-%02d", year, month, day))
+                    prices.append(value)
+                }
+                guard dates.count >= 4000 else { return nil }
+                return PublicHistorySeries(
+                    symbol: "cboe_put_tr", category: "cboe_option_index_proxy", label: "Cboe PUT total-return index proxy",
+                    currency: "USD", unit: "index", source: "Cboe official PUT_History.csv frozen 2026-08-23",
+                    dates: dates, prices: prices, hasOHLC: false, ohlcSource: nil, ohlcCoverageRatio: nil,
+                    openPrices: nil, highPrices: nil, lowPrices: nil, closePrices: nil, volumes: nil
+                )
+            }
+
+            func loadSPY(path: String) -> PublicHistorySeries? {
+                guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return nil }
+                var dates: [String] = []
+                var prices: [Double] = []
+                for line in text.split(whereSeparator: \.isNewline).dropFirst() {
+                    let fields = line.split(separator: ",", omittingEmptySubsequences: false)
+                    guard fields.count >= 2,
+                          String(fields[0]) >= "2007-01-03",
+                          String(fields[0]) <= "2026-08-21",
+                          let value = Double(fields[1]), value.isFinite, value > 0 else { continue }
+                    dates.append(String(fields[0])); prices.append(value)
+                }
+                guard dates.count >= 4000 else { return nil }
+                return PublicHistorySeries(
+                    symbol: "spy_tr", category: "us_etf_total_return_proxy", label: "SPY adjusted-close total-return proxy",
+                    currency: "USD", unit: "adjusted_close", source: "Yahoo Finance adjusted close · US-TOTAL-RETURN-CONTROL-V1-2026-08-22",
+                    dates: dates, prices: prices, hasOHLC: false, ohlcSource: nil, ohlcCoverageRatio: nil,
+                    openPrices: nil, highPrices: nil, lowPrices: nil, closePrices: nil, volumes: nil
+                )
+            }
+
+            guard let put = loadCboePUT(path: "tools/research-results/strategy-validation/factor-data/CBOE-PUT-OFFICIAL-2026-08-23/PUT_History.csv"),
+                  let spy = loadSPY(path: "tools/research-results/strategy-validation/factor-data/US-TOTAL-RETURN-CONTROL-V1-2026-08-22/SPY.csv"),
+                  let fx = seriesBySymbol["usd_per_cny"] else {
+                print("PUT_INDEX_PROXY_001_INPUTS_MISSING"); return
+            }
+            let putOption = BacktestAssetOption(symbol: put.symbol, title: "Cboe PUT", color: AssetTheme.accentBlue, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny", currency: "USD")
+            let spyOption = BacktestAssetOption(symbol: spy.symbol, title: "SPY TR", color: AssetTheme.accentRed, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny", currency: "USD")
+            let inputs = [
+                (assetSeries: Optional(put), assetOption: putOption, fxSeries: Optional(fx)),
+                (assetSeries: Optional(spy), assetOption: spyOption, fxSeries: Optional(fx))
+            ]
+            let settings = AdvancedBacktestRiskSettings(feeRate: 1.00, slippageRate: 0.05, maxPositionRatio: 100, cooldownDays: 0, stopLossRatio: 0, takeProfitRatio: 0)
+            let formatter = DateFormatter(); formatter.calendar = BacktestSeriesAlignment.historicalSeriesCalendar; formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.timeZone = BacktestSeriesAlignment.historicalSeriesCalendar.timeZone; formatter.dateFormat = "yyyy-MM-dd"
+            guard let start = formatter.date(from: "2007-01-03"), let end = formatter.date(from: "2026-08-21") else { print("PUT_INDEX_PROXY_001_DATE_FAILED"); return }
+            let bounds = start...end
+            let folds:[(String,String,String)] = [
+                ("2007-2009","2007-01-03","2009-12-31"),("2010-2012","2010-01-01","2012-12-31"),("2013-2015","2013-01-01","2015-12-31"),
+                ("2016-2018","2016-01-01","2018-12-31"),("2019-2021","2019-01-01","2021-12-31"),("2022-2024","2022-01-01","2024-12-31"),("2025-latest","2025-01-01","9999-12-31")
+            ]
+            enum Mode { case put, spy, cash }
+            func config(_ id:String)->ResearchTargetStrategyConfig { ResearchTargetStrategyConfig(symbol:id,title:id,warmupSessions:2,rebalanceSessions:999999,rebalanceBand:0,maxGrossExposure:1,allowsFinancedExposure:false,financingAnnualRate:0,buyReason:id) }
+            func runPath(_ id:String,_ mode:Mode)->ResearchTargetStrategyRun? {
+                BacktestEngine.runResearchTargetProviderStrategyWithTrace(assetInputs: inputs, initialCash:100_000, settings:settings, config:config(id), dateBounds:bounds, targetWeights:{ _,_ in
+                    switch mode { case .put: return PUTIndexProxy001Logic.putWeights; case .spy: return PUTIndexProxy001Logic.spyWeights; case .cash: return [:] }
+                })
+            }
+            guard let candidate=runPath("PUT001",.put), let control=runPath("C-SPY-TR",.spy), let cash=runPath("C-CASH",.cash) else { print("PUT_INDEX_PROXY_001_RUN_FAILED"); return }
+            func pts(_ r:ResearchTargetStrategyRun)->[BacktestSeriesPoint]{r.report.points.filter{$0.date>=start && $0.date<=end}}
+            func sts(_ r:ResearchTargetStrategyRun)->[BacktestDailyState]{r.dailyStates.filter{$0.date>=start && $0.date<=end}}
+            func fp(_ states:[BacktestDailyState])->String{var h:UInt64=1469598103934665603;for s in states{for sym in symbols{var v=UInt64(bitPattern:Int64(((s.targetWeights[sym] ?? 0)*1_000_000).rounded()));for _ in 0..<8{h ^= v & UInt64(0xff);h &*= UInt64(1099511628211);v >>= 8}}};return String(format:"%016llx",h)}
+            func foldMetrics(_ p:[BacktestSeriesPoint])->[[String:Any]]{folds.map{name,a,b in let x=p.filter{$0.date.recordDateString>=a && $0.date.recordDateString<=b};let m=BacktestMetricsCalculator.performanceMetrics(from:x);return ["name":name,"sessions":x.count,"cagr_percent":(m?.annualizedReturn ?? 0)*100,"mdd_percent":(m?.maxDrawdown ?? 0)*100,"sharpe":m?.sharpeRatio ?? 0]}}
+            func doc(_ id:String,_ r:ResearchTargetStrategyRun)->[String:Any]{let p=pts(r),s=sts(r),m=BacktestMetricsCalculator.performanceMetrics(from:p),m20=BacktestMetricsCalculator.performanceMetrics(from:p.filter{$0.date.recordDateString>="2020-01-01"}),m22=BacktestMetricsCalculator.performanceMetrics(from:p.filter{$0.date.recordDateString>="2022-01-01"});let g=s.map{x in x.portfolioValue>0 ? x.holdingsBySymbol.values.reduce(0,+)/x.portfolioValue:0};return ["id":id,"start":p.first?.date.recordDateString ?? "","end":p.last?.date.recordDateString ?? "","sessions":p.count,"cagr_percent":(m?.annualizedReturn ?? 0)*100,"mdd_percent":(m?.maxDrawdown ?? 0)*100,"volatility_percent":(m?.annualizedVolatility ?? 0)*100,"sharpe":m?.sharpeRatio ?? 0,"trades":r.report.trades.count,"average_cash_ratio":r.report.averageCashRatio,"max_gross":g.max() ?? 0,"minimum_cash":s.map(\.cash).min() ?? 0,"target_fingerprint":fp(s),"since2020_cagr_percent":(m20?.annualizedReturn ?? 0)*100,"since2020_sharpe":m20?.sharpeRatio ?? 0,"since2022_cagr_percent":(m22?.annualizedReturn ?? 0)*100,"since2022_sharpe":m22?.sharpeRatio ?? 0,"folds":foldMetrics(p)]}
+            let cdoc=doc("PUT001",candidate), sdoc=doc("C-SPY-TR",control), cashdoc=doc("C-CASH",cash)
+            if !formal { let t=cdoc["trades"] as? Int ?? 0,g=cdoc["max_gross"] as? Double ?? 0,mc=cdoc["minimum_cash"] as? Double ?? -1; print("PUT_INDEX_PROXY_001_SMOKE_TRADES=\(t)");print("PUT_INDEX_PROXY_001_SMOKE_MAX_GROSS=\(g)");print("PUT_INDEX_PROXY_001_SMOKE_MIN_CASH=\(mc)");guard t>0,g<=1.000000001,mc >= -1e-6 else {print("PUT_INDEX_PROXY_001_SMOKE_INVALID");return};print("PUT_INDEX_PROXY_001_SMOKE_OK");return }
+            if let outputDir { try? FileManager.default.createDirectory(atPath:outputDir,withIntermediateDirectories:true);for(id,r) in [("PUT001",candidate),("C-SPY-TR",control),("C-CASH",cash)]{var lines=["date,portfolio_value"];lines.append(contentsOf:pts(r).map{"\($0.date.recordDateString),\(String(format:"%.10f",$0.portfolioValue))"});let p=URL(fileURLWithPath:outputDir).appendingPathComponent("\(id)-portfolio.csv").path;try?(lines.joined(separator:"\n")+"\n").write(toFile:p,atomically:true,encoding:.utf8)}}
+            let out:[String:Any]=["trial_id":"ATM-SVP3-PUT-INDEX-PROXY-001","candidate_id":"S-PUT-INDEX-PROXY-001","candidate":cdoc,"spy_total_return_control":sdoc,"cash_control":cashdoc,"fee_percent_per_external_trade":1.0,"slippage_percent_per_external_trade":0.05,"evaluation_start":"2007-01-03","evaluation_end":"2026-08-21","implementation_scope":"Cboe PUT index proxy embeds monthly cash-secured SPX put writing but excludes actual investor commissions/implementation slippage; this run applies product cost only to acquiring the proxy and is not execution-complete"]
+            guard JSONSerialization.isValidJSONObject(out),let json=try?JSONSerialization.data(withJSONObject:out,options:[.sortedKeys]),let text=String(data:json,encoding:.utf8) else {print("PUT_INDEX_PROXY_001_JSON_FAILED");return};print("PUT_INDEX_PROXY_001_FORMAL_JSON="+text);print("PUT_INDEX_PROXY_001_FORMAL_OK");return
+        }
