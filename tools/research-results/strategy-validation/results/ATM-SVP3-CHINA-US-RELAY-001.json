@@ -1,0 +1,67 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/C-CASH-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/C-CHINA-AVAILABLE-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/C-CHINA-AVAILABLE-NASDAQ-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/C-CHINA-AVAILABLE-SP500-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/CUS001-COMBINED-SLIP005-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/CUS001-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/CUS001-NASDAQ-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/CUS001-SP500-portfolio.csv"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-CHINA-US-RELAY-001",
+      "metrics": {
+        "implementation_audit": {
+          "candidate_combined_active_target_sessions": 2452,
+          "candidate_combined_max_intraday_gross": 0.0,
+          "candidate_combined_round_trips": 0,
+          "candidate_combined_minimum_end_of_day_cash": 100000.0,
+          "candidate_combined_target_fingerprint": "809e9df935b7e503",
+          "defect": "Signal-only China assets were incorrectly included in runResearchIntradayRoundTripStrategyWithTrace assetInputs. Nonzero intended target states were emitted, but the execution path produced zero U.S. trades and zero realized gross, so all reported performance is cash-path contamination and is not strategy evidence.",
+          "invalid": true
+        },
+        "constraints": {
+          "financing_allowed": false,
+          "shorting_allowed": false,
+          "max_gross": 0.0,
+          "pass": false
+        },
+        "strategy_library_validation": {
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "objective_status": "INCONCLUSIVE",
+          "comparison_status": "UNKNOWN",
+          "validation_failures": [
+            "invalid_implementation_zero_actual_trades_despite_nonzero_target_states"
+          ],
+          "validation_warnings": [],
+          "objective_failures": [],
+          "comparative_failures": [],
+          "evidence_missing": [],
+          "trial_status": "INVALID",
+          "note": "No performance metric from this run may be interpreted as strategy performance."
+        }
+      }
+    }
+  ],
+  "comparison_status": "UNKNOWN",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-CHINA-US-RELAY-001.json",
+  "decision": "INVALID_IMPLEMENTATION. The frozen China-to-U.S. relay rule emitted nonzero U.S. target weights on 2452 combined sessions, but the actual intraday execution audit recorded zero round trips, zero realized intraday gross and unchanged initial cash. The formal performance series therefore represents only the cash path and cannot support any conclusion about the economic hypothesis. The defect is implementation plumbing: signal-only CSI300/Shanghai inputs were passed as execution assetInputs. No signal direction, threshold, asset, timing, allocation, fee, slippage or validation gate may be changed. A corrected successor may change only the plumbing so China series are read as external causal signals while execution assetInputs contain only Nasdaq and S&P 500.",
+  "execution_git_commit": "d8bf3b746d00c81c7acc096b14df6e128a2f1045",
+  "objective_status": "INCONCLUSIVE",
+  "preregistration_record_hash": "426d83ca881bfa06edef7c115054666705e2e4b34264bbfdb861a6521fb1ddb3",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/run-authorization.json",
+  "status": "INVALID",
+  "trial_id": "ATM-SVP3-CHINA-US-RELAY-001",
+  "validation_status": "FAIL"
+}

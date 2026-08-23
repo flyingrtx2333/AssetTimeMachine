@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "d8bf3b746d00c81c7acc096b14df6e128a2f1045",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "426d83ca881bfa06edef7c115054666705e2e4b34264bbfdb861a6521fb1ddb3",
+  "preregistration_record_hash": "426d83ca881bfa06edef7c115054666705e2e4b34264bbfdb861a6521fb1ddb3",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-CHINA-US-RELAY-001"
+}

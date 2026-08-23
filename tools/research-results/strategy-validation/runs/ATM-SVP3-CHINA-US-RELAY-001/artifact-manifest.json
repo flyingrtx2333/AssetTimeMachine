@@ -1,0 +1,181 @@
+{
+  "files": [
+    {
+      "bytes": 162885,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2005-01-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/C-CASH-COMBINED-portfolio.csv",
+      "row_count": 5616,
+      "sha256": "9e7994787a4bfe1d4c3b95f992de5c09ee339f2eea2f7364631033179fd956fd"
+    },
+    {
+      "bytes": 162885,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2005-01-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/C-CHINA-AVAILABLE-COMBINED-portfolio.csv",
+      "row_count": 5616,
+      "sha256": "9e7994787a4bfe1d4c3b95f992de5c09ee339f2eea2f7364631033179fd956fd"
+    },
+    {
+      "bytes": 162885,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2005-01-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/C-CHINA-AVAILABLE-NASDAQ-portfolio.csv",
+      "row_count": 5616,
+      "sha256": "9e7994787a4bfe1d4c3b95f992de5c09ee339f2eea2f7364631033179fd956fd"
+    },
+    {
+      "bytes": 162885,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2005-01-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/C-CHINA-AVAILABLE-SP500-portfolio.csv",
+      "row_count": 5616,
+      "sha256": "9e7994787a4bfe1d4c3b95f992de5c09ee339f2eea2f7364631033179fd956fd"
+    },
+    {
+      "bytes": 162885,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2005-01-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/CUS001-COMBINED-SLIP005-portfolio.csv",
+      "row_count": 5616,
+      "sha256": "9e7994787a4bfe1d4c3b95f992de5c09ee339f2eea2f7364631033179fd956fd"
+    },
+    {
+      "bytes": 162885,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2005-01-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/CUS001-COMBINED-portfolio.csv",
+      "row_count": 5616,
+      "sha256": "9e7994787a4bfe1d4c3b95f992de5c09ee339f2eea2f7364631033179fd956fd"
+    },
+    {
+      "bytes": 162885,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2005-01-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/CUS001-NASDAQ-portfolio.csv",
+      "row_count": 5616,
+      "sha256": "9e7994787a4bfe1d4c3b95f992de5c09ee339f2eea2f7364631033179fd956fd"
+    },
+    {
+      "bytes": 162885,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2005-01-05",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/CUS001-SP500-portfolio.csv",
+      "row_count": 5616,
+      "sha256": "9e7994787a4bfe1d4c3b95f992de5c09ee339f2eea2f7364631033179fd956fd"
+    },
+    {
+      "bytes": 1226,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "round_trips",
+        "win_rate_percent",
+        "average_return_percent",
+        "profit_factor",
+        "active_sessions",
+        "max_intraday_gross",
+        "overnight_position_days",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/candidate-metrics.csv",
+      "row_count": 8,
+      "sha256": "39f97630af94f9f11b8a4638f591e0d3d28b7b1d1e039a5329f88cf0a34278c8"
+    },
+    {
+      "bytes": 20777,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/candidates/candidate-metrics.json",
+      "sha256": "ccb1690c311b5449acfa6d860c241d411c9f37dd7f712c252e38ef5ffc73040e"
+    },
+    {
+      "bytes": 970,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/execution.json",
+      "sha256": "cd761156342bb9ad34a49cb2e3bb7a1ad5112127e7072c86b4d226de7be968f4"
+    },
+    {
+      "bytes": 441,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/run-authorization.json",
+      "sha256": "9c2b64f72c2177b644f86b3590d2bbd4e1eff33973cd47104896c64d26ca19e0"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1300,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-CHINA-US-RELAY-001/stdout.txt",
+      "sha256": "bbc0266f82331a8d315a655b5c6bbcfc8209a51273871cfeca1220aa33ffa391"
+    }
+  ],
+  "generated_at": "2026-08-23T11:05:04+08:00",
+  "git_commit": "d8bf3b746d00c81c7acc096b14df6e128a2f1045",
+  "kind": "result",
+  "metadata": {
+    "decision": "INVALID_IMPLEMENTATION",
+    "defect": "target states were nonzero but actual intraday execution produced zero trades and zero realized gross because signal-only China assets were incorrectly included in execution assetInputs"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-CHINA-US-RELAY-001"
+}

@@ -83,7 +83,7 @@ def file_record(path: Path) -> dict[str, Any]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--trial-id", required=True)
-    parser.add_argument("--protocol-id", choices=["ATM-SVP-1", "ATM-SVP-2"], default="ATM-SVP-2")
+    parser.add_argument("--protocol-id", choices=["ATM-SVP-1", "ATM-SVP-2", "ATM-SVP-3"], default="ATM-SVP-3")
     parser.add_argument("--kind", choices=["dataset", "run", "result"], required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--file", action="append", dest="files", required=True)
