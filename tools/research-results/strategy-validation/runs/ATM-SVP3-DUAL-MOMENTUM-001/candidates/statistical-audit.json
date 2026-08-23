@@ -1,0 +1,16 @@
+{
+  "candidate_sharpe": 0.5303953774818154,
+  "global_dsr_pass": false,
+  "global_post_protocol_dsr": {
+    "dsr_probability": 1.9316905017219277e-05,
+    "dsr_z": -4.1155017294693135,
+    "expected_max_sharpe_annualized": 1.3678943388670595,
+    "observations": 6172,
+    "observed_sharpe_annualized": 0.5303953774818132,
+    "pearson_kurtosis": 6.778705309935029,
+    "skewness": -0.373542131369401,
+    "trial_count": 60
+  },
+  "prior_performance_bearing_candidates": 59,
+  "total_with_candidate": 60
+}

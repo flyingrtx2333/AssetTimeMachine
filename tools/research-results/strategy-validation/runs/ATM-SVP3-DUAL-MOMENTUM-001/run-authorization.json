@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "25bb833d43a12e77d8d02bde11fc7a9afd6e055d",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "a1b19fb991c9c4ab32dbf58cef16be44d56aabaf4c51bb09fdc140eed4f8ea25",
+  "preregistration_record_hash": "a1b19fb991c9c4ab32dbf58cef16be44d56aabaf4c51bb09fdc140eed4f8ea25",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-DUAL-MOMENTUM-001"
+}

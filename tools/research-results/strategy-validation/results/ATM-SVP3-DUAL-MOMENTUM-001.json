@@ -1,0 +1,141 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-DUAL-MOMENTUM-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DUAL-MOMENTUM-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DUAL-MOMENTUM-001/candidates/C-BARBELL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DUAL-MOMENTUM-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DUAL-MOMENTUM-001/candidates/DM001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DUAL-MOMENTUM-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DUAL-MOMENTUM-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DUAL-MOMENTUM-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DUAL-MOMENTUM-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DUAL-MOMENTUM-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DUAL-MOMENTUM-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-DUAL-MOMENTUM-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-DUAL-MOMENTUM-001",
+      "metrics": {
+        "average_cash_ratio": 0.023813380852097846,
+        "barbell_control": {
+          "cagr_percent": 12.062881133465254,
+          "mdd_percent": 37.71662775385042,
+          "sharpe": 0.8805036045356769
+        },
+        "cagr_percent": 8.494293401564668,
+        "comparison_checks": {
+          "mdd_lt_barbell": true,
+          "sharpe_gt_barbell": false
+        },
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "fold_cagrs_percent": [
+          6.26326050803887,
+          2.409519515640035,
+          -0.6587512537309048,
+          18.03814385384932,
+          6.240748747566283,
+          9.842651697966144,
+          13.778605308562586
+        ],
+        "fold_mdds_percent": [
+          24.788184797651056,
+          31.370529645286677,
+          23.530043435090494,
+          13.812340606061685,
+          15.373212415323268,
+          22.921602323198638,
+          28.660096496113024
+        ],
+        "fold_names": [
+          "2002-2005",
+          "2006-2008",
+          "2009-2011",
+          "2012-2014",
+          "2015-2017",
+          "2018-2021",
+          "2022-latest"
+        ],
+        "fold_sharpes": [
+          0.4516183156498332,
+          0.21826596162658385,
+          0.058774054115886584,
+          1.2129066569413893,
+          0.4728151016598066,
+          0.5764850732042923,
+          0.7267065318146413
+        ],
+        "folds_with_positive_sharpe": 7,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 1.9316905017219277e-05,
+        "global_post_protocol_dsr_trial_count": 60,
+        "max_gross": 1,
+        "mdd_percent": 35.86268563080965,
+        "minimum_cash": 0,
+        "objective_checks": {
+          "cagr_ge_12pct": false,
+          "cagr_gt_cash": true,
+          "mdd_le_20pct": false,
+          "sharpe_ge_1": false,
+          "since2020_cagr_positive": true,
+          "since2022_cagr_positive": true
+        },
+        "sharpe": 0.5303953774818154,
+        "since2020_cagr_percent": 13.56803254011063,
+        "since2020_sharpe": 0.7166878645825846,
+        "since2022_cagr_percent": 13.778605308562586,
+        "since2022_sharpe": 0.7267065318146413,
+        "strategy_library_validation": {
+          "comparative_failures": [
+            "sharpe_gt_barbell"
+          ],
+          "comparison_status": "FAIL",
+          "evidence_missing": [],
+          "objective_failures": [
+            "cagr_ge_12pct",
+            "mdd_le_20pct",
+            "sharpe_ge_1"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_mdd_le_25pct"
+          ],
+          "validation_warnings": [
+            "execution_stress_not_in_this_R1_trial",
+            "global_dsr_below_project_pass_threshold"
+          ]
+        },
+        "target_fingerprint": "cf86f93f55064e3f",
+        "trades": 75,
+        "validation_checks": {
+          "actual_trades_gt_0": true,
+          "cash_nonnegative": true,
+          "full_cagr_gt_0": true,
+          "full_mdd_le_25pct": false,
+          "full_sharpe_gt_0": true,
+          "max_gross_le_1": true,
+          "positive_sharpe_folds_ge_70pct": true
+        }
+      }
+    }
+  ],
+  "comparison_status": "FAIL",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-DUAL-MOMENTUM-001.json",
+  "decision": "FAIL / VALIDATION_FAIL. Canonical 252-session Nasdaq-gold dual momentum produced 8.494293% CAGR, 0.530395 Sharpe and 35.862686% MDD under 1.00% fee +0.05% slippage. All seven folds had positive Sharpe, and 2022+ CAGR was 13.778605%, but full MDD breached 25%. The fixed annual 50/50 Nasdaq-gold barbell was stronger at 12.062881% CAGR and 0.880504 Sharpe, so comparison=FAIL. No horizon, skip-month, asset or filter rescue is allowed.",
+  "execution_git_commit": "25bb833d43a12e77d8d02bde11fc7a9afd6e055d",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "a1b19fb991c9c4ab32dbf58cef16be44d56aabaf4c51bb09fdc140eed4f8ea25",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-DUAL-MOMENTUM-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-DUAL-MOMENTUM-001",
+  "validation_status": "FAIL"
+}
