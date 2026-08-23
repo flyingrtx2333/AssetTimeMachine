@@ -232,11 +232,40 @@ def strategy_validation_assessment(
 ) -> dict[str, Any]:
     """Assess strategy validity independently from target attainment and peer ranking.
 
-    This policy intentionally does not use "beat V11", CAGR target, Sharpe target, or
-    other campaign objectives as the strategy-validity decision. It asks whether the
-    frozen strategy produced a reproducible, causally valid, unlevered and sufficiently
-    stable positive retrospective result under a single common absolute floor.
+    ATM-SVP-3 RESULT records may carry an explicit three-axis interpretation produced
+    after the frozen formal run (for example an absolute-gate PASS downgraded to WEAK
+    by the global DSR audit). Preserve that durable interpretation instead of trying
+    to infer it again from legacy single-axis fields.
     """
+    explicit = metrics.get("strategy_library_validation")
+    if str(prereg.get("protocol_id") or "") == "ATM-SVP-3" and isinstance(explicit, dict):
+        validation_status = str(explicit.get("status") or result.get("validation_status") or "INCOMPLETE")
+        objective_status = str(explicit.get("objective_status") or result.get("objective_status") or "INCONCLUSIVE")
+        comparison_status = str(explicit.get("comparison_status") or result.get("comparison_status") or "NOT_APPLICABLE")
+        if validation_status not in {"PASS", "WEAK", "FAIL", "INCOMPLETE"}:
+            validation_status = "INCOMPLETE"
+        if objective_status not in {"PASS", "FAIL", "INCONCLUSIVE", "NOT_APPLICABLE"}:
+            objective_status = "INCONCLUSIVE"
+        if comparison_status not in {"PASS", "FAIL", "UNKNOWN", "NOT_APPLICABLE"}:
+            comparison_status = "UNKNOWN"
+        durable = dict(explicit)
+        durable.update({
+            "policy_id": str(explicit.get("policy_id") or STRATEGY_LIBRARY_VALIDATION_POLICY_ID),
+            "status": validation_status,
+            "level": str(explicit.get("level") or "R1_RETROSPECTIVE"),
+            "objective_status": objective_status,
+            "comparison_status": comparison_status,
+            "trial_status": str(result.get("status") or explicit.get("trial_status") or "INCONCLUSIVE"),
+        })
+        durable.setdefault("evidence_missing", [])
+        durable.setdefault("validation_failures", [])
+        durable.setdefault("validation_warnings", [])
+        durable.setdefault("objective_failures", [])
+        durable.setdefault("comparative_failures", [])
+        durable.setdefault("legacy_robust_strategy_pass", bool(metrics.get("robust_strategy_pass", False)))
+        durable.setdefault("note", "Validation, campaign objective attainment and peer-strategy comparison are independent axes.")
+        return durable
+
     primary = result_primary_metrics(metrics)
     validation_failures: list[str] = []
     validation_warnings: list[str] = []
@@ -411,12 +440,26 @@ def lifecycle_for_validation(validation_status: str) -> str:
     return "research"
 
 
-def candidate_result_status(trial_status: str, metrics: dict[str, Any], robust: bool) -> str:
-    if robust:
-        return "PASS"
+def candidate_result_status(
+    trial_status: str,
+    metrics: dict[str, Any],
+    robust: bool,
+    *,
+    protocol_id: str,
+    single_candidate: bool,
+) -> str:
     explicit = metrics.get("result_status")
     if explicit in {"PASS", "FAIL", "INCONCLUSIVE", "INVALID", "ABORTED", "CONTROL"}:
         return str(explicit)
+    if robust:
+        return "PASS"
+    # ATM-SVP-3 separates the formal mechanical trial result from validation strength.
+    # A one-candidate trial can mechanically PASS while its final validation evidence is
+    # WEAK (for example after DSR). Do not rewrite that truthful PASS into FAIL.
+    if protocol_id == "ATM-SVP-3" and single_candidate and trial_status in {
+        "PASS", "FAIL", "INCONCLUSIVE", "INVALID", "ABORTED"
+    }:
+        return trial_status
     if trial_status in {"INVALID", "ABORTED", "INCONCLUSIVE"}:
         return trial_status
     return "FAIL"
@@ -479,7 +522,13 @@ def export_one(result_path: Path, output_dir: Path) -> Path | None:
         primary = result_primary_metrics(metrics)
         robust = bool(metrics.get("robust_strategy_pass", candidate.get("robust_strategy_pass", False)))
         superseded = SUPERSEDED_BY.get(candidate_id)
-        result_status = candidate_result_status(trial_status, metrics, robust)
+        result_status = candidate_result_status(
+            trial_status,
+            metrics,
+            robust,
+            protocol_id=str(prereg.get("protocol_id") or ""),
+            single_candidate=len(candidates) == 1,
+        )
         max_gross, constraints = unlevered_constraints(prereg, metrics, primary)
         validation = strategy_validation_assessment(
             prereg=prereg, result=result, metrics=metrics, constraints=constraints

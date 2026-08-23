@@ -1,0 +1,330 @@
+{
+  "batch_key": "ATM-SVP3-US-TURN-MONTH-001-strategy-library-v2",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-US-TURN-MONTH-001.json",
+    "decision": "PASS ON FROZEN ABSOLUTE VALIDATION GATES / ATM-SVP-3 EVIDENCE WEAK. The canonical turn-of-month 50/50 Nasdaq-S&P strategy produced 2.833448% CAGR, 0.346410 Sharpe and 23.745589% MDD with all 7/7 fixed folds positive-Sharpe. The 0.05% adverse-slippage path remained positive at 1.603180% CAGR and 0.217268 Sharpe with 24.858575% MDD, so all preregistered absolute validation gates passed. It also beat the rest-of-month path on Sharpe and drawdown, comparison=PASS. However the high-return objective failed (CAGR<8%, Sharpe<1, MDD>15%), and global post-protocol DSR over 57 performance-bearing candidates is only 2.06466752e-07; under ATM-SVP-3 the final strategy-validation evidence is therefore WEAK, not strong PASS. No calendar-window or filter rescue is permitted inside this lineage.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "b276c7232ba3048a51895fd9cb48cc7401f46e03",
+    "methodology": {
+      "follow_up_policy": "After any formal performance metric is viewed, do not change calendar window, dates, weights, asset set, execution cadence, fee, slippage or add conditioning filters inside this lineage. Any further seasonal or calendar idea is a new preregistered lineage.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "actual trades > 0",
+        "full CAGR > 0",
+        "full Sharpe > 0",
+        "full MDD <=25%",
+        "at least 70% of seven fixed folds have Sharpe >0",
+        "0.05% adverse-slippage stress CAGR >0 and Sharpe >0",
+        "stress MDD <=2x base MDD",
+        "max realized gross <=100%, cash >=0, target path fee-invariant"
+      ],
+      "selection_metric": "No within-family selection. One canonical turn-of-month window only. Validation, objective attainment and comparison are reported independently under ATM-SVP-3."
+    },
+    "preregistration_hash": "5c47120a117fce89f98fbca0cb41595b0aacbcfeac3f40e611c8d38bba4b890e",
+    "protocol_id": "ATM-SVP-3",
+    "run_key": "ATM-SVP3-US-TURN-MONTH-001",
+    "status": "PASS",
+    "title": "us-turn-month-001 / 美股月末月初001; independent calendar-flow strategy"
+  },
+  "schema_version": "strategy-library-v2",
+  "source_commit": "b276c7232ba3048a51895fd9cb48cc7401f46e03",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "Institutional month-end rebalancing and beginning-of-month contribution flows concentrate a disproportionate share of U.S. equity returns around the turn of the month. Holding a fixed 50/50 Nasdaq and S&P 500 portfolio from the penultimate trading-day close through the third trading-day close of the next month should produce a repeatable positive close-to-close return stream with materially lower trading frequency than daily strategies.",
+      "display_name": "us-turn-month-001 / 美股月末月初001",
+      "family": "策略研究",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/candidates/C-CASH-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/candidates/C-REST-OF-MONTH-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/candidates/USTOM001-COMBINED-SLIP005-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/candidates/USTOM001-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/candidates/statistical-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-TURN-MONTH-001/stdout.txt"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": 2.8334478435862787,
+        "candidate_id": "S-US-TURN-MONTH-001",
+        "conclusion": "PASS ON FROZEN ABSOLUTE VALIDATION GATES / ATM-SVP-3 EVIDENCE WEAK. The canonical turn-of-month 50/50 Nasdaq-S&P strategy produced 2.833448% CAGR, 0.346410 Sharpe and 23.745589% MDD with all 7/7 fixed folds positive-Sharpe. The 0.05% adverse-slippage path remained positive at 1.603180% CAGR and 0.217268 Sharpe with 24.858575% MDD, so all preregistered absolute validation gates passed. It also beat the rest-of-month path on Sharpe and drawdown, comparison=PASS. However the high-return objective failed (CAGR<8%, Sharpe<1, MDD>15%), and global post-protocol DSR over 57 performance-bearing candidates is only 2.06466752e-07; under ATM-SVP-3 the final strategy-validation evidence is therefore WEAK, not strong PASS. No calendar-window or filter rescue is permitted inside this lineage.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "dsr_probability": 2.0646675208402243e-07,
+        "folds": {
+          "cagrs_percent": [
+            6.954906123137605,
+            2.2444487310418815,
+            1.0141042713450288,
+            2.3882824744314135,
+            1.4491707803194531,
+            1.3035332170651115,
+            4.649543531357003
+          ],
+          "mdds_percent": [
+            23.74558927560207,
+            4.192686794336435,
+            17.787945273742967,
+            10.33640574416606,
+            9.498513761304334,
+            12.323435365821727,
+            12.916408426189552
+          ],
+          "names": [
+            "2000-2003",
+            "2004-2007",
+            "2008-2011",
+            "2012-2015",
+            "2016-2019",
+            "2020-2022",
+            "2023-latest"
+          ],
+          "sharpes": [
+            0.5676985149384781,
+            0.40801806245757166,
+            0.14404700765405756,
+            0.4146348822196688,
+            0.24922872264985954,
+            0.1745174331801986,
+            0.6286312216143128
+          ]
+        },
+        "folds_total": 7,
+        "folds_won": 7,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 23.74558927560207,
+        "metrics": {
+          "active_target_sessions": 1276,
+          "average_cash_ratio": 0.8096374757571236,
+          "cagr_percent": 2.8334478435862787,
+          "comparison_checks": {
+            "turn_month_mdd_le_rest_month": true,
+            "turn_month_sharpe_gt_rest_month": true
+          },
+          "comparison_failures": [],
+          "constraints": {
+            "financing_allowed": false,
+            "max_gross": 1,
+            "minimum_cash": 0,
+            "pass": true,
+            "shorting_allowed": false
+          },
+          "fold_cagrs_percent": [
+            6.954906123137605,
+            2.2444487310418815,
+            1.0141042713450288,
+            2.3882824744314135,
+            1.4491707803194531,
+            1.3035332170651115,
+            4.649543531357003
+          ],
+          "fold_mdds_percent": [
+            23.74558927560207,
+            4.192686794336435,
+            17.787945273742967,
+            10.33640574416606,
+            9.498513761304334,
+            12.323435365821727,
+            12.916408426189552
+          ],
+          "fold_names": [
+            "2000-2003",
+            "2004-2007",
+            "2008-2011",
+            "2012-2015",
+            "2016-2019",
+            "2020-2022",
+            "2023-latest"
+          ],
+          "fold_sharpes": [
+            0.5676985149384781,
+            0.40801806245757166,
+            0.14404700765405756,
+            0.4146348822196688,
+            0.24922872264985954,
+            0.1745174331801986,
+            0.6286312216143128
+          ],
+          "folds_with_positive_sharpe": 7,
+          "global_dsr_pass": false,
+          "global_post_protocol_dsr_probability": 2.0646675208402243e-07,
+          "global_post_protocol_dsr_trial_count": 57,
+          "max_gross": 1,
+          "mdd_percent": 23.74558927560207,
+          "minimum_cash": 0,
+          "objective_checks": {
+            "combined_cagr_ge_8pct": false,
+            "combined_mdd_le_15pct": false,
+            "combined_sharpe_ge_1": false,
+            "since2020_cagr_positive": true,
+            "since2022_cagr_positive": true,
+            "turn_month_cagr_gt_cash": true
+          },
+          "objective_failures": [
+            "combined_cagr_ge_8pct",
+            "combined_mdd_le_15pct",
+            "combined_sharpe_ge_1"
+          ],
+          "rest_of_month_control": {
+            "cagr_percent": 3.4766632652358576,
+            "mdd_percent": 72.9721801129956,
+            "sharpe": 0.27359695941672
+          },
+          "sharpe": 0.34641005299697786,
+          "since2020_cagr_percent": 3.052721843802808,
+          "since2020_sharpe": 0.3741790752563398,
+          "since2022_cagr_percent": 2.047164655069822,
+          "since2022_sharpe": 0.2763053650299021,
+          "slippage_stress": {
+            "cagr_percent": 1.6031797671415493,
+            "mdd_percent": 24.858575113007472,
+            "sharpe": 0.2172678171795816,
+            "target_fingerprint": "b0a827cc77f28a43"
+          },
+          "strategy_library_validation": {
+            "comparative_failures": [],
+            "comparison_status": "PASS",
+            "evidence_missing": [],
+            "legacy_robust_strategy_pass": false,
+            "level": "R1_RETROSPECTIVE",
+            "note": "All frozen absolute validation gates passed, but global post-protocol DSR is below 90%; ATM-SVP-3 therefore classifies the retrospective evidence as WEAK rather than strong validation.",
+            "objective_failures": [
+              "combined_cagr_ge_8pct",
+              "combined_mdd_le_15pct",
+              "combined_sharpe_ge_1"
+            ],
+            "objective_status": "FAIL",
+            "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+            "status": "WEAK",
+            "trial_status": "PASS",
+            "validation_failures": [],
+            "validation_warnings": [
+              "global_dsr_below_project_pass_threshold"
+            ]
+          },
+          "target_fingerprint": "b0a827cc77f28a43",
+          "trades": 1280,
+          "validation_checks": {
+            "actual_trades_gt_0": true,
+            "cash_nonnegative": true,
+            "full_cagr_gt_0": true,
+            "full_mdd_le_25pct": true,
+            "full_sharpe_gt_0": true,
+            "max_gross_le_1": true,
+            "positive_sharpe_folds_ge_70pct": true,
+            "stress_cagr_gt_0": true,
+            "stress_mdd_le_2x_base": true,
+            "stress_sharpe_gt_0": true,
+            "stress_target_fingerprint_invariant": true
+          }
+        },
+        "result_status": "PASS",
+        "robust_strategy_pass": false,
+        "sharpe": 0.34641005299697786,
+        "since2020_cagr_percent": 3.052721843802808,
+        "since2022_cagr_percent": 2.047164655069822,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-US-TURN-MONTH-001",
+      "strategy_kind": "strategy_architecture_not_factor",
+      "tags": [
+        "ATM-SVP3-US-TURN-MONTH-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [
+          "nasdaq",
+          "sp500"
+        ],
+        "code_sha256": "3ace73fea7f54aa44594603af32f8f564c6b2e120b7341b7d3fee1eb3a5f7b72",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "candidate",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "Institutional month-end rebalancing and beginning-of-month contribution flows concentrate a disproportionate share of U.S. equity returns around the turn of the month. Holding a fixed 50/50 Nasdaq and S&P 500 portfolio from the penultimate trading-day close through the third trading-day close of the next month should produce a repeatable positive close-to-close return stream with materially lower trading frequency than daily strategies.",
+        "parameters": {
+          "allowed_changes": [
+            "one fixed canonical four-return-day turn-of-month window: last trading day of month M plus first three trading days of M+1",
+            "implement that window by entering 50/50 Nasdaq/S&P 500 at the penultimate trading-day close of M and exiting at the third trading-day close of M+1",
+            "hold cash outside the window using the existing CashYieldCNY model",
+            "use U.S. exchange-session date metadata only to identify trading-day ordinal; no price/return information enters calendar selection",
+            "one rest-of-month control and one 0.05% adverse-slippage-per-fill stress"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "testing alternative month-end or month-start window lengths after viewing results",
+            "weekday, holiday, January, quarter-end or tax-calendar subfilters",
+            "trend, volatility, momentum, gap, VIX, NFCI or macro filters",
+            "changing 50/50 Nasdaq/S&P weights or dropping either asset",
+            "daily rebalancing inside the active window; only entry and exit transitions may trade",
+            "shorting, borrowing, financing, leverage, gross exposure above 100% or negative cash",
+            "changing fee or stress slippage after viewing results"
+          ],
+          "shared_rules": {
+            "assets": [
+              "nasdaq",
+              "sp500"
+            ],
+            "cash_model": "CashYieldCNY",
+            "combined_weights": {
+              "nasdaq": 0.5,
+              "sp500": 0.5
+            },
+            "entry": "penultimate trading-day close of each month",
+            "evaluation_end": "2026-08-20",
+            "evaluation_start": "2000-01-04",
+            "exit": "third trading-day close of next month",
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "rebalance_inside_window": false,
+            "shorting_allowed": false
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "tools/us_turn_month_001_logic.swift",
+        "target_fingerprint": "b0a827cc77f28a43",
+        "version_key": "S-US-TURN-MONTH-001"
+      }
+    }
+  ]
+}
