@@ -1,0 +1,257 @@
+        if ProcessInfo.processInfo.environment["ATM_ANNUAL_WINNER_001"] == "1" {
+            let formal = ProcessInfo.processInfo.environment["ATM_ANNUAL_WINNER_001_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_ANNUAL_WINNER_001_OUTPUT_DIR"]
+            let symbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = symbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in
+                    seriesBySymbol[normalizedHistorySymbol(symbol)]
+                }
+            }
+            guard inputs.count == symbols.count else {
+                print("ANNUAL_WINNER_001_INPUTS_MISSING")
+                return
+            }
+
+            let settings = AdvancedBacktestRiskSettings(
+                feeRate: 1.00,
+                slippageRate: 0.05,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            let dateFormatter = DateFormatter()
+            dateFormatter.calendar = BacktestSeriesAlignment.historicalSeriesCalendar
+            dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+            dateFormatter.timeZone = BacktestSeriesAlignment.historicalSeriesCalendar.timeZone
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            guard let evaluationStart = dateFormatter.date(from: "2003-01-01"),
+                  let evaluationEnd = dateFormatter.date(from: "2026-08-20") else {
+                print("ANNUAL_WINNER_001_DATE_PARSE_FAILED")
+                return
+            }
+            let evaluationBounds = evaluationStart...evaluationEnd
+            let folds: [(String, String, String)] = [
+                ("2003-2005", "2003-01-01", "2005-12-31"),
+                ("2006-2008", "2006-01-01", "2008-12-31"),
+                ("2009-2011", "2009-01-01", "2011-12-31"),
+                ("2012-2014", "2012-01-01", "2014-12-31"),
+                ("2015-2017", "2015-01-01", "2017-12-31"),
+                ("2018-2021", "2018-01-01", "2021-12-31"),
+                ("2022-latest", "2022-01-01", "9999-12-31")
+            ]
+
+            enum AnnualWinnerPathMode { case winner, equalWeight, cash }
+
+            func config(_ id: String) -> ResearchTargetStrategyConfig {
+                ResearchTargetStrategyConfig(
+                    symbol: id,
+                    title: "年度赢家001",
+                    warmupSessions: 2,
+                    rebalanceSessions: 1,
+                    rebalanceBand: 0,
+                    maxGrossExposure: 1,
+                    allowsFinancedExposure: false,
+                    financingAnnualRate: 0,
+                    buyReason: "上一完整自然年赢家获得下一年资本"
+                )
+            }
+
+            func runPath(
+                id: String,
+                mode: AnnualWinnerPathMode
+            ) -> (run: ResearchTargetStrategyRun, ownerByYear: [Int: String])? {
+                var firstDecision = true
+                var ownerByYear: [Int: String] = [:]
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings,
+                    config: config(id),
+                    dateBounds: evaluationBounds,
+                    rebalanceDecision: { index, signalIndex, data in
+                        guard data.dates.indices.contains(index) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        if firstDecision {
+                            firstDecision = false
+                            return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                        }
+                        guard data.dates.indices.contains(signalIndex) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        let currentYear = AnnualWinner001Logic.calendarYear(data.dates[index].recordDateString)
+                        let priorYear = AnnualWinner001Logic.calendarYear(data.dates[signalIndex].recordDateString)
+                        return BacktestRebalanceDecision(
+                            shouldRebalance: currentYear != nil && currentYear != priorYear,
+                            refreshOverlay: false
+                        )
+                    },
+                    targetWeights: { context, data in
+                        switch mode {
+                        case .cash:
+                            return [:]
+                        case .equalWeight:
+                            let weight = 1.0 / Double(symbols.count)
+                            return Dictionary(uniqueKeysWithValues: symbols.map { ($0, weight) })
+                        case .winner:
+                            let dateKeys = data.dates.map(\.recordDateString)
+                            guard let owner = AnnualWinner001Logic.winner(
+                                executionDateKey: context.date.recordDateString,
+                                signalIndex: context.signalIndex,
+                                dateKeys: dateKeys,
+                                pricesBySymbol: data.pricesBySymbol,
+                                symbols: symbols
+                            ) else {
+                                if let year = AnnualWinner001Logic.calendarYear(context.date.recordDateString) {
+                                    ownerByYear[year] = "cash"
+                                }
+                                return [:]
+                            }
+                            if let year = AnnualWinner001Logic.calendarYear(context.date.recordDateString) {
+                                ownerByYear[year] = owner
+                            }
+                            return [owner: 1.0]
+                        }
+                    }
+                ) else { return nil }
+                return (run, ownerByYear)
+            }
+
+            guard let candidatePair = runPath(id: "ANWIN001", mode: .winner),
+                  let equalPair = runPath(id: "C-ANNUAL-EQUAL", mode: .equalWeight),
+                  let cashPair = runPath(id: "C-CASH", mode: .cash) else {
+                print("ANNUAL_WINNER_001_RUN_FAILED")
+                return
+            }
+            let candidate = candidatePair.run
+            let equalControl = equalPair.run
+            let cashControl = cashPair.run
+
+            func filteredPoints(_ report: AdvancedBacktestReport) -> [BacktestSeriesPoint] {
+                report.points.filter { $0.date >= evaluationStart && $0.date <= evaluationEnd }
+            }
+            func filteredStates(_ states: [BacktestDailyState]) -> [BacktestDailyState] {
+                states.filter { $0.date >= evaluationStart && $0.date <= evaluationEnd }
+            }
+            func targetFingerprint(_ states: [BacktestDailyState]) -> String {
+                var hash: UInt64 = 1469598103934665603
+                for state in states {
+                    for symbol in symbols {
+                        var value = UInt64(bitPattern: Int64(((state.targetWeights[symbol] ?? 0) * 1_000_000).rounded()))
+                        for _ in 0..<8 {
+                            hash ^= value & UInt64(0xff)
+                            hash &*= UInt64(1099511628211)
+                            value >>= 8
+                        }
+                    }
+                }
+                return String(format: "%016llx", hash)
+            }
+            func foldMetrics(_ points: [BacktestSeriesPoint]) -> [[String: Any]] {
+                folds.map { name, start, end in
+                    let slice = points.filter {
+                        let key = $0.date.recordDateString
+                        return key >= start && key <= end
+                    }
+                    let metrics = BacktestMetricsCalculator.performanceMetrics(from: slice)
+                    return [
+                        "name": name,
+                        "sessions": slice.count,
+                        "cagr_percent": (metrics?.annualizedReturn ?? 0) * 100,
+                        "mdd_percent": (metrics?.maxDrawdown ?? 0) * 100,
+                        "sharpe": metrics?.sharpeRatio ?? 0
+                    ]
+                }
+            }
+            func pathDocument(
+                _ id: String,
+                _ run: ResearchTargetStrategyRun,
+                ownerByYear: [Int: String]
+            ) -> [String: Any] {
+                let points = filteredPoints(run.report)
+                let states = filteredStates(run.dailyStates)
+                let metrics = BacktestMetricsCalculator.performanceMetrics(from: points)
+                let since2020 = BacktestMetricsCalculator.performanceMetrics(from: points.filter { $0.date.recordDateString >= "2020-01-01" })
+                let since2022 = BacktestMetricsCalculator.performanceMetrics(from: points.filter { $0.date.recordDateString >= "2022-01-01" })
+                let realizedGross = states.map { state -> Double in
+                    guard state.portfolioValue > 0 else { return 0 }
+                    return state.holdingsBySymbol.values.reduce(0, +) / state.portfolioValue
+                }
+                return [
+                    "id": id,
+                    "start": points.first?.date.recordDateString ?? "",
+                    "end": points.last?.date.recordDateString ?? "",
+                    "sessions": points.count,
+                    "cagr_percent": (metrics?.annualizedReturn ?? 0) * 100,
+                    "mdd_percent": (metrics?.maxDrawdown ?? 0) * 100,
+                    "volatility_percent": (metrics?.annualizedVolatility ?? 0) * 100,
+                    "sharpe": metrics?.sharpeRatio ?? 0,
+                    "trades": run.report.trades.count,
+                    "average_cash_ratio": run.report.averageCashRatio,
+                    "max_gross": realizedGross.max() ?? 0,
+                    "minimum_cash": states.map(\.cash).min() ?? 0,
+                    "target_fingerprint": targetFingerprint(states),
+                    "since2020_cagr_percent": (since2020?.annualizedReturn ?? 0) * 100,
+                    "since2020_sharpe": since2020?.sharpeRatio ?? 0,
+                    "since2022_cagr_percent": (since2022?.annualizedReturn ?? 0) * 100,
+                    "since2022_sharpe": since2022?.sharpeRatio ?? 0,
+                    "folds": foldMetrics(points),
+                    "owner_by_year": Dictionary(uniqueKeysWithValues: ownerByYear.keys.sorted().map { (String($0), ownerByYear[$0]!) })
+                ]
+            }
+
+            let candidateDoc = pathDocument("ANWIN001", candidate, ownerByYear: candidatePair.ownerByYear)
+            let equalDoc = pathDocument("C-ANNUAL-EQUAL", equalControl, ownerByYear: [:])
+            let cashDoc = pathDocument("C-CASH", cashControl, ownerByYear: [:])
+
+            if !formal {
+                let trades = candidateDoc["trades"] as? Int ?? 0
+                let maxGross = candidateDoc["max_gross"] as? Double ?? 0
+                let minCash = candidateDoc["minimum_cash"] as? Double ?? -1
+                let ownerCount = (candidateDoc["owner_by_year"] as? [String: String])?.count ?? 0
+                print("ANNUAL_WINNER_001_SMOKE_TRADES=\(trades)")
+                print("ANNUAL_WINNER_001_SMOKE_MAX_GROSS=\(String(format: "%.10f", maxGross))")
+                print("ANNUAL_WINNER_001_SMOKE_MIN_CASH=\(String(format: "%.6f", minCash))")
+                print("ANNUAL_WINNER_001_SMOKE_OWNER_YEARS=\(ownerCount)")
+                guard trades > 0, maxGross <= 1.000000001, minCash >= -1e-6, ownerCount >= 20 else {
+                    print("ANNUAL_WINNER_001_SMOKE_INVALID")
+                    return
+                }
+                print("ANNUAL_WINNER_001_SMOKE_OK")
+                return
+            }
+
+            if let outputDir {
+                try? FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+                for (id, run) in [("ANWIN001", candidate), ("C-ANNUAL-EQUAL", equalControl), ("C-CASH", cashControl)] {
+                    let points = filteredPoints(run.report)
+                    var lines = ["date,portfolio_value"]
+                    lines.append(contentsOf: points.map { "\($0.date.recordDateString),\(String(format: "%.10f", $0.portfolioValue))" })
+                    let path = URL(fileURLWithPath: outputDir).appendingPathComponent("\(id)-portfolio.csv").path
+                    try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+                }
+            }
+            let document: [String: Any] = [
+                "trial_id": "ATM-SVP3-ANNUAL-WINNER-001",
+                "candidate_id": "S-ANNUAL-WINNER-001",
+                "candidate": candidateDoc,
+                "annual_equal_control": equalDoc,
+                "cash_control": cashDoc,
+                "fee_percent_per_trade": 1.00,
+                "slippage_percent_per_trade": 0.05,
+                "evaluation_start": "2003-01-01",
+                "evaluation_end": "2026-08-20",
+                "rule": "on the first execution session of each calendar year, own 100% of the single asset with the highest positive prior-complete-calendar-year CNY return; if none is positive, own cash for the year"
+            ]
+            guard JSONSerialization.isValidJSONObject(document),
+                  let json = try? JSONSerialization.data(withJSONObject: document, options: [.sortedKeys]),
+                  let text = String(data: json, encoding: .utf8) else {
+                print("ANNUAL_WINNER_001_JSON_FAILED")
+                return
+            }
+            print("ANNUAL_WINNER_001_FORMAL_JSON=" + text)
+            print("ANNUAL_WINNER_001_FORMAL_OK")
+            return
+        }
