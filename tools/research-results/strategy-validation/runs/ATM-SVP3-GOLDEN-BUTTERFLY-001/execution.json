@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_golden_butterfly_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "55ea20427fb5c4dcdfb07a7bd22724d120107fb2",
+  "finished_at": "2026-08-23T19:14:13+08:00",
+  "preregistration_record_hash": "fe1426376786d10918313e8acb24fe6c11c54c6f8a957b48498e6af445eab154",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 1,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/run-authorization.json",
+  "started_at": "2026-08-23T19:13:43+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/stdout.txt",
+  "trial_id": "ATM-SVP3-GOLDEN-BUTTERFLY-001"
+}

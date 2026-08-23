@@ -1,0 +1,38 @@
+{
+  "files": [
+    {
+      "bytes": 982,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/execution.json",
+      "sha256": "5a1475a98df68753c3db6ed95d7cf3ff5714b1d63aed89b2b6f0c9c130a2c315"
+    },
+    {
+      "bytes": 443,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/run-authorization.json",
+      "sha256": "a7db48bf78f01c84b462724c555c3ce140f0fb0639fd9e84dfc9266ba3116b9b"
+    },
+    {
+      "bytes": 934,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/stderr.txt",
+      "sha256": "4ffeef757beaa05399494ab4579aa3236b77bb409c471237747e97d69c2694ca"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "generated_at": "2026-08-23T19:15:04+08:00",
+  "git_commit": "55ea20427fb5c4dcdfb07a7bd22724d120107fb2",
+  "kind": "result",
+  "metadata": {
+    "defect": "stale Permanent Portfolio gold/cash validator in Python wrapper",
+    "performance_used": false,
+    "status": "INVALID_IMPLEMENTATION"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-GOLDEN-BUTTERFLY-001"
+}

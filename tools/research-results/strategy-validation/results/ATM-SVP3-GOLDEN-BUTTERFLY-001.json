@@ -1,0 +1,54 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/candidates/C-SPY-BUYHOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/candidates/GB001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-GOLDEN-BUTTERFLY-001",
+      "metrics": {
+        "constraints": {
+          "financing_allowed": false,
+          "pass": false,
+          "shorting_allowed": false
+        },
+        "implementation_audit": {
+          "defect": "Python formal wrapper retained stale Permanent Portfolio gold_weight/cash_weight validation although Golden Butterfly manifest exposes one sleeve_weight=0.20. The economic rule itself was not changed. No generated performance metric from this failed formal attempt was inspected or used.",
+          "invalid": true
+        },
+        "strategy_library_validation": {
+          "comparative_failures": [],
+          "comparison_status": "UNKNOWN",
+          "evidence_missing": [],
+          "note": "Implementation-invalid formal wrapper; no performance conclusion.",
+          "objective_failures": [],
+          "objective_status": "INCONCLUSIVE",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "INVALID",
+          "validation_failures": [
+            "invalid_formal_wrapper_validation"
+          ],
+          "validation_warnings": []
+        }
+      }
+    }
+  ],
+  "comparison_status": "UNKNOWN",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-GOLDEN-BUTTERFLY-001.json",
+  "decision": "INVALID_IMPLEMENTATION. The Golden Butterfly 001 formal run was authorized on the frozen economic implementation, but the Python wrapper rejected its own output because a stale Permanent Portfolio gold_weight/cash_weight validator remained after the conversion to a single 20% sleeve field. No Golden Butterfly performance metric from this failed attempt was inspected or used. A successor may change only this wrapper-validation plumbing; five 20% sleeves, annual rebalance, data files, evaluation window and 1.00%+0.05% product cost must remain unchanged.",
+  "execution_git_commit": "55ea20427fb5c4dcdfb07a7bd22724d120107fb2",
+  "objective_status": "INCONCLUSIVE",
+  "preregistration_record_hash": "fe1426376786d10918313e8acb24fe6c11c54c6f8a957b48498e6af445eab154",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-GOLDEN-BUTTERFLY-001/run-authorization.json",
+  "status": "INVALID",
+  "trial_id": "ATM-SVP3-GOLDEN-BUTTERFLY-001",
+  "validation_status": "FAIL"
+}

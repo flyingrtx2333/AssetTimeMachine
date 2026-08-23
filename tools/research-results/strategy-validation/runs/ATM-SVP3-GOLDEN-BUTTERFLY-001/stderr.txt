@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine-golden-butterfly-001/scripts/run_golden_butterfly_001.py", line 186, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine-golden-butterfly-001/scripts/run_golden_butterfly_001.py", line 177, in main
+    document = parse_formal_stdout(stdout)
+  File "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine-golden-butterfly-001/scripts/run_golden_butterfly_001.py", line 147, in parse_formal_stdout
+    validate_document(document)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine-golden-butterfly-001/scripts/run_golden_butterfly_001.py", line 60, in validate_document
+    raise RuntimeError("permanent portfolio gold/cash weights drifted")
+RuntimeError: permanent portfolio gold/cash weights drifted
