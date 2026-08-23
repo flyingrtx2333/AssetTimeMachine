@@ -1,0 +1,116 @@
+{
+  "files": [
+    {
+      "bytes": 178859,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2003-01-02",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FABER-GTAA-001/candidates/C-ANNUAL-EQUAL-portfolio.csv",
+      "row_count": 6167,
+      "sha256": "da7cb427ceb61e6ece218ce79e799c1a1ae8e8772f6df0802d6bfe643e5d16d1"
+    },
+    {
+      "bytes": 178864,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2003-01-02",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FABER-GTAA-001/candidates/C-CASH-portfolio.csv",
+      "row_count": 6167,
+      "sha256": "03204e9f4c519a5ef5739b044f83b4fd13d45344c5b369747ce9b3e5fd5d74d9"
+    },
+    {
+      "bytes": 178819,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2003-01-02",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FABER-GTAA-001/candidates/FABER001-portfolio.csv",
+      "row_count": 6167,
+      "sha256": "c67b624b1ae84c82f84b6ae5fa100a10a04a70d36745158f0a34abc1b13d05cc"
+    },
+    {
+      "bytes": 546,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FABER-GTAA-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "cdce42c2d045312e568285582daf707a8ddce3b5a0a8f9776e3806e4c6eaee03"
+    },
+    {
+      "bytes": 34131,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FABER-GTAA-001/candidates/candidate-metrics.json",
+      "sha256": "eff6b797c13e35215bf70edb01c3da0bbdb3b521f581b3177e10fe989aa5f8ad"
+    },
+    {
+      "bytes": 544,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FABER-GTAA-001/candidates/statistical-audit.json",
+      "sha256": "0db859b0b0d1b9aec59c265ad4e7ca239f5b74ad256322167d9a7b6e3dda55a4"
+    },
+    {
+      "bytes": 946,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FABER-GTAA-001/execution.json",
+      "sha256": "f41acb46fac4c38137bbab4c58ec0f56ea6fb5798a777ecab134575bfb9d78cc"
+    },
+    {
+      "bytes": 437,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FABER-GTAA-001/run-authorization.json",
+      "sha256": "1097f6a7e1d30cb2a6c8aff9b74a600fdc51fa3149dbf12fc8a8f2cf9b098959"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FABER-GTAA-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1122,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FABER-GTAA-001/stdout.txt",
+      "sha256": "8218833d0b9ac740749707db13a03a0a3fb03946e8b61d772c6f95f05a5e53d2"
+    }
+  ],
+  "generated_at": "2026-08-23T14:51:40+08:00",
+  "git_commit": "049598ad8cd5961cb39161ad965059410b240310",
+  "kind": "result",
+  "metadata": {
+    "absolute_validation": "PASS",
+    "comparison_status": "FAIL",
+    "objective_status": "FAIL",
+    "validation_status": "WEAK"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-FABER-GTAA-001"
+}

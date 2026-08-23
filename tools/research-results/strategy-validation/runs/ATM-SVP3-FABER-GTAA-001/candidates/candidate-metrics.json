@@ -1,0 +1,1757 @@
+{
+  "annual_equal_control": {
+    "active_by_month": {},
+    "average_cash_ratio": 0,
+    "cagr_percent": 10.083000530592635,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 6.1692699587514666,
+        "mdd_percent": 18.151697154641052,
+        "name": "2003-2005",
+        "sessions": 780,
+        "sharpe": 0.6283236200677786
+      },
+      {
+        "cagr_percent": 10.699304515573104,
+        "mdd_percent": 53.61771732400919,
+        "name": "2006-2008",
+        "sessions": 779,
+        "sharpe": 0.6169725681668333
+      },
+      {
+        "cagr_percent": 12.274450643628644,
+        "mdd_percent": 16.02642743342069,
+        "name": "2009-2011",
+        "sessions": 780,
+        "sharpe": 0.8021619871666902
+      },
+      {
+        "cagr_percent": 11.979359169176096,
+        "mdd_percent": 12.244243428161965,
+        "name": "2012-2014",
+        "sessions": 780,
+        "sharpe": 1.1407790019892448
+      },
+      {
+        "cagr_percent": 7.388352596702563,
+        "mdd_percent": 25.455783524176574,
+        "name": "2015-2017",
+        "sessions": 780,
+        "sharpe": 0.6058177486453103
+      },
+      {
+        "cagr_percent": 10.892808629326334,
+        "mdd_percent": 18.531746721252684,
+        "name": "2018-2021",
+        "sessions": 1043,
+        "sharpe": 0.8678520736308346
+      },
+      {
+        "cagr_percent": 10.180113346958674,
+        "mdd_percent": 15.876220069467506,
+        "name": "2022-latest",
+        "sessions": 1225,
+        "sharpe": 0.8710295136889448
+      }
+    ],
+    "id": "C-ANNUAL-EQUAL",
+    "max_gross": 1.0000000000000004,
+    "mdd_percent": 53.61771732400916,
+    "minimum_cash": 0,
+    "sessions": 6167,
+    "sharpe": 0.7724142180893253,
+    "since2020_cagr_percent": 11.007144604918896,
+    "since2020_sharpe": 0.876872881892467,
+    "since2022_cagr_percent": 10.180113346958674,
+    "since2022_sharpe": 0.8710295136889448,
+    "start": "2003-01-02",
+    "target_fingerprint": "ed8222e9393db067",
+    "trades": 120,
+    "volatility_percent": 13.131686758408229
+  },
+  "candidate": {
+    "active_by_month": {
+      "2003-01": [
+        "gold_cny"
+      ],
+      "2003-02": [
+        "gold_cny"
+      ],
+      "2003-03": [
+        "gold_cny"
+      ],
+      "2003-04": [
+        "gold_cny"
+      ],
+      "2003-05": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2003-06": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2003-07": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2003-08": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2003-09": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2003-10": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2003-11": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2003-12": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2004-01": [
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2004-02": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2004-03": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2004-04": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2004-05": [
+        "csi300",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2004-06": [
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2004-07": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2004-08": [],
+      "2004-09": [
+        "gold_cny"
+      ],
+      "2004-10": [
+        "gold_cny"
+      ],
+      "2004-11": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2004-12": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2005-01": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2005-02": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2005-03": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2005-04": [
+        "gold_cny",
+        "sp500"
+      ],
+      "2005-05": [
+        "gold_cny",
+        "sp500"
+      ],
+      "2005-06": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2005-07": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2005-08": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2005-09": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2005-10": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2005-11": [
+        "gold_cny",
+        "nasdaq"
+      ],
+      "2005-12": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2006-01": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2006-02": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2006-03": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2006-04": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2006-05": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2006-06": [
+        "csi300",
+        "gold_cny",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2006-07": [
+        "csi300",
+        "gold_cny",
+        "shanghai_composite"
+      ],
+      "2006-08": [
+        "csi300",
+        "gold_cny",
+        "shanghai_composite"
+      ],
+      "2006-09": [
+        "csi300",
+        "gold_cny",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2006-10": [
+        "csi300",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2006-11": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2006-12": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2007-01": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2007-02": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2007-03": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2007-04": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2007-05": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2007-06": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2007-07": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2007-08": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite"
+      ],
+      "2007-09": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite"
+      ],
+      "2007-10": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2007-11": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2007-12": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite"
+      ],
+      "2008-01": [
+        "csi300",
+        "gold_cny",
+        "shanghai_composite"
+      ],
+      "2008-02": [
+        "gold_cny"
+      ],
+      "2008-03": [
+        "gold_cny"
+      ],
+      "2008-04": [
+        "gold_cny"
+      ],
+      "2008-05": [
+        "gold_cny"
+      ],
+      "2008-06": [
+        "gold_cny"
+      ],
+      "2008-07": [
+        "gold_cny"
+      ],
+      "2008-08": [
+        "gold_cny"
+      ],
+      "2008-09": [],
+      "2008-10": [],
+      "2008-11": [],
+      "2008-12": [],
+      "2009-01": [
+        "gold_cny"
+      ],
+      "2009-02": [
+        "gold_cny"
+      ],
+      "2009-03": [
+        "gold_cny"
+      ],
+      "2009-04": [
+        "csi300",
+        "gold_cny",
+        "shanghai_composite"
+      ],
+      "2009-05": [
+        "csi300",
+        "gold_cny",
+        "shanghai_composite"
+      ],
+      "2009-06": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite"
+      ],
+      "2009-07": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2009-08": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2009-09": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2009-10": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2009-11": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2009-12": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2010-01": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2010-02": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2010-03": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2010-04": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2010-05": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2010-06": [
+        "gold_cny",
+        "nasdaq"
+      ],
+      "2010-07": [
+        "gold_cny"
+      ],
+      "2010-08": [
+        "gold_cny",
+        "nasdaq"
+      ],
+      "2010-09": [
+        "gold_cny"
+      ],
+      "2010-10": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2010-11": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2010-12": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2011-01": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2011-02": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2011-03": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2011-04": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2011-05": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2011-06": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2011-07": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2011-08": [
+        "gold_cny"
+      ],
+      "2011-09": [
+        "gold_cny"
+      ],
+      "2011-10": [
+        "gold_cny"
+      ],
+      "2011-11": [
+        "gold_cny"
+      ],
+      "2011-12": [
+        "gold_cny"
+      ],
+      "2012-01": [],
+      "2012-02": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2012-03": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2012-04": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2012-05": [
+        "csi300",
+        "nasdaq",
+        "sp500"
+      ],
+      "2012-06": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2012-07": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2012-08": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2012-09": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2012-10": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2012-11": [
+        "gold_cny",
+        "sp500"
+      ],
+      "2012-12": [
+        "gold_cny",
+        "sp500"
+      ],
+      "2013-01": [
+        "csi300",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2013-02": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2013-03": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2013-04": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2013-05": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2013-06": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2013-07": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2013-08": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2013-09": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2013-10": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2013-11": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2013-12": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2014-01": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2014-02": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2014-03": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2014-04": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2014-05": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2014-06": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2014-07": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2014-08": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2014-09": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2014-10": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2014-11": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2014-12": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2015-01": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2015-02": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2015-03": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2015-04": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2015-05": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2015-06": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2015-07": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2015-08": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2015-09": [
+        "nasdaq"
+      ],
+      "2015-10": [],
+      "2015-11": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2015-12": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2016-01": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2016-02": [
+        "gold_cny"
+      ],
+      "2016-03": [
+        "gold_cny"
+      ],
+      "2016-04": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2016-05": [
+        "gold_cny",
+        "sp500"
+      ],
+      "2016-06": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2016-07": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2016-08": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2016-09": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2016-10": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2016-11": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2016-12": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2017-01": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2017-02": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2017-03": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2017-04": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2017-05": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2017-06": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2017-07": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2017-08": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2017-09": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2017-10": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2017-11": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2017-12": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2018-01": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2018-02": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2018-03": [
+        "csi300",
+        "nasdaq",
+        "sp500"
+      ],
+      "2018-04": [
+        "nasdaq"
+      ],
+      "2018-05": [
+        "nasdaq"
+      ],
+      "2018-06": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2018-07": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2018-08": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2018-09": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2018-10": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2018-11": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2018-12": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2019-01": [
+        "gold_cny"
+      ],
+      "2019-02": [
+        "gold_cny"
+      ],
+      "2019-03": [
+        "csi300",
+        "gold_cny",
+        "shanghai_composite"
+      ],
+      "2019-04": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2019-05": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2019-06": [
+        "csi300",
+        "gold_cny",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2019-07": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2019-08": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2019-09": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2019-10": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2019-11": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2019-12": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2020-01": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2020-02": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2020-03": [
+        "csi300",
+        "gold_cny",
+        "nasdaq"
+      ],
+      "2020-04": [
+        "gold_cny"
+      ],
+      "2020-05": [
+        "csi300",
+        "gold_cny",
+        "nasdaq"
+      ],
+      "2020-06": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2020-07": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2020-08": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2020-09": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2020-10": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2020-11": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2020-12": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2021-01": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2021-02": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2021-03": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2021-04": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2021-05": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2021-06": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2021-07": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2021-08": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2021-09": [
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2021-10": [
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2021-11": [
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2021-12": [
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2022-01": [
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2022-02": [
+        "sp500"
+      ],
+      "2022-03": [
+        "gold_cny"
+      ],
+      "2022-04": [
+        "gold_cny",
+        "sp500"
+      ],
+      "2022-05": [
+        "gold_cny"
+      ],
+      "2022-06": [
+        "gold_cny"
+      ],
+      "2022-07": [
+        "gold_cny"
+      ],
+      "2022-08": [
+        "gold_cny"
+      ],
+      "2022-09": [],
+      "2022-10": [],
+      "2022-11": [
+        "sp500"
+      ],
+      "2022-12": [
+        "gold_cny",
+        "sp500"
+      ],
+      "2023-01": [
+        "gold_cny"
+      ],
+      "2023-02": [
+        "csi300",
+        "gold_cny",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2023-03": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2023-04": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2023-05": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2023-06": [
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2023-07": [
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2023-08": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2023-09": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2023-10": [
+        "nasdaq",
+        "sp500"
+      ],
+      "2023-11": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2023-12": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2024-01": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2024-02": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2024-03": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2024-04": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2024-05": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2024-06": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2024-07": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2024-08": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2024-09": [
+        "gold_cny",
+        "nasdaq",
+        "sp500"
+      ],
+      "2024-10": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2024-11": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2024-12": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2025-01": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2025-02": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2025-03": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2025-04": [
+        "csi300",
+        "gold_cny",
+        "shanghai_composite"
+      ],
+      "2025-05": [
+        "gold_cny",
+        "shanghai_composite"
+      ],
+      "2025-06": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2025-07": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2025-08": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2025-09": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2025-10": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2025-11": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2025-12": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2026-01": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2026-02": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2026-03": [
+        "csi300",
+        "gold_cny",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2026-04": [
+        "gold_cny",
+        "shanghai_composite"
+      ],
+      "2026-05": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2026-06": [
+        "csi300",
+        "gold_cny",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2026-07": [
+        "csi300",
+        "nasdaq",
+        "shanghai_composite",
+        "sp500"
+      ],
+      "2026-08": [
+        "nasdaq",
+        "sp500"
+      ]
+    },
+    "average_cash_ratio": 0.3424695536518633,
+    "cagr_percent": 6.589351158952916,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 1.7187310125167832,
+        "mdd_percent": 13.420506599023446,
+        "name": "2003-2005",
+        "sessions": 780,
+        "sharpe": 0.3022401083215859
+      },
+      {
+        "cagr_percent": 23.886550401996143,
+        "mdd_percent": 14.29286784657533,
+        "name": "2006-2008",
+        "sessions": 779,
+        "sharpe": 1.8277013324233353
+      },
+      {
+        "cagr_percent": 6.726903711217269,
+        "mdd_percent": 12.028423930360141,
+        "name": "2009-2011",
+        "sessions": 780,
+        "sharpe": 0.6390173913898646
+      },
+      {
+        "cagr_percent": 5.5587158903668055,
+        "mdd_percent": 8.688321496378203,
+        "name": "2012-2014",
+        "sessions": 780,
+        "sharpe": 0.7533997960114465
+      },
+      {
+        "cagr_percent": 2.746185856393768,
+        "mdd_percent": 22.82244011173252,
+        "name": "2015-2017",
+        "sessions": 780,
+        "sharpe": 0.305607218632112
+      },
+      {
+        "cagr_percent": 4.716315941319604,
+        "mdd_percent": 12.332367888543654,
+        "name": "2018-2021",
+        "sessions": 1043,
+        "sharpe": 0.5180513083230025
+      },
+      {
+        "cagr_percent": 4.123780840667068,
+        "mdd_percent": 13.341343623673897,
+        "name": "2022-latest",
+        "sessions": 1225,
+        "sharpe": 0.5027970059499424
+      }
+    ],
+    "id": "FABER001",
+    "max_gross": 1.0000000000000004,
+    "mdd_percent": 22.822440111732565,
+    "minimum_cash": 0,
+    "sessions": 6167,
+    "sharpe": 0.7112672552108139,
+    "since2020_cagr_percent": 4.905284440787527,
+    "since2020_sharpe": 0.5437142268279908,
+    "since2022_cagr_percent": 4.123780840667068,
+    "since2022_sharpe": 0.5027970059499424,
+    "start": "2003-01-02",
+    "target_fingerprint": "49b131c508e4f0a3",
+    "trades": 1026,
+    "volatility_percent": 9.271545928240402
+  },
+  "candidate_id": "S-FABER-GTAA-001",
+  "cash_control": {
+    "active_by_month": {},
+    "average_cash_ratio": 1,
+    "cagr_percent": 0.4697157002296226,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 0.7465335477948143,
+        "mdd_percent": 0,
+        "name": "2003-2005",
+        "sessions": 780,
+        "sharpe": 5907141717170.629
+      },
+      {
+        "cagr_percent": 0.7477357853537425,
+        "mdd_percent": 0,
+        "name": "2006-2008",
+        "sessions": 779,
+        "sharpe": 162.45394739130086
+      },
+      {
+        "cagr_percent": 0.410679450397633,
+        "mdd_percent": 0,
+        "name": "2009-2011",
+        "sessions": 780,
+        "sharpe": 105.3284703260479
+      },
+      {
+        "cagr_percent": 0.38629888483565633,
+        "mdd_percent": 0,
+        "name": "2012-2014",
+        "sessions": 780,
+        "sharpe": 111.5603033475596
+      },
+      {
+        "cagr_percent": 0.3625397157763999,
+        "mdd_percent": 0,
+        "name": "2015-2017",
+        "sessions": 780,
+        "sharpe": 2104339091125.0474
+      },
+      {
+        "cagr_percent": 0.36270704912813034,
+        "mdd_percent": 0,
+        "name": "2018-2021",
+        "sessions": 1043,
+        "sharpe": 2124979096827.8135
+      },
+      {
+        "cagr_percent": 0.3680844642551584,
+        "mdd_percent": 0,
+        "name": "2022-latest",
+        "sessions": 1225,
+        "sharpe": 2064394529278.6018
+      }
+    ],
+    "id": "C-CASH",
+    "max_gross": 0,
+    "mdd_percent": 0,
+    "minimum_cash": 100000,
+    "sessions": 6167,
+    "sharpe": 44.5159956596123,
+    "since2020_cagr_percent": 0.366159156406054,
+    "since2020_sharpe": 2083370366047.1077,
+    "since2022_cagr_percent": 0.3680844642551584,
+    "since2022_sharpe": 2064394529278.6018,
+    "start": "2003-01-02",
+    "target_fingerprint": "9f12944484997ca3",
+    "trades": 0,
+    "volatility_percent": 0.010166543172982323
+  },
+  "evaluation_end": "2026-08-20",
+  "evaluation_start": "2003-01-02",
+  "fee_percent_per_trade": 1,
+  "month_count": 10,
+  "rule": "monthly Faber-style GTAA: each of five fixed 20% sleeves is invested only when its latest completed month-end price is strictly above its own 10-month simple average of completed month-end prices; inactive sleeves remain CNY cash",
+  "sleeve_weight": 0.2,
+  "slippage_percent_per_trade": 0.05,
+  "three_axis_evaluation": {
+    "comparison_checks": {
+      "cagr_gt_annual_equal": false,
+      "mdd_le_annual_equal": true,
+      "sharpe_gt_annual_equal": false
+    },
+    "comparison_status": "FAIL",
+    "diagnostics": {
+      "annual_equal_cagr_percent": 10.083000530592635,
+      "annual_equal_mdd_percent": 53.61771732400916,
+      "annual_equal_sharpe": 0.7724142180893253,
+      "cash_cagr_percent": 0.4697157002296226,
+      "fold_count": 7,
+      "positive_fold_count": 7,
+      "positive_fold_fraction": 1.0
+    },
+    "objective_checks": {
+      "cagr_ge_12pct": false,
+      "cagr_gt_cash": true,
+      "mdd_le_20pct": false,
+      "sharpe_ge_1": false,
+      "since2020_cagr_positive": true,
+      "since2022_cagr_positive": true
+    },
+    "objective_status": "FAIL",
+    "status": "PASS",
+    "validation_checks": {
+      "actual_trades_gt_0": true,
+      "cash_nonnegative": true,
+      "full_cagr_gt_0": true,
+      "full_mdd_le_25pct": true,
+      "full_sharpe_gt_0": true,
+      "max_gross_le_1": true,
+      "positive_sharpe_folds_ge_70pct": true
+    },
+    "validation_status": "PASS",
+    "validation_warnings": [
+      "execution_stress_not_in_this_R1_trial; base run already uses product 1.00% fee plus 0.05% slippage"
+    ]
+  },
+  "trial_id": "ATM-SVP3-FABER-GTAA-001"
+}

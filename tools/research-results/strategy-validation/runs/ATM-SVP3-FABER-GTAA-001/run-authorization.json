@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "049598ad8cd5961cb39161ad965059410b240310",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "17d1b9d93180349435db47b16d2a0ee687edb777014a98356c51fe205a376314",
+  "preregistration_record_hash": "17d1b9d93180349435db47b16d2a0ee687edb777014a98356c51fe205a376314",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-FABER-GTAA-001"
+}

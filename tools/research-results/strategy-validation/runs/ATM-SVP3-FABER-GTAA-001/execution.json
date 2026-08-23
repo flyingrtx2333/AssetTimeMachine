@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_faber_gtaa_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FABER-GTAA-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "049598ad8cd5961cb39161ad965059410b240310",
+  "finished_at": "2026-08-23T14:50:27+08:00",
+  "preregistration_record_hash": "17d1b9d93180349435db47b16d2a0ee687edb777014a98356c51fe205a376314",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-FABER-GTAA-001/run-authorization.json",
+  "started_at": "2026-08-23T14:49:31+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-FABER-GTAA-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-FABER-GTAA-001/stdout.txt",
+  "trial_id": "ATM-SVP3-FABER-GTAA-001"
+}
