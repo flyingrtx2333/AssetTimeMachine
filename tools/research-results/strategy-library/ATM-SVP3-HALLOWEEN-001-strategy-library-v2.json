@@ -1,0 +1,334 @@
+{
+  "batch_key": "ATM-SVP3-HALLOWEEN-001-strategy-library-v2",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-HALLOWEEN-001.json",
+    "decision": "FAIL / VALIDATION_FAIL. The frozen S&P500 November-April / cash May-October calendar strategy produced 1.718114% CAGR, 0.191660 Sharpe and 43.060832% MDD after the product-level 1.00% fee plus 0.05% slippage, with 5/7 positive-Sharpe folds. 2020+ CAGR was 1.172291% and 2022+ 0.189238%. Buy-and-hold S&P500 had 5.607546% CAGR, 0.379923 Sharpe and 63.398334% MDD. The seasonal rule lowers drawdown but still breaches the intrinsic <=25% MDD validation floor and does not improve Sharpe, so validation/objective/comparison all FAIL. Global DSR probability is 1.67031944e-11 over 68 performance-bearing candidates. No calendar-window rescue is permitted.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "74600a810675e057d8bb743ef74685c63e6a4b16",
+    "methodology": {
+      "follow_up_policy": "After any formal performance metric is viewed, do not shift calendar months, entry/exit session, asset, cost, or add any filter in this lineage. Alternative seasonal windows are forbidden rescue variants, not follow-ups.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "actual trades >0",
+        "full CAGR >0",
+        "full Sharpe >0",
+        "full MDD <=25%",
+        "at least 70% of seven fixed folds have Sharpe >0",
+        "max realized gross <=100% and minimum cash >=0"
+      ],
+      "selection_metric": "No month search. Exactly one canonical November-April equity / May-October cash calendar rule. Validation, objective and buy-hold comparison are independent ATM-SVP-3 axes."
+    },
+    "preregistration_hash": "11d5e112cdb56e39fcbbbea904cad183f3c53ec974af849d80313e48f7021380",
+    "protocol_id": "ATM-SVP-3",
+    "run_key": "ATM-SVP3-HALLOWEEN-001",
+    "status": "FAIL",
+    "title": "halloween-001 / Sell-in-May 001; fixed half-year S&P500 calendar seasonality"
+  },
+  "schema_version": "strategy-library-v2",
+  "source_commit": "74600a810675e057d8bb743ef74685c63e6a4b16",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "The documented Halloween effect proposes that broad equity returns are concentrated in the November-April half-year. A fixed, no-signal implementation that holds S&P 500 from the close of the first observed November session until the close of the first observed May session, and CNY demand cash otherwise, may retain a persistent seasonal equity premium while cutting approximately half of annual equity exposure and keeping product-level turnover to roughly two state changes per year.",
+      "display_name": "halloween-001 / Sell-in-May 001",
+      "family": "策略研究",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/C-CASH-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/C-SP500-BUYHOLD-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/HALLOWEEN001-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/candidates/statistical-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-HALLOWEEN-001/stdout.txt"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": 1.718114389059977,
+        "candidate_id": "S-HALLOWEEN-001",
+        "conclusion": "FAIL / VALIDATION_FAIL. The frozen S&P500 November-April / cash May-October calendar strategy produced 1.718114% CAGR, 0.191660 Sharpe and 43.060832% MDD after the product-level 1.00% fee plus 0.05% slippage, with 5/7 positive-Sharpe folds. 2020+ CAGR was 1.172291% and 2022+ 0.189238%. Buy-and-hold S&P500 had 5.607546% CAGR, 0.379923 Sharpe and 63.398334% MDD. The seasonal rule lowers drawdown but still breaches the intrinsic <=25% MDD validation floor and does not improve Sharpe, so validation/objective/comparison all FAIL. Global DSR probability is 1.67031944e-11 over 68 performance-bearing candidates. No calendar-window rescue is permitted.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "dsr_probability": 1.6703194383183018e-11,
+        "folds": {
+          "cagrs_percent": [
+            -2.6366150500797936,
+            1.3346608336447519,
+            0.7424629281106876,
+            6.517585618592214,
+            3.8628370218871666,
+            -3.61001399760148,
+            5.369111894493961
+          ],
+          "mdds_percent": [
+            27.400815355230932,
+            9.725024973579915,
+            35.78744993029554,
+            8.171583530108633,
+            22.539302836738635,
+            33.10523528638536,
+            19.81984595250349
+          ],
+          "names": [
+            "2000-2003",
+            "2004-2007",
+            "2008-2011",
+            "2012-2015",
+            "2016-2019",
+            "2020-2022",
+            "2023-latest"
+          ],
+          "sharpes": [
+            -0.10285541290653612,
+            0.19924313475147967,
+            0.13438327875019654,
+            0.7676593491316575,
+            0.4264958364646684,
+            -0.07135609222693647,
+            0.4879019965883439
+          ]
+        },
+        "folds_total": 7,
+        "folds_won": 5,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 43.06083159338656,
+        "metrics": {
+          "active_target_sessions": 3288,
+          "average_cash_ratio": 0.5094733701327764,
+          "buy_hold_control": {
+            "cagr_percent": 5.607545513311862,
+            "mdd_percent": 63.39833353800067,
+            "sharpe": 0.3799233981089765,
+            "target_fingerprint": "93db1a14a5e8284a",
+            "trades": 1
+          },
+          "cagr_percent": 1.718114389059977,
+          "cash_control_cagr_percent": 0.5053058655630105,
+          "comparison_checks": {
+            "mdd_le_buy_hold": true,
+            "sharpe_gt_buy_hold": false
+          },
+          "comparison_failures": [
+            "sharpe_gt_buy_hold"
+          ],
+          "constraints": {
+            "financing_allowed": false,
+            "max_gross": 1,
+            "minimum_cash": 0,
+            "pass": true,
+            "shorting_allowed": false
+          },
+          "failed_preregistered_gates": [
+            "full_mdd_le_25pct"
+          ],
+          "fold_cagrs_percent": [
+            -2.6366150500797936,
+            1.3346608336447519,
+            0.7424629281106876,
+            6.517585618592214,
+            3.8628370218871666,
+            -3.61001399760148,
+            5.369111894493961
+          ],
+          "fold_mdds_percent": [
+            27.400815355230932,
+            9.725024973579915,
+            35.78744993029554,
+            8.171583530108633,
+            22.539302836738635,
+            33.10523528638536,
+            19.81984595250349
+          ],
+          "fold_names": [
+            "2000-2003",
+            "2004-2007",
+            "2008-2011",
+            "2012-2015",
+            "2016-2019",
+            "2020-2022",
+            "2023-latest"
+          ],
+          "fold_sharpes": [
+            -0.10285541290653612,
+            0.19924313475147967,
+            0.13438327875019654,
+            0.7676593491316575,
+            0.4264958364646684,
+            -0.07135609222693647,
+            0.4879019965883439
+          ],
+          "folds_with_positive_sharpe": 5,
+          "global_dsr_pass": false,
+          "global_post_protocol_dsr_probability": 1.6703194383183018e-11,
+          "global_post_protocol_dsr_trial_count": 68,
+          "max_gross": 1,
+          "mdd_percent": 43.06083159338656,
+          "minimum_cash": 0,
+          "objective_checks": {
+            "cagr_ge_12pct": false,
+            "cagr_gt_cash": true,
+            "mdd_le_20pct": false,
+            "sharpe_ge_1": false,
+            "since2020_cagr_positive": true,
+            "since2022_cagr_positive": true
+          },
+          "objective_failures": [
+            "cagr_ge_12pct",
+            "mdd_le_20pct",
+            "sharpe_ge_1"
+          ],
+          "sharpe": 0.1916600727814927,
+          "since2020_cagr_percent": 1.172291434799333,
+          "since2020_sharpe": 0.15366568395876495,
+          "since2022_cagr_percent": 0.1892377175695792,
+          "since2022_sharpe": 0.08010907966583752,
+          "strategy_library_validation": {
+            "comparative_failures": [
+              "sharpe_gt_buy_hold"
+            ],
+            "comparison_status": "FAIL",
+            "evidence_missing": [],
+            "legacy_robust_strategy_pass": false,
+            "level": "R1_RETROSPECTIVE",
+            "note": "The fixed November-April S&P500 seasonal strategy fails intrinsic drawdown validation despite lower drawdown than buy-and-hold.",
+            "objective_failures": [
+              "cagr_ge_12pct",
+              "mdd_le_20pct",
+              "sharpe_ge_1"
+            ],
+            "objective_status": "FAIL",
+            "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+            "status": "FAIL",
+            "trial_status": "FAIL",
+            "validation_failures": [
+              "full_mdd_le_25pct"
+            ],
+            "validation_warnings": [
+              "execution_stress_not_in_this_R1_trial; base run already uses product 1.00% fee plus 0.05% slippage"
+            ]
+          },
+          "target_fingerprint": "e046aeab91eb0cd3",
+          "trades": 54,
+          "validation_checks": {
+            "actual_trades_gt_0": true,
+            "cash_nonnegative": true,
+            "full_cagr_gt_0": true,
+            "full_mdd_le_25pct": false,
+            "full_sharpe_gt_0": true,
+            "max_gross_le_1": true,
+            "positive_sharpe_folds_ge_70pct": true
+          }
+        },
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "sharpe": 0.1916600727814927,
+        "since2020_cagr_percent": 1.172291434799333,
+        "since2022_cagr_percent": 0.1892377175695792,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-HALLOWEEN-001",
+      "strategy_kind": "strategy_architecture_not_factor",
+      "tags": [
+        "ATM-SVP3-HALLOWEEN-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "a98704d20f6f9d7b1fe8d74e60c6b04d60f38a6ae9fc18fac1994add3c805585",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "The documented Halloween effect proposes that broad equity returns are concentrated in the November-April half-year. A fixed, no-signal implementation that holds S&P 500 from the close of the first observed November session until the close of the first observed May session, and CNY demand cash otherwise, may retain a persistent seasonal equity premium while cutting approximately half of annual equity exposure and keeping product-level turnover to roughly two state changes per year.",
+        "parameters": {
+          "allowed_changes": [
+            "use only S&P 500 as the economic risk asset",
+            "post-close state is 100% S&P 500 for execution dates whose calendar month is November through April and 100% CashYieldCNY for May through October",
+            "state changes only when the fixed calendar state changes at the first observed May or November session",
+            "one full-period S&P 500 buy-and-hold control and one CNY cash control",
+            "use product-level 1.00% fee plus 0.05% slippage with no sensitivity grid"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "October, December or turn-of-month shifted entry/exit dates",
+            "different summer/winter month windows or optimizing entry/exit days",
+            "Nasdaq, Russell, sector, China or gold substitution after results",
+            "using the engine-support Nasdaq series as an economic target",
+            "trend, momentum, VIX, volatility, macro, weekday, election, holiday or January filters",
+            "changing fee/slippage after results",
+            "shorting, leverage, financing, gross exposure above 100% or negative cash"
+          ],
+          "shared_rules": {
+            "cash_model": "CashYieldCNY",
+            "cash_months": [
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ],
+            "economic_asset": "sp500",
+            "equity_months": [
+              11,
+              12,
+              1,
+              2,
+              3,
+              4
+            ],
+            "equity_weight": 1.0,
+            "evaluation_end": "2026-08-20",
+            "evaluation_start": "2000-01-04",
+            "fee_percent_per_trade": 1.0,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "review": "calendar state transition only",
+            "shorting_allowed": false,
+            "slippage_percent_per_trade": 0.05
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "tools/halloween_001_logic.swift",
+        "target_fingerprint": "e046aeab91eb0cd3",
+        "version_key": "S-HALLOWEEN-001"
+      }
+    }
+  ]
+}
