@@ -1,0 +1,62 @@
+{
+  "comparison_status": {
+    "examples": [
+      "vs_v11",
+      "vs_matched_control",
+      "vs_previous_version",
+      "peer_bootstrap_superiority"
+    ],
+    "independent_from_validation": true
+  },
+  "governance_change_scope": "SEPARATE_VALIDATION_OBJECTIVE_COMPARISON_STATUS",
+  "inherits_protocol_id": "ATM-SVP-2",
+  "legacy_result_rule": "Never rewrite ATM-SVP-1/2 RESULT status; add V3 three-axis interpretation in strategy library.",
+  "model_selection": {
+    "dsr_pass_min": 0.95,
+    "dsr_weak_min": 0.9,
+    "pbo_pass_max": 0.2,
+    "weak_does_not_equal_strategy_rejection": true
+  },
+  "objective_status": {
+    "examples": [
+      "cagr_target",
+      "sharpe_target",
+      "mdd_target",
+      "trade_frequency_target"
+    ],
+    "independent_from_validation": true
+  },
+  "prospective_clock_reset": false,
+  "protocol_id": "ATM-SVP-3",
+  "protocol_version": 3,
+  "strategy_logic_change": false,
+  "strategy_validation": {
+    "evidence_chain_required": [
+      "preregistration_record_hash",
+      "execution_git_commit",
+      "run_guard_receipt",
+      "artifact_manifest"
+    ],
+    "execution_stress_if_present": {
+      "cagr_min_exclusive": 0.0,
+      "mdd_multiple_max": 2.0,
+      "sharpe_min_exclusive": 0.0
+    },
+    "financing_allowed": false,
+    "gross_max": 1.0,
+    "negative_cash_allowed": false,
+    "retrospective_absolute_floor": {
+      "cagr_min_exclusive": 0.0,
+      "mdd_max": 0.25,
+      "positive_sharpe_fold_fraction_min": 0.7,
+      "sharpe_min_exclusive": 0.0
+    },
+    "shorting_allowed": false,
+    "statuses": [
+      "PASS",
+      "WEAK",
+      "FAIL",
+      "INCOMPLETE"
+    ]
+  }
+}

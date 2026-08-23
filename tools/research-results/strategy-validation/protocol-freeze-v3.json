@@ -1,0 +1,11 @@
+{
+  "change_rule": "Any content change to a frozen V3 governance file invalidates ATM-SVP-3. Further governance changes require ATM-SVP-4; ATM-SVP-1 and ATM-SVP-2 remain independently frozen and must still verify.",
+  "files": {
+    "docs/strategies/validation/strategy-validation-protocol-v3.md": "5ba04d016c8070f2ee246e7544319602730542760b074697b33cadd124c285d0",
+    "tools/research-results/strategy-validation/strategy-validation-policy-v3.json": "b5b8f0ced6895fd7209022513f8122708ee2f4197244932fa7524aa000e250d6"
+  },
+  "frozen_from_git_parent": "afde3966075fd95c73a340f736678726dcd54706",
+  "inherits_protocol_id": "ATM-SVP-2",
+  "protocol_id": "ATM-SVP-3",
+  "protocol_version": 3
+}

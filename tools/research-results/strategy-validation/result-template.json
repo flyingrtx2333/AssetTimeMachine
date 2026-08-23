@@ -1,5 +1,5 @@
 {
-  "trial_id": "ATM-SVP1-YYYYMMDD-XXXX",
+  "trial_id": "ATM-SVP3-YYYYMMDD-XXXX",
   "preregistration_record_hash": "<64-char hash printed by ledger append>",
   "execution_git_commit": "<40-char commit printed by run guard>",
   "run_guard_receipt": "tools/research-results/strategy-validation/runs/<trial-id>/run-authorization.json",
@@ -17,11 +17,14 @@
       }
     }
   ],
-  "decision": "State the mechanical PASS/FAIL decision from the preregistered gates; do not add a new gate after seeing results.",
+  "decision": "Report three independent axes: strategy validation, preregistered objective attainment, and peer comparison. Never mark a strategy validation FAIL solely because it did not beat V11 or another strategy.",
   "artifacts": [
     "<Swift-engine output series>",
     "<dataset manifest>",
     "<target fingerprint report>",
     "<statistical audit output>"
-  ]
+  ],
+  "validation_status": "PASS",
+  "objective_status": "PASS",
+  "comparison_status": "NOT_APPLICABLE"
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export formal ATM-SVP strategy RESULT records into strategy-library-v1 manifests.
+"""Export formal ATM-SVP strategy RESULT records into strategy-library-v2 manifests.
 
 One formal trial becomes one import batch. Every candidate in that trial is retained,
 including FAIL/INVALID/near-miss outcomes. Factor-only trials are skipped.
@@ -24,6 +24,12 @@ DEFAULT_OUTPUT_DIR = ROOT / "tools/research-results/strategy-library"
 SUPERSEDED_BY: dict[str, str] = {
     "S-IWD-PROD-SP500-ROLE": "ATM-SVP2-IWD-SPY-TR-001",
 }
+
+STRATEGY_LIBRARY_VALIDATION_POLICY_ID = "ATM-STRATEGY-LIBRARY-VALIDATION-1"
+COMPARATIVE_TOKENS = (
+    "v11", "matched", "no-sma", "no_sma", "equal-eligible", "equal_eligible",
+    "spy", "versus", " vs ", "candidate_minus_", "gt_v11", "ge_v11",
+)
 
 
 def git_head() -> str:
@@ -77,7 +83,12 @@ def result_primary_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
     if first_number(metrics.get("cagr_percent"), metrics.get("full_cagr_percent")) is not None:
         return metrics
     combined = metrics.get("combined")
-    return combined if isinstance(combined, dict) else metrics
+    if isinstance(combined, dict):
+        return combined
+    candidate = metrics.get("candidate")
+    if isinstance(candidate, dict):
+        return candidate
+    return metrics
 
 
 def is_strategy_trial(prereg: dict[str, Any], result: dict[str, Any]) -> bool:
@@ -184,14 +195,220 @@ def probability(metrics: dict[str, Any], primary: dict[str, Any], kind: str) -> 
     return None
 
 
-def lifecycle_for(result_status: str, robust: bool, superseded: str | None) -> str:
-    if superseded:
-        return "suspended"
-    if robust:
+def is_comparative_gate(text: str) -> bool:
+    normalized = " " + str(text or "").lower().replace("_", "_") + " "
+    return any(token in normalized for token in COMPARATIVE_TOKENS)
+
+
+def _bool_false_checks(mapping: Any) -> tuple[list[str], list[str]]:
+    intrinsic: list[str] = []
+    comparative: list[str] = []
+    if not isinstance(mapping, dict):
+        return intrinsic, comparative
+    for key, value in mapping.items():
+        if value is not False:
+            continue
+        (comparative if is_comparative_gate(str(key)) else intrinsic).append(str(key))
+    return intrinsic, comparative
+
+
+def infer_total_folds(prereg: dict[str, Any], metrics: dict[str, Any], primary: dict[str, Any]) -> int | None:
+    for container in (metrics, primary):
+        names = container.get("fold_names") if isinstance(container, dict) else None
+        if isinstance(names, list) and names:
+            return len(names)
+        sharpes = container.get("fold_sharpes") if isinstance(container, dict) else None
+        if isinstance(sharpes, list) and sharpes:
+            return len(sharpes)
+    for gate in prereg.get("pass_fail_gates") or []:
+        match = re.search(r"(?:at least\s+)?\d+/(\d+)\s+fixed", str(gate), flags=re.I)
+        if match:
+            return int(match.group(1))
+    return None
+
+
+def strategy_validation_assessment(
+    *, prereg: dict[str, Any], result: dict[str, Any], metrics: dict[str, Any], constraints: dict[str, Any]
+) -> dict[str, Any]:
+    """Assess strategy validity independently from target attainment and peer ranking.
+
+    This policy intentionally does not use "beat V11", CAGR target, Sharpe target, or
+    other campaign objectives as the strategy-validity decision. It asks whether the
+    frozen strategy produced a reproducible, causally valid, unlevered and sufficiently
+    stable positive retrospective result under a single common absolute floor.
+    """
+    primary = result_primary_metrics(metrics)
+    validation_failures: list[str] = []
+    validation_warnings: list[str] = []
+    comparative_failures: list[str] = []
+    objective_failures: list[str] = []
+
+    failed_gates = metrics.get("failed_preregistered_gates")
+    if isinstance(failed_gates, list):
+        for gate in failed_gates:
+            text = str(gate)
+            if is_comparative_gate(text):
+                comparative_failures.append(text)
+            else:
+                objective_failures.append(text)
+    for check_key in ("admission_checks", "checks"):
+        mapping = metrics.get(check_key)
+        if isinstance(mapping, dict):
+            for key, value in mapping.items():
+                if value is False:
+                    text = str(key)
+                    if is_comparative_gate(text) or "improvement" in text.lower():
+                        comparative_failures.append(text)
+                    else:
+                        objective_failures.append(text)
+
+    evidence_missing = [
+        key for key, value in {
+            "artifact_manifest": result.get("artifact_manifest"),
+            "preregistration_record_hash": result.get("preregistration_record_hash"),
+            "run_guard_receipt": result.get("run_guard_receipt"),
+            "execution_git_commit": result.get("execution_git_commit"),
+        }.items() if not value
+    ]
+
+    # Common absolute retrospective floor. These are project validation floors, not
+    # optimization targets: positive return/risk-adjusted return and bounded drawdown.
+    primary_cagr = first_number(primary.get("cagr_percent"), primary.get("full_cagr_percent"))
+    primary_sharpe = first_number(primary.get("sharpe"), primary.get("full_sharpe"))
+    primary_mdd = first_number(primary.get("mdd_percent"), primary.get("full_mdd_percent"))
+    if primary_cagr is None or primary_cagr <= 0:
+        validation_failures.append("full_cagr_gt_0")
+    if primary_sharpe is None or primary_sharpe <= 0:
+        validation_failures.append("full_sharpe_gt_0")
+    if primary_mdd is None or primary_mdd > 25.0:
+        validation_failures.append("full_mdd_le_25pct")
+
+    # Time stability: at least 70% of fixed folds have positive Sharpe. A positive
+    # worst-fold Sharpe is stronger and also satisfies this condition.
+    fold_positive = None
+    fold_total = infer_total_folds(prereg, metrics, primary)
+    for container in (metrics, primary):
+        sharpes = container.get("fold_sharpes") if isinstance(container, dict) else None
+        if isinstance(sharpes, list) and sharpes:
+            fold_positive = sum(1 for value in sharpes if finite(value) is not None and float(value) > 0)
+            fold_total = len(sharpes)
+            break
+    if fold_positive is None:
+        fold_positive = metrics.get("folds_with_positive_sharpe", primary.get("folds_with_positive_sharpe"))
+    worst_fold = first_number(metrics.get("worst_fold_sharpe"), primary.get("worst_fold_sharpe"))
+    if worst_fold is not None and worst_fold > 0:
+        fold_pass = True
+    elif isinstance(fold_positive, int) and fold_total:
+        fold_pass = fold_positive / fold_total >= 0.70
+    else:
+        fold_pass = None
+    if fold_pass is False:
+        validation_failures.append("positive_sharpe_folds_ge_70pct")
+    elif fold_pass is None:
+        validation_warnings.append("fold_robustness_evidence_unavailable")
+
+    # Execution/cost stress is evaluated when the formal result provides it. Missing
+    # stress evidence lowers confidence but does not rewrite a valid formal trial to FAIL.
+    stress = metrics.get("slippage_stress") if isinstance(metrics.get("slippage_stress"), dict) else {}
+    if stress:
+        stress_cagr = finite(stress.get("cagr_percent"))
+        stress_sharpe = finite(stress.get("sharpe"))
+        stress_mdd = finite(stress.get("mdd_percent"))
+        if stress_cagr is None or stress_cagr <= 0:
+            validation_failures.append("stress_cagr_gt_0")
+        if stress_sharpe is None or stress_sharpe <= 0:
+            validation_failures.append("stress_sharpe_gt_0")
+        if stress_mdd is not None and primary_mdd is not None and stress_mdd > 2.0 * primary_mdd + 1e-9:
+            validation_failures.append("stress_mdd_le_2x_base")
+    else:
+        validation_warnings.append("execution_stress_not_in_this_trial")
+
+    if constraints.get("pass") is False:
+        validation_failures.append("portfolio_constraints_pass")
+    max_gross = finite(constraints.get("max_gross"))
+    if max_gross is not None and max_gross > 1.000000001:
+        validation_failures.append("max_gross_le_1")
+    if bool(constraints.get("financing_allowed", False)):
+        validation_failures.append("financing_forbidden")
+    if bool(constraints.get("shorting_allowed", False)):
+        validation_failures.append("shorting_forbidden")
+
+    trial_status = str(result.get("status") or "").upper()
+    if trial_status in {"INVALID", "ABORTED"}:
+        validation_failures.append(f"formal_trial_{trial_status.lower()}")
+
+    # Multiple-testing evidence changes confidence level rather than turning an otherwise
+    # sound strategy into a fake "rejected" strategy. It remains visible as WEAK.
+    selection_risk_weak = metrics.get("global_dsr_pass") is False
+    if selection_risk_weak:
+        validation_warnings.append("global_dsr_below_project_pass_threshold")
+
+    validation_failures = list(dict.fromkeys(validation_failures))
+    validation_warnings = list(dict.fromkeys(validation_warnings))
+    comparative_failures = list(dict.fromkeys(comparative_failures))
+    objective_failures = list(dict.fromkeys(objective_failures))
+
+    if evidence_missing:
+        validation_status = "INCOMPLETE"
+    elif validation_failures:
+        validation_status = "FAIL"
+    elif selection_risk_weak:
+        validation_status = "WEAK"
+    else:
+        validation_status = "PASS"
+
+    prereg_gates = prereg.get("pass_fail_gates") if isinstance(prereg.get("pass_fail_gates"), list) else []
+    comparative_gate_count = sum(1 for gate in prereg_gates if is_comparative_gate(str(gate)))
+    # Scalar comparative bootstrap/fold evidence can fail even when older result JSON did
+    # not enumerate failed gates.
+    has_peer_bootstrap = any(
+        key in metrics for key in (
+            "bootstrap_probability_cagr_gt_v11", "bootstrap_probability_sharpe_gt_v11",
+            "bootstrap_probability_cagr_gt_matched", "bootstrap_probability_sharpe_gt_matched",
+        )
+    )
+    if has_peer_bootstrap and metrics.get("bootstrap_robust_pass") is False:
+        comparative_failures.append("peer_superiority_bootstrap")
+    comparative_failures = list(dict.fromkeys(comparative_failures))
+    if comparative_failures:
+        comparison_status = "FAIL"
+    elif comparative_gate_count:
+        comparison_status = "PASS"
+    else:
+        comparison_status = "NOT_APPLICABLE"
+
+    prereg_gate_pass = metrics.get("preregistered_gate_pass")
+    objective_status = (
+        "PASS" if prereg_gate_pass is True
+        else "FAIL" if prereg_gate_pass is False or trial_status == "FAIL"
+        else trial_status or "INCONCLUSIVE"
+    )
+
+    return {
+        "policy_id": STRATEGY_LIBRARY_VALIDATION_POLICY_ID,
+        "status": validation_status,
+        "level": "R1_RETROSPECTIVE",
+        "evidence_missing": evidence_missing,
+        "validation_failures": validation_failures,
+        "validation_warnings": validation_warnings,
+        "objective_status": objective_status,
+        "objective_failures": objective_failures,
+        "comparison_status": comparison_status,
+        "comparative_failures": comparative_failures,
+        "trial_status": trial_status or "INCONCLUSIVE",
+        "legacy_robust_strategy_pass": bool(metrics.get("robust_strategy_pass", False)),
+        "note": "Validation, campaign objective attainment and peer-strategy comparison are independent axes.",
+    }
+
+
+def lifecycle_for_validation(validation_status: str) -> str:
+    if validation_status == "PASS":
         return "validated"
-    if result_status == "PASS":
+    if validation_status == "WEAK":
         return "candidate"
-    return "rejected"
+    if validation_status == "FAIL":
+        return "rejected"
+    return "research"
 
 
 def candidate_result_status(trial_status: str, metrics: dict[str, Any], robust: bool) -> str:
@@ -264,6 +481,9 @@ def export_one(result_path: Path, output_dir: Path) -> Path | None:
         superseded = SUPERSEDED_BY.get(candidate_id)
         result_status = candidate_result_status(trial_status, metrics, robust)
         max_gross, constraints = unlevered_constraints(prereg, metrics, primary)
+        validation = strategy_validation_assessment(
+            prereg=prereg, result=result, metrics=metrics, constraints=constraints
+        )
         folds_won, folds_total = infer_fold_count(metrics, primary)
         bootstrap_block = metrics.get("bootstrap") if isinstance(metrics.get("bootstrap"), dict) else {}
         gates = (
@@ -308,7 +528,7 @@ def export_one(result_path: Path, output_dir: Path) -> Path | None:
                 "source_path": source.relative_to(ROOT).as_posix() if source else entrypoint[:768] or None,
                 "code_sha256": code_sha,
                 "target_fingerprint": str(target_fp) if target_fp is not None else None,
-                "lifecycle_status": lifecycle_for(result_status, robust, superseded),
+                "lifecycle_status": lifecycle_for_validation(str(validation["status"])),
                 "max_gross_limit": max_gross,
                 "leverage_allowed": False,
                 "shorting_allowed": False,
@@ -330,7 +550,7 @@ def export_one(result_path: Path, output_dir: Path) -> Path | None:
                 "bootstrap_probability_cagr": probability(metrics, primary, "cagr"),
                 "bootstrap_probability_sharpe": probability(metrics, primary, "sharpe"),
                 "dsr_probability": dsr,
-                "metrics": metrics,
+                "metrics": {**metrics, "strategy_library_validation": validation},
                 "gates": gates,
                 "bootstrap": bootstrap_block,
                 "folds": fold_payload,
@@ -344,8 +564,8 @@ def export_one(result_path: Path, output_dir: Path) -> Path | None:
         return None
     prereg_hash = result.get("preregistration_record_hash")
     manifest = {
-        "schema_version": "strategy-library-v1",
-        "batch_key": f"{trial_id}-strategy-library-v1",
+        "schema_version": "strategy-library-v2",
+        "batch_key": f"{trial_id}-strategy-library-v2",
         "source_repository": "AssetTimeMachine",
         "source_commit": source_commit,
         "run": {
@@ -369,7 +589,7 @@ def export_one(result_path: Path, output_dir: Path) -> Path | None:
         "strategies": strategies,
     }
     output_dir.mkdir(parents=True, exist_ok=True)
-    output = output_dir / f"{trial_id}-strategy-library-v1.json"
+    output = output_dir / f"{trial_id}-strategy-library-v2.json"
     output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return output
 

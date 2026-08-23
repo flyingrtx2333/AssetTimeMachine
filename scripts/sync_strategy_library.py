@@ -26,7 +26,7 @@ def main() -> int:
     args = parser.parse_args()
 
     run([sys.executable, "scripts/export_strategy_library_manifest.py", "--all"])
-    manifests = sorted(MANIFEST_DIR.glob("*-strategy-library-v1.json"))
+    manifests = sorted(MANIFEST_DIR.glob("*-strategy-library-v2.json"))
     if not manifests:
         raise SystemExit("no strategy-library manifests were exported")
 

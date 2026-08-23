@@ -20,8 +20,8 @@ from typing import Any
 
 DEFAULT_LEDGER = Path("tools/research-results/strategy-validation/trial-ledger.jsonl")
 GENESIS = "GENESIS"
-CURRENT_PROTOCOL_ID = "ATM-SVP-2"
-SUPPORTED_PROTOCOL_IDS = {"ATM-SVP-1", "ATM-SVP-2"}
+CURRENT_PROTOCOL_ID = "ATM-SVP-3"
+SUPPORTED_PROTOCOL_IDS = {"ATM-SVP-1", "ATM-SVP-2", "ATM-SVP-3"}
 EVIDENCE_CLASSES = {"D0_EXPOSED", "R1_RETROSPECTIVE", "H2_PRISTINE_HOLDOUT", "P3_PROSPECTIVE"}
 PREREGISTER_REQUIRED_FIELDS = {
     "trial_id",
@@ -223,6 +223,16 @@ def validate_result_payload(
         raise SystemExit("RESULT artifacts must be a list")
     if not isinstance(payload["decision"], str) or not payload["decision"].strip():
         raise SystemExit("RESULT decision must be a non-empty string")
+    if prereg_payload.get("protocol_id") == "ATM-SVP-3":
+        for key in ("validation_status", "objective_status", "comparison_status"):
+            if key not in payload:
+                raise SystemExit(f"ATM-SVP-3 RESULT missing {key}")
+        if payload["validation_status"] not in {"PASS", "WEAK", "FAIL", "INCOMPLETE"}:
+            raise SystemExit("ATM-SVP-3 RESULT validation_status is invalid")
+        if payload["objective_status"] not in {"PASS", "FAIL", "INCONCLUSIVE", "NOT_APPLICABLE"}:
+            raise SystemExit("ATM-SVP-3 RESULT objective_status is invalid")
+        if payload["comparison_status"] not in {"PASS", "FAIL", "UNKNOWN", "NOT_APPLICABLE"}:
+            raise SystemExit("ATM-SVP-3 RESULT comparison_status is invalid")
 
 
 def verify_records(records: list[dict[str, Any]]) -> None:
@@ -299,18 +309,19 @@ def verify_records(records: list[dict[str, Any]]) -> None:
         elif event == "PROTOCOL_UPGRADE":
             require_payload_fields(payload, PROTOCOL_UPGRADE_REQUIRED_FIELDS, "PROTOCOL_UPGRADE")
             transition = (str(payload["from_protocol"]), str(payload["to_protocol"]))
-            if transition != ("ATM-SVP-1", "ATM-SVP-2"):
+            if transition not in {("ATM-SVP-1", "ATM-SVP-2"), ("ATM-SVP-2", "ATM-SVP-3")}:
                 raise SystemExit(f"Unsupported protocol upgrade transition: {transition}")
             if transition in upgraded_protocols:
                 raise SystemExit(f"Duplicate PROTOCOL_UPGRADE transition: {transition}")
             if payload["strategy_target_path_changed"] is not False:
-                raise SystemExit("ATM-SVP-2 governance upgrade must not change the strategy target path")
+                raise SystemExit(f"{transition[1]} governance upgrade must not change the strategy target path")
             if payload["prospective_clock_restarted"] is not False:
-                raise SystemExit("ATM-SVP-2 governance upgrade must not restart the prospective clock")
-            if payload["g4_holdout_burned_before_upgrade"] is not False:
-                raise SystemExit("ATM-SVP-2 upgrade must occur before any G4 holdout burn")
-            if payload["g4_full_history_opened_before_upgrade"] is not False:
-                raise SystemExit("ATM-SVP-2 upgrade must occur before any G4 full-history opening")
+                raise SystemExit(f"{transition[1]} governance upgrade must not restart the prospective clock")
+            if transition == ("ATM-SVP-1", "ATM-SVP-2"):
+                if payload["g4_holdout_burned_before_upgrade"] is not False:
+                    raise SystemExit("ATM-SVP-2 upgrade must occur before any G4 holdout burn")
+                if payload["g4_full_history_opened_before_upgrade"] is not False:
+                    raise SystemExit("ATM-SVP-2 upgrade must occur before any G4 full-history opening")
             upgraded_protocols.add(transition)
         elif event == "G4_REFERENCE_BASELINE_FROZEN":
             require_payload_fields(payload, G4_REFERENCE_REQUIRED_FIELDS, "G4_REFERENCE_BASELINE_FROZEN")
