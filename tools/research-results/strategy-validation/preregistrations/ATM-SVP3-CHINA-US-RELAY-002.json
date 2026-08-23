@@ -1,0 +1,100 @@
+{
+  "allowed_changes": [
+    "implementation-only correction from INVALID trial 001: China CSI300/Shanghai series are read outside the intraday execution engine into a same-date risk-on map, while execution assetInputs contain only Nasdaq and S&P 500",
+    "all economic rules, dates, signal direction, AND breadth rule, U.S. assets, 50/50 combined allocation, same-day close exit, fee, slippage stress, validation gates, objective gates and comparison gates remain byte-for-byte conceptually identical to trial 001"
+  ],
+  "candidate_count": 1,
+  "candidate_ids": [
+    "S-CHINA-US-RELAY-002"
+  ],
+  "candidate_kind": "STRATEGY_ARCHITECTURE_NOT_FACTOR",
+  "comparison_gates": [
+    "candidate combined Sharpe > matched China-availability control Sharpe",
+    "candidate combined CAGR > matched China-availability control CAGR",
+    "candidate combined MDD <= matched China-availability control MDD"
+  ],
+  "controls": {
+    "cash": "C-CASH-COMBINED uses the existing CashYieldCNY demand-deposit model over the identical evaluation window",
+    "matched_availability": "C-CHINA-AVAILABLE trades the same U.S. open-to-close assets on every date with usable same-day China signal bars and U.S. execution bars, but removes only the China breadth sign filter"
+  },
+  "cost_model": {
+    "fee_rate_per_fill": 5e-05,
+    "primary_slippage_rate_per_fill": 0.0,
+    "round_trip_nominal_fee_rate": 0.0001,
+    "stress_slippage_rate_per_fill": 0.0005
+  },
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-CHINA-US-RELAY-002.json",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "expected_outputs": [
+    "Nasdaq, S&P 500 and fixed 50/50 combined candidate metrics",
+    "availability-matched controls, CNY cash control and 0.05% per-fill adverse-slippage stress",
+    "full-period, 2020+, 2022+ and seven fixed-fold CAGR/MDD/Sharpe",
+    "round-trip count, win rate, average net trade return, profit factor and active-session count",
+    "maximum intraday gross, minimum end-of-day cash, overnight-position audit and target fingerprint",
+    "portfolio CSV for every candidate, control and stress path",
+    "dataset hash, run authorization receipt and SHA-256 artifact manifest",
+    "ATM-SVP-3 three-axis validation_status / objective_status / comparison_status"
+  ],
+  "follow_up_policy": "This is the one implementation-corrected rerun permitted after ATM-SVP3-CHINA-US-RELAY-001 was recorded INVALID_IMPLEMENTATION. After any 002 formal performance metric is viewed, no sign inversion, threshold, China/U.S. asset replacement, lag, filter, holding-period, allocation, fee, stress or rescue variant is allowed inside this lineage.",
+  "forbidden_changes": [
+    "reading current U.S. session high, low or close before the U.S. open entry decision",
+    "using any China observation timestamped after the U.S. cash open",
+    "testing positive, negative, thresholded or weighted China-return variants and selecting the best",
+    "changing same-day China breadth from the fixed CSI300 AND Shanghai Composite positive-close rule",
+    "adding SMA, ATR, RSI, MACD, volume, VIX, NFCI or any other filter after viewing the result",
+    "changing same-day U.S. close exit to overnight or multi-day holding",
+    "asset-specific parameters or dropping a weak Nasdaq or S&P 500 path",
+    "shorting, borrowing, financing, leverage, negative target weights, gross exposure above 100% or negative end-of-day cash",
+    "changing the 0.005% per-fill fee or hiding the preregistered adverse-slippage stress"
+  ],
+  "formal_run_budget": 1,
+  "hypothesis": "A broad positive China cash-session close, observed before the U.S. cash open on the same calendar date, reflects globally persistent risk-on information and capital-flow sentiment that carries into the subsequent U.S. cash session. Buying Nasdaq and S&P 500 at the U.S. open only after both CSI300 and Shanghai Composite close higher should produce a repeatable positive open-to-close return without overnight exposure.",
+  "invalid_fix_boundary": "Only execution plumbing may change: signal-only China series must not be passed as execution assetInputs. No economic-rule change is permitted.",
+  "objective_gates": [
+    "combined CAGR >= 8%",
+    "combined Sharpe >= 1.00",
+    "combined MDD <= 15%",
+    "both standalone U.S. paths have Sharpe > 0",
+    "combined profit factor >= 1.10",
+    "combined average net round-trip return > 0",
+    "combined 2020+ CAGR > 0 and 2022+ CAGR > 0"
+  ],
+  "pass_fail_gates": [
+    "full combined CAGR > 0",
+    "full combined Sharpe > 0",
+    "full combined MDD <= 25%",
+    "at least 70% of seven fixed folds have combined Sharpe > 0",
+    "with 0.05% adverse slippage per fill, combined CAGR > 0 and Sharpe > 0",
+    "stress MDD <= 2 times base MDD",
+    "maximum intraday gross <=100%, minimum end-of-day cash >=0 and overnight position days =0"
+  ],
+  "predecessor_invalid_trial": "ATM-SVP3-CHINA-US-RELAY-001",
+  "protocol_component": "INDEPENDENT_CHINA_TO_US_INTRADAY_RISK_ON_RELAY_V1",
+  "protocol_id": "ATM-SVP-3",
+  "selection_metric": "No within-family selection. There is exactly one China-breadth continuation rule. Strategy validation, objective attainment and matched-control comparison are reported separately under ATM-SVP-3.",
+  "shared_rules": {
+    "china_signal": "same calendar date CSI300 close > prior real CSI300 close AND Shanghai Composite close > prior real Shanghai close",
+    "entry": "buy current U.S. session real open after the completed same-date China cash closes are known",
+    "evaluation_end": "2026-08-20",
+    "evaluation_start": "2005-01-05",
+    "exit": "sell current U.S. session close",
+    "financing_allowed": false,
+    "max_gross": 1.0,
+    "nasdaq_weight_combined": 0.5,
+    "overnight_positions_allowed": false,
+    "shorting_allowed": false,
+    "sp500_weight_combined": 0.5,
+    "time_causality": "China cash close precedes U.S. cash open on the same calendar date"
+  },
+  "strategy_lineage": "china-us-relay-002 / 中美接力002; implementation-corrected successor to INVALID 001 with identical cross-market economic rule",
+  "swift_engine_entrypoint": "scripts/run_china_us_relay_002.py -> tools/china_us_relay_002.swiftpart + tools/china_us_relay_002_logic.swift -> raw China signal map + U.S.-only BacktestEngine.runResearchIntradayRoundTripStrategyWithTrace execution inputs",
+  "trial_id": "ATM-SVP3-CHINA-US-RELAY-002",
+  "validation_gates": [
+    "full combined CAGR > 0",
+    "full combined Sharpe > 0",
+    "full combined MDD <= 25%",
+    "positive-Sharpe fixed-fold fraction >=70%",
+    "execution stress CAGR and Sharpe remain positive and stress MDD <=2x base MDD",
+    "gross/cash/no-overnight/no-short/no-financing constraints pass"
+  ]
+}

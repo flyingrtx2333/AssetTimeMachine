@@ -1,0 +1,62 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    }
+  ],
+  "generated_at": "2026-08-23T10:50:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "campaign": "china-us-relay-002",
+    "candidate_kind": "INDEPENDENT_CROSS_MARKET_INTRADAY_RELAY",
+    "evaluation_end": "2026-08-20",
+    "evaluation_start": "2005-01-05",
+    "evaluation_start_rule": "first calendar date with real OHLC for Nasdaq, S&P 500, CSI300 and Shanghai Composite, plus a prior real CSI300 and Shanghai Composite session",
+    "implementation_fix": "Read CSI300/Shanghai from raw seriesBySymbol into a date->risk-on signal map; pass only Nasdaq/S&P 500 to the intraday execution assetInputs. Economic rule is unchanged.",
+    "performance_viewed_before_freeze": false,
+    "predecessor_trial": "ATM-SVP3-CHINA-US-RELAY-001",
+    "primary_cost": "0.005% fee per fill; zero additional slippage",
+    "real_ohlc_only": true,
+    "series": [
+      {
+        "currency": "USD",
+        "end": "2026-08-20",
+        "ohlc_rows": 6700,
+        "source": "Nasdaq · Yahoo Finance",
+        "start": "2000-01-03",
+        "symbol": "nasdaq_composite"
+      },
+      {
+        "currency": "USD",
+        "end": "2026-08-20",
+        "ohlc_rows": 6711,
+        "source": "S&P Dow Jones Indices · Yahoo Finance",
+        "start": "2000-01-03",
+        "symbol": "sp500"
+      },
+      {
+        "currency": "CNY",
+        "end": "2026-08-21",
+        "ohlc_rows": 5255,
+        "source": "Yahoo Finance",
+        "start": "2005-01-04",
+        "symbol": "csi300"
+      },
+      {
+        "currency": "CNY",
+        "end": "2026-08-21",
+        "ohlc_rows": 6455,
+        "source": "Yahoo Finance",
+        "start": "2000-01-04",
+        "symbol": "shanghai_composite"
+      }
+    ],
+    "stress_cost": "0.005% fee plus 0.05% adverse slippage per fill",
+    "timing_note": "On the same calendar date, the China cash session closes before the U.S. cash session opens. The candidate reads only the completed same-date China closes and prior China closes before entering at the U.S. open."
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-CHINA-US-RELAY-002"
+}
