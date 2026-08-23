@@ -236,7 +236,6 @@ struct SettingsView: View {
             }
             .foregroundStyle(AssetTheme.textPrimary)
             .settingsSurfaceRow()
-            .onboardingAnchor(.settingsAppearance)
 
             Button {
                 pendingAppLanguage = nil
@@ -260,7 +259,6 @@ struct SettingsView: View {
             }
             .buttonStyle(.plain)
             .settingsSurfaceRow()
-            .onboardingAnchor(.settingsReplay)
         } header: {
             SettingsSectionHeader(title: AppLocalization.string("偏好"))
         }
@@ -295,7 +293,6 @@ struct SettingsView: View {
                 }
             }
             .settingsSurfaceRow()
-            .onboardingAnchor(.settingsNotifications)
 
             HStack(spacing: 12) {
                 SettingsRowLabel(

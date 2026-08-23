@@ -946,7 +946,6 @@ struct TimeMachineHeroTrendCard: View {
                     }
                 }
                 .padding(.bottom, 4)
-                .onboardingAnchor(.timeMachineChart)
 
                 if activeSeries.isEmpty && !showsLiabilityBand {
                     VStack(spacing: 7) {
@@ -1055,7 +1054,6 @@ struct TimeMachineHeroTrendCard: View {
                 .frame(maxWidth: .infinity)
 
                 TimeMachineRangeSelector(selectedRange: $selectedRange)
-                    .onboardingAnchor(.timeMachineRange)
             }
 
             TimeMachineDateRuler(
@@ -1984,7 +1982,6 @@ struct TimeMachineCurrentAnchorCard: View {
             }
         }
         .atmCardStyle()
-        .onboardingAnchor(.timeMachineAnchors)
     }
 }
 

@@ -13,7 +13,6 @@ struct SnapshotListLayout {
     let displayedTotalAssets: Double
     let displayedTotalLiabilities: Double
     let displayedNetAssets: Double
-    let onboardingInputTargetCategoryID: UUID?
 }
 
 enum SnapshotRecordLayoutBuilder {
@@ -106,8 +105,7 @@ enum SnapshotRecordLayoutBuilder {
             displayEntriesByItemID: displayEntriesByItemID,
             displayedTotalAssets: displayedTotalAssets,
             displayedTotalLiabilities: displayedTotalLiabilities,
-            displayedNetAssets: displayedTotalAssets - displayedTotalLiabilities,
-            onboardingInputTargetCategoryID: nonLiabilityCategoryItems.first?.id
+            displayedNetAssets: displayedTotalAssets - displayedTotalLiabilities
         )
     }
 
@@ -305,7 +303,6 @@ struct SnapshotListView: View {
 
                         RecordSnapshotSections(
                             layout: layout,
-                            onboardingActiveAnchorID: nil,
                             highlightedItemID: onboardingSavedItemID,
                             amountInputs: $amountInputs,
                             quantityInputs: $quantityInputs,
@@ -1075,7 +1072,6 @@ struct RecordHeroMetric: View {
 
 struct RecordSnapshotSections: View {
     let layout: SnapshotListLayout
-    let onboardingActiveAnchorID: OnboardingAnchorID?
     var highlightedItemID: UUID? = nil
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
@@ -1110,8 +1106,6 @@ struct RecordSnapshotSections: View {
                     category: categoryItems.category,
                     items: items,
                     snapshotEntriesByItemID: layout.displayEntriesByItemID,
-                    onboardingInputItemID: categoryItems.id == layout.onboardingInputTargetCategoryID ? items.first?.id : nil,
-                    onboardingActiveAnchorID: onboardingActiveAnchorID,
                     highlightedItemID: highlightedItemID,
                     amountInputs: $amountInputs,
                     quantityInputs: $quantityInputs,
@@ -1135,8 +1129,6 @@ struct RecordSnapshotSections: View {
                     category: categoryItems.category,
                     items: items,
                     snapshotEntriesByItemID: layout.displayEntriesByItemID,
-                    onboardingInputItemID: nil,
-                    onboardingActiveAnchorID: onboardingActiveAnchorID,
                     highlightedItemID: highlightedItemID,
                     amountInputs: $amountInputs,
                     quantityInputs: $quantityInputs,
@@ -1229,7 +1221,6 @@ struct RecordPageHero: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(AppLocalization.string("新增资产"))
-                        .onboardingAnchor(.recordsAddAsset)
                     }
                 }
             }
@@ -1250,7 +1241,6 @@ struct RecordPageHero: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.74)
                 .monospacedDigit()
-                .onboardingAnchor(.recordsTotal)
 
             HStack(alignment: .top, spacing: 12) {
                 RecordHeroMetric(
@@ -1373,8 +1363,6 @@ struct RecordLedgerSection: View {
     let category: AssetCategory
     let items: [AssetItem]
     let snapshotEntriesByItemID: [UUID: AssetEntry]
-    let onboardingInputItemID: UUID?
-    let onboardingActiveAnchorID: OnboardingAnchorID?
     let highlightedItemID: UUID?
     @Binding var amountInputs: [UUID: String]
     @Binding var quantityInputs: [UUID: String]
@@ -1431,9 +1419,6 @@ struct RecordLedgerSection: View {
                         inlineEditingField: inlineEditingField,
                         onBeginInlineEdit: onBeginInlineEdit,
                         accent: accent,
-                        isOnboardingTarget: item.id == onboardingInputItemID,
-                        showsOnboardingInputPreview: onboardingActiveAnchorID == .recordsFirstInput
-                            && item.id == onboardingInputItemID,
                         isHighlighted: item.id == highlightedItemID,
                         onEdit: { onEdit(item) },
                         onEditValue: { onEditValue(item) },
@@ -1486,8 +1471,6 @@ struct RecordLedgerRow: View {
     let inlineEditingField: RecordInputField?
     let onBeginInlineEdit: (RecordInputField) -> Void
     let accent: Color
-    let isOnboardingTarget: Bool
-    let showsOnboardingInputPreview: Bool
     let isHighlighted: Bool
     let onEdit: () -> Void
     let onEditValue: () -> Void
@@ -1556,7 +1539,6 @@ struct RecordLedgerRow: View {
             .layoutPriority(1)
 
             valueControl
-                .onboardingAnchorIf(isOnboardingTarget, .recordsFirstInput)
         }
         .padding(.vertical, 9)
         .padding(.horizontal, isHighlighted ? 10 : 0)
@@ -1576,7 +1558,7 @@ struct RecordLedgerRow: View {
 
     @ViewBuilder
     private var valueControl: some View {
-        if isEditing || showsOnboardingInputPreview {
+        if isEditing {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 ATMInputField(
                     text: item.valuationMethod == .directAmount ? $amountText : $quantityText,
@@ -3771,7 +3753,6 @@ struct SnapshotDetailView: View {
 
                     RecordSnapshotSections(
                         layout: layout,
-                        onboardingActiveAnchorID: nil,
                         amountInputs: $amountInputs,
                         quantityInputs: $quantityInputs,
                         unitPriceInputs: $unitPriceInputs,

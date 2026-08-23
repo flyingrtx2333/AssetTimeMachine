@@ -423,7 +423,6 @@ struct DashboardView: View {
                 .frame(height: 1)
                 .padding(.top, 20)
         }
-        .onboardingAnchor(.dashboardAllocation)
     }
 
     private var dashboardGreeting: some View {
@@ -466,7 +465,6 @@ struct DashboardView: View {
             keyboardDismissSignal: $freedomKeyboardDismissSignal,
             amountsVisible: amountsVisible
         )
-        .onboardingAnchor(.dashboardFreedom)
     }
 
 }
