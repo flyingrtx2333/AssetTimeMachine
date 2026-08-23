@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_qqq_tlt_barbell_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "c66b3bfb3b8d986b4b04593e6269865dedb7b23f",
+  "finished_at": "2026-08-23T15:06:34+08:00",
+  "preregistration_record_hash": "249db229a5fb1c652caeb1485d38ac2c3c9d2f2bd712293081fda62691bb1fbd",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/run-authorization.json",
+  "started_at": "2026-08-23T15:06:06+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/stdout.txt",
+  "trial_id": "ATM-SVP3-QQQ-TLT-BARBELL-001"
+}

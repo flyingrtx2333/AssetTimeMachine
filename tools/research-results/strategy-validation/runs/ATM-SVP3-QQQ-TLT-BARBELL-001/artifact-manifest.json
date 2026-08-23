@@ -1,0 +1,116 @@
+{
+  "files": [
+    {
+      "bytes": 175384,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-08-01",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/candidates/C-CASH-portfolio.csv",
+      "row_count": 6047,
+      "sha256": "8625cc77fffab310a63789a7226196a7b5b37830d1867daac097f0be0fd21f65"
+    },
+    {
+      "bytes": 176901,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-08-01",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/candidates/C-QQQ-BUYHOLD-portfolio.csv",
+      "row_count": 6047,
+      "sha256": "985a893b126cf88672471f6ec0bd2ad56fd06411d94e0d48ab339c81c65a9f9b"
+    },
+    {
+      "bytes": 175371,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-08-01",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/candidates/QQQTLT001-portfolio.csv",
+      "row_count": 6047,
+      "sha256": "ce401778e53b4e534d0edf03f563b8662c9300aa49926300dc70dff73ced6041"
+    },
+    {
+      "bytes": 491,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "ddc84cd151ab3ef34577487ef3e1092b69d0200ab828d213a2d5fadced87ee44"
+    },
+    {
+      "bytes": 7677,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/candidates/candidate-metrics.json",
+      "sha256": "42bf131086c710ce3662c88e9c0ba07c351a7941399252c4220383faa26bad92"
+    },
+    {
+      "bytes": 543,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/candidates/statistical-audit.json",
+      "sha256": "889b4ac9bb3c9ca856a00565946ba3bca891ab5ee255e16118e077e9b11b9e90"
+    },
+    {
+      "bytes": 976,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/execution.json",
+      "sha256": "79a74e7c77487cafca010986d6f779c0a2756097747ed8545f1de1cd46dfaf44"
+    },
+    {
+      "bytes": 442,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/run-authorization.json",
+      "sha256": "e977233265501dfed0bc57fcc7b3cdcb68fda124e6484b849eecaa5fb92ff404"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1213,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/stdout.txt",
+      "sha256": "060d1f0f525791b560fb118f98b01fffb624981c40c76ef3d2d2a226b198e196"
+    }
+  ],
+  "generated_at": "2026-08-23T15:07:12+08:00",
+  "git_commit": "c66b3bfb3b8d986b4b04593e6269865dedb7b23f",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "PASS",
+    "measurement": "matched adjusted-close total-return proxies",
+    "objective_status": "FAIL",
+    "validation_status": "FAIL"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-QQQ-TLT-BARBELL-001"
+}

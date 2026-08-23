@@ -1,0 +1,261 @@
+{
+  "candidate": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 9.76713846271724,
+    "end": "2026-08-13",
+    "folds": [
+      {
+        "cagr_percent": 12.948636074485421,
+        "mdd_percent": 9.181681637904845,
+        "name": "2002-2005",
+        "sessions": 862,
+        "sharpe": 1.1354596174371119
+      },
+      {
+        "cagr_percent": -1.645743378923492,
+        "mdd_percent": 27.502298307334673,
+        "name": "2006-2008",
+        "sessions": 755,
+        "sharpe": -0.09139583354294856
+      },
+      {
+        "cagr_percent": 12.846455759179198,
+        "mdd_percent": 13.507986571083276,
+        "name": "2009-2011",
+        "sessions": 756,
+        "sharpe": 1.168329384944755
+      },
+      {
+        "cagr_percent": 13.99259952243086,
+        "mdd_percent": 7.868050370590554,
+        "name": "2012-2014",
+        "sessions": 754,
+        "sharpe": 1.7716322218867828
+      },
+      {
+        "cagr_percent": 10.935405317922942,
+        "mdd_percent": 6.167034658357711,
+        "name": "2015-2017",
+        "sessions": 755,
+        "sharpe": 1.20732336283973
+      },
+      {
+        "cagr_percent": 16.066380575741167,
+        "mdd_percent": 13.052305469967571,
+        "name": "2018-2021",
+        "sessions": 1008,
+        "sharpe": 1.2658355339753762
+      },
+      {
+        "cagr_percent": 4.823717465956157,
+        "mdd_percent": 25.461083668404438,
+        "name": "2022-latest",
+        "sessions": 1157,
+        "sharpe": 0.3903917309092685
+      }
+    ],
+    "id": "QQQTLT001",
+    "max_gross": 1,
+    "mdd_percent": 27.502298307334698,
+    "minimum_cash": 0,
+    "sessions": 6047,
+    "sharpe": 0.8639343858589137,
+    "since2020_cagr_percent": 7.838209530067264,
+    "since2020_sharpe": 0.5876870907391054,
+    "since2022_cagr_percent": 4.823717465956157,
+    "since2022_sharpe": 0.3903917309092685,
+    "start": "2002-08-01",
+    "target_fingerprint": "20655281a6729f23",
+    "trades": 50,
+    "volatility_percent": 11.58395090356657
+  },
+  "candidate_id": "S-QQQ-TLT-BARBELL-001",
+  "cash_control": {
+    "average_cash_ratio": 1,
+    "cagr_percent": 0.4581606220513068,
+    "end": "2026-08-13",
+    "folds": [
+      {
+        "cagr_percent": 0.7231330763401544,
+        "mdd_percent": 0,
+        "name": "2002-2005",
+        "sessions": 862,
+        "sharpe": 5894447106050.672
+      },
+      {
+        "cagr_percent": 0.7248931884517473,
+        "mdd_percent": 0,
+        "name": "2006-2008",
+        "sessions": 755,
+        "sharpe": 163.11616037600353
+      },
+      {
+        "cagr_percent": 0.3979926249369159,
+        "mdd_percent": 0,
+        "name": "2009-2011",
+        "sessions": 756,
+        "sharpe": 105.3511501411614
+      },
+      {
+        "cagr_percent": 0.37332060283856716,
+        "mdd_percent": 0,
+        "name": "2012-2014",
+        "sessions": 754,
+        "sharpe": 111.62098419418709
+      },
+      {
+        "cagr_percent": 0.3508845486147161,
+        "mdd_percent": 0,
+        "name": "2015-2017",
+        "sessions": 755,
+        "sharpe": 2101510605166.4304
+      },
+      {
+        "cagr_percent": 0.350743320893554,
+        "mdd_percent": 0,
+        "name": "2018-2021",
+        "sessions": 1008,
+        "sharpe": 2049604431877.393
+      },
+      {
+        "cagr_percent": 0.3490481002685897,
+        "mdd_percent": 0,
+        "name": "2022-latest",
+        "sessions": 1157,
+        "sharpe": 2064698785081.2317
+      }
+    ],
+    "id": "C-CASH",
+    "max_gross": 0,
+    "mdd_percent": 0,
+    "minimum_cash": 100000,
+    "sessions": 6047,
+    "sharpe": 44.29853549625852,
+    "since2020_cagr_percent": 0.3495143952739532,
+    "since2020_sharpe": 2062798287999.1646,
+    "since2022_cagr_percent": 0.3490481002685897,
+    "since2022_sharpe": 2064698785081.2317,
+    "start": "2002-08-01",
+    "target_fingerprint": "3a71b1f961d6c2c3",
+    "trades": 0,
+    "volatility_percent": 0.010336597464076759
+  },
+  "evaluation_end": "2026-08-13",
+  "evaluation_start": "2002-07-30",
+  "fee_percent_per_trade": 1,
+  "qqq_buy_hold_control": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 15.381333719846001,
+    "end": "2026-08-13",
+    "folds": [
+      {
+        "cagr_percent": 17.93997680763486,
+        "mdd_percent": 23.318044546646615,
+        "name": "2002-2005",
+        "sessions": 862,
+        "sharpe": 0.8382999699644582
+      },
+      {
+        "cagr_percent": -15.011678746961143,
+        "mdd_percent": 57.328110621738574,
+        "name": "2006-2008",
+        "sessions": 755,
+        "sharpe": -0.46906792061588093
+      },
+      {
+        "cagr_percent": 19.498790224971764,
+        "mdd_percent": 18.21193147773349,
+        "name": "2009-2011",
+        "sessions": 756,
+        "sharpe": 0.8932256574034041
+      },
+      {
+        "cagr_percent": 23.053350993090138,
+        "mdd_percent": 12.700516994301086,
+        "name": "2012-2014",
+        "sessions": 754,
+        "sharpe": 1.5569578864929465
+      },
+      {
+        "cagr_percent": 17.870348052886253,
+        "mdd_percent": 14.556286754653621,
+        "name": "2015-2017",
+        "sessions": 755,
+        "sharpe": 1.1482021997855167
+      },
+      {
+        "cagr_percent": 26.07612850403338,
+        "mdd_percent": 28.26989270600538,
+        "name": "2018-2021",
+        "sessions": 1008,
+        "sharpe": 1.0872732655424555
+      },
+      {
+        "cagr_percent": 16.07527687490442,
+        "mdd_percent": 29.061845882548766,
+        "name": "2022-latest",
+        "sessions": 1157,
+        "sharpe": 0.754789149065572
+      }
+    ],
+    "id": "C-QQQ-BUYHOLD",
+    "max_gross": 1,
+    "mdd_percent": 57.32811062173848,
+    "minimum_cash": 0,
+    "sessions": 6047,
+    "sharpe": 0.7608544899168678,
+    "since2020_cagr_percent": 20.367137184638096,
+    "since2020_sharpe": 0.8729893869501113,
+    "since2022_cagr_percent": 16.07527687490442,
+    "since2022_sharpe": 0.754789149065572,
+    "start": "2002-08-01",
+    "target_fingerprint": "050645052bdb83ca",
+    "trades": 1,
+    "volatility_percent": 22.031120150811866
+  },
+  "qqq_weight": 0.5,
+  "rule": "fixed 50% QQQ adjusted-close total-return proxy plus 50% TLT adjusted-close total-return proxy, both converted through the same historical USD/CNY path and rebalanced only at the first common session of each calendar year",
+  "slippage_percent_per_trade": 0.05,
+  "three_axis_evaluation": {
+    "comparison_checks": {
+      "mdd_le_qqq_buy_hold": true,
+      "sharpe_gt_qqq_buy_hold": true
+    },
+    "comparison_status": "PASS",
+    "diagnostics": {
+      "cash_cagr_percent": 0.4581606220513068,
+      "fold_count": 7,
+      "positive_fold_count": 6,
+      "positive_fold_fraction": 0.8571428571428571,
+      "qqq_buy_hold_cagr_percent": 15.381333719846001,
+      "qqq_buy_hold_mdd_percent": 57.32811062173848,
+      "qqq_buy_hold_sharpe": 0.7608544899168678
+    },
+    "objective_checks": {
+      "cagr_ge_12pct": false,
+      "cagr_gt_cash": true,
+      "mdd_le_20pct": false,
+      "sharpe_ge_1": false,
+      "since2020_cagr_positive": true,
+      "since2022_cagr_positive": true
+    },
+    "objective_status": "FAIL",
+    "status": "FAIL",
+    "validation_checks": {
+      "actual_trades_gt_0": true,
+      "cash_nonnegative": true,
+      "full_cagr_gt_0": true,
+      "full_mdd_le_25pct": false,
+      "full_sharpe_gt_0": true,
+      "max_gross_le_1": true,
+      "positive_sharpe_folds_ge_70pct": true
+    },
+    "validation_status": "FAIL",
+    "validation_warnings": [
+      "execution_stress_not_in_this_R1_trial; base run already uses product 1.00% fee plus 0.05% slippage",
+      "QQQ and TLT are matched Yahoo adjusted-close total-return proxies, not raw price indices"
+    ]
+  },
+  "tlt_weight": 0.5,
+  "trial_id": "ATM-SVP3-QQQ-TLT-BARBELL-001"
+}

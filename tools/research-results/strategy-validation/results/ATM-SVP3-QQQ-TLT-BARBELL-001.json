@@ -1,0 +1,152 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/candidates/C-QQQ-BUYHOLD-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/candidates/QQQTLT001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-QQQ-TLT-BARBELL-001",
+      "metrics": {
+        "average_cash_ratio": 0,
+        "cagr_percent": 9.76713846271724,
+        "cash_control_cagr_percent": 0.4581606220513068,
+        "comparison_checks": {
+          "mdd_le_qqq_buy_hold": true,
+          "sharpe_gt_qqq_buy_hold": true
+        },
+        "comparison_failures": [],
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "failed_preregistered_gates": [
+          "full_mdd_le_25pct"
+        ],
+        "fold_cagrs_percent": [
+          12.948636074485421,
+          -1.645743378923492,
+          12.846455759179198,
+          13.99259952243086,
+          10.935405317922942,
+          16.066380575741167,
+          4.823717465956157
+        ],
+        "fold_mdds_percent": [
+          9.181681637904845,
+          27.502298307334673,
+          13.507986571083276,
+          7.868050370590554,
+          6.167034658357711,
+          13.052305469967571,
+          25.461083668404438
+        ],
+        "fold_names": [
+          "2002-2005",
+          "2006-2008",
+          "2009-2011",
+          "2012-2014",
+          "2015-2017",
+          "2018-2021",
+          "2022-latest"
+        ],
+        "fold_sharpes": [
+          1.1354596174371119,
+          -0.09139583354294856,
+          1.168329384944755,
+          1.7716322218867828,
+          1.20732336283973,
+          1.2658355339753762,
+          0.3903917309092685
+        ],
+        "folds_with_positive_sharpe": 6,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 0.0015452602498769452,
+        "global_post_protocol_dsr_trial_count": 69,
+        "max_gross": 1,
+        "mdd_percent": 27.502298307334698,
+        "minimum_cash": 0,
+        "objective_checks": {
+          "cagr_ge_12pct": false,
+          "cagr_gt_cash": true,
+          "mdd_le_20pct": false,
+          "sharpe_ge_1": false,
+          "since2020_cagr_positive": true,
+          "since2022_cagr_positive": true
+        },
+        "objective_failures": [
+          "cagr_ge_12pct",
+          "mdd_le_20pct",
+          "sharpe_ge_1"
+        ],
+        "qqq_buy_hold_control": {
+          "cagr_percent": 15.381333719846001,
+          "mdd_percent": 57.32811062173848,
+          "sharpe": 0.7608544899168678,
+          "target_fingerprint": "050645052bdb83ca",
+          "trades": 1
+        },
+        "sharpe": 0.8639343858589137,
+        "since2020_cagr_percent": 7.838209530067264,
+        "since2020_sharpe": 0.5876870907391054,
+        "since2022_cagr_percent": 4.823717465956157,
+        "since2022_sharpe": 0.3903917309092685,
+        "strategy_library_validation": {
+          "comparative_failures": [],
+          "comparison_status": "PASS",
+          "evidence_missing": [],
+          "note": "Matched-total-return QQQ/TLT annual barbell improves Sharpe and drawdown versus QQQ buy-and-hold but misses the absolute 25% MDD validation floor.",
+          "objective_failures": [
+            "cagr_ge_12pct",
+            "mdd_le_20pct",
+            "sharpe_ge_1"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_mdd_le_25pct"
+          ],
+          "validation_warnings": [
+            "execution_stress_not_in_this_R1_trial; base run already uses product 1.00% fee plus 0.05% slippage",
+            "QQQ and TLT are matched Yahoo adjusted-close total-return proxies, not raw price indices"
+          ]
+        },
+        "target_fingerprint": "20655281a6729f23",
+        "trades": 50,
+        "validation_checks": {
+          "actual_trades_gt_0": true,
+          "cash_nonnegative": true,
+          "full_cagr_gt_0": true,
+          "full_mdd_le_25pct": false,
+          "full_sharpe_gt_0": true,
+          "max_gross_le_1": true,
+          "positive_sharpe_folds_ge_70pct": true
+        }
+      }
+    }
+  ],
+  "comparison_status": "PASS",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-QQQ-TLT-BARBELL-001.json",
+  "decision": "FAIL / VALIDATION_FAIL, COMPARISON_PASS. The fixed matched-total-return 50/50 QQQ-TLT annual barbell produced 9.767138% CAGR, 0.863934 Sharpe and 27.502298% MDD after 1.00% fee plus 0.05% slippage, with 6/7 positive-Sharpe folds. QQQ buy-and-hold delivered 15.381334% CAGR, 0.760854 Sharpe and 57.328111% MDD, so the barbell improves Sharpe and drawdown and comparison=PASS. However its 27.502298% MDD still breaches the frozen 25% absolute validation floor and the high-return objective is not met. Global DSR probability is 0.00154526025 over 69 performance-bearing candidates. No 60/40, third-asset, rebalance-cadence or timing rescue is allowed in this lineage.",
+  "execution_git_commit": "c66b3bfb3b8d986b4b04593e6269865dedb7b23f",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "249db229a5fb1c652caeb1485d38ac2c3c9d2f2bd712293081fda62691bb1fbd",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-QQQ-TLT-BARBELL-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-QQQ-TLT-BARBELL-001",
+  "validation_status": "FAIL"
+}

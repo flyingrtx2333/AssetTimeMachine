@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "c66b3bfb3b8d986b4b04593e6269865dedb7b23f",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "249db229a5fb1c652caeb1485d38ac2c3c9d2f2bd712293081fda62691bb1fbd",
+  "preregistration_record_hash": "249db229a5fb1c652caeb1485d38ac2c3c9d2f2bd712293081fda62691bb1fbd",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-QQQ-TLT-BARBELL-001"
+}
