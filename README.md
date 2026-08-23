@@ -254,7 +254,7 @@ ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json \
 
 ## 当前进度
 
-项目已进入 **持续迭代 / TestFlight 发布阶段**，当前版本 1.10。
+项目已进入 **持续迭代 / TestFlight 发布阶段**，当前 TestFlight 版本为 1.13。
 
 已完成并在线上运行的功能：
 
@@ -267,7 +267,7 @@ ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json \
 - 云同步（AssetTimeMachine cloud，经 Flyingrtx 后端）
 - 行情数据接入 `https://api.flyingrtx.com`，含本地缓存
 - 量化策略回测模块：内置高级策略模板、单资产 / 多资产 / 轮动策略、回测历史记录与调仓提醒
-- 多语言（中英字符串目录）、通知服务、新手引导
+- 多语言（简中、繁中、英文字符串目录）、通知服务、聚焦资产记录的新手引导
 
 当前迭代重心：
 
