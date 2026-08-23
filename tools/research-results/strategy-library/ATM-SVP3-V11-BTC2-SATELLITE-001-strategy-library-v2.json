@@ -1,0 +1,334 @@
+{
+  "batch_key": "ATM-SVP3-V11-BTC2-SATELLITE-001-strategy-library-v2",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-V11-BTC2-SATELLITE-001.json",
+    "decision": "PASS ON FROZEN INTRINSIC VALIDATION GATES / ATM-SVP-3 EVIDENCE WEAK. The externally anchored fixed 2% BTC satellite on 98% frozen V11 produced 15.798526% CAGR, 1.354951 Sharpe and 8.144367% MDD with 7/7 positive-Sharpe folds and all no-leverage/cash constraints satisfied. The matched V11 replay produced 14.720670% CAGR, 1.290286 Sharpe and 7.380963% MDD. Candidate improves CAGR by 1.077856 pp and Sharpe by 0.064665, but MDD is 0.763403 pp higher, therefore the frozen all-three comparison gate FAILS. The 16%/1.45 objective also fails. Global DSR probability is 0.385701944 across 78 performance-bearing candidates, so final validation evidence is WEAK rather than strong PASS. No BTC-weight or timing rescue is permitted; the next allowed work is statistical robustness auditing of this exact frozen candidate.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "c08346147ea423cc3f1f69378087fe83767a9aab",
+    "methodology": {
+      "follow_up_policy": "After formal performance is viewed, do not change BTC weight, add timing, change rebalance cadence or alter V11. If this candidate fails comparison or objective, 1/3/5% BTC variants are forbidden rescue tuning. A genuinely different crypto risk-budget method such as externally specified volatility dilution requires a separate preregistered lineage.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "actual trades >0",
+        "full CAGR >0",
+        "full Sharpe >0",
+        "full MDD <=25%",
+        "at least 70% of seven fixed folds have Sharpe >0",
+        "max target gross <=100%",
+        "max realized gross <=100% within floating-point tolerance",
+        "minimum cash >=0"
+      ],
+      "selection_metric": "No BTC weight search. Exact external 2% satellite: candidate target = 0.98 * frozen V11 source target + 0.02 BTC. Re-target only at initial matched point and frozen V11 source trade dates. Validation, campaign objective and matched-V11 comparison are independent ATM-SVP-3 axes."
+    },
+    "preregistration_hash": "5d95c55ffb15b0b3577fe14b5cf189e1efa3e81edcc78138ffad7c4ab09f12bb",
+    "protocol_id": "ATM-SVP-3",
+    "run_key": "ATM-SVP3-V11-BTC2-SATELLITE-001",
+    "status": "PASS",
+    "title": "v11-btc2-satellite-001 / 冻结V11+2%比特币卫星001; externally risk-budgeted permanent crypto satellite on immutable V11 events"
+  },
+  "schema_version": "strategy-library-v2",
+  "source_commit": "c08346147ea423cc3f1f69378087fe83767a9aab",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "Bitcoin is a high-return but high-tail-risk independent asset source. A very small permanent satellite can potentially add secular crypto exposure without allowing crypto to control the portfolio risk regime. Scaling every frozen V11 target weight by exactly 98% and adding exactly 2% BTC only on the original V11 rebalance dates should preserve V11 risk-off behavior and gross<=100% while testing whether a risk-budget-sized crypto sleeve can improve matched-window return without materially degrading Sharpe or drawdown.",
+      "display_name": "v11-btc2-satellite-001 / 冻结V11+2%比特币卫星001",
+      "family": "策略研究",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/candidates/C-V11-MATCHED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/candidates/S-V11-BTC2-SATELLITE-001-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/candidates/statistical-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-001/stdout.txt"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": 15.79852638547623,
+        "candidate_id": "S-V11-BTC2-SATELLITE-001",
+        "conclusion": "PASS ON FROZEN INTRINSIC VALIDATION GATES / ATM-SVP-3 EVIDENCE WEAK. The externally anchored fixed 2% BTC satellite on 98% frozen V11 produced 15.798526% CAGR, 1.354951 Sharpe and 8.144367% MDD with 7/7 positive-Sharpe folds and all no-leverage/cash constraints satisfied. The matched V11 replay produced 14.720670% CAGR, 1.290286 Sharpe and 7.380963% MDD. Candidate improves CAGR by 1.077856 pp and Sharpe by 0.064665, but MDD is 0.763403 pp higher, therefore the frozen all-three comparison gate FAILS. The 16%/1.45 objective also fails. Global DSR probability is 0.385701944 across 78 performance-bearing candidates, so final validation evidence is WEAK rather than strong PASS. No BTC-weight or timing rescue is permitted; the next allowed work is statistical robustness auditing of this exact frozen candidate.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0000000000000002,
+          "max_realized_gross": 1.0000000000000002,
+          "max_target_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "dsr_probability": 0.38570194449673956,
+        "folds": {
+          "cagrs_percent": [
+            8.112956666695649,
+            19.50786921563541,
+            7.365773008604171,
+            1.463761808457531,
+            16.253390544470992,
+            31.329102679156474,
+            31.559819803916934
+          ],
+          "mdds_percent": [
+            7.144289638349285,
+            8.144366516496683,
+            3.4013267775749667,
+            1.7169167791522137,
+            6.0778682469709,
+            6.600731048275812,
+            6.095914476358991
+          ],
+          "names": [
+            "2017-2019",
+            "2020",
+            "2021",
+            "2022",
+            "2023",
+            "2024",
+            "2025-latest"
+          ],
+          "sharpes": [
+            1.0535514658963698,
+            1.4377789352775836,
+            1.0570442042898134,
+            0.4259278291772887,
+            1.3280881713354913,
+            1.7498345542454918,
+            1.892095140475237
+          ]
+        },
+        "folds_total": 7,
+        "folds_won": 7,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": 8.144366516496666,
+        "metrics": {
+          "average_cash_ratio": 0.3904757746782223,
+          "cagr_percent": 15.79852638547623,
+          "candidate_minus_v11_cagr_pp": 1.0778560424279817,
+          "candidate_minus_v11_mdd_pp": 0.763403329088038,
+          "candidate_minus_v11_sharpe": 0.06466517226125834,
+          "comparison_checks": {
+            "cagr_gt_matched_v11": true,
+            "mdd_le_matched_v11": false,
+            "sharpe_ge_matched_v11": true
+          },
+          "comparison_failures": [
+            "mdd_le_matched_v11"
+          ],
+          "constraints": {
+            "financing_allowed": false,
+            "max_realized_gross": 1.0000000000000002,
+            "max_target_gross": 1,
+            "minimum_cash": 0,
+            "pass": true,
+            "shorting_allowed": false
+          },
+          "fold_cagrs_percent": [
+            8.112956666695649,
+            19.50786921563541,
+            7.365773008604171,
+            1.463761808457531,
+            16.253390544470992,
+            31.329102679156474,
+            31.559819803916934
+          ],
+          "fold_mdds_percent": [
+            7.144289638349285,
+            8.144366516496683,
+            3.4013267775749667,
+            1.7169167791522137,
+            6.0778682469709,
+            6.600731048275812,
+            6.095914476358991
+          ],
+          "fold_names": [
+            "2017-2019",
+            "2020",
+            "2021",
+            "2022",
+            "2023",
+            "2024",
+            "2025-latest"
+          ],
+          "fold_sharpes": [
+            1.0535514658963698,
+            1.4377789352775836,
+            1.0570442042898134,
+            0.4259278291772887,
+            1.3280881713354913,
+            1.7498345542454918,
+            1.892095140475237
+          ],
+          "folds_with_positive_sharpe": 7,
+          "global_dsr_pass": false,
+          "global_post_protocol_dsr_probability": 0.38570194449673956,
+          "global_post_protocol_dsr_trial_count": 78,
+          "matched_v11_control": {
+            "average_cash_ratio": 0.3971433510514053,
+            "cagr_percent": 14.720670343048248,
+            "max_gross": 1.0000000000000002,
+            "max_target_gross": 1,
+            "mdd_percent": 7.380963187408628,
+            "minimum_cash": 0,
+            "sharpe": 1.2902856425567937,
+            "target_fingerprint": "821e413cc801115f",
+            "trades": 162,
+            "v11_role_fingerprint": "e6206235083a3e1f"
+          },
+          "max_gross": 1.0000000000000002,
+          "max_target_gross": 1,
+          "mdd_percent": 8.144366516496666,
+          "measurement": {
+            "btc_driven_rebalances": false,
+            "btc_source": "Binance BTCUSDT",
+            "execution_calendar": "frozen V11 matched common dates",
+            "usdt_as_usd_equivalent": true
+          },
+          "minimum_cash": 0,
+          "objective_checks": {
+            "cagr_ge_16pct": false,
+            "mdd_le_10pct": true,
+            "sharpe_ge_1_45": false,
+            "since2020_cagr_positive": true,
+            "since2022_cagr_positive": true
+          },
+          "objective_failures": [
+            "cagr_ge_16pct",
+            "sharpe_ge_1_45"
+          ],
+          "sharpe": 1.354950814818052,
+          "since2020_cagr_percent": 18.6794826489759,
+          "since2020_sharpe": 1.4503592072729383,
+          "since2022_cagr_percent": 21.082683743918196,
+          "since2022_sharpe": 1.5279131313144367,
+          "strategy_library_validation": {
+            "comparative_failures": [
+              "mdd_le_matched_v11"
+            ],
+            "comparison_status": "FAIL",
+            "evidence_missing": [],
+            "legacy_robust_strategy_pass": false,
+            "level": "R1_RETROSPECTIVE",
+            "note": "All intrinsic ATM-SVP-3 gates pass. The fixed external 2% BTC satellite raises matched-window CAGR and Sharpe versus V11 but increases MDD by about 0.76 percentage points, so strict comparison fails. Global DSR is below 90%, therefore final validation evidence is WEAK.",
+            "objective_failures": [
+              "cagr_ge_16pct",
+              "sharpe_ge_1_45"
+            ],
+            "objective_status": "FAIL",
+            "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+            "status": "WEAK",
+            "trial_status": "PASS",
+            "validation_failures": [],
+            "validation_warnings": [
+              "global_dsr_below_project_pass_threshold",
+              "BTCUSDT_as_USD_equivalent_measurement"
+            ]
+          },
+          "target_fingerprint": "96721191571c538c",
+          "trades": 182,
+          "v11_role_fingerprint": "6a7ef7f951fe6550",
+          "validation_checks": {
+            "actual_trades_gt_0": true,
+            "cash_nonnegative": true,
+            "full_cagr_gt_0": true,
+            "full_mdd_le_25pct": true,
+            "full_sharpe_gt_0": true,
+            "max_realized_gross_le_1": true,
+            "max_target_gross_le_1": true,
+            "positive_sharpe_folds_ge_70pct": true
+          }
+        },
+        "result_status": "PASS",
+        "robust_strategy_pass": false,
+        "sharpe": 1.354950814818052,
+        "since2020_cagr_percent": 18.6794826489759,
+        "since2022_cagr_percent": 21.082683743918196,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-V11-BTC2-SATELLITE-001",
+      "strategy_kind": "strategy_architecture_not_factor",
+      "tags": [
+        "ATM-SVP3-V11-BTC2-SATELLITE-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "3486cd54e5ff87a1e402d88bec853c0456c98a64e8f4ba6c64d1dbd7f7d044db",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "candidate",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "Bitcoin is a high-return but high-tail-risk independent asset source. A very small permanent satellite can potentially add secular crypto exposure without allowing crypto to control the portfolio risk regime. Scaling every frozen V11 target weight by exactly 98% and adding exactly 2% BTC only on the original V11 rebalance dates should preserve V11 risk-off behavior and gross<=100% while testing whether a risk-budget-sized crypto sleeve can improve matched-window return without materially degrading Sharpe or drawdown.",
+        "parameters": {
+          "allowed_changes": [
+            "run the frozen V11 source path nfciDualCoreSimplifiedV11 with the existing ALFRED initial-release NFCI fixtures",
+            "use exact frozen Binance BTCUSDT data and the same BTCUSDT≈USD historical USD/CNY conversion already frozen for BTC-SMA200/HALVING research",
+            "on each eligible replay event scale every nonnegative frozen V11 target weight by exactly 0.98 and add exactly 0.02 btc_cny",
+            "initialize candidate/control on the first common simulator point in the BTC-available matched window",
+            "after initialization rebalance only on frozen V11 source trade dates; BTC may not create a trade date",
+            "compare against a pure frozen-V11 matched-window replay using identical replay inputs, execution calendar and costs",
+            "use product-level 1.00% fee plus 0.05% slippage"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "1%, 3%, 5%, 10% or any other BTC weight search",
+            "dynamic BTC weight, volatility target, risk-parity sizing or cash dilution after results",
+            "BTC SMA, halving, momentum, RSI, ATR, drawdown, MVRV, funding or any BTC timing rule",
+            "BTC-driven rebalance dates between frozen V11 events",
+            "changing any V11 target-path parameter, NFCI rule, role, band or strategy mode",
+            "replacing BTC with ETH or a crypto basket after results",
+            "weekend-only execution or alternate BTC data source after results",
+            "changing fee/slippage after results",
+            "shorting, borrowing, financing, leverage, gross exposure above 100% or negative cash"
+          ],
+          "shared_rules": {
+            "base_strategy_mode": "nfciDualCoreSimplifiedV11",
+            "btc_rebalance_rule": "initial matched point + frozen V11 source trade dates only",
+            "btc_timing_rule": null,
+            "btc_weight": 0.02,
+            "core_scale": 0.98,
+            "evaluation_end": "2026-08-20",
+            "evaluation_start_bound": "2017-08-17",
+            "fee_percent_per_trade": 1.0,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "shorting_allowed": false,
+            "slippage_percent_per_trade": 0.05
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "tools/v11_btc2_satellite_001_logic.swift",
+        "target_fingerprint": "96721191571c538c",
+        "version_key": "S-V11-BTC2-SATELLITE-001"
+      }
+    }
+  ]
+}
