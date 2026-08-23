@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_sahm_state_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "3fdd8878770ed2405cd920a99c0d2a483fa99193",
+  "finished_at": "2026-08-23T14:07:05+08:00",
+  "preregistration_record_hash": "c809b5ca49223f2787e09632dfd9c9650118eb03934dcf1c5d1068c970ba65b4",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/run-authorization.json",
+  "started_at": "2026-08-23T14:06:36+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/stdout.txt",
+  "trial_id": "ATM-SVP3-SAHM-STATE-001"
+}

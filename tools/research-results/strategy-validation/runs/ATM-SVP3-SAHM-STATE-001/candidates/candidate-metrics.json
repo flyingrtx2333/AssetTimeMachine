@@ -1,0 +1,271 @@
+{
+  "barbell_control": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 12.009919116563882,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 14.075924489886837,
+        "mdd_percent": 12.320573436708855,
+        "name": "2002-2005",
+        "sessions": 875,
+        "sharpe": 1.1432833592082126
+      },
+      {
+        "cagr_percent": -1.6017175078850698,
+        "mdd_percent": 37.71662775385557,
+        "name": "2006-2008",
+        "sessions": 757,
+        "sharpe": -0.006298420188816127
+      },
+      {
+        "cagr_percent": 16.19611643850043,
+        "mdd_percent": 10.260764358066265,
+        "name": "2009-2011",
+        "sessions": 756,
+        "sharpe": 1.0198981046033413
+      },
+      {
+        "cagr_percent": 5.945031744393603,
+        "mdd_percent": 14.759126329547339,
+        "name": "2012-2014",
+        "sessions": 756,
+        "sharpe": 0.5631533465039568
+      },
+      {
+        "cagr_percent": 10.144906208341053,
+        "mdd_percent": 7.3193705561625535,
+        "name": "2015-2017",
+        "sessions": 768,
+        "sharpe": 1.0697740042802226
+      },
+      {
+        "cagr_percent": 15.206377912452673,
+        "mdd_percent": 18.21307255435216,
+        "name": "2018-2021",
+        "sessions": 1038,
+        "sharpe": 1.0730528888462763
+      },
+      {
+        "cagr_percent": 19.120440966948337,
+        "mdd_percent": 15.569691656985322,
+        "name": "2022-latest",
+        "sessions": 1216,
+        "sharpe": 1.197616890776611
+      }
+    ],
+    "id": "C-BARBELL",
+    "max_gross": 1,
+    "mdd_percent": 37.71662775385566,
+    "minimum_cash": 0,
+    "owner_by_month": {},
+    "sessions": 6166,
+    "sharpe": 0.8772866898427629,
+    "since2020_cagr_percent": 17.80985202069434,
+    "since2020_sharpe": 1.0969172269058678,
+    "since2022_cagr_percent": 19.120440966948337,
+    "since2022_sharpe": 1.197616890776611,
+    "start": "2002-07-15",
+    "target_fingerprint": "6d6d7516ea3ee7c3",
+    "trades": 50,
+    "volatility_percent": 13.829203270153819
+  },
+  "candidate": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 11.827118893655285,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 14.243377455173857,
+        "mdd_percent": 18.620984731984667,
+        "name": "2002-2005",
+        "sessions": 875,
+        "sharpe": 0.8470568622608505
+      },
+      {
+        "cagr_percent": -2.047187632326264,
+        "mdd_percent": 36.30201652485414,
+        "name": "2006-2008",
+        "sessions": 757,
+        "sharpe": 0.016191743790590553
+      },
+      {
+        "cagr_percent": 13.027902779430335,
+        "mdd_percent": 20.300052712817372,
+        "name": "2009-2011",
+        "sessions": 756,
+        "sharpe": 0.6718931246358186
+      },
+      {
+        "cagr_percent": 20.85392783414037,
+        "mdd_percent": 12.044062688694048,
+        "name": "2012-2014",
+        "sessions": 756,
+        "sharpe": 1.423099516746723
+      },
+      {
+        "cagr_percent": 15.31096338585536,
+        "mdd_percent": 15.373212415323243,
+        "name": "2015-2017",
+        "sessions": 768,
+        "sharpe": 1.0346350138498248
+      },
+      {
+        "cagr_percent": 11.096704383844314,
+        "mdd_percent": 29.383308084806288,
+        "name": "2018-2021",
+        "sessions": 1038,
+        "sharpe": 0.5783130770071695
+      },
+      {
+        "cagr_percent": 10.913595711859191,
+        "mdd_percent": 29.617114437341996,
+        "name": "2022-latest",
+        "sessions": 1216,
+        "sharpe": 0.5540842103200869
+      }
+    ],
+    "id": "SAHM001",
+    "max_gross": 1,
+    "mdd_percent": 36.30201652485415,
+    "minimum_cash": 0,
+    "owner_by_month": {
+      "2002-07": "gold_cny",
+      "2002-12": "nasdaq",
+      "2008-05": "gold_cny",
+      "2010-07": "nasdaq",
+      "2020-05": "gold_cny",
+      "2021-05": "nasdaq",
+      "2024-08": "gold_cny",
+      "2024-11": "nasdaq"
+    },
+    "sessions": 6166,
+    "sharpe": 0.6559734873777515,
+    "since2020_cagr_percent": 8.963814124412606,
+    "since2020_sharpe": 0.4718319376803978,
+    "since2022_cagr_percent": 10.913595711859191,
+    "since2022_sharpe": 0.5540842103200869,
+    "start": "2002-07-15",
+    "target_fingerprint": "6b573c9e977796e7",
+    "trades": 15,
+    "volatility_percent": 19.770270380392528
+  },
+  "candidate_id": "S-SAHM-STATE-001",
+  "cash_control": {
+    "average_cash_ratio": 1,
+    "cagr_percent": 0.4647165894974714,
+    "end": "2026-08-20",
+    "folds": [
+      {
+        "cagr_percent": 0.7241827122155708,
+        "mdd_percent": 0,
+        "name": "2002-2005",
+        "sessions": 875,
+        "sharpe": 5911050442780.548
+      },
+      {
+        "cagr_percent": 0.7268165758746337,
+        "mdd_percent": 0,
+        "name": "2006-2008",
+        "sessions": 757,
+        "sharpe": 163.3309610598701
+      },
+      {
+        "cagr_percent": 0.3979926249369381,
+        "mdd_percent": 0,
+        "name": "2009-2011",
+        "sessions": 756,
+        "sharpe": 105.35115014111996
+      },
+      {
+        "cagr_percent": 0.3742523216276439,
+        "mdd_percent": 0,
+        "name": "2012-2014",
+        "sessions": 756,
+        "sharpe": 111.72268358521731
+      },
+      {
+        "cagr_percent": 0.35694506660921554,
+        "mdd_percent": 0,
+        "name": "2015-2017",
+        "sessions": 768,
+        "sharpe": 2084874579112.0674
+      },
+      {
+        "cagr_percent": 0.3609634748429791,
+        "mdd_percent": 0,
+        "name": "2018-2021",
+        "sessions": 1038,
+        "sharpe": 2078096618293.7346
+      },
+      {
+        "cagr_percent": 0.3653730224581153,
+        "mdd_percent": 0,
+        "name": "2022-latest",
+        "sessions": 1216,
+        "sharpe": 2092936196296.6973
+      }
+    ],
+    "id": "C-CASH",
+    "max_gross": 0,
+    "mdd_percent": 0,
+    "minimum_cash": 100000,
+    "owner_by_month": {},
+    "sessions": 6166,
+    "sharpe": 44.31403189736357,
+    "since2020_cagr_percent": 0.36342637233286457,
+    "since2020_sharpe": 2084551163082.9253,
+    "since2022_cagr_percent": 0.3653730224581153,
+    "since2022_sharpe": 2092936196296.6973,
+    "start": "2002-07-15",
+    "target_fingerprint": "29b2c2d46789d403",
+    "trades": 0,
+    "volatility_percent": 0.010306299987900069
+  },
+  "evaluation_end": "2026-08-20",
+  "evaluation_start": "2002-07-15",
+  "fee_percent_per_trade": 1,
+  "prior_month_only": true,
+  "review_day_floor": 15,
+  "sahm_trigger": 0.5,
+  "slippage_percent_per_trade": 0.05,
+  "three_axis_evaluation": {
+    "comparison_checks": {
+      "mdd_lt_barbell": true,
+      "sharpe_gt_barbell": false
+    },
+    "comparison_status": "FAIL",
+    "diagnostics": {
+      "barbell_cagr_percent": 12.009919116563882,
+      "barbell_mdd_percent": 37.71662775385566,
+      "barbell_sharpe": 0.8772866898427629,
+      "cash_cagr_percent": 0.4647165894974714,
+      "fold_count": 7,
+      "positive_fold_count": 7
+    },
+    "objective_checks": {
+      "cagr_ge_12pct": false,
+      "cagr_gt_cash": true,
+      "mdd_le_20pct": false,
+      "sharpe_ge_1": false,
+      "since2020_cagr_positive": true,
+      "since2022_cagr_positive": true
+    },
+    "objective_status": "FAIL",
+    "status": "FAIL",
+    "validation_checks": {
+      "actual_trades_gt_0": true,
+      "cash_nonnegative": true,
+      "full_cagr_gt_0": true,
+      "full_mdd_le_25pct": false,
+      "full_sharpe_gt_0": true,
+      "max_gross_le_1": true,
+      "positive_sharpe_folds_ge_70pct": true
+    },
+    "validation_status": "FAIL",
+    "validation_warnings": [
+      "execution_stress_not_in_this_R1_trial"
+    ]
+  },
+  "trial_id": "ATM-SVP3-SAHM-STATE-001"
+}

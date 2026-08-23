@@ -1,0 +1,102 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/candidates/C-BARBELL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/candidates/SAHM001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-SAHM-STATE-001",
+      "metrics": {
+        "average_cash_ratio": 0,
+        "barbell_control": {
+          "cagr_percent": 12.009919116563882,
+          "mdd_percent": 37.71662775385566,
+          "sharpe": 0.8772866898427629
+        },
+        "cagr_percent": 11.827118893655285,
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "fold_names": [
+          "2002-2005",
+          "2006-2008",
+          "2009-2011",
+          "2012-2014",
+          "2015-2017",
+          "2018-2021",
+          "2022-latest"
+        ],
+        "fold_sharpes": [
+          0.8470568622608505,
+          0.016191743790590553,
+          0.6718931246358186,
+          1.423099516746723,
+          1.0346350138498248,
+          0.5783130770071695,
+          0.5540842103200869
+        ],
+        "folds_with_positive_sharpe": 7,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 0.00011914427099007918,
+        "global_post_protocol_dsr_trial_count": 64,
+        "max_gross": 1,
+        "mdd_percent": 36.30201652485415,
+        "minimum_cash": 0,
+        "sharpe": 0.6559734873777515,
+        "since2020_cagr_percent": 8.963814124412606,
+        "since2020_sharpe": 0.4718319376803978,
+        "since2022_cagr_percent": 10.913595711859191,
+        "since2022_sharpe": 0.5540842103200869,
+        "strategy_library_validation": {
+          "comparative_failures": [
+            "sharpe_gt_barbell"
+          ],
+          "comparison_status": "FAIL",
+          "evidence_missing": [],
+          "objective_failures": [
+            "cagr_ge_12pct",
+            "mdd_le_20pct",
+            "sharpe_ge_1"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_mdd_le_25pct"
+          ],
+          "validation_warnings": [
+            "execution_stress_not_in_this_R1_trial",
+            "global_dsr_below_project_pass_threshold"
+          ]
+        },
+        "target_fingerprint": "6b573c9e977796e7",
+        "trades": 15
+      }
+    }
+  ],
+  "comparison_status": "FAIL",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-SAHM-STATE-001.json",
+  "decision": "FAIL / VALIDATION_FAIL. Conservatively lagged official Sahm 0.50pp state produced 11.827119% CAGR, 0.655973 Sharpe and 36.302017% MDD with just 15 trades and all seven folds positive-Sharpe. It reduced barbell drawdown slightly but remained above the 25% validation ceiling and did not beat barbell Sharpe. No Sahm threshold/lag/review/owner rescue is allowed.",
+  "execution_git_commit": "3fdd8878770ed2405cd920a99c0d2a483fa99193",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "c809b5ca49223f2787e09632dfd9c9650118eb03934dcf1c5d1068c970ba65b4",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-SAHM-STATE-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-SAHM-STATE-001",
+  "validation_status": "FAIL"
+}

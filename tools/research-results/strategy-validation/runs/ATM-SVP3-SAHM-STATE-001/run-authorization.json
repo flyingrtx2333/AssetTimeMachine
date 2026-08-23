@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "3fdd8878770ed2405cd920a99c0d2a483fa99193",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "c809b5ca49223f2787e09632dfd9c9650118eb03934dcf1c5d1068c970ba65b4",
+  "preregistration_record_hash": "c809b5ca49223f2787e09632dfd9c9650118eb03934dcf1c5d1068c970ba65b4",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-SAHM-STATE-001"
+}
