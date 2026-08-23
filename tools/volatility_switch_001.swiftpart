@@ -1,0 +1,60 @@
+        if ProcessInfo.processInfo.environment["ATM_VOLATILITY_SWITCH_001"] == "1" {
+            let formal = ProcessInfo.processInfo.environment["ATM_VOLATILITY_SWITCH_001_FORMAL"] == "1"
+            let outputDir = ProcessInfo.processInfo.environment["ATM_VOLATILITY_SWITCH_001_OUTPUT_DIR"]
+            let symbols = ["nasdaq", "gold_cny"]
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = symbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { symbol in seriesBySymbol[normalizedHistorySymbol(symbol)] }
+            }
+            guard inputs.count == symbols.count else { print("VOLATILITY_SWITCH_001_INPUTS_MISSING"); return }
+            let settings = AdvancedBacktestRiskSettings(feeRate: 1.00, slippageRate: 0.05, maxPositionRatio: 100, cooldownDays: 0, stopLossRatio: 0, takeProfitRatio: 0)
+            let formatter = DateFormatter(); formatter.calendar = BacktestSeriesAlignment.historicalSeriesCalendar; formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.timeZone = BacktestSeriesAlignment.historicalSeriesCalendar.timeZone; formatter.dateFormat = "yyyy-MM-dd"
+            guard let evaluationStart = formatter.date(from: "2002-07-03"), let evaluationEnd = formatter.date(from: "2026-08-20") else { print("VOLATILITY_SWITCH_001_DATE_PARSE_FAILED"); return }
+            let bounds = evaluationStart...evaluationEnd
+            let folds: [(String,String,String)] = [
+                ("2002-2005","2002-07-03","2005-12-31"),("2006-2008","2006-01-01","2008-12-31"),("2009-2011","2009-01-01","2011-12-31"),("2012-2014","2012-01-01","2014-12-31"),("2015-2017","2015-01-01","2017-12-31"),("2018-2021","2018-01-01","2021-12-31"),("2022-latest","2022-01-01","9999-12-31")
+            ]
+            enum Mode { case dual, barbell, cash }
+            func config(_ id: String) -> ResearchTargetStrategyConfig { ResearchTargetStrategyConfig(symbol: id, title: "波动率切换001", warmupSessions: 252, rebalanceSessions: 1, rebalanceBand: 0, maxGrossExposure: 1, allowsFinancedExposure: false, financingAnnualRate: 0, buyReason: "21/252实现波动率状态所有者") }
+            func monthlyBoundary(index: Int, signalIndex: Int, data: ResearchTargetDataContext) -> Bool {
+                guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else { return false }
+                let current = String(data.dates[index].recordDateString.prefix(7)); let prior = String(data.dates[signalIndex].recordDateString.prefix(7)); return current != prior
+            }
+            func runPath(_ id: String, mode: Mode) -> (ResearchTargetStrategyRun,[String:String])? {
+                var firstDecision = true; var lastOwner: String? = nil; var ownerByMonth: [String:String] = [:]
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(assetInputs: inputs, initialCash: 100_000, settings: settings, config: config(id), dateBounds: bounds, rebalanceDecision: { index, signalIndex, data in
+                    guard data.dates.indices.contains(index), data.dates.indices.contains(signalIndex) else { return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false) }
+                    if firstDecision { firstDecision = false; if mode == .dual { lastOwner = VolatilitySwitch001Logic.owner(nasdaqPrices: data.pricesBySymbol["nasdaq"] ?? [], signalIndex: signalIndex) }; return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false) }
+                    switch mode {
+                    case .cash: return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                    case .barbell:
+                        let yearNow=String(data.dates[index].recordDateString.prefix(4)); let yearPrior=String(data.dates[signalIndex].recordDateString.prefix(4)); return BacktestRebalanceDecision(shouldRebalance: yearNow != yearPrior, refreshOverlay: false)
+                    case .dual:
+                        guard monthlyBoundary(index: index, signalIndex: signalIndex, data: data) else { return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false) }
+                        let owner = VolatilitySwitch001Logic.owner(nasdaqPrices: data.pricesBySymbol["nasdaq"] ?? [], signalIndex: signalIndex)
+                        let changed = owner != lastOwner; lastOwner = owner
+                        return BacktestRebalanceDecision(shouldRebalance: changed, refreshOverlay: false)
+                    }
+                }, targetWeights: { context, data in
+                    switch mode {
+                    case .cash: return [:]
+                    case .barbell: return ["nasdaq":0.5,"gold_cny":0.5]
+                    case .dual:
+                        let owner = VolatilitySwitch001Logic.owner(nasdaqPrices: data.pricesBySymbol["nasdaq"] ?? [], signalIndex: context.signalIndex)
+                        let month=String(context.date.recordDateString.prefix(7)); ownerByMonth[month]=owner ?? "cash"; guard let owner else { return [:] }; return [owner:1.0]
+                    }
+                }) else { return nil }
+                return (run,ownerByMonth)
+            }
+            guard let candidatePair=runPath("VOLSW001",mode:.dual), let barbellPair=runPath("C-BARBELL",mode:.barbell), let cashPair=runPath("C-CASH",mode:.cash) else { print("VOLATILITY_SWITCH_001_RUN_FAILED"); return }
+            func pts(_ run: ResearchTargetStrategyRun)->[BacktestSeriesPoint]{run.report.points.filter{$0.date>=evaluationStart && $0.date<=evaluationEnd}}
+            func sts(_ run: ResearchTargetStrategyRun)->[BacktestDailyState]{run.dailyStates.filter{$0.date>=evaluationStart && $0.date<=evaluationEnd}}
+            func fp(_ states:[BacktestDailyState])->String{var h:UInt64=1469598103934665603; for s in states{for sym in symbols{var v=UInt64(bitPattern:Int64(((s.targetWeights[sym] ?? 0)*1_000_000).rounded())); for _ in 0..<8{h ^= v & UInt64(0xff); h &*= UInt64(1099511628211); v >>= 8}}}; return String(format:"%016llx",h)}
+            func foldMetrics(_ points:[BacktestSeriesPoint])->[[String:Any]]{folds.map{name,start,end in let slice=points.filter{$0.date.recordDateString>=start && $0.date.recordDateString<=end}; let m=BacktestMetricsCalculator.performanceMetrics(from:slice); return ["name":name,"sessions":slice.count,"cagr_percent":(m?.annualizedReturn ?? 0)*100,"mdd_percent":(m?.maxDrawdown ?? 0)*100,"sharpe":m?.sharpeRatio ?? 0]}}
+            func doc(_ id:String,_ run:ResearchTargetStrategyRun, owners:[String:String])->[String:Any]{let p=pts(run), s=sts(run), m=BacktestMetricsCalculator.performanceMetrics(from:p), m20=BacktestMetricsCalculator.performanceMetrics(from:p.filter{$0.date.recordDateString>="2020-01-01"}), m22=BacktestMetricsCalculator.performanceMetrics(from:p.filter{$0.date.recordDateString>="2022-01-01"}); let gross=s.map{x in x.portfolioValue>0 ? x.holdingsBySymbol.values.reduce(0,+)/x.portfolioValue : 0}; return ["id":id,"start":p.first?.date.recordDateString ?? "","end":p.last?.date.recordDateString ?? "","sessions":p.count,"cagr_percent":(m?.annualizedReturn ?? 0)*100,"mdd_percent":(m?.maxDrawdown ?? 0)*100,"volatility_percent":(m?.annualizedVolatility ?? 0)*100,"sharpe":m?.sharpeRatio ?? 0,"trades":run.report.trades.count,"average_cash_ratio":run.report.averageCashRatio,"max_gross":gross.max() ?? 0,"minimum_cash":s.map(\.cash).min() ?? 0,"target_fingerprint":fp(s),"since2020_cagr_percent":(m20?.annualizedReturn ?? 0)*100,"since2020_sharpe":m20?.sharpeRatio ?? 0,"since2022_cagr_percent":(m22?.annualizedReturn ?? 0)*100,"since2022_sharpe":m22?.sharpeRatio ?? 0,"folds":foldMetrics(p),"owner_by_month":owners]}
+            let candidateDoc=doc("VOLSW001",candidatePair.0,owners:candidatePair.1), barbellDoc=doc("C-BARBELL",barbellPair.0,owners:[:]), cashDoc=doc("C-CASH",cashPair.0,owners:[:])
+            if !formal { let t=candidateDoc["trades"] as? Int ?? 0, g=candidateDoc["max_gross"] as? Double ?? 0, c=candidateDoc["minimum_cash"] as? Double ?? -1; print("VOLATILITY_SWITCH_001_SMOKE_TRADES=\(t)"); print("VOLATILITY_SWITCH_001_SMOKE_MAX_GROSS=\(g)"); print("VOLATILITY_SWITCH_001_SMOKE_MIN_CASH=\(c)"); guard t > 0, g <= 1.000000001, c >= -1e-6 else {print("VOLATILITY_SWITCH_001_SMOKE_INVALID");return}; print("VOLATILITY_SWITCH_001_SMOKE_OK"); return }
+            if let outputDir { try? FileManager.default.createDirectory(atPath:outputDir,withIntermediateDirectories:true); for (id,run) in [("VOLSW001",candidatePair.0),("C-BARBELL",barbellPair.0),("C-CASH",cashPair.0)]{var lines=["date,portfolio_value"]; lines.append(contentsOf:pts(run).map{"\($0.date.recordDateString),\(String(format:"%.10f",$0.portfolioValue))"}); let path=URL(fileURLWithPath:outputDir).appendingPathComponent("\(id)-portfolio.csv").path; try?(lines.joined(separator:"\n")+"\n").write(toFile:path,atomically:true,encoding:.utf8)}}
+            let out:[String:Any]=["trial_id":"ATM-SVP3-VOLATILITY-SWITCH-001","candidate_id":"S-VOLATILITY-SWITCH-001","candidate":candidateDoc,"barbell_control":barbellDoc,"cash_control":cashDoc,"short_window":21,"long_window":252,"fee_percent_per_trade":1.00,"slippage_percent_per_trade":0.05,"evaluation_start":"2002-07-03","evaluation_end":"2026-08-20"]
+            guard JSONSerialization.isValidJSONObject(out),let json=try?JSONSerialization.data(withJSONObject:out,options:[.sortedKeys]),let text=String(data:json,encoding:.utf8) else {print("VOLATILITY_SWITCH_001_JSON_FAILED");return}; print("VOLATILITY_SWITCH_001_FORMAL_JSON="+text); print("VOLATILITY_SWITCH_001_FORMAL_OK"); return
+        }

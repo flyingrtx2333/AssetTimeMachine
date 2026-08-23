@@ -1,0 +1,30 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    }
+  ],
+  "generated_at": "2026-08-23T14:00:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "base_cost": "1.00% fee + 0.05% slippage per trade; no grid",
+    "campaign": "volatility-switch-001",
+    "candidate_kind": "INDEPENDENT_REALIZED_VOLATILITY_REGIME_SWITCH",
+    "evaluation_end": "2026-08-20",
+    "evaluation_start": "2002-07-03",
+    "evaluation_start_rule": "253rd common valid Nasdaq/gold price date, permitting 252 prior Nasdaq return observations",
+    "owners": {
+      "short_vol_gt_long_vol": "gold_cny",
+      "short_vol_le_long_vol": "nasdaq"
+    },
+    "performance_viewed_before_freeze": false,
+    "review": "first execution session of each calendar month",
+    "signal": "Nasdaq 21-session sample realized volatility versus Nasdaq 252-session sample realized volatility, using T-1 and earlier prices only",
+    "trade_only_on_owner_change": true
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-VOLATILITY-SWITCH-001"
+}
