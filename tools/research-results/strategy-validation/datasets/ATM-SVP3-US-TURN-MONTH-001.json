@@ -1,0 +1,43 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    }
+  ],
+  "generated_at": "2026-08-23T13:12:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "calendar_rule_source": "U.S. exchange-session date metadata only; active windows are derived from trading dates without reading future prices or returns",
+    "campaign": "us-turn-month-001",
+    "candidate_kind": "INDEPENDENT_CALENDAR_FLOW_STRATEGY",
+    "evaluation_end": "2026-08-20",
+    "evaluation_start": "2000-01-04",
+    "performance_viewed_before_freeze": false,
+    "primary_cost": "0.005% fee per fill; zero additional slippage",
+    "real_ohlc_only": true,
+    "series": [
+      {
+        "currency": "USD",
+        "end": "2026-08-20",
+        "ohlc_rows": 6700,
+        "source": "Nasdaq · Yahoo Finance",
+        "start": "2000-01-03",
+        "symbol": "nasdaq_composite"
+      },
+      {
+        "currency": "USD",
+        "end": "2026-08-20",
+        "ohlc_rows": 6711,
+        "source": "S&P Dow Jones Indices · Yahoo Finance",
+        "start": "2000-01-03",
+        "symbol": "sp500"
+      }
+    ],
+    "stress_cost": "0.005% fee plus 0.05% adverse slippage per fill"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-US-TURN-MONTH-001"
+}
