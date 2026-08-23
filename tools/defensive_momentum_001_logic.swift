@@ -1,0 +1,11 @@
+import Foundation
+
+nonisolated enum DefensiveMomentum001Logic {
+    static let targetWeights: [String: Double] = ["splv_tr": 0.5, "mtum_tr": 0.5]
+    static func year(_ key: String) -> Int? { key.count >= 4 ? Int(key.prefix(4)) : nil }
+    static func shouldRebalance(current: String, previous: String?) -> Bool {
+        guard let cy = year(current) else { return false }
+        guard let previous, let py = year(previous) else { return true }
+        return cy != py
+    }
+}
