@@ -1,0 +1,43 @@
+{
+  "files": [
+    {
+      "bytes": 5102420,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "6245d44190b95f7df9ace9e3a61b4a2ec221d43f7bc8e311b8241f613883d6e7"
+    }
+  ],
+  "generated_at": "2026-08-23T14:58:00+08:00",
+  "kind": "dataset",
+  "metadata": {
+    "base_cost": "1.00% fee plus 0.05% slippage per trade; no seasonal-window or cost grid",
+    "campaign": "halloween-001",
+    "candidate_kind": "INDEPENDENT_HALF_YEAR_CALENDAR_SEASONALITY",
+    "economic_asset": "sp500",
+    "engine_alignment_support_asset": "nasdaq (zero target at all times; included only because shared target-provider engine requires at least two prepared series)",
+    "evaluation_end": "2026-08-20",
+    "evaluation_start": "2000-01-04",
+    "performance_viewed_before_freeze": false,
+    "series": [
+      {
+        "currency": "USD",
+        "end": "2026-08-20",
+        "price_rows": 6700,
+        "source": "Nasdaq · Yahoo Finance",
+        "start": "2000-01-03",
+        "symbol": "nasdaq_composite"
+      },
+      {
+        "currency": "USD",
+        "end": "2026-08-20",
+        "price_rows": 6711,
+        "source": "S&P Dow Jones Indices · Yahoo Finance",
+        "start": "2000-01-03",
+        "symbol": "sp500"
+      }
+    ],
+    "signal_source": "calendar month only; no price, return, macro or volatility input"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-HALLOWEEN-001"
+}
