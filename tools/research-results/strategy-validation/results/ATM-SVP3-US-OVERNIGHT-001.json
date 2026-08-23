@@ -1,0 +1,506 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/C-CASH-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/C-DAYTIME-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/C-DAYTIME-NASDAQ-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/C-DAYTIME-SP500-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/USOVN001-COMBINED-SLIP005-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/USOVN001-COMBINED-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/USOVN001-NASDAQ-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/USOVN001-SP500-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-US-OVERNIGHT-001",
+      "metrics": {
+        "cash_control_cagr_percent": 0.5052095162081383,
+        "combined": {
+          "active_sessions": 6687,
+          "average_session_gross": 0.9977618621307073,
+          "cagr_percent": 2.9598776433074514,
+          "end": "2026-08-20",
+          "folds": [
+            {
+              "cagr_percent": 3.6964672825348766,
+              "mdd_percent": 15.842567328919428,
+              "name": "2000-2003",
+              "sessions": 994,
+              "sharpe": 0.4515086883406922
+            },
+            {
+              "cagr_percent": 0.41053308559739765,
+              "mdd_percent": 7.111914687185215,
+              "name": "2004-2007",
+              "sessions": 1009,
+              "sharpe": 0.11090719322471708
+            },
+            {
+              "cagr_percent": -8.265488599442062,
+              "mdd_percent": 32.88470543677524,
+              "name": "2008-2011",
+              "sessions": 1015,
+              "sharpe": -0.8571504502236728
+            },
+            {
+              "cagr_percent": 4.453995427526292,
+              "mdd_percent": 5.748186892795623,
+              "name": "2012-2015",
+              "sessions": 1010,
+              "sharpe": 0.8249858857841266
+            },
+            {
+              "cagr_percent": 8.7336971121875,
+              "mdd_percent": 7.7547346682088625,
+              "name": "2016-2019",
+              "sessions": 1007,
+              "sharpe": 1.1407218876639786
+            },
+            {
+              "cagr_percent": 3.130283267588818,
+              "mdd_percent": 22.79325761424493,
+              "name": "2020-2022",
+              "sessions": 756,
+              "sharpe": 0.2851409835135642
+            },
+            {
+              "cagr_percent": 9.825353499652568,
+              "mdd_percent": 17.51559998091857,
+              "name": "2023-latest",
+              "sessions": 911,
+              "sharpe": 0.9342580556335827
+            }
+          ],
+          "id": "USOVN001-COMBINED",
+          "max_session_gross": 1,
+          "mdd_percent": 36.51755626798398,
+          "minimum_end_of_session_cash": 78628.95371270725,
+          "round_trips_by_symbol": {
+            "nasdaq": 6687,
+            "sp500": 6687
+          },
+          "session_kind": "overnight_close_to_next_open",
+          "sessions": 6702,
+          "sharpe": 0.3689766540304702,
+          "since2020_cagr_percent": 6.86172965329932,
+          "since2020_sharpe": 0.5931502427467567,
+          "since2022_cagr_percent": 5.670909648873312,
+          "since2022_sharpe": 0.5363853169549493,
+          "start": "2000-01-19",
+          "take_profit_hits_by_symbol": {
+            "nasdaq": 0,
+            "sp500": 0
+          },
+          "target_fingerprint": "d2c55709f565aa63",
+          "total_return_percent": 117.15673999828553,
+          "trade_stats": {
+            "average_return_percent": 0.011184449861288274,
+            "profit_factor": 1.0611115143207217,
+            "round_trips": 13374,
+            "win_rate_percent": 46.672648422311944
+          },
+          "volatility_percent": 9.007185014031558
+        },
+        "comparison_failures": [],
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1,
+          "minimum_cash": 78628.95371270725,
+          "pass": true,
+          "shorting_allowed": false,
+          "take_profit_hits": 0
+        },
+        "daytime_control": {
+          "active_sessions": 6688,
+          "average_session_gross": 0.9977621960316276,
+          "cagr_percent": -0.804563471798414,
+          "end": "2026-08-20",
+          "folds": [
+            {
+              "cagr_percent": -16.814925711789506,
+              "mdd_percent": 66.08669202644423,
+              "name": "2000-2003",
+              "sessions": 995,
+              "sharpe": -0.5750033184466972
+            },
+            {
+              "cagr_percent": 0.03539442172992846,
+              "mdd_percent": 17.28194480311683,
+              "name": "2004-2007",
+              "sessions": 1009,
+              "sharpe": 0.06352357002269968
+            },
+            {
+              "cagr_percent": -0.4097716298321674,
+              "mdd_percent": 41.34902649008744,
+              "name": "2008-2011",
+              "sessions": 1015,
+              "sharpe": 0.10570875625485605
+            },
+            {
+              "cagr_percent": 6.3662965767348645,
+              "mdd_percent": 11.90468923630522,
+              "name": "2012-2015",
+              "sessions": 1010,
+              "sharpe": 0.5989561091757781
+            },
+            {
+              "cagr_percent": 2.453775642670575,
+              "mdd_percent": 25.261755370233786,
+              "name": "2016-2019",
+              "sessions": 1007,
+              "sharpe": 0.26376909579941704
+            },
+            {
+              "cagr_percent": -2.4128198389069433,
+              "mdd_percent": 22.090194330885087,
+              "name": "2020-2022",
+              "sessions": 756,
+              "sharpe": -0.026344772393142493
+            },
+            {
+              "cagr_percent": 8.182214884674565,
+              "mdd_percent": 15.488372030019592,
+              "name": "2023-latest",
+              "sessions": 911,
+              "sharpe": 0.6235242914895345
+            }
+          ],
+          "id": "C-DAYTIME-COMBINED",
+          "max_session_gross": 1,
+          "mdd_percent": 72.25556850766876,
+          "minimum_end_of_session_cash": 28014.249295292153,
+          "round_trips_by_symbol": {
+            "nasdaq": 6688,
+            "sp500": 6688
+          },
+          "session_kind": "daytime_open_to_close",
+          "sessions": 6703,
+          "sharpe": 0.04538821460463563,
+          "since2020_cagr_percent": 3.0618107344081213,
+          "since2020_sharpe": 0.26323438125510074,
+          "since2022_cagr_percent": 1.9294628610562636,
+          "since2022_sharpe": 0.19806714593892918,
+          "start": "2000-01-18",
+          "take_profit_hits_by_symbol": {
+            "nasdaq": 0,
+            "sp500": 0
+          },
+          "target_fingerprint": "a8caa61a90a08cc3",
+          "total_return_percent": -19.327837840331718,
+          "trade_stats": {
+            "average_return_percent": 0.001330456111961434,
+            "profit_factor": 1.0032894280459832,
+            "round_trips": 13376,
+            "win_rate_percent": 52.98295454545454
+          },
+          "volatility_percent": 18.0366962664471
+        },
+        "failed_preregistered_gates": [
+          "full_mdd_le_25pct",
+          "stress_cagr_gt_0",
+          "stress_mdd_le_2x_base",
+          "stress_sharpe_gt_0"
+        ],
+        "nasdaq": {
+          "active_sessions": 6689,
+          "average_session_gross": 1,
+          "cagr_percent": 5.679168616203856,
+          "end": "2026-08-20",
+          "folds": [
+            {
+              "cagr_percent": 8.55497316458611,
+              "mdd_percent": 27.804014474564465,
+              "name": "2000-2003",
+              "sessions": 993,
+              "sharpe": 0.5499087624029526
+            },
+            {
+              "cagr_percent": 6.707484991901369,
+              "mdd_percent": 5.324573894323225,
+              "name": "2004-2007",
+              "sessions": 1006,
+              "sharpe": 0.901467775101877
+            },
+            {
+              "cagr_percent": -8.348141424067656,
+              "mdd_percent": 35.190294218691776,
+              "name": "2008-2011",
+              "sessions": 1009,
+              "sharpe": -0.5052990203555482
+            },
+            {
+              "cagr_percent": 8.313084534793491,
+              "mdd_percent": 10.716859519257918,
+              "name": "2012-2015",
+              "sessions": 1008,
+              "sharpe": 0.910835825768263
+            },
+            {
+              "cagr_percent": 10.014331380690745,
+              "mdd_percent": 9.668711068492284,
+              "name": "2016-2019",
+              "sessions": 1006,
+              "sharpe": 1.08317451889117
+            },
+            {
+              "cagr_percent": 3.17793808593132,
+              "mdd_percent": 26.263673186120045,
+              "name": "2020-2022",
+              "sessions": 756,
+              "sharpe": 0.26645639380389574
+            },
+            {
+              "cagr_percent": 12.129647761684414,
+              "mdd_percent": 21.40552078244712,
+              "name": "2023-latest",
+              "sessions": 911,
+              "sharpe": 0.9407112576846777
+            }
+          ],
+          "id": "USOVN001-NASDAQ",
+          "max_session_gross": 1,
+          "mdd_percent": 36.12640114106828,
+          "minimum_end_of_session_cash": 99638.04637082496,
+          "round_trips_by_symbol": {
+            "nasdaq": 6689
+          },
+          "session_kind": "overnight_close_to_next_open",
+          "sessions": 6689,
+          "sharpe": 0.4859069436308141,
+          "since2020_cagr_percent": 8.149909089411466,
+          "since2020_sharpe": 0.5911385302810762,
+          "since2022_cagr_percent": 6.0818913631928595,
+          "since2022_sharpe": 0.4852798458337536,
+          "start": "2000-01-19",
+          "take_profit_hits_by_symbol": {
+            "nasdaq": 0
+          },
+          "target_fingerprint": "0ae9966c4c2e7e7e",
+          "total_return_percent": 334.2568046653155,
+          "trade_stats": {
+            "average_return_percent": 0.02336230469113988,
+            "profit_factor": 1.0886379370078014,
+            "round_trips": 6689,
+            "win_rate_percent": 53.80475407385259
+          },
+          "volatility_percent": 13.18309233610362
+        },
+        "objective_failures": [
+          "combined_cagr_ge_8pct",
+          "combined_mdd_le_15pct",
+          "combined_sharpe_ge_1"
+        ],
+        "slippage_stress": {
+          "active_sessions": 6687,
+          "average_session_gross": 0.9977618621307073,
+          "cagr_percent": -19.934927171480055,
+          "end": "2026-08-20",
+          "folds": [
+            {
+              "cagr_percent": -19.343423638478306,
+              "mdd_percent": 60.76491068564665,
+              "name": "2000-2003",
+              "sessions": 994,
+              "sharpe": -2.3658646832782972
+            },
+            {
+              "cagr_percent": -21.924783353405786,
+              "mdd_percent": 62.88208639517837,
+              "name": "2004-2007",
+              "sessions": 1009,
+              "sharpe": -5.2677718518159775
+            },
+            {
+              "cagr_percent": -28.736796087511053,
+              "mdd_percent": 74.80251650726328,
+              "name": "2008-2011",
+              "sessions": 1015,
+              "sharpe": -3.5063648644532446
+            },
+            {
+              "cagr_percent": -18.794762766240147,
+              "mdd_percent": 56.910259632188556,
+              "name": "2012-2015",
+              "sessions": 1010,
+              "sharpe": -3.7853867012554883
+            },
+            {
+              "cagr_percent": -15.482217786788432,
+              "mdd_percent": 49.597656689660305,
+              "name": "2016-2019",
+              "sessions": 1007,
+              "sharpe": -2.1785128649637113
+            },
+            {
+              "cagr_percent": -19.866564316516687,
+              "mdd_percent": 48.457499390040816,
+              "name": "2020-2022",
+              "sessions": 756,
+              "sharpe": -1.453815710759662
+            },
+            {
+              "cagr_percent": -14.5406824727771,
+              "mdd_percent": 44.397079636467076,
+              "name": "2023-latest",
+              "sessions": 911,
+              "sharpe": -1.4234514758877623
+            }
+          ],
+          "id": "USOVN001-COMBINED-SLIP005",
+          "max_session_gross": 1,
+          "mdd_percent": 99.75530250137605,
+          "minimum_end_of_session_cash": 266.15081835740284,
+          "round_trips_by_symbol": {
+            "nasdaq": 6687,
+            "sp500": 6687
+          },
+          "session_kind": "overnight_close_to_next_open_stress",
+          "sessions": 6702,
+          "sharpe": -2.4238582534171678,
+          "since2020_cagr_percent": -16.879247315617572,
+          "since2020_sharpe": -1.4142604949198725,
+          "since2022_cagr_percent": -17.77911447293721,
+          "since2022_sharpe": -1.6404350261793181,
+          "start": "2000-01-19",
+          "take_profit_hits_by_symbol": {
+            "nasdaq": 0,
+            "sp500": 0
+          },
+          "target_fingerprint": "d2c55709f565aa63",
+          "total_return_percent": -99.72893080544219,
+          "trade_stats": {
+            "average_return_percent": -0.08877675398663697,
+            "profit_factor": 0.6336334823855403,
+            "round_trips": 13374,
+            "win_rate_percent": 35.247495139823535
+          },
+          "volatility_percent": 8.998424178925392
+        },
+        "sp500": {
+          "active_sessions": 6700,
+          "average_session_gross": 1,
+          "cagr_percent": 0.10195802486794303,
+          "end": "2026-08-20",
+          "folds": [
+            {
+              "cagr_percent": -1.7359627033408875,
+              "mdd_percent": 6.680148059121926,
+              "name": "2000-2003",
+              "sessions": 994,
+              "sharpe": -7.8949242940338396
+            },
+            {
+              "cagr_percent": -5.631719361636356,
+              "mdd_percent": 21.075633775369766,
+              "name": "2004-2007",
+              "sessions": 1009,
+              "sharpe": -1.906474469410786
+            },
+            {
+              "cagr_percent": -7.940481639098163,
+              "mdd_percent": 30.113956936076757,
+              "name": "2008-2011",
+              "sessions": 1015,
+              "sharpe": -1.322095719683923
+            },
+            {
+              "cagr_percent": 0.24414098539722318,
+              "mdd_percent": 8.021750381893373,
+              "name": "2012-2015",
+              "sessions": 1008,
+              "sharpe": 0.10564235035210678
+            },
+            {
+              "cagr_percent": 7.402705661087605,
+              "mdd_percent": 7.487523437342218,
+              "name": "2016-2019",
+              "sessions": 1007,
+              "sharpe": 1.13496462449862
+            },
+            {
+              "cagr_percent": 2.924321611596725,
+              "mdd_percent": 19.31503324556477,
+              "name": "2020-2022",
+              "sessions": 756,
+              "sharpe": 0.30024976931044
+            },
+            {
+              "cagr_percent": 7.489522240187441,
+              "mdd_percent": 13.656266096099198,
+              "name": "2023-latest",
+              "sessions": 911,
+              "sharpe": 0.9075870779757663
+            }
+          ],
+          "id": "USOVN001-SP500",
+          "max_session_gross": 1,
+          "mdd_percent": 50.40313005221461,
+          "minimum_end_of_session_cash": 49591.9103847828,
+          "round_trips_by_symbol": {
+            "sp500": 6700
+          },
+          "session_kind": "overnight_close_to_next_open",
+          "sessions": 6700,
+          "sharpe": 0.04791739549475329,
+          "since2020_cagr_percent": 5.473212454389298,
+          "since2020_sharpe": 0.5763004782118565,
+          "since2022_cagr_percent": 5.162206914871437,
+          "since2022_sharpe": 0.6058123000811158,
+          "start": "2000-01-19",
+          "take_profit_hits_by_symbol": {
+            "sp500": 0
+          },
+          "target_fingerprint": "d7dd08588e05a30b",
+          "total_return_percent": 2.746155883834067,
+          "trade_stats": {
+            "average_return_percent": -0.0007956516608031047,
+            "profit_factor": 0.9922325785055714,
+            "round_trips": 6700,
+            "win_rate_percent": 39.492537313432834
+          },
+          "volatility_percent": 6.3373191299624185
+        },
+        "strategy_library_validation": {
+          "comparative_failures": [],
+          "comparison_status": "PASS",
+          "evidence_missing": [],
+          "note": "The unconditional overnight premium is positive and dominates the complementary daytime segment, but absolute drawdown and execution-cost stress fail the frozen validation floor.",
+          "objective_failures": [
+            "combined_cagr_ge_8pct",
+            "combined_mdd_le_15pct",
+            "combined_sharpe_ge_1"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_mdd_le_25pct",
+            "stress_cagr_gt_0",
+            "stress_mdd_le_2x_base",
+            "stress_sharpe_gt_0"
+          ],
+          "validation_warnings": []
+        }
+      }
+    }
+  ],
+  "comparison_status": "PASS",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-US-OVERNIGHT-001.json",
+  "decision": "FAIL / VALIDATION_FAIL. The unconditional U.S. overnight 50/50 Nasdaq-S&P path produced 2.959878% CAGR, 0.368977 Sharpe and 36.517556% MDD across 13374 close-to-next-open round trips. Six of seven fixed folds had positive Sharpe, and the overnight segment beat the complementary daytime path (daytime CAGR -0.804563%, Sharpe 0.045388, MDD 72.255569%), so comparison=PASS. However base MDD exceeded the 25% validation ceiling and the 0.05% adverse-slippage-per-fill stress collapsed to -19.934927% CAGR, -2.423858 Sharpe and 99.755303% MDD. Objective targets were also not met. Per preregistration, no calendar/trend/volatility/gap/weekday or asset-selection rescue is permitted inside this trial.",
+  "execution_git_commit": "28c45d67a0f0ca27c9a5b3775c73077c2a7f75a3",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "37d632a7cb64f352e574c9875919af120054542a8b84d2d312cd58cac9d7b956",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-US-OVERNIGHT-001",
+  "validation_status": "FAIL"
+}

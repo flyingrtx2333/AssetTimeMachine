@@ -1,0 +1,181 @@
+{
+  "files": [
+    {
+      "bytes": 194379,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2000-01-19",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/C-CASH-COMBINED-portfolio.csv",
+      "row_count": 6702,
+      "sha256": "9f3c2614f1cfabfd681e640a230856309c5c80f8e81d43d7f0afea8ec67e19dc"
+    },
+    {
+      "bytes": 187709,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2000-01-18",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/C-DAYTIME-COMBINED-portfolio.csv",
+      "row_count": 6703,
+      "sha256": "a4636df98be83fa717f3538666e78051e1c8b5553c076c1e7bafe44f8e328db8"
+    },
+    {
+      "bytes": 187345,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2000-01-18",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/C-DAYTIME-NASDAQ-portfolio.csv",
+      "row_count": 6690,
+      "sha256": "adf13dd7663180732c85663383eeaaa4ec88f8863397073e5c990ad4c150a0d3"
+    },
+    {
+      "bytes": 191024,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2000-01-18",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/C-DAYTIME-SP500-portfolio.csv",
+      "row_count": 6701,
+      "sha256": "ab1518f11888b20e559cf445921d2c1fbc710bc40a4e308654ea275fedc8aca2"
+    },
+    {
+      "bytes": 181500,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2000-01-19",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/USOVN001-COMBINED-SLIP005-portfolio.csv",
+      "row_count": 6702,
+      "sha256": "92263d2e44c7e1ea9b2a97305306cf910fc941f88a80a26f8c3cfdb2318623b8"
+    },
+    {
+      "bytes": 192359,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2000-01-19",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/USOVN001-COMBINED-portfolio.csv",
+      "row_count": 6702,
+      "sha256": "01900f3b81cd20fecefdf80a2b335a7bc98f444082982451497c2af8cbca0da6"
+    },
+    {
+      "bytes": 194001,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2000-01-19",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/USOVN001-NASDAQ-portfolio.csv",
+      "row_count": 6689,
+      "sha256": "be38676d1bb3bce21c1d483a7a24c3cb04fa49031a5fb3061303a48fa5173826"
+    },
+    {
+      "bytes": 187866,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2000-01-19",
+      "format": "csv",
+      "last_date": "2026-08-20",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/USOVN001-SP500-portfolio.csv",
+      "row_count": 6700,
+      "sha256": "b49132e63bce82096e2d08f588102650f17153c6e5ed62d413a890a552c7fb2e"
+    },
+    {
+      "bytes": 1691,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "round_trips",
+        "win_rate_percent",
+        "average_return_percent",
+        "profit_factor",
+        "active_sessions",
+        "max_session_gross",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/candidate-metrics.csv",
+      "row_count": 8,
+      "sha256": "49cb2a368efd5ae1c987ab8db912af4ef942841e37af6e5af26c554af9bdb61b"
+    },
+    {
+      "bytes": 22480,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/candidates/candidate-metrics.json",
+      "sha256": "2e5320c4161c41dacfe2c5ca6b630104137f5ba0dd8083841958c44f96e386be"
+    },
+    {
+      "bytes": 958,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/execution.json",
+      "sha256": "12de74140ccfa025451b54db7c95adfa7a54e83883844b3cd506f72ab843878f"
+    },
+    {
+      "bytes": 439,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/run-authorization.json",
+      "sha256": "2e47baaafcd283f5e8ac5af7210c72027847560c735c08f85f025b532ebe15a8"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1221,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-US-OVERNIGHT-001/stdout.txt",
+      "sha256": "b8e04bf574e5b5be6b35257fad8a628c90ea23b31ea738ec82c618f50adf9e48"
+    }
+  ],
+  "generated_at": "2026-08-23T11:34:18+08:00",
+  "git_commit": "28c45d67a0f0ca27c9a5b3775c73077c2a7f75a3",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "PASS",
+    "objective_status": "FAIL",
+    "validation_status": "FAIL"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-US-OVERNIGHT-001"
+}

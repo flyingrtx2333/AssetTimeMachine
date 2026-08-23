@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "28c45d67a0f0ca27c9a5b3775c73077c2a7f75a3",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "37d632a7cb64f352e574c9875919af120054542a8b84d2d312cd58cac9d7b956",
+  "preregistration_record_hash": "37d632a7cb64f352e574c9875919af120054542a8b84d2d312cd58cac9d7b956",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-US-OVERNIGHT-001"
+}
