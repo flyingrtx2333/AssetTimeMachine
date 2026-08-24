@@ -1,0 +1,290 @@
+{
+  "batch_key": "ATM-SVP2-US-MQ-ROLE-001-strategy-library-v2",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-US-MQ-ROLE-001.json",
+    "decision": "INVALID_IMPLEMENTATION / NO PERFORMANCE CONCLUSION. The formal wrapper terminated before recording any candidate metrics because the preregistered hybrid style-role constructor incorrectly required an MTUM/QUAL quote on every date in the multi-market union S&P role calendar. A deterministic pre-performance calendar audit found 11 S&P-role dates after 2013-07-19 without a same-date style ETF print (one U.S. market holiday and later weekend/holiday union-calendar placeholders). The intended economic rule is daily adjusted-close role return; on a calendar date with no new ETF print the investable ETF price must carry forward and its return for that union-calendar date is zero. No candidate portfolio CSV, candidate metric block, bootstrap result, or performance conclusion was recorded by this formal run. The original trial remains permanently INVALID. A repair trial may reuse the exact frozen MTUM/QUAL instruments, 2013-07-19 start, 100% sp500-role substitution, costs, target path, and gates, changing only the calendar-alignment implementation so missing non-trading-day style prints carry the last available price forward. No performance-driven strategy change is permitted.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "de5cecf7ba0645e48d856054144a1992f57db339",
+    "methodology": {
+      "follow_up_policy": "After either result is opened, do not change the 2013-07-19 substitution start, ETF, role, splice rule, substitution percentage, V11 target path, evaluation window, momentum/quality weighting, blend the candidates with each other or with S&P, add a third style ETF, or introduce style timing. Both outcomes remain permanently recorded. Any new style or blend is a new preregistered campaign and new G3 trial count.",
+      "formal_run_budget": 2,
+      "pass_fail_gates": [
+        "deterministic 2013-07-19+: candidate CAGR > V11 CAGR",
+        "deterministic 2013-07-19+: candidate Sharpe >= V11 Sharpe",
+        "deterministic 2013-07-19+: candidate MDD <=10%",
+        "deterministic: at least 5/7 fixed folds candidate Sharpe >= V11 Sharpe in the same fold",
+        "deterministic: worst fixed-fold Sharpe >0",
+        "deterministic: candidate target fingerprint exactly equals frozen production V11 ba67c8aa24bc7168; gross <=100%, min target weight >=0, no financing or shorting",
+        "bootstrap on 2013-07-19+ behavior: paired circular moving blocks versus V11, 63 sessions, 20000 replicates, seed 20260822",
+        "bootstrap: P(CAGR candidate > V11) >=0.90",
+        "bootstrap: P(Sharpe candidate > V11) >=0.90",
+        "bootstrap: median candidate-minus-V11 CAGR delta >0",
+        "bootstrap: median candidate-minus-V11 Sharpe delta >0",
+        "bootstrap: candidate MDD P97.5 <=15%",
+        "PBO/winner-selection test: not applicable because both preregistered roles are independently reported and no family winner is selected",
+        "global post-protocol DSR probability >=95% using all prior 36 formal return-seeking candidates plus both current candidates, total trial count 38; current-candidate DSR uses only 2013-07-19+ behavior so identical pre-substitution history cannot inflate evidence",
+        "ROBUST_STRATEGY_PASS requires every applicable deterministic, bootstrap and global DSR gate"
+      ],
+      "selection_metric": "No winner selection or survivor reporting. MTUM and QUAL are independently compared with the same production-path V11 over 2013-07-19+ and both remain in G3/global multiple-testing accounting regardless of outcome."
+    },
+    "preregistration_hash": "ac6e72ef9c2c8d50c846819234470fa981fd55e9ff8ce62a83ca0e507399857d",
+    "protocol_id": "ATM-SVP-2",
+    "run_key": "ATM-SVP2-US-MQ-ROLE-001",
+    "status": "INVALID",
+    "title": "US_MOMENTUM_QUALITY_PRODUCTION_PATH_ROLE_SUBSTITUTION_V1"
+  },
+  "schema_version": "strategy-library-v2",
+  "source_commit": "de5cecf7ba0645e48d856054144a1992f57db339",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "The frozen V11 broad-U.S.-equity role may be improved by an investable momentum or quality return source. Replacing only the realized return carried by the sp500 portfolio slot after both style ETFs have sufficient price history, while preserving the full production V11 signal and target path from 2002 onward, can increase post-substitution CAGR and Sharpe without increasing gross exposure or maximum drawdown beyond 10%.",
+      "display_name": "MTUM 美股动量角色替代",
+      "family": "美股质量动量角色",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/artifact-manifest.json"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": null,
+        "candidate_id": "F-MTUM-SP500-ROLE",
+        "conclusion": "INVALID_IMPLEMENTATION / NO PERFORMANCE CONCLUSION. The formal wrapper terminated before recording any candidate metrics because the preregistered hybrid style-role constructor incorrectly required an MTUM/QUAL quote on every date in the multi-market union S&P role calendar. A deterministic pre-performance calendar audit found 11 S&P-role dates after 2013-07-19 without a same-date style ETF print (one U.S. market holiday and later weekend/holiday union-calendar placeholders). The intended economic rule is daily adjusted-close role return; on a calendar date with no new ETF print the investable ETF price must carry forward and its return for that union-calendar date is zero. No candidate portfolio CSV, candidate metric block, bootstrap result, or performance conclusion was recorded by this formal run. The original trial remains permanently INVALID. A repair trial may reuse the exact frozen MTUM/QUAL instruments, 2013-07-19 start, 100% sp500-role substitution, costs, target path, and gates, changing only the calendar-alignment implementation so missing non-trading-day style prints carry the last available price forward. No performance-driven strategy change is permitted.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "shorting_allowed": false
+        },
+        "dsr_probability": null,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": null,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": null,
+        "metrics": {
+          "strategy_library_validation": {
+            "comparative_failures": [],
+            "comparison_status": "UNKNOWN",
+            "evidence_missing": [
+              "performance_metrics"
+            ],
+            "legacy_robust_strategy_pass": false,
+            "level": "R1_RETROSPECTIVE",
+            "note": "The formal strategy trial ended before candidate performance metrics were recorded; preserve it as an INVALID/ABORTED research artifact rather than dropping it from the strategy library.",
+            "objective_failures": [],
+            "objective_status": "INCONCLUSIVE",
+            "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+            "status": "FAIL",
+            "trial_status": "INVALID",
+            "validation_failures": [
+              "formal_trial_invalid"
+            ],
+            "validation_warnings": [
+              "formal_trial_ended_before_candidate_metrics"
+            ]
+          }
+        },
+        "result_status": "INVALID",
+        "robust_strategy_pass": false,
+        "sharpe": null,
+        "since2020_cagr_percent": null,
+        "since2022_cagr_percent": null,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "F-MTUM-SP500-ROLE--archive--ATM-SVP2-US-MQ-ROLE-001",
+      "strategy_kind": "strategy_asset_role_not_factor",
+      "tags": [
+        "ATM-SVP2-US-MQ-ROLE-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "fa46b1d7b27035a0d1b576d51b8c29b9cf4c606e35e048588b594f646cc9ca8d",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "The frozen V11 broad-U.S.-equity role may be improved by an investable momentum or quality return source. Replacing only the realized return carried by the sp500 portfolio slot after both style ETFs have sufficient price history, while preserving the full production V11 signal and target path from 2002 onward, can increase post-substitution CAGR and Sharpe without increasing gross exposure or maximum drawdown beyond 10%.",
+        "parameters": {
+          "allowed_changes": [
+            "run frozen production V11 on the unchanged full 2002+ input history to obtain its immutable source-event target path",
+            "before 2013-07-19 each candidate sp500 P&L series is exactly the original S&P series, preserving full pre-substitution portfolio history and state",
+            "from 2013-07-19 onward F-MTUM-SP500-ROLE replaces only sp500-role daily realized return with MTUM adjusted-close daily return",
+            "from 2013-07-19 onward F-QUAL-SP500-ROLE performs the identical replacement with QUAL adjusted-close daily return",
+            "the hybrid price level is recursively spliced from the prior S&P role value using the style ETF's daily return, so the transition has no artificial level jump",
+            "V11 signal dates, event dates, target weights, USD/CNY conversion, fees, slippage, rebalance band, cash treatment and risk reductions remain unchanged"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "any frozen V11 signal, parameter, event date, target sizing, or target-path change",
+            "any substitution before 2013-07-19",
+            "any style/S&P blend or MTUM/QUAL blend after results",
+            "any substitution fraction other than exactly 100% of the sp500 realized-return role after the frozen start",
+            "any alternate momentum or quality ETF, third candidate, or winner-only reporting",
+            "any style timing, moving average, relative-strength gate, valuation gate, regime switch, or adaptive allocation",
+            "any leverage, financing, negative target weights, or gross above 100%",
+            "including pre-substitution identical returns in current-candidate DSR evidence"
+          ],
+          "shared_rules": {
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "production_v11_target_fingerprint": "ba67c8aa24bc7168",
+            "rebalance_band": 0.25,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005,
+            "sp500_role_substitution_fraction": 1.0,
+            "substitution_start": "2013-07-19"
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "scripts/run_us_momentum_quality_role_v1.py",
+        "target_fingerprint": null,
+        "version_key": "F-MTUM-SP500-ROLE--archive--ATM-SVP2-US-MQ-ROLE-001"
+      }
+    },
+    {
+      "description": "The frozen V11 broad-U.S.-equity role may be improved by an investable momentum or quality return source. Replacing only the realized return carried by the sp500 portfolio slot after both style ETFs have sufficient price history, while preserving the full production V11 signal and target path from 2002 onward, can increase post-substitution CAGR and Sharpe without increasing gross exposure or maximum drawdown beyond 10%.",
+      "display_name": "QUAL 美股质量角色替代",
+      "family": "美股质量动量角色",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-US-MQ-ROLE-001/artifact-manifest.json"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": null,
+        "candidate_id": "F-QUAL-SP500-ROLE",
+        "conclusion": "INVALID_IMPLEMENTATION / NO PERFORMANCE CONCLUSION. The formal wrapper terminated before recording any candidate metrics because the preregistered hybrid style-role constructor incorrectly required an MTUM/QUAL quote on every date in the multi-market union S&P role calendar. A deterministic pre-performance calendar audit found 11 S&P-role dates after 2013-07-19 without a same-date style ETF print (one U.S. market holiday and later weekend/holiday union-calendar placeholders). The intended economic rule is daily adjusted-close role return; on a calendar date with no new ETF print the investable ETF price must carry forward and its return for that union-calendar date is zero. No candidate portfolio CSV, candidate metric block, bootstrap result, or performance conclusion was recorded by this formal run. The original trial remains permanently INVALID. A repair trial may reuse the exact frozen MTUM/QUAL instruments, 2013-07-19 start, 100% sp500-role substitution, costs, target path, and gates, changing only the calendar-alignment implementation so missing non-trading-day style prints carry the last available price forward. No performance-driven strategy change is permitted.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "shorting_allowed": false
+        },
+        "dsr_probability": null,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": null,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": null,
+        "metrics": {
+          "strategy_library_validation": {
+            "comparative_failures": [],
+            "comparison_status": "UNKNOWN",
+            "evidence_missing": [
+              "performance_metrics"
+            ],
+            "legacy_robust_strategy_pass": false,
+            "level": "R1_RETROSPECTIVE",
+            "note": "The formal strategy trial ended before candidate performance metrics were recorded; preserve it as an INVALID/ABORTED research artifact rather than dropping it from the strategy library.",
+            "objective_failures": [],
+            "objective_status": "INCONCLUSIVE",
+            "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+            "status": "FAIL",
+            "trial_status": "INVALID",
+            "validation_failures": [
+              "formal_trial_invalid"
+            ],
+            "validation_warnings": [
+              "formal_trial_ended_before_candidate_metrics"
+            ]
+          }
+        },
+        "result_status": "INVALID",
+        "robust_strategy_pass": false,
+        "sharpe": null,
+        "since2020_cagr_percent": null,
+        "since2022_cagr_percent": null,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "F-QUAL-SP500-ROLE--archive--ATM-SVP2-US-MQ-ROLE-001",
+      "strategy_kind": "strategy_asset_role_not_factor",
+      "tags": [
+        "ATM-SVP2-US-MQ-ROLE-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "fa46b1d7b27035a0d1b576d51b8c29b9cf4c606e35e048588b594f646cc9ca8d",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "The frozen V11 broad-U.S.-equity role may be improved by an investable momentum or quality return source. Replacing only the realized return carried by the sp500 portfolio slot after both style ETFs have sufficient price history, while preserving the full production V11 signal and target path from 2002 onward, can increase post-substitution CAGR and Sharpe without increasing gross exposure or maximum drawdown beyond 10%.",
+        "parameters": {
+          "allowed_changes": [
+            "run frozen production V11 on the unchanged full 2002+ input history to obtain its immutable source-event target path",
+            "before 2013-07-19 each candidate sp500 P&L series is exactly the original S&P series, preserving full pre-substitution portfolio history and state",
+            "from 2013-07-19 onward F-MTUM-SP500-ROLE replaces only sp500-role daily realized return with MTUM adjusted-close daily return",
+            "from 2013-07-19 onward F-QUAL-SP500-ROLE performs the identical replacement with QUAL adjusted-close daily return",
+            "the hybrid price level is recursively spliced from the prior S&P role value using the style ETF's daily return, so the transition has no artificial level jump",
+            "V11 signal dates, event dates, target weights, USD/CNY conversion, fees, slippage, rebalance band, cash treatment and risk reductions remain unchanged"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "any frozen V11 signal, parameter, event date, target sizing, or target-path change",
+            "any substitution before 2013-07-19",
+            "any style/S&P blend or MTUM/QUAL blend after results",
+            "any substitution fraction other than exactly 100% of the sp500 realized-return role after the frozen start",
+            "any alternate momentum or quality ETF, third candidate, or winner-only reporting",
+            "any style timing, moving average, relative-strength gate, valuation gate, regime switch, or adaptive allocation",
+            "any leverage, financing, negative target weights, or gross above 100%",
+            "including pre-substitution identical returns in current-candidate DSR evidence"
+          ],
+          "shared_rules": {
+            "fee_rate": 0.01,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "production_v11_target_fingerprint": "ba67c8aa24bc7168",
+            "rebalance_band": 0.25,
+            "shorting_allowed": false,
+            "slippage_rate": 0.0005,
+            "sp500_role_substitution_fraction": 1.0,
+            "substitution_start": "2013-07-19"
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "scripts/run_us_momentum_quality_role_v1.py",
+        "target_fingerprint": null,
+        "version_key": "F-QUAL-SP500-ROLE--archive--ATM-SVP2-US-MQ-ROLE-001"
+      }
+    }
+  ]
+}

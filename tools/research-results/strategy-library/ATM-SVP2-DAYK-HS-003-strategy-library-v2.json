@@ -1,0 +1,207 @@
+{
+  "batch_key": "ATM-SVP2-DAYK-HS-003-strategy-library-v2",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-DAYK-HS-003.json",
+    "decision": "INVALID / NO_CANDIDATE_ADMITTED. The first formal 日K高速003 execution exposed a cross-calendar mark-to-market defect in the new daily swing simulator: when one held asset had no OHLC bar on a date supplied by another market, the combined path omitted that held asset's carried value instead of using its last valid close. This created a mechanically impossible 68.237158% combined drawdown relative to the standalone sleeves. All viewed performance metrics from this run are invalid and must not be used for selection. The run and raw outputs are permanently retained. The defect must be corrected and the same economic rule, if retried, must use a new preregistered trial identifier and formal-run budget.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "28f3ecc62207dbe43da1240b1b1b0215616e8f51",
+    "methodology": {
+      "follow_up_policy": "After any formal metric is viewed, do not tune or replace SMA/ATR lookbacks, two-session decline multiple, take-profit multiple, maximum holding sessions, allocation, asset set, fee, or slippage inside this trial. Do not add RSI, volume, calendar, stop-loss, asset-specific or dynamic-sizing rescue variants. Any such mechanism is a new trial and must be preregistered with the complete family counted before results.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "at least two of three standalone assets have full-period CAGR above the CNY cash control",
+        "at least two of three standalone assets have full-period Sharpe >0",
+        "each standalone asset has at least 75 completed round trips",
+        "fixed one-third combined CAGR >= CNY cash CAGR +2.00 percentage points",
+        "fixed one-third combined Sharpe >=1.00",
+        "fixed one-third combined MDD <=12%",
+        "fixed one-third combined Sharpe > C-PULLBACK-COMBINED Sharpe",
+        "fixed one-third combined average net round-trip return >0 and profit factor >=1.10",
+        "at least 4/5 fixed time folds have combined Sharpe >0",
+        "combined 2020+ CAGR and 2022+ CAGR are each greater than full-window CNY cash CAGR",
+        "with 0.05% adverse slippage per fill, combined CAGR remains above CNY cash CAGR and Sharpe >0.50",
+        "maximum gross <=100%, minimum end-of-day cash >=0, every trade holds 2-5 observed asset sessions and final open positions =0"
+      ],
+      "selection_metric": "No within-family selection. There is exactly one daily-bar rule; all three standalone paths, the fixed one-third combined path, matched controls and execution stress are reported, and PASS requires every preregistered gate."
+    },
+    "preregistration_hash": "dd626db75408e729f2ea79d0d2f77e07a61ebd9573ac4ba561e7e9db91c75b50",
+    "protocol_id": "ATM-SVP-2",
+    "run_key": "ATM-SVP2-DAYK-HS-003",
+    "status": "INVALID",
+    "title": "INDEPENDENT_DAILY_TREND_PULLBACK_REVERSAL_V1"
+  },
+  "schema_version": "strategy-library-v2",
+  "source_commit": "28f3ecc62207dbe43da1240b1b1b0215616e8f51",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "When the prior close remains above SMA(200), a two-session decline of at least one ATR reflects temporary daily-scale price pressure rather than a broken long-term trend. Buying the next daily open, holding overnight, and exiting at a 0.75 ATR profit limit or the fifth session close should earn repeatable net returns across gold, Nasdaq and S&P 500 after the user-specified fee.",
+      "display_name": "日K高速003",
+      "family": "日K高速",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/stdout.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/C-CASH-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/C-PULLBACK-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/C-PULLBACK-GOLD-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/C-PULLBACK-NASDAQ-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/C-PULLBACK-SP500-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/DKHS003-COMBINED-SLIP005-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/DKHS003-COMBINED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/DKHS003-GOLD-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/DKHS003-NASDAQ-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-DAYK-HS-003/candidates/DKHS003-SP500-portfolio.csv"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": null,
+        "candidate_id": "S-DAYK-HIGH-SPEED-003",
+        "conclusion": "INVALID / NO_CANDIDATE_ADMITTED. The first formal 日K高速003 execution exposed a cross-calendar mark-to-market defect in the new daily swing simulator: when one held asset had no OHLC bar on a date supplied by another market, the combined path omitted that held asset's carried value instead of using its last valid close. This created a mechanically impossible 68.237158% combined drawdown relative to the standalone sleeves. All viewed performance metrics from this run are invalid and must not be used for selection. The run and raw outputs are permanently retained. The defect must be corrected and the same economic rule, if retried, must use a new preregistered trial identifier and formal-run budget.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "shorting_allowed": false
+        },
+        "dsr_probability": null,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": null,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": null,
+        "metrics": {
+          "strategy_library_validation": {
+            "comparative_failures": [],
+            "comparison_status": "UNKNOWN",
+            "evidence_missing": [
+              "performance_metrics"
+            ],
+            "legacy_robust_strategy_pass": false,
+            "level": "R1_RETROSPECTIVE",
+            "note": "The formal strategy trial ended before candidate performance metrics were recorded; preserve it as an INVALID/ABORTED research artifact rather than dropping it from the strategy library.",
+            "objective_failures": [],
+            "objective_status": "INCONCLUSIVE",
+            "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+            "status": "FAIL",
+            "trial_status": "INVALID",
+            "validation_failures": [
+              "formal_trial_invalid"
+            ],
+            "validation_warnings": [
+              "formal_trial_ended_before_candidate_metrics"
+            ]
+          }
+        },
+        "result_status": "INVALID",
+        "robust_strategy_pass": false,
+        "sharpe": null,
+        "since2020_cagr_percent": null,
+        "since2022_cagr_percent": null,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-DAYK-HIGH-SPEED-003",
+      "strategy_kind": "strategy",
+      "tags": [
+        "ATM-SVP2-DAYK-HS-003",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "033ffdded7aab76af3f9db89510b2b0e9476464c64bca44d73979ca0e9ab01d7",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "When the prior close remains above SMA(200), a two-session decline of at least one ATR reflects temporary daily-scale price pressure rather than a broken long-term trend. Buying the next daily open, holding overnight, and exiting at a 0.75 ATR profit limit or the fifth session close should earn repeatable net returns across gold, Nasdaq and S&P 500 after the user-specified fee.",
+        "parameters": {
+          "allowed_changes": [
+            "one fixed cross-asset rule: previous close above trailing SMA(200) and the two-session close-to-close decline is at least 1.00 times ATR(14)",
+            "enter at the next real daily open, with no same-session exit allowed",
+            "from the second held asset session, exit at entry open plus 0.75 times the frozen T-1 ATR when daily high reaches it; otherwise exit at the fifth held session close",
+            "standalone 100% sleeve runs for gold_cny, nasdaq and sp500 plus one fixed one-third-per-asset combined run",
+            "matched pullback controls that remove only the SMA(200) trend gate, a CNY demand-cash control and one preregistered 0.05% adverse-slippage execution stress"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "reading execution-session high, low or close before the opening buy decision",
+            "allowing a same-session take-profit exit on the entry bar",
+            "any SMA, ATR, pullback, take-profit or holding-period grid or post-result threshold change",
+            "using synthetic OHLC rows or close-only fallback rows as real OHLC",
+            "asset-specific parameters or dropping a weak gold, Nasdaq or S&P 500 component",
+            "adding RSI, MACD, volume, calendar or another factor after viewing this result",
+            "adding a stop-loss or changing the five-session liquidation rule",
+            "shorting, borrowing, financing, leverage, negative target weights, gross exposure above 100% or negative end-of-day cash",
+            "changing the user-specified 0.005% per-fill fee or hiding the preregistered slippage stress",
+            "representing index OHLC execution as directly investable product evidence"
+          ],
+          "shared_rules": {
+            "atr_lookback_sessions": 14,
+            "entry": "buy current session real open after the T-1 close signal passes",
+            "evaluation_end": "2026-08-20",
+            "evaluation_start": "2017-04-11",
+            "exit": "no entry-day exit; from held session 2 sell at entry open + 0.75 * frozen T-1 ATR if daily high reaches it, otherwise sell held session 5 close",
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "maximum_holding_sessions": 5,
+            "minimum_holding_sessions": 2,
+            "overnight_required": true,
+            "pullback_atr_multiple": 1.0,
+            "pullback_window_sessions": 2,
+            "shorting_allowed": false,
+            "take_profit_atr_multiple": 0.75,
+            "trend_lookback_sessions": 200,
+            "trend_rule": "previous close > mean of the 200 closes ending at previous close"
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "tools/dayk_high_speed_003_logic.swift",
+        "target_fingerprint": null,
+        "version_key": "S-DAYK-HIGH-SPEED-003"
+      }
+    }
+  ]
+}

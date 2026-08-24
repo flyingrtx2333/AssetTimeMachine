@@ -96,10 +96,27 @@ def is_strategy_trial(prereg: dict[str, Any], result: dict[str, Any]) -> bool:
     if kind:
         return "STRATEGY" in kind
     candidate_ids = [str(item.get("candidate_id") or "") for item in result.get("candidate_results") or []]
+    if not candidate_ids:
+        candidate_ids = [str(item or "") for item in prereg.get("candidate_ids") or []]
     # Older strategy preregistrations predate candidate_kind. Their immutable candidate
     # namespace is S-* (strategy) or HR-* (high-return architecture). Formal factor
-    # candidates use F-* and must stay exclusively in the factor library.
+    # candidates use F-* and must stay exclusively in the factor library. INVALID trials
+    # may terminate before candidate_results are materialized, so fall back to prereg IDs.
     return bool(candidate_ids) and all(candidate.startswith(("S-", "HR-")) for candidate in candidate_ids)
+
+
+def candidate_id_reused_in_other_result(candidate_id: str, trial_id: str) -> bool:
+    for path in RESULTS_DIR.glob("ATM-SVP*-*.json"):
+        if path.stem == trial_id:
+            continue
+        try:
+            other = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        for item in other.get("candidate_results") or []:
+            if str(item.get("candidate_id") or "") == candidate_id:
+                return True
+    return False
 
 
 def infer_family(trial_id: str, candidate_id: str, prereg: dict[str, Any]) -> str:
@@ -265,6 +282,24 @@ def strategy_validation_assessment(
         durable.setdefault("legacy_robust_strategy_pass", bool(metrics.get("robust_strategy_pass", False)))
         durable.setdefault("note", "Validation, campaign objective attainment and peer-strategy comparison are independent axes.")
         return durable
+
+    trial_status = str(result.get("status") or "").upper()
+    if trial_status in {"INVALID", "ABORTED"} and not metrics:
+        return {
+            "policy_id": STRATEGY_LIBRARY_VALIDATION_POLICY_ID,
+            "status": "FAIL",
+            "level": str(prereg.get("evidence_class") or "R1_RETROSPECTIVE"),
+            "evidence_missing": ["performance_metrics"],
+            "validation_failures": [f"formal_trial_{trial_status.lower()}"],
+            "validation_warnings": ["formal_trial_ended_before_candidate_metrics"],
+            "objective_status": "INCONCLUSIVE",
+            "objective_failures": [],
+            "comparison_status": "UNKNOWN",
+            "comparative_failures": [],
+            "trial_status": trial_status,
+            "legacy_robust_strategy_pass": False,
+            "note": "The formal strategy trial ended before candidate performance metrics were recorded; preserve it as an INVALID/ABORTED research artifact rather than dropping it from the strategy library.",
+        }
 
     primary = result_primary_metrics(metrics)
     validation_failures: list[str] = []
@@ -502,6 +537,10 @@ def export_one(result_path: Path, output_dir: Path) -> Path | None:
     if not is_strategy_trial(prereg, result):
         return None
     candidates = result.get("candidate_results") or []
+    had_recorded_candidates = bool(candidates)
+    if not candidates:
+        prereg_ids = [str(item or "").strip() for item in prereg.get("candidate_ids") or []]
+        candidates = [{"candidate_id": candidate_id, "metrics": {}} for candidate_id in prereg_ids if candidate_id]
     if not candidates:
         return None
 
@@ -556,8 +595,13 @@ def export_one(result_path: Path, output_dir: Path) -> Path | None:
             metrics.get("target_fingerprint") or metrics.get("fingerprint")
             or metrics.get("execution_event_target_fingerprint")
         )
+        archive_key = (
+            f"{candidate_id}--archive--{trial_id}"
+            if not had_recorded_candidates and candidate_id_reused_in_other_result(candidate_id, trial_id)
+            else candidate_id
+        )
         strategies.append({
-            "strategy_key": candidate_id,
+            "strategy_key": archive_key,
             "display_name": infer_display_name(candidate_id, prereg),
             "family": infer_family(trial_id, candidate_id, prereg),
             "strategy_kind": str(prereg.get("candidate_kind") or "strategy").lower(),
@@ -565,7 +609,7 @@ def export_one(result_path: Path, output_dir: Path) -> Path | None:
             "tags": [trial_id, str(prereg.get("evidence_class") or "R1_RETROSPECTIVE")],
             "source_project": "AssetTimeMachine",
             "version": {
-                "version_key": candidate_id,
+                "version_key": archive_key,
                 "mechanism_text": str(prereg.get("hypothesis") or prereg.get("selection_metric") or candidate_id),
                 "parameters": {
                     "candidate_definition": prereg.get("candidate_definition"),
