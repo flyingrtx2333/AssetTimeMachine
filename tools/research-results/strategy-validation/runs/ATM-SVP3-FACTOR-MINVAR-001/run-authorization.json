@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "755899f7e40cbd23427e824aab43e9692f17809f",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "830324a29c0db2af7b16056f0257c86a9979fedcbdc431d453d98c08fed954a8",
+  "preregistration_record_hash": "830324a29c0db2af7b16056f0257c86a9979fedcbdc431d453d98c08fed954a8",
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-FACTOR-MINVAR-001"
+}

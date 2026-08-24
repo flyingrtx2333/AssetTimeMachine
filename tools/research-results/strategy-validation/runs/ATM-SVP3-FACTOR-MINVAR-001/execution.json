@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_factor_minvar_001.py",
+    "--fixture",
+    "tools/fixtures/backtest-history/public_history.json",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/candidates",
+    "--formal"
+  ],
+  "execution_git_commit": "755899f7e40cbd23427e824aab43e9692f17809f",
+  "finished_at": "2026-08-23T22:57:45+08:00",
+  "preregistration_record_hash": "830324a29c0db2af7b16056f0257c86a9979fedcbdc431d453d98c08fed954a8",
+  "protocol_id": "ATM-SVP-3",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/run-authorization.json",
+  "started_at": "2026-08-23T22:57:19+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/stdout.txt",
+  "trial_id": "ATM-SVP3-FACTOR-MINVAR-001"
+}

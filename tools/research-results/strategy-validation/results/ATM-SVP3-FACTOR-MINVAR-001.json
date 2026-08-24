@@ -1,0 +1,159 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/artifact-manifest.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/candidates/C-CASH-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/candidates/C-FACTOR-EQUAL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/candidates/FMINVAR001-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/candidates/weights-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/stdout.txt"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-FACTOR-MINVAR-001",
+      "metrics": {
+        "average_cash_ratio": 0,
+        "cagr_percent": 10.08976266307342,
+        "cash_control_cagr_percent": 0.3497670867944169,
+        "comparison_checks": {
+          "mdd_le_equal_factor": false,
+          "sharpe_gt_equal_factor": false
+        },
+        "comparison_failures": [
+          "mdd_le_equal_factor",
+          "sharpe_gt_equal_factor"
+        ],
+        "constraints": {
+          "financing_allowed": false,
+          "max_gross": 1.0000000000000002,
+          "minimum_cash": 0,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "equal_factor_control": {
+          "cagr_percent": 12.807712458674203,
+          "mdd_percent": 36.44613801355397,
+          "sharpe": 0.7964339241537784,
+          "target_fingerprint": "b8afc09d217c6183",
+          "trades": 48
+        },
+        "failed_preregistered_gates": [
+          "full_mdd_le_25pct"
+        ],
+        "fold_cagrs_percent": [
+          16.355500557970302,
+          7.428983738166228,
+          10.731345133104275,
+          12.660824186069132,
+          12.188706041365416,
+          1.9829450320228315,
+          9.610068473592381
+        ],
+        "fold_mdds_percent": [
+          11.039546038776429,
+          12.220222813200541,
+          36.78653136944257,
+          12.038434204712438,
+          8.250279608236681,
+          9.61550761263559,
+          6.526096559533487
+        ],
+        "fold_names": [
+          "2015-2016",
+          "2017-2018",
+          "2019-2020",
+          "2021-2022",
+          "2023-2024",
+          "2025",
+          "2026-latest"
+        ],
+        "fold_sharpes": [
+          1.1324136874109985,
+          0.7189172769546288,
+          0.5319477948293542,
+          0.8433978977063424,
+          1.0717235655045576,
+          0.21373579090108524,
+          1.0018723962949942
+        ],
+        "folds_with_positive_sharpe": 7,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 0.006100793254867343,
+        "global_post_protocol_dsr_trial_count": 76,
+        "max_gross": 1.0000000000000002,
+        "mdd_percent": 36.78653136944256,
+        "minimum_cash": 0,
+        "objective_checks": {
+          "cagr_ge_12pct": false,
+          "cagr_gt_cash": true,
+          "mdd_le_20pct": false,
+          "sharpe_ge_1": false,
+          "since2020_cagr_positive": true,
+          "since2022_cagr_positive": true
+        },
+        "objective_failures": [
+          "cagr_ge_12pct",
+          "mdd_le_20pct",
+          "sharpe_ge_1"
+        ],
+        "sharpe": 0.6900887053184173,
+        "since2020_cagr_percent": 6.796432279202125,
+        "since2020_sharpe": 0.4560699282689362,
+        "since2022_cagr_percent": 7.350931477636502,
+        "since2022_sharpe": 0.6007946658011861,
+        "strategy_library_validation": {
+          "comparative_failures": [
+            "mdd_le_equal_factor",
+            "sharpe_gt_equal_factor"
+          ],
+          "comparison_status": "FAIL",
+          "evidence_missing": [],
+          "note": "Annual 252-return CNY long-only minimum variance fails intrinsic drawdown validation and underperforms the same-universe annual equal-weight control on CAGR, Sharpe and MDD. The covariance mechanism itself adds no value in this frozen form.",
+          "objective_failures": [
+            "cagr_ge_12pct",
+            "mdd_le_20pct",
+            "sharpe_ge_1"
+          ],
+          "objective_status": "FAIL",
+          "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+          "status": "FAIL",
+          "trial_status": "FAIL",
+          "validation_failures": [
+            "full_mdd_le_25pct"
+          ],
+          "validation_warnings": [
+            "execution_stress_not_in_this_R1_trial; base run already uses product 1.00% fee plus 0.05% slippage",
+            "annual covariance weights use previous 252 common CNY daily returns and no execution-day observation"
+          ]
+        },
+        "target_fingerprint": "b51efe26ec6e033d",
+        "trades": 35,
+        "validation_checks": {
+          "actual_trades_gt_0": true,
+          "cash_nonnegative": true,
+          "full_cagr_gt_0": true,
+          "full_mdd_le_25pct": false,
+          "full_sharpe_gt_0": true,
+          "max_gross_le_1": true,
+          "positive_sharpe_folds_ge_70pct": true
+        }
+      }
+    }
+  ],
+  "comparison_status": "FAIL",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-FACTOR-MINVAR-001.json",
+  "decision": "FAIL / VALIDATION_FAIL / COMPARISON_FAIL. The frozen annual long-only minimum-variance allocation over VBR/MTUM/QUAL/SPLV produced 10.089763% CAGR, 0.690089 Sharpe and 36.786531% MDD after product-level costs, with 7/7 positive-Sharpe folds. It fails the intrinsic <=25% MDD ceiling. The matched annual equal-factor control is strictly better on all three headline metrics: 12.807712% CAGR, 0.796434 Sharpe and 36.446138% MDD. Global DSR=0.00610079325 over 76 candidates. No covariance-window, shrinkage, weight-cap/floor, factor-removal or safe-asset rescue is permitted in this lineage.",
+  "execution_git_commit": "755899f7e40cbd23427e824aab43e9692f17809f",
+  "objective_status": "FAIL",
+  "preregistration_record_hash": "830324a29c0db2af7b16056f0257c86a9979fedcbdc431d453d98c08fed954a8",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP3-FACTOR-MINVAR-001",
+  "validation_status": "FAIL"
+}

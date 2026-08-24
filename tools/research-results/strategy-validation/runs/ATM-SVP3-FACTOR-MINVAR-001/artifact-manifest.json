@@ -1,0 +1,121 @@
+{
+  "files": [
+    {
+      "bytes": 84701,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2015-01-02",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/candidates/C-CASH-portfolio.csv",
+      "row_count": 2920,
+      "sha256": "b8bfe83a1c63ccd7a824e4d8595334e4a35587675b4aae15c8976ae858ad46ca"
+    },
+    {
+      "bytes": 84660,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2015-01-02",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/candidates/C-FACTOR-EQUAL-portfolio.csv",
+      "row_count": 2920,
+      "sha256": "512962f4e2ef3c525d66a6751638e3653f8c8335d1ff93940c4a4431e481b222"
+    },
+    {
+      "bytes": 84557,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2015-01-02",
+      "format": "csv",
+      "last_date": "2026-08-13",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/candidates/FMINVAR001-portfolio.csv",
+      "row_count": 2920,
+      "sha256": "8f0f64e1f59d5c0d63793b73f13cd58b6b524de201f874e68120e8baee23d87b"
+    },
+    {
+      "bytes": 531,
+      "columns": [
+        "id",
+        "kind",
+        "cagr_percent",
+        "mdd_percent",
+        "volatility_percent",
+        "sharpe",
+        "trades",
+        "average_cash_ratio",
+        "max_gross",
+        "minimum_cash",
+        "target_fingerprint"
+      ],
+      "date_column": null,
+      "first_date": null,
+      "format": "csv",
+      "last_date": null,
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/candidates/candidate-metrics.csv",
+      "row_count": 3,
+      "sha256": "7ac101a15ef2e09848364cfb2ebd2929f8d433cecb55ae0da6b2a05d9e42afc3"
+    },
+    {
+      "bytes": 7730,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/candidates/candidate-metrics.json",
+      "sha256": "66e5eca61ee0d38eed9d6c2f2ad085b316e47f20cc76cf4bf7a7ec35fcd4d366"
+    },
+    {
+      "bytes": 543,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/candidates/statistical-audit.json",
+      "sha256": "51d150af50eb7611e3379756fae2ad6dbff6e00a71d0d23a5573cad183fb0833"
+    },
+    {
+      "bytes": 3528,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/candidates/weights-audit.json",
+      "sha256": "9c8aab7ecbc78947968c6767144153db45f81aa5adbc8d6e7e4a6de7faf136a4"
+    },
+    {
+      "bytes": 964,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/execution.json",
+      "sha256": "574d7328b97c9ecc927e2e358fc7a41e77d7bea5743893a883bd74e647afb20c"
+    },
+    {
+      "bytes": 440,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/run-authorization.json",
+      "sha256": "b361727369c4872de9fc3271ebf83d473cc525013d115668e29ecdf585a0cd9f"
+    },
+    {
+      "bytes": 0,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1206,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-FACTOR-MINVAR-001/stdout.txt",
+      "sha256": "8cf717a819f0816aee973adf9d3f4a5b9006645a67cac8c9248fa5fe9e0d92d7"
+    }
+  ],
+  "generated_at": "2026-08-23T22:58:23+08:00",
+  "git_commit": "755899f7e40cbd23427e824aab43e9692f17809f",
+  "kind": "result",
+  "metadata": {
+    "comparison_status": "FAIL",
+    "objective_status": "FAIL",
+    "validation_status": "FAIL"
+  },
+  "protocol_id": "ATM-SVP-3",
+  "trial_id": "ATM-SVP3-FACTOR-MINVAR-001"
+}

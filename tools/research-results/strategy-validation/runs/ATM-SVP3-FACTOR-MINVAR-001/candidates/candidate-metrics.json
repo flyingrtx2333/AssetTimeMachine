@@ -1,0 +1,261 @@
+{
+  "candidate": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 10.08976266307342,
+    "end": "2026-08-13",
+    "folds": [
+      {
+        "cagr_percent": 16.355500557970302,
+        "mdd_percent": 11.039546038776429,
+        "name": "2015-2016",
+        "sessions": 504,
+        "sharpe": 1.1324136874109985
+      },
+      {
+        "cagr_percent": 7.428983738166228,
+        "mdd_percent": 12.220222813200541,
+        "name": "2017-2018",
+        "sessions": 502,
+        "sharpe": 0.7189172769546288
+      },
+      {
+        "cagr_percent": 10.731345133104275,
+        "mdd_percent": 36.78653136944257,
+        "name": "2019-2020",
+        "sessions": 505,
+        "sharpe": 0.5319477948293542
+      },
+      {
+        "cagr_percent": 12.660824186069132,
+        "mdd_percent": 12.038434204712438,
+        "name": "2021-2022",
+        "sessions": 503,
+        "sharpe": 0.8433978977063424
+      },
+      {
+        "cagr_percent": 12.188706041365416,
+        "mdd_percent": 8.250279608236681,
+        "name": "2023-2024",
+        "sessions": 502,
+        "sharpe": 1.0717235655045576
+      },
+      {
+        "cagr_percent": 1.9829450320228315,
+        "mdd_percent": 9.61550761263559,
+        "name": "2025",
+        "sessions": 250,
+        "sharpe": 0.21373579090108524
+      },
+      {
+        "cagr_percent": 9.610068473592381,
+        "mdd_percent": 6.526096559533487,
+        "name": "2026-latest",
+        "sessions": 154,
+        "sharpe": 1.0018723962949942
+      }
+    ],
+    "id": "FMINVAR001",
+    "max_gross": 1.0000000000000002,
+    "mdd_percent": 36.78653136944256,
+    "minimum_cash": 0,
+    "sessions": 2920,
+    "sharpe": 0.6900887053184173,
+    "since2020_cagr_percent": 6.796432279202125,
+    "since2020_sharpe": 0.4560699282689362,
+    "since2022_cagr_percent": 7.350931477636502,
+    "since2022_sharpe": 0.6007946658011861,
+    "start": "2015-01-02",
+    "target_fingerprint": "b51efe26ec6e033d",
+    "trades": 35,
+    "volatility_percent": 15.778162659468196
+  },
+  "candidate_id": "S-FACTOR-MINVAR-001",
+  "cash_control": {
+    "average_cash_ratio": 1,
+    "cagr_percent": 0.3497670867944169,
+    "end": "2026-08-13",
+    "folds": [
+      {
+        "cagr_percent": 0.35111763869291046,
+        "mdd_percent": 0,
+        "name": "2015-2016",
+        "sessions": 504,
+        "sharpe": 2100133071056.764
+      },
+      {
+        "cagr_percent": 0.3502009918373794,
+        "mdd_percent": 0,
+        "name": "2017-2018",
+        "sessions": 502,
+        "sharpe": 2067486320981.175
+      },
+      {
+        "cagr_percent": 0.3513334633219234,
+        "mdd_percent": 0,
+        "name": "2019-2020",
+        "sessions": 505,
+        "sharpe": 2053413320000.598
+      },
+      {
+        "cagr_percent": 0.35187092522688257,
+        "mdd_percent": 0,
+        "name": "2021-2022",
+        "sessions": 503,
+        "sharpe": 2063419767907.6597
+      },
+      {
+        "cagr_percent": 0.3497191063447591,
+        "mdd_percent": 0,
+        "name": "2023-2024",
+        "sessions": 502,
+        "sharpe": 2070031538199.152
+      },
+      {
+        "cagr_percent": 0.3485806460559626,
+        "mdd_percent": 0,
+        "name": "2025",
+        "sessions": 250,
+        "sharpe": 2136523656638.687
+      },
+      {
+        "cagr_percent": 0.34865610936878344,
+        "mdd_percent": 0,
+        "name": "2026-latest",
+        "sessions": 154,
+        "sharpe": 2054542726042.0986
+      }
+    ],
+    "id": "C-CASH",
+    "max_gross": 0,
+    "mdd_percent": 0,
+    "minimum_cash": 100000,
+    "sessions": 2920,
+    "sharpe": 2075732059935.7273,
+    "since2020_cagr_percent": 0.34951439527397543,
+    "since2020_sharpe": 2073388948971.861,
+    "since2022_cagr_percent": 0.3490481002687007,
+    "since2022_sharpe": 2088917646978.6128,
+    "start": "2015-01-02",
+    "target_fingerprint": "2c8d7f38b7131f83",
+    "trades": 0,
+    "volatility_percent": 1.6861521135398761e-13
+  },
+  "equal_factor_control": {
+    "average_cash_ratio": 0,
+    "cagr_percent": 12.807712458674203,
+    "end": "2026-08-13",
+    "folds": [
+      {
+        "cagr_percent": 13.978304776720996,
+        "mdd_percent": 10.244537037580464,
+        "name": "2015-2016",
+        "sessions": 504,
+        "sharpe": 1.0275767346549332
+      },
+      {
+        "cagr_percent": 6.906681429479322,
+        "mdd_percent": 18.22943127712407,
+        "name": "2017-2018",
+        "sessions": 502,
+        "sharpe": 0.594242292511717
+      },
+      {
+        "cagr_percent": 17.628271370125614,
+        "mdd_percent": 36.44613801355394,
+        "name": "2019-2020",
+        "sessions": 505,
+        "sharpe": 0.7697761997849988
+      },
+      {
+        "cagr_percent": 7.48802032938507,
+        "mdd_percent": 17.511643616088964,
+        "name": "2021-2022",
+        "sessions": 503,
+        "sharpe": 0.4854837944570618
+      },
+      {
+        "cagr_percent": 20.852852607037796,
+        "mdd_percent": 9.11893173883719,
+        "name": "2023-2024",
+        "sessions": 502,
+        "sharpe": 1.516130684931958
+      },
+      {
+        "cagr_percent": 7.579723862403109,
+        "mdd_percent": 15.646581400508508,
+        "name": "2025",
+        "sessions": 250,
+        "sharpe": 0.5223143399357139
+      },
+      {
+        "cagr_percent": 21.18536860450679,
+        "mdd_percent": 7.427495138288058,
+        "name": "2026-latest",
+        "sessions": 154,
+        "sharpe": 1.5453990665196613
+      }
+    ],
+    "id": "C-FACTOR-EQUAL",
+    "max_gross": 1.0000000000000004,
+    "mdd_percent": 36.44613801355397,
+    "minimum_cash": 0,
+    "sessions": 2920,
+    "sharpe": 0.7964339241537784,
+    "since2020_cagr_percent": 11.846261423987304,
+    "since2020_sharpe": 0.671093206110391,
+    "since2022_cagr_percent": 11.603157588134927,
+    "since2022_sharpe": 0.7648614653975007,
+    "start": "2015-01-02",
+    "target_fingerprint": "b8afc09d217c6183",
+    "trades": 48,
+    "volatility_percent": 16.99042424360426
+  },
+  "evaluation_end": "2026-08-13",
+  "evaluation_start": "2015-01-02",
+  "fee_percent_per_trade": 1,
+  "lookback_returns": 252,
+  "rule": "annual long-only fully-invested minimum-variance weights across VBR/MTUM/QUAL/SPLV using covariance of the previous 252 common CNY daily returns ending strictly before the rebalance date; exact active-set solution, no shrinkage/caps/floors/return forecasts",
+  "schedule_entries": 12,
+  "slippage_percent_per_trade": 0.05,
+  "three_axis_evaluation": {
+    "comparison_checks": {
+      "mdd_le_equal_factor": false,
+      "sharpe_gt_equal_factor": false
+    },
+    "comparison_status": "FAIL",
+    "diagnostics": {
+      "cash_cagr_percent": 0.3497670867944169,
+      "equal_factor_cagr_percent": 12.807712458674203,
+      "equal_factor_mdd_percent": 36.44613801355397,
+      "equal_factor_sharpe": 0.7964339241537784,
+      "fold_count": 7,
+      "positive_fold_count": 7,
+      "positive_fold_fraction": 1.0
+    },
+    "objective_checks": {
+      "cagr_ge_12pct": false,
+      "cagr_gt_cash": true,
+      "mdd_le_20pct": false,
+      "sharpe_ge_1": false,
+      "since2020_cagr_positive": true,
+      "since2022_cagr_positive": true
+    },
+    "objective_status": "FAIL",
+    "status": "FAIL",
+    "validation_checks": {
+      "actual_trades_gt_0": true,
+      "cash_nonnegative": true,
+      "full_cagr_gt_0": true,
+      "full_mdd_le_25pct": false,
+      "full_sharpe_gt_0": true,
+      "max_gross_le_1": true,
+      "positive_sharpe_folds_ge_70pct": true
+    },
+    "validation_status": "FAIL",
+    "validation_warnings": [
+      "execution_stress_not_in_this_R1_trial; base run already uses product 1.00% fee plus 0.05% slippage",
+      "annual covariance weights use previous 252 common CNY daily returns and no execution-day observation"
+    ]
+  },
+  "trial_id": "ATM-SVP3-FACTOR-MINVAR-001"
+}
