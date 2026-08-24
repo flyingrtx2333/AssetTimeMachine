@@ -501,6 +501,13 @@ public enum PublicBacktestCore {
             maxGrossExposure: 1.0,
             financingRate: nil
         ),
+        "nfci-dual-core-v11": .init(
+            riskLevel: "中等",
+            summary: "以跨市场趋势和组合状态协同控制风险预算，在风险走弱阶段自动收缩。",
+            assetScope: ["黄金", "美国权益指数", "中国权益指数", "现金"],
+            maxGrossExposure: 1.0,
+            financingRate: nil
+        ),
         "core-gold-satellite-equity-curve-state-gate-momentum": .init(
             riskLevel: "中等",
             summary: "以跨市场趋势和组合状态协同控制风险预算，在风险走弱阶段自动收缩。",
