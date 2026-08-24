@@ -372,7 +372,12 @@ struct SnapshotListView: View {
             )
         }
         .sheet(item: $editingAssetItem, onDismiss: finishAssetEditorDraft) { item in
-            AssetItemEditorSheet(snapshot: currentSnapshot, marketStore: marketStore, editingItem: item)
+            AssetItemEditorSheet(
+                snapshot: currentSnapshot,
+                marketStore: marketStore,
+                editingItem: item,
+                onSaved: handleAssetItemSaved
+            )
         }
         .overlay {
             #if DEBUG
@@ -698,6 +703,14 @@ struct SnapshotListView: View {
     @MainActor
     private func handleAddAssetEditorDismissed() {
         finishAssetEditorDraft()
+        refreshCachedListLayout()
+    }
+
+    @MainActor
+    private func handleAssetItemSaved(_ item: AssetItem) {
+        if let snapshot = currentSnapshot {
+            hydrateInputs(for: item, from: snapshot)
+        }
         refreshCachedListLayout()
     }
 

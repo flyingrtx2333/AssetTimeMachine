@@ -150,6 +150,8 @@ ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json \
 
 新策略研究只能新增 Swift `StrategyTargetProvider`/Swift CLI 搜索入口，并必须通过同一个 `BacktestDailySimulator` 与 pinned fixture baseline 验证后，才能更新 README 或 App 可见指标。
 
+新的研究工作材料统一放在 `/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachineResearch`：策略家族与非正式测试在 `strategies/`，因子工作在 `factors/`，研究简报在 `studies/`，通用研究工具在 `tools/`。正式 ATM-SVP 的 preregistration、数据清单、结果和 Git 提交仍必须保留在本仓库的 `tools/research-results/strategy-validation/`，以维持可复现和审计边界。
+
 ## 资产分类设计
 
 一级分类固定，二级项目由用户自定义。
