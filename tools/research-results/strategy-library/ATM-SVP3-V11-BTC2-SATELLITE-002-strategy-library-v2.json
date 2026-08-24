@@ -1,0 +1,183 @@
+{
+  "batch_key": "ATM-SVP3-V11-BTC2-SATELLITE-002-strategy-library-v2",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-V11-BTC2-SATELLITE-002.json",
+    "decision": "INVALID_PATH_IDENTITY. This trial was allowed to change metrics only and required exact candidate/control portfolio path equality to predecessor 001. Re-executing the same engine introduced machine-level floating-point drift, so the exact gate failed even though the maximum relative difference is about 1e-15. No corrected performance metric from 002 is accepted or inspected. The next allowed repair is measurement-only computation directly from the immutable 001 portfolio CSVs, with no strategy re-execution.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "55663c545ab9134609962240cc761639817ad126",
+    "methodology": {
+      "follow_up_policy": "After corrected formal metrics are viewed, no BTC weight, calendar policy, timing, cost or V11 change is allowed. If comparison still fails on MDD, a smaller BTC weight is not an allowed rescue. Statistical robustness may only be rerun with the same 63-session/20k/seed standard but corrected observation-frequency annualization.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "actual trades >0",
+        "full CAGR >0",
+        "full Sharpe >0",
+        "full MDD <=25%",
+        "at least70% of seven fixed folds have Sharpe >0",
+        "max target gross <=100%",
+        "max realized gross <=100% within floating tolerance",
+        "minimum cash >=0",
+        "candidate and control portfolio paths exactly equal predecessor 001 paths"
+      ],
+      "selection_metric": "No strategy selection or weight change. Exact 98% frozen V11 + 2% BTC architecture from 001; only metric annualization is repaired. Validation, objective and matched-V11 comparison retain the same thresholds as 001."
+    },
+    "preregistration_hash": "6a3b573b58e9bb35b5b763c9ecbd6a531af94513af205b37b484a39edebbe9e6",
+    "protocol_id": "ATM-SVP-3",
+    "run_key": "ATM-SVP3-V11-BTC2-SATELLITE-002",
+    "status": "INVALID",
+    "title": "v11-btc2-satellite-002 / V11+2%BTC measurement-corrected successor; exact same target path as 001"
+  },
+  "schema_version": "strategy-library-v2",
+  "source_commit": "55663c545ab9134609962240cc761639817ad126",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "The economic target path of V11-BTC2-SATELLITE-001 may still provide useful incremental return once the mixed 24/7 BTC plus traditional-asset calendar is measured correctly. The repair must preserve every portfolio target and trade event from 001, keep weekend BTC mark-to-market risk, and change only annualized volatility/Sharpe from a hard-coded 252-period convention to the observed number of return periods per actual calendar year.",
+      "display_name": "v11-btc2-satellite-002 / V11+2%BTC measurement-corrected successor",
+      "family": "策略研究",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/candidates/C-V11-MATCHED-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/candidates/S-V11-BTC2-SATELLITE-002-portfolio.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/candidates/candidate-metrics.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/candidates/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-SATELLITE-002/stdout.txt"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": null,
+        "candidate_id": "S-V11-BTC2-SATELLITE-002",
+        "conclusion": "INVALID_PATH_IDENTITY. This trial was allowed to change metrics only and required exact candidate/control portfolio path equality to predecessor 001. Re-executing the same engine introduced machine-level floating-point drift, so the exact gate failed even though the maximum relative difference is about 1e-15. No corrected performance metric from 002 is accepted or inspected. The next allowed repair is measurement-only computation directly from the immutable 001 portfolio CSVs, with no strategy re-execution.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "shorting_allowed": false
+        },
+        "dsr_probability": null,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": null,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": null,
+        "metrics": {
+          "economic_rule_changed": false,
+          "invalid_measurement_repair": true,
+          "invalid_reason": "Pre-registered exact portfolio path identity versus 001 failed. Re-executing the unchanged engine produced floating-point path drift: candidate max relative difference about 1.33e-15 and control about 1.0e-15. Although economically negligible, the frozen exact-identity gate is binary and cannot be relaxed after formal execution. Corrected performance metrics emitted by this run are not used.",
+          "max_candidate_relative_path_drift": 1.3322676295501878e-15,
+          "max_control_relative_path_drift": 9.992007221626409e-16,
+          "performance_used": false,
+          "strategy_library_validation": {
+            "comparative_failures": [],
+            "comparison_status": "NOT_APPLICABLE",
+            "evidence_missing": [],
+            "legacy_robust_strategy_pass": false,
+            "level": "R1_RETROSPECTIVE",
+            "note": "Validation, campaign objective attainment and peer-strategy comparison are independent axes.",
+            "objective_failures": [],
+            "objective_status": "INVALID",
+            "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+            "status": "FAIL",
+            "trial_status": "INVALID",
+            "validation_failures": [
+              "full_cagr_gt_0",
+              "full_sharpe_gt_0",
+              "full_mdd_le_25pct",
+              "formal_trial_invalid"
+            ],
+            "validation_warnings": [
+              "fold_robustness_evidence_unavailable",
+              "execution_stress_not_in_this_trial"
+            ]
+          }
+        },
+        "result_status": "INVALID",
+        "robust_strategy_pass": false,
+        "sharpe": null,
+        "since2020_cagr_percent": null,
+        "since2022_cagr_percent": null,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "S-V11-BTC2-SATELLITE-002",
+      "strategy_kind": "strategy_architecture_not_factor",
+      "tags": [
+        "ATM-SVP3-V11-BTC2-SATELLITE-002",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "3486cd54e5ff87a1e402d88bec853c0456c98a64e8f4ba6c64d1dbd7f7d044db",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "The economic target path of V11-BTC2-SATELLITE-001 may still provide useful incremental return once the mixed 24/7 BTC plus traditional-asset calendar is measured correctly. The repair must preserve every portfolio target and trade event from 001, keep weekend BTC mark-to-market risk, and change only annualized volatility/Sharpe from a hard-coded 252-period convention to the observed number of return periods per actual calendar year.",
+        "parameters": {
+          "allowed_changes": [
+            "reuse immutable V11BTC2Satellite001Logic without modification",
+            "reuse the exact 001 V11 source path, BTC source, 98% core scale, 2% BTC weight, costs, date bounds and V11-only rebalance events",
+            "retain the mixed daily calendar including weekend BTC mark-to-market observations",
+            "replace only metric computation for full/recent/fold volatility and Sharpe with observed periods per calendar year; CAGR remains date-span annualized and MDD remains path based",
+            "require candidate and matched-control portfolio value paths to equal 001 exactly after formal run"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "changing BTC weight or V11 core scale",
+            "dropping weekend BTC marks or restricting to weekdays",
+            "changing any target weight, source event, rebalance band, NFCI input, cost, date or BTC data source",
+            "changing objective/comparison thresholds after seeing corrected metrics",
+            "using corrected metrics to introduce BTC timing, weight search or dynamic risk budget",
+            "shorting, borrowing, financing, leverage, gross exposure above100% or negative cash"
+          ],
+          "shared_rules": {
+            "base_strategy_mode": "nfciDualCoreSimplifiedV11",
+            "btc_rebalance_rule": "initial matched point + frozen V11 source trade dates only",
+            "btc_timing_rule": null,
+            "btc_weight": 0.02,
+            "core_scale": 0.98,
+            "evaluation_end": "2026-08-20",
+            "evaluation_start_bound": "2017-08-17",
+            "fee_percent_per_trade": 1.0,
+            "financing_allowed": false,
+            "max_gross": 1.0,
+            "metric_method": "observed_periods_per_calendar_year",
+            "predecessor_trial": "ATM-SVP3-V11-BTC2-SATELLITE-001",
+            "shorting_allowed": false,
+            "slippage_percent_per_trade": 0.05,
+            "weekend_btc_marks_retained": true
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "tools/v11_btc2_satellite_001_logic.swift",
+        "target_fingerprint": null,
+        "version_key": "S-V11-BTC2-SATELLITE-002"
+      }
+    }
+  ]
+}

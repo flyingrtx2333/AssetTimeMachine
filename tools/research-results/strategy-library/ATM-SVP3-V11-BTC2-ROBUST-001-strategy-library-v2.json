@@ -1,0 +1,220 @@
+{
+  "batch_key": "ATM-SVP3-V11-BTC2-ROBUST-001-strategy-library-v2",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP3-V11-BTC2-ROBUST-001.json",
+    "decision": "INVALID_MEASUREMENT. The frozen paired bootstrap mechanically passed all five gates, but the audit assumed 252 sessions/year while the source candidate/control paths are daily mixed-calendar series with roughly 365 marks/year after BTC was added. Because Sharpe and CAGR resampling annualization are therefore inconsistent with the data frequency, no bootstrap incremental PASS is accepted. This does not change the strategy. A successor statistical audit may only replace the annualization convention with an observation-frequency-aware method after the source strategy measurement itself is repaired; block size, candidate weight and strategy logic may not be rescue-tuned.",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "execution_commit": "9211486a1802b53fe67df5078f7dc5e74f469294",
+    "methodology": {
+      "follow_up_policy": "No failed bootstrap gate may trigger a different block size, seed, BTC weight, or strategy rescue. A failure closes the incremental robustness claim for this exact candidate. A pass supports a stronger incremental-evidence statement but does not overwrite source-trial WEAK validation.",
+      "formal_run_budget": 1,
+      "pass_fail_gates": [
+        "P(CAGR candidate > matched V11) >= 0.90",
+        "P(Sharpe candidate > matched V11) >= 0.90",
+        "median candidate-minus-V11 CAGR >0",
+        "median candidate-minus-V11 Sharpe >0",
+        "candidate bootstrap MDD p97.5 <=15%"
+      ],
+      "selection_metric": "No strategy selection and no parameter search. Apply the project-existing V11 paired circular moving-block bootstrap standard unchanged to the immutable candidate/control return pair."
+    },
+    "preregistration_hash": "6594f5c93f7ac4ef9996d1f1ff399adf7aeb5ee53c6b2657ba3fd878e6a46980",
+    "protocol_id": "ATM-SVP-3",
+    "run_key": "ATM-SVP3-V11-BTC2-ROBUST-001",
+    "status": "INVALID",
+    "title": "v11-btc2-satellite-001 robustness audit; no strategy or weight changes"
+  },
+  "schema_version": "strategy-library-v2",
+  "source_commit": "9211486a1802b53fe67df5078f7dc5e74f469294",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "The positive observed incremental CAGR and Sharpe of the immutable 98% V11 + 2% BTC candidate versus its matched V11 control may be stable under dependence-preserving resampling even though the deterministic comparison failed on slightly higher maximum drawdown and the cumulative global DSR remains below the strong-validation threshold.",
+      "display_name": "v11-btc2-satellite-001 robustness audit",
+      "family": "策略研究",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/audit/bootstrap-audit.csv"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/audit/bootstrap-audit.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/execution.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/run-authorization.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/stderr.txt"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP3-V11-BTC2-ROBUST-001/stdout.txt"
+          }
+        ],
+        "bootstrap": {},
+        "bootstrap_probability_cagr": null,
+        "bootstrap_probability_sharpe": null,
+        "cagr_percent": null,
+        "candidate_id": "A-V11-BTC2-ROBUST-001",
+        "conclusion": "INVALID_MEASUREMENT. The frozen paired bootstrap mechanically passed all five gates, but the audit assumed 252 sessions/year while the source candidate/control paths are daily mixed-calendar series with roughly 365 marks/year after BTC was added. Because Sharpe and CAGR resampling annualization are therefore inconsistent with the data frequency, no bootstrap incremental PASS is accepted. This does not change the strategy. A successor statistical audit may only replace the annualization convention with an observation-frequency-aware method after the source strategy measurement itself is repaired; block size, candidate weight and strategy logic may not be rescue-tuned.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross": 1.0,
+          "shorting_allowed": false
+        },
+        "dsr_probability": null,
+        "folds": {},
+        "folds_total": null,
+        "folds_won": null,
+        "gates": {},
+        "max_gross": 1.0,
+        "mdd_percent": null,
+        "metrics": {
+          "invalid_measurement": true,
+          "invalid_reason": "The immutable candidate/control portfolio paths contain 3290 daily marks over 2017-08-18..2026-08-20 (~365 observations/year), but this audit preregistered the traditional 252 sessions/year standard. The raw bootstrap gates mechanically pass, but their Sharpe/CAGR annualization is not the correct mixed-calendar method and cannot support an incremental robustness conclusion.",
+          "raw_bootstrap_output": {
+            "audit_id": "A-V11-BTC2-ROBUST-001",
+            "bootstrap": {
+              "candidate_cagr_p025": 0.06928333471432153,
+              "candidate_cagr_p50": 0.10600923217152367,
+              "candidate_cagr_p975": 0.14702563802851146,
+              "candidate_mdd_p975": 0.136576678019924,
+              "candidate_sharpe_p025": 0.9405950102481277,
+              "candidate_sharpe_p50": 1.3571028071264135,
+              "candidate_sharpe_p975": 1.779622217197068,
+              "median_candidate_minus_v11_cagr": 0.006912027601304077,
+              "median_candidate_minus_v11_sharpe": 0.06292576935004934,
+              "probability_cagr_gt_v11": 0.95345,
+              "probability_sharpe_gt_v11": 0.9014
+            },
+            "bootstrap_incremental_pass": true,
+            "candidate_id": "S-V11-BTC2-SATELLITE-001",
+            "checks": {
+              "candidate_mdd_p975_le_0_15": true,
+              "median_cagr_delta_gt_0": true,
+              "median_sharpe_delta_gt_0": true,
+              "probability_cagr_gt_v11_ge_0_90": true,
+              "probability_sharpe_gt_v11_ge_0_90": true
+            },
+            "control_id": "C-V11-MATCHED",
+            "known_source_global_dsr_probability": 0.38570194449673956,
+            "method": {
+              "block_sessions": 63,
+              "replicates": 20000,
+              "rng_seed": 20260822,
+              "sampling": "paired circular moving blocks",
+              "sessions_per_year": 252
+            },
+            "observed": {
+              "candidate": {
+                "cagr": 0.1064993633352739,
+                "mdd": 0.0814436651649667,
+                "sharpe": 1.3549508148180587
+              },
+              "matched_v11": {
+                "cagr": 0.09938316541110136,
+                "mdd": 0.07380963187408662,
+                "sharpe": 1.2902856425567921
+              }
+            },
+            "sample": {
+              "aligned_portfolio_dates": 3290,
+              "daily_returns": 3289,
+              "first_date": "2017-08-18",
+              "last_date": "2026-08-20"
+            },
+            "source_trial_id": "ATM-SVP3-V11-BTC2-SATELLITE-001",
+            "strong_validation_upgrade_allowed": false,
+            "strong_validation_upgrade_blocker": "source-trial global DSR remains below the project threshold; this audit cannot rewrite the immutable R1 validation status",
+            "trial_id": "ATM-SVP3-V11-BTC2-ROBUST-001"
+          },
+          "source_trial_id": "ATM-SVP3-V11-BTC2-SATELLITE-001",
+          "strategy_library_validation": {
+            "comparative_failures": [],
+            "comparison_status": "PASS",
+            "evidence_missing": [],
+            "legacy_robust_strategy_pass": false,
+            "level": "R1_RETROSPECTIVE",
+            "note": "Validation, campaign objective attainment and peer-strategy comparison are independent axes.",
+            "objective_failures": [],
+            "objective_status": "INVALID",
+            "policy_id": "ATM-STRATEGY-LIBRARY-VALIDATION-1",
+            "status": "FAIL",
+            "trial_status": "INVALID",
+            "validation_failures": [
+              "full_cagr_gt_0",
+              "full_sharpe_gt_0",
+              "full_mdd_le_25pct",
+              "formal_trial_invalid"
+            ],
+            "validation_warnings": [
+              "fold_robustness_evidence_unavailable",
+              "execution_stress_not_in_this_trial"
+            ]
+          },
+          "strategy_mutation": false
+        },
+        "result_status": "INVALID",
+        "robust_strategy_pass": false,
+        "sharpe": null,
+        "since2020_cagr_percent": null,
+        "since2022_cagr_percent": null,
+        "superseded_by": null
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "A-V11-BTC2-ROBUST-001",
+      "strategy_kind": "statistical_audit_not_strategy",
+      "tags": [
+        "ATM-SVP3-V11-BTC2-ROBUST-001",
+        "R1_RETROSPECTIVE"
+      ],
+      "version": {
+        "assets": [],
+        "code_sha256": "58619bdb6b49985b810e5d1e67b64d5e06f8f898d1e0c07d49b365d813f638fc",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "The positive observed incremental CAGR and Sharpe of the immutable 98% V11 + 2% BTC candidate versus its matched V11 control may be stable under dependence-preserving resampling even though the deterministic comparison failed on slightly higher maximum drawdown and the cumulative global DSR remains below the strong-validation threshold.",
+        "parameters": {
+          "allowed_changes": [
+            "read only the immutable portfolio CSVs produced by ATM-SVP3-V11-BTC2-SATELLITE-001",
+            "paired circular moving-block resampling with block length exactly 63 sessions",
+            "exactly 20,000 replicates, RNG seed 20260822, 252 sessions/year",
+            "compute probability candidate CAGR > matched V11 CAGR, probability candidate Sharpe > matched V11 Sharpe, median deltas, and candidate MDD 97.5th percentile"
+          ],
+          "candidate_definition": null,
+          "forbidden_changes": [
+            "changing BTC weight, V11 scale, strategy implementation, costs, dates or rebalance rules",
+            "trying alternate block sizes, seeds, replicate counts or bootstrap families after results",
+            "dropping unfavorable return periods or folds",
+            "using this audit to rewrite the immutable R1 deterministic comparison result",
+            "using this audit to upgrade source validation to strong PASS while source global DSR remains below threshold"
+          ],
+          "shared_rules": {
+            "block_sessions": 63,
+            "candidate_mdd_p975_limit": 0.15,
+            "known_source_global_dsr_probability": 0.38570194449673956,
+            "probability_gate": 0.9,
+            "replicates": 20000,
+            "rng_seed": 20260822,
+            "sampling": "paired circular moving blocks",
+            "sessions_per_year": 252,
+            "source_trial_id": "ATM-SVP3-V11-BTC2-SATELLITE-001",
+            "strategy_mutation_allowed": false
+          }
+        },
+        "shorting_allowed": false,
+        "source_path": "scripts/run_v11_btc2_robust_001.py",
+        "target_fingerprint": null,
+        "version_key": "A-V11-BTC2-ROBUST-001"
+      }
+    }
+  ]
+}
