@@ -541,7 +541,9 @@ Pull requests should describe the user-facing change, list verification commands
 
 ## Current Known Operational Notes
 
-- Latest TestFlight release: version `1.13` build `196`, Delivery UUID `a2da6fec-e0a2-43cc-b28f-2b1ce7696eb1`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.13-196`.
+- Latest TestFlight release: version `1.13` build `197`, Delivery UUID `f833711f-a997-4ef9-9f36-3dac85acfb94`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.13-197`.
+- Build 197 expands the basic strategy selection, removes repeated curated badges from picker rows, and smooths Today Strategy staged progress.
+- Previous TestFlight release: version `1.13` build `196`, Delivery UUID `a2da6fec-e0a2-43cc-b28f-2b1ce7696eb1`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.13-196`.
 - Build 196 packages the unified today/history record editor, keyboard-aware Modal positioning, the Research Agent policy/workspace hardening, and the public strategy-catalog alignment fix.
 - Previous TestFlight release: version `1.13` build `195`, Delivery UUID `a1c8613f-13c7-49af-bb4e-5647860ab8af`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.13-195`.
 - Build 195 packages the record-page quantity-refresh fix, the Research Agent execution/preparation workers, and the public strategy-catalog alignment fix.
