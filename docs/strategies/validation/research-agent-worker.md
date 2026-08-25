@@ -65,13 +65,21 @@ python3 scripts/research_agent_worker.py \
   --once
 ```
 
-持续运行时去掉 `--once`。默认状态目录位于 macOS Application Support，其中保存：
+持续运行时去掉 `--once`。默认状态目录位于独立研究工作区：
+
+```text
+/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachineResearch/agent/
+```
+
+准备 Worker 使用 `agent/preparation/`，正式执行 Worker 使用 `agent/execution/`。其中保存：
 
 - 按 authorization SHA 隔离的 Git worktree；
 - Worker 自身 stdout/stderr；
 - API 暂时不可用时的待回传结果。
 
 待回传文件权限为 `0600`，成功收到服务端确认后立即删除。API Key 不会写入状态目录或研究产物。
+可通过 `ASSET_TIME_MACHINE_RESEARCH_WORKSPACE` 迁移整个研究工作区，或分别使用
+`FLYINGRTX_RESEARCH_PREPARATION_STATE`、`FLYINGRTX_RESEARCH_WORKER_STATE` 覆盖两个 Worker 的状态目录。
 
 ## 正式入口输出合同
 

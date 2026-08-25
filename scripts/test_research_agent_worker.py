@@ -1,7 +1,9 @@
 import importlib.util
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).with_name("research_agent_worker.py")
@@ -12,6 +14,17 @@ SPEC.loader.exec_module(worker)
 
 
 class ResearchAgentWorkerTests(unittest.TestCase):
+    def test_default_state_dir_uses_research_workspace(self):
+        with patch.dict(
+            os.environ,
+            {"ASSET_TIME_MACHINE_RESEARCH_WORKSPACE": "/tmp/atm-research"},
+            clear=True,
+        ):
+            self.assertEqual(
+                worker.default_state_dir(),
+                Path("/tmp/atm-research/agent/execution"),
+            )
+
     def test_safe_repo_path_rejects_escape(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

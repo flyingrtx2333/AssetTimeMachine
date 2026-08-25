@@ -75,19 +75,19 @@ class FactorLibraryPublisherTests(unittest.TestCase):
         with patch.dict(os.environ, {"FRK_TOKEN": fake_token}, clear=False):
             self.assertEqual(resolve_token("FRK_TOKEN", None), fake_token)
 
-    def test_resolve_token_can_read_local_agents_file(self) -> None:
+    def test_resolve_token_can_read_private_env_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "AGENTS.md"
+            path = Path(tmp) / "asset-time-machine.env"
             fake_token = "frk_" + "local_only"
             path.write_text(f"FRK_TOKEN={fake_token}\n", encoding="utf-8")
             with patch.dict(os.environ, {}, clear=True):
                 self.assertEqual(resolve_token("FRK_TOKEN", path), fake_token)
 
-    def test_resolve_token_can_read_markdown_bullet_code_agents_file(self) -> None:
+    def test_resolve_token_can_read_exported_quoted_env_value(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "AGENTS.md"
-            fake_token = "frk_" + "markdown_local_only"
-            path.write_text(f"- `FRK_TOKEN={fake_token}`\n", encoding="utf-8")
+            path = Path(tmp) / "asset-time-machine.env"
+            fake_token = "frk_" + "quoted_local_only"
+            path.write_text(f'export FRK_TOKEN="{fake_token}"\n', encoding="utf-8")
             with patch.dict(os.environ, {}, clear=True):
                 self.assertEqual(resolve_token("FRK_TOKEN", path), fake_token)
 

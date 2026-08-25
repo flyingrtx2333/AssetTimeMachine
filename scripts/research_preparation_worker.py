@@ -22,6 +22,8 @@ import urllib.request
 from pathlib import Path, PurePosixPath
 from typing import Any, Dict, Optional
 
+from research_asset_policy import validate_research_policy_snapshot
+
 
 API_PATH = "/api/v1/asset-time-machine/internal/research-agent/preparation/jobs"
 DEFAULT_BASE_URL = "https://api.flyingrtx.com"
@@ -161,6 +163,7 @@ NON-NEGOTIABLE SAFETY BOUNDARY:
 - Do not run a formal backtest, formal experiment, strategy_validation_formal_run.py, or any command that creates/reads a RESULT for this trial.
 - Do not inspect the performance result of this new trial. This stage ends before formal execution.
 - Do not change the frozen plan, candidate IDs, trial budget, hard constraints, or pass/fail gates.
+- Never introduce digital assets/cryptocurrencies, leveraged or inverse products, leverage, financing, shorting, negative cash, or gross exposure above 100%.
 - Do not use network data to evaluate candidate performance.
 
 Required deliverables:
@@ -495,6 +498,21 @@ class ResearchPreparationWorker:
             raise WorkerError("Unsupported preparation contract")
         if contract.get("protocol_id") != "ATM-SVP-2" or policies.get("formal_backtest_allowed") is not False:
             raise WorkerError("Preparation contract does not preserve the formal-run safety boundary")
+        execution_contract = dict(contract.get("execution_contract") or {})
+        hard = dict(execution_contract.get("hard_constraints") or {})
+        if (
+            hard.get("max_gross") != 1.0
+            or hard.get("leverage_allowed") is not False
+            or hard.get("shorting_allowed") is not False
+            or hard.get("financing_allowed") is not False
+            or hard.get("digital_assets_allowed") is not False
+            or hard.get("leveraged_products_allowed") is not False
+        ):
+            raise WorkerError("Preparation contract relaxes mandatory asset or exposure constraints")
+        try:
+            validate_research_policy_snapshot(execution_contract)
+        except ValueError as exc:
+            raise WorkerError(str(exc)) from exc
         worktree, base_commit = self.prepare_worktree(job)
         self.heartbeat(job, "codex_starting", base_commit=base_commit)
         output = self._run_codex(job, worktree)
@@ -536,7 +554,13 @@ def default_state_dir() -> Path:
     configured = os.environ.get("FLYINGRTX_RESEARCH_PREPARATION_STATE")
     if configured:
         return Path(configured).expanduser()
-    return Path.home() / "Library" / "Application Support" / "FlyingrtxResearchPreparationWorker"
+    workspace = os.environ.get("ASSET_TIME_MACHINE_RESEARCH_WORKSPACE")
+    research_root = (
+        Path(workspace).expanduser()
+        if workspace
+        else Path.home() / "Desktop" / "AllProjects" / "AssetTimeMachineResearch"
+    )
+    return research_root / "agent" / "preparation"
 
 
 def main() -> None:

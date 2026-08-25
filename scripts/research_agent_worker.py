@@ -20,6 +20,8 @@ import urllib.request
 from pathlib import Path, PurePosixPath
 from typing import Any, Dict, Iterable, Optional
 
+from research_asset_policy import validate_research_policy_snapshot
+
 
 API_PATH = "/api/v1/asset-time-machine/internal/research-agent/jobs"
 DEFAULT_BASE_URL = "https://api.flyingrtx.com"
@@ -239,10 +241,19 @@ class ResearchWorker:
         if contract.get("protocol_id") != "ATM-SVP-2":
             raise WorkerError("Worker only accepts ATM-SVP-2 contracts")
         hard = dict(contract.get("hard_constraints") or {})
-        if hard.get("max_gross") != 1.0 or any(hard.get(key) for key in (
-            "leverage_allowed", "shorting_allowed", "financing_allowed"
-        )):
-            raise WorkerError("Frozen contract relaxes product risk constraints")
+        if (
+            hard.get("max_gross") != 1.0
+            or hard.get("leverage_allowed") is not False
+            or hard.get("shorting_allowed") is not False
+            or hard.get("financing_allowed") is not False
+            or hard.get("digital_assets_allowed") is not False
+            or hard.get("leveraged_products_allowed") is not False
+        ):
+            raise WorkerError("Frozen contract relaxes mandatory asset or exposure constraints")
+        try:
+            validate_research_policy_snapshot(contract)
+        except ValueError as exc:
+            raise WorkerError(str(exc)) from exc
         runner = dict(contract.get("runner") or {})
         evidence = dict(contract.get("bound_evidence") or {})
         entrypoint = safe_repo_path(worktree, str(runner["entrypoint"]))
@@ -359,7 +370,13 @@ def default_state_dir() -> Path:
     configured = os.environ.get("FLYINGRTX_RESEARCH_WORKER_STATE")
     if configured:
         return Path(configured).expanduser()
-    return Path.home() / "Library" / "Application Support" / "FlyingrtxResearchWorker"
+    workspace = os.environ.get("ASSET_TIME_MACHINE_RESEARCH_WORKSPACE")
+    research_root = (
+        Path(workspace).expanduser()
+        if workspace
+        else Path.home() / "Desktop" / "AllProjects" / "AssetTimeMachineResearch"
+    )
+    return research_root / "agent" / "execution"
 
 
 def main() -> None:

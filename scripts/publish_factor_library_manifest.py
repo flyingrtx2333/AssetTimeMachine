@@ -16,6 +16,7 @@ import requests
 
 DEFAULT_BASE_URL = "https://api.flyingrtx.com"
 DEFAULT_TOKEN_ENV = "FRK_TOKEN"
+DEFAULT_TOKEN_FILE = Path.home() / ".config" / "flyingrtx" / "asset-time-machine.env"
 
 
 @dataclass(frozen=True)
@@ -31,19 +32,22 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def resolve_token(token_env: str, agents_file: Path | None) -> str:
+def resolve_token(token_env: str, token_file: Path | None) -> str:
     token = os.environ.get(token_env, "").strip()
     if token:
         if not token.startswith("frk_"):
             raise ValueError(f"{token_env} is not an FRK API key")
         return token
-    if agents_file is not None:
-        text = agents_file.read_text(encoding="utf-8")
-        match = re.search(r"FRK_TOKEN\s*=\s*(frk_[A-Za-z0-9_-]+)", text)
+    if token_file is not None and token_file.is_file():
+        text = token_file.read_text(encoding="utf-8")
+        match = re.search(
+            rf"(?m)^\s*(?:export\s+)?{re.escape(token_env)}\s*=\s*['\"]?(frk_[A-Za-z0-9_-]+)['\"]?\s*(?:#.*)?$",
+            text,
+        )
         if match:
             return match.group(1)
     raise ValueError(
-        f"API key unavailable: set {token_env} or pass --agents-file containing a local FRK_TOKEN"
+        f"API key unavailable: set {token_env} or store it in the configured private token file"
     )
 
 
@@ -59,7 +63,9 @@ def prepare_upload_plan(
         raise ValueError("artifact list drifted while preparing wire manifest")
 
     uploads: dict[str, UploadArtifact] = {}
-    for raw, wire_item in zip(raw_artifacts, wire_artifacts, strict=True):
+    # The explicit length check above keeps the two lists aligned while
+    # remaining compatible with the Python 3.9 runtime used on this Mac.
+    for raw, wire_item in zip(raw_artifacts, wire_artifacts):
         artifact_key = str(raw.get("artifact_key") or "")
         if not artifact_key or artifact_key in uploads:
             raise ValueError(f"invalid or duplicate artifact_key: {artifact_key!r}")
@@ -270,7 +276,7 @@ def main() -> int:
     parser.add_argument("--manifest", required=True)
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
     parser.add_argument("--token-env", default=DEFAULT_TOKEN_ENV)
-    parser.add_argument("--agents-file")
+    parser.add_argument("--token-file", default=str(DEFAULT_TOKEN_FILE))
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--status-only", action="store_true")
     parser.add_argument("--complete-only", action="store_true")
@@ -280,7 +286,7 @@ def main() -> int:
 
     token = resolve_token(
         args.token_env,
-        Path(args.agents_file).resolve() if args.agents_file else None,
+        Path(args.token_file).expanduser().resolve() if args.token_file else None,
     )
     if args.status_only or args.complete_only or args.diff_remote_manifest:
         manifest_path = Path(args.manifest).resolve()
