@@ -12,14 +12,16 @@ This repository is the **AssetTimeMachine** SwiftUI + SwiftData iOS app. It conn
   - `CloudSync.swift`: AssetTimeMachine cloud sync API client.
   - `RemoteMarket.swift`: market-data API client/cache store.
   - `ImportExport.swift`: local import/export.
-  - `LogicTests.swift`: lightweight in-app/preview-style logic checks, not a separate XCTest target.
   - `Backtest/`: backtest UI, strategy templates, strategy cards, result views, and App-facing backtest engine.
   - `Views/`: dashboard, settings, snapshots, time machine, and shared SwiftUI surfaces.
+  - `Services/AssetRecordingOnboarding.swift` and `Views/Snapshots/AssetRecordingOnboardingViews.swift`: the current focused asset-recording onboarding flow. The former app-wide spotlight tutorial and anchor-preference plumbing have been removed.
+- `Server/Tests/CoreTests/` contains the Swift Package XCTest coverage for the shared public backtest core.
 - `AssetTimeMachine/Assets.xcassets/` stores app icons, accent colors, and asset category icons.
 - `AssetTimeMachine/Localizable.xcstrings` and related string catalogs hold localized text. Route user-visible strings through `AppLocalization` / localization catalog style already used in the code.
 - `demo/` contains sample import/history JSON files.
 - `scripts/` contains helper conversion/demo/search scripts.
-- `tools/` contains local research/backtest parity utilities. Keep durable comparison scripts here instead of `/tmp`.
+- `tools/` contains App-adjacent backtest parity and formal-governance utilities. Keep tools that must run against the committed App source here.
+- The independent research workspace is `/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachineResearch`. Put exploratory study briefs, strategy/factor working material, and reusable research-only utilities there; its `README.md` defines the layout. Formal ATM-SVP artifacts and executable code remain committed in this repository before a formal run.
 - `marketing/` contains App Store copy, screenshots, icon prompts, and backups.
   - Final App Store poster exports should also be copied to the local OneDrive delivery folder:
     `/Users/xiangjunsheng/Library/CloudStorage/OneDrive-个人/作品合集/个人-IOSAPP资产时光机-2026`
@@ -61,6 +63,21 @@ Security rules:
 
 - Do not commit API keys, App Store Connect private keys, SSH secrets, FRP tokens, real user exports, or private financial data.
 - If a backend/server operation needs secrets, use existing local env/config files and never paste the secret into source-controlled files.
+
+Local private credential configuration:
+
+- `FRK_TOKEN` is stored outside the repository in `~/.config/flyingrtx/asset-time-machine.env`, with permissions restricted to the current user. Never copy its value into this file or another source-controlled file.
+- Never print the value in logs, screenshots, test output, commits, pull requests, deployment artifacts, or user-facing responses.
+- `FRK_TOKEN` is the FlyingrtxFast AssetTimeMachine factor-library import API key. Use it only for the factor-import scoped internal endpoints under `/api/v1/asset-time-machine/internal/factor-imports` and the related prospective-forward-snapshot read used by factor research; it is not a user login token, backend admin password, FRP token, or general-purpose API credential.
+- Preferred production usage is `python3 scripts/publish_factor_library_manifest.py ...`. The maintained helper reads `FRK_TOKEN` from the process environment first, then the private env file. Use `--token-file` only to select another local private env file.
+- Never put the literal token on a shell/tool command line merely to test it. Load it through the maintained helper and verify access with `--status-only` or `--validate-only`.
+
+### Factor-library research sync rule
+
+- Every formal factor candidate that reaches a recorded result must be archived to the FlyingrtxFast factor library, regardless of PASS/FAIL. Rejected factors are intentionally retained to prevent survivorship bias. Strategy-architecture candidates such as `HR-A/B/C` are not factors and must not be uploaded as factors.
+- A factor study is not operationally closed until its `factor-library-v1` manifest exists and the production import status is `completed` with `failed_count=0`.
+- After each completed factor-research trial: generate/update the manifest, run remote `--validate-only`, publish with `scripts/publish_factor_library_manifest.py`, run `--status-only`, and reconcile the expected factor count against the research ledger.
+- Preserve preregistration/result artifacts and the original lifecycle status; never promote or hide a failed factor merely to make the library look cleaner.
 
 ## Build, Test, and Development Commands
 
@@ -428,6 +445,16 @@ The dump fetches live history from `https://api.flyingrtx.com`, so it may need n
 
 ### How to find / research strategies
 
+Use `/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachineResearch` as the working home for new research:
+
+- `strategies/` for strategy families and non-formal tests;
+- `factors/` for factor research;
+- `studies/` for study briefs keyed by research task;
+- `tools/` for reusable research-only tools; and
+- `archive/` for links to immutable Git refs and formal artifacts.
+
+Before formal execution, copy or implement the approved executable code in this repository, commit it with the preregistration and required manifests, and retain the governed artifacts under `tools/research-results/strategy-validation/`. The external workspace is not a replacement for those immutable records.
+
 Use this order when looking for a new strategy candidate:
 
 1. Read the existing App strategy templates first:
@@ -438,9 +465,10 @@ Use this order when looking for a new strategy candidate:
    rg -n 'symbol: ".*rotation' AssetTimeMachine/Backtest
    ```
 
-2. Check the reusable Swift dump/verifier before adding new strategy code:
+2. Check the research workspace and reusable Swift dump/verifier before adding new strategy code:
 
    ```bash
+   ls /Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachineResearch
    ls tools
    sed -n '1,160p' tools/strategy_metric_dump.swift
    ```
@@ -461,11 +489,14 @@ Use this order when looking for a new strategy candidate:
 - Do not trust one-off `/tmp` research scripts for App-facing strategy metrics.
 - New strategy candidates must be implemented as Swift target providers and replayed through the current unified App/backtest simulator before being presented as product results. Prefer `tools/strategy_metric_dump.swift` for current product metrics.
 - Do not copy high-return/high-Sharpe values from non-App scripts into README, AGENTS, App cards, App subtitles, release notes, or user-facing answers unless a Swift App-engine run produces the same values.
-- For AssetTimeMachine strategy work, keep durable Swift comparison/search code under `tools/`.
+- Keep App-coupled Swift comparison/search code under `tools/`; keep exploratory strategy/factor tools and study material in `/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachineResearch`.
 - For multi-asset backtests across gold/US equities/A-shares, use recent valid price forward-fill with enough holiday tolerance; do not accidentally delete dates because one market is closed.
 - K-line charts must use real OHLC data. Do not fake OHLC from close-only series.
 - User preference: no BTC in main AssetTimeMachine strategy line unless explicitly requested.
 - User preference: use the product default 1.00% fee and 0.05% slippage for strategy research. Do not run multiple transaction-fee sensitivity tests unless the user explicitly requests them.
+- **User hard rule — absolutely no leverage:** all new AssetTimeMachine strategy research must keep requested target gross exposure <=100%, marked-to-market actual gross exposure <=100%, financed exposure disabled, cash >=0 at all times, and no borrowing/margin/leveraged derivatives or synthetic leveraged payoff. Do not research, propose, preregister, rescue, or ship any strategy whose return target depends on leverage. Previously explored leveraged/risk-scale lines are dead ends for future product research and may remain only as historical evidence.
+- **User hard rule — new strategy means a genuinely different economic/trading mechanism:** do not treat V11 parameter changes, asset/ETF substitutions, blend-weight changes, threshold tweaks, exposure scaling, or recombinations of existing V11/HighCore/C3L3 components as a new strategy research direction. New-strategy discovery should prioritize independent bottom-up mechanisms such as overnight close-to-next-open/next-close trades, intraday mean reversion, gap effects, short-horizon breakout/trend, volatility-compression breakout, calendar/session effects, cross-sectional short-horizon relative strength/reversal, or other causally distinct trading processes. V11 may be used as a benchmark/control, not as the mandatory scaffold for candidate construction.
+- Mechanism-first research rule: define the economic mechanism, information set, holding period, entry/exit semantics, tradable instruments, transaction-cost model, and falsification test before looking at formal performance. Prefer one simple natural specification per mechanism over parameter grids. If a mechanism needs a parameter search to become profitable, treat that as model-selection debt and count the full family in G3.
 - User preference: keep all strategy cash strictly as RMB demand deposits using the existing `CashYieldCNY` model. Do not research or propose term deposits, money-market funds, reverse repo, cash ladders, or other cash-yield enhancement unless the user explicitly requests them. Focus strategy research on asset allocation and rebalancing execution logic.
 - Hard rule: external fund sleeves/proxies are unavailable and meaningless for this project. Do not use, recommend, rank, compare, or revive strategies that depend on `qmnix`, `qmnrx`, `ostix`, `vmnfx`, `bprrx`, or similar off-App fund/proxy sleeves.
 - User explicitly rejected all external fund-sleeve/proxy-asset based strategy lines as unusable/no-value. Treat them as dead ends, not as candidates, benchmarks, fallbacks, or evidence that a Sharpe-2 product strategy exists.
@@ -498,7 +529,7 @@ When searching/reading code in this local repo, prefer terminal `rtk grep`, `rtk
 
 ## Testing Guidelines
 
-The repository currently has `AssetTimeMachine/LogicTests.swift` with lightweight preview-style checks, not a separate XCTest target. For now, validate changes with `xcodebuild ... build` plus manual app flows for record entry, charts, localization, import/export, cloud sync, notifications, backtests, and persistence.
+Run the shared backtest-core XCTest target from the repository root with `swift test`. The iOS app itself does not currently have a separate XCTest target, so validate app changes with `scripts/audit_localizations.py`, `xcodebuild ... build`, and focused manual flows for record entry, charts, localization, import/export, cloud sync, notifications, backtests, onboarding, and persistence.
 
 When adding formal tests, create XCTest files named after the unit under test, for example `PortfolioCalculatorTests.swift`, and cover calculations before UI behavior.
 
@@ -510,9 +541,16 @@ Pull requests should describe the user-facing change, list verification commands
 
 ## Current Known Operational Notes
 
-- Latest TestFlight release: version `1.12` build `190`, Delivery UUID `7be5b75a-4941-4718-8899-082fbb29670c`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.12-190`.
+- Latest TestFlight release: version `1.13` build `196`, Delivery UUID `a2da6fec-e0a2-43cc-b28f-2b1ce7696eb1`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.13-196`.
+- Build 196 packages the unified today/history record editor, keyboard-aware Modal positioning, the Research Agent policy/workspace hardening, and the public strategy-catalog alignment fix.
+- Previous TestFlight release: version `1.13` build `195`, Delivery UUID `a1c8613f-13c7-49af-bb4e-5647860ab8af`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.13-195`.
+- Build 195 packages the record-page quantity-refresh fix, the Research Agent execution/preparation workers, and the public strategy-catalog alignment fix.
+- Previous TestFlight release: version `1.13` build `192`, Delivery UUID `ed9d358f-7243-434a-ac26-0f3e154ca493`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.13-192`.
+- Build 192 moves the TestFlight train from 1.12 to 1.13 because App Store Connect closed 1.12 after approval. It packages the current `main`, including recorded-holding mapping to strategy assets and the latest strategy-validation research alignment, without changing the recorded validation gate claims.
+- Previous TestFlight release: version `1.12` build `191`, Delivery UUID `2824e09a-d7cc-440c-9de7-a6bdfba51da2`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.12-191`.
+- Earlier TestFlight release: version `1.12` build `190`, Delivery UUID `7be5b75a-4941-4718-8899-082fbb29670c`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.12-190`.
 - Build 190 refines the Quant result ruler controls with current-date alignment and pinch zoom, removes redundant Dashboard allocation and financial-independence copy, and standardizes the share poster on the unified brand logo. It also rebuilds Time Machine trend-video presentation around the generated background, moves the smaller app logo and title to the bottom, and adds a collapsible export surface for saving to Files or Photos and opening the video in other apps while preserving the pinned App-engine strategy baseline.
-- Previous TestFlight release: version `1.12` build `189`, Delivery UUID `ed4cb688-2f5f-4aad-bc58-bc690ea365f7`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.12-189`.
+- Earlier TestFlight release: version `1.12` build `189`, Delivery UUID `ed4cb688-2f5f-4aad-bc58-bc690ea365f7`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.12-189`.
 - Build 189 commits the focused asset-recording onboarding, settings overview, market-logo propagation, and three-year diversified simulator data refresh. It also fixes Quant result shared-date invalidation so the net-value and per-asset exposure guides remain synchronized, removes the duplicate bottom time axes, joins the two chart plots into one continuous selected-date guide, and moves the exposure title and average-position summary below the exposure chart while preserving the pinned App-engine strategy baseline.
 - Earlier TestFlight release: version `1.12` build `188`, Delivery UUID `b8973fd1-024b-49e7-8096-689fee6b6d73`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.12-188`.
 - Build 188 replaces the long first-run tutorial with a focused two-step asset-recording flow on the real Records screen. Users start from common asset categories or the full catalog, may save an explicit zero value, can resume or skip after cancellation, and see the saved real row highlighted without duplicating untouched seeded bank-card or property items. The flow is localized across all three supported locales and preserves the existing data model and pinned App-engine strategy baseline.
