@@ -956,7 +956,12 @@ struct AdvancedStrategyLibrarySheet: View {
     }
 
     private func basicFamily(for template: AdvancedBacktestStrategyTemplate) -> BasicStrategyFamily {
-        template.id == "basic-boll-mean-reversion" ? .reversal : .trend
+        switch template.id {
+        case "basic-boll-mean-reversion", "basic-three-day-reversal":
+            return .reversal
+        default:
+            return .trend
+        }
     }
 
     private var strategyEmptyState: some View {
@@ -1029,8 +1034,26 @@ struct AdvancedStrategyTemplateRow: View {
             return "arrow.triangle.branch"
         case "basic-ma20-trend":
             return "clock.arrow.circlepath"
+        case "basic-ma20-hold":
+            return "chart.line.uptrend.xyaxis"
+        case "basic-boll-breakout":
+            return "arrow.up.right.circle.fill"
         case "basic-boll-mean-reversion":
             return "arrow.uturn.down.circle.fill"
+        case "basic-three-day-reversal":
+            return "arrow.uturn.backward.circle.fill"
+        case "basic-buy-and-hold":
+            return "calendar.circle.fill"
+        case "basic-gold-nasdaq-hold":
+            return "scale.3d"
+        case "basic-gold-trend":
+            return "medal.fill"
+        case "basic-us-trend":
+            return "flag.fill"
+        case "basic-china-trend":
+            return "building.columns.fill"
+        case "basic-three-day-trend":
+            return "arrow.up.right.circle.fill"
         default:
             return "sparkles"
         }
@@ -1045,10 +1068,12 @@ struct AdvancedStrategyTemplateRow: View {
              "nfci-dual-core-v11":
             return AssetTheme.accentOrange
         case "core-gold-satellite-risk-budget-state-gate-momentum",
-             "basic-boll-mean-reversion":
+             "basic-boll-mean-reversion",
+             "basic-three-day-reversal":
             return AssetTheme.accentOrange
         case "core-gold-satellite-profit-lock-momentum",
-             "basic-ma60-trend":
+             "basic-ma60-trend",
+             "basic-ma20-hold":
             return AssetTheme.accentBlue
         case "gold-nasdaq-dual-trend-barbell":
             return AssetTheme.accentRed
@@ -1063,10 +1088,6 @@ struct AdvancedStrategyTemplateRow: View {
 
     private var isRecommendedStrategy: Bool {
         template.id == StrategyRebalanceDefaults.recommendedTemplateID
-    }
-
-    private var isCuratedStrategy: Bool {
-        BacktestProductStrategyCatalog.isCuratedTemplateID(template.id)
     }
 
     private var isExperimentalStrategy: Bool {
@@ -1090,11 +1111,8 @@ struct AdvancedStrategyTemplateRow: View {
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        if isCuratedStrategy || isExperimentalStrategy || isRecommendedStrategy || isDefaultStrategy || isActive {
+                        if isExperimentalStrategy || isRecommendedStrategy || isDefaultStrategy || isActive {
                             HStack(spacing: 5) {
-                                if isCuratedStrategy {
-                                    CuratedStrategyBadge(compact: true)
-                                }
                                 if isExperimentalStrategy {
                                     strategyBadge(AppLocalization.string("前瞻观察"), accent: AssetTheme.accentOrange)
                                 }

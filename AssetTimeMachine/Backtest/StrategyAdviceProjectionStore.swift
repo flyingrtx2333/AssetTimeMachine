@@ -50,16 +50,18 @@ final class StrategyAdviceProjectionStore: ObservableObject {
 
         isRefreshing = true
         statusMessage = nil
-        resetProgress()
-        updateProgress(
-            fraction: 0.08,
-            message: AppLocalization.format("正在准备%@", template.title)
-        )
         defer {
             if calculationGeneration == generation {
                 isRefreshing = false
             }
         }
+        resetProgress()
+        updateProgress(
+            fraction: 0.08,
+            message: AppLocalization.format("正在准备%@", template.title)
+        )
+        await Task.yield()
+        guard !Task.isCancelled, calculationGeneration == generation else { return }
 
         let assetOptions = StrategyRebalanceDefaults.assetOptions(for: template)
         let historySymbols = StrategyRebalanceDefaults.historySymbols(for: assetOptions)
@@ -91,6 +93,8 @@ final class StrategyAdviceProjectionStore: ObservableObject {
             fraction: 0.54,
             message: AppLocalization.format("正在整理%@行情", template.title)
         )
+        await Task.yield()
+        guard !Task.isCancelled, calculationGeneration == generation else { return }
         let historyBySymbol = Dictionary(uniqueKeysWithValues: historySymbols.compactMap { symbol in
             marketStore.history(for: symbol).map { (symbol, $0) }
         })
@@ -107,6 +111,8 @@ final class StrategyAdviceProjectionStore: ObservableObject {
                 fraction: 0.90,
                 message: AppLocalization.string("正在匹配当前持仓")
             )
+            await Task.yield()
+            guard !Task.isCancelled, calculationGeneration == generation else { return }
             updateSnapshot(snapshot)
             updateProgress(fraction: 1, message: AppLocalization.string("今日策略已生成"))
             return
@@ -149,6 +155,8 @@ final class StrategyAdviceProjectionStore: ObservableObject {
             fraction: 0.90,
             message: AppLocalization.string("正在匹配当前持仓")
         )
+        await Task.yield()
+        guard !Task.isCancelled, calculationGeneration == generation else { return }
         updateSnapshot(snapshot)
         updateProgress(fraction: 1, message: AppLocalization.string("今日策略已生成"))
     }
@@ -290,6 +298,19 @@ final class StrategyAdviceProjectionStore: ObservableObject {
     }
 }
 
+private struct StrategyAdviceProgressPercentageText: View, Animatable {
+    var fraction: Double
+
+    var animatableData: Double {
+        get { fraction }
+        set { fraction = newValue }
+    }
+
+    var body: some View {
+        Text("\(Int((min(max(fraction, 0), 1) * 100).rounded()))%")
+    }
+}
+
 struct StrategyAdviceLoadingProgressView: View {
     let fraction: Double
     let message: String
@@ -304,7 +325,7 @@ struct StrategyAdviceLoadingProgressView: View {
 
                 Spacer(minLength: 8)
 
-                Text("\(Int((min(max(fraction, 0), 1) * 100).rounded()))%")
+                StrategyAdviceProgressPercentageText(fraction: fraction)
                     .font(AppTypography.chartAxisStrip)
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.goldSoft)
@@ -316,5 +337,6 @@ struct StrategyAdviceLoadingProgressView: View {
                 .accessibilityValue("\(Int((min(max(fraction, 0), 1) * 100).rounded()))%")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .animation(.easeInOut(duration: 0.36), value: fraction)
     }
 }
