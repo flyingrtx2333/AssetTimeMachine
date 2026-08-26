@@ -541,7 +541,9 @@ Pull requests should describe the user-facing change, list verification commands
 
 ## Current Known Operational Notes
 
-- Latest TestFlight release: version `1.13` build `197`, Delivery UUID `f833711f-a997-4ef9-9f36-3dac85acfb94`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.13-197`.
+- Latest TestFlight release: version `1.13` build `198`, Delivery UUID `ed7fc6be-eb2b-4a3b-96de-57975a0b95d8`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.13-198`.
+- Build 198 adds ratio/amount switching to Quant rebalance advice, makes record quick editors auto-focus without a redundant keyboard gap, compacts direct-amount editing, adds the Dashboard financial-freedom progress sweep, and makes manual market refreshes request fresh overview, FX, and history data.
+- Previous TestFlight release: version `1.13` build `197`, Delivery UUID `f833711f-a997-4ef9-9f36-3dac85acfb94`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.13-197`.
 - Build 197 expands the basic strategy selection, removes repeated curated badges from picker rows, and smooths Today Strategy staged progress.
 - Previous TestFlight release: version `1.13` build `196`, Delivery UUID `a2da6fec-e0a2-43cc-b28f-2b1ce7696eb1`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.13-196`.
 - Build 196 packages the unified today/history record editor, keyboard-aware Modal positioning, the Research Agent policy/workspace hardening, and the public strategy-catalog alignment fix.
