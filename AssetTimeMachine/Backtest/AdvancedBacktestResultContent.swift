@@ -200,6 +200,7 @@ struct AdvancedBacktestResultContent: View {
     var onShowRiskSignal: (() -> Void)? = nil
 
     @State private var showsAllRecentTrades = false
+    @State private var showsRebalanceAmounts = false
 
     private var assetOptions: [BacktestAssetOption] {
         BacktestDefaults.dcaAssetOptions
@@ -428,10 +429,38 @@ struct AdvancedBacktestResultContent: View {
 
                 Spacer(minLength: 12)
 
-                Text(rebalanceAdviceTrailingText(advice))
-                    .font(AppTypography.captionStrong)
-                    .foregroundStyle(strategyMode.isRotation ? AssetTheme.textSecondary : AssetTheme.accentOrange)
-                    .lineLimit(1)
+                VStack(alignment: .trailing, spacing: 6) {
+                    Text(rebalanceAdviceTrailingText(advice))
+                        .font(AppTypography.captionStrong)
+                        .foregroundStyle(strategyMode.isRotation ? AssetTheme.textSecondary : AssetTheme.accentOrange)
+                        .lineLimit(1)
+
+                    if strategyMode.isRotation, advice != nil {
+                        Button {
+                            showsRebalanceAmounts.toggle()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: showsRebalanceAmounts ? "yensign" : "percent")
+                                Text(AppLocalization.string(showsRebalanceAmounts ? "金额" : "比例"))
+                            }
+                            .font(AppTypography.captionStrong)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 5)
+                            .background(AssetTheme.overlaySoft, in: Capsule())
+                            .overlay(
+                                Capsule()
+                                    .stroke(AssetTheme.border.opacity(0.6), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(
+                            showsRebalanceAmounts
+                                ? AppLocalization.format("显示%@", AppLocalization.string("持仓比例"))
+                                : AppLocalization.string("显示操作金额")
+                        )
+                    }
+                }
             }
 
             if strategyMode.isRotation {
@@ -447,6 +476,7 @@ struct AdvancedBacktestResultContent: View {
                         if actions.isEmpty {
                             rebalanceCashRow(
                                 weight: 1,
+                                investmentBase: nil,
                                 title: AppLocalization.string("现金防守"),
                                 detail: AppLocalization.string("当前没有资产满足策略条件")
                             )
@@ -458,6 +488,7 @@ struct AdvancedBacktestResultContent: View {
                             if advice.cashWeight > 0.005 {
                                 rebalanceCashRow(
                                     weight: advice.cashWeight,
+                                    investmentBase: actions.compactMap(\.investmentBase).first,
                                     title: AppLocalization.string("现金/其他"),
                                     detail: AppLocalization.string("未投入部分保留为防守仓位")
                                 )
@@ -548,7 +579,7 @@ struct AdvancedBacktestResultContent: View {
                     .font(AppTypography.captionStrong)
                     .foregroundStyle(action.kind.accent)
 
-                Text(action.amountText)
+                Text(rebalanceValueText(for: action))
                     .font(AppTypography.rowTitle.monospacedDigit())
                     .foregroundStyle(action.kind.accent)
                     .lineLimit(1)
@@ -557,7 +588,12 @@ struct AdvancedBacktestResultContent: View {
         .padding(.vertical, 2)
     }
 
-    private func rebalanceCashRow(weight: Double, title: String, detail: String) -> some View {
+    private func rebalanceCashRow(
+        weight: Double,
+        investmentBase: Double?,
+        title: String,
+        detail: String
+    ) -> some View {
         HStack(alignment: .center, spacing: 10) {
             Circle()
                 .stroke(AssetTheme.textSecondary.opacity(0.55), lineWidth: 1.5)
@@ -576,11 +612,27 @@ struct AdvancedBacktestResultContent: View {
 
             Spacer(minLength: 12)
 
-            Text(weight.percentString(maxFractionDigits: 1))
+            Text(rebalanceCashValueText(weight: weight, investmentBase: investmentBase))
                 .font(AppTypography.rowTitle.monospacedDigit())
                 .foregroundStyle(AssetTheme.textSecondary)
         }
         .padding(.vertical, 2)
+    }
+
+    private func rebalanceValueText(for action: StrategyRebalanceAction) -> String {
+        guard showsRebalanceAmounts else {
+            return action.targetWeight.percentString(maxFractionDigits: 1)
+        }
+        guard action.investmentBase != nil else { return "—" }
+        return action.amountText
+    }
+
+    private func rebalanceCashValueText(weight: Double, investmentBase: Double?) -> String {
+        guard showsRebalanceAmounts else {
+            return weight.percentString(maxFractionDigits: 1)
+        }
+        guard let investmentBase, investmentBase > 0 else { return "—" }
+        return (investmentBase * weight).currencyString()
     }
 
     private func rebalanceActions(for advice: StrategyRebalanceAdvice) -> [StrategyRebalanceAction] {

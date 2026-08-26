@@ -13533,6 +13533,29 @@
         }
       }
     },
+    "比例": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ratio"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "比例"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "比例"
+          }
+        }
+      }
+    },
     "持仓比例": {
       "extractionState": "manual",
       "localizations": {
@@ -28499,6 +28522,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "金"
+          }
+        }
+      }
+    },
+    "金额": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amount"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金额"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金額"
           }
         }
       }

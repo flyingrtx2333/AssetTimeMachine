@@ -655,6 +655,106 @@ nonisolated enum FinancialFreedomEstimator {
     }
 }
 
+private struct DashboardFreedomProgressBar: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @State private var sweepProgress: CGFloat = 0
+
+    let progress: Double
+
+    private var clampedProgress: CGFloat {
+        CGFloat(min(max(progress, 0), 1))
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            let fillWidth = max(
+                geometry.size.width * clampedProgress,
+                clampedProgress > 0 ? 6 : 0
+            )
+            let sweepWidth = min(76, max(30, fillWidth * 0.42))
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                AssetTheme.border.opacity(0.5),
+                                AssetTheme.border.opacity(0.28)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .overlay {
+                        Capsule()
+                            .stroke(Color.white.opacity(0.045), lineWidth: 1)
+                    }
+
+                if fillWidth > 0 {
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        AssetTheme.gold.opacity(0.9),
+                                        AssetTheme.goldSoft,
+                                        AssetTheme.gold.opacity(0.82)
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+
+                        if !accessibilityReduceMotion, fillWidth > 12 {
+                            LinearGradient(
+                                colors: [
+                                    .clear,
+                                    Color.white.opacity(0.12),
+                                    Color.white.opacity(0.82),
+                                    Color.white.opacity(0.12),
+                                    .clear
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                            .frame(width: sweepWidth)
+                            .offset(
+                                x: -sweepWidth
+                                    + ((fillWidth + sweepWidth) * sweepProgress)
+                            )
+                            .blendMode(.screen)
+                        }
+                    }
+                    .frame(width: fillWidth)
+                    .clipShape(Capsule())
+                    .shadow(color: AssetTheme.goldSoft.opacity(0.32), radius: 5, y: 1)
+                }
+            }
+        }
+        .frame(height: 8)
+        .task(id: accessibilityReduceMotion) {
+            await updateSweepAnimation()
+        }
+    }
+
+    @MainActor
+    private func updateSweepAnimation() async {
+        var resetTransaction = Transaction()
+        resetTransaction.disablesAnimations = true
+        withTransaction(resetTransaction) {
+            sweepProgress = 0
+        }
+
+        guard !accessibilityReduceMotion else { return }
+        await Task.yield()
+        try? await Task.sleep(nanoseconds: 80_000_000)
+        guard !Task.isCancelled else { return }
+        withAnimation(.linear(duration: 2.35).repeatForever(autoreverses: false)) {
+            sweepProgress = 1
+        }
+    }
+}
+
 struct DashboardFreedomSection: View {
     let projection: FinancialFreedomProjection?
     @Binding var monthlySalary: Double
@@ -716,17 +816,7 @@ struct DashboardFreedomSection: View {
             .padding(.bottom, 14)
 
             HStack(alignment: .center, spacing: 12) {
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(AssetTheme.border.opacity(0.42))
-
-                        Capsule()
-                            .fill(AssetTheme.goldSoft)
-                            .frame(width: max(geometry.size.width * CGFloat(freedomProgress), freedomProgress > 0 ? 5 : 0))
-                    }
-                }
-                .frame(height: 6)
+                DashboardFreedomProgressBar(progress: freedomProgress)
 
                 Text(freedomProgress.formatted(.percent.precision(.fractionLength(0))))
                     .font(.system(size: 17, weight: .bold, design: .rounded))

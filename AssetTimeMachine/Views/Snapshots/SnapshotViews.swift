@@ -2659,10 +2659,24 @@ struct RecordValueEditorSheet: View {
                 content
             } else {
                 content.defaultFocus($focusedField, .primary)
+                    .task {
+                        await focusPrimaryFieldAfterPresentation()
+                    }
             }
             #else
             content.defaultFocus($focusedField, .primary)
+                .task {
+                    await focusPrimaryFieldAfterPresentation()
+                }
             #endif
+        }
+
+        @MainActor
+        private func focusPrimaryFieldAfterPresentation() async {
+            await Task.yield()
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            guard !Task.isCancelled else { return }
+            focusedField = .primary
         }
     }
 
@@ -2678,6 +2692,7 @@ struct RecordValueEditorSheet: View {
     @State private var unitPriceText: String
     @State private var errorMessage: String?
     @State private var isRefreshingAutoPrice = false
+    @State private var lastManualPriceRefreshAt: Date?
     @State private var manualAutoPriceRefreshTask: Task<Void, Never>?
     @FocusState private var focusedField: RecordValueField?
 
@@ -2752,6 +2767,9 @@ struct RecordValueEditorSheet: View {
               usesAutomaticUnitPrice else {
             return nil
         }
+        if let lastManualPriceRefreshAt {
+            return AppLocalization.format("%@更新", lastManualPriceRefreshAt.recordTimeString)
+        }
         guard let fetchedAt = item.autoPriceFetchedAt(using: marketStore) else { return nil }
         return AppLocalization.format("%@更新", fetchedAt.recordTimeString)
     }
@@ -2814,17 +2832,23 @@ struct RecordValueEditorSheet: View {
                     .padding(.bottom, 14)
             }
 
-            Rectangle()
-                .fill(Color.white.opacity(0.12))
-                .frame(height: 1)
-                .padding(.horizontal, 20)
+            if item.valuationMethod == .quantityAndUnitPrice {
+                Rectangle()
+                    .fill(Color.white.opacity(0.12))
+                    .frame(height: 1)
+                    .padding(.horizontal, 20)
 
-            marketValueRow
-                .padding(.horizontal, 26)
-                .padding(.top, 24)
-                .padding(.bottom, 30)
+                marketValueRow
+                    .padding(.horizontal, 26)
+                    .padding(.top, 24)
+                    .padding(.bottom, 30)
+            }
         }
-        .frame(maxWidth: 540, minHeight: 435, alignment: .top)
+        .frame(
+            maxWidth: 540,
+            minHeight: item.valuationMethod == .directAmount ? 260 : 435,
+            alignment: .top
+        )
         .background(
             UnevenRoundedRectangle(
                 topLeadingRadius: 28,
@@ -2863,16 +2887,6 @@ struct RecordValueEditorSheet: View {
             )
         )
         .modifier(RecordValueAutoFocusModifier(focusedField: $focusedField))
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button(AppLocalization.string("完成")) {
-                    focusedField = nil
-                }
-                .font(AppTypography.rowTitle)
-                .foregroundStyle(AssetTheme.gold)
-            }
-        }
         .onDisappear {
             manualAutoPriceRefreshTask?.cancel()
             manualAutoPriceRefreshTask = nil
@@ -2894,20 +2908,11 @@ struct RecordValueEditorSheet: View {
 
             Spacer(minLength: 4)
 
-            VStack(spacing: 2) {
-                Text(AppLocalization.string(item.name))
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(AssetTheme.textPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.78)
-
-                if let date = snapshot?.date {
-                    Text(date.longDateString)
-                        .font(AppTypography.meta)
-                        .foregroundStyle(AssetTheme.textSecondary)
-                        .lineLimit(1)
-                }
-            }
+            Text(AppLocalization.string(item.name))
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(AssetTheme.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
 
             Spacer(minLength: 4)
 
@@ -3086,7 +3091,10 @@ struct RecordValueEditorSheet: View {
     }
 
     private func beginManualPriceRefresh() {
+        guard !isRefreshingAutoPrice else { return }
         manualAutoPriceRefreshTask?.cancel()
+        isRefreshingAutoPrice = true
+        errorMessage = nil
         let writeID = ModelContextMutationBarrier.shared.beginDeferredWrite()
         manualAutoPriceRefreshTask = Task {
             defer { ModelContextMutationBarrier.shared.finishDeferredWrite(writeID) }
@@ -3152,14 +3160,12 @@ struct RecordValueEditorSheet: View {
 
     @MainActor
     private func refreshAutoPriceManually() async {
-        guard usesAutomaticUnitPrice, !Task.isCancelled else { return }
-        isRefreshingAutoPrice = true
-        errorMessage = nil
         defer {
             if !Task.isCancelled {
                 isRefreshingAutoPrice = false
             }
         }
+        guard usesAutomaticUnitPrice, !Task.isCancelled else { return }
 
         guard let symbol = item.marketAssetSymbol else { return }
         let didRefreshLiveData = await marketStore.refreshRecordPrice(for: symbol)
@@ -3175,6 +3181,7 @@ struct RecordValueEditorSheet: View {
         }
 
         unitPriceText = latestRate.plainNumberString()
+        lastManualPriceRefreshAt = .now
 
         guard let snapshot else { return }
         guard !Task.isCancelled else { return }

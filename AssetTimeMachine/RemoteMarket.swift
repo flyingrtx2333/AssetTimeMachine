@@ -324,6 +324,21 @@ enum RemoteMarketClient {
         return try await decode(PublicMarketOverview.self, from: data)
     }
 
+    static func refreshOverview() async throws -> PublicMarketOverview {
+        let url = url(for: "/api/v1/money/public/market-overview/refresh")
+        var request = URLRequest(
+            url: url,
+            cachePolicy: .reloadIgnoringLocalAndRemoteCacheData,
+            timeoutInterval: 30
+        )
+        request.httpMethod = "POST"
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        request.setValue("no-cache", forHTTPHeaderField: "Pragma")
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response: response, data: data)
+        return try await decode(PublicMarketOverview.self, from: data)
+    }
+
     static func fetchExchangeRates(forceRemote: Bool = false) async throws -> PublicExchangeRates {
         let url = url(for: "/api/v1/money/public/rmb-exchange-rates")
         let (data, response) = try await data(from: url, forceRemote: forceRemote)
@@ -356,6 +371,9 @@ enum RemoteMarketClient {
         }
         if includeOHLC {
             queryItems.append(.init(name: "include_ohlc", value: "true"))
+        }
+        if forceRemote {
+            queryItems.append(.init(name: "refresh", value: "true"))
         }
         components.queryItems = queryItems.isEmpty ? nil : queryItems
 
@@ -939,7 +957,7 @@ final class RemoteMarketStore: ObservableObject {
     }
 
     func refresh() async {
-        await refreshLiveData()
+        await refreshLiveData(forceRemote: true)
         await refreshAssetCatalogIfNeeded(force: true)
         await refreshHistoryIfNeeded(force: true)
     }
@@ -1264,32 +1282,71 @@ final class RemoteMarketStore: ObservableObject {
         var refreshedOverview: PublicMarketOverview?
         var refreshedNFCIAsOf: PublicNFCIAsOfResponse?
 
-        async let exchangeRatesRequest = RemoteMarketClient.fetchExchangeRates(forceRemote: forceRemote)
-        async let overviewRequest = RemoteMarketClient.fetchOverview(forceRemote: forceRemote)
-        async let nfciRequest = RemoteMarketClient.fetchNFCIAsOf(forceRemote: forceRemote)
-
-        do {
-            let exchangeRates = try await exchangeRatesRequest
-            refreshedExchangeRates = exchangeRates.rates.reduce(into: [String: Double]()) { result, item in
-                result[item.currency.uppercased()] = item.rate
+        if forceRemote {
+            do {
+                refreshedOverview = try await RemoteMarketClient.refreshOverview()
+                didRefreshOverview = true
+            } catch let error as NSError where error.code == 404 || error.code == 405 {
+                // Keep compatibility during a staggered App/backend rollout. Once
+                // the refresh endpoint is deployed, manual refreshes use the POST
+                // path above and actually update the upstream-backed server cache.
+                do {
+                    refreshedOverview = try await RemoteMarketClient.fetchOverview(forceRemote: true)
+                    didRefreshOverview = true
+                } catch {
+                    firstErrorMessage = error.localizedDescription
+                }
+            } catch {
+                firstErrorMessage = error.localizedDescription
             }
-            refreshedExchangeRatesFetchedAt = exchangeRates.fetchedAt
-            didRefreshExchangeRates = true
-        } catch {
-            firstErrorMessage = error.localizedDescription
-        }
 
-        do {
-            refreshedOverview = try await overviewRequest
-            didRefreshOverview = true
-        } catch {
-            firstErrorMessage = firstErrorMessage ?? error.localizedDescription
-        }
+            // The refresh endpoint writes overview quotes and FX in one transaction
+            // sequence. Read FX only after it returns so a manual refresh cannot race
+            // an older cached exchange-rate response.
+            do {
+                let exchangeRates = try await RemoteMarketClient.fetchExchangeRates(forceRemote: true)
+                refreshedExchangeRates = exchangeRates.rates.reduce(into: [String: Double]()) { result, item in
+                    result[item.currency.uppercased()] = item.rate
+                }
+                refreshedExchangeRatesFetchedAt = exchangeRates.fetchedAt
+                didRefreshExchangeRates = true
+            } catch {
+                firstErrorMessage = firstErrorMessage ?? error.localizedDescription
+            }
 
-        do {
-            refreshedNFCIAsOf = try await nfciRequest
-        } catch {
-            // Rollout-compatible soft dependency: older servers may not expose NFCI yet.
+            do {
+                refreshedNFCIAsOf = try await RemoteMarketClient.fetchNFCIAsOf(forceRemote: true)
+            } catch {
+                // Rollout-compatible soft dependency: older servers may not expose NFCI yet.
+            }
+        } else {
+            async let exchangeRatesRequest = RemoteMarketClient.fetchExchangeRates()
+            async let overviewRequest = RemoteMarketClient.fetchOverview()
+            async let nfciRequest = RemoteMarketClient.fetchNFCIAsOf()
+
+            do {
+                let exchangeRates = try await exchangeRatesRequest
+                refreshedExchangeRates = exchangeRates.rates.reduce(into: [String: Double]()) { result, item in
+                    result[item.currency.uppercased()] = item.rate
+                }
+                refreshedExchangeRatesFetchedAt = exchangeRates.fetchedAt
+                didRefreshExchangeRates = true
+            } catch {
+                firstErrorMessage = error.localizedDescription
+            }
+
+            do {
+                refreshedOverview = try await overviewRequest
+                didRefreshOverview = true
+            } catch {
+                firstErrorMessage = firstErrorMessage ?? error.localizedDescription
+            }
+
+            do {
+                refreshedNFCIAsOf = try await nfciRequest
+            } catch {
+                // Rollout-compatible soft dependency: older servers may not expose NFCI yet.
+            }
         }
 
         // Network work may have started before a cloud import. Publish the batch only
@@ -1368,7 +1425,7 @@ final class RemoteMarketStore: ObservableObject {
 
         let refreshTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            await self.refreshHistory()
+            await self.refreshHistory(forceRemote: force)
         }
         historyRefreshTask = refreshTask
         await refreshTask.value
@@ -1479,7 +1536,7 @@ final class RemoteMarketStore: ObservableObject {
         }
     }
 
-    private func refreshHistory() async {
+    private func refreshHistory(forceRemote: Bool = false) async {
         guard !isRefreshingHistory else {
             await waitForHistoryRefreshToFinish()
             return
@@ -1522,7 +1579,8 @@ final class RemoteMarketStore: ObservableObject {
                             symbols: batch.symbols,
                             startDate: batch.startDate,
                             endDate: fullHistoryEndDate,
-                            includeOHLC: batch.includeOHLC
+                            includeOHLC: batch.includeOHLC,
+                            forceRemote: forceRemote
                         )
                         let catalog = response.catalog ?? response.series.map { MarketAssetDescriptor(series: $0) }
                         return HistoryBatchFetchResult(series: response.series, catalog: catalog, errorMessage: nil)
