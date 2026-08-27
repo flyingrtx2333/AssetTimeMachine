@@ -5,7 +5,7 @@ import UserNotifications
 struct SettingsView: View {
     @Environment(\.openURL) private var openURL
     @EnvironmentObject private var appLanguageStore: AppLanguageStore
-    @AppStorage("app.appearanceMode") private var appearanceModeRawValue: String = AppAppearanceMode.system.rawValue
+    @AppStorage(AppAppearanceMode.defaultsKey) private var appearanceModeRawValue: String = AppAppearanceMode.system.rawValue
     @AppStorage("app.notifications.enabled") private var notificationEnabled = false
     @AppStorage("app.notifications.intervalHours") private var notificationIntervalHours: Double = 1
     @AppStorage("app.strategyNotifications.enabled") private var strategyNotificationEnabled = false

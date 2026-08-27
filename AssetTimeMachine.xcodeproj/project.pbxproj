@@ -6,9 +6,48 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8B7100012F9D000000000001 /* AssetTimeMachineWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8B7100012F9D000000000004 /* AssetTimeMachineWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		8B7100012F9D000000000002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B7089492F9CFC8400B7D1C7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8B7100012F9D000000000008;
+			remoteInfo = AssetTimeMachineWidgets;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8B7100012F9D000000000003 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				8B7100012F9D000000000001 /* AssetTimeMachineWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		8B7089512F9CFC8400B7D1C7 /* AssetTimeMachine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AssetTimeMachine.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8B7100012F9D000000000004 /* AssetTimeMachineWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AssetTimeMachineWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8B7100012F9D00000000000F /* Exceptions for "AssetTimeMachineWidgets" folder in "AssetTimeMachineWidgets" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8B7100012F9D000000000008 /* AssetTimeMachineWidgets */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8B7089532F9CFC8400B7D1C7 /* AssetTimeMachine */ = {
@@ -16,10 +55,30 @@
 			path = AssetTimeMachine;
 			sourceTree = "<group>";
 		};
+		8B7100012F9D000000000005 /* AssetTimeMachineWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8B7100012F9D00000000000F /* Exceptions for "AssetTimeMachineWidgets" folder in "AssetTimeMachineWidgets" target */,
+			);
+			path = AssetTimeMachineWidgets;
+			sourceTree = "<group>";
+		};
+		8B7100012F9D000000000006 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		8B70894E2F9CFC8400B7D1C7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8B7100012F9D000000000007 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +92,8 @@
 			isa = PBXGroup;
 			children = (
 				8B7089532F9CFC8400B7D1C7 /* AssetTimeMachine */,
+				8B7100012F9D000000000005 /* AssetTimeMachineWidgets */,
+				8B7100012F9D000000000006 /* Shared */,
 				8B7089522F9CFC8400B7D1C7 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +102,7 @@
 			isa = PBXGroup;
 			children = (
 				8B7089512F9CFC8400B7D1C7 /* AssetTimeMachine.app */,
+				8B7100012F9D000000000004 /* AssetTimeMachineWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -55,13 +117,16 @@
 				8B70894D2F9CFC8400B7D1C7 /* Sources */,
 				8B70894E2F9CFC8400B7D1C7 /* Frameworks */,
 				8B70894F2F9CFC8400B7D1C7 /* Resources */,
+				8B7100012F9D000000000003 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				8B7100012F9D00000000000B /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8B7089532F9CFC8400B7D1C7 /* AssetTimeMachine */,
+				8B7100012F9D000000000006 /* Shared */,
 			);
 			name = AssetTimeMachine;
 			packageProductDependencies = (
@@ -69,6 +134,29 @@
 			productName = AssetTimeMachine;
 			productReference = 8B7089512F9CFC8400B7D1C7 /* AssetTimeMachine.app */;
 			productType = "com.apple.product-type.application";
+		};
+		8B7100012F9D000000000008 /* AssetTimeMachineWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8B7100012F9D00000000000E /* Build configuration list for PBXNativeTarget "AssetTimeMachineWidgets" */;
+			buildPhases = (
+				8B7100012F9D00000000000A /* Sources */,
+				8B7100012F9D000000000007 /* Frameworks */,
+				8B7100012F9D000000000009 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				8B7100012F9D000000000005 /* AssetTimeMachineWidgets */,
+				8B7100012F9D000000000006 /* Shared */,
+			);
+			name = AssetTimeMachineWidgets;
+			packageProductDependencies = (
+			);
+			productName = AssetTimeMachineWidgets;
+			productReference = 8B7100012F9D000000000004 /* AssetTimeMachineWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -83,7 +171,18 @@
 					8B7089502F9CFC8400B7D1C7 = {
 						CreatedOnToolsVersion = 26.3;
 						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
 							com.apple.SignInWithApple = {
+								enabled = 1;
+							};
+						};
+					};
+					8B7100012F9D000000000008 = {
+						CreatedOnToolsVersion = 26.3;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
 								enabled = 1;
 							};
 						};
@@ -105,12 +204,20 @@
 			projectRoot = "";
 			targets = (
 				8B7089502F9CFC8400B7D1C7 /* AssetTimeMachine */,
+				8B7100012F9D000000000008 /* AssetTimeMachineWidgets */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		8B70894F2F9CFC8400B7D1C7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8B7100012F9D000000000009 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -127,7 +234,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8B7100012F9D00000000000A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		8B7100012F9D00000000000B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8B7100012F9D000000000008 /* AssetTimeMachineWidgets */;
+			targetProxy = 8B7100012F9D000000000002 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		8B70895C2F9CFC8500B7D1C7 /* Debug */ = {
@@ -251,7 +373,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = AssetTimeMachine/AssetTimeMachine.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 198;
+				CURRENT_PROJECT_VERSION = 199;
 				DEVELOPMENT_TEAM = 8BPSC5L74V;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -298,7 +420,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = AssetTimeMachine/AssetTimeMachine.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 198;
+				CURRENT_PROJECT_VERSION = 199;
 				DEVELOPMENT_TEAM = 8BPSC5L74V;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -338,6 +460,70 @@
 			};
 			name = Release;
 		};
+		8B7100012F9D00000000000C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = AssetTimeMachineWidgets/AssetTimeMachineWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 199;
+				DEVELOPMENT_TEAM = 8BPSC5L74V;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AssetTimeMachineWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.13;
+				PRODUCT_BUNDLE_IDENTIFIER = com.flyingrtx.AssetTimeMachine.Widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		8B7100012F9D00000000000D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = AssetTimeMachineWidgets/AssetTimeMachineWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 199;
+				DEVELOPMENT_TEAM = 8BPSC5L74V;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AssetTimeMachineWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.13;
+				PRODUCT_BUNDLE_IDENTIFIER = com.flyingrtx.AssetTimeMachine.Widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -355,6 +541,15 @@
 			buildConfigurations = (
 				8B70895F2F9CFC8500B7D1C7 /* Debug */,
 				8B7089602F9CFC8500B7D1C7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8B7100012F9D00000000000E /* Build configuration list for PBXNativeTarget "AssetTimeMachineWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8B7100012F9D00000000000C /* Debug */,
+				8B7100012F9D00000000000D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

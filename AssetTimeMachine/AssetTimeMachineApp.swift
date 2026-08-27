@@ -24,7 +24,7 @@ final class AssetTimeMachineAppDelegate: NSObject, UIApplicationDelegate, UNUser
 @main
 struct AssetTimeMachineApp: App {
     @UIApplicationDelegateAdaptor(AssetTimeMachineAppDelegate.self) private var appDelegate
-    @AppStorage("app.appearanceMode") private var appearanceModeRawValue: String = AppAppearanceMode.system.rawValue
+    @AppStorage(AppAppearanceMode.defaultsKey) private var appearanceModeRawValue: String = AppAppearanceMode.system.rawValue
     @StateObject private var appLanguageStore = AppLanguageStore()
     private let modelBootstrap: AppModelContainerBootstrap
 

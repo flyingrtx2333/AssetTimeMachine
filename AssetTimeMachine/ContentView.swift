@@ -20,12 +20,20 @@ final class AppRuntimeStore: ObservableObject {
 struct ContentView: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.scenePhase) var scenePhase
+    @EnvironmentObject var appLanguageStore: AppLanguageStore
     @AppStorage("app.onboarding.completed") var hasCompletedOnboarding = false
     @AppStorage("app.notifications.enabled") var notificationEnabled = false
     @AppStorage("app.notifications.intervalHours") var notificationIntervalHours: Double = 1
     @AppStorage("app.strategyNotifications.enabled") var strategyNotificationEnabled = false
     @AppStorage("app.strategyNotifications.templateID") var strategyNotificationTemplateID = StrategyRebalanceDefaults.defaultTemplateID
     @AppStorage("app.strategyNotifications.hour") var strategyNotificationHour: Int = StrategyNotificationDefaults.defaultHour
+    @AppStorage("dashboard.monthlyExpense") var widgetMonthlyExpense: Double = 3000
+    @AppStorage("dashboard.inflationRate") var widgetInflationRate: Double = 0.05
+    @AppStorage("dashboard.monthlySalary") var widgetMonthlySalary: Double = 10000
+    @AppStorage("dashboard.annualReturnRate") var widgetAnnualReturnRate: Double = 0.03
+    @AppStorage("dashboard.freedomUsesCurrentAssets") var widgetFreedomUsesCurrentAssets = true
+    @AppStorage("dashboard.amountsVisible") var widgetAmountsVisible = true
+    @AppStorage(AppAppearanceMode.defaultsKey) var appearanceModeRawValue = AppAppearanceMode.system.rawValue
     @StateObject var runtimeStore = AppRuntimeStore()
     @State var mountedTabs: Set<AppTab> = [.dashboard]
     @State var lastSelectedTab: AppTab = .dashboard
@@ -40,6 +48,8 @@ struct ContentView: View {
     @State var notificationRefreshGeneration = 0
     @State var notificationRefreshRequestedDelayNanoseconds: UInt64 = 0
     @State var startupMaintenanceTask: Task<Void, Never>?
+    @State var pendingWidgetSnapshotRefreshTask: Task<Void, Never>?
+    @State var widgetSnapshotGeneration = 0
     @State var isApplyingCloudData = false
     @State var cloudDataRevision = 0
     #if DEBUG
@@ -152,6 +162,7 @@ struct ContentView: View {
                 strategyNotificationTemplateID = migratedStrategyID
             }
             await runStartupIfNeeded()
+            scheduleWidgetSnapshotRefresh(delayNanoseconds: 0)
             if workActiveTab == nil {
                 scheduleWorkActivation(for: selectedTab)
             }
@@ -184,6 +195,7 @@ struct ContentView: View {
             guard !Task.isCancelled, scenePhase == .active else { return }
 
             await refreshLiveMarketDataIfNeeded(force: false)
+            scheduleWidgetSnapshotRefresh(delayNanoseconds: 0)
 
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: nextMarketRefreshDelayNanoseconds)
@@ -199,6 +211,7 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { notification in
             guard PortfolioSaveNotificationFilter.affectsPortfolio(notification) else { return }
+            scheduleWidgetSnapshotRefresh()
             if !cloudStore.isApplyingLocalData {
                 cloudStore.scheduleAutoSync(from: modelContext, quietly: true)
             }
@@ -217,11 +230,13 @@ struct ContentView: View {
             } else {
                 scheduleWorkActivation(for: selectedTab)
                 scheduleSnapshotNotificationRefresh()
+                scheduleWidgetSnapshotRefresh(delayNanoseconds: 0)
             }
         }
         .onReceive(cloudStore.$localDataRevision.removeDuplicates()) { revision in
             guard revision != cloudDataRevision else { return }
             cloudDataRevision = revision
+            scheduleWidgetSnapshotRefresh(delayNanoseconds: 0)
         }
         .onChange(of: strategyNotificationEnabled) { _, _ in
             scheduleSnapshotNotificationRefresh(delayNanoseconds: 0)
@@ -232,6 +247,27 @@ struct ContentView: View {
         .onChange(of: strategyNotificationHour) { _, _ in
             scheduleSnapshotNotificationRefresh(delayNanoseconds: 0)
         }
+        .onChange(of: widgetSettingsToken) { _, _ in
+            scheduleWidgetSnapshotRefresh()
+        }
+        .onReceive(appLanguageStore.$language.removeDuplicates()) { _ in
+            scheduleWidgetSnapshotRefresh()
+        }
+        .onReceive(marketStore.$overview.combineLatest(marketStore.$exchangeRates)) { _ in
+            scheduleWidgetSnapshotRefresh()
+        }
+    }
+
+    private var widgetSettingsToken: String {
+        [
+            widgetMonthlyExpense.description,
+            widgetInflationRate.description,
+            widgetMonthlySalary.description,
+            widgetAnnualReturnRate.description,
+            widgetFreedomUsesCurrentAssets.description,
+            widgetAmountsVisible.description,
+            appearanceModeRawValue,
+        ].joined(separator: "|")
     }
 }
 
