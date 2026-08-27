@@ -104,12 +104,20 @@ set -a
 source "$ASC_ENV"
 set +a
 
-for name in ASC_KEY_ID ASC_ISSUER_ID; do
+for name in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_PATH; do
     if [[ -z "${!name:-}" ]]; then
         echo "Missing $name in $ASC_ENV" >&2
         exit 78
     fi
 done
+
+require_file "$ASC_KEY_PATH"
+
+XCODE_AUTH_ARGS=(
+    -authenticationKeyPath "$ASC_KEY_PATH"
+    -authenticationKeyID "$ASC_KEY_ID"
+    -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+)
 
 read_versions() {
     python3 - <<'PY'
@@ -186,6 +194,7 @@ IPA="$EXPORT/$SCHEME.ipa"
 ARCHIVE_LOG="$BUILD_DIR/archive.log"
 EXPORT_LOG="$BUILD_DIR/export.log"
 UPLOAD_LOG="$BUILD_DIR/upload.log"
+VALIDATE_LOG="$BUILD_DIR/validate.log"
 STATUS_LOG="$BUILD_DIR/build-status.log"
 
 log "Version $MARKETING_VERSION ($CURRENT_BUILD)"
@@ -233,7 +242,9 @@ cat > "$BUILD_DIR/ExportOptions.plist" <<PLIST
 <plist version="1.0">
 <dict>
     <key>method</key>
-    <string>app-store</string>
+    <string>app-store-connect</string>
+    <key>destination</key>
+    <string>export</string>
     <key>teamID</key>
     <string>$TEAM_ID</string>
     <key>uploadBitcode</key>
@@ -252,6 +263,7 @@ xcodebuild -exportArchive \
     -exportPath "$EXPORT" \
     -exportOptionsPlist "$BUILD_DIR/ExportOptions.plist" \
     -allowProvisioningUpdates \
+    "${XCODE_AUTH_ARGS[@]}" \
     > "$EXPORT_LOG" 2>&1 || { tail -n 180 "$EXPORT_LOG"; exit 1; }
 
 if [[ ! -f "$IPA" ]]; then
@@ -263,6 +275,19 @@ if [[ -z "${IPA:-}" || ! -f "$IPA" ]]; then
 fi
 ls -lh "$IPA"
 
+log "Validating IPA with App Store Connect"
+xcrun altool --validate-app \
+    --type ios \
+    --file "$IPA" \
+    --apiKey "$ASC_KEY_ID" \
+    --apiIssuer "$ASC_ISSUER_ID" \
+    > "$VALIDATE_LOG" 2>&1 || { tail -n 180 "$VALIDATE_LOG"; exit 1; }
+if grep -Eq 'ERROR:|Validation failed' "$VALIDATE_LOG"; then
+    tail -n 180 "$VALIDATE_LOG"
+    exit 1
+fi
+tail -n 60 "$VALIDATE_LOG"
+
 log "Uploading to App Store Connect"
 xcrun altool --upload-app \
     --type ios \
@@ -270,6 +295,10 @@ xcrun altool --upload-app \
     --apiKey "$ASC_KEY_ID" \
     --apiIssuer "$ASC_ISSUER_ID" \
     > "$UPLOAD_LOG" 2>&1 || { tail -n 180 "$UPLOAD_LOG"; exit 1; }
+if grep -Eq 'ERROR:|Upload failed' "$UPLOAD_LOG"; then
+    tail -n 180 "$UPLOAD_LOG"
+    exit 1
+fi
 tail -n 120 "$UPLOAD_LOG"
 
 DELIVERY_ID="$(grep -Eo '[0-9a-fA-F-]{36}' "$UPLOAD_LOG" | tail -n 1)"
