@@ -1,0 +1,25 @@
+{
+  "files": [
+    {
+      "bytes": 4895866,
+      "format": "json",
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "sha256": "332562774379871e11de156e2f2cd6fca4c4ce4ba3ab651657f3b41f22febf02"
+    }
+  ],
+  "generated_at": "2026-09-02T11:44:14+08:00",
+  "git_commit": "b2d1a41c3af209e840708e19418a992e470add97",
+  "kind": "dataset",
+  "metadata": {
+    "candidate_id": "GOR-QREG-252-63",
+    "engine_version": "atm-swift-clock-v3-2026-08-31",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "series": ["gold_cny", "oil_wti_cny", "nasdaq", "usd_per_cny"],
+    "observation_rule": "all four series observed=true, finite and positive on a common aligned date; forward fill valuation only",
+    "schedule_rule": "pure precomputed 252-lookback, 63-common-observation review schedule",
+    "performance_viewed_before_freeze": false,
+    "strategy_lineage": "gor-qreg-252-63-v1"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-GOR-QREG-001"
+}

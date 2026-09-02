@@ -1,0 +1,79 @@
+{
+  "trial_id": "ATM-SVP2-GOR-QREG-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "GOLD_OIL_RATIO_QUARTERLY_MACRO_REGIME",
+  "strategy_lineage": "gor-qreg-252-63-v1; ATM-COST-2026-08-28-BPS25 descriptive replay plus fixed App-cost product acceptance",
+  "hypothesis": "The gold-to-WTI ratio classifies a slow macro regime: above its prior one-year common-observation mean indicates defensive or growth-stress conditions favoring gold, while at or below the mean indicates growth and risk-asset conditions favoring Nasdaq. Reviewing quarterly should make the signal economically interpretable and product-cost tolerant.",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-GOR-QREG-001.json",
+  "allowed_changes": [
+    "exact GOR-QREG-252-63 single candidate only",
+    "one immutable precomputed target schedule replayed at BPS25 and App product cost",
+    "fixed cash, state-independent 50/50 and sign-reversal falsification controls",
+    "mechanical reporting of frozen windows and stress periods"
+  ],
+  "candidate_ids": ["GOR-QREG-252-63"],
+  "candidate_count": 1,
+  "selection_metric": "No optimization or candidate selection. The one frozen candidate is evaluated once; only App 1.00% fee plus 0.05% slippage determines product acceptance.",
+  "pass_fail_gates": [
+    "App-cost full-history, last-10-calendar-years, 2020+ and 2022+ CAGR each >=10%",
+    "App-cost full-history, last-10-calendar-years, 2020+ and 2022+ MDD each <=10%",
+    "GFC, COVID and 2022 tightening MDD each <=15%",
+    "App-cost full-history CAGR greater than CashYieldCNY control",
+    "App-cost full-history Sharpe greater than state-independent naturally drifting 50/50 gold-Nasdaq control",
+    "App-cost full-history Sharpe greater than sign-reversal falsification control",
+    "the exact same immutable schedule object/fingerprint, event dates and target weights are used for BPS25 and App-cost replays",
+    "maximum requested and marked-to-market actual gross <=100%; target weights, holdings and cash nonnegative; no shorting, financing or signal-only asset trades",
+    "all frozen schedule, strict T-1, common-observation and clock-v3 contract tests pass"
+  ],
+  "formal_run_budget": 1,
+  "follow_up_policy": "If any gate fails, record REJECTED and stop. No 126/200/240/504 lookback, 21/42/126 review interval, median/EMA/z-score/quantile, lag confirmation, reversed mapping, oil-only or alternate ratio, partial allocation, 50/50 blend, risk parity, buffer, stop loss, month-end anchor, cost substitution or post-result rescue is allowed. A genuinely different mechanism requires a new lineage and preregistration.",
+  "swift_engine_entrypoint": "scripts/run_gor_qreg_252_63_formal.py -> tools/gor_qreg_252_63_formal.swiftpart + GORQREG25263Strategy.makeSchedule -> BacktestEngine.runResearchTargetProviderStrategyWithTrace frozenSchedule -> shared BacktestDailySimulator",
+  "expected_outputs": [
+    "formal BPS25 and App-cost full-history, last-10-years, 2020+, 2022+ and frozen stress-period metrics",
+    "cash, naturally drifting 50/50 and sign-reversal control metrics",
+    "immutable schedule CSV, fingerprint and event count",
+    "portfolio paths, constraints, execution record, stdout/stderr and SHA-256 artifact manifest",
+    "mechanical PASS or REJECTED decision"
+  ],
+  "candidate_definition": {
+    "candidate_id": "GOR-QREG-252-63",
+    "tradable_assets": ["gold_cny", "nasdaq"],
+    "signal_only_assets": ["oil_wti_cny", "usd_per_cny"],
+    "common_observation": "gold_cny, oil_wti_cny, nasdaq and usd_per_cny must all be observed=true, finite and positive on the same aligned date; forward-filled values never advance the signal clock",
+    "state_variable": "R_s = gold_cny_close_s / oil_wti_cny_close_s",
+    "lookback": "arithmetic mean of exactly the previous 252 common-observation R values, s-252 through s-1, excluding current R_s",
+    "review_grid": "common-observation ordinals 252,315,378,... only; invalid values consume the fixed anchor and preserve the prior target",
+    "mapping": "R_s > prior252Mean targets 100% gold_cny; R_s <= prior252Mean targets 100% nasdaq",
+    "same_state": "no target event and no drift rebalancing",
+    "warmup": "100% CashYieldCNY until the first target executes",
+    "causality": "schedule event is formed at signal date s and executes no earlier than the next common real observation under strict T-1",
+    "execution": "sell before buy; cross-market proceeds buy no earlier than the next complete common observation; no leverage, financing, shorting or signal-only trades"
+  },
+  "cost_models": {
+    "formal_primary": {"cost_regime_id": "ATM-COST-2026-08-28-BPS25", "fee_rate_percent": 0.025, "slippage_rate_percent": 0.0, "role": "descriptive formal replay only"},
+    "product_acceptance": {"fee_rate_percent": 1.0, "slippage_rate_percent": 0.05, "sole_basis_for_product_decision": true},
+    "modeling_rule": "Both costs replay the same precomputed immutable schedule. Low-cost results cannot substitute for App-cost acceptance."
+  },
+  "evaluation_windows": {
+    "full_history": "all available frozen App fixture history after engine warmup",
+    "last_10_years": "latest portfolio date minus exactly 10 calendar years through latest",
+    "since_2020": "2020-01-01 through latest",
+    "since_2022": "2022-01-01 through latest",
+    "stress_periods": {"GFC_2008_2009": "2008-09-01 through 2009-06-30", "COVID_CRASH_2020": "2020-02-19 through 2020-04-30", "TIGHTENING_2022": "2022-01-01 through 2022-12-31"}
+  },
+  "controls": {
+    "cash_yield_cny": "same frame and warmup; no target events",
+    "state_independent_50_50": "at first review establish 50% gold and 50% Nasdaq once, then naturally drift without periodic rebalancing",
+    "sign_reversal_falsification": "same schedule dates but invert the candidate gold/Nasdaq mapping"
+  },
+  "forbidden_changes": [
+    "any alternate lookback or review interval",
+    "any alternate statistic, ratio, asset, threshold, mapping or confirmation",
+    "any forward-filled signal observation",
+    "any periodic rebalance within an unchanged state",
+    "any leverage, financing, shorting, negative cash or signal-only asset trade",
+    "any product decision based on BPS25",
+    "any post-result rescue or replacement within this trial"
+  ]
+}

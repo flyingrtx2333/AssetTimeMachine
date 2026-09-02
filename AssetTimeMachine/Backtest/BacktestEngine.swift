@@ -115,6 +115,8 @@ nonisolated struct ResearchTargetStrategyConfig {
     let rebalanceBand: Double
     let tradeToBandBoundary: Bool
     let zeroFillBeforeFirstSymbols: Set<String>
+    /// Prepared series that may drive a frozen schedule but can never be held or traded.
+    let signalOnlySymbols: Set<String>
     let maxGrossExposure: Double
     let allowsFinancedExposure: Bool
     let financingAnnualRate: Double
@@ -128,6 +130,7 @@ nonisolated struct ResearchTargetStrategyConfig {
         rebalanceBand: Double = 0,
         tradeToBandBoundary: Bool = false,
         zeroFillBeforeFirstSymbols: Set<String> = [],
+        signalOnlySymbols: Set<String> = [],
         maxGrossExposure: Double = 1,
         allowsFinancedExposure: Bool = false,
         financingAnnualRate: Double = 0,
@@ -140,6 +143,7 @@ nonisolated struct ResearchTargetStrategyConfig {
         self.rebalanceBand = rebalanceBand
         self.tradeToBandBoundary = tradeToBandBoundary
         self.zeroFillBeforeFirstSymbols = zeroFillBeforeFirstSymbols
+        self.signalOnlySymbols = signalOnlySymbols
         self.maxGrossExposure = maxGrossExposure
         self.allowsFinancedExposure = allowsFinancedExposure
         self.financingAnnualRate = financingAnnualRate
@@ -4925,6 +4929,7 @@ nonisolated enum BacktestEngine {
         dateBounds: ClosedRange<Date>? = nil,
         rebalanceDecision: ((Int, Int, ResearchTargetDataContext) -> BacktestRebalanceDecision)? = nil,
         contextualRebalanceDecision: ((StrategyTargetContext, ResearchTargetDataContext) -> BacktestRebalanceDecision)? = nil,
+        frozenSchedule: ((MarketDataFrame) -> FrozenTargetSchedule?)? = nil,
         targetWeights: @escaping (StrategyTargetContext, ResearchTargetDataContext) -> [String: Double]
     ) -> AdvancedBacktestReport? {
         runResearchTargetProviderStrategyWithTrace(
@@ -4935,6 +4940,7 @@ nonisolated enum BacktestEngine {
             dateBounds: dateBounds,
             rebalanceDecision: rebalanceDecision,
             contextualRebalanceDecision: contextualRebalanceDecision,
+            frozenSchedule: frozenSchedule,
             targetWeights: targetWeights
         )?.report
     }
@@ -4947,6 +4953,7 @@ nonisolated enum BacktestEngine {
         dateBounds: ClosedRange<Date>? = nil,
         rebalanceDecision: ((Int, Int, ResearchTargetDataContext) -> BacktestRebalanceDecision)? = nil,
         contextualRebalanceDecision: ((StrategyTargetContext, ResearchTargetDataContext) -> BacktestRebalanceDecision)? = nil,
+        frozenSchedule: ((MarketDataFrame) -> FrozenTargetSchedule?)? = nil,
         targetWeights: @escaping (StrategyTargetContext, ResearchTargetDataContext) -> [String: Double]
     ) -> ResearchTargetStrategyRun? {
         let preparedSeries: [PreparedAdvancedSeries] = assetInputs.compactMap { input -> PreparedAdvancedSeries? in
@@ -4968,7 +4975,9 @@ nonisolated enum BacktestEngine {
         let commonDates = aligned.dates
         let pricesBySymbol = aligned.pricesBySymbol
         let optionBySymbol = Dictionary(uniqueKeysWithValues: preparedSeries.map { ($0.assetOption.symbol, $0.assetOption) })
-        let tradableSymbols = preparedSeries.map(\.assetOption.symbol)
+        let allPreparedSymbols = preparedSeries.map(\.assetOption.symbol)
+        guard config.signalOnlySymbols.isSubset(of: Set(allPreparedSymbols)) else { return nil }
+        let tradableSymbols = allPreparedSymbols.filter { !config.signalOnlySymbols.contains($0) }
         guard !commonDates.isEmpty, !tradableSymbols.isEmpty else { return nil }
 
         let requestedRange: ClosedRange<Int>
@@ -5001,6 +5010,15 @@ nonisolated enum BacktestEngine {
             optionBySymbol: optionBySymbol,
             simulationRange: simulationRange
         )
+        let precomputedSchedule: FrozenTargetSchedule?
+        if let frozenSchedule {
+            guard contextualRebalanceDecision == nil,
+                  rebalanceDecision == nil,
+                  let schedule = frozenSchedule(frame) else { return nil }
+            precomputedSchedule = schedule
+        } else {
+            precomputedSchedule = nil
+        }
         let execution = BacktestExecutionConfig(
             initialCash: normalizedInitialCash,
             feeRate: normalizedFeeRate,
@@ -5014,7 +5032,12 @@ nonisolated enum BacktestEngine {
         let provider = StrategyTargetProvider { context in
             let allowedSymbols = Set(tradableSymbols)
             var cleanedWeights: [String: Double] = [:]
-            let rawWeights = targetWeights(context, dataContext)
+            let rawWeights: [String: Double]
+            if let precomputedSchedule {
+                rawWeights = precomputedSchedule.event(signalIndex: context.signalIndex)?.targetWeights ?? [:]
+            } else {
+                rawWeights = targetWeights(context, dataContext)
+            }
             for symbol in rawWeights.keys.sorted() where allowedSymbols.contains(symbol) {
                 let weight = rawWeights[symbol] ?? 0
                 guard weight.isFinite, weight > 0 else { continue }
@@ -5033,7 +5056,14 @@ nonisolated enum BacktestEngine {
         var lastRebalanceIndex = Int.min / 2
         let firstRebalanceIndex = simulationRange.lowerBound
         let contextualDecision: ((StrategyTargetContext) -> BacktestRebalanceDecision)?
-        if let contextualRebalanceDecision {
+        if let precomputedSchedule {
+            contextualDecision = { context in
+                BacktestRebalanceDecision(
+                    shouldRebalance: precomputedSchedule.event(signalIndex: context.signalIndex) != nil,
+                    refreshOverlay: false
+                )
+            }
+        } else if let contextualRebalanceDecision {
             contextualDecision = { context in contextualRebalanceDecision(context, dataContext) }
         } else {
             contextualDecision = nil

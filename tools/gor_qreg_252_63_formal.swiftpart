@@ -1,0 +1,268 @@
+        if ProcessInfo.processInfo.environment["ATM_GOR_QREG_FORMAL"] == "1" {
+            let outputDir = ProcessInfo.processInfo.environment["ATM_GOR_QREG_OUTPUT_DIR"] ?? ""
+            guard !outputDir.isEmpty else {
+                print("GOR_QREG_OUTPUT_DIR_MISSING")
+                return
+            }
+            let trialID = ProcessInfo.processInfo.environment["ATM_SVP_TRIAL_ID"] ?? "ATM-SVP2-GOR-QREG-001"
+            let candidateID = GORQREG25263Strategy.candidateID
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let marketSymbols = [GORQREG25263Strategy.goldSymbol, GORQREG25263Strategy.nasdaqSymbol, GORQREG25263Strategy.oilSymbol]
+            var inputs = marketSymbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+            }
+            let fxOption = BacktestAssetOption(
+                symbol: GORQREG25263Strategy.fxSymbol,
+                title: "USD per CNY signal",
+                color: .blue,
+                requiresHistoricalFX: false,
+                historicalFXSymbol: nil
+            )
+            inputs.append((
+                assetSeries: seriesBySymbol[normalizedHistorySymbol(GORQREG25263Strategy.fxSymbol)],
+                assetOption: fxOption,
+                fxSeries: nil
+            ))
+            guard inputs.count == 4 else {
+                print("GOR_QREG_INPUTS_MISSING")
+                return
+            }
+
+            func settings(feePercent: Double, slippagePercent: Double) -> AdvancedBacktestRiskSettings {
+                AdvancedBacktestRiskSettings(
+                    feeRate: feePercent,
+                    slippageRate: slippagePercent,
+                    maxPositionRatio: 100,
+                    cooldownDays: 0,
+                    stopLossRatio: 0,
+                    takeProfitRatio: 0
+                )
+            }
+            let config = ResearchTargetStrategyConfig(
+                symbol: "gor_qreg_252_63",
+                title: "GOR-QREG-252-63",
+                warmupSessions: 1,
+                rebalanceSessions: 1,
+                rebalanceBand: 0,
+                signalOnlySymbols: GORQREG25263Strategy.signalOnlySymbols,
+                maxGrossExposure: 1,
+                allowsFinancedExposure: false,
+                financingAnnualRate: 0,
+                buyReason: "GOR-QREG frozen schedule target"
+            )
+
+            var sharedCandidateSchedule: FrozenTargetSchedule?
+            guard let bps25 = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings(feePercent: 0.025, slippagePercent: 0),
+                config: config,
+                frozenSchedule: { frame in
+                    let schedule = GORQREG25263Strategy.makeSchedule(frame: frame, variant: .candidate)
+                    sharedCandidateSchedule = schedule
+                    return schedule
+                },
+                targetWeights: { _, _ in [:] }
+            ), let frozenCandidateSchedule = sharedCandidateSchedule,
+            let appCost = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings(feePercent: 1.00, slippagePercent: 0.05),
+                config: config,
+                frozenSchedule: { _ in frozenCandidateSchedule },
+                targetWeights: { _, _ in [:] }
+            ), let equalWeightControl = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings(feePercent: 1.00, slippagePercent: 0.05),
+                config: config,
+                frozenSchedule: { frame in
+                    GORQREG25263Strategy.makeSchedule(frame: frame, variant: .stateIndependentEqualWeightControl)
+                },
+                targetWeights: { _, _ in [:] }
+            ), let signReversalControl = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings(feePercent: 1.00, slippagePercent: 0.05),
+                config: config,
+                frozenSchedule: { frame in
+                    GORQREG25263Strategy.makeSchedule(frame: frame, variant: .signReversalFalsificationControl)
+                },
+                targetWeights: { _, _ in [:] }
+            ), let cashControl = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: inputs,
+                initialCash: 100_000,
+                settings: settings(feePercent: 1.00, slippagePercent: 0.05),
+                config: config,
+                frozenSchedule: { _ in FrozenTargetSchedule(events: []) },
+                targetWeights: { _, _ in [:] }
+            ) else {
+                print("GOR_QREG_RUN_FAILED")
+                return
+            }
+
+            func metrics(_ points: [BacktestSeriesPoint]) -> [String: Any] {
+                guard let value = BacktestMetricsCalculator.performanceMetrics(from: points) else { return ["available": false] }
+                return [
+                    "available": true,
+                    "start": points.first?.date.recordDateString ?? "",
+                    "end": points.last?.date.recordDateString ?? "",
+                    "observations": points.count,
+                    "cagr_percent": (value.annualizedReturn ?? 0) * 100,
+                    "mdd_percent": value.maxDrawdown * 100,
+                    "sharpe": value.sharpeRatio as Any,
+                    "total_return": value.totalReturn
+                ]
+            }
+            func sliced(_ points: [BacktestSeriesPoint], start: String, end: String = "9999-12-31") -> [BacktestSeriesPoint] {
+                points.filter { $0.date.recordDateString >= start && $0.date.recordDateString <= end }
+            }
+            func lastTenYearStart(_ points: [BacktestSeriesPoint]) -> String {
+                guard let last = points.last?.date,
+                      let start = BacktestSeriesAlignment.historicalSeriesCalendar.date(byAdding: .year, value: -10, to: last) else { return "" }
+                return start.recordDateString
+            }
+            let stressPeriods: [(String, String, String)] = [
+                ("GFC_2008_2009", "2008-09-01", "2009-06-30"),
+                ("COVID_CRASH_2020", "2020-02-19", "2020-04-30"),
+                ("TIGHTENING_2022", "2022-01-01", "2022-12-31")
+            ]
+            func windows(_ points: [BacktestSeriesPoint]) -> [String: Any] {
+                [
+                    "full_history": metrics(points),
+                    "last_10_years": metrics(sliced(points, start: lastTenYearStart(points))),
+                    "since_2020": metrics(sliced(points, start: "2020-01-01")),
+                    "since_2022": metrics(sliced(points, start: "2022-01-01")),
+                    "stress_periods": Dictionary(uniqueKeysWithValues: stressPeriods.map { name, start, end in
+                        (name, metrics(sliced(points, start: start, end: end)))
+                    })
+                ]
+            }
+            func constraints(_ run: ResearchTargetStrategyRun) -> [String: Any] {
+                let maxTargetGross = run.dailyStates.map { $0.targetWeights.values.reduce(0, +) }.max() ?? 0
+                let minTargetWeight = run.dailyStates.flatMap { $0.targetWeights.values }.min() ?? 0
+                let minCash = run.dailyStates.map(\.cash).min() ?? 0
+                let maxActualGross = run.dailyStates.map { state in
+                    guard state.portfolioValue > 0 else { return 0 }
+                    return max(state.portfolioValue - state.cash, 0) / state.portfolioValue
+                }.max() ?? 0
+                let tradedSymbols = Set(run.report.trades.map(\.assetSymbol))
+                let pass = maxTargetGross <= 1.000000001 && maxActualGross <= 1.000000001
+                    && minTargetWeight >= -1e-10 && minCash >= -1e-8
+                    && tradedSymbols.isSubset(of: GORQREG25263Strategy.tradableSymbols)
+                return [
+                    "max_target_gross": maxTargetGross,
+                    "max_actual_gross": maxActualGross,
+                    "min_target_weight": minTargetWeight,
+                    "min_cash": minCash,
+                    "traded_symbols": tradedSymbols.sorted(),
+                    "signal_only_symbols": GORQREG25263Strategy.signalOnlySymbols.sorted(),
+                    "financing_allowed": false,
+                    "shorting_allowed": false,
+                    "pass": pass
+                ]
+            }
+            func cagr(_ metric: [String: Any]) -> Double { metric["cagr_percent"] as? Double ?? -.infinity }
+            func mdd(_ metric: [String: Any]) -> Double { metric["mdd_percent"] as? Double ?? .infinity }
+            func sharpe(_ metric: [String: Any]) -> Double { metric["sharpe"] as? Double ?? -.infinity }
+            func mechanicalGate(
+                _ value: [String: Any],
+                constraints: [String: Any],
+                sameSchedule: Bool,
+                cashControl: [String: Any],
+                equalWeightControl: [String: Any],
+                signReversalControl: [String: Any]
+            ) -> [String: Any] {
+                let full = value["full_history"] as! [String: Any]
+                let last10 = value["last_10_years"] as! [String: Any]
+                let since2020 = value["since_2020"] as! [String: Any]
+                let since2022 = value["since_2022"] as! [String: Any]
+                let stress = value["stress_periods"] as! [String: [String: Any]]
+                var checks: [String: Bool] = [
+                    "full_cagr_ge_10pct": cagr(full) >= 10,
+                    "last10_cagr_ge_10pct": cagr(last10) >= 10,
+                    "since2020_cagr_ge_10pct": cagr(since2020) >= 10,
+                    "since2022_cagr_ge_10pct": cagr(since2022) >= 10,
+                    "full_mdd_le_10pct": mdd(full) <= 10,
+                    "last10_mdd_le_10pct": mdd(last10) <= 10,
+                    "since2020_mdd_le_10pct": mdd(since2020) <= 10,
+                    "since2022_mdd_le_10pct": mdd(since2022) <= 10,
+                    "full_cagr_gt_cash_control": cagr(full) > cagr(cashControl),
+                    "full_sharpe_gt_state_independent_50_50": sharpe(full) > sharpe(equalWeightControl),
+                    "full_sharpe_gt_sign_reversal_falsification": sharpe(full) > sharpe(signReversalControl),
+                    "constraints_pass": constraints["pass"] as? Bool == true,
+                    "same_immutable_schedule_at_both_costs": sameSchedule
+                ]
+                for (name, metric) in stress {
+                    checks["\(name)_mdd_le_15pct"] = mdd(metric) <= 15
+                }
+                return ["checks": checks, "pass": checks.values.allSatisfy { $0 }]
+            }
+
+            let bpsWindows = windows(bps25.report.points)
+            let appWindows = windows(appCost.report.points)
+            let equalWeightWindows = windows(equalWeightControl.report.points)
+            let signReversalWindows = windows(signReversalControl.report.points)
+            let cashWindows = windows(cashControl.report.points)
+            let bpsConstraints = constraints(bps25)
+            let appConstraints = constraints(appCost)
+            let sameSchedule = true
+            let productGate = mechanicalGate(
+                appWindows,
+                constraints: appConstraints,
+                sameSchedule: sameSchedule,
+                cashControl: cashWindows["full_history"] as! [String: Any],
+                equalWeightControl: equalWeightWindows["full_history"] as! [String: Any],
+                signReversalControl: signReversalWindows["full_history"] as! [String: Any]
+            )
+            let decision = productGate["pass"] as? Bool == true ? "PASS" : "REJECTED"
+            let result: [String: Any] = [
+                "protocol_id": ProcessInfo.processInfo.environment["ATM_SVP_PROTOCOL_ID"] ?? "ATM-SVP-2",
+                "trial_id": trialID,
+                "candidate_id": candidateID,
+                "engine_version": BacktestEngine.defaultEngineVersion,
+                "same_schedule_replayed_at_both_costs": sameSchedule,
+                "formal_bps25": [
+                    "metrics": bpsWindows,
+                    "constraints": bpsConstraints,
+                    "schedule_fingerprint": frozenCandidateSchedule.fingerprint,
+                    "schedule_event_count": frozenCandidateSchedule.events.count
+                ],
+                "app_product_cost": [
+                    "metrics": appWindows,
+                    "constraints": appConstraints,
+                    "schedule_fingerprint": frozenCandidateSchedule.fingerprint,
+                    "schedule_event_count": frozenCandidateSchedule.events.count,
+                    "mechanical_product_gate": productGate
+                ],
+                "controls": [
+                    "cash_yield_cny": ["metrics": cashWindows, "role": "cash hurdle; cannot rescue candidate"],
+                    "state_independent_50_50": ["metrics": equalWeightWindows, "role": "state-independent control; cannot rescue candidate"],
+                    "sign_reversal_falsification": ["metrics": signReversalWindows, "role": "falsification control; cannot replace candidate"]
+                ],
+                "decision": decision,
+                "no_parameter_rescue": true
+            ]
+
+            let manager = FileManager.default
+            try? manager.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+            let root = URL(fileURLWithPath: outputDir)
+            if let data = try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys]) {
+                try? data.write(to: root.appendingPathComponent("candidate-metrics.json"))
+            }
+            func writePortfolio(_ name: String, _ points: [BacktestSeriesPoint]) {
+                let rows = ["date,portfolio_value"] + points.map { "\($0.date.recordDateString),\($0.portfolioValue)" }
+                try? (rows.joined(separator: "\n") + "\n").write(to: root.appendingPathComponent("\(name)-portfolio.csv"), atomically: true, encoding: .utf8)
+            }
+            let scheduleRows = ["signal_index,signal_date,gold_target,nasdaq_target,reason"] + frozenCandidateSchedule.events.map {
+                "\($0.signalIndex),\($0.signalDate.recordDateString),\($0.targetWeights[GORQREG25263Strategy.goldSymbol] ?? 0),\($0.targetWeights[GORQREG25263Strategy.nasdaqSymbol] ?? 0),\($0.reason)"
+            }
+            try? (scheduleRows.joined(separator: "\n") + "\n").write(to: root.appendingPathComponent("GOR-QREG-252-63-schedule.csv"), atomically: true, encoding: .utf8)
+            writePortfolio("GOR-QREG-252-63-BPS25", bps25.report.points)
+            writePortfolio("GOR-QREG-252-63-APP", appCost.report.points)
+            writePortfolio("CONTROL-STATE-INDEPENDENT-50-50", equalWeightControl.report.points)
+            writePortfolio("CONTROL-SIGN-REVERSAL", signReversalControl.report.points)
+            writePortfolio("CONTROL-CASH-YIELD-CNY", cashControl.report.points)
+            print("GOR_QREG_FORMAL_COMPLETE trial_id=\(trialID) decision=\(decision) schedule_fingerprint=\(frozenCandidateSchedule.fingerprint)")
+            return
+        }
