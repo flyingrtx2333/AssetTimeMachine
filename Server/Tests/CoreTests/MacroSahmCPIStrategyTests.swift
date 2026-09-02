@@ -260,7 +260,11 @@ final class MacroSahmCPIStrategyTests: XCTestCase {
     }
 
     func testFrozenLoaderConsumesCommittedCSVAndPreservesKnownGap() throws {
-        let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // CoreTests
+            .deletingLastPathComponent() // Tests
+            .deletingLastPathComponent() // Server
+            .deletingLastPathComponent() // repository root
         let dataURL = root.appendingPathComponent("tools/research-results/macro-vintages/alfred-initial-release")
         let dataset = try MacroInitialReleaseCSVLoader.load(directory: dataURL)
         XCTAssertEqual(dataset.unrateByMonth.keys.min(), "1999-12")

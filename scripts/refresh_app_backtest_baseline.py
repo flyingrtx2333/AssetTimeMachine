@@ -49,6 +49,7 @@ SWIFT_SOURCES = [
     "AssetTimeMachine/Backtest/BacktestSeriesAlignment.swift",
     "AssetTimeMachine/Backtest/BacktestFXConverter.swift",
     "AssetTimeMachine/Backtest/BacktestAdvancedSeriesPreparer.swift",
+    "AssetTimeMachine/Backtest/GORQREG25263Strategy.swift",
     "AssetTimeMachine/Backtest/BacktestEngine.swift",
     "tools/strategy_metric_dump.swift",
 ]
@@ -68,11 +69,20 @@ def fetch_fixture(path: Path, timeout: int) -> dict:
             "symbols": ",".join(SYMBOLS),
             "period": "all",
             "include_ohlc": "true",
+            # The public endpoint deliberately permits stale-while-revalidate.
+            # A baseline refresh must freeze the database state at invocation,
+            # not reuse a cached response from before a data migration.
+            "_refresh_nonce": dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M%S%f"),
         }
     )
     request = urllib.request.Request(
         f"{ENDPOINT}?{query}",
-        headers={"Accept": "application/json", "User-Agent": "AssetTimeMachine-baseline-refresh/1"},
+        headers={
+            "Accept": "application/json",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+            "User-Agent": "AssetTimeMachine-baseline-refresh/1",
+        },
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
         payload = response.read()

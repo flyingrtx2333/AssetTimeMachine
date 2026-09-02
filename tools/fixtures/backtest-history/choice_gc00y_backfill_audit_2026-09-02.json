@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "source": {
+    "path": "tools/fixtures/backtest-history/sources/choice/GC00Y_daily_1990-01-03_2026-07-08.xlsx",
+    "provider": "妙想Choice",
+    "symbol": "GC00Y",
+    "bytes": 566752,
+    "sha256": "97d72953caf6fb498754929b17347c837ae83e7e000bdebe22e273361e4786f5",
+    "date_start": "1990-01-03",
+    "date_end": "2026-07-08",
+    "source_rows": 9224,
+    "valid_rows": 9223,
+    "invalid_geometry_dates": [
+      "2018-03-30"
+    ],
+    "zero_volume_rows": 107,
+    "duplicate_dates": 0,
+    "out_of_order_dates": 0,
+    "weekend_dates": 0
+  },
+  "conversion": {
+    "formula": "CNY_per_gram = GC_USD_per_troy_oz * CNY_per_USD / 31.1034768",
+    "production_fx_policy": "latest causal FX observation whose date is not later than the GC trade date",
+    "preserve_existing_policy": "never insert or delete dates; never change canonical close_price; never overwrite complete OHLC; fail closed on partial OHLC",
+    "independent_close_field": "ohlc_close_price"
+  },
+  "production_import": {
+    "backend_runtime_commit": "b9fe228",
+    "deployed_image": "registry.cn-hangzhou.aliyuncs.com/flyingrtx/flyingrtxfast-backend:b9fe228",
+    "backup_table": "public_gold_history_backup_20260902_b9fe228",
+    "backup_rows": 15681,
+    "canonical_close_sha256_before": "d203d2c4ee26e8de09211d51d91768a7547f210a5be99e3b55530a7af4200709",
+    "canonical_close_sha256_after": "d203d2c4ee26e8de09211d51d91768a7547f210a5be99e3b55530a7af4200709",
+    "gold_rows_before": 6398,
+    "gold_rows_after": 6398,
+    "complete_ohlc_before": 4935,
+    "complete_ohlc_after": 6386,
+    "updated_rows": 1451,
+    "idempotent_second_dry_run_would_update": 0,
+    "canonical_close_changed_rows": 0,
+    "date_set_changed_rows": 0,
+    "partial_ohlc_rows_after": 0,
+    "ohlc_geometry_violations_after": 0,
+    "coverage_after": 0.9981244138793373,
+    "remaining_missing_ohlc_dates": [
+      "2001-06-26",
+      "2001-07-24",
+      "2001-08-27",
+      "2001-09-24",
+      "2001-10-19",
+      "2001-11-13",
+      "2001-12-12",
+      "2001-12-18",
+      "2002-01-28",
+      "2002-03-04",
+      "2002-03-25",
+      "2002-04-23"
+    ],
+    "remaining_missing_reason": "dates do not exist in the supplied Choice workbook",
+    "audit_reports_server_path": "/www/wwwroot/Flyingrtx/deploy-backups/20260902_gc00y_b9fe228"
+  },
+  "asset_time_machine_fixture": {
+    "path": "tools/fixtures/backtest-history/public_history.json",
+    "bytes": 5178861,
+    "sha256": "35bcfc9a06079ca8c3a2bb69ac4bad377e5314a313a6ca279c7817df139e124b",
+    "series_count": 12,
+    "gold_rows": 6398,
+    "gold_complete_ohlc_rows": 6386,
+    "gold_ohlc_coverage_ratio": 0.9981244138793373,
+    "gold_date_start": "2001-06-25",
+    "gold_date_end": "2026-08-31",
+    "canonical_gold_dates_prices_observed_equal_to_preimport_snapshot": true,
+    "independent_ohlc_close_differs_from_canonical_on_rows": 1434
+  },
+  "golden_baseline": {
+    "path": "tools/expected_backtest_metrics/app/app_engine_strategy_baseline.json",
+    "bytes": 54578,
+    "sha256": "59cf4696c3a079984934c2cec5680226c78a3b779295014146dd35343de25570",
+    "strategy_count": 23,
+    "verification": "APP_BASELINE_VERIFY_OK"
+  },
+  "verification": {
+    "backend_full_pytest": "451 passed",
+    "backend_importer_pytest": "12 passed",
+    "asset_data_python_unittest": "9 passed",
+    "app_simulator_build": "BUILD SUCCEEDED",
+    "server_swift_test": "60 passed",
+    "preimport_vs_choice_golden_metric_differences": 0
+  }
+}
