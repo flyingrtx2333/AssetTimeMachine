@@ -1,0 +1,67 @@
+{
+  "files": [
+    {
+      "bytes": 1088,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/execution.json",
+      "sha256": "764c053bd09d416ee7ce0f81b123c5c31f91d05ceecca93be70b4245de92a1c7"
+    },
+    {
+      "bytes": 355,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/factor-evidence.json",
+      "sha256": "88a52df4d9e4672e073886895384dc16e961afe9e1def24a38adc98cfd93fb36"
+    },
+    {
+      "bytes": 552,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/launch-marker.json",
+      "sha256": "3049e423af5a3f66d3b0053798efc32a59dd86dc6868a812c687d89c0ad79073"
+    },
+    {
+      "bytes": 526,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/run-authorization.json",
+      "sha256": "1dc3a7947b1bda85d9271c73b2e5dee706cb4fc9402046bd28b4acd584995fd6"
+    },
+    {
+      "bytes": 948,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/run-budget-reservation.json",
+      "sha256": "3289015a209715edbcb7760ec1f8e8b13ca4090b9b2ab3e55f512a9c7cccfecc"
+    },
+    {
+      "bytes": 904,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/run-slot.json",
+      "sha256": "d8b62482a90722a29c85242f25b10a10e7554f5e59aff7255df4a23e0f4b4a88"
+    },
+    {
+      "bytes": 527,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/stderr.txt",
+      "sha256": "7249a15e69c259ad57524fef57364331419ebfeeab944a9bc125390956b639f0"
+    },
+    {
+      "bytes": 466,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/stdout.txt",
+      "sha256": "be47f127c38866f8241b830adaef35a98442640186a69c6380c8017997c3a85b"
+    },
+    {
+      "bytes": 3961,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/strategy-library-import-v2.json",
+      "sha256": "4db0b1a57bbbd78268029f4c94f93b714d51b053c1a72a60c3beaa46692626a0"
+    }
+  ],
+  "generated_at": "2026-09-03T00:21:43+08:00",
+  "git_commit": "a2d81d20b00734d36c11d25944a3c81577d8fd26",
+  "kind": "result",
+  "metadata": {
+    "permanent_no_retry": true,
+    "status": "INVALID"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-IDB-63-21-001"
+}

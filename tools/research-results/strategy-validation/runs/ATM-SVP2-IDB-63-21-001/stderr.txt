@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine/scripts/run_intraday_downside_breadth_formal.py", line 483, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine/scripts/run_intraday_downside_breadth_formal.py", line 476, in main
+    raise RuntimeError(f"formal binary failed after one-shot consumption ({result.returncode})")
+RuntimeError: formal binary failed after one-shot consumption (1)

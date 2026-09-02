@@ -1,0 +1,6 @@
+[0/1] Planning build
+Building for production...
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+Build of product 'IntradayDownsideBreadthFormal' complete! (14.73s)
+IDB_FORMAL_COMPILE_OK binary=/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine/.build/release/IntradayDownsideBreadthFormal sha256=6cf78b9d2ca15444e1c3b96deb6257ae1e67da114d2ec615b48ca66dc13c76f1
+INTRADAY_DOWNSIDE_BREADTH_FORMAL_ERROR: queue incomplete: pending target suppressed or incomplete

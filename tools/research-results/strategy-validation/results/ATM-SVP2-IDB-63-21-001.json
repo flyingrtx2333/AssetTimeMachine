@@ -1,0 +1,23 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/factor-evidence.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/launch-marker.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/run-budget-reservation.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/run-slot.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/strategy-library-import-v2.json"
+  ],
+  "candidate_results": [],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-IDB-63-21-001.json",
+  "decision": "INVALID / PERMANENTLY CLOSED: the one-shot formal launch returned code 1 without a complete validated performance artifact; no retry or parameter rescue is permitted.",
+  "execution_git_commit": "a2d81d20b00734d36c11d25944a3c81577d8fd26",
+  "preregistration_record_hash": "24094a81a5d5fbac7d9528300769e617458957ae1171654d2f92108a09e386fc",
+  "run_budget_record_hash": "f12bcee693cbf861542f07e4b794b54fa74867625f79ad67b781beeb591d6469",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/run-authorization.json",
+  "status": "INVALID",
+  "trial_id": "ATM-SVP2-IDB-63-21-001"
+}
