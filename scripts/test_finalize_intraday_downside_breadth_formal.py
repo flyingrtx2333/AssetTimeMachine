@@ -106,17 +106,25 @@ class FinalizerTests(unittest.TestCase):
         }.items():
             (run_dir / name).write_text(content, encoding="utf-8")
         if metrics:
-            windows = {key: {"cagr": 0.10, "sharpe": 0.90, "mdd": 0.09} for key in [
-                "full", "since_2016_08_31", "since_2020_01_01", "since_2022_01_01"
-            ]}
+            window_ids = ["full", "since_2016_08_31", "since_2020_01_01", "since_2022_01_01"]
+            candidate = {key: {"cagr": 0.10, "sharpe": 0.90, "mdd": 0.08} for key in window_ids}
+            if decision == "FAIL":
+                candidate = {key: {"cagr": 0.05, "sharpe": 0.50, "mdd": 0.15} for key in window_ids}
+            natural = {key: {"cagr": 0.08, "sharpe": 0.70, "mdd": 0.12} for key in window_ids}
+            placebo = {key: {"cagr": 0.08, "sharpe": 0.60, "mdd": 0.10} for key in window_ids}
+            factor_windows = {key: {
+                "risk_count": 5, "calm_count": 5, "risk_median": -0.01, "calm_median": 0.01,
+                "sufficient": True, "direction": True,
+            } for key in window_ids}
             value = {
                 "trial_id": finalizer.TRIAL_ID, "candidate_id": finalizer.CANDIDATE_ID,
                 "decision": decision,
-                "candidate": windows if decision != "INVALID" else {},
-                "natural": windows if decision != "INVALID" else {},
-                "placebo": windows if decision != "INVALID" else {},
-                "factor_mechanism": {"sufficient": decision != "INVALID", "direction": decision != "INVALID", "windows": {}},
-                "checks": {}, "schedule_fingerprints": {"full": "b" * 64},
+                "candidate": candidate if decision != "INVALID" else {},
+                "natural": natural if decision != "INVALID" else {},
+                "placebo": placebo if decision != "INVALID" else {},
+                "factor_mechanism": {"sufficient": decision != "INVALID", "direction": decision != "INVALID", "windows": factor_windows},
+                "checks": {key: decision == "PASS" for key in window_ids},
+                "schedule_fingerprints": {"full": "b" * 64},
             }
             (run_dir / "candidate-metrics.json").write_text(json.dumps(value), encoding="utf-8")
             (run_dir / "queue-trace.json").write_text("{}\n", encoding="utf-8")
@@ -155,6 +163,20 @@ class FinalizerTests(unittest.TestCase):
         result = self.run_case(0, True)
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(len(result["candidate_results"]), 1)
+
+    def test_false_pass_with_control_ties_is_rejected(self):
+        with tempfile.TemporaryDirectory() as raw:
+            self.configure(Path(raw), 0, True, "PASS")
+            metrics_path = finalizer.RUN_DIR / "candidate-metrics.json"
+            metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+            metrics["natural"] = metrics["candidate"]
+            metrics["placebo"] = metrics["candidate"]
+            metrics_path.write_text(json.dumps(metrics), encoding="utf-8")
+            with patch.object(sys, "argv", ["finalizer", "--output-dir", str(finalizer.RUN_DIR)]):
+                self.assertEqual(finalizer.main(), 0)
+            result = json.loads(finalizer.RESULT_PATH.read_text(encoding="utf-8"))
+            self.assertEqual(result["status"], "INVALID")
+            self.assertEqual(result["candidate_results"], [])
 
     def test_failure_writes_invalid_without_fake_metrics(self):
         result = self.run_case(1, False)
