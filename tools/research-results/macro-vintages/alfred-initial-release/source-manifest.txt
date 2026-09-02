@@ -1,0 +1,9 @@
+generated_at_utc=2026-09-02T04:08:59.098806+00:00
+provider=Federal Reserve Bank of St. Louis ALFRED
+method=earliest official release vintage in which each reference month appears
+sha256=45a6e7080ff97667b7947942c442fdf529e0936620a3f9dea129cb2559bc82f2 bytes=69226 path=tools/research-results/macro-vintages/alfred-initial-release/CPIAUCSL_initial_release.csv
+sha256=16d4ec270a14772848088970f2b27d7b53d0a991624e217303e9d0b00060e3c3 bytes=178 path=tools/research-results/macro-vintages/alfred-initial-release/CPIAUCSL_missing_reference_months.csv
+sha256=fb0fddb5fc90500bd48474c987d3a01f30de4f3af4fba5be384b24341a1ef54a bytes=66766 path=tools/research-results/macro-vintages/alfred-initial-release/UNRATE_initial_release.csv
+sha256=d37db1b704265a3815f6b104731a66af6ed59af998bd5cac79e4056a055a2a3d bytes=176 path=tools/research-results/macro-vintages/alfred-initial-release/UNRATE_missing_reference_months.csv
+sha256=885f042aaeccaa4e334dfb5ee56a4b89354ab7034ea2c2f7ec241217bf0a33bd bytes=12145 path=tools/research-results/macro-vintages/alfred-initial-release/sources/release_dates_10.txt
+sha256=9b74815cc59fd334a8a6c06d777dd8e7a3a23e66ca0c2287351beeb6b211610c bytes=11199 path=tools/research-results/macro-vintages/alfred-initial-release/sources/release_dates_50.txt

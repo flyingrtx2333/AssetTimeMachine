@@ -1,0 +1,2 @@
+series_id,missing_reference_month,previous_available_month,next_available_month,handling
+UNRATE,2025-10,2025-09,2025-11,remain_or_move_to_cash; never interpolate or backfill
