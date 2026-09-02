@@ -44,6 +44,9 @@ nonisolated enum BacktestResearchOverrides {
 nonisolated struct MarketDataFrame {
     let dates: [Date]
     let pricesBySymbol: [String: [Double]]
+    /// True only when the symbol has a real observation on the frame date.
+    /// Forward-filled prices remain valid for valuation but not for execution.
+    let observedBySymbol: [String: [Bool]]
     let ohlcBySymbol: [String: [(date: Date, open: Double, high: Double, low: Double, close: Double)]]
     let tradableSymbols: [String]
     let optionBySymbol: [String: BacktestAssetOption]
@@ -86,10 +89,18 @@ nonisolated struct StrategyTargetContext {
     let signalIndex: Int
     let date: Date
     let signalDate: Date
-    let preRebalanceValue: Double
+    /// Portfolio value known at the signal close. Target providers must not use
+    /// execution-day prices when constructing a strict T-1 target.
+    let signalPortfolioValue: Double
     let points: [BacktestSeriesPoint]
     let portfolioValuesByIndex: [Double]
     let refreshOverlay: Bool
+}
+
+nonisolated struct AlignedRotationPriceSeries {
+    let dates: [Date]
+    let pricesBySymbol: [String: [Double]]
+    let observedBySymbol: [String: [Bool]]
 }
 
 nonisolated struct StrategyTargetProvider {
@@ -139,6 +150,7 @@ nonisolated struct ResearchTargetStrategyConfig {
 nonisolated struct ResearchTargetDataContext {
     let dates: [Date]
     let pricesBySymbol: [String: [Double]]
+    let observedBySymbol: [String: [Bool]]
     let ohlcBySymbol: [String: [(date: Date, open: Double, high: Double, low: Double, close: Double)]]
     let tradableSymbols: [String]
 }
@@ -184,7 +196,8 @@ nonisolated enum BacktestDailySimulator {
         execution: BacktestExecutionConfig,
         provider: StrategyTargetProvider,
         rebalanceDecision: (Int, Int) -> BacktestRebalanceDecision,
-        contextualRebalanceDecision: ((StrategyTargetContext) -> BacktestRebalanceDecision)? = nil
+        contextualRebalanceDecision: ((StrategyTargetContext) -> BacktestRebalanceDecision)? = nil,
+        didExecuteTarget: ((Int) -> Void)? = nil
     ) -> BacktestDailySimulationResult? {
         guard execution.initialCash > 0,
               frame.simulationRange.count > 1,
@@ -200,6 +213,7 @@ nonisolated enum BacktestDailySimulator {
         var trades: [AdvancedBacktestTrade] = []
         var dailyStates: [BacktestDailyState] = []
         var currentTargetWeights: [String: Double] = [:]
+        var pendingTargetWeights: [String: Double]?
         var portfolioValuesByIndex = Array(repeating: 0.0, count: frame.dates.count)
         var exposureSum = 0.0
         var exposureSamples = 0
@@ -208,6 +222,13 @@ nonisolated enum BacktestDailySimulator {
         var cashInterestEarned = 0.0
         var cashAnnualRateSum = 0.0
         var cashAnnualRateSamples = 0
+        let benchmarkEntryIndexBySymbol: [String: Int] = Dictionary(uniqueKeysWithValues: frame.tradableSymbols.compactMap { symbol in
+            guard let entryIndex = frame.simulationRange.first(where: { index in
+                (frame.pricesBySymbol[symbol]?[index] ?? 0) > 0
+                    && frame.observedBySymbol[symbol]?[index] == true
+            }) else { return nil }
+            return (symbol, entryIndex)
+        })
 
         func portfolioValue(at index: Int) -> Double {
             cash + frame.tradableSymbols.reduce(0.0) { partial, symbol in
@@ -220,17 +241,22 @@ nonisolated enum BacktestDailySimulator {
             let date = frame.dates[index]
 
             if index > frame.simulationRange.lowerBound {
-                let annualCashRate = CashYieldCNY.annualRate(on: frame.dates[index - 1])
+                let previousDate = frame.dates[index - 1]
+                let annualCashRate = CashYieldCNY.annualRate(on: previousDate)
                 cashAnnualRateSum += annualCashRate
                 cashAnnualRateSamples += 1
                 if cash > 0 {
-                    let cashInterest = cash * CashYieldCNY.dailyReturn(fromAnnualRate: annualCashRate)
+                    let cashInterest = cash * CashYieldCNY.periodReturn(from: previousDate, to: date)
                     if cashInterest.isFinite, cashInterest > 0 {
                         cash += cashInterest
                         cashInterestEarned += cashInterest
                     }
                 } else if cash < 0, execution.financingAnnualRate > 0 {
-                    let financingCost = abs(cash) * CashYieldCNY.dailyReturn(fromAnnualRate: execution.financingAnnualRate)
+                    let financingCost = abs(cash) * CashYieldCNY.periodReturn(
+                        fromAnnualRate: execution.financingAnnualRate,
+                        from: previousDate,
+                        to: date
+                    )
                     if financingCost.isFinite, financingCost > 0 {
                         cash -= financingCost
                     }
@@ -239,6 +265,7 @@ nonisolated enum BacktestDailySimulator {
 
             let signalIndex = index - 1
             let preRebalanceValue = portfolioValue(at: index)
+            let signalPortfolioValue = points.last?.portfolioValue ?? preRebalanceValue
             let signalDate = signalIndex >= 0 && frame.dates.indices.contains(signalIndex)
                 ? frame.dates[signalIndex]
                 : date
@@ -247,13 +274,15 @@ nonisolated enum BacktestDailySimulator {
                 signalIndex: signalIndex,
                 date: date,
                 signalDate: signalDate,
-                preRebalanceValue: preRebalanceValue,
+                signalPortfolioValue: signalPortfolioValue,
                 points: points,
                 portfolioValuesByIndex: portfolioValuesByIndex,
                 refreshOverlay: false
             )
-            let decision = contextualRebalanceDecision?(decisionContext)
-                ?? rebalanceDecision(index, signalIndex)
+            let decision = pendingTargetWeights == nil
+                ? (contextualRebalanceDecision?(decisionContext)
+                    ?? rebalanceDecision(index, signalIndex))
+                : BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
             if decision.shouldRebalance {
                 let targetWeights: [String: Double]
                 if signalIndex >= 0, frame.dates.indices.contains(signalIndex) {
@@ -263,7 +292,7 @@ nonisolated enum BacktestDailySimulator {
                             signalIndex: signalIndex,
                             date: date,
                             signalDate: signalDate,
-                            preRebalanceValue: preRebalanceValue,
+                            signalPortfolioValue: signalPortfolioValue,
                             points: points,
                             portfolioValuesByIndex: portfolioValuesByIndex,
                             refreshOverlay: decision.refreshOverlay
@@ -273,7 +302,37 @@ nonisolated enum BacktestDailySimulator {
                     targetWeights = [:]
                 }
                 currentTargetWeights = targetWeights
+                pendingTargetWeights = targetWeights
+            }
+
+            if let targetWeights = pendingTargetWeights {
                 let targetSymbols = Set(targetWeights.keys)
+                let executionSymbols = heldSymbols.union(targetSymbols)
+                let canExecuteTarget = executionSymbols.allSatisfy { symbol in
+                    frame.observedBySymbol[symbol]?[index] == true
+                        && (frame.pricesBySymbol[symbol]?[index] ?? 0) > 0
+                }
+
+                if canExecuteTarget {
+
+                let requiresSale = heldSymbols.contains { symbol in
+                    guard let units = unitsBySymbol[symbol], units > 0 else { return false }
+                    guard targetSymbols.contains(symbol),
+                          let targetWeight = targetWeights[symbol],
+                          let price = frame.pricesBySymbol[symbol]?[index] else { return true }
+                    let currentValue = units * price
+                    return currentValue > preRebalanceValue * targetWeight * (1 + execution.rebalanceBand)
+                }
+                let requiresBuy = targetSymbols.contains { symbol in
+                    guard let targetWeight = targetWeights[symbol],
+                          let price = frame.pricesBySymbol[symbol]?[index],
+                          price > 0 else { return false }
+                    let currentValue = (unitsBySymbol[symbol] ?? 0) * price
+                    let targetValue = preRebalanceValue * targetWeight
+                    return currentValue <= 0.0001
+                        ? targetValue > 0.0001
+                        : currentValue < targetValue * (1 - execution.rebalanceBand)
+                }
 
                 for symbol in heldSymbols.subtracting(targetSymbols).sorted() {
                     guard let price = frame.pricesBySymbol[symbol]?[index],
@@ -361,6 +420,11 @@ nonisolated enum BacktestDailySimulator {
                     }
                 }
 
+                // A daily bar has no reliable cross-venue intraday ordering. When
+                // a rotation needs both sells and buys, settle the sells first and
+                // defer all buys to the next fully observed session. This prevents
+                // later US-close proceeds from financing an earlier China close.
+                if !requiresSale || !requiresBuy {
                 let totalValue = portfolioValue(at: index)
                 for symbol in targetSymbols.sorted() {
                     guard let targetWeight = targetWeights[symbol],
@@ -412,6 +476,12 @@ nonisolated enum BacktestDailySimulator {
                         ))
                     }
                 }
+                }
+                if !requiresSale || !requiresBuy {
+                    pendingTargetWeights = nil
+                    didExecuteTarget?(index)
+                }
+                }
             }
 
             let value = portfolioValue(at: index)
@@ -438,12 +508,18 @@ nonisolated enum BacktestDailySimulator {
             cashRatioSamples += 1
 
             let benchmarkValue = frame.tradableSymbols.reduce(0.0) { partial, symbol in
-                guard let prices = frame.pricesBySymbol[symbol],
-                      prices.indices.contains(frame.simulationRange.lowerBound),
-                      prices.indices.contains(index) else { return partial }
-                let firstPrice = prices[frame.simulationRange.lowerBound]
-                guard firstPrice > 0 else { return partial }
-                return partial + execution.initialCash / Double(frame.tradableSymbols.count) * prices[index] / firstPrice
+                let allocation = execution.initialCash / Double(frame.tradableSymbols.count)
+                guard let entryIndex = benchmarkEntryIndexBySymbol[symbol],
+                      entryIndex <= index,
+                      let prices = frame.pricesBySymbol[symbol],
+                      prices.indices.contains(entryIndex),
+                      prices.indices.contains(index),
+                      prices[entryIndex] > 0 else {
+                    // Reserve this sleeve as cash until the asset has a genuine
+                    // first observation instead of dropping it from the benchmark.
+                    return partial + allocation
+                }
+                return partial + allocation * prices[index] / prices[entryIndex]
             }
             benchmarkPoints.append(.init(date: date, portfolioValue: benchmarkValue, sequence: benchmarkPoints.count))
         }
@@ -470,6 +546,10 @@ nonisolated enum BacktestDailySimulator {
 }
 
 nonisolated enum BacktestEngine {
+    /// Increment whenever event-time, execution, valuation, or metric semantics
+    /// change in a way that invalidates pinned strategy baselines.
+    static let defaultEngineVersion = "atm-swift-clock-v3-2026-08-31"
+
     private typealias HistoricalPricePoint = BacktestHistoricalPricePoint
     private typealias HistoricalLookup = BacktestHistoricalLookup
 
@@ -623,7 +703,7 @@ nonisolated enum BacktestEngine {
             let filtered = source.filter { bounds.contains($0.date) }
             guard let first = filtered.first, first.portfolioValue > 0 else { return [] }
             return filtered.enumerated().map { sequence, point in
-                BacktestSeriesPoint(
+                return BacktestSeriesPoint(
                     date: point.date,
                     portfolioValue: targetStartValue * point.portfolioValue / first.portfolioValue,
                     sequence: sequence
@@ -633,9 +713,10 @@ nonisolated enum BacktestEngine {
 
         func scaledTrade(
             _ trade: AdvancedBacktestTrade,
-            includesRealizedStatistics: Bool = true
+            realizedStatisticsShare: Double = 1
         ) -> AdvancedBacktestTrade {
-            AdvancedBacktestTrade(
+            let statisticsShare = min(max(realizedStatisticsShare, 0), 1)
+            return AdvancedBacktestTrade(
                 assetSymbol: trade.assetSymbol,
                 assetTitle: trade.assetTitle,
                 date: trade.date,
@@ -644,9 +725,11 @@ nonisolated enum BacktestEngine {
                 cashAmount: trade.cashAmount * monetaryScale,
                 units: trade.units * monetaryScale,
                 reason: trade.reason,
-                realizedProfit: includesRealizedStatistics ? trade.realizedProfit.map { $0 * monetaryScale } : nil,
-                realizedReturn: includesRealizedStatistics ? trade.realizedReturn : nil,
-                holdingDays: includesRealizedStatistics ? trade.holdingDays : nil
+                realizedProfit: statisticsShare > 0
+                    ? trade.realizedProfit.map { $0 * monetaryScale * statisticsShare }
+                    : nil,
+                realizedReturn: statisticsShare > 0 ? trade.realizedReturn : nil,
+                holdingDays: statisticsShare >= 0.999999 ? trade.holdingDays : nil
             )
         }
 
@@ -678,7 +761,9 @@ nonisolated enum BacktestEngine {
             titlesBySymbol: exposureTitles
         )
         var inheritedUnitsBySymbol: [String: Double] = [:]
-        for trade in report.trades where trade.date < bounds.lowerBound {
+        // A slice is measured close-to-close. Trades on the lower-bound close
+        // belong to the inherited opening state, not to the selected interval.
+        for trade in report.trades where trade.date <= bounds.lowerBound {
             switch trade.action {
             case .buy:
                 inheritedUnitsBySymbol[trade.assetSymbol, default: 0] += trade.units
@@ -690,16 +775,17 @@ nonisolated enum BacktestEngine {
             }
         }
         var trades: [AdvancedBacktestTrade] = []
-        for trade in report.trades where bounds.contains(trade.date) {
+        for trade in report.trades where trade.date > bounds.lowerBound && trade.date <= bounds.upperBound {
             let inheritedUnits = inheritedUnitsBySymbol[trade.assetSymbol] ?? 0
-            let inheritedPosition = inheritedUnits > Double.leastNonzeroMagnitude
-            trades.append(scaledTrade(
-                trade,
-                includesRealizedStatistics: !inheritedPosition
-            ))
-            if trade.action == .sell, inheritedPosition {
-                inheritedUnitsBySymbol[trade.assetSymbol] = max(inheritedUnits - trade.units, 0)
+            var statisticsShare = 1.0
+            if trade.action == .sell,
+               inheritedUnits > Double.leastNonzeroMagnitude,
+               trade.units > 0 {
+                let inheritedSold = min(inheritedUnits, trade.units)
+                statisticsShare = max(trade.units - inheritedSold, 0) / trade.units
+                inheritedUnitsBySymbol[trade.assetSymbol] = max(inheritedUnits - inheritedSold, 0)
             }
+            trades.append(scaledTrade(trade, realizedStatisticsShare: statisticsShare))
         }
 
         let averageExposureRatio: Double = {
@@ -721,9 +807,14 @@ nonisolated enum BacktestEngine {
         }()
 
         let cashAccrualStates = Array(statesInRange.dropLast())
-        let totalCashInterest = cashAccrualStates.reduce(0.0) { partial, state in
+        let cashAccrualIntervals = zip(statesInRange.dropLast(), statesInRange.dropFirst())
+        let totalCashInterest = cashAccrualIntervals.reduce(0.0) { partial, interval in
+            let state = interval.0
             guard state.cash > 0 else { return partial }
-            return partial + state.cash * CashYieldCNY.dailyReturn(on: state.date) * monetaryScale
+            return partial + state.cash * CashYieldCNY.periodReturn(
+                from: state.date,
+                to: interval.1.date
+            ) * monetaryScale
         }
         let averageAnnualRate = cashAccrualStates.isEmpty
             ? 0
@@ -938,16 +1029,24 @@ nonisolated enum BacktestEngine {
         let daySpan = max(BacktestSeriesAlignment.historicalSeriesCalendar.dateComponents([.day], from: first.date, to: last.date).day ?? 0, 1)
         let years = Double(daySpan) / 365.25
         let annualizedReturn = years > 0 ? pow(last.portfolioValue / first.portfolioValue, 1 / years) - 1 : nil
+        let observedPeriodsPerYear = years > 0 && !returns.isEmpty
+            ? Double(returns.count) / years
+            : 0
 
         let mean = returns.isEmpty ? nil : returns.reduce(0, +) / Double(returns.count)
         let variance = returns.count > 1 && mean != nil
             ? returns.reduce(0) { $0 + pow($1 - mean!, 2) } / Double(returns.count - 1)
             : nil
         let dailyVolatility = variance.map { sqrt($0) }
-        let annualizedVolatility = dailyVolatility.map { $0 * sqrt(252) }
+        let annualizedVolatility = dailyVolatility.flatMap {
+            observedPeriodsPerYear > 0 ? $0 * sqrt(observedPeriodsPerYear) : nil
+        }
         let sharpeRatio: Double?
-        if let mean, let dailyVolatility, dailyVolatility > 0 {
-            sharpeRatio = (mean * 252) / (dailyVolatility * sqrt(252))
+        if let mean,
+           let dailyVolatility,
+           dailyVolatility > 0,
+           observedPeriodsPerYear > 0 {
+            sharpeRatio = mean / dailyVolatility * sqrt(observedPeriodsPerYear)
         } else {
             sharpeRatio = nil
         }
@@ -1002,7 +1101,7 @@ nonisolated enum BacktestEngine {
 
         guard let firstPoint = pricePoints.first, let lastPoint = pricePoints.last else { return nil }
 
-        let calendar = Calendar(identifier: .gregorian)
+        let calendar = BacktestSeriesAlignment.historicalSeriesCalendar
         var scheduledDate = firstPoint.date
         var nextContributionIndex: Int? = 0
         var unitsHeld = 0.0
@@ -1160,7 +1259,10 @@ nonisolated enum BacktestEngine {
                 cashAnnualRateSum += annualCashRate
                 cashAnnualRateSampleCount += 1
                 if cash > 0 {
-                    let cashInterest = cash * CashYieldCNY.dailyReturn(fromAnnualRate: annualCashRate)
+                    let cashInterest = cash * CashYieldCNY.periodReturn(
+                        from: pricePoints[index - 1].date,
+                        to: point.date
+                    )
                     if cashInterest.isFinite, cashInterest > 0 {
                         cash += cashInterest
                         cashInterestEarned += cashInterest
@@ -1599,7 +1701,7 @@ nonisolated enum BacktestEngine {
                 mode: mode
             ) else { return nil }
             targetMaps[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map {
-                ($0.date.recordDateString, $0.targetWeights)
+                ($0.date.backtestDateString, $0.targetWeights)
             })
         }
 
@@ -1649,7 +1751,7 @@ nonisolated enum BacktestEngine {
                     return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
                 }
 
-                let executionKey = data.dates[index].recordDateString
+                let executionKey = data.dates[index].backtestDateString
                 var underlyingChanged = false
                 for mode in modes {
                     if let weights = targetMaps[mode]?[executionKey] {
@@ -1940,16 +2042,16 @@ nonisolated enum BacktestEngine {
         ) else { return nil }
 
         let stableTargets = Dictionary(uniqueKeysWithValues: stableRun.dailyStates.map {
-            ($0.date.recordDateString, $0.targetWeights)
+            ($0.date.backtestDateString, $0.targetWeights)
         })
         let growthTargets = Dictionary(uniqueKeysWithValues: growthRun.dailyStates.map {
-            ($0.date.recordDateString, $0.targetWeights)
+            ($0.date.backtestDateString, $0.targetWeights)
         })
         let stableValues = Dictionary(uniqueKeysWithValues: stableRun.report.points.map {
-            ($0.date.recordDateString, $0.portfolioValue)
+            ($0.date.backtestDateString, $0.portfolioValue)
         })
         let growthValues = Dictionary(uniqueKeysWithValues: growthRun.report.points.map {
-            ($0.date.recordDateString, $0.portfolioValue)
+            ($0.date.backtestDateString, $0.portfolioValue)
         })
 
         let lookback = 252
@@ -2012,7 +2114,7 @@ nonisolated enum BacktestEngine {
                     var lastStableValue: Double?
                     var lastGrowthValue: Double?
                     for date in data.dates {
-                        let key = date.recordDateString
+                        let key = date.backtestDateString
                         if let value = stableValues[key] { lastStableValue = value }
                         if let value = growthValues[key] { lastGrowthValue = value }
                         alignedStableValues.append(lastStableValue)
@@ -2020,7 +2122,7 @@ nonisolated enum BacktestEngine {
                     }
                 }
 
-                let executionKey = data.dates[index].recordDateString
+                let executionKey = data.dates[index].backtestDateString
                 if let weights = stableTargets[executionKey], !weights.isEmpty {
                     latestStableTarget = weights
                 }
@@ -2252,17 +2354,17 @@ nonisolated enum BacktestEngine {
         ) else { return nil }
 
         let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
-            ($0.date.recordDateString, $0.targetWeights)
+            ($0.date.backtestDateString, $0.targetWeights)
         })
         let baseValues = Dictionary(uniqueKeysWithValues: baseRun.report.points.map {
-            ($0.date.recordDateString, $0.portfolioValue)
+            ($0.date.backtestDateString, $0.portfolioValue)
         })
         let baseCashRatios = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { state in
             let ratio = state.portfolioValue > 0 ? max(state.cash / state.portfolioValue, 0) : 0
-            return (state.date.recordDateString, ratio)
+            return (state.date.backtestDateString, ratio)
         })
         let baseGrosses = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
-            ($0.date.recordDateString, $0.targetWeights.values.reduce(0, +))
+            ($0.date.backtestDateString, $0.targetWeights.values.reduce(0, +))
         })
 
         let minimumWaterDuration = 60
@@ -2322,7 +2424,7 @@ nonisolated enum BacktestEngine {
                     var lastCashRatio = 0.0
                     var lastGross = 0.0
                     for date in data.dates {
-                        let key = date.recordDateString
+                        let key = date.backtestDateString
                         if let value = baseValues[key] { lastValue = value }
                         if let value = baseCashRatios[key] { lastCashRatio = value }
                         if let value = baseGrosses[key] { lastGross = value }
@@ -2333,7 +2435,7 @@ nonisolated enum BacktestEngine {
                     basePeakValue = alignedBaseValues.compactMap { $0 }.first ?? initialCash
                 }
 
-                let executionKey = data.dates[index].recordDateString
+                let executionKey = data.dates[index].backtestDateString
                 var baseTargetChanged = false
                 if let weights = baseTargets[executionKey], !weights.isEmpty {
                     baseTargetChanged = absoluteWeightDifference(latestBaseTarget, weights) > 0.0000001
@@ -2677,10 +2779,10 @@ nonisolated enum BacktestEngine {
         ) else { return nil }
 
         let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
-            ($0.date.recordDateString, $0.targetWeights)
+            ($0.date.backtestDateString, $0.targetWeights)
         })
         let baseValues = Dictionary(uniqueKeysWithValues: baseRun.report.points.map {
-            ($0.date.recordDateString, $0.portfolioValue)
+            ($0.date.backtestDateString, $0.portfolioValue)
         })
         let equitySymbols = ["nasdaq", "sp500", "csi300", "shanghai_composite"]
         let tradeBand: Double
@@ -2817,14 +2919,14 @@ nonisolated enum BacktestEngine {
                 if alignedBaseValues.isEmpty {
                     var lastValue: Double?
                     for date in data.dates {
-                        if let value = baseValues[date.recordDateString] {
+                        if let value = baseValues[date.backtestDateString] {
                             lastValue = value
                         }
                         alignedBaseValues.append(lastValue)
                     }
                 }
 
-                let executionKey = data.dates[index].recordDateString
+                let executionKey = data.dates[index].backtestDateString
                 var baseTargetChanged = false
                 if let weights = baseTargets[executionKey], !weights.isEmpty {
                     baseTargetChanged = absoluteWeightDifference(latestBaseTarget, weights) > 0.0000001
@@ -3546,16 +3648,16 @@ nonisolated enum BacktestEngine {
         ) else { return nil }
 
         let stableTargets = Dictionary(uniqueKeysWithValues: stableRun.dailyStates.map {
-            ($0.date.recordDateString, $0.targetWeights)
+            ($0.date.backtestDateString, $0.targetWeights)
         })
         let growthTargets = Dictionary(uniqueKeysWithValues: growthRun.dailyStates.map {
-            ($0.date.recordDateString, $0.targetWeights)
+            ($0.date.backtestDateString, $0.targetWeights)
         })
         let stableValues = Dictionary(uniqueKeysWithValues: stableRun.report.points.map {
-            ($0.date.recordDateString, $0.portfolioValue)
+            ($0.date.backtestDateString, $0.portfolioValue)
         })
         let growthValues = Dictionary(uniqueKeysWithValues: growthRun.report.points.map {
-            ($0.date.recordDateString, $0.portfolioValue)
+            ($0.date.backtestDateString, $0.portfolioValue)
         })
 
         let lookback = 252
@@ -3604,7 +3706,7 @@ nonisolated enum BacktestEngine {
                     var lastStableValue: Double?
                     var lastGrowthValue: Double?
                     for date in data.dates {
-                        let key = date.recordDateString
+                        let key = date.backtestDateString
                         if let value = stableValues[key] { lastStableValue = value }
                         if let value = growthValues[key] { lastGrowthValue = value }
                         alignedStableValues.append(lastStableValue)
@@ -3612,7 +3714,7 @@ nonisolated enum BacktestEngine {
                     }
                 }
 
-                let executionKey = data.dates[index].recordDateString
+                let executionKey = data.dates[index].backtestDateString
                 if let weights = stableTargets[executionKey], !weights.isEmpty {
                     latestStableTarget = weights
                 }
@@ -3703,10 +3805,10 @@ nonisolated enum BacktestEngine {
                 mode: mode
             ) else { return nil }
             targetMaps[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map {
-                ($0.date.recordDateString, $0.targetWeights)
+                ($0.date.backtestDateString, $0.targetWeights)
             })
             valueMaps[mode] = Dictionary(uniqueKeysWithValues: run.report.points.map {
-                ($0.date.recordDateString, $0.portfolioValue)
+                ($0.date.backtestDateString, $0.portfolioValue)
             })
         }
 
@@ -3752,14 +3854,14 @@ nonisolated enum BacktestEngine {
                         var values: [Double?] = []
                         values.reserveCapacity(data.dates.count)
                         for date in data.dates {
-                            if let value = map[date.recordDateString] { lastValue = value }
+                            if let value = map[date.backtestDateString] { lastValue = value }
                             values.append(lastValue)
                         }
                         alignedValues[mode] = values
                     }
                 }
 
-                let executionKey = data.dates[index].recordDateString
+                let executionKey = data.dates[index].backtestDateString
                 var underlyingTargetChanged = false
                 for mode in modes {
                     if let weights = targetMaps[mode]?[executionKey] {
@@ -4023,7 +4125,7 @@ nonisolated enum BacktestEngine {
                 mode: mode
             ) else { return nil }
             targetMaps[mode] = Dictionary(uniqueKeysWithValues: run.dailyStates.map {
-                ($0.date.recordDateString, $0.targetWeights)
+                ($0.date.backtestDateString, $0.targetWeights)
             })
         }
         guard let crashSeries = syntheticCrashHedgeSeries(from: assetInputs) else { return nil }
@@ -4068,7 +4170,7 @@ nonisolated enum BacktestEngine {
                 guard data.dates.indices.contains(index) else {
                     return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
                 }
-                let dateKey = data.dates[index].recordDateString
+                let dateKey = data.dates[index].backtestDateString
                 for mode in modes {
                     if let weights = targetMaps[mode]?[dateKey] { latest[mode] = weights }
                 }
@@ -4109,18 +4211,29 @@ nonisolated enum BacktestEngine {
         signalDate: String,
         lookbackReleases: Int
     ) -> Double? {
-        guard lookbackReleases > 0 else { return nil }
-        let sorted = points.sorted { $0.releaseDate < $1.releaseDate }
-        var latestIndex: Int?
-        for index in sorted.indices {
-            if sorted[index].releaseDate <= signalDate {
-                latestIndex = index
-            } else {
-                break
+        guard lookbackReleases > 0,
+              let signalDay = BacktestSeriesAlignment.historicalSeriesDate(from: signalDate),
+              let signalCutoff = BacktestSeriesAlignment.historicalSeriesCalendar.date(
+                  byAdding: .day,
+                  value: 1,
+                  to: signalDay
+              ) else { return nil }
+        let sorted = points
+            .compactMap { point -> (point: BacktestNFCIPoint, releaseDay: Date)? in
+                guard let releaseDay = BacktestSeriesAlignment.historicalSeriesDate(from: point.releaseDate),
+                      releaseDay <= signalDay else { return nil }
+                guard let availableAt = point.availableAt else {
+                    // Legacy research fixtures contain first-release observations
+                    // without intraday timestamps. They remain explicitly supported.
+                    return (point, releaseDay)
+                }
+                return availableAt < signalCutoff ? (point, releaseDay) : nil
             }
-        }
-        guard let latestIndex, latestIndex >= lookbackReleases else { return nil }
-        return sorted[latestIndex].value - sorted[latestIndex - lookbackReleases].value
+            .sorted { $0.releaseDay < $1.releaseDay }
+        guard sorted.count > lookbackReleases else { return nil }
+        let latestIndex = sorted.index(before: sorted.endIndex)
+        return sorted[latestIndex].point.value
+            - sorted[latestIndex - lookbackReleases].point.value
     }
 
     private static func runNFCIC3L3SleeveWithTrace(
@@ -4138,10 +4251,10 @@ nonisolated enum BacktestEngine {
         baseDecisionTradeDates: Set<String>? = nil
     ) -> ResearchTargetStrategyRun? {
         let baseTargets = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
-            ($0.date.recordDateString, $0.targetWeights)
+            ($0.date.backtestDateString, $0.targetWeights)
         })
         let eligibleTradeDates = baseDecisionTradeDates
-            ?? Set(baseRun.report.trades.map { $0.date.recordDateString })
+            ?? Set(baseRun.report.trades.map { $0.date.backtestDateString })
         let usSymbols: Set<String> = ["nasdaq", "sp500"]
         let config = ResearchTargetStrategyConfig(
             symbol: symbol,
@@ -4168,7 +4281,7 @@ nonisolated enum BacktestEngine {
                       data.dates.indices.contains(signalIndex) else {
                     return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
                 }
-                let executionKey = data.dates[index].recordDateString
+                let executionKey = data.dates[index].backtestDateString
                 guard eligibleTradeDates.contains(executionKey),
                       var target = baseTargets[executionKey] else {
                     return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
@@ -4177,7 +4290,7 @@ nonisolated enum BacktestEngine {
                 let prior = previousBaseTarget
                 previousBaseTarget = target
                 if !prior.isEmpty {
-                    let signalKey = data.dates[signalIndex].recordDateString
+                    let signalKey = data.dates[signalIndex].backtestDateString
                     let creditTriggered = nfciReleaseChange(
                         points: creditPoints,
                         signalDate: signalKey,
@@ -4314,8 +4427,8 @@ nonisolated enum BacktestEngine {
             lowNoiseDecisionRun = frozenLowNoise
             cashConfidenceDecisionRun = frozenCashConfidence
         }
-        let lowNoiseDecisionTradeDates = Set(lowNoiseDecisionRun.report.trades.map { $0.date.recordDateString })
-        let cashConfidenceDecisionTradeDates = Set(cashConfidenceDecisionRun.report.trades.map { $0.date.recordDateString })
+        let lowNoiseDecisionTradeDates = Set(lowNoiseDecisionRun.report.trades.map { $0.date.backtestDateString })
+        let cashConfidenceDecisionTradeDates = Set(cashConfidenceDecisionRun.report.trades.map { $0.date.backtestDateString })
 
         guard let highReturnCore = runNFCIC3L3SleeveWithTrace(
             baseRun: lowNoiseBase,
@@ -4346,10 +4459,10 @@ nonisolated enum BacktestEngine {
         ) else { return nil }
 
         let highTargets = Dictionary(uniqueKeysWithValues: highReturnCore.dailyStates.map {
-            ($0.date.recordDateString, $0.targetWeights)
+            ($0.date.backtestDateString, $0.targetWeights)
         })
         let balancedTargets = Dictionary(uniqueKeysWithValues: balancedCore.dailyStates.map {
-            ($0.date.recordDateString, $0.targetWeights)
+            ($0.date.backtestDateString, $0.targetWeights)
         })
         let commonKeys = Set(highTargets.keys).intersection(balancedTargets.keys)
         var blendedTargets: [String: [String: Double]] = [:]
@@ -4398,7 +4511,7 @@ nonisolated enum BacktestEngine {
                 guard data.dates.indices.contains(index) else {
                     return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
                 }
-                let key = data.dates[index].recordDateString
+                let key = data.dates[index].backtestDateString
                 guard let target = blendedTargets[key] else {
                     return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
                 }
@@ -4543,9 +4656,9 @@ nonisolated enum BacktestEngine {
             decisionSource = frozenSource
         }
         let sourceTargets = Dictionary(uniqueKeysWithValues: decisionSource.dailyStates.map {
-            ($0.date.recordDateString, $0.targetWeights)
+            ($0.date.backtestDateString, $0.targetWeights)
         })
-        let sourceTradeDates = Set(decisionSource.report.trades.map { $0.date.recordDateString })
+        let sourceTradeDates = Set(decisionSource.report.trades.map { $0.date.backtestDateString })
         let config = ResearchTargetStrategyConfig(
             symbol: "nfci_dual_core_v11_qual_role",
             title: AppLocalization.string("NFCI 双核心·质量增强（研究）"),
@@ -4568,7 +4681,7 @@ nonisolated enum BacktestEngine {
                 guard data.dates.indices.contains(index) else {
                     return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
                 }
-                let key = data.dates[index].recordDateString
+                let key = data.dates[index].backtestDateString
                 guard sourceTradeDates.contains(key), let target = sourceTargets[key] else {
                     return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
                 }
@@ -4875,12 +4988,14 @@ nonisolated enum BacktestEngine {
         let dataContext = ResearchTargetDataContext(
             dates: commonDates,
             pricesBySymbol: pricesBySymbol,
+            observedBySymbol: aligned.observedBySymbol,
             ohlcBySymbol: ohlcBySymbol,
             tradableSymbols: tradableSymbols
         )
         let frame = MarketDataFrame(
             dates: commonDates,
             pricesBySymbol: pricesBySymbol,
+            observedBySymbol: aligned.observedBySymbol,
             ohlcBySymbol: ohlcBySymbol,
             tradableSymbols: tradableSymbols,
             optionBySymbol: optionBySymbol,
@@ -4933,12 +5048,10 @@ nonisolated enum BacktestEngine {
                 }
                 let shouldRebalance = index == firstRebalanceIndex
                     || (index > firstRebalanceIndex && index - lastRebalanceIndex >= max(config.rebalanceSessions, 1))
-                if shouldRebalance {
-                    lastRebalanceIndex = index
-                }
                 return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
             },
-            contextualRebalanceDecision: contextualDecision
+            contextualRebalanceDecision: contextualDecision,
+            didExecuteTarget: { lastRebalanceIndex = $0 }
         ) else { return nil }
 
         guard let last = simulation.points.last,
@@ -4946,15 +5059,22 @@ nonisolated enum BacktestEngine {
 
         let perAssetBenchmarkSeries = tradableSymbols.compactMap { symbol -> AdvancedBacktestBenchmarkSeries? in
             guard let prices = pricesBySymbol[symbol],
-                  prices.indices.contains(simulationRange.lowerBound),
                   prices.indices.contains(simulationRange.upperBound),
                   let option = optionBySymbol[symbol] else { return nil }
-            let firstPrice = prices[simulationRange.lowerBound]
-            guard firstPrice > 0 else { return nil }
+            let entryIndex = simulationRange.first {
+                prices[$0] > 0 && aligned.observedBySymbol[symbol]?[$0] == true
+            }
+            let allocation = normalizedInitialCash / Double(tradableSymbols.count)
             let seriesPoints = simulationRange.enumerated().map { sequence, index in
-                BacktestSeriesPoint(
+                let value: Double
+                if let entryIndex, entryIndex <= index, prices[entryIndex] > 0 {
+                    value = allocation * prices[index] / prices[entryIndex]
+                } else {
+                    value = allocation
+                }
+                return BacktestSeriesPoint(
                     date: commonDates[index],
-                    portfolioValue: normalizedInitialCash / Double(tradableSymbols.count) * prices[index] / firstPrice,
+                    portfolioValue: value,
                     sequence: sequence
                 )
             }
@@ -5110,7 +5230,10 @@ nonisolated enum BacktestEngine {
             }
 
             let signalDate = sharedDates[index]
-            let cashReturn = CashYieldCNY.dailyReturn(on: signalDate)
+            let cashReturn = CashYieldCNY.periodReturn(
+                from: sharedDates[index],
+                to: sharedDates[index + 1]
+            )
             let dailyReturn: Double
             if guarded {
                 dailyReturn = 0.75 * baseReturn + 0.25 * cashReturn
@@ -5273,7 +5396,10 @@ nonisolated enum BacktestEngine {
             let signalDate = sharedDates[index]
             let dailyReturn: Double
             if guarded {
-                dailyReturn = 0.75 * baseReturn + 0.25 * CashYieldCNY.dailyReturn(on: signalDate)
+                dailyReturn = 0.75 * baseReturn + 0.25 * CashYieldCNY.periodReturn(
+                    from: sharedDates[index],
+                    to: sharedDates[index + 1]
+                )
                 cashRatioSum += 0.25
             } else if let bucket = bucket(for: signalDate), turboBuckets.contains(bucket) {
                 dailyReturn = 0.35 * baseReturn + 0.65 * riskBudgetReturns[index]
@@ -5426,7 +5552,10 @@ nonisolated enum BacktestEngine {
             let signalDate = sharedDates[index]
             let dailyReturn: Double
             if guarded {
-                dailyReturn = 0.75 * baseReturn + 0.25 * CashYieldCNY.dailyReturn(on: signalDate)
+                dailyReturn = 0.75 * baseReturn + 0.25 * CashYieldCNY.periodReturn(
+                    from: sharedDates[index],
+                    to: sharedDates[index + 1]
+                )
                 cashRatioSum += 0.25
             } else if let bucket = bucket(for: signalDate), turboBuckets.contains(bucket) {
                 dailyReturn = 0.35 * baseReturn + 0.65 * riskBudgetReturns[index]
@@ -7909,6 +8038,7 @@ nonisolated enum BacktestEngine {
         mode: AdvancedBacktestStrategyMode,
         initialCash: Double,
         settings: AdvancedBacktestRiskSettings?,
+        nfciAsOf: BacktestNFCIAsOfData? = nil,
         strategyRun: AdvancedRotationStrategyRun? = nil
     ) -> StrategyRebalanceAdvice? {
         let normalizedInitialCash = max(initialCash, 0)
@@ -7921,12 +8051,41 @@ nonisolated enum BacktestEngine {
             takeProfitRatio: 0
         )
         guard normalizedInitialCash > 0 else { return nil }
-        let resolvedRun = strategyRun ?? runAdvancedRotationStrategyWithTrace(
-            assetInputs: assetInputs,
-            initialCash: normalizedInitialCash,
-            settings: resolvedSettings,
-            mode: mode
-        )
+        let resolvedRun: AdvancedRotationStrategyRun?
+        let adviceAsOfDate: Date?
+        if let strategyRun {
+            resolvedRun = strategyRun
+            adviceAsOfDate = strategyRun.dailyStates.last?.date
+        } else {
+            let sourceSeries = assetInputs.flatMap { input in
+                [input.assetSeries, input.fxSeries].compactMap { $0 }
+            }
+            guard let bounds = availableDateBounds(for: sourceSeries) else { return nil }
+            let decisionDate = BacktestSeriesAlignment.nextStrategyWeekday(after: bounds.upperBound)
+            let decisionInputs = assetInputs.map { input in
+                (
+                    assetSeries: BacktestSeriesAlignment.appendingFlatDecisionSession(
+                        to: input.assetSeries,
+                        cutoff: bounds.upperBound,
+                        decisionDate: decisionDate
+                    ),
+                    assetOption: input.assetOption,
+                    fxSeries: BacktestSeriesAlignment.appendingFlatDecisionSession(
+                        to: input.fxSeries,
+                        cutoff: bounds.upperBound,
+                        decisionDate: decisionDate
+                    )
+                )
+            }
+            resolvedRun = runAdvancedRotationStrategyWithTrace(
+                assetInputs: decisionInputs,
+                initialCash: normalizedInitialCash,
+                settings: resolvedSettings,
+                mode: mode,
+                nfciAsOf: nfciAsOf
+            )
+            adviceAsOfDate = bounds.upperBound
+        }
         guard let run = resolvedRun,
               let latestState = run.dailyStates.last else {
             return nil
@@ -7955,7 +8114,7 @@ nonisolated enum BacktestEngine {
 
         return StrategyRebalanceAdvice(
             strategyTitle: mode.title,
-            asOfDate: latestState.date,
+            asOfDate: adviceAsOfDate ?? latestState.date,
             lookbackSessions: 0,
             rebalanceSessions: 0,
             targetAnnualVolatility: nil,
@@ -8022,6 +8181,7 @@ nonisolated enum BacktestEngine {
         mode: AdvancedBacktestStrategyMode,
         initialCash: Double = 100_000,
         settings: AdvancedBacktestRiskSettings? = nil,
+        nfciAsOf: BacktestNFCIAsOfData? = nil,
         strategyRun: AdvancedRotationStrategyRun? = nil
     ) -> StrategyRebalanceAdvice? {
         guard let config = advancedRotationConfig(for: mode) else {
@@ -8030,6 +8190,7 @@ nonisolated enum BacktestEngine {
                 mode: mode,
                 initialCash: initialCash,
                 settings: settings,
+                nfciAsOf: nfciAsOf,
                 strategyRun: strategyRun
             )
         }
@@ -8160,6 +8321,7 @@ nonisolated enum BacktestEngine {
                 for: engineRouter,
                 symbols: symbols,
                 pricesBySymbol: pricesBySymbol,
+                observedBySymbol: aligned.observedBySymbol,
                 maBySymbol: maBySymbol,
                 volatilityBySymbol: volatilityBySymbol,
                 commonDates: commonDates,
@@ -8175,6 +8337,7 @@ nonisolated enum BacktestEngine {
             simulatedFullRotationTrace(
                 symbols: symbols,
                 pricesBySymbol: pricesBySymbol,
+                observedBySymbol: aligned.observedBySymbol,
                 maBySymbol: maBySymbol,
                 volatilityBySymbol: volatilityBySymbol,
                 commonDates: commonDates,
@@ -8191,6 +8354,7 @@ nonisolated enum BacktestEngine {
             simulatedFullRotationTrace(
                 symbols: symbols,
                 pricesBySymbol: pricesBySymbol,
+                observedBySymbol: aligned.observedBySymbol,
                 maBySymbol: maBySymbol,
                 volatilityBySymbol: volatilityBySymbol,
                 commonDates: commonDates,
@@ -8406,7 +8570,10 @@ nonisolated enum BacktestEngine {
             }
             let investedWeight = positiveWeightSum(weightsBySymbol)
             let cashWeight = max(0, 1 - investedWeight)
-            dailyReturn += cashWeight * CashYieldCNY.dailyReturn(on: commonDates[index - 1])
+            dailyReturn += cashWeight * CashYieldCNY.periodReturn(
+                from: commonDates[index - 1],
+                to: commonDates[index]
+            )
             value *= 1 + dailyReturn
             guard value.isFinite, value > 0 else { return 1 }
 
@@ -8471,7 +8638,10 @@ nonisolated enum BacktestEngine {
             }
             let investedWeight = positiveWeightSum(weightsBySymbol)
             let cashWeight = max(0, 1 - investedWeight)
-            dailyReturn += cashWeight * CashYieldCNY.dailyReturn(on: commonDates[index - 1])
+            dailyReturn += cashWeight * CashYieldCNY.periodReturn(
+                from: commonDates[index - 1],
+                to: commonDates[index]
+            )
             value *= 1 + dailyReturn
             if !value.isFinite || value <= 0 {
                 value = values.last ?? 100_000
@@ -9989,10 +10159,12 @@ nonisolated enum BacktestEngine {
         from preparedSeries: [PreparedAdvancedSeries],
         commonDates: [Date]
     ) -> [String: [AdvancedRotationOHLCRiskFeature?]] {
-        let calendar = Calendar(identifier: .gregorian)
+        let calendar = BacktestSeriesAlignment.historicalSeriesCalendar
         var output: [String: [AdvancedRotationOHLCRiskFeature?]] = [:]
         for prepared in preparedSeries where !prepared.ohlcPoints.isEmpty {
-            let bars = prepared.ohlcPoints.map {
+            let bars = prepared.ohlcPoints
+                .filter { BacktestSeriesAlignment.isStrategySessionDate($0.date) }
+                .map {
                 AdvancedRotationOHLCBar(date: $0.date, open: $0.open, high: $0.high, low: $0.low, close: $0.close)
             }
             let featuresByDate = ohlcRiskFeatures(bars: bars)
@@ -10771,6 +10943,7 @@ nonisolated enum BacktestEngine {
         for engineRouter: AdvancedRotationEngineRouter,
         symbols: [String],
         pricesBySymbol: [String: [Double]],
+        observedBySymbol: [String: [Bool]],
         maBySymbol: [String: [Double?]],
         volatilityBySymbol: [String: [Double?]],
         commonDates: [Date],
@@ -10786,6 +10959,7 @@ nonisolated enum BacktestEngine {
             engineRouter.currentMode: simulatedFullRotationTrace(
                 symbols: symbols,
                 pricesBySymbol: pricesBySymbol,
+                observedBySymbol: observedBySymbol,
                 maBySymbol: maBySymbol,
                 volatilityBySymbol: volatilityBySymbol,
                 commonDates: commonDates,
@@ -10797,6 +10971,7 @@ nonisolated enum BacktestEngine {
             engineRouter.offensiveMode: simulatedFullRotationTrace(
                 symbols: symbols,
                 pricesBySymbol: pricesBySymbol,
+                observedBySymbol: observedBySymbol,
                 maBySymbol: maBySymbol,
                 volatilityBySymbol: volatilityBySymbol,
                 commonDates: commonDates,
@@ -10812,6 +10987,7 @@ nonisolated enum BacktestEngine {
         for selector: AdvancedRotationDynamicSleeveSelector,
         symbols: [String],
         pricesBySymbol: [String: [Double]],
+        observedBySymbol: [String: [Bool]],
         maBySymbol: [String: [Double?]],
         volatilityBySymbol: [String: [Double?]],
         commonDates: [Date],
@@ -10827,6 +11003,7 @@ nonisolated enum BacktestEngine {
             selector.satelliteMode: simulatedFullRotationTrace(
                 symbols: symbols,
                 pricesBySymbol: pricesBySymbol,
+                observedBySymbol: observedBySymbol,
                 maBySymbol: maBySymbol,
                 volatilityBySymbol: volatilityBySymbol,
                 commonDates: commonDates,
@@ -10838,6 +11015,7 @@ nonisolated enum BacktestEngine {
             selector.defensiveMode: simulatedFullRotationTrace(
                 symbols: symbols,
                 pricesBySymbol: pricesBySymbol,
+                observedBySymbol: observedBySymbol,
                 maBySymbol: maBySymbol,
                 volatilityBySymbol: volatilityBySymbol,
                 commonDates: commonDates,
@@ -10852,6 +11030,7 @@ nonisolated enum BacktestEngine {
     private static func simulatedFullRotationTrace(
         symbols: [String],
         pricesBySymbol: [String: [Double]],
+        observedBySymbol: [String: [Bool]],
         maBySymbol: [String: [Double?]],
         volatilityBySymbol: [String: [Double?]],
         commonDates: [Date],
@@ -10900,6 +11079,7 @@ nonisolated enum BacktestEngine {
                 for: engineRouter,
                 symbols: symbols,
                 pricesBySymbol: pricesBySymbol,
+                observedBySymbol: observedBySymbol,
                 maBySymbol: maBySymbol,
                 volatilityBySymbol: volatilityBySymbol,
                 commonDates: commonDates,
@@ -10913,6 +11093,7 @@ nonisolated enum BacktestEngine {
                 for: selector,
                 symbols: symbols,
                 pricesBySymbol: pricesBySymbol,
+                observedBySymbol: observedBySymbol,
                 maBySymbol: maBySymbol,
                 volatilityBySymbol: volatilityBySymbol,
                 commonDates: commonDates,
@@ -10946,6 +11127,7 @@ nonisolated enum BacktestEngine {
         let frame = MarketDataFrame(
             dates: commonDates,
             pricesBySymbol: pricesBySymbol,
+            observedBySymbol: observedBySymbol,
             ohlcBySymbol: [:],
             tradableSymbols: tradableSymbols,
             optionBySymbol: optionBySymbol,
@@ -11004,7 +11186,7 @@ nonisolated enum BacktestEngine {
             let guardedWeights = config.metaSwitch == nil
                 ? applyPortfolioGuard(
                     to: rawWeights,
-                    currentValue: context.preRebalanceValue,
+                    currentValue: context.signalPortfolioValue,
                     currentPoints: context.points
                 )
                 : rawWeights
@@ -11034,14 +11216,12 @@ nonisolated enum BacktestEngine {
                     shouldBaseRebalance = index == firstRebalanceIndex || (index > 0 && index % rebalanceSessions == 0)
                 }
                 let shouldRebalance = shouldBaseRebalance || shouldOverlayRebalance
-                if shouldRebalance {
-                    lastRebalanceIndex = index
-                }
                 return BacktestRebalanceDecision(
                     shouldRebalance: shouldRebalance,
                     refreshOverlay: shouldOverlayRebalance
                 )
-            }
+            },
+            didExecuteTarget: { lastRebalanceIndex = $0 }
         )
 
         guard let simulation else {
@@ -12002,6 +12182,7 @@ nonisolated enum BacktestEngine {
                 for: engineRouter,
                 symbols: symbols,
                 pricesBySymbol: pricesBySymbol,
+                observedBySymbol: aligned.observedBySymbol,
                 maBySymbol: maBySymbol,
                 volatilityBySymbol: volatilityBySymbol,
                 commonDates: commonDates,
@@ -12018,6 +12199,7 @@ nonisolated enum BacktestEngine {
                 for: selector,
                 symbols: symbols,
                 pricesBySymbol: pricesBySymbol,
+                observedBySymbol: aligned.observedBySymbol,
                 maBySymbol: maBySymbol,
                 volatilityBySymbol: volatilityBySymbol,
                 commonDates: commonDates,
@@ -12155,6 +12337,7 @@ nonisolated enum BacktestEngine {
         let frame = MarketDataFrame(
             dates: commonDates,
             pricesBySymbol: pricesBySymbol,
+            observedBySymbol: aligned.observedBySymbol,
             ohlcBySymbol: Dictionary(uniqueKeysWithValues: preparedSeries.map { ($0.assetOption.symbol, $0.ohlcPoints) }),
             tradableSymbols: tradableSymbols,
             optionBySymbol: optionBySymbol,
@@ -12180,7 +12363,7 @@ nonisolated enum BacktestEngine {
             let guardedTargetWeights = config.metaSwitch == nil
                 ? applyPortfolioDrawdownGuard(
                     to: baseTargetWeights,
-                    currentValue: context.preRebalanceValue,
+                    currentValue: context.signalPortfolioValue,
                     currentPoints: context.points
                 )
                 : baseTargetWeights
@@ -12205,14 +12388,12 @@ nonisolated enum BacktestEngine {
                     shouldBaseRebalance = index == firstRebalanceIndex || (index > 0 && index % rebalanceSessions == 0)
                 }
                 let shouldRebalance = shouldBaseRebalance || shouldOverlayRebalance
-                if shouldRebalance {
-                    lastRebalanceIndex = index
-                }
                 return BacktestRebalanceDecision(
                     shouldRebalance: shouldRebalance,
                     refreshOverlay: shouldOverlayRebalance
                 )
-            }
+            },
+            didExecuteTarget: { lastRebalanceIndex = $0 }
         ) else { return nil }
 
         let points = simulation.points
@@ -12224,15 +12405,22 @@ nonisolated enum BacktestEngine {
 
         let perAssetBenchmarkSeries = tradableSymbols.compactMap { symbol -> AdvancedBacktestBenchmarkSeries? in
             guard let prices = pricesBySymbol[symbol],
-                  prices.indices.contains(simulationRange.lowerBound),
                   prices.indices.contains(simulationRange.upperBound),
                   let option = optionBySymbol[symbol] else { return nil }
-            let firstPrice = prices[simulationRange.lowerBound]
-            guard firstPrice > 0 else { return nil }
+            let entryIndex = simulationRange.first {
+                prices[$0] > 0 && aligned.observedBySymbol[symbol]?[$0] == true
+            }
+            let allocation = normalizedInitialCash / Double(tradableSymbols.count)
             let seriesPoints = simulationRange.enumerated().map { sequence, index in
-                BacktestSeriesPoint(
+                let value: Double
+                if let entryIndex, entryIndex <= index, prices[entryIndex] > 0 {
+                    value = allocation * prices[index] / prices[entryIndex]
+                } else {
+                    value = allocation
+                }
+                return BacktestSeriesPoint(
                     date: commonDates[index],
-                    portfolioValue: normalizedInitialCash / Double(tradableSymbols.count) * prices[index] / firstPrice,
+                    portfolioValue: value,
                     sequence: sequence
                 )
             }
@@ -12282,27 +12470,44 @@ nonisolated enum BacktestEngine {
         return AdvancedRotationStrategyRun(report: report, dailyStates: simulation.dailyStates)
     }
 
-    private static func alignedRotationPriceSeries(
+    static func alignedRotationPriceSeries(
         from preparedSeries: [PreparedAdvancedSeries],
         zeroFillBeforeFirstSymbols: Set<String> = []
-    ) -> (dates: [Date], pricesBySymbol: [String: [Double]]) {
-        let calendarSeries = preparedSeries.filter { !zeroFillBeforeFirstSymbols.contains($0.assetOption.symbol) }
-        let dateSourceSeries = calendarSeries.isEmpty ? preparedSeries : calendarSeries
-        let allDates = Set(dateSourceSeries.flatMap { $0.pricePoints.map(\.date) }).sorted()
+    ) -> AlignedRotationPriceSeries {
+        let allDates = BacktestSeriesAlignment.rotationDecisionDates(
+            from: preparedSeries,
+            zeroFillBeforeFirstSymbols: zeroFillBeforeFirstSymbols
+        )
         var indices = Dictionary(uniqueKeysWithValues: preparedSeries.map { ($0.assetOption.symbol, 0) })
         var latestPrices: [String: Double] = [:]
         var latestPriceDates: [String: Date] = [:]
         var outputDates: [Date] = []
         var pricesBySymbol = Dictionary(uniqueKeysWithValues: preparedSeries.map { ($0.assetOption.symbol, [Double]()) })
+        var observedBySymbol = Dictionary(uniqueKeysWithValues: preparedSeries.map { ($0.assetOption.symbol, [Bool]()) })
 
         for date in allDates {
-            if Task.isCancelled { return (outputDates, pricesBySymbol) }
+            if Task.isCancelled {
+                return AlignedRotationPriceSeries(
+                    dates: outputDates,
+                    pricesBySymbol: pricesBySymbol,
+                    observedBySymbol: observedBySymbol
+                )
+            }
+            var observedSymbols = Set<String>()
             for series in preparedSeries {
                 let symbol = series.assetOption.symbol
                 var index = indices[symbol] ?? 0
                 while index < series.pricePoints.count && series.pricePoints[index].date <= date {
-                    latestPrices[symbol] = series.pricePoints[index].cnyPrice
-                    latestPriceDates[symbol] = series.pricePoints[index].date
+                    let point = series.pricePoints[index]
+                    if BacktestSeriesAlignment.isStrategySessionDate(point.date) {
+                        latestPrices[symbol] = point.cnyPrice
+                        latestPriceDates[symbol] = point.date
+                        if point.date == date,
+                           series.executionObservationDates.contains(date),
+                           series.hypotheticalDecisionDate != date {
+                            observedSymbols.insert(symbol)
+                        }
+                    }
                     index += 1
                 }
                 indices[symbol] = index
@@ -12321,10 +12526,15 @@ nonisolated enum BacktestEngine {
             for series in preparedSeries {
                 let symbol = series.assetOption.symbol
                 pricesBySymbol[symbol, default: []].append(latestPrices[symbol] ?? 0)
+                observedBySymbol[symbol, default: []].append(observedSymbols.contains(symbol))
             }
         }
 
-        return (outputDates, pricesBySymbol)
+        return AlignedRotationPriceSeries(
+            dates: outputDates,
+            pricesBySymbol: pricesBySymbol,
+            observedBySymbol: observedBySymbol
+        )
     }
 
     private static func runAdvancedStrategies(

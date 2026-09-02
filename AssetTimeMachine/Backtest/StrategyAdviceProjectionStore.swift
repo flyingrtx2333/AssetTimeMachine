@@ -65,6 +65,15 @@ final class StrategyAdviceProjectionStore: ObservableObject {
 
         let assetOptions = StrategyRebalanceDefaults.assetOptions(for: template)
         let historySymbols = StrategyRebalanceDefaults.historySymbols(for: assetOptions)
+        if template.mode.requiresNFCIAsOf,
+           force || !marketStore.hasFreshNFCIAsOf() {
+            updateProgress(
+                fraction: 0.14,
+                message: AppLocalization.format("正在更新%@所需宏观数据", template.title)
+            )
+            _ = await marketStore.refreshLiveData(forceRemote: force)
+            guard !Task.isCancelled, calculationGeneration == generation else { return }
+        }
         let shouldForceHistoryRefresh = force || isMissingRequiredHistory(
             for: assetOptions,
             marketStore: marketStore
@@ -89,6 +98,17 @@ final class StrategyAdviceProjectionStore: ObservableObject {
         }
         guard !Task.isCancelled, calculationGeneration == generation else { return }
 
+        let hasFreshHistory = marketStore.hasFreshStrategyHistory(for: historySymbols)
+        let hasFreshMacroData = !template.mode.requiresNFCIAsOf || marketStore.hasFreshNFCIAsOf()
+        guard hasFreshHistory, hasFreshMacroData else {
+            advice = nil
+            actions = []
+            snapshotDate = snapshot?.date
+            statusMessage = AppLocalization.string("行情或宏观数据已过期，今日调仓将在数据更新后生成。")
+            resetProgress()
+            return
+        }
+
         updateProgress(
             fraction: 0.54,
             message: AppLocalization.format("正在整理%@行情", template.title)
@@ -98,8 +118,9 @@ final class StrategyAdviceProjectionStore: ObservableObject {
         let historyBySymbol = Dictionary(uniqueKeysWithValues: historySymbols.compactMap { symbol in
             marketStore.history(for: symbol).map { (symbol, $0) }
         })
-        let historyToken = marketStore.historyRelevanceToken(for: historySymbols)
-        let calculationToken = "\(template.id)|\(historyToken)"
+        let inputToken = marketStore.strategyInputRelevanceToken(for: historySymbols)
+        let calculationToken = "\(template.id)|\(inputToken)"
+        let nfciAsOf = marketStore.nfciAsOf?.backtestNFCIAsOfData
         activeCalculationToken = calculationToken
         selectedAssetOptions = assetOptions
         historySourceNames = Self.sourceNames(from: historyBySymbol.values)
@@ -127,6 +148,7 @@ final class StrategyAdviceProjectionStore: ObservableObject {
             template: template,
             assetOptions: assetOptions,
             historyBySymbol: historyBySymbol,
+            nfciAsOf: nfciAsOf,
             force: force
         )
 
@@ -134,7 +156,7 @@ final class StrategyAdviceProjectionStore: ObservableObject {
               calculationGeneration == generation,
               activeCalculationToken == calculationToken,
               StrategyRebalanceDefaults.template(for: templateID)?.id == template.id,
-              marketStore.historyRelevanceToken(for: historySymbols) == historyToken else { return }
+              marketStore.strategyInputRelevanceToken(for: historySymbols) == inputToken else { return }
 
         guard let nextAdvice else {
             advice = nil

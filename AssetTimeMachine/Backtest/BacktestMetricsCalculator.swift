@@ -52,16 +52,24 @@ nonisolated enum BacktestMetricsCalculator {
         let daySpan = max(BacktestSeriesAlignment.historicalSeriesCalendar.dateComponents([.day], from: first.date, to: last.date).day ?? 0, 1)
         let years = Double(daySpan) / 365.25
         let annualizedReturn = years > 0 ? pow(normalizedValue, 1 / years) - 1 : nil
+        let observedPeriodsPerYear = years > 0 && !returns.isEmpty
+            ? Double(returns.count) / years
+            : 0
 
         let mean = returns.isEmpty ? nil : returns.reduce(0, +) / Double(returns.count)
         let variance = returns.count > 1 && mean != nil
             ? returns.reduce(0) { $0 + pow($1 - mean!, 2) } / Double(returns.count - 1)
             : nil
         let dailyVolatility = variance.map { sqrt($0) }
-        let annualizedVolatility = dailyVolatility.map { $0 * sqrt(252) }
+        let annualizedVolatility = dailyVolatility.flatMap {
+            observedPeriodsPerYear > 0 ? $0 * sqrt(observedPeriodsPerYear) : nil
+        }
         let sharpeRatio: Double?
-        if let mean, let dailyVolatility, dailyVolatility > 0 {
-            sharpeRatio = (mean * 252) / (dailyVolatility * sqrt(252))
+        if let mean,
+           let dailyVolatility,
+           dailyVolatility > 0,
+           observedPeriodsPerYear > 0 {
+            sharpeRatio = mean / dailyVolatility * sqrt(observedPeriodsPerYear)
         } else {
             sharpeRatio = nil
         }

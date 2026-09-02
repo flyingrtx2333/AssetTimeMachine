@@ -257,11 +257,11 @@
                         guard index >= 20 else { return [:] }
                         switch variant.family {
                         case .tippStatic, .tippInverseVol:
-                            highWater = max(highWater, context.preRebalanceValue)
+                            highWater = max(highWater, context.signalPortfolioValue)
                             let floor = highWater * variant.p1
-                            let cushion = max(context.preRebalanceValue - floor, 0)
-                            let riskyGross = context.preRebalanceValue > 0
-                                ? min(max(variant.p2 * cushion / context.preRebalanceValue, 0), 1)
+                            let cushion = max(context.signalPortfolioValue - floor, 0)
+                            let riskyGross = context.signalPortfolioValue > 0
+                                ? min(max(variant.p2 * cushion / context.signalPortfolioValue, 0), 1)
                                 : 0
                             guard riskyGross > 0 else { return [:] }
                             if variant.family == .tippInverseVol {
@@ -274,9 +274,9 @@
                             ]
 
                         case .cppiFixedFloor:
-                            let cushion = max(context.preRebalanceValue - fixedFloor, 0)
-                            let riskyGross = context.preRebalanceValue > 0
-                                ? min(max(variant.p2 * cushion / context.preRebalanceValue, 0), 1)
+                            let cushion = max(context.signalPortfolioValue - fixedFloor, 0)
+                            let riskyGross = context.signalPortfolioValue > 0
+                                ? min(max(variant.p2 * cushion / context.signalPortfolioValue, 0), 1)
                                 : 0
                             let goldShare = min(max(variant.p3, 0), 1)
                             return [

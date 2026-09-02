@@ -13,6 +13,7 @@ actor StrategyAdviceService {
         template: AdvancedBacktestStrategyTemplate,
         assetOptions: [BacktestAssetOption],
         historyBySymbol: [String: PublicHistorySeries],
+        nfciAsOf: BacktestNFCIAsOfData?,
         force: Bool
     ) async -> StrategyRebalanceAdvice? {
         if !force, let cachedAdvice = cachedAdviceByToken[calculationToken] {
@@ -35,7 +36,8 @@ actor StrategyAdviceService {
                     if template.mode.isRotation {
                         return BacktestEngine.advancedRotationRebalanceAdvice(
                             assetInputs: assetInputs,
-                            mode: template.mode
+                            mode: template.mode,
+                            nfciAsOf: nfciAsOf
                         )
                     }
                     return BacktestEngine.advancedRuleBasedRebalanceAdvice(

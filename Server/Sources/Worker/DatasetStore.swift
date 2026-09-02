@@ -70,8 +70,9 @@ actor BacktestDatasetStore {
         let data = try await fetchDatasetData()
         let hash = sha256Hex(data)
         if let current = active, current.dataset.datasetHash == hash {
+            let isFresh = PublicBacktestCore.isMarketDataFresh(cutoff: current.dataset.dataCutoff)
             active = ActiveDatasetSnapshot(
-                dataset: current.dataset.markingStale(false),
+                dataset: current.dataset.markingStale(!isFresh),
                 defaultResults: current.defaultResults,
                 datasetFileURL: current.datasetFileURL
             )

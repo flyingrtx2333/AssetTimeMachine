@@ -168,10 +168,10 @@
                                         return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
                                     }
 
-                                    let previousPeak = context.points.map(\.portfolioValue).max() ?? context.preRebalanceValue
-                                    let accountPeak = max(previousPeak, context.preRebalanceValue)
+                                    let previousPeak = context.points.map(\.portfolioValue).max() ?? context.signalPortfolioValue
+                                    let accountPeak = max(previousPeak, context.signalPortfolioValue)
                                     let accountDrawdown = accountPeak > 0
-                                        ? max(1 - context.preRebalanceValue / accountPeak, 0)
+                                        ? max(1 - context.signalPortfolioValue / accountPeak, 0)
                                         : 0
                                     let shadowDrawdown = shadowDrawdownByDate[signalDateKey] ?? 0
                                     let effectiveDrawdown = useShadowDrawdown ? max(accountDrawdown, shadowDrawdown) : accountDrawdown

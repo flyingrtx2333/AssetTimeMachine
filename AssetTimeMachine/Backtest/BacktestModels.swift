@@ -902,6 +902,7 @@ enum CashYieldCNY {
     static var source: String { AppLocalization.string("中国人民银行 · 金融机构人民币存款基准利率") }
     static var sourceDetail: String { AppLocalization.string("回测中未投入资产的现金仓按历史活期存款基准利率日化计息；实际银行、货币基金或现金管理产品收益可能不同。") }
     private static let tradingDaysPerYear = 252.0
+    private static let calendarDaysPerYear = 365.25
     private static var calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
@@ -967,6 +968,39 @@ enum CashYieldCNY {
 
     static func dailyReturn(fromAnnualRate annualRate: Double) -> Double {
         max(annualRate, 0) / tradingDaysPerYear
+    }
+
+    /// Calendar-time cash accrual between two portfolio observations.
+    ///
+    /// A multi-market union can contain about 260 observations per year and its
+    /// gaps are not uniformly one day. Accruing `annualRate / 252` once per row
+    /// therefore makes cash yield depend on the shape of the strategy calendar.
+    static func periodReturn(from startDate: Date, to endDate: Date) -> Double {
+        guard endDate > startDate else { return 0 }
+        var cursor = calendar.startOfDay(for: startDate)
+        let end = calendar.startOfDay(for: endDate)
+        var factor = 1.0
+        while cursor < end {
+            factor *= 1 + max(annualRate(on: cursor), 0) / calendarDaysPerYear
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
+            cursor = next
+        }
+        return max(factor - 1, 0)
+    }
+
+    static func periodReturn(
+        fromAnnualRate annualRate: Double,
+        from startDate: Date,
+        to endDate: Date
+    ) -> Double {
+        guard endDate > startDate else { return 0 }
+        let dayCount = calendar.dateComponents(
+            [.day],
+            from: calendar.startOfDay(for: startDate),
+            to: calendar.startOfDay(for: endDate)
+        ).day ?? 0
+        guard dayCount > 0 else { return 0 }
+        return pow(1 + max(annualRate, 0) / calendarDaysPerYear, Double(dayCount)) - 1
     }
 
     static func averageAnnualRate(across dates: [Date]) -> Double {
@@ -2318,12 +2352,12 @@ struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
 /// product-facing surface (library, reminders and daily advice) consumes this ordered registry.
 enum BacktestProductStrategyCatalog {
     static let curatedTemplateIDs = [
-        "risk-contribution-cash-confidence-low-noise",
+        "gold-nasdaq-dual-trend-barbell",
         "nfci-dual-core-v11",
         "core-gold-satellite-equity-curve-state-gate-momentum",
         "core-gold-satellite-risk-budget-state-gate-momentum",
         "core-gold-satellite-profit-lock-momentum",
-        "gold-nasdaq-dual-trend-barbell",
+        "risk-contribution-cash-confidence-low-noise",
     ]
 
     static let experimentalTemplateIDs: [String] = [
@@ -3400,7 +3434,7 @@ enum BacktestDefaults {
 
 enum StrategyRebalanceDefaults {
     static let defaultTemplateID = "core-gold-satellite-equity-curve-state-gate-momentum"
-    static let recommendedTemplateID = "risk-contribution-cash-confidence-low-noise"
+    static let recommendedTemplateID = "gold-nasdaq-dual-trend-barbell"
 
     static var eligibleTemplates: [AdvancedBacktestStrategyTemplate] {
         AdvancedBacktestStrategyTemplate.productCatalog

@@ -591,7 +591,10 @@ nonisolated private enum MarketHistoryMergeProcessor {
                 if current == merged { continue }
                 normalizedSeries[normalizedSymbol] = merged
             } else {
-                normalizedSeries[normalizedSymbol] = series
+                normalizedSeries[normalizedSymbol] = MarketHistorySeriesMerger.merge(
+                    existing: series,
+                    incoming: series
+                )
             }
             didChange = true
         }
@@ -864,12 +867,15 @@ nonisolated extension PublicNFCIAsOfResponse {
             return nil
         }
         func mapPoints(_ points: [PublicMacroAsOfPoint]) -> [BacktestNFCIPoint] {
-            points.map {
-                BacktestNFCIPoint(
-                    releaseDate: $0.releaseDate,
-                    referenceDate: $0.referenceDate,
-                    availableAt: $0.availableAt,
-                    value: $0.value
+            points.compactMap { point in
+                guard BacktestSeriesAlignment.historicalSeriesDate(from: point.releaseDate) != nil,
+                      BacktestSeriesAlignment.historicalSeriesDate(from: point.referenceDate) != nil,
+                      point.value.isFinite else { return nil }
+                return BacktestNFCIPoint(
+                    releaseDate: point.releaseDate,
+                    referenceDate: point.referenceDate,
+                    availableAt: point.availableAt,
+                    value: point.value
                 )
             }
         }
@@ -888,6 +894,7 @@ final class RemoteMarketStore: ObservableObject {
     @Published var exchangeRatesFetchedAt: Date?
     @Published var nfciAsOf: PublicNFCIAsOfResponse? {
         didSet {
+            macroRevision &+= 1
             BacktestMacroSnapshotStore.shared.updateNFCIAsOf(nfciAsOf?.backtestNFCIAsOfData)
         }
     }
@@ -895,6 +902,7 @@ final class RemoteMarketStore: ObservableObject {
         didSet { historyRevision &+= 1 }
     }
     @Published private(set) var historyRevision = 0
+    @Published private(set) var macroRevision = 0
     @Published private(set) var assetCatalog: [MarketAssetDescriptor] = [] {
         didSet { MarketAssetLogoRegistry.register(assetCatalog) }
     }
@@ -1808,11 +1816,54 @@ final class RemoteMarketStore: ObservableObject {
         return nil
     }
 
+    func hasFreshStrategyHistory(
+        for symbols: some Sequence<String>,
+        asOf: Date = Date()
+    ) -> Bool {
+        Set(symbols).allSatisfy { symbol in
+            let lookupSymbol = symbol == "usd_cash" ? "usd_per_cny" : symbol
+            guard let series = history(for: lookupSymbol),
+                  let latestDate = series.dates.compactMap({
+                      BacktestSeriesAlignment.historicalSeriesDate(from: $0)
+                  }).max() else {
+                return false
+            }
+            return PublicBacktestCore.isMarketDataFresh(
+                cutoff: MarketDay.string(from: latestDate),
+                asOf: asOf
+            )
+        }
+    }
+
+    func hasFreshNFCIAsOf(asOf: Date = Date()) -> Bool {
+        guard let response = nfciAsOf,
+              let snapshot = response.backtestNFCIAsOfData,
+              snapshot.isReadyForC3L3,
+              let credit = response.series.first(where: { $0.seriesID == "NFCICREDIT" }),
+              let leverage = response.series.first(where: { $0.seriesID == "NFCILEVERAGE" }) else {
+            return false
+        }
+        return [credit, leverage].allSatisfy { series in
+            guard let latestAvailableAt = series.points.map(\.availableAt).max() else { return false }
+            return PublicBacktestCore.isMacroDataFresh(
+                availableAt: latestAvailableAt,
+                asOf: asOf
+            )
+        }
+    }
+
     func historyRelevanceToken(for symbols: some Sequence<String>) -> String {
-        Array(Set(symbols)).sorted().map { symbol in
+        let seriesToken = Array(Set(symbols)).sorted().map { symbol in
             guard let series = history(for: symbol) else { return "\(symbol):nil" }
             return "\(symbol):\(series.dates.count):\(series.dates.last ?? "")"
         }.joined(separator: "|")
+        // The revision is intentionally part of the token. Providers can revise an
+        // existing close or OHLC row without changing either the row count or cutoff.
+        return "history-r\(historyRevision)|\(seriesToken)"
+    }
+
+    func strategyInputRelevanceToken(for symbols: some Sequence<String>) -> String {
+        "\(BacktestEngine.defaultEngineVersion)|\(historyRelevanceToken(for: symbols))|macro-r\(macroRevision)"
     }
 }
 

@@ -28,15 +28,31 @@ private struct AssetWidgetProvider: TimelineProvider {
 }
 
 private enum AssetWidgetPalette {
+    // WidgetKit can darken a light container when the Home Screen uses its
+    // dark appearance. Keep widget foregrounds and tracks slightly stronger
+    // than the in-app tokens so the compact UI remains legible at a glance.
+    private static let widgetTextPrimary = AssetAdaptiveColorToken(
+        daylightGold: AssetRGBA(34, 29, 22),
+        darkGold: AssetRGBA(248, 246, 240)
+    )
+    private static let widgetTextSecondary = AssetAdaptiveColorToken(
+        daylightGold: AssetRGBA(102, 91, 72),
+        darkGold: AssetRGBA(203, 200, 192)
+    )
+    private static let widgetTrack = AssetAdaptiveColorToken(
+        daylightGold: AssetRGBA(0, 0, 0, alpha: 0.16),
+        darkGold: AssetRGBA(255, 255, 255, alpha: 0.20)
+    )
+
     static let background = adaptive(AssetColorPalette.background)
     static let backgroundRaised = adaptive(AssetColorPalette.surfaceRaised)
-    static let textPrimary = adaptive(AssetColorPalette.textPrimary)
-    static let textSecondary = adaptive(AssetColorPalette.textSecondary)
+    static let textPrimary = adaptive(widgetTextPrimary)
+    static let textSecondary = adaptive(widgetTextSecondary)
     static let gold = adaptive(AssetColorPalette.gold)
     static let goldSoft = adaptive(AssetColorPalette.goldSoft)
     static let positive = adaptive(AssetColorPalette.positive)
     static let negative = adaptive(AssetColorPalette.negative)
-    static let track = adaptive(AssetColorPalette.overlayStrong)
+    static let track = adaptive(widgetTrack)
     static let divider = adaptive(AssetColorPalette.border)
 
     static let backgroundGradient = LinearGradient(
@@ -296,6 +312,17 @@ private struct AssetWidgetSurface<Content: View>: View {
         self.content = content()
     }
 
+    /// The Home Screen's dark appearance may darken a light widget container
+    /// even when the app explicitly prefers the daylight palette. Let the
+    /// actual dark rendering environment win so light foreground tokens are
+    /// always paired with the darkened surface.
+    private var resolvedColorScheme: ColorScheme {
+        if systemColorScheme == .dark {
+            return .dark
+        }
+        return snapshot.theme.colorScheme ?? systemColorScheme
+    }
+
     var body: some View {
         Group {
             if snapshot.hasPortfolioData {
@@ -307,7 +334,7 @@ private struct AssetWidgetSurface<Content: View>: View {
         .containerBackground(for: .widget) {
             AssetWidgetPalette.backgroundGradient
         }
-        .environment(\.colorScheme, snapshot.theme.colorScheme ?? systemColorScheme)
+        .environment(\.colorScheme, resolvedColorScheme)
     }
 }
 
@@ -750,6 +777,7 @@ private struct FreedomRingsWidget: Widget {
         .configurationDisplayName("双环进度")
         .description("并列查看结余与财务自由进度。")
         .supportedFamilies([.systemSmall, .systemMedium])
+        .containerBackgroundRemovable(false)
     }
 }
 
@@ -763,6 +791,7 @@ private struct FinancialProgressWidget: Widget {
         .configurationDisplayName("财务进度")
         .description("查看结余金额、年度目标与财务自由进度。")
         .supportedFamilies([.systemSmall, .systemMedium])
+        .containerBackgroundRemovable(false)
     }
 }
 
@@ -776,6 +805,7 @@ private struct AssetTrendWidget: Widget {
         .configurationDisplayName("资产趋势")
         .description("查看近 30 日资产趋势和关键财务进度。")
         .supportedFamilies([.systemSmall, .systemMedium])
+        .containerBackgroundRemovable(false)
     }
 }
 

@@ -6,6 +6,8 @@ struct SettingsView: View {
     @Environment(\.openURL) private var openURL
     @EnvironmentObject private var appLanguageStore: AppLanguageStore
     @AppStorage(AppAppearanceMode.defaultsKey) private var appearanceModeRawValue: String = AppAppearanceMode.system.rawValue
+    @AppStorage(MonthlyExpenseEstimateStorage.defaultsKey) private var storedMonthlyExpenseEstimate = ""
+    @AppStorage("dashboard.monthlyExpense") private var dashboardMonthlyExpense: Double = 3000
     @AppStorage("app.notifications.enabled") private var notificationEnabled = false
     @AppStorage("app.notifications.intervalHours") private var notificationIntervalHours: Double = 1
     @AppStorage("app.strategyNotifications.enabled") private var strategyNotificationEnabled = false
@@ -23,6 +25,7 @@ struct SettingsView: View {
     @State private var strategyTestNotificationMessage: String?
     @State private var showsLanguageSelection = false
     @State private var showsStrategyLibrary = false
+    @State private var showsMonthlyExpenseEstimator = false
     @State private var pendingAppLanguage: AppLanguage?
 
     init(
@@ -126,6 +129,7 @@ struct SettingsView: View {
                 List {
                     pageOverviewSection
                     preferencesSection
+                    planningSection
                     automationSection
                     dataSection
                     supportSection
@@ -182,6 +186,9 @@ struct SettingsView: View {
                 }
                 .presentationDetents([.fraction(0.72), .large])
                 .presentationDragIndicator(.visible)
+            }
+            .navigationDestination(isPresented: $showsMonthlyExpenseEstimator) {
+                MonthlyExpenseEstimatorView()
             }
             .alert(AppLocalization.string("退出云同步"), isPresented: $showsLogoutConfirmation) {
                 Button(AppLocalization.string("取消"), role: .cancel) {}
@@ -363,6 +370,27 @@ struct SettingsView: View {
             }
         } header: {
             SettingsSectionHeader(title: AppLocalization.string("自动化"))
+        }
+    }
+
+    private var planningSection: some View {
+        Section {
+            Button {
+                showsMonthlyExpenseEstimator = true
+            } label: {
+                SettingsNavigationRow(
+                    title: AppLocalization.string("月开支估算"),
+                    systemImage: "calculator",
+                    value: MonthlyExpenseEstimateStorage.monthlyAverage(
+                        from: storedMonthlyExpenseEstimate,
+                        fallback: dashboardMonthlyExpense
+                    ).currencyString()
+                )
+            }
+            .buttonStyle(.plain)
+            .settingsSurfaceRow()
+        } header: {
+            SettingsSectionHeader(title: AppLocalization.string("规划"))
         }
     }
 

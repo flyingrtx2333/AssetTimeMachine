@@ -156,16 +156,28 @@ extension ContentView {
 
         let assetOptions = StrategyRebalanceDefaults.assetOptions(for: template)
         let historySymbols = StrategyRebalanceDefaults.historySymbols(for: assetOptions)
+        if template.mode.requiresNFCIAsOf,
+           !marketStore.hasFreshNFCIAsOf() {
+            _ = await marketStore.refreshLiveData()
+        }
         _ = await marketStore.refreshHistory(for: historySymbols)
+        guard marketStore.hasFreshStrategyHistory(for: historySymbols),
+              !template.mode.requiresNFCIAsOf || marketStore.hasFreshNFCIAsOf() else {
+            return (
+                template.title,
+                AppLocalization.string("行情或宏观数据已过期，今日调仓将在数据更新后生成。")
+            )
+        }
         let historyBySymbol = Dictionary(uniqueKeysWithValues: historySymbols.compactMap { symbol in
             marketStore.history(for: symbol).map { (symbol, $0) }
         })
-        let historyToken = marketStore.historyRelevanceToken(for: historySymbols)
+        let inputToken = marketStore.strategyInputRelevanceToken(for: historySymbols)
         let advice = await strategyAdviceService.advice(
-            calculationToken: "\(template.id)|\(historyToken)",
+            calculationToken: "\(template.id)|\(inputToken)",
             template: template,
             assetOptions: assetOptions,
             historyBySymbol: historyBySymbol,
+            nfciAsOf: marketStore.nfciAsOf?.backtestNFCIAsOfData,
             force: false
         )
         guard !Task.isCancelled else { return (template.title, nil) }

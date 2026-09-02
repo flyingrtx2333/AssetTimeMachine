@@ -1,6 +1,7 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-08-10T08:44:04+08:00",
+  "engine_version": "atm-swift-clock-v3-2026-08-31",
+  "generated_at": "2026-08-31T17:26:49+08:00",
   "source": "scripts/refresh_app_backtest_baseline.py using the same period=all public-history request as tools/strategy_metric_dump.swift",
   "baseline_type": "app_backtest_engine_baseline_not_full_app_equivalent_replay",
   "command": "tools/strategy_metric_dump.swift --verify-app-baseline",
@@ -28,73 +29,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 8.11926,
-            "max_drawdown": 16.692629,
-            "volatility": 9.650491,
-            "sharpe": 0.83012
+            "annualized": 4.540581,
+            "max_drawdown": 17.082251,
+            "volatility": 9.469656,
+            "sharpe": 0.516399
           },
           "metrics": {
-            "annualized_return": 0.0811926,
-            "max_drawdown": -0.16692629,
-            "annualized_volatility": 0.09650491,
-            "sharpe": 0.83012
+            "annualized_return": 0.045405810000000005,
+            "max_drawdown": -0.17082250999999998,
+            "annualized_volatility": 0.09469656,
+            "sharpe": 0.516399
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
-          "point_count": 6413
+          "point_count": 5723
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 9.484136,
-            "max_drawdown": 12.161809,
-            "volatility": 10.690869,
-            "sharpe": 0.865993
+            "annualized": 3.151843,
+            "max_drawdown": 16.894339,
+            "volatility": 10.982401,
+            "sharpe": 0.337608
           },
           "metrics": {
-            "annualized_return": 0.09484136,
-            "max_drawdown": -0.12161809,
-            "annualized_volatility": 0.10690868999999999,
-            "sharpe": 0.865993
+            "annualized_return": 0.03151843,
+            "max_drawdown": -0.16894339,
+            "annualized_volatility": 0.10982401,
+            "sharpe": 0.337608
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 5.725888,
-            "max_drawdown": 16.692629,
-            "volatility": 9.694878,
-            "sharpe": 0.600538
+            "annualized": 2.155557,
+            "max_drawdown": 17.082251,
+            "volatility": 9.749783,
+            "sharpe": 0.267597
           },
           "metrics": {
-            "annualized_return": 0.057258880000000005,
-            "max_drawdown": -0.16692629,
-            "annualized_volatility": 0.09694878,
-            "sharpe": 0.600538
+            "annualized_return": 0.02155557,
+            "max_drawdown": -0.17082250999999998,
+            "annualized_volatility": 0.09749783000000001,
+            "sharpe": 0.267597
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 8.942189,
-            "max_drawdown": 12.161809,
-            "volatility": 10.514081,
-            "sharpe": 0.829793
+            "annualized": 5.164527,
+            "max_drawdown": 13.717106,
+            "volatility": 11.283964,
+            "sharpe": 0.502786
           },
           "metrics": {
-            "annualized_return": 0.08942189,
-            "max_drawdown": -0.12161809,
-            "annualized_volatility": 0.10514080999999999,
-            "sharpe": 0.829793
+            "annualized_return": 0.05164526999999999,
+            "max_drawdown": -0.13717105999999998,
+            "annualized_volatility": 0.11283963999999999,
+            "sharpe": 0.502786
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 178,
+      "full_average_cash_ratio": 0.49070781
     },
     {
       "title": "黄金交接保护",
@@ -102,73 +105,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 8.324898,
-            "max_drawdown": 14.370036,
-            "volatility": 9.605244,
-            "sharpe": 0.852708
+            "annualized": 4.606234,
+            "max_drawdown": 16.894339,
+            "volatility": 9.557737,
+            "sharpe": 0.519092
           },
           "metrics": {
-            "annualized_return": 0.08324897999999999,
-            "max_drawdown": -0.14370036,
-            "annualized_volatility": 0.09605244,
-            "sharpe": 0.852708
+            "annualized_return": 0.04606234,
+            "max_drawdown": -0.16894339,
+            "annualized_volatility": 0.09557737,
+            "sharpe": 0.519092
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
-          "point_count": 6413
+          "point_count": 5723
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 9.537288,
-            "max_drawdown": 12.161809,
-            "volatility": 10.907293,
-            "sharpe": 0.855242
+            "annualized": 3.132998,
+            "max_drawdown": 16.894339,
+            "volatility": 11.122979,
+            "sharpe": 0.333108
           },
           "metrics": {
-            "annualized_return": 0.09537288000000001,
-            "max_drawdown": -0.12161809,
-            "annualized_volatility": 0.10907293,
-            "sharpe": 0.855242
+            "annualized_return": 0.03132998,
+            "max_drawdown": -0.16894339,
+            "annualized_volatility": 0.11122979000000001,
+            "sharpe": 0.333108
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 6.11943,
-            "max_drawdown": 14.370036,
-            "volatility": 9.761996,
-            "sharpe": 0.633678
+            "annualized": 2.193694,
+            "max_drawdown": 16.894339,
+            "volatility": 9.845745,
+            "sharpe": 0.269745
           },
           "metrics": {
-            "annualized_return": 0.06119430000000001,
-            "max_drawdown": -0.14370036,
-            "annualized_volatility": 0.09761996,
-            "sharpe": 0.633678
+            "annualized_return": 0.02193694,
+            "max_drawdown": -0.16894339,
+            "annualized_volatility": 0.09845745,
+            "sharpe": 0.269745
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 9.088841,
-            "max_drawdown": 12.161809,
-            "volatility": 10.680432,
-            "sharpe": 0.830568
+            "annualized": 5.055331,
+            "max_drawdown": 13.717106,
+            "volatility": 11.494634,
+            "sharpe": 0.486638
           },
           "metrics": {
-            "annualized_return": 0.09088841,
-            "max_drawdown": -0.12161809,
-            "annualized_volatility": 0.10680432,
-            "sharpe": 0.830568
+            "annualized_return": 0.05055331,
+            "max_drawdown": -0.13717105999999998,
+            "annualized_volatility": 0.11494634,
+            "sharpe": 0.486638
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 184,
+      "full_average_cash_ratio": 0.48306656
     },
     {
       "title": "单向控波元策略",
@@ -176,73 +181,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 9.268688,
-            "max_drawdown": 14.181484,
-            "volatility": 9.284548,
-            "sharpe": 0.96924
+            "annualized": 5.263208,
+            "max_drawdown": 17.051621,
+            "volatility": 9.306913,
+            "sharpe": 0.597813
           },
           "metrics": {
-            "annualized_return": 0.09268687999999999,
-            "max_drawdown": -0.14181484,
-            "annualized_volatility": 0.09284548,
-            "sharpe": 0.96924
+            "annualized_return": 0.05263208,
+            "max_drawdown": -0.17051621,
+            "annualized_volatility": 0.09306913,
+            "sharpe": 0.597813
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
-          "point_count": 6413
+          "point_count": 5723
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 8.789693,
-            "max_drawdown": 9.326726,
-            "volatility": 10.089523,
-            "sharpe": 0.85101
+            "annualized": 3.459775,
+            "max_drawdown": 16.438432,
+            "volatility": 11.156424,
+            "sharpe": 0.360787
           },
           "metrics": {
-            "annualized_return": 0.08789693,
-            "max_drawdown": -0.09326726,
-            "annualized_volatility": 0.10089523,
-            "sharpe": 0.85101
+            "annualized_return": 0.034597750000000004,
+            "max_drawdown": -0.16438432,
+            "annualized_volatility": 0.11156424,
+            "sharpe": 0.360787
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 5.677503,
-            "max_drawdown": 14.181484,
-            "volatility": 9.223691,
-            "sharpe": 0.621659
+            "annualized": 2.915904,
+            "max_drawdown": 17.051621,
+            "volatility": 9.875431,
+            "sharpe": 0.34053
           },
           "metrics": {
-            "annualized_return": 0.05677503,
-            "max_drawdown": -0.14181484,
-            "annualized_volatility": 0.09223691,
-            "sharpe": 0.621659
+            "annualized_return": 0.029159039999999997,
+            "max_drawdown": -0.17051621,
+            "annualized_volatility": 0.09875431000000001,
+            "sharpe": 0.34053
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 8.891285,
-            "max_drawdown": 9.326726,
-            "volatility": 10.440632,
-            "sharpe": 0.830642
+            "annualized": 5.28882,
+            "max_drawdown": 13.717106,
+            "volatility": 10.980079,
+            "sharpe": 0.524376
           },
           "metrics": {
-            "annualized_return": 0.08891285,
-            "max_drawdown": -0.09326726,
-            "annualized_volatility": 0.10440632000000001,
-            "sharpe": 0.830642
+            "annualized_return": 0.0528882,
+            "max_drawdown": -0.13717105999999998,
+            "annualized_volatility": 0.10980079,
+            "sharpe": 0.524376
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 425,
+      "full_average_cash_ratio": 0.48367508
     },
     {
       "title": "均衡权益状态",
@@ -250,73 +257,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 9.631962,
-            "max_drawdown": 13.019532,
-            "volatility": 9.217656,
-            "sharpe": 1.010416
+            "annualized": 5.432805,
+            "max_drawdown": 19.0238,
+            "volatility": 9.229557,
+            "sharpe": 0.61952
           },
           "metrics": {
-            "annualized_return": 0.09631962,
-            "max_drawdown": -0.13019532,
-            "annualized_volatility": 0.09217656,
-            "sharpe": 1.010416
+            "annualized_return": 0.05432805,
+            "max_drawdown": -0.19023800000000002,
+            "annualized_volatility": 0.09229557,
+            "sharpe": 0.61952
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
-          "point_count": 6413
+          "point_count": 5723
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 8.965468,
-            "max_drawdown": 8.755887,
-            "volatility": 10.070179,
-            "sharpe": 0.867812
+            "annualized": 3.25824,
+            "max_drawdown": 18.687611,
+            "volatility": 10.864348,
+            "sharpe": 0.349609
           },
           "metrics": {
-            "annualized_return": 0.08965468,
-            "max_drawdown": -0.08755887,
-            "annualized_volatility": 0.10070179,
-            "sharpe": 0.867812
+            "annualized_return": 0.0325824,
+            "max_drawdown": -0.18687611,
+            "annualized_volatility": 0.10864348,
+            "sharpe": 0.349609
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 5.676557,
-            "max_drawdown": 13.019532,
-            "volatility": 9.060924,
-            "sharpe": 0.63108
+            "annualized": 2.996057,
+            "max_drawdown": 19.0238,
+            "volatility": 9.58432,
+            "sharpe": 0.35606
           },
           "metrics": {
-            "annualized_return": 0.05676557,
-            "max_drawdown": -0.13019532,
-            "annualized_volatility": 0.09060924,
-            "sharpe": 0.63108
+            "annualized_return": 0.02996057,
+            "max_drawdown": -0.19023800000000002,
+            "annualized_volatility": 0.0958432,
+            "sharpe": 0.35606
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 9.284759,
-            "max_drawdown": 8.755887,
-            "volatility": 10.284914,
-            "sharpe": 0.875096
+            "annualized": 5.42891,
+            "max_drawdown": 10.606027,
+            "volatility": 9.980531,
+            "sharpe": 0.579715
           },
           "metrics": {
-            "annualized_return": 0.09284759,
-            "max_drawdown": -0.08755887,
-            "annualized_volatility": 0.10284914,
-            "sharpe": 0.875096
+            "annualized_return": 0.0542891,
+            "max_drawdown": -0.10606027,
+            "annualized_volatility": 0.09980531,
+            "sharpe": 0.579715
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 251,
+      "full_average_cash_ratio": 0.50399623
     },
     {
       "title": "高夏普状态机",
@@ -324,73 +333,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 5.902111,
-            "max_drawdown": 9.878162,
-            "volatility": 5.478857,
-            "sharpe": 1.038987
+            "annualized": 3.539676,
+            "max_drawdown": 8.36232,
+            "volatility": 5.056476,
+            "sharpe": 0.713283
           },
           "metrics": {
-            "annualized_return": 0.059021109999999995,
-            "max_drawdown": -0.09878162,
-            "annualized_volatility": 0.054788569999999995,
-            "sharpe": 1.038987
+            "annualized_return": 0.03539676,
+            "max_drawdown": -0.08362320000000001,
+            "annualized_volatility": 0.05056476,
+            "sharpe": 0.713283
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
-          "point_count": 6413
+          "point_count": 5723
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 3.3258,
-            "max_drawdown": 3.467094,
-            "volatility": 3.71666,
-            "sharpe": 0.862397
+            "annualized": 1.501271,
+            "max_drawdown": 6.672845,
+            "volatility": 4.093967,
+            "sharpe": 0.384469
           },
           "metrics": {
-            "annualized_return": 0.033258,
-            "max_drawdown": -0.03467094,
-            "annualized_volatility": 0.0371666,
-            "sharpe": 0.862397
+            "annualized_return": 0.01501271,
+            "max_drawdown": -0.06672845,
+            "annualized_volatility": 0.040939670000000004,
+            "sharpe": 0.384469
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 2.267169,
-            "max_drawdown": 5.017096,
-            "volatility": 3.388274,
-            "sharpe": 0.652868
+            "annualized": 1.388531,
+            "max_drawdown": 6.672845,
+            "volatility": 3.629637,
+            "sharpe": 0.39809
           },
           "metrics": {
-            "annualized_return": 0.02267169,
-            "max_drawdown": -0.050170959999999994,
-            "annualized_volatility": 0.03388274,
-            "sharpe": 0.652868
+            "annualized_return": 0.01388531,
+            "max_drawdown": -0.06672845,
+            "annualized_volatility": 0.036296369999999994,
+            "sharpe": 0.39809
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 3.35716,
-            "max_drawdown": 3.467094,
-            "volatility": 3.84914,
-            "sharpe": 0.837578
+            "annualized": 2.174532,
+            "max_drawdown": 4.535551,
+            "volatility": 3.981173,
+            "sharpe": 0.560277
           },
           "metrics": {
-            "annualized_return": 0.0335716,
-            "max_drawdown": -0.03467094,
-            "annualized_volatility": 0.038491399999999995,
-            "sharpe": 0.837578
+            "annualized_return": 0.021745320000000002,
+            "max_drawdown": -0.04535551,
+            "annualized_volatility": 0.039811730000000004,
+            "sharpe": 0.560277
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 249,
+      "full_average_cash_ratio": 0.76015733
     },
     {
       "title": "收益回撤门状态机",
@@ -398,73 +409,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 8.786098,
-            "max_drawdown": 13.136835,
-            "volatility": 8.837154,
-            "sharpe": 0.965317
+            "annualized": 5.228156,
+            "max_drawdown": 18.979074,
+            "volatility": 9.212851,
+            "sharpe": 0.599382
           },
           "metrics": {
-            "annualized_return": 0.08786098,
-            "max_drawdown": -0.13136835,
-            "annualized_volatility": 0.08837154,
-            "sharpe": 0.965317
+            "annualized_return": 0.052281560000000005,
+            "max_drawdown": -0.18979074,
+            "annualized_volatility": 0.09212851000000001,
+            "sharpe": 0.599382
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
-          "point_count": 6413
+          "point_count": 5723
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 8.451898,
-            "max_drawdown": 8.755887,
-            "volatility": 9.931787,
-            "sharpe": 0.832904
+            "annualized": 3.398291,
+            "max_drawdown": 18.687984,
+            "volatility": 10.841059,
+            "sharpe": 0.362631
           },
           "metrics": {
-            "annualized_return": 0.08451898,
-            "max_drawdown": -0.08755887,
-            "annualized_volatility": 0.09931787,
-            "sharpe": 0.832904
+            "annualized_return": 0.03398291,
+            "max_drawdown": -0.18687984,
+            "annualized_volatility": 0.10841059,
+            "sharpe": 0.362631
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 5.475174,
-            "max_drawdown": 13.136835,
-            "volatility": 9.014526,
-            "sharpe": 0.613525
+            "annualized": 3.214399,
+            "max_drawdown": 18.979074,
+            "volatility": 9.600381,
+            "sharpe": 0.377686
           },
           "metrics": {
-            "annualized_return": 0.05475174,
-            "max_drawdown": -0.13136835,
-            "annualized_volatility": 0.09014526,
-            "sharpe": 0.613525
+            "annualized_return": 0.03214399,
+            "max_drawdown": -0.18979074,
+            "annualized_volatility": 0.09600381000000001,
+            "sharpe": 0.377686
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 8.98764,
-            "max_drawdown": 8.755887,
-            "volatility": 10.309286,
-            "sharpe": 0.848074
+            "annualized": 5.684373,
+            "max_drawdown": 10.864235,
+            "volatility": 9.93478,
+            "sharpe": 0.606292
           },
           "metrics": {
-            "annualized_return": 0.08987640000000001,
-            "max_drawdown": -0.08755887,
-            "annualized_volatility": 0.10309286000000001,
-            "sharpe": 0.848074
+            "annualized_return": 0.05684373,
+            "max_drawdown": -0.10864235000000001,
+            "annualized_volatility": 0.0993478,
+            "sharpe": 0.606292
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 250,
+      "full_average_cash_ratio": 0.51081119
     },
     {
       "title": "进取风险预算",
@@ -472,73 +485,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 10.548614,
-            "max_drawdown": 14.087112,
-            "volatility": 9.988337,
-            "sharpe": 1.020443
+            "annualized": 6.738557,
+            "max_drawdown": 16.163298,
+            "volatility": 9.735305,
+            "sharpe": 0.718707
           },
           "metrics": {
-            "annualized_return": 0.10548614,
-            "max_drawdown": -0.14087112,
-            "annualized_volatility": 0.09988337,
-            "sharpe": 1.020443
+            "annualized_return": 0.06738557,
+            "max_drawdown": -0.16163298,
+            "annualized_volatility": 0.09735305,
+            "sharpe": 0.718707
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
-          "point_count": 6413
+          "point_count": 5723
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 9.687265,
-            "max_drawdown": 9.177921,
-            "volatility": 10.587892,
-            "sharpe": 0.890146
+            "annualized": 2.991999,
+            "max_drawdown": 16.163298,
+            "volatility": 10.834303,
+            "sharpe": 0.326403
           },
           "metrics": {
-            "annualized_return": 0.09687265,
-            "max_drawdown": -0.09177921,
-            "annualized_volatility": 0.10587892,
-            "sharpe": 0.890146
+            "annualized_return": 0.029919989999999997,
+            "max_drawdown": -0.16163298,
+            "annualized_volatility": 0.10834303,
+            "sharpe": 0.326403
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 6.713658,
-            "max_drawdown": 12.6626,
-            "volatility": 9.62644,
-            "sharpe": 0.696964
+            "annualized": 2.806942,
+            "max_drawdown": 16.163298,
+            "volatility": 9.570965,
+            "sharpe": 0.337189
           },
           "metrics": {
-            "annualized_return": 0.06713658,
-            "max_drawdown": -0.126626,
-            "annualized_volatility": 0.0962644,
-            "sharpe": 0.696964
+            "annualized_return": 0.028069419999999998,
+            "max_drawdown": -0.16163298,
+            "annualized_volatility": 0.09570965,
+            "sharpe": 0.337189
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 8.881178,
-            "max_drawdown": 9.081478,
-            "volatility": 10.07256,
-            "sharpe": 0.856311
+            "annualized": 4.851223,
+            "max_drawdown": 12.913348,
+            "volatility": 11.090836,
+            "sharpe": 0.48267
           },
           "metrics": {
-            "annualized_return": 0.08881178,
-            "max_drawdown": -0.09081478000000001,
-            "annualized_volatility": 0.1007256,
-            "sharpe": 0.856311
+            "annualized_return": 0.04851223,
+            "max_drawdown": -0.12913348,
+            "annualized_volatility": 0.11090836,
+            "sharpe": 0.48267
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 243,
+      "full_average_cash_ratio": 0.46324267
     },
     {
       "title": "确认加速进攻袖套",
@@ -546,73 +561,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 9.492369,
-            "max_drawdown": 14.042857,
-            "volatility": 10.226192,
-            "sharpe": 0.908315
+            "annualized": 4.786126,
+            "max_drawdown": 23.938587,
+            "volatility": 10.046597,
+            "sharpe": 0.515742
           },
           "metrics": {
-            "annualized_return": 0.09492369,
-            "max_drawdown": -0.14042857,
-            "annualized_volatility": 0.10226191999999999,
-            "sharpe": 0.908315
+            "annualized_return": 0.04786126,
+            "max_drawdown": -0.23938586999999997,
+            "annualized_volatility": 0.10046597,
+            "sharpe": 0.515742
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
-          "point_count": 6413
+          "point_count": 5723
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 7.445086,
-            "max_drawdown": 14.042857,
-            "volatility": 11.785307,
-            "sharpe": 0.643115
+            "annualized": 2.81096,
+            "max_drawdown": 20.058682,
+            "volatility": 12.301064,
+            "sharpe": 0.287072
           },
           "metrics": {
-            "annualized_return": 0.07445086,
-            "max_drawdown": -0.14042857,
-            "annualized_volatility": 0.11785306999999999,
-            "sharpe": 0.643115
+            "annualized_return": 0.028109600000000002,
+            "max_drawdown": -0.20058682,
+            "annualized_volatility": 0.12301064,
+            "sharpe": 0.287072
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 4.950492,
-            "max_drawdown": 14.042857,
-            "volatility": 10.562923,
-            "sharpe": 0.49257
+            "annualized": 1.817722,
+            "max_drawdown": 20.058682,
+            "volatility": 10.883226,
+            "sharpe": 0.220096
           },
           "metrics": {
-            "annualized_return": 0.049504919999999994,
-            "max_drawdown": -0.14042857,
-            "annualized_volatility": 0.10562922999999999,
-            "sharpe": 0.49257
+            "annualized_return": 0.01817722,
+            "max_drawdown": -0.20058682,
+            "annualized_volatility": 0.10883226,
+            "sharpe": 0.220096
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 7.090812,
-            "max_drawdown": 12.429231,
-            "volatility": 10.949173,
-            "sharpe": 0.651783
+            "annualized": 4.808125,
+            "max_drawdown": 13.775088,
+            "volatility": 11.212806,
+            "sharpe": 0.47498
           },
           "metrics": {
-            "annualized_return": 0.07090811999999999,
-            "max_drawdown": -0.12429231,
-            "annualized_volatility": 0.10949173,
-            "sharpe": 0.651783
+            "annualized_return": 0.048081250000000006,
+            "max_drawdown": -0.13775088,
+            "annualized_volatility": 0.11212806,
+            "sharpe": 0.47498
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 507,
+      "full_average_cash_ratio": 0.44483196
     },
     {
       "title": "稳健锁盈防守",
@@ -620,73 +637,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 8.578248,
-            "max_drawdown": 11.671872,
-            "volatility": 8.375958,
-            "sharpe": 0.991615
+            "annualized": 4.221417,
+            "max_drawdown": 14.902566,
+            "volatility": 8.081484,
+            "sharpe": 0.552159
           },
           "metrics": {
-            "annualized_return": 0.08578248000000001,
-            "max_drawdown": -0.11671872,
-            "annualized_volatility": 0.08375958,
-            "sharpe": 0.991615
+            "annualized_return": 0.042214169999999995,
+            "max_drawdown": -0.14902566,
+            "annualized_volatility": 0.08081484,
+            "sharpe": 0.552159
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
-          "point_count": 6413
+          "point_count": 5723
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 8.767796,
-            "max_drawdown": 8.755887,
-            "volatility": 9.405773,
-            "sharpe": 0.903714
+            "annualized": 2.71452,
+            "max_drawdown": 12.890594,
+            "volatility": 9.023356,
+            "sharpe": 0.342041
           },
           "metrics": {
-            "annualized_return": 0.08767796,
-            "max_drawdown": -0.08755887,
-            "annualized_volatility": 0.09405773,
-            "sharpe": 0.903714
+            "annualized_return": 0.027145199999999998,
+            "max_drawdown": -0.12890594,
+            "annualized_volatility": 0.09023355999999999,
+            "sharpe": 0.342041
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 5.551107,
-            "max_drawdown": 11.671872,
-            "volatility": 8.439105,
-            "sharpe": 0.657591
+            "annualized": 2.162411,
+            "max_drawdown": 14.560375,
+            "volatility": 8.13849,
+            "sharpe": 0.303637
           },
           "metrics": {
-            "annualized_return": 0.05551107,
-            "max_drawdown": -0.11671872,
-            "annualized_volatility": 0.08439105,
-            "sharpe": 0.657591
+            "annualized_return": 0.021624110000000002,
+            "max_drawdown": -0.14560375,
+            "annualized_volatility": 0.0813849,
+            "sharpe": 0.303637
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 9.129539,
-            "max_drawdown": 8.755887,
-            "volatility": 9.790423,
-            "sharpe": 0.900364
+            "annualized": 4.531956,
+            "max_drawdown": 11.184618,
+            "volatility": 9.193143,
+            "sharpe": 0.528188
           },
           "metrics": {
-            "annualized_return": 0.09129538999999999,
-            "max_drawdown": -0.08755887,
-            "annualized_volatility": 0.09790423000000001,
-            "sharpe": 0.900364
+            "annualized_return": 0.04531956,
+            "max_drawdown": -0.11184618,
+            "annualized_volatility": 0.09193143,
+            "sharpe": 0.528188
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 419,
+      "full_average_cash_ratio": 0.56618399
     },
     {
       "title": "凸性极速空头组合",
@@ -694,73 +713,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 11.979116,
-            "max_drawdown": 14.514663,
-            "volatility": 10.947569,
-            "sharpe": 1.053456
+            "annualized": 9.370116,
+            "max_drawdown": 17.581748,
+            "volatility": 10.939869,
+            "sharpe": 0.873687
           },
           "metrics": {
-            "annualized_return": 0.11979116,
-            "max_drawdown": -0.14514663,
-            "annualized_volatility": 0.10947569,
-            "sharpe": 1.053456
+            "annualized_return": 0.09370115999999999,
+            "max_drawdown": -0.17581748,
+            "annualized_volatility": 0.10939868999999999,
+            "sharpe": 0.873687
           },
           "start": "2002-04-09",
           "end": "2026-08-07",
-          "point_count": 6347
+          "point_count": 5669
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 14.261778,
-            "max_drawdown": 14.514663,
-            "volatility": 12.401065,
-            "sharpe": 1.092748
+            "annualized": 8.659833,
+            "max_drawdown": 17.581748,
+            "volatility": 12.965613,
+            "sharpe": 0.705698
           },
           "metrics": {
-            "annualized_return": 0.14261778,
-            "max_drawdown": -0.14514663,
-            "annualized_volatility": 0.12401064999999999,
-            "sharpe": 1.092748
+            "annualized_return": 0.08659833,
+            "max_drawdown": -0.17581748,
+            "annualized_volatility": 0.12965612999999998,
+            "sharpe": 0.705698
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 11.472094,
-            "max_drawdown": 14.514663,
-            "volatility": 11.084875,
-            "sharpe": 0.997248
+            "annualized": 8.053159,
+            "max_drawdown": 17.581748,
+            "volatility": 11.306467,
+            "sharpe": 0.741841
           },
           "metrics": {
-            "annualized_return": 0.11472094000000001,
-            "max_drawdown": -0.14514663,
-            "annualized_volatility": 0.11084875,
-            "sharpe": 0.997248
+            "annualized_return": 0.08053159000000001,
+            "max_drawdown": -0.17581748,
+            "annualized_volatility": 0.11306466999999999,
+            "sharpe": 0.741841
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 14.197564,
-            "max_drawdown": 14.514663,
-            "volatility": 12.119016,
-            "sharpe": 1.105821
+            "annualized": 11.958035,
+            "max_drawdown": 15.685502,
+            "volatility": 13.06221,
+            "sharpe": 0.930294
           },
           "metrics": {
-            "annualized_return": 0.14197564,
-            "max_drawdown": -0.14514663,
-            "annualized_volatility": 0.12119016,
-            "sharpe": 1.105821
+            "annualized_return": 0.11958035,
+            "max_drawdown": -0.15685501999999998,
+            "annualized_volatility": 0.1306221,
+            "sharpe": 0.930294
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 385,
+      "full_average_cash_ratio": 0.22550245
     },
     {
       "title": "风险贡献再分配",
@@ -768,73 +789,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 10.674252,
-            "max_drawdown": 9.493661,
-            "volatility": 8.733015,
-            "sharpe": 1.166004
+            "annualized": 7.285123,
+            "max_drawdown": 13.848006,
+            "volatility": 8.811844,
+            "sharpe": 0.842268
           },
           "metrics": {
-            "annualized_return": 0.10674252,
-            "max_drawdown": -0.09493660999999999,
-            "annualized_volatility": 0.08733015,
-            "sharpe": 1.166004
+            "annualized_return": 0.07285122999999999,
+            "max_drawdown": -0.13848006,
+            "annualized_volatility": 0.08811844,
+            "sharpe": 0.842268
           },
-          "start": "2002-02-04",
+          "start": "2002-02-05",
           "end": "2026-08-07",
-          "point_count": 6392
+          "point_count": 5702
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 11.869665,
-            "max_drawdown": 9.493661,
-            "volatility": 9.407803,
-            "sharpe": 1.190058
+            "annualized": 6.511325,
+            "max_drawdown": 13.848006,
+            "volatility": 9.98434,
+            "sharpe": 0.681928
           },
           "metrics": {
-            "annualized_return": 0.11869665,
-            "max_drawdown": -0.09493660999999999,
-            "annualized_volatility": 0.09407802999999999,
-            "sharpe": 1.190058
+            "annualized_return": 0.06511325,
+            "max_drawdown": -0.13848006,
+            "annualized_volatility": 0.0998434,
+            "sharpe": 0.681928
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 9.375341,
-            "max_drawdown": 9.493661,
-            "volatility": 8.35739,
-            "sharpe": 1.072512
+            "annualized": 6.079464,
+            "max_drawdown": 13.848006,
+            "volatility": 8.694538,
+            "sharpe": 0.722452
           },
           "metrics": {
-            "annualized_return": 0.09375341000000001,
-            "max_drawdown": -0.09493660999999999,
-            "annualized_volatility": 0.0835739,
-            "sharpe": 1.072512
+            "annualized_return": 0.06079464,
+            "max_drawdown": -0.13848006,
+            "annualized_volatility": 0.08694538,
+            "sharpe": 0.722452
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 12.358472,
-            "max_drawdown": 8.971878,
-            "volatility": 9.23877,
-            "sharpe": 1.24953
+            "annualized": 9.314299,
+            "max_drawdown": 10.111874,
+            "volatility": 10.046858,
+            "sharpe": 0.93684
           },
           "metrics": {
-            "annualized_return": 0.12358472000000001,
-            "max_drawdown": -0.08971878,
-            "annualized_volatility": 0.0923877,
-            "sharpe": 1.24953
+            "annualized_return": 0.09314299,
+            "max_drawdown": -0.10111874,
+            "annualized_volatility": 0.10046858,
+            "sharpe": 0.93684
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 357,
+      "full_average_cash_ratio": 0.4050849
     },
     {
       "title": "动态袖套夏普策略",
@@ -842,73 +865,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 9.001186,
-            "max_drawdown": 12.095121,
-            "volatility": 9.347122,
-            "sharpe": 0.938007
+            "annualized": 4.139779,
+            "max_drawdown": 24.89263,
+            "volatility": 9.380484,
+            "sharpe": 0.479487
           },
           "metrics": {
-            "annualized_return": 0.09001186,
-            "max_drawdown": -0.12095121,
-            "annualized_volatility": 0.09347122000000001,
-            "sharpe": 0.938007
+            "annualized_return": 0.04139779,
+            "max_drawdown": -0.24892630000000002,
+            "annualized_volatility": 0.09380483999999999,
+            "sharpe": 0.479487
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
-          "point_count": 6413
+          "point_count": 5723
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 7.225374,
-            "max_drawdown": 10.33269,
-            "volatility": 10.634745,
-            "sharpe": 0.682084
+            "annualized": 2.658979,
+            "max_drawdown": 19.898616,
+            "volatility": 11.420011,
+            "sharpe": 0.287097
           },
           "metrics": {
-            "annualized_return": 0.07225374000000001,
-            "max_drawdown": -0.1033269,
-            "annualized_volatility": 0.10634745000000001,
-            "sharpe": 0.682084
+            "annualized_return": 0.02658979,
+            "max_drawdown": -0.19898616,
+            "annualized_volatility": 0.11420011000000001,
+            "sharpe": 0.287097
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 4.768023,
-            "max_drawdown": 12.095121,
-            "volatility": 9.505821,
-            "sharpe": 0.51856
+            "annualized": 1.641757,
+            "max_drawdown": 19.898616,
+            "volatility": 10.024735,
+            "sharpe": 0.21272
           },
           "metrics": {
-            "annualized_return": 0.047680230000000004,
-            "max_drawdown": -0.12095121,
-            "annualized_volatility": 0.09505820999999999,
-            "sharpe": 0.51856
+            "annualized_return": 0.01641757,
+            "max_drawdown": -0.19898616,
+            "annualized_volatility": 0.10024735,
+            "sharpe": 0.21272
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 6.946179,
-            "max_drawdown": 10.020371,
-            "volatility": 10.215012,
-            "sharpe": 0.678347
+            "annualized": 5.046636,
+            "max_drawdown": 11.822164,
+            "volatility": 10.068335,
+            "sharpe": 0.539444
           },
           "metrics": {
-            "annualized_return": 0.06946179,
-            "max_drawdown": -0.10020371,
-            "annualized_volatility": 0.10215012,
-            "sharpe": 0.678347
+            "annualized_return": 0.05046636,
+            "max_drawdown": -0.11822164,
+            "annualized_volatility": 0.10068334999999999,
+            "sharpe": 0.539444
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 505,
+      "full_average_cash_ratio": 0.51679652
     },
     {
       "title": "月度热度上限元",
@@ -916,73 +941,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 7.679899,
-            "max_drawdown": 16.800822,
-            "volatility": 9.89788,
-            "sharpe": 0.772056
+            "annualized": 3.966562,
+            "max_drawdown": 25.655164,
+            "volatility": 9.716683,
+            "sharpe": 0.449038
           },
           "metrics": {
-            "annualized_return": 0.07679899,
-            "max_drawdown": -0.16800822,
-            "annualized_volatility": 0.0989788,
-            "sharpe": 0.772056
+            "annualized_return": 0.03966562,
+            "max_drawdown": -0.25655163999999997,
+            "annualized_volatility": 0.09716683,
+            "sharpe": 0.449038
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
-          "point_count": 6413
+          "point_count": 5723
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 9.567878,
-            "max_drawdown": 11.718055,
-            "volatility": 11.088414,
-            "sharpe": 0.845472
+            "annualized": 1.783783,
+            "max_drawdown": 22.353617,
+            "volatility": 11.201829,
+            "sharpe": 0.213966
           },
           "metrics": {
-            "annualized_return": 0.09567878,
-            "max_drawdown": -0.11718055,
-            "annualized_volatility": 0.11088414,
-            "sharpe": 0.845472
+            "annualized_return": 0.01783783,
+            "max_drawdown": -0.22353617,
+            "annualized_volatility": 0.11201829,
+            "sharpe": 0.213966
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 5.902373,
-            "max_drawdown": 16.800822,
-            "volatility": 10.087356,
-            "sharpe": 0.596928
+            "annualized": 1.28771,
+            "max_drawdown": 23.154065,
+            "volatility": 9.907257,
+            "sharpe": 0.178786
           },
           "metrics": {
-            "annualized_return": 0.059023729999999996,
-            "max_drawdown": -0.16800822,
-            "annualized_volatility": 0.10087356,
-            "sharpe": 0.596928
+            "annualized_return": 0.012877099999999999,
+            "max_drawdown": -0.23154065,
+            "annualized_volatility": 0.09907257,
+            "sharpe": 0.178786
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 8.780654,
-            "max_drawdown": 11.718055,
-            "volatility": 10.809058,
-            "sharpe": 0.796978
+            "annualized": 4.422199,
+            "max_drawdown": 14.95081,
+            "volatility": 11.577676,
+            "sharpe": 0.431745
           },
           "metrics": {
-            "annualized_return": 0.08780654,
-            "max_drawdown": -0.11718055,
-            "annualized_volatility": 0.10809058,
-            "sharpe": 0.796978
+            "annualized_return": 0.04422199,
+            "max_drawdown": -0.1495081,
+            "annualized_volatility": 0.11577676,
+            "sharpe": 0.431745
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 315,
+      "full_average_cash_ratio": 0.47861448
     },
     {
       "title": "增强热度上限元",
@@ -990,73 +1017,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 8.291761,
-            "max_drawdown": 16.876914,
-            "volatility": 9.8524,
-            "sharpe": 0.830754
+            "annualized": 4.872103,
+            "max_drawdown": 17.864829,
+            "volatility": 9.635251,
+            "sharpe": 0.542037
           },
           "metrics": {
-            "annualized_return": 0.08291760999999999,
-            "max_drawdown": -0.16876913999999998,
-            "annualized_volatility": 0.098524,
-            "sharpe": 0.830754
+            "annualized_return": 0.04872103,
+            "max_drawdown": -0.17864829000000002,
+            "annualized_volatility": 0.09635251,
+            "sharpe": 0.542037
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
-          "point_count": 6413
+          "point_count": 5723
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 9.467514,
-            "max_drawdown": 12.675181,
-            "volatility": 10.972728,
-            "sharpe": 0.845215
+            "annualized": 3.340858,
+            "max_drawdown": 17.30708,
+            "volatility": 11.174155,
+            "sharpe": 0.350108
           },
           "metrics": {
-            "annualized_return": 0.09467513999999999,
-            "max_drawdown": -0.12675181,
-            "annualized_volatility": 0.10972728,
-            "sharpe": 0.845215
+            "annualized_return": 0.03340858,
+            "max_drawdown": -0.1730708,
+            "annualized_volatility": 0.11174155000000001,
+            "sharpe": 0.350108
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 5.709537,
-            "max_drawdown": 16.876914,
-            "volatility": 9.939929,
-            "sharpe": 0.586667
+            "annualized": 2.188201,
+            "max_drawdown": 17.30708,
+            "volatility": 9.910296,
+            "sharpe": 0.268084
           },
           "metrics": {
-            "annualized_return": 0.05709537,
-            "max_drawdown": -0.16876913999999998,
-            "annualized_volatility": 0.09939928999999999,
-            "sharpe": 0.586667
+            "annualized_return": 0.021882009999999997,
+            "max_drawdown": -0.1730708,
+            "annualized_volatility": 0.09910296,
+            "sharpe": 0.268084
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 8.936897,
-            "max_drawdown": 12.665348,
-            "volatility": 10.812765,
-            "sharpe": 0.809404
+            "annualized": 5.432717,
+            "max_drawdown": 13.38299,
+            "volatility": 11.52309,
+            "sharpe": 0.516836
           },
           "metrics": {
-            "annualized_return": 0.08936897,
-            "max_drawdown": -0.12665347999999998,
-            "annualized_volatility": 0.10812765,
-            "sharpe": 0.809404
+            "annualized_return": 0.05432717,
+            "max_drawdown": -0.1338299,
+            "annualized_volatility": 0.1152309,
+            "sharpe": 0.516836
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 244,
+      "full_average_cash_ratio": 0.47506391
     },
     {
       "title": "双趋势金纳杠铃",
@@ -1064,73 +1093,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 10.200518,
-            "max_drawdown": 16.92552,
-            "volatility": 11.295427,
-            "sharpe": 0.904296
+            "annualized": 9.26484,
+            "max_drawdown": 17.344026,
+            "volatility": 11.378581,
+            "sharpe": 0.835849
           },
           "metrics": {
-            "annualized_return": 0.10200518,
-            "max_drawdown": -0.1692552,
-            "annualized_volatility": 0.11295427,
-            "sharpe": 0.904296
+            "annualized_return": 0.09264839999999999,
+            "max_drawdown": -0.17344025999999998,
+            "annualized_volatility": 0.11378581,
+            "sharpe": 0.835849
           },
-          "start": "2002-09-06",
+          "start": "2002-09-18",
           "end": "2026-08-07",
-          "point_count": 6116
+          "point_count": 5946
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 15.67793,
-            "max_drawdown": 16.92552,
-            "volatility": 13.448979,
-            "sharpe": 1.114026
+            "annualized": 11.982321,
+            "max_drawdown": 17.235265,
+            "volatility": 13.609266,
+            "sharpe": 0.9
           },
           "metrics": {
-            "annualized_return": 0.1567793,
-            "max_drawdown": -0.1692552,
-            "annualized_volatility": 0.13448979,
-            "sharpe": 1.114026
+            "annualized_return": 0.11982321000000001,
+            "max_drawdown": -0.17235265,
+            "annualized_volatility": 0.13609266,
+            "sharpe": 0.9
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1721
+          "point_count": 1645
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 13.940438,
-            "max_drawdown": 16.92552,
-            "volatility": 11.867218,
-            "sharpe": 1.122645
+            "annualized": 11.178042,
+            "max_drawdown": 17.235265,
+            "volatility": 11.972032,
+            "sharpe": 0.945293
           },
           "metrics": {
-            "annualized_return": 0.13940438,
-            "max_drawdown": -0.1692552,
-            "annualized_volatility": 0.11867217999999999,
-            "sharpe": 1.122645
+            "annualized_return": 0.11178041999999999,
+            "max_drawdown": -0.17235265,
+            "annualized_volatility": 0.11972032,
+            "sharpe": 0.945293
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2607
+          "point_count": 2492
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 17.279836,
-            "max_drawdown": 16.14558,
-            "volatility": 12.7013,
-            "sharpe": 1.270918
+            "annualized": 15.562646,
+            "max_drawdown": 17.170281,
+            "volatility": 13.519499,
+            "sharpe": 1.137805
           },
           "metrics": {
-            "annualized_return": 0.17279835999999998,
-            "max_drawdown": -0.16145579999999998,
-            "annualized_volatility": 0.127013,
-            "sharpe": 1.270918
+            "annualized_return": 0.15562646000000002,
+            "max_drawdown": -0.17170280999999998,
+            "annualized_volatility": 0.13519499,
+            "sharpe": 1.137805
           },
           "start": "2022-01-03",
           "end": "2026-08-07",
-          "point_count": 1204
+          "point_count": 1143
         }
-      }
+      },
+      "full_trade_count": 78,
+      "full_average_cash_ratio": 0.2050028
     },
     {
       "title": "MA20趋势",
@@ -1138,16 +1169,16 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": -20.091431,
-            "max_drawdown": 99.601345,
-            "volatility": 12.610019,
-            "sharpe": -1.65471
+            "annualized": -20.086948,
+            "max_drawdown": 99.600798,
+            "volatility": 12.830179,
+            "sharpe": -1.682457
           },
           "metrics": {
-            "annualized_return": -0.20091431,
-            "max_drawdown": -0.99601345,
-            "annualized_volatility": 0.12610019,
-            "sharpe": -1.65471
+            "annualized_return": -0.20086948,
+            "max_drawdown": -0.99600798,
+            "annualized_volatility": 0.12830179,
+            "sharpe": -1.682457
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
@@ -1155,16 +1186,16 @@
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": -28.474323,
-            "max_drawdown": 89.251332,
-            "volatility": 11.82356,
-            "sharpe": -2.65569
+            "annualized": -28.477116,
+            "max_drawdown": 89.254121,
+            "volatility": 12.080092,
+            "sharpe": -2.712087
           },
           "metrics": {
-            "annualized_return": -0.28474322999999996,
-            "max_drawdown": -0.89251332,
-            "annualized_volatility": 0.11823560000000001,
-            "sharpe": -2.65569
+            "annualized_return": -0.28477115999999997,
+            "max_drawdown": -0.89254121,
+            "annualized_volatility": 0.12080092,
+            "sharpe": -2.712087
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
@@ -1172,16 +1203,16 @@
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": -25.558081,
-            "max_drawdown": 94.9325,
-            "volatility": 11.501097,
-            "sharpe": -2.407377
+            "annualized": -25.557139,
+            "max_drawdown": 94.931881,
+            "volatility": 11.7346,
+            "sharpe": -2.454911
           },
           "metrics": {
-            "annualized_return": -0.25558081,
-            "max_drawdown": -0.9493250000000001,
-            "annualized_volatility": 0.11501096999999999,
-            "sharpe": -2.407377
+            "annualized_return": -0.25557139,
+            "max_drawdown": -0.9493188100000001,
+            "annualized_volatility": 0.117346,
+            "sharpe": -2.454911
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
@@ -1189,22 +1220,24 @@
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": -24.843427,
-            "max_drawdown": 73.29117,
-            "volatility": 10.678214,
-            "sharpe": -2.496498
+            "annualized": -24.845392,
+            "max_drawdown": 73.294916,
+            "volatility": 10.936918,
+            "sharpe": -2.555566
           },
           "metrics": {
-            "annualized_return": -0.24843426999999998,
-            "max_drawdown": -0.7329116999999999,
-            "annualized_volatility": 0.10678214000000001,
-            "sharpe": -2.496498
+            "annualized_return": -0.24845392,
+            "max_drawdown": -0.73294916,
+            "annualized_volatility": 0.10936918000000001,
+            "sharpe": -2.555566
           },
           "start": "2022-01-03",
           "end": "2026-08-07",
           "point_count": 1214
         }
-      }
+      },
+      "full_trade_count": 2874,
+      "full_average_cash_ratio": 0.41759099
     },
     {
       "title": "MA60趋势",
@@ -1212,16 +1245,16 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": -6.753834,
-            "max_drawdown": 87.045636,
-            "volatility": 11.683301,
-            "sharpe": -0.519667
+            "annualized": -6.747789,
+            "max_drawdown": 87.033003,
+            "volatility": 11.887875,
+            "sharpe": -0.527924
           },
           "metrics": {
-            "annualized_return": -0.06753834,
-            "max_drawdown": -0.87045636,
-            "annualized_volatility": 0.11683301,
-            "sharpe": -0.519667
+            "annualized_return": -0.06747789,
+            "max_drawdown": -0.87033003,
+            "annualized_volatility": 0.11887874999999999,
+            "sharpe": -0.527924
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
@@ -1229,16 +1262,16 @@
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": -10.127138,
-            "max_drawdown": 51.15906,
-            "volatility": 11.085088,
-            "sharpe": -0.86768
+            "annualized": -10.123081,
+            "max_drawdown": 51.144337,
+            "volatility": 11.325949,
+            "sharpe": -0.885551
           },
           "metrics": {
-            "annualized_return": -0.10127138000000001,
-            "max_drawdown": -0.5115906,
-            "annualized_volatility": 0.11085088000000001,
-            "sharpe": -0.86768
+            "annualized_return": -0.10123081,
+            "max_drawdown": -0.51144337,
+            "annualized_volatility": 0.11325948999999999,
+            "sharpe": -0.885551
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
@@ -1246,16 +1279,16 @@
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": -9.42332,
-            "max_drawdown": 64.379904,
-            "volatility": 10.702347,
-            "sharpe": -0.835103
+            "annualized": -9.419564,
+            "max_drawdown": 64.369934,
+            "volatility": 10.920247,
+            "sharpe": -0.851179
           },
           "metrics": {
-            "annualized_return": -0.0942332,
-            "max_drawdown": -0.64379904,
-            "annualized_volatility": 0.10702347,
-            "sharpe": -0.835103
+            "annualized_return": -0.09419564,
+            "max_drawdown": -0.64369934,
+            "annualized_volatility": 0.10920247,
+            "sharpe": -0.851179
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
@@ -1263,22 +1296,24 @@
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": -6.314167,
-            "max_drawdown": 26.008707,
-            "volatility": 10.150088,
-            "sharpe": -0.562298
+            "annualized": -6.309307,
+            "max_drawdown": 25.990632,
+            "volatility": 10.396007,
+            "sharpe": -0.575024
           },
           "metrics": {
-            "annualized_return": -0.06314167,
-            "max_drawdown": -0.26008707000000003,
-            "annualized_volatility": 0.10150088,
-            "sharpe": -0.562298
+            "annualized_return": -0.06309307,
+            "max_drawdown": -0.25990632,
+            "annualized_volatility": 0.10396007000000002,
+            "sharpe": -0.575024
           },
           "start": "2022-01-03",
           "end": "2026-08-07",
           "point_count": 1214
         }
-      }
+      },
+      "full_trade_count": 1551,
+      "full_average_cash_ratio": 0.38859925
     },
     {
       "title": "MA金叉死叉",
@@ -1286,16 +1321,16 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 1.293281,
-            "max_drawdown": 40.770832,
-            "volatility": 9.957849,
-            "sharpe": 0.174685
+            "annualized": 1.294562,
+            "max_drawdown": 40.779324,
+            "volatility": 10.132254,
+            "sharpe": 0.177805
           },
           "metrics": {
-            "annualized_return": 0.01293281,
-            "max_drawdown": -0.40770832,
-            "annualized_volatility": 0.09957848999999999,
-            "sharpe": 0.174685
+            "annualized_return": 0.01294562,
+            "max_drawdown": -0.40779324,
+            "annualized_volatility": 0.10132254,
+            "sharpe": 0.177805
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
@@ -1303,16 +1338,16 @@
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 0.118841,
-            "max_drawdown": 29.41444,
-            "volatility": 9.094565,
-            "sharpe": 0.058088
+            "annualized": 0.113459,
+            "max_drawdown": 29.410743,
+            "volatility": 9.28814,
+            "sharpe": 0.058749
           },
           "metrics": {
-            "annualized_return": 0.00118841,
-            "max_drawdown": -0.2941444,
-            "annualized_volatility": 0.09094564999999999,
-            "sharpe": 0.058088
+            "annualized_return": 0.00113459,
+            "max_drawdown": -0.29410743,
+            "annualized_volatility": 0.0928814,
+            "sharpe": 0.058749
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
@@ -1320,16 +1355,16 @@
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 1.649055,
-            "max_drawdown": 29.41444,
-            "volatility": 8.421483,
-            "sharpe": 0.228843
+            "annualized": 1.645115,
+            "max_drawdown": 29.410743,
+            "volatility": 8.590337,
+            "sharpe": 0.232981
           },
           "metrics": {
-            "annualized_return": 0.01649055,
-            "max_drawdown": -0.2941444,
-            "annualized_volatility": 0.08421483,
-            "sharpe": 0.228843
+            "annualized_return": 0.01645115,
+            "max_drawdown": -0.29410743,
+            "annualized_volatility": 0.08590336999999999,
+            "sharpe": 0.232981
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
@@ -1337,22 +1372,24 @@
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 0.67138,
-            "max_drawdown": 18.133317,
-            "volatility": 8.336789,
-            "sharpe": 0.11832
+            "annualized": 0.664566,
+            "max_drawdown": 18.122327,
+            "volatility": 8.533312,
+            "sharpe": 0.120366
           },
           "metrics": {
-            "annualized_return": 0.0067138,
-            "max_drawdown": -0.18133317000000002,
-            "annualized_volatility": 0.08336789,
-            "sharpe": 0.11832
+            "annualized_return": 0.00664566,
+            "max_drawdown": -0.18122327,
+            "annualized_volatility": 0.08533312,
+            "sharpe": 0.120366
           },
           "start": "2022-01-03",
           "end": "2026-08-07",
           "point_count": 1214
         }
-      }
+      },
+      "full_trade_count": 437,
+      "full_average_cash_ratio": 0.39591292
     },
     {
       "title": "BOLL下轨反弹",
@@ -1360,16 +1397,16 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": -5.198452,
-            "max_drawdown": 74.240207,
-            "volatility": 7.743597,
-            "sharpe": -0.627443
+            "annualized": -5.198089,
+            "max_drawdown": 74.237413,
+            "volatility": 7.876547,
+            "sharpe": -0.63828
           },
           "metrics": {
-            "annualized_return": -0.05198452,
-            "max_drawdown": -0.74240207,
-            "annualized_volatility": 0.07743597,
-            "sharpe": -0.627443
+            "annualized_return": -0.05198089,
+            "max_drawdown": -0.7423741300000001,
+            "annualized_volatility": 0.07876547,
+            "sharpe": -0.63828
           },
           "start": "2002-01-04",
           "end": "2026-08-07",
@@ -1377,16 +1414,16 @@
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": -3.920541,
-            "max_drawdown": 26.992237,
-            "volatility": 9.216685,
-            "sharpe": -0.369876
+            "annualized": -3.922524,
+            "max_drawdown": 27.002248,
+            "volatility": 9.412493,
+            "sharpe": -0.378093
           },
           "metrics": {
-            "annualized_return": -0.03920541,
-            "max_drawdown": -0.26992236999999997,
-            "annualized_volatility": 0.09216685,
-            "sharpe": -0.369876
+            "annualized_return": -0.03922524,
+            "max_drawdown": -0.27002248,
+            "annualized_volatility": 0.09412493,
+            "sharpe": -0.378093
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
@@ -1394,16 +1431,16 @@
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": -3.808298,
-            "max_drawdown": 34.876789,
-            "volatility": 8.135168,
-            "sharpe": -0.418031
+            "annualized": -3.810308,
+            "max_drawdown": 34.888181,
+            "volatility": 8.297051,
+            "sharpe": -0.426742
           },
           "metrics": {
-            "annualized_return": -0.03808298,
-            "max_drawdown": -0.34876789,
-            "annualized_volatility": 0.08135168,
-            "sharpe": -0.418031
+            "annualized_return": -0.03810308,
+            "max_drawdown": -0.34888181,
+            "annualized_volatility": 0.08297051,
+            "sharpe": -0.426742
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
@@ -1411,22 +1448,24 @@
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": -3.15631,
-            "max_drawdown": 16.837268,
-            "volatility": 7.791819,
-            "sharpe": -0.353825
+            "annualized": -3.161018,
+            "max_drawdown": 16.854124,
+            "volatility": 7.977145,
+            "sharpe": -0.362943
           },
           "metrics": {
-            "annualized_return": -0.0315631,
-            "max_drawdown": -0.16837268000000002,
-            "annualized_volatility": 0.07791819,
-            "sharpe": -0.353825
+            "annualized_return": -0.03161018,
+            "max_drawdown": -0.16854123999999998,
+            "annualized_volatility": 0.07977145000000001,
+            "sharpe": -0.362943
           },
           "start": "2022-01-03",
           "end": "2026-08-07",
           "point_count": 1214
         }
-      }
+      },
+      "full_trade_count": 856,
+      "full_average_cash_ratio": 0.78200772
     },
     {
       "title": "双引擎制度路由",
@@ -1434,73 +1473,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 11.623308,
-            "max_drawdown": 9.493661,
-            "volatility": 9.353942,
-            "sharpe": 1.182842
+            "annualized": 7.464488,
+            "max_drawdown": 15.266654,
+            "volatility": 9.203448,
+            "sharpe": 0.828441
           },
           "metrics": {
-            "annualized_return": 0.11623308,
-            "max_drawdown": -0.09493660999999999,
-            "annualized_volatility": 0.09353942,
-            "sharpe": 1.182842
+            "annualized_return": 0.07464488,
+            "max_drawdown": -0.15266654000000002,
+            "annualized_volatility": 0.09203448,
+            "sharpe": 0.828441
           },
-          "start": "2002-02-04",
+          "start": "2002-02-05",
           "end": "2026-08-07",
-          "point_count": 6392
+          "point_count": 5702
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 13.613062,
-            "max_drawdown": 9.493661,
-            "volatility": 10.495904,
-            "sharpe": 1.218299
+            "annualized": 6.290831,
+            "max_drawdown": 15.266654,
+            "volatility": 10.254958,
+            "sharpe": 0.646426
           },
           "metrics": {
-            "annualized_return": 0.13613061999999998,
-            "max_drawdown": -0.09493660999999999,
-            "annualized_volatility": 0.10495903999999999,
-            "sharpe": 1.218299
+            "annualized_return": 0.06290831,
+            "max_drawdown": -0.15266654000000002,
+            "annualized_volatility": 0.10254958,
+            "sharpe": 0.646426
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 10.497058,
-            "max_drawdown": 9.493661,
-            "volatility": 9.175624,
-            "sharpe": 1.091607
+            "annualized": 5.952798,
+            "max_drawdown": 15.266654,
+            "volatility": 8.921792,
+            "sharpe": 0.692926
           },
           "metrics": {
-            "annualized_return": 0.10497058000000001,
-            "max_drawdown": -0.09493660999999999,
-            "annualized_volatility": 0.09175623999999999,
-            "sharpe": 1.091607
+            "annualized_return": 0.059527979999999994,
+            "max_drawdown": -0.15266654000000002,
+            "annualized_volatility": 0.08921792,
+            "sharpe": 0.692926
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 14.561706,
-            "max_drawdown": 8.693508,
-            "volatility": 10.494276,
-            "sharpe": 1.28844
+            "annualized": 9.25298,
+            "max_drawdown": 10.528042,
+            "volatility": 10.199011,
+            "sharpe": 0.918886
           },
           "metrics": {
-            "annualized_return": 0.14561706,
-            "max_drawdown": -0.08693508,
-            "annualized_volatility": 0.10494276,
-            "sharpe": 1.28844
+            "annualized_return": 0.09252980000000001,
+            "max_drawdown": -0.10528041999999999,
+            "annualized_volatility": 0.10199011000000001,
+            "sharpe": 0.918886
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 381,
+      "full_average_cash_ratio": 0.39126443
     },
     {
       "title": "双引擎水下恢复",
@@ -1508,73 +1549,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 12.149043,
-            "max_drawdown": 9.424616,
-            "volatility": 9.653212,
-            "sharpe": 1.196173
+            "annualized": 7.500082,
+            "max_drawdown": 16.480536,
+            "volatility": 9.416053,
+            "sharpe": 0.815367
           },
           "metrics": {
-            "annualized_return": 0.12149043000000001,
-            "max_drawdown": -0.09424616000000001,
-            "annualized_volatility": 0.09653212,
-            "sharpe": 1.196173
+            "annualized_return": 0.07500082,
+            "max_drawdown": -0.16480536,
+            "annualized_volatility": 0.09416052999999999,
+            "sharpe": 0.815367
           },
-          "start": "2002-02-04",
+          "start": "2002-02-05",
           "end": "2026-08-07",
-          "point_count": 6392
+          "point_count": 5702
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 14.321561,
-            "max_drawdown": 9.258747,
-            "volatility": 10.997795,
-            "sharpe": 1.221819
+            "annualized": 5.959678,
+            "max_drawdown": 16.480536,
+            "volatility": 10.513476,
+            "sharpe": 0.603434
           },
           "metrics": {
-            "annualized_return": 0.14321561000000002,
-            "max_drawdown": -0.09258746999999999,
-            "annualized_volatility": 0.10997795,
-            "sharpe": 1.221819
+            "annualized_return": 0.05959678,
+            "max_drawdown": -0.16480536,
+            "annualized_volatility": 0.10513476000000001,
+            "sharpe": 0.603434
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 11.052777,
-            "max_drawdown": 9.258747,
-            "volatility": 9.591783,
-            "sharpe": 1.098608
+            "annualized": 5.809823,
+            "max_drawdown": 16.480536,
+            "volatility": 9.154106,
+            "sharpe": 0.662908
           },
           "metrics": {
-            "annualized_return": 0.11052777000000001,
-            "max_drawdown": -0.09258746999999999,
-            "annualized_volatility": 0.09591783,
-            "sharpe": 1.098608
+            "annualized_return": 0.05809823,
+            "max_drawdown": -0.16480536,
+            "annualized_volatility": 0.09154106000000001,
+            "sharpe": 0.662908
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 15.217134,
-            "max_drawdown": 9.013271,
-            "volatility": 11.130861,
-            "sharpe": 1.269855
+            "annualized": 9.135451,
+            "max_drawdown": 11.247072,
+            "volatility": 10.357913,
+            "sharpe": 0.895974
           },
           "metrics": {
-            "annualized_return": 0.15217134,
-            "max_drawdown": -0.09013270999999999,
-            "annualized_volatility": 0.11130860999999999,
-            "sharpe": 1.269855
+            "annualized_return": 0.09135451,
+            "max_drawdown": -0.11247072,
+            "annualized_volatility": 0.10357913,
+            "sharpe": 0.895974
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 462,
+      "full_average_cash_ratio": 0.37426385
     },
     {
       "title": "无融资置信度恢复",
@@ -1582,73 +1625,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 11.139791,
-            "max_drawdown": 7.236032,
-            "volatility": 7.061485,
-            "sharpe": 1.48073
+            "annualized": 4.451253,
+            "max_drawdown": 15.846808,
+            "volatility": 7.345286,
+            "sharpe": 0.629773
           },
           "metrics": {
-            "annualized_return": 0.11139791,
-            "max_drawdown": -0.07236031999999999,
-            "annualized_volatility": 0.07061485,
-            "sharpe": 1.48073
+            "annualized_return": 0.04451253,
+            "max_drawdown": -0.15846807999999998,
+            "annualized_volatility": 0.07345286,
+            "sharpe": 0.629773
           },
-          "start": "2002-02-04",
+          "start": "2002-02-05",
           "end": "2026-08-07",
-          "point_count": 6392
+          "point_count": 5702
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 12.267898,
-            "max_drawdown": 6.600919,
-            "volatility": 7.92247,
-            "sharpe": 1.439929
+            "annualized": 3.188448,
+            "max_drawdown": 15.846808,
+            "volatility": 8.067747,
+            "sharpe": 0.429577
           },
           "metrics": {
-            "annualized_return": 0.12267898,
-            "max_drawdown": -0.06600919,
-            "annualized_volatility": 0.0792247,
-            "sharpe": 1.439929
+            "annualized_return": 0.03188448,
+            "max_drawdown": -0.15846807999999998,
+            "annualized_volatility": 0.08067747,
+            "sharpe": 0.429577
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 9.351276,
-            "max_drawdown": 6.600919,
-            "volatility": 6.826538,
-            "sharpe": 1.29288
+            "annualized": 2.92799,
+            "max_drawdown": 15.846808,
+            "volatility": 6.929273,
+            "sharpe": 0.451294
           },
           "metrics": {
-            "annualized_return": 0.09351276,
-            "max_drawdown": -0.06600919,
-            "annualized_volatility": 0.06826538,
-            "sharpe": 1.29288
+            "annualized_return": 0.029279899999999998,
+            "max_drawdown": -0.15846807999999998,
+            "annualized_volatility": 0.06929273,
+            "sharpe": 0.451294
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 14.942133,
-            "max_drawdown": 6.600919,
-            "volatility": 8.660405,
-            "sharpe": 1.577471
+            "annualized": 5.478231,
+            "max_drawdown": 9.732359,
+            "volatility": 7.107129,
+            "sharpe": 0.786045
           },
           "metrics": {
-            "annualized_return": 0.14942133,
-            "max_drawdown": -0.06600919,
-            "annualized_volatility": 0.08660405,
-            "sharpe": 1.577471
+            "annualized_return": 0.05478231,
+            "max_drawdown": -0.09732359,
+            "annualized_volatility": 0.07107129,
+            "sharpe": 0.786045
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 486,
+      "full_average_cash_ratio": 0.58406774
     },
     {
       "title": "无杠杆低噪增强",
@@ -1656,73 +1701,75 @@
       "metrics_by_slice": {
         "full": {
           "metrics_percent": {
-            "annualized": 14.437635,
-            "max_drawdown": 7.931053,
-            "volatility": 8.906796,
-            "sharpe": 1.507868
+            "annualized": 5.855682,
+            "max_drawdown": 17.767393,
+            "volatility": 9.332405,
+            "sharpe": 0.656641
           },
           "metrics": {
-            "annualized_return": 0.14437635,
-            "max_drawdown": -0.07931053,
-            "annualized_volatility": 0.08906796,
-            "sharpe": 1.507868
+            "annualized_return": 0.058556819999999996,
+            "max_drawdown": -0.17767392999999998,
+            "annualized_volatility": 0.09332404999999999,
+            "sharpe": 0.656641
           },
-          "start": "2002-02-04",
+          "start": "2002-02-05",
           "end": "2026-08-07",
-          "point_count": 6392
+          "point_count": 5702
         },
         "since2020": {
           "metrics_percent": {
-            "annualized": 16.833214,
-            "max_drawdown": 7.584862,
-            "volatility": 9.890422,
-            "sharpe": 1.557638
+            "annualized": 3.76036,
+            "max_drawdown": 17.767393,
+            "volatility": 10.540089,
+            "sharpe": 0.403196
           },
           "metrics": {
-            "annualized_return": 0.16833214,
-            "max_drawdown": -0.07584862,
-            "annualized_volatility": 0.09890422,
-            "sharpe": 1.557638
+            "annualized_return": 0.0376036,
+            "max_drawdown": -0.17767392999999998,
+            "annualized_volatility": 0.10540089,
+            "sharpe": 0.403196
           },
           "start": "2020-01-02",
           "end": "2026-08-07",
-          "point_count": 1735
+          "point_count": 1537
         },
         "last10y": {
           "metrics_percent": {
-            "annualized": 13.422125,
-            "max_drawdown": 7.584862,
-            "volatility": 8.791812,
-            "sharpe": 1.421068
+            "annualized": 3.731524,
+            "max_drawdown": 17.767393,
+            "volatility": 9.315567,
+            "sharpe": 0.44008
           },
           "metrics": {
-            "annualized_return": 0.13422125,
-            "max_drawdown": -0.07584862,
-            "annualized_volatility": 0.08791812,
-            "sharpe": 1.421068
+            "annualized_return": 0.03731524,
+            "max_drawdown": -0.17767392999999998,
+            "annualized_volatility": 0.09315567,
+            "sharpe": 0.44008
           },
           "start": "2016-08-08",
           "end": "2026-08-07",
-          "point_count": 2622
+          "point_count": 2334
         },
         "since2022": {
           "metrics_percent": {
-            "annualized": 20.349081,
-            "max_drawdown": 6.831549,
-            "volatility": 10.553379,
-            "sharpe": 1.727497
+            "annualized": 5.849655,
+            "max_drawdown": 12.346148,
+            "volatility": 9.687194,
+            "sharpe": 0.635442
           },
           "metrics": {
-            "annualized_return": 0.20349081,
-            "max_drawdown": -0.06831549,
-            "annualized_volatility": 0.10553379,
-            "sharpe": 1.727497
+            "annualized_return": 0.05849655,
+            "max_drawdown": -0.12346148,
+            "annualized_volatility": 0.09687194,
+            "sharpe": 0.635442
           },
-          "start": "2022-01-03",
+          "start": "2022-01-04",
           "end": "2026-08-07",
-          "point_count": 1214
+          "point_count": 1067
         }
-      }
+      },
+      "full_trade_count": 457,
+      "full_average_cash_ratio": 0.44777088
     }
   ],
   "history_fixture": "tools/fixtures/backtest-history/public_history.json",

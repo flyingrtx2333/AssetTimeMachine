@@ -1,7 +1,15 @@
 import Foundation
 
 nonisolated enum BacktestFXConverter {
-    static let maximumForwardFillCalendarDays = 30
+    static let maximumForwardFillCalendarDays = 4
+
+    static func hasSameSessionFXObservation(
+        on date: Date,
+        fxLookup: BacktestHistoricalLookup?
+    ) -> Bool {
+        guard let fxDate = fxLookup?.point(onOrBefore: date)?.date else { return false }
+        return BacktestSeriesAlignment.historicalSeriesCalendar.isDate(fxDate, inSameDayAs: date)
+    }
 
     static func usdCashHistorySeries(from fxSeries: PublicHistorySeries?, label: String) -> PublicHistorySeries? {
         guard let fxSeries else { return nil }

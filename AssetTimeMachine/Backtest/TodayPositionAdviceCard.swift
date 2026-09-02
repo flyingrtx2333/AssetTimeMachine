@@ -81,14 +81,16 @@ struct TodayPositionAdviceCard: View {
     }
 
     private var relevantHistoryToken: String {
-        marketStore.historyRelevanceToken(for: relevantHistorySymbols)
+        marketStore.strategyInputRelevanceToken(for: relevantHistorySymbols)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             header
 
-            if adviceStore.isRefreshing && adviceStore.statusMessage == nil {
+            if adviceStore.isRefreshing,
+               adviceStore.statusMessage == nil,
+               adviceStore.advice == nil {
                 loadingState
             }
 

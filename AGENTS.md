@@ -401,18 +401,18 @@ Current App defaults are initial cash 100,000 CNY, fee 1.00%, and slippage 0.05%
 
 The product Sharpe ratio must remain calculated and visible. The current implementation uses daily returns with a zero risk-free-rate assumption.
 
-Current product results from the pinned fixture, run on 2026-07-13 with data through 2026-07-03:
+Current product results from the clock-v3 pinned fixture, refreshed on 2026-08-31 with data through 2026-08-07:
 
 | Product strategy | Type | Full annualized | Full max drawdown | Last 10Y annualized | Last 10Y max drawdown | Full Sharpe |
 |---|---|---:|---:|---:|---:|---:|
-| 进取风险预算 | selected | 10.50% | 14.09% | 6.62% | 12.63% | 1.02 |
-| 均衡权益状态 | selected / default | 9.60% | 13.02% | 5.67% | 13.02% | 1.01 |
-| 稳健锁盈防守 | selected | 8.55% | 11.67% | 5.56% | 11.67% | 0.99 |
-| 凸性极速空头组合 | experimental | 11.73% | 13.47% | 11.23% | 13.47% | 1.04 |
-| 风险贡献再分配 | experimental | 10.59% | 9.49% | 9.15% | 9.49% | 1.16 |
-| 双趋势金纳杠铃 | independent | 10.15% | 16.98% | 13.56% | 16.98% | 0.89 |
+| 双趋势金纳杠铃 | selected / recommended | 9.26% | 17.34% | 11.18% | 17.24% | 0.83 |
+| 进取风险预算 | selected | 6.74% | 16.16% | 2.81% | 16.16% | 0.72 |
+| 均衡权益状态 | selected / default | 5.43% | 19.02% | 3.00% | 19.02% | 0.62 |
+| 无杠杆低噪增强 | selected | 5.86% | 17.77% | 3.73% | 17.77% | 0.66 |
+| 稳健锁盈防守 | selected | 4.22% | 14.90% | 2.16% | 14.56% | 0.55 |
+| NFCI 双核心·简化 | selected / forward-validation | replay separately | replay separately | replay separately | replay separately | replay separately |
 
-The first three visible strategies share the gold/equity meta-strategy trunk and represent aggressive, balanced, and defensive risk tiers. `双趋势金纳杠铃` remains an independent signal family. The two experimental entries serve different goals. `凸性极速空头组合` blends the high-Sharpe, risk-budget, and dual-trend target weights, adds a 3% strict T−1 modeled equity-short crisis sleeve, caps gross exposure at 110%, and charges 5% annual financing on negative cash. The short sleeve is a synthetic inverse-payoff model, not a directly investable product. `风险贡献再分配` replaces the weaker consensus-scaling version. It first blends 40% High-Sharpe State Engine, 25% Aggressive Risk Budget, and 35% Dual-Trend Gold–Nasdaq targets and applies the same 1.00×/1.20×/1.40× exposure-consensus scaling. Every 42 sessions it estimates up to 126 sessions of covariance; when one asset exceeds 65% of portfolio risk contribution, 60% of target weights are reallocated toward lower-volatility and less positively correlated assets. It applies two strict T−1 protections. First, when existing US-equity exposure is at least 10%, a proposed one-step increase is greater than 10% and no more than 20%, and both Nasdaq and S&P 500 five-session momentum are non-positive, only 60% of the incremental exposure is executed. Second, when China-equity targets fall by at least 15%, US-equity targets rise by 5%–10%, and either Nasdaq or S&P 500 five-session momentum has not turned positive, only 50% of the incremental US exposure is executed to avoid immediately transferring regional exit risk into US equities. Normal reductions, ordinary increases, and large regime resets are unchanged. On the current pinned fixture these protections affect a small number of rebalances in 2010, 2012, and 2015, while the last-10-year, 2020+, and 2022+ metrics remain unchanged. Gross exposure is capped at 110%, negative cash is financed at 5% annually, and trades require more than 8% target-weight change. Neither strategy satisfies the requested 8% drawdown threshold, and neither may replace the default `均衡权益状态` without an explicit product decision. All metrics use the required 1% fee and 0.05% slippage assumptions; Sharpe remains calculated and visible.
+Clock-v3 removes optimistic execution semantics from the former baseline: target providers cannot observe execution-day portfolio moves, forward-filled prices remain valid only for valuation, closed-market targets wait for a real observation, and cross-venue sell/buy rotations settle sales before funding purchases. Cash accrual uses calendar time and return metrics annualize from the observed frequency. Consequently, pre-clock-v3 strategy claims are stale and must not appear in product copy or release notes. `双趋势金纳杠铃` is the recommended product strategy because it is the strongest validated gold/Nasdaq-focused candidate under the corrected engine; it does not satisfy a sub-10% drawdown target, so the App must continue to present drawdown and Sharpe without implying low risk. `均衡权益状态` remains the migration-safe default. `无杠杆低噪增强` remains selectable but is no longer recommended. NFCI prospective strategies require their own frozen prospective-validation evidence and must not borrow metrics from this baseline.
 
 The backend fixture supplies price-change series; the engine does not inject equity dividend reinvestment. A future total-return-index migration requires a new baseline and must not be compared directly with these values.
 
@@ -541,7 +541,9 @@ Pull requests should describe the user-facing change, list verification commands
 
 ## Current Known Operational Notes
 
-- Latest TestFlight release: version `1.13` build `198`, Delivery UUID `ed7fc6be-eb2b-4a3b-96de-57975a0b95d8`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.13-198`.
+- Latest TestFlight release: version `1.14` build `200`, Delivery UUID `4d659e37-4f51-438c-8d2a-07022bce64a9`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.14-200`.
+- Build 200 adds the compact unified monthly-expense estimator in Settings, with monthly/annual filtering, inline entry, annual-to-monthly conversion, swipe deletion, local persistence, and Dashboard monthly-expense synchronization. It also packages the current app/widget appearance refinements and three-locale copy.
+- Previous TestFlight release: version `1.13` build `198`, Delivery UUID `ed7fc6be-eb2b-4a3b-96de-57975a0b95d8`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.13-198`.
 - Build 198 adds ratio/amount switching to Quant rebalance advice, makes record quick editors auto-focus without a redundant keyboard gap, compacts direct-amount editing, adds the Dashboard financial-freedom progress sweep, and makes manual market refreshes request fresh overview, FX, and history data.
 - Previous TestFlight release: version `1.13` build `197`, Delivery UUID `f833711f-a997-4ef9-9f36-3dac85acfb94`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.13-197`.
 - Build 197 expands the basic strategy selection, removes repeated curated badges from picker rows, and smooths Today Strategy staged progress.

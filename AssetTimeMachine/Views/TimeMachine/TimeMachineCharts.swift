@@ -1191,13 +1191,12 @@ struct TimeMachineHeroTrendCard: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 11)
         .frame(width: AppLocalization.currentLanguage == .english ? 198 : 174)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .background(AssetTheme.surface.opacity(0.76), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(AssetTheme.surfaceRaised.opacity(0.98), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(AssetTheme.border.opacity(0.9), lineWidth: 0.8)
         )
-        .shadow(color: Color.black.opacity(0.24), radius: 12, y: 5)
+        .shadow(color: AssetTheme.cardShadow, radius: 10, y: 4)
     }
 
     private var seriesToggleRow: some View {

@@ -180,14 +180,53 @@ nonisolated enum MarketHistorySeriesMerger {
     }
 
     static func merge(existing: PublicHistorySeries, incoming: PublicHistorySeries) -> PublicHistorySeries {
-        var points: [String: Point] = [:]
-        add(series: existing, to: &points, preservingMissingFields: false)
+        var existingPoints: [String: Point] = [:]
+        add(series: existing, to: &existingPoints, preservingMissingFields: false)
+        var points = existingPoints
         add(series: incoming, to: &points, preservingMissingFields: true)
 
-        let dates = points.keys.sorted()
-        guard !dates.isEmpty else { return incoming }
-
-        let mergedPoints = dates.compactMap { points[$0] }
+        let maximumMove: Double? = {
+            let category = incoming.category.lowercased()
+            if category == "index" { return 0.30 }
+            if category == "fx" || incoming.symbol.lowercased().contains("_per_") { return 0.20 }
+            if category == "gold" || incoming.symbol.lowercased() == "gold_cny" { return 0.20 }
+            return nil
+        }()
+        var dates: [String] = []
+        var mergedPoints: [Point] = []
+        var previousAcceptedPrice: Double?
+        for date in points.keys.sorted() {
+            guard var point = points[date], point.price.isFinite, point.price > 0 else { continue }
+            if let previousAcceptedPrice, let maximumMove,
+               abs(point.price / previousAcceptedPrice - 1) > maximumMove {
+                guard let fallback = existingPoints[date],
+                      fallback.price.isFinite,
+                      fallback.price > 0,
+                      abs(fallback.price / previousAcceptedPrice - 1) <= maximumMove else {
+                    continue
+                }
+                point = fallback
+            }
+            if let open = point.open,
+               let high = point.high,
+               let low = point.low,
+               let close = point.close {
+                let validGeometry = min(open, high, low, close) > 0
+                    && high >= max(open, close, low)
+                    && low <= min(open, close, high)
+                let matchesPrimary = abs(close - point.price) / point.price <= 0.001
+                if !validGeometry || !matchesPrimary {
+                    point.open = nil
+                    point.high = nil
+                    point.low = nil
+                    point.close = nil
+                    point.volume = nil
+                }
+            }
+            dates.append(date)
+            mergedPoints.append(point)
+            previousAcceptedPrice = point.price
+        }
         let hasAnyOHLC = mergedPoints.contains {
             $0.open != nil || $0.high != nil || $0.low != nil || $0.close != nil
         }
@@ -225,9 +264,13 @@ nonisolated enum MarketHistorySeriesMerger {
     ) {
         for index in series.dates.indices where series.prices.indices.contains(index) {
             let date = series.dates[index]
+            let price = series.prices[index]
+            guard BacktestSeriesAlignment.historicalSeriesDate(from: date) != nil,
+                  price.isFinite,
+                  price > 0 else { continue }
             let previous = preservingMissingFields ? points[date] : nil
             points[date] = Point(
-                price: series.prices[index],
+                price: price,
                 open: optionalValue(series.openPrices, at: index) ?? previous?.open,
                 high: optionalValue(series.highPrices, at: index) ?? previous?.high,
                 low: optionalValue(series.lowPrices, at: index) ?? previous?.low,

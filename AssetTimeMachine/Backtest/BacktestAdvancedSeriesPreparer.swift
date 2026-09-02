@@ -3,13 +3,20 @@ import Foundation
 nonisolated struct PreparedAdvancedSeries {
     let assetOption: BacktestAssetOption
     let pricePoints: [(date: Date, cnyPrice: Double)]
+    let executionObservationDates: Set<Date>
     let ohlcPoints: [(date: Date, open: Double, high: Double, low: Double, close: Double)]
+    let hypotheticalDecisionDate: Date?
     let ma20: [Double?]
     let ma60: [Double?]
     let boll20: [(middle: Double, lower: Double, upper: Double)?]
 }
 
 nonisolated enum BacktestAdvancedSeriesPreparer {
+    /// OHLC features and the primary close series must describe the same bar.
+    /// A small tolerance permits provider rounding without allowing a revised or
+    /// differently oriented close series to drive the risk overlay.
+    private static let maximumOHLCPrimaryCloseRelativeDifference = 0.001
+
     static func preparedAdvancedSeries(
         assetSeries: PublicHistorySeries?,
         assetOption: BacktestAssetOption,
@@ -33,6 +40,12 @@ nonisolated enum BacktestAdvancedSeriesPreparer {
             return (date: point.date, cnyPrice: cnyPrice)
         }
         guard pricePoints.count >= 2 else { return nil }
+        let executionObservationDates = Set(pricePoints.compactMap { point -> Date? in
+            guard assetOption.requiresHistoricalFX else { return point.date }
+            return BacktestFXConverter.hasSameSessionFXObservation(on: point.date, fxLookup: fxLookup)
+                ? point.date
+                : nil
+        })
 
         let ohlcPoints: [(date: Date, open: Double, high: Double, low: Double, close: Double)]
         if let openPrices = assetSeries.openPrices,
@@ -46,6 +59,9 @@ nonisolated enum BacktestAdvancedSeriesPreparer {
             var rowsByDate: [Date: (open: Double, high: Double, low: Double, close: Double)] = [:]
             for index in assetSeries.dates.indices {
                 guard let date = BacktestSeriesAlignment.historicalSeriesDate(from: assetSeries.dates[index]),
+                      index < assetSeries.prices.count,
+                      assetSeries.prices[index].isFinite,
+                      assetSeries.prices[index] > 0,
                       let open = openPrices[index],
                       let high = highPrices[index],
                       let low = lowPrices[index],
@@ -55,7 +71,10 @@ nonisolated enum BacktestAdvancedSeriesPreparer {
                       low.isFinite,
                       close.isFinite,
                       min(open, high, low, close) > 0,
-                      low <= high,
+                      high >= max(open, close, low),
+                      low <= min(open, close, high),
+                      abs(close - assetSeries.prices[index]) / assetSeries.prices[index]
+                        <= maximumOHLCPrimaryCloseRelativeDifference,
                       let cnyMultiplier = BacktestFXConverter.cnyMultiplier(
                         on: date,
                         assetOption: assetOption,
@@ -81,7 +100,11 @@ nonisolated enum BacktestAdvancedSeriesPreparer {
         return PreparedAdvancedSeries(
             assetOption: assetOption,
             pricePoints: pricePoints,
+            executionObservationDates: executionObservationDates,
             ohlcPoints: ohlcPoints,
+            hypotheticalDecisionDate: assetSeries.source.contains(BacktestSeriesAlignment.hypotheticalDecisionSourceMarker)
+                ? pricePoints.last?.date
+                : nil,
             ma20: movingAverage(prices, 20),
             ma60: movingAverage(prices, 60),
             boll20: bollingerBands(prices, 20, 2)

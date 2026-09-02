@@ -16,6 +16,7 @@ import datetime as dt
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -26,6 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_FIXTURE = ROOT / "tools/fixtures/backtest-history/public_history.json"
 DEFAULT_BASELINE = ROOT / "tools/expected_backtest_metrics/app/app_engine_strategy_baseline.json"
 DEFAULT_BINARY = Path("/private/tmp/strategy_metric_dump")
+ENGINE_SOURCE = ROOT / "AssetTimeMachine/Backtest/BacktestEngine.swift"
 ENDPOINT = "https://api.flyingrtx.com/api/v1/money/public/history"
 SYMBOLS = [
     "gold_cny",
@@ -123,8 +125,19 @@ def collect_slice_rows(binary: Path, fixture: Path, timeout: int) -> list[dict[s
     return list(csv.DictReader(lines[1:]))
 
 
+def current_engine_version() -> str:
+    match = re.search(
+        r'static let defaultEngineVersion\s*=\s*"([^"]+)"',
+        ENGINE_SOURCE.read_text(),
+    )
+    if match is None:
+        raise RuntimeError("Could not read BacktestEngine.defaultEngineVersion")
+    return match.group(1)
+
+
 def update_baseline(path: Path, fixture_document: dict, rows: list[dict[str, str]]) -> dict:
     document = json.loads(path.read_text())
+    document["engine_version"] = current_engine_version()
     actual = {(row["id"], row["slice"]): row for row in rows}
     expected = {
         (strategy["id"], slice_name)
@@ -136,6 +149,9 @@ def update_baseline(path: Path, fixture_document: dict, rows: list[dict[str, str
         raise RuntimeError(f"Metric dump is missing baseline rows: {sorted(missing)}")
 
     for strategy in document["strategies"]:
+        full_row = actual[(strategy["id"], "full")]
+        strategy["full_trade_count"] = int(full_row["trades"])
+        strategy["full_average_cash_ratio"] = float(full_row["average_cash_ratio"])
         for slice_name, target in strategy["metrics_by_slice"].items():
             row = actual[(strategy["id"], slice_name)]
             annualized = float(row["annualized"])

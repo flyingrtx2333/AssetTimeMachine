@@ -288,7 +288,7 @@ public struct PublicForwardStrategySnapshot: Codable, Equatable, Sendable {
     public let frozenAt: String
     public let decisionAt: Date
     public let signalDate: String
-    public let executionDateHint: String
+    public let executionDateHint: String?
     public let dataCutoff: String
     public let datasetHash: String
     public let engineVersion: String
@@ -435,10 +435,13 @@ private struct ForwardMacroResponsePayload: Decodable {
 }
 
 public enum PublicBacktestCore {
+    public static let maximumFreshMarketDataAgeDays = 10
+    public static let maximumFreshMacroDataAgeDays = 21
+    public static let defaultEngineVersion = BacktestEngine.defaultEngineVersion
     public static let engineVersion: String = {
         let configured = ProcessInfo.processInfo.environment["BACKTEST_ENGINE_VERSION"]?
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        return configured?.isEmpty == false ? configured! : "atm-swift-dev"
+        return configured?.isEmpty == false ? configured! : defaultEngineVersion
     }()
     public static let fixedCosts = PublicBacktestFixedCosts()
     public static let minimumInitialCash = 10_000.0
@@ -576,20 +579,44 @@ public enum PublicBacktestCore {
             throw PublicBacktestCoreError.invalidDataset("upstream response is unsuccessful")
         }
 
+        let requiredSymbols = Set(["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite", "usd_per_cny"])
         var normalizedSeries: [String: PublicHistorySeries] = [:]
+        var invalidRequiredSymbols = Set<String>()
         for series in response.series {
-            try validate(series: series)
             let symbol = normalizedHistorySymbol(series.symbol)
-            if let existing = normalizedSeries[symbol], existing.dates.count >= series.dates.count {
+            do {
+                try validate(series: series)
+            } catch {
+                if requiredSymbols.contains(symbol) {
+                    invalidRequiredSymbols.insert(symbol)
+                }
+                // Optional research dependencies fail closed instead of poisoning
+                // the complete public dataset with corrupt prices. Required aliases
+                // also continue so a later valid alias can recover the symbol.
                 continue
+            }
+            invalidRequiredSymbols.remove(symbol)
+            if let existing = normalizedSeries[symbol] {
+                let existingCutoff = existing.dates.last.flatMap {
+                    BacktestSeriesAlignment.historicalSeriesDate(from: $0)
+                }
+                let candidateCutoff = series.dates.last.flatMap {
+                    BacktestSeriesAlignment.historicalSeriesDate(from: $0)
+                }
+                if let existingCutoff, let candidateCutoff,
+                   existingCutoff > candidateCutoff
+                    || (existingCutoff == candidateCutoff && existing.dates.count >= series.dates.count) {
+                    continue
+                }
             }
             normalizedSeries[symbol] = series
         }
 
-        let requiredSymbols = Set(["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite", "usd_per_cny"])
         let missing = requiredSymbols.subtracting(normalizedSeries.keys)
         guard missing.isEmpty else {
-            throw PublicBacktestCoreError.invalidDataset("missing required symbols: \(missing.sorted().joined(separator: ","))")
+            let invalid = missing.intersection(invalidRequiredSymbols)
+            let detail = invalid.isEmpty ? missing : invalid
+            throw PublicBacktestCoreError.invalidDataset("missing or invalid required symbols: \(detail.sorted().joined(separator: ","))")
         }
 
         guard let fx = normalizedSeries["usd_per_cny"],
@@ -603,15 +630,31 @@ public enum PublicBacktestCore {
         }
         let cutoff = dateString(bounds.upperBound)
         let sources = Array(Set(requiredSeries.map(\.source).filter { !$0.isEmpty })).sorted()
+        let cutoffIsFresh = isMarketDataFresh(cutoff: cutoff, asOf: loadedAt)
         return PublicBacktestDataset(
             datasetHash: datasetHash,
             dataCutoff: cutoff,
             loadedAt: loadedAt,
-            dataStale: dataStale,
+            dataStale: dataStale || !cutoffIsFresh,
             dataSources: sources,
             response: response,
             seriesBySymbol: normalizedSeries
         )
+    }
+
+    public static func isMarketDataFresh(cutoff: String, asOf: Date = Date()) -> Bool {
+        guard let cutoffDate = BacktestSeriesAlignment.historicalSeriesDate(from: cutoff) else { return false }
+        let startOfCutoff = calendar.startOfDay(for: cutoffDate)
+        let startOfAsOf = calendar.startOfDay(for: asOf)
+        let age = calendar.dateComponents([.day], from: startOfCutoff, to: startOfAsOf).day ?? Int.max
+        return age >= 0 && age <= maximumFreshMarketDataAgeDays
+    }
+
+    public static func isMacroDataFresh(availableAt: Date, asOf: Date = Date()) -> Bool {
+        let startOfAvailability = calendar.startOfDay(for: availableAt)
+        let startOfAsOf = calendar.startOfDay(for: asOf)
+        let age = calendar.dateComponents([.day], from: startOfAvailability, to: startOfAsOf).day ?? Int.max
+        return age >= 0 && age <= maximumFreshMacroDataAgeDays
     }
 
     public static func prewarm(dataset: PublicBacktestDataset) throws -> [String: PublicBacktestResult] {
@@ -764,7 +807,17 @@ public enum PublicBacktestCore {
         guard let commonCutoffDate = parseDate(dataset.dataCutoff) else {
             throw PublicBacktestCoreError.invalidDataset("forward strategy has an invalid common data cutoff")
         }
-        let syntheticExecutionDate = nextWeekday(after: commonCutoffDate)
+        // The common cutoff can include a US close stamped with the prior US
+        // calendar date. In China time that bar is not final until the following
+        // morning, so a date-only midnight boundary would still allow lookahead.
+        let nextChinaDay = calendar.date(byAdding: .day, value: 1, to: commonCutoffDate)
+            ?? commonCutoffDate.addingTimeInterval(24 * 60 * 60)
+        let marketAvailableAt = calendar.date(byAdding: .hour, value: 8, to: nextChinaDay)
+            ?? nextChinaDay.addingTimeInterval(8 * 60 * 60)
+        guard decisionAt >= marketAvailableAt else {
+            throw PublicBacktestCoreError.invalidDataset("decision time predates the market data cutoff availability")
+        }
+        let syntheticExecutionDate = BacktestSeriesAlignment.nextStrategyWeekday(after: commonCutoffDate)
         let syntheticExecutionDateText = dateString(syntheticExecutionDate)
 
         var extendedSeriesBySymbol = dataset.seriesBySymbol
@@ -782,9 +835,10 @@ public enum PublicBacktestCore {
                 throw PublicBacktestCoreError.invalidDataset("forward strategy has no \(normalized) data by common cutoff")
             }
             causalSeriesBySymbol[normalized] = commonCutoffSeries
-            extendedSeriesBySymbol[normalized] = appendingSyntheticSession(
+            extendedSeriesBySymbol[normalized] = BacktestSeriesAlignment.appendingFlatDecisionSession(
                 to: commonCutoffSeries,
-                dateText: syntheticExecutionDateText
+                cutoff: commonCutoffDate,
+                decisionDate: syntheticExecutionDate
             )
         }
 
@@ -809,13 +863,13 @@ public enum PublicBacktestCore {
             mode: descriptor.mode,
             nfciAsOf: nfci
         ), let latestState = run.dailyStates.last,
-           latestState.date.recordDateString == syntheticExecutionDateText,
+           latestState.date.backtestDateString == syntheticExecutionDateText,
            run.dailyStates.count >= 2 else {
             throw PublicBacktestCoreError.computationFailed
         }
 
         let signalState = run.dailyStates[run.dailyStates.count - 2]
-        let signalDate = signalState.date.recordDateString
+        let signalDate = signalState.date.backtestDateString
         let symbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
         var desiredWeights: [String: Double] = [:]
         for symbol in symbols {
@@ -838,9 +892,10 @@ public enum PublicBacktestCore {
         let modelGross = executedWeights.values.reduce(0, +)
         let modelCash = max(latestState.cash / latestState.portfolioValue, 0)
         let desiredCash = max(1 - desiredGross, 0)
-        let rebalanceRecommended = run.report.trades.contains {
-            $0.date.recordDateString == syntheticExecutionDateText
-        }
+        let targetDistance = symbols.reduce(0.0) {
+            $0 + abs((desiredWeights[$1] ?? 0) - (executedWeights[$1] ?? 0))
+        } + abs(desiredCash - modelCash)
+        let rebalanceRecommended = targetDistance > 0.01
 
         return PublicForwardStrategySnapshot(
             strategyID: descriptor.id,
@@ -849,7 +904,10 @@ public enum PublicBacktestCore {
             frozenAt: descriptor.frozenAt,
             decisionAt: decisionAt,
             signalDate: signalDate,
-            executionDateHint: syntheticExecutionDateText,
+            // Without an exchange-calendar service there is no honest common
+            // executable date for US and China venues. Clients should schedule
+            // against their own venue calendars.
+            executionDateHint: nil,
             dataCutoff: dataset.dataCutoff,
             datasetHash: dataset.datasetHash,
             engineVersion: engineVersion,
@@ -1206,6 +1264,14 @@ public enum PublicBacktestCore {
             throw PublicBacktestCoreError.invalidDataset("\(series.symbol) has an invalid or short price series")
         }
         var previousDate: Date?
+        var previousPrice: Double?
+        let normalizedCategory = series.category.lowercased()
+        let maximumSingleSessionMove: Double? = {
+            if normalizedCategory == "index" { return 0.45 }
+            if normalizedCategory == "fx" || series.symbol.lowercased().contains("_per_") { return 0.25 }
+            if normalizedCategory == "gold" || series.symbol.lowercased() == "gold_cny" { return 0.20 }
+            return nil
+        }()
         for index in series.dates.indices {
             let price = series.prices[index]
             guard price.isFinite, price > 0,
@@ -1215,7 +1281,13 @@ public enum PublicBacktestCore {
             if let previousDate, date <= previousDate {
                 throw PublicBacktestCoreError.invalidDataset("\(series.symbol) dates are not strictly increasing")
             }
+            if let previousPrice,
+               let maximumSingleSessionMove,
+               abs(price / previousPrice - 1) > maximumSingleSessionMove {
+                throw PublicBacktestCoreError.invalidDataset("\(series.symbol) contains an implausible single-session move")
+            }
             previousDate = date
+            previousPrice = price
         }
 
         if series.hasOHLC == true {
@@ -1340,6 +1412,14 @@ public enum PublicBacktestCore {
         guard result.isReadyForC3L3 else {
             throw PublicBacktestCoreError.invalidMacroData("not enough first-seen NFCI points are available at decision time")
         }
+        for requiredSeries in [credit, leverage] {
+            guard let latestAvailableAt = requiredSeries.compactMap(\.availableAt).max() else {
+                throw PublicBacktestCoreError.invalidMacroData("NFCI data has no availability timestamp")
+            }
+            guard isMacroDataFresh(availableAt: latestAvailableAt, asOf: decisionAt) else {
+                throw PublicBacktestCoreError.invalidMacroData("latest NFCI release is stale at decision time")
+            }
+        }
         return result
     }
 
@@ -1347,24 +1427,29 @@ public enum PublicBacktestCore {
         _ nfci: BacktestNFCIAsOfData,
         signalDate: String
     ) -> PublicForwardNFCIState {
-        func latest(_ points: [BacktestNFCIPoint]) -> (Int, BacktestNFCIPoint)? {
-            var match: (Int, BacktestNFCIPoint)?
-            for (index, point) in points.enumerated() {
-                guard point.releaseDate <= signalDate else { break }
-                match = (index, point)
+        let signalAvailableAtCutoff = parseDate(signalDate).flatMap {
+            calendar.date(byAdding: .day, value: 1, to: $0)
+        }
+        func causalPoints(_ points: [BacktestNFCIPoint]) -> [BacktestNFCIPoint] {
+            points.filter { point in
+                guard point.releaseDate <= signalDate else { return false }
+                guard let availableAt = point.availableAt,
+                      let signalAvailableAtCutoff else { return true }
+                return availableAt < signalAvailableAtCutoff
             }
-            return match
         }
         func change(_ points: [BacktestNFCIPoint], latestIndex: Int?, lookback: Int) -> Double? {
             guard let latestIndex, latestIndex >= lookback else { return nil }
             return points[latestIndex].value - points[latestIndex - lookback].value
         }
 
-        let creditLatest = latest(nfci.credit)
-        let leverageLatest = latest(nfci.leverage)
-        let creditChange = change(nfci.credit, latestIndex: creditLatest?.0, lookback: 8)
-        let leverageChange = change(nfci.leverage, latestIndex: leverageLatest?.0, lookback: 4)
-        let latestAvailableAt = (nfci.credit + nfci.leverage)
+        let causalCredit = causalPoints(nfci.credit)
+        let causalLeverage = causalPoints(nfci.leverage)
+        let creditLatest = causalCredit.indices.last.map { ($0, causalCredit[$0]) }
+        let leverageLatest = causalLeverage.indices.last.map { ($0, causalLeverage[$0]) }
+        let creditChange = change(causalCredit, latestIndex: creditLatest?.0, lookback: 8)
+        let leverageChange = change(causalLeverage, latestIndex: leverageLatest?.0, lookback: 4)
+        let latestAvailableAt = (causalCredit + causalLeverage)
             .compactMap(\.availableAt)
             .max()
         return PublicForwardNFCIState(

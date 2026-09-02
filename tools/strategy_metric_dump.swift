@@ -56,19 +56,22 @@ final class AssetItem {
     var category: AssetCategory?
     var resolvedAutoPricedAssetKind: AutoPricedAssetKind?
     var marketAssetSymbol: String?
+    var quantStrategyProxySymbol: String?
 
     init(
         name: String = "",
         note: String = "",
         category: AssetCategory? = nil,
         resolvedAutoPricedAssetKind: AutoPricedAssetKind? = nil,
-        marketAssetSymbol: String? = nil
+        marketAssetSymbol: String? = nil,
+        quantStrategyProxySymbol: String? = nil
     ) {
         self.name = name
         self.note = note
         self.category = category
         self.resolvedAutoPricedAssetKind = resolvedAutoPricedAssetKind
         self.marketAssetSymbol = marketAssetSymbol
+        self.quantStrategyProxySymbol = quantStrategyProxySymbol
     }
 }
 
@@ -311,6 +314,34 @@ struct StrategyMetricDump {
         let start: String
         let end: String
         let pointCount: Int
+        let tradeCount: Int?
+        let averageCashRatio: Double?
+
+        init(
+            title: String,
+            id: String,
+            annualized: Double?,
+            maxDrawdown: Double?,
+            volatility: Double?,
+            sharpe: Double?,
+            start: String,
+            end: String,
+            pointCount: Int,
+            tradeCount: Int? = nil,
+            averageCashRatio: Double? = nil
+        ) {
+            self.title = title
+            self.id = id
+            self.annualized = annualized
+            self.maxDrawdown = maxDrawdown
+            self.volatility = volatility
+            self.sharpe = sharpe
+            self.start = start
+            self.end = end
+            self.pointCount = pointCount
+            self.tradeCount = tradeCount
+            self.averageCashRatio = averageCashRatio
+        }
     }
 
     struct SliceMetricRow {
@@ -607,15 +638,23 @@ struct StrategyMetricDump {
         let daySpan = max(Calendar.current.dateComponents([.day], from: first.date, to: last.date).day ?? 0, 1)
         let years = Double(daySpan) / 365.25
         let annualizedReturn = years > 0 ? pow(normalizedValue, 1 / years) - 1 : nil
+        let observedPeriodsPerYear = years > 0 && !returns.isEmpty
+            ? Double(returns.count) / years
+            : 0
         let mean = returns.isEmpty ? nil : returns.reduce(0, +) / Double(returns.count)
         let variance = returns.count > 1 && mean != nil
             ? returns.reduce(0) { $0 + pow($1 - mean!, 2) } / Double(returns.count - 1)
             : nil
         let dailyVolatility = variance.map { sqrt($0) }
-        let annualizedVolatility = dailyVolatility.map { $0 * sqrt(252) }
+        let annualizedVolatility = dailyVolatility.flatMap {
+            observedPeriodsPerYear > 0 ? $0 * sqrt(observedPeriodsPerYear) : nil
+        }
         let sharpeRatio: Double?
-        if let mean, let dailyVolatility, dailyVolatility > 0 {
-            sharpeRatio = (mean * 252) / (dailyVolatility * sqrt(252))
+        if let mean,
+           let dailyVolatility,
+           dailyVolatility > 0,
+           observedPeriodsPerYear > 0 {
+            sharpeRatio = mean / dailyVolatility * sqrt(observedPeriodsPerYear)
         } else {
             sharpeRatio = nil
         }
@@ -855,7 +894,7 @@ struct StrategyMetricDump {
         context: StrategyTargetContext,
         lookback: Int
     ) -> Double {
-        let values = context.points.suffix(max(lookback, 1)).map(\.portfolioValue) + [context.preRebalanceValue]
+        let values = context.points.suffix(max(lookback, 1)).map(\.portfolioValue) + [context.signalPortfolioValue]
         guard let current = values.last,
               let peak = values.max(),
               peak > 0 else { return 0 }
@@ -1204,9 +1243,9 @@ struct StrategyMetricDump {
                 "sp500": min(baseEquityWeight * 0.30, variant.perAssetCap * 0.50),
             ].filter { $0.value > 0 }
 
-            let recentValues = context.points.suffix(252).map(\.portfolioValue) + [context.preRebalanceValue]
-            let recentPeak = recentValues.max() ?? context.preRebalanceValue
-            let portfolioDrawdown = recentPeak > 0 ? context.preRebalanceValue / recentPeak - 1 : 0
+            let recentValues = context.points.suffix(252).map(\.portfolioValue) + [context.signalPortfolioValue]
+            let recentPeak = recentValues.max() ?? context.signalPortfolioValue
+            let portfolioDrawdown = recentPeak > 0 ? context.signalPortfolioValue / recentPeak - 1 : 0
             if portfolioDrawdown < -0.18 {
                 weights["nasdaq"] = (weights["nasdaq"] ?? 0) * min(max(variant.minScore, 0), 1)
                 weights["sp500"] = (weights["sp500"] ?? 0) * min(max(variant.minScore, 0), 1)
@@ -1422,7 +1461,9 @@ struct StrategyMetricDump {
                 sharpe: report.sharpeRatio,
                 start: report.points.first?.date.recordDateString ?? "n/a",
                 end: report.points.last?.date.recordDateString ?? "n/a",
-                pointCount: report.points.count
+                pointCount: report.points.count,
+                tradeCount: report.trades.count,
+                averageCashRatio: report.averageCashRatio
             )
             sliceRows.append(contentsOf: metricRowsForSlices(title: variant.title, id: variant.id, points: report.points, fullRow: fullRow))
         }
@@ -1914,9 +1955,9 @@ struct StrategyMetricDump {
             "sp500": equityWeight * 0.25
         ].filter { $0.value > 0.0001 }
 
-        let recentValues = context.points.suffix(252).map(\.portfolioValue) + [context.preRebalanceValue]
-        let recentPeak = recentValues.max() ?? context.preRebalanceValue
-        let portfolioDrawdown = recentPeak > 0 ? context.preRebalanceValue / recentPeak - 1 : 0
+        let recentValues = context.points.suffix(252).map(\.portfolioValue) + [context.signalPortfolioValue]
+        let recentPeak = recentValues.max() ?? context.signalPortfolioValue
+        let portfolioDrawdown = recentPeak > 0 ? context.signalPortfolioValue / recentPeak - 1 : 0
         if portfolioDrawdown < -variant.portfolioBrake {
             let equityScale = portfolioDrawdown < -(variant.portfolioBrake + 0.04) ? 0.35 : 0.55
             let oldNasdaq = weights["nasdaq"] ?? 0
@@ -4357,7 +4398,7 @@ struct StrategyMetricDump {
     }
 
     private static func allTimePortfolioDrawdown(_ context: StrategyTargetContext) -> Double {
-        let values = context.points.map(\.portfolioValue) + [context.preRebalanceValue]
+        let values = context.points.map(\.portfolioValue) + [context.signalPortfolioValue]
         guard let current = values.last,
               let peak = values.max(),
               peak > 0 else { return 0 }
@@ -5438,7 +5479,9 @@ struct StrategyMetricDump {
                 sharpe: report.sharpeRatio,
                 start: report.points.first?.date.recordDateString ?? "n/a",
                 end: report.points.last?.date.recordDateString ?? "n/a",
-                pointCount: report.points.count
+                pointCount: report.points.count,
+                tradeCount: report.trades.count,
+                averageCashRatio: report.averageCashRatio
             )
             rows.append(row)
             sliceRows.append(contentsOf: metricRowsForSlices(title: template.title, id: template.id, points: report.points, fullRow: row))
@@ -5447,8 +5490,15 @@ struct StrategyMetricDump {
     }
 
     private struct BaselineDocument: Decodable {
+        let engineVersion: String?
         let strategies: [BaselineStrategy]?
         let strategy: BaselineStrategy?
+
+        enum CodingKeys: String, CodingKey {
+            case engineVersion = "engine_version"
+            case strategies
+            case strategy
+        }
 
         var allStrategies: [BaselineStrategy] {
             strategies ?? strategy.map { [$0] } ?? []
@@ -5458,11 +5508,15 @@ struct StrategyMetricDump {
     private struct BaselineStrategy: Decodable {
         let title: String
         let id: String
+        let fullTradeCount: Int?
+        let fullAverageCashRatio: Double?
         let metricsBySlice: [String: BaselineSlice]
 
         enum CodingKeys: String, CodingKey {
             case title
             case id
+            case fullTradeCount = "full_trade_count"
+            case fullAverageCashRatio = "full_average_cash_ratio"
             case metricsBySlice = "metrics_by_slice"
         }
     }
@@ -5508,7 +5562,33 @@ struct StrategyMetricDump {
         }
         var failures: [String] = []
 
+        if document.engineVersion != BacktestEngine.defaultEngineVersion {
+            failures.append(
+                "engine_version actual=\(BacktestEngine.defaultEngineVersion) "
+                    + "expected=\(document.engineVersion ?? "missing")"
+            )
+        }
+
         for strategy in document.allStrategies {
+            if let actual = actualRows["\(strategy.id)|full"] {
+                if let expectedTradeCount = strategy.fullTradeCount,
+                   actual.tradeCount != expectedTradeCount {
+                    failures.append(
+                        "\(strategy.title) full trade_count actual=\(actual.tradeCount.map(String.init) ?? "missing") "
+                            + "expected=\(expectedTradeCount)"
+                    )
+                }
+                if let expectedCashRatio = strategy.fullAverageCashRatio {
+                    comparePercent(
+                        name: "average_cash_ratio",
+                        actual: actual.averageCashRatio.map { $0 * 100 },
+                        expected: expectedCashRatio * 100,
+                        tolerance: tolerance,
+                        context: "\(strategy.title) full",
+                        failures: &failures
+                    )
+                }
+            }
             for (slice, expected) in strategy.metricsBySlice {
                 let key = "\(strategy.id)|\(slice)"
                 guard let actual = actualRows[key] else {
@@ -9640,9 +9720,9 @@ struct StrategyMetricDump {
                                             return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
                                         }
 
-                                        if state == 0 { controlPeak = max(controlPeak, context.preRebalanceValue) }
+                                        if state == 0 { controlPeak = max(controlPeak, context.signalPortfolioValue) }
                                         let drawdown = controlPeak > 0
-                                            ? max(1 - context.preRebalanceValue / controlPeak, 0)
+                                            ? max(1 - context.signalPortfolioValue / controlPeak, 0)
                                             : 0
                                         let fast = shadowFastByDate[signalKey] ?? false
                                         let strong = shadowStrongByDate[signalKey] ?? false
@@ -9682,7 +9762,7 @@ struct StrategyMetricDump {
                                             stateEnteredIndex = context.index
                                             entryDrawdown = drawdown
                                             if state == 0 {
-                                                controlPeak = context.preRebalanceValue
+                                                controlPeak = context.signalPortfolioValue
                                                 entryDrawdown = 0
                                             }
                                         }
@@ -10947,10 +11027,10 @@ struct StrategyMetricDump {
                                             }
 
                                             if state == 0 {
-                                                controlPeak = max(controlPeak, context.preRebalanceValue)
+                                                controlPeak = max(controlPeak, context.signalPortfolioValue)
                                             }
                                             let accountDrawdown = controlPeak > 0
-                                                ? max(1 - context.preRebalanceValue / controlPeak, 0)
+                                                ? max(1 - context.signalPortfolioValue / controlPeak, 0)
                                                 : 0
                                             let shadowFast = shadowFastByDate[signalDateKey] ?? false
                                             let shadowStrong = shadowStrongByDate[signalDateKey] ?? false
@@ -11002,7 +11082,7 @@ struct StrategyMetricDump {
                                                 stateEnteredIndex = context.index
                                                 stateEntryDrawdown = accountDrawdown
                                                 if state == 0 {
-                                                    controlPeak = context.preRebalanceValue
+                                                    controlPeak = context.signalPortfolioValue
                                                     stateEntryDrawdown = 0
                                                 }
                                             }
@@ -14178,7 +14258,7 @@ struct StrategyMetricDump {
                                             targetVolatility / max(estimatedVolatility, 0.04)
                                         )
 
-                                        let currentValue = max(context.preRebalanceValue, 1)
+                                        let currentValue = max(context.signalPortfolioValue, 1)
                                         let accountPeak = max(
                                             currentValue,
                                             context.portfolioValuesByIndex.prefix(index).filter { $0 > 0 }.max() ?? currentValue
@@ -14330,7 +14410,7 @@ struct StrategyMetricDump {
                                             guard baseGross > 0 else { return [:] }
                                             let normalizedWeights = rawWeights.mapValues { $0 / baseGross }
 
-                                            let currentValue = max(context.preRebalanceValue, 1)
+                                            let currentValue = max(context.signalPortfolioValue, 1)
                                             let accountPeak = max(
                                                 currentValue,
                                                 context.portfolioValuesByIndex.prefix(index).filter { $0 > 0 }.max() ?? currentValue
@@ -14528,7 +14608,7 @@ struct StrategyMetricDump {
                                                 guard baseGross > 0 else { return [:] }
                                                 let normalizedWeights = rawWeights.mapValues { $0 / baseGross }
 
-                                                let currentValue = max(context.preRebalanceValue, 1)
+                                                let currentValue = max(context.signalPortfolioValue, 1)
                                                 let priorPeak = context.portfolioValuesByIndex
                                                     .prefix(index)
                                                     .filter { $0 > 0 }
@@ -18772,7 +18852,7 @@ struct StrategyMetricDump {
 
     private static func printRows(_ rows: [MetricRow], header: String) {
         print(header)
-        print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points")
+        print("title,id,annualized,max_drawdown,volatility,sharpe,start,end,points,trades,average_cash_ratio")
         for row in rows {
             print([
                 row.title,
@@ -18783,14 +18863,16 @@ struct StrategyMetricDump {
                 format(row.sharpe, digits: 6, percent: false),
                 row.start,
                 row.end,
-                String(row.pointCount)
+                String(row.pointCount),
+                row.tradeCount.map(String.init) ?? "",
+                row.averageCashRatio.map { String(format: "%.8f", $0) } ?? ""
             ].joined(separator: ","))
         }
     }
 
     private static func printSliceRows(_ rows: [SliceMetricRow], header: String) {
         print(header)
-        print("title,id,slice,annualized,max_drawdown,volatility,sharpe,start,end,points")
+        print("title,id,slice,annualized,max_drawdown,volatility,sharpe,start,end,points,trades,average_cash_ratio")
         for sliceRow in rows {
             let row = sliceRow.row
             print([
@@ -18803,7 +18885,9 @@ struct StrategyMetricDump {
                 format(row.sharpe, digits: 6, percent: false),
                 row.start,
                 row.end,
-                String(row.pointCount)
+                String(row.pointCount),
+                row.tradeCount.map(String.init) ?? "",
+                row.averageCashRatio.map { String(format: "%.8f", $0) } ?? ""
             ].joined(separator: ","))
         }
     }

@@ -1521,7 +1521,7 @@ struct DashboardFreedomProjectionChart: View {
     @State private var selectedHorizonYears = FreedomChartHorizon.five.rawValue
 
     private struct CrossingMarker {
-        let monthOffset: Double
+        let monthOffset: Int
         let date: Date
         let passiveIncome: Double
     }
@@ -1559,7 +1559,15 @@ struct DashboardFreedomProjectionChart: View {
     }
 
     private var crossingMarker: CrossingMarker? {
-        firstCrossingMarker(in: displayPoints)
+        guard case let .projected(months) = projection.status,
+              let point = displayPoints.first(where: { $0.monthOffset == months }) else {
+            return nil
+        }
+        return CrossingMarker(
+            monthOffset: months,
+            date: point.date,
+            passiveIncome: point.projectedPassiveIncome
+        )
     }
 
     private var isUnreachable: Bool {
@@ -1842,27 +1850,7 @@ struct DashboardFreedomProjectionChart: View {
         }
     }
 
-    private func firstCrossingMarker(in points: [FinancialFreedomProjectionPoint]) -> CrossingMarker? {
-        guard points.count > 1 else { return nil }
-        for index in 1..<points.count {
-            let previous = points[index - 1]
-            let current = points[index]
-            let previousGap = previous.projectedPassiveIncome - previous.projectedMonthlyExpense
-            let currentGap = current.projectedPassiveIncome - current.projectedMonthlyExpense
-            let changesCoverageState = (previousGap < 0 && currentGap >= 0) || (previousGap > 0 && currentGap <= 0)
-            guard changesCoverageState, abs(previousGap - currentGap) > .ulpOfOne else { continue }
-
-            let progress = min(max(previousGap / (previousGap - currentGap), 0), 1)
-            return CrossingMarker(
-                monthOffset: Double(previous.monthOffset) + (Double(current.monthOffset - previous.monthOffset) * progress),
-                date: previous.date.addingTimeInterval(current.date.timeIntervalSince(previous.date) * progress),
-                passiveIncome: previous.projectedPassiveIncome + ((current.projectedPassiveIncome - previous.projectedPassiveIncome) * progress)
-            )
-        }
-        return nil
-    }
-
-    private func crossingBadge(for monthOffset: Double) -> some View {
+    private func crossingBadge(for monthOffset: Int) -> some View {
         Text(AppLocalization.format("约 %@ 追平", crossingLabel(for: monthOffset)))
             .font(.system(size: 10.5, weight: .semibold, design: .default))
             .foregroundStyle(AssetTheme.textPrimary)
@@ -1875,17 +1863,17 @@ struct DashboardFreedomProjectionChart: View {
             )
     }
 
-    private func crossingLabel(for monthOffset: Double) -> String {
-        let roundedMonths = max(Int(monthOffset.rounded()), 0)
-        if roundedMonths >= 12 {
-            let years = roundedMonths / 12
-            let months = roundedMonths % 12
+    private func crossingLabel(for monthOffset: Int) -> String {
+        let monthsUntilCrossing = max(monthOffset, 0)
+        if monthsUntilCrossing >= 12 {
+            let years = monthsUntilCrossing / 12
+            let months = monthsUntilCrossing % 12
             if months > 0 {
                 return AppLocalization.format("%d 年 %d 月", years, months)
             }
             return AppLocalization.format("%d 年", years)
         }
-        return AppLocalization.format("%d 月", max(roundedMonths, 1))
+        return AppLocalization.format("%d 月", max(monthsUntilCrossing, 1))
     }
 
     private func projectionLegendChip(title: String, color: Color, dashed: Bool = false) -> some View {
