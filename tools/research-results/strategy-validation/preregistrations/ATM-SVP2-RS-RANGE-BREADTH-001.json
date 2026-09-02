@@ -1,0 +1,192 @@
+{
+  "algorithm" : {
+    "asset_order" : [
+      "gold_cny",
+      "nasdaq",
+      "sp500"
+    ],
+    "candidate" : "equal weight across valid calm assets; cash if none",
+    "clock" : "anchor is earliest common valid-OHLC date with 252 own valid bars per asset; review anchor+21*m on common OHLC ordinal",
+    "daily_q" : "log(high/close)*log(high/open)+log(low/close)*log(low/open); exact Swift operation order, micro-negative clamp to +0",
+    "execution" : "strictly later joint canonical prepared-price date with same-session USD FX; sell-before-buy, with replacement buy on the next eligible date; zero vector uses the same eligibility rule",
+    "fingerprint_grammar" : "ATM_RS_RANGE_BREADTH_SCHEDULE_V1 as documented in RSRangeBreadthStrategy.swift; U64 big-endian lengths/counts/integers, IEEE-754 binary64 bits big-endian, explicit bool/enum/optional tags, fixed field and asset order",
+    "lookback" : 252,
+    "natural" : "one-third each at anchor, then natural drift; unchanged reviews suppressed",
+    "placebo" : "equal weight across valid expanding assets; cash if none",
+    "review_step" : 21,
+    "short_lookback" : 21,
+    "state" : "longMean=sum(oldest-to-newest 252 q)/252; shortMean=sum(oldest-to-newest final 21 q)/21; x=shortMean/longMean-1; x<=0 calm, x>0 expanding; nonpositive/nonfinite longMean invalid"
+  },
+  "allowed_changes" : [
+    "none after this freeze",
+    "one exact candidate schedule",
+    "natural and sign-placebo falsification controls only"
+  ],
+  "assets" : [
+    {
+      "canonical_source" : "CME Group · COMEX",
+      "fixture_symbol" : "gold_cny",
+      "historical_fx" : null,
+      "native_currency" : "CNY",
+      "ohlc_source" : "CME Group · COMEX",
+      "prepared_currency" : "CNY",
+      "same_session_ohlc_conversion" : true,
+      "symbol" : "gold_cny"
+    },
+    {
+      "canonical_source" : "Nasdaq · Yahoo Finance",
+      "fixture_symbol" : "nasdaq_composite",
+      "historical_fx" : "usd_per_cny",
+      "native_currency" : "USD",
+      "ohlc_source" : "Nasdaq · Yahoo Finance",
+      "prepared_currency" : "CNY",
+      "same_session_ohlc_conversion" : true,
+      "symbol" : "nasdaq"
+    },
+    {
+      "canonical_source" : "S&P Dow Jones Indices · Yahoo Finance",
+      "fixture_symbol" : "sp500",
+      "historical_fx" : "usd_per_cny",
+      "native_currency" : "USD",
+      "ohlc_source" : "S&P Dow Jones Indices · Yahoo Finance",
+      "prepared_currency" : "CNY",
+      "same_session_ohlc_conversion" : true,
+      "symbol" : "sp500"
+    }
+  ],
+  "candidate_count" : 1,
+  "candidate_ids" : [
+    "RS-RANGE-BREADTH-21-252-001"
+  ],
+  "cost_model" : {
+    "allows_financed_exposure" : false,
+    "cash_yield" : "CashYieldCNY PBOC historical demand-deposit rules",
+    "fee_rate_percent" : 1,
+    "financing_annual_rate" : 0,
+    "initial_cash_cny" : 100000,
+    "rebalance_band" : 0,
+    "slippage_rate_percent" : 0.050000000000000003
+  },
+  "dataset_manifest" : "tools/research-results/strategy-validation/datasets/ATM-SVP2-RS-RANGE-BREADTH-001.json",
+  "evaluation_windows" : [
+    {
+      "actual_end" : "2026-08-31",
+      "actual_start" : "2002-07-09",
+      "id" : "full",
+      "requested_start" : null
+    },
+    {
+      "actual_end" : "2026-08-31",
+      "actual_start" : "2016-08-31",
+      "id" : "since_2016_08_31",
+      "requested_start" : "2016-08-31"
+    },
+    {
+      "actual_end" : "2026-08-31",
+      "actual_start" : "2020-01-02",
+      "id" : "since_2020_01_01",
+      "requested_start" : "2020-01-01"
+    },
+    {
+      "actual_end" : "2026-08-31",
+      "actual_start" : "2022-01-03",
+      "id" : "since_2022_01_01",
+      "requested_start" : "2022-01-01"
+    }
+  ],
+  "evidence_class" : "R1_RETROSPECTIVE",
+  "expected_outputs" : [
+    "formal candidate/natural/placebo evidence for exactly four frozen windows",
+    "factor-mechanism evidence for exactly four frozen windows",
+    "immutable schedule fingerprints and shared-simulator queue trace",
+    "constraint checks, run authorization receipt, execution record, stdout/stderr and SHA-256 artifact manifest"
+  ],
+  "factor_gate" : {
+    "future_risk" : "mean q over exactly 21 strictly subsequent own valid bars divided by signal-date longMean",
+    "groups" : "expanding x>0 versus calm x<=0",
+    "minimum_per_group_per_asset_window" : 5,
+    "overall_pass" : "all four windows pass; missing/nonfinite evidence fails the candidate",
+    "sample" : "each formal review x asset with valid signal x",
+    "tail_rule" : "fewer than 21 future valid bars excludes only that sample and is reported; overlapping samples retained",
+    "window_pass" : "at least two of three assets have unrounded median(expanding futureRisk)-median(calm futureRisk)>0"
+  },
+  "fixture" : {
+    "cutoff" : "2026-08-31",
+    "dataset_manifest_sha256" : "c578a2ebedfbcccff7b0800a516d2d5c88de4a73f1c578d37308cda6f625fd47",
+    "path" : "tools/fixtures/backtest-history/public_history.json",
+    "sha256" : "35bcfc9a06079ca8c3a2bb69ac4bad377e5314a313a6ca279c7817df139e124b",
+    "source_manifest_path" : "tools/fixtures/backtest-history/choice_gc00y_backfill_audit_2026-09-02.json",
+    "source_manifest_sha256" : "cf48271c5c771e5db37a1e121d3b212f2dad95cde5f92dfedc8826d760cb7826"
+  },
+  "follow_up_policy" : "If any gate fails or the sole run is invalid, permanently close this exact candidate. No retry, parameter change, threshold, window, asset, source, cost, control, sign, lag or execution rescue is allowed after performance is opened.",
+  "formal_run_budget" : 1,
+  "frozen_schedule" : {
+    "actual_windows" : [
+      {
+        "actual_end" : "2026-08-31",
+        "actual_start" : "2002-07-09",
+        "id" : "full",
+        "requested_start" : null
+      },
+      {
+        "actual_end" : "2026-08-31",
+        "actual_start" : "2016-08-31",
+        "id" : "since_2016_08_31",
+        "requested_start" : "2016-08-31"
+      },
+      {
+        "actual_end" : "2026-08-31",
+        "actual_start" : "2020-01-02",
+        "id" : "since_2020_01_01",
+        "requested_start" : "2020-01-01"
+      },
+      {
+        "actual_end" : "2026-08-31",
+        "actual_start" : "2022-01-03",
+        "id" : "since_2022_01_01",
+        "requested_start" : "2022-01-01"
+      }
+    ],
+    "anchor_date" : "2002-07-09",
+    "fingerprints" : {
+      "candidate" : "14d4908657c2362655b31f6e68c25312c73cac1157ffae46d52eb80209125473",
+      "combined" : "f4c3b50ab8bc7d6be600cf33e491b4630710d76a67614ca2e2862f50246d6a15",
+      "natural" : "aac97c5ddbf1405e56854243d7e4d94cf27648ae231f632eb983826c9e2a5612",
+      "placebo" : "e567fba93fa2c95e97d8ea8ba1e2f8c9d1fa05577629889512dd5f3638bcd798"
+    },
+    "path" : "tools/research-results/strategy-validation/preregistrations/RS-RANGE-BREADTH-21-252-001-schedule.json",
+    "review_count" : 289,
+    "sha256" : "e72607b06df0be5be2fcd381ab98b059536a273e64f755b46cde637552ab0f8a"
+  },
+  "hypothesis" : "Cross-asset contraction in true Rogers-Satchell range risk identifies calmer assets whose equal-weight allocation is more durable than state-independent natural drift; the opposite expanding-state schedule is a directional placebo.",
+  "implementation_commit" : "07efbae691196a68ee784c80dbdea29ce3346fff",
+  "no_search_policy" : [
+    "no arguments expose strategy parameters",
+    "unique formal run only",
+    "failure is not rerun",
+    "controls cannot be promoted"
+  ],
+  "pass_fail_gates" : [
+    "factorMechanismPass: in every frozen window, at least two of three assets have unrounded median futureRisk(expanding)-median futureRisk(calm)>0, with at least five samples in each state per asset",
+    "in each frozen window candidate CAGR>=10%, MDD<=10%, Sharpe>=0.8",
+    "in each frozen window candidate Sharpe is strictly greater than natural and placebo",
+    "in each frozen window candidate MDD is strictly less than natural",
+    "all metrics use BacktestMetricsCalculator without pre-comparison rounding; missing or non-finite values fail",
+    "requested and marked-to-market gross exposure<=100%, all weights/holdings/cash nonnegative, no financing, leverage or shorting",
+    "shared BacktestDailySimulator trace must show every pending target completed before the next review"
+  ],
+  "protocol_component" : "ROGERS_SATCHELL_RANGE_BREADTH_21_252",
+  "protocol_id" : "ATM-SVP-2",
+  "return_blind_freeze" : true,
+  "runtime" : {
+    "os_build" : "25F84",
+    "os_product" : "macOS",
+    "os_version" : "26.5.2",
+    "swift" : "Apple Swift version 6.2.4 (swiftlang-6.2.4.1.4 clang-1700.6.4.2)",
+    "target" : "arm64-apple-macosx26.0"
+  },
+  "selection_metric" : "No parameter search and no selection. One candidate, one immutable schedule, one formal run; all four strategy windows and the factor-mechanism gate must pass.",
+  "strategy_lineage" : "rs-range-breadth-21-252-v1",
+  "swift_engine_entrypoint" : "RSRangeBreadthArtifactLoader date lookup only -> shared BacktestDailySimulator; schedule generation is prohibited during formal simulation",
+  "trial_id" : "ATM-SVP2-RS-RANGE-BREADTH-001"
+}
