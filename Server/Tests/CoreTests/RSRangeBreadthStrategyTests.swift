@@ -222,4 +222,54 @@ final class RSRangeBreadthStrategyTests: XCTestCase {
         XCTAssertEqual(validated.trace[1].completionDate, base[274].date)
         XCTAssertLessThan(validated.trace[1].completionDate, artifact.reviews[2].date)
     }
+
+    func testSharedSimulatorRejectsIncompleteFrameCoverage() throws {
+        let base = datedBars(count: 315, qMode: { _ in (100, 110, 90, 100) })
+        let assets = RSRangeBreadthStrategy.assetOrder.enumerated().map { offset, symbol in
+            RSRangeBreadthAssetInput(symbol: symbol, sourceID: "source-\(offset)", currency: "CNY", bars: base)
+        }
+        let dates = base.map { BacktestSeriesAlignment.historicalSeriesDate(from: $0.date)! }
+        let artifact = try RSRangeBreadthScheduleBuilder.build(assets: assets, config: config(executableDates: base.map(\.date)))
+        let incompleteOptions = Array(RSRangeBreadthStrategy.assetOrder.dropLast())
+        let frame = MarketDataFrame(
+            dates: dates,
+            pricesBySymbol: Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, Array(repeating: 100.0, count: dates.count)) }),
+            observedBySymbol: Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, Array(repeating: true, count: dates.count)) }),
+            ohlcBySymbol: [:], tradableSymbols: RSRangeBreadthStrategy.assetOrder,
+            optionBySymbol: Dictionary(uniqueKeysWithValues: incompleteOptions.map { ($0, BacktestAssetOption(symbol: $0, title: $0, color: .blue, requiresHistoricalFX: false, historicalFXSymbol: nil)) }),
+            simulationRange: 1...(dates.count - 1)
+        )
+        XCTAssertThrowsError(try RSRangeBreadthSharedSimulator.run(
+            artifact: artifact, variant: .candidate, frame: frame,
+            execution: .init(initialCash: 100_000, feeRate: 0, slippageRate: 0, rebalanceBand: 0, financingAnnualRate: 0, allowsFinancedExposure: false, buyReason: "coverage test")
+        ))
+    }
+
+    func testSharedSimulatorRejectsCompletionOutsideFrozenExecutableDates() throws {
+        let base = datedBars(count: 315, qMode: { _ in (100, 110, 90, 100) })
+        let assets = RSRangeBreadthStrategy.assetOrder.enumerated().map { offset, symbol in
+            RSRangeBreadthAssetInput(symbol: symbol, sourceID: "source-\(offset)", currency: "CNY", bars: base)
+        }
+        let dates = base.map { BacktestSeriesAlignment.historicalSeriesDate(from: $0.date)! }
+        let baselineArtifact = try RSRangeBreadthScheduleBuilder.build(assets: assets, config: config(executableDates: base.map(\.date)))
+        let firstEventDate = try XCTUnwrap(baselineArtifact.reviews.first(where: { $0.candidate.event })?.date)
+        let firstEventIndex = try XCTUnwrap(base.firstIndex(where: { $0.date == firstEventDate }))
+        let omittedCompletion = base[firstEventIndex + 1].date
+        let executableDates = base.map(\.date).filter { $0 != omittedCompletion }
+        let artifact = try RSRangeBreadthScheduleBuilder.build(assets: assets, config: config(executableDates: executableDates))
+        let options = Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { symbol in
+            (symbol, BacktestAssetOption(symbol: symbol, title: symbol, color: .blue, requiresHistoricalFX: false, historicalFXSymbol: nil))
+        })
+        let frame = MarketDataFrame(
+            dates: dates,
+            pricesBySymbol: Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, Array(repeating: 100.0, count: dates.count)) }),
+            observedBySymbol: Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, Array(repeating: true, count: dates.count)) }),
+            ohlcBySymbol: [:], tradableSymbols: RSRangeBreadthStrategy.assetOrder,
+            optionBySymbol: options, simulationRange: 1...(dates.count - 1)
+        )
+        XCTAssertThrowsError(try RSRangeBreadthSharedSimulator.run(
+            artifact: artifact, variant: .candidate, frame: frame,
+            execution: .init(initialCash: 100_000, feeRate: 0, slippageRate: 0, rebalanceBand: 0, financingAnnualRate: 0, allowsFinancedExposure: false, buyReason: "executable date test")
+        ))
+    }
 }

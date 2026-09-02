@@ -612,6 +612,20 @@ nonisolated enum RSRangeBreadthSharedSimulator {
         frame: MarketDataFrame,
         execution: BacktestExecutionConfig
     ) throws -> RSRangeBreadthSimulationValidation {
+        let requiredSymbols = Set(RSRangeBreadthStrategy.assetOrder)
+        guard requiredSymbols.isSubset(of: Set(frame.tradableSymbols)),
+              requiredSymbols.isSubset(of: Set(frame.optionBySymbol.keys)),
+              !artifact.executableDates.isEmpty else {
+            throw RSRangeBreadthError.invalidInput("shared simulator frame coverage")
+        }
+        for symbol in RSRangeBreadthStrategy.assetOrder {
+            guard let prices = frame.pricesBySymbol[symbol], prices.count == frame.dates.count,
+                  prices.allSatisfy({ $0.isFinite && $0 > 0 }),
+                  let observations = frame.observedBySymbol[symbol], observations.count == frame.dates.count else {
+                throw RSRangeBreadthError.invalidInput("shared simulator series \(symbol)")
+            }
+        }
+        let executableDates = Set(artifact.executableDates)
         let events = artifact.reviews.filter { $0.target(variant).event }
         let eventByDate = Dictionary(uniqueKeysWithValues: events.map { ($0.date, $0.target(variant).valuesBySymbol) })
         var activated: [String] = []
@@ -645,6 +659,10 @@ nonisolated enum RSRangeBreadthSharedSimulator {
         }
         let allReviews = artifact.reviews.map(\.date)
         for item in trace {
+            guard item.completionDate > item.reviewDate,
+                  executableDates.contains(item.completionDate) else {
+                throw RSRangeBreadthError.queueIncomplete("completion \(item.completionDate) is not a frozen execution date after review \(item.reviewDate)")
+            }
             guard let reviewIndex = allReviews.firstIndex(of: item.reviewDate) else {
                 throw RSRangeBreadthError.queueIncomplete("unknown review \(item.reviewDate)")
             }
