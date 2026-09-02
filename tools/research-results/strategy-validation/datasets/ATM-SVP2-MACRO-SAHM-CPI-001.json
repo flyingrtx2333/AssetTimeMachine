@@ -1,0 +1,27 @@
+{
+  "files": [
+    {"path": "tools/fixtures/backtest-history/public_history.json", "format": "json", "bytes": 4895866, "sha256": "332562774379871e11de156e2f2cd6fca4c4ce4ba3ab651657f3b41f22febf02"},
+    {"path": "tools/research-results/macro-vintages/alfred-initial-release/UNRATE_initial_release.csv", "format": "csv", "bytes": 66766, "sha256": "fb0fddb5fc90500bd48474c987d3a01f30de4f3af4fba5be384b24341a1ef54a"},
+    {"path": "tools/research-results/macro-vintages/alfred-initial-release/CPIAUCSL_initial_release.csv", "format": "csv", "bytes": 69226, "sha256": "45a6e7080ff97667b7947942c442fdf529e0936620a3f9dea129cb2559bc82f2"},
+    {"path": "tools/research-results/macro-vintages/alfred-initial-release/UNRATE_missing_reference_months.csv", "format": "csv", "bytes": 176, "sha256": "d37db1b704265a3815f6b104731a66af6ed59af998bd5cac79e4056a055a2a3d"},
+    {"path": "tools/research-results/macro-vintages/alfred-initial-release/CPIAUCSL_missing_reference_months.csv", "format": "csv", "bytes": 178, "sha256": "16d4ec270a14772848088970f2b27d7b53d0a991624e217303e9d0b00060e3c3"},
+    {"path": "tools/research-results/macro-vintages/alfred-initial-release/source-manifest.txt", "format": "text", "bytes": 1263, "sha256": "7f273a96585820c71d13c07516817988e706c213459b8a2d0ee05cec3fb1fb4d"}
+  ],
+  "generated_at": "2026-09-02T12:19:59+08:00",
+  "git_commit": "e8c684760daab8c8b7e411f2586e1edae574ff63",
+  "kind": "dataset",
+  "metadata": {
+    "candidate_id": "MACRO-SAHM-CPI-001",
+    "engine_version": "atm-swift-clock-v3-2026-08-31",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "macro_series": ["UNRATE initial release", "CPIAUCSL initial release"],
+    "macro_coverage": "1999-12 through 2026-07; genuine joint gap 2025-10",
+    "market_series": ["gold_cny", "nasdaq", "usd_per_cny"],
+    "data_readiness": "The prior DATA_BLOCKED state is resolved by commit e8c684760daab8c8b7e411f2586e1edae574ff63, which froze and validated the ALFRED initial-release data. No interpolation or backfill is permitted.",
+    "performance_viewed_before_freeze": false,
+    "schedule_rule": "pure precomputed immutable monthly macro target schedule with row hashes, strict availability, common-real-observation review, 62-day freshness and same-target suppression",
+    "strategy_lineage": "macro-sahm-cpi-initial-release-v1"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-MACRO-SAHM-CPI-001"
+}

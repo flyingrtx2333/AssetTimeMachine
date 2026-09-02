@@ -7,13 +7,32 @@ nonisolated struct FrozenTargetEvent: Equatable {
     let signalDate: Date
     let targetWeights: [String: Double]
     let reason: String
+    let referenceMonth: String?
+    let macroRowHashes: [String: String]
+
+    init(
+        signalIndex: Int,
+        signalDate: Date,
+        targetWeights: [String: Double],
+        reason: String,
+        referenceMonth: String? = nil,
+        macroRowHashes: [String: String] = [:]
+    ) {
+        self.signalIndex = signalIndex
+        self.signalDate = signalDate
+        self.targetWeights = targetWeights
+        self.reason = reason
+        self.referenceMonth = referenceMonth
+        self.macroRowHashes = macroRowHashes
+    }
 }
 
 /// An immutable schedule built before simulation. Querying it cannot advance strategy state.
 nonisolated struct FrozenTargetSchedule: Equatable {
     let events: [FrozenTargetEvent]
+    let reviewClockFingerprint: String?
 
-    init?(events: [FrozenTargetEvent]) {
+    init?(events: [FrozenTargetEvent], reviewClockFingerprint: String? = nil) {
         var previousIndex = -1
         for event in events {
             guard event.signalIndex > previousIndex,
@@ -24,6 +43,7 @@ nonisolated struct FrozenTargetSchedule: Equatable {
             previousIndex = event.signalIndex
         }
         self.events = events
+        self.reviewClockFingerprint = reviewClockFingerprint
     }
 
     func event(signalIndex: Int) -> FrozenTargetEvent? {
@@ -38,7 +58,16 @@ nonisolated struct FrozenTargetSchedule: Equatable {
                 let scaled = Int64(((event.targetWeights[symbol] ?? 0) * 1_000_000_000).rounded())
                 return "\(symbol)=\(scaled)"
             }.joined(separator: ",")
-            let row = "\(event.signalIndex)|\(event.signalDate.recordDateString)|\(weights)|\(event.reason)\n"
+            let row: String
+            if event.referenceMonth == nil, event.macroRowHashes.isEmpty {
+                // Preserve the exact pre-macro canonical form used by archived GOR/GNR evidence.
+                row = "\(event.signalIndex)|\(event.signalDate.recordDateString)|\(weights)|\(event.reason)\n"
+            } else {
+                let macroHashes = event.macroRowHashes.keys.sorted().map {
+                    "\($0)=\(event.macroRowHashes[$0] ?? "")"
+                }.joined(separator: ",")
+                row = "macro-v1|\(event.signalIndex)|\(event.signalDate.recordDateString)|\(weights)|\(event.reason)|\(event.referenceMonth ?? "")|\(macroHashes)\n"
+            }
             for byte in row.utf8 {
                 hash ^= UInt64(byte)
                 hash &*= 1099511628211

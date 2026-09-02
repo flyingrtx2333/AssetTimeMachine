@@ -4,6 +4,22 @@ import XCTest
 final class GORQREG25263StrategyTests: XCTestCase {
     private let calendar = Calendar(identifier: .gregorian)
 
+    private func legacyFingerprint(_ events: [FrozenTargetEvent]) -> String {
+        var hash: UInt64 = 1469598103934665603
+        for event in events {
+            let weights = event.targetWeights.keys.sorted().map { symbol in
+                let scaled = Int64(((event.targetWeights[symbol] ?? 0) * 1_000_000_000).rounded())
+                return "\(symbol)=\(scaled)"
+            }.joined(separator: ",")
+            let row = "\(event.signalIndex)|\(event.signalDate.recordDateString)|\(weights)|\(event.reason)\n"
+            for byte in row.utf8 {
+                hash ^= UInt64(byte)
+                hash &*= 1099511628211
+            }
+        }
+        return String(format: "%016llx", hash)
+    }
+
     private func option(_ symbol: String) -> BacktestAssetOption {
         BacktestAssetOption(
             symbol: symbol,
@@ -209,6 +225,7 @@ final class GORQREG25263StrategyTests: XCTestCase {
         let date = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: "2026-01-01"))
         let baseEvent = FrozenTargetEvent(signalIndex: 252, signalDate: date, targetWeights: ["gold_cny": 1], reason: "a")
         let base = try XCTUnwrap(FrozenTargetSchedule(events: [baseEvent]))
+        XCTAssertEqual(base.fingerprint, legacyFingerprint([baseEvent]))
         let changedReason = try XCTUnwrap(FrozenTargetSchedule(events: [
             FrozenTargetEvent(signalIndex: 252, signalDate: date, targetWeights: ["gold_cny": 1], reason: "b")
         ]))

@@ -1,0 +1,76 @@
+{
+  "trial_id": "ATM-SVP2-MACRO-SAHM-CPI-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "INITIAL_RELEASE_SAHM_CPI_MACRO_ALLOCATION",
+  "strategy_lineage": "macro-sahm-cpi-initial-release-v1; exactly one candidate; no search or optimization",
+  "hypothesis": "Causal initial-release unemployment deterioration identifies recession conditions in which the portfolio should remain entirely in CashYieldCNY, while initial-release CPI inflation separates gold-favoring inflationary non-recessions from Nasdaq-favoring lower-inflation non-recessions.",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-MACRO-SAHM-CPI-001.json",
+  "data_readiness": "The earlier DATA_BLOCKED state is explicitly resolved by e8c684760daab8c8b7e411f2586e1edae574ff63, which froze ALFRED initial-release UNRATE/CPIAUCSL rows and passed their validator. Coverage is 1999-12..2026-07 with the genuine 2025-10 gap retained.",
+  "allowed_changes": [
+    "the exact MACRO-SAHM-CPI-001 candidate only",
+    "one immutable precomputed schedule replayed unchanged at both frozen costs",
+    "the fixed naturally drifting 50/50 control and fixed non-recession mapping-swap placebo",
+    "mechanical reporting of frozen evaluation windows and constraints"
+  ],
+  "candidate_ids": ["MACRO-SAHM-CPI-001"],
+  "candidate_count": 1,
+  "selection_metric": "No optimization or selection. The sole frozen candidate is evaluated once; only App cost (1.00% fee plus 0.05% slippage) determines acceptance.",
+  "pass_fail_gates": [
+    "At App cost, full-history, last-10-calendar-years, 2020+ and 2022+ CAGR each >=10%",
+    "At App cost, full-history, last-10-calendar-years, 2020+ and 2022+ MDD each <=10%",
+    "At App cost, full-history candidate Sharpe strictly greater than the naturally drifting 50/50 control and strictly greater than the swap placebo",
+    "the exact same immutable schedule fingerprint, event indices, dates, weights, reasons, reference months and macro row hashes are replayed at both costs",
+    "maximum requested and marked-to-market actual gross <=100%; weights, holdings and cash nonnegative; no shorting, leverage or financing",
+    "all frozen loader, schedule, causality, strict-T-1, real-observation, freshness and append-only contract tests pass"
+  ],
+  "formal_run_budget": 1,
+  "follow_up_policy": "If any gate fails, record REJECTED and stop. Once performance is opened, no threshold, direction, weight, filter, window, lag, freshness, release timing, missing-data behavior, asset mapping, control, cost or other rescue is allowed. A different mechanism requires a new lineage and preregistration.",
+  "swift_engine_entrypoint": "scripts/run_macro_sahm_cpi_formal.py -> tools/macro_sahm_cpi_formal.swiftpart + MacroInitialReleaseCSVLoader + MacroSahmCPIStrategy.makeSchedule -> BacktestEngine.runResearchTargetProviderStrategyWithTrace frozenSchedule -> shared BacktestDailySimulator",
+  "expected_outputs": [
+    "BPS25 descriptive and App-cost candidate metrics for full history, last 10 years, 2020+ and 2022+",
+    "naturally drifting 50/50 and swap-placebo metrics",
+    "immutable candidate schedule CSV with fingerprint, event count, reference month and macro row hashes",
+    "portfolio paths, constraints, execution receipt, stdout/stderr and SHA-256 artifact manifest",
+    "mechanical PASS or REJECTED decision"
+  ],
+  "candidate_definition": {
+    "tradable_assets": ["gold_cny", "nasdaq"],
+    "cash": "all unallocated capital remains in existing CashYieldCNY",
+    "unrate_rule": "U3_m=(U_m+U_m-1+U_m-2)/3; S_m=U3_m-min(U3_m-1...U3_m-12); S_m>=0.50 percentage points targets 100% CashYieldCNY",
+    "cpi_rule": "pi_m=100*(CPI_m/CPI_m-12-1); when S_m<0.50, pi_m>=2.00% targets 100% gold_cny and pi_m<2.00% targets 100% nasdaq; equality uses >=",
+    "warmup": "15 consecutive UNRATE reference months and 13 consecutive CPI reference months are required; otherwise 100% CashYieldCNY",
+    "invalid_data": "any missing, non-finite, conflicting duplicate or discontinuous required macro row makes that review cash; 2025-10 remains missing with no interpolation or backfill and subsequent classification must re-warm continuously",
+    "availability": "available_at is release_date plus one calendar day at 08:00 Asia/Shanghai; a market date is eligible only when its Shanghai day boundary is strictly later than both rows' available_at",
+    "review": "each reference month is reviewed once, on the first gold_cny+nasdaq+usd_per_cny common real-observation date after both releases are eligible; forward fill never advances review",
+    "freshness": "when the latest complete paired reference month is more than 62 calendar days past its month-end with no new complete pair, target cash on the next common real-observation date; 62 is fixed; recovery only follows an eligible valid pair and is not retrospective",
+    "event_suppression": "no event when the new target exactly equals the previous target; never rebalance natural drift",
+    "execution": "signal at s executes no earlier than the next common real executable date under strict T-1; closed markets remain pending; forward-filled rows cannot execute; Nasdaq CNY conversion requires same-session FX; sell before buy and defer cross-venue purchases to the next eligible session",
+    "schedule": "pure full-history immutable precomputation; events contain signalIndex, signalDate, targetWeights, reason, referenceMonth and both macro row hashes; callback lookup only; costs, holdings, cash, pending fills, portfolio value and callback count cannot alter future events",
+    "constraints": "long-only, no leverage, no financing, no shorting, gross<=1 and cash>=0"
+  },
+  "cost_models": {
+    "descriptive_formal": {"cost_regime_id": "ATM-COST-2026-08-28-BPS25", "fee_rate_percent": 0.025, "slippage_rate_percent": 0.0, "decision_role": false},
+    "product_acceptance": {"fee_rate_percent": 1.0, "slippage_rate_percent": 0.05, "sole_basis_for_decision": true},
+    "schedule_identity": "both costs must replay the exact same precomputed schedule object and fingerprint"
+  },
+  "evaluation_windows": {
+    "full_history": "all available frozen App fixture history after engine warmup",
+    "last_10_years": "latest portfolio date minus exactly 10 calendar years through latest",
+    "since_2020": "2020-01-01 through latest",
+    "since_2022": "2022-01-01 through latest"
+  },
+  "controls": {
+    "naturally_drifting_50_50": "on the first valid warm classification execution, establish 50% gold_cny and 50% Nasdaq once, then never rebalance and allow natural drift",
+    "swap_placebo": "recession still targets cash; only swap the non-recession gold/Nasdaq mapping; all other timing, warmup, missing and freshness rules remain identical; cannot replace or rescue candidate"
+  },
+  "forbidden_changes": [
+    "any alternate Sahm or CPI threshold, equality direction, formula, warmup, lag or release timing",
+    "any alternate mapping, weights, assets, filters or windows",
+    "any interpolation, backfill, revised macro vintage or forward-filled signal/FX observation",
+    "any freshness other than 62 calendar days or any retrospective recovery",
+    "any periodic or drift rebalance when target is unchanged",
+    "any leverage, financing, shorting or negative cash",
+    "any post-result rescue, neighborhood search or replacement in this trial"
+  ]
+}

@@ -43,6 +43,7 @@ let package = Package(
                 "BacktestEngine.swift",
                 "GNR5ReversalStrategy.swift",
                 "GORQREG25263Strategy.swift",
+                "MacroSahmCPIStrategy.swift",
                 "AssetTimeMachineServerSupport.swift",
                 "PublicBacktestCore.swift"
             ],
