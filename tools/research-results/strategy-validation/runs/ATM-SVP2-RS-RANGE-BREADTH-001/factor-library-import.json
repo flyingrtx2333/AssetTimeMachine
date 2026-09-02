@@ -1,0 +1,57 @@
+{
+  "schema_version": "factor-library-v1",
+  "batch_key": "ATM-SVP2-RS-RANGE-BREADTH-001-factor-library-v1",
+  "source_repository": "AssetTimeMachine",
+  "source_commit": "5c47cb9e312db523d205e7bbb7c21e5aeaaed21d",
+  "dataset_fingerprint": "c578a2ebedfbcccff7b0800a516d2d5c88de4a73f1c578d37308cda6f625fd47",
+  "methodology": {
+    "evaluation_kind": "formal_retrospective_factor_mechanism",
+    "sample_design": "four frozen windows; run invalidated before factor evidence output",
+    "performance_opened": false,
+    "permanent_no_retry": true
+  },
+  "run_key": "ATM-SVP2-RS-RANGE-BREADTH-001",
+  "run_title": "RS 区间风险广度因子正式验证",
+  "runner_path": "AssetTimeMachine/Backtest/RSRangeBreadthFormalSupport.swift",
+  "started_at": "2026-09-02T18:08:50+08:00",
+  "finished_at": "2026-09-02T18:09:26+08:00",
+  "summary": "共享模拟器 queue completion gate 失败，因子机制指标未输出；该版本永久淘汰。",
+  "factors": [
+    {
+      "factor_key": "rs_range_risk_21_252",
+      "display_name": "RS 区间风险比 21/252",
+      "family": "range_risk",
+      "description": "Rogers-Satchell 21 日均值相对 252 日均值的变化率；正式候选因执行队列门禁失败而拒绝。",
+      "tags": ["rogers-satchell", "ohlc", "range-risk", "rejected", "permanently-closed"],
+      "research_role": "alpha_candidate",
+      "owner_name": "AssetTimeMachine",
+      "source_project": "AssetTimeMachine",
+      "version": {
+        "version_key": "rs-range-risk-21-252-v1",
+        "formula_text": "q=log(H/C)*log(H/O)+log(L/C)*log(L/O); x=mean(q,21)/mean(q,252)-1",
+        "parameters": {"short_lookback": 21, "long_lookback": 252, "calm_rule": "x<=0"},
+        "required_inputs": ["open", "high", "low", "close"],
+        "applicable_universe": ["gold_cny", "nasdaq", "sp500"],
+        "frequency": "daily",
+        "lookback_sessions": 252,
+        "observation_lag_sessions": 1,
+        "source_path": "AssetTimeMachine/Backtest/RSRangeBreadthStrategy.swift",
+        "code_sha256": "a8ecb7c597141aa964cf57c79142ee95f8f69d5ffae2a1c5356d6b6a600bbe99",
+        "lifecycle_status": "rejected",
+        "materialization_policy": "none"
+      },
+      "results": [
+        {
+          "target_key": "future_rs_risk_21",
+          "horizon_sessions": 21,
+          "result_status": "invalid",
+          "sample_counts": {},
+          "conclusion": "正式 run 在共享 simulator queue completion gate 中止，未输出机制样本或指标；禁止重跑。",
+          "metrics": []
+        }
+      ]
+    }
+  ],
+  "artifacts": [],
+  "observations": []
+}

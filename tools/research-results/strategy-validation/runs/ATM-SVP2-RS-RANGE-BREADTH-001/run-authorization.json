@@ -1,0 +1,10 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "R1_RETROSPECTIVE",
+  "execution_git_commit": "5c47cb9e312db523d205e7bbb7c21e5aeaaed21d",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "9b098c7f2bad32084d106bf32c96703416f144914f95038fe5dbcee5b1214c29",
+  "preregistration_record_hash": "9b098c7f2bad32084d106bf32c96703416f144914f95038fe5dbcee5b1214c29",
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-RS-RANGE-BREADTH-001"
+}
