@@ -1,0 +1,60 @@
+{
+  "schema_version": "strategy-library-v1",
+  "batch_key": "ATM-SVP2-RS-RANGE-BREADTH-001-strategy-library-v1",
+  "source_repository": "AssetTimeMachine",
+  "source_commit": "5c47cb9e312db523d205e7bbb7c21e5aeaaed21d",
+  "run": {
+    "run_key": "ATM-SVP2-RS-RANGE-BREADTH-001",
+    "title": "RS 区间风险广度策略正式验证",
+    "protocol_id": "ATM-SVP-2",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-RS-RANGE-BREADTH-001.json",
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-RS-RANGE-BREADTH-001/artifact-manifest.json",
+    "preregistration_hash": "9b098c7f2bad32084d106bf32c96703416f144914f95038fe5dbcee5b1214c29",
+    "execution_commit": "5c47cb9e312db523d205e7bbb7c21e5aeaaed21d",
+    "status": "INVALID",
+    "decision": "共享 BacktestDailySimulator 检出 pending target 未在下一 review 前完成；正式运行在指标输出前中止，永久淘汰，禁止重跑。",
+    "methodology": {
+      "schedule": "immutable bit-exact RS 21/252 schedule",
+      "execution": "shared BacktestDailySimulator, T-1, sell-before-buy",
+      "performance_opened": false,
+      "permanent_no_retry": true
+    },
+    "started_at": "2026-09-02T18:08:50+08:00",
+    "finished_at": "2026-09-02T18:09:26+08:00"
+  },
+  "strategies": [
+    {
+      "strategy_key": "RS-RANGE-BREADTH-21-252-001",
+      "display_name": "RS 区间风险广度 21/252",
+      "family": "range-risk-breadth",
+      "strategy_kind": "allocation",
+      "description": "在黄金、纳指、标普三资产间等权配置于 Rogers-Satchell 短期风险不高于长期风险的资产。正式验证因执行队列不完整而永久淘汰。",
+      "tags": ["rogers-satchell", "ohlc", "cross-asset", "invalid", "permanently-closed"],
+      "source_project": "AssetTimeMachine",
+      "version": {
+        "version_key": "rs-range-breadth-21-252-v1",
+        "mechanism_text": "q=log(H/C)log(H/O)+log(L/C)log(L/O); x=mean21(q)/mean252(q)-1; x<=0 资产等权，21 个共同 OHLC 日复核；T-1、先卖后买、无杠杆。",
+        "parameters": {"short_lookback": 21, "long_lookback": 252, "review_step": 21, "threshold": 0},
+        "assets": ["gold_cny", "nasdaq", "sp500"],
+        "source_path": "AssetTimeMachine/Backtest/RSRangeBreadthStrategy.swift",
+        "code_sha256": "a8ecb7c597141aa964cf57c79142ee95f8f69d5ffae2a1c5356d6b6a600bbe99",
+        "target_fingerprint": "f4c3b50ab8bc7d6be600cf33e491b4630710d76a67614ca2e2862f50246d6a15",
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "leverage_allowed": false,
+        "shorting_allowed": false,
+        "financing_allowed": false
+      },
+      "result": {
+        "candidate_id": "RS-RANGE-BREADTH-21-252-001",
+        "result_status": "INVALID",
+        "robust_strategy_pass": false,
+        "metrics": {"performance_opened": false},
+        "gates": {"shared_simulator_queue_completion": false, "permanent_no_retry": true},
+        "artifacts": [{"path": "tools/research-results/strategy-validation/results/ATM-SVP2-RS-RANGE-BREADTH-001.json"}],
+        "conclusion": "冻结 target 在共享 App simulator 中存在未完成/被抑制的 pending 队列；未生成收益指标，按预注册规则永久关闭。"
+      }
+    }
+  ]
+}

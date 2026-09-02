@@ -1,0 +1,37 @@
+{
+  "files": [
+    {
+      "bytes": 889,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-RS-RANGE-BREADTH-001/execution.json",
+      "sha256": "6dd22df66977342004e7ad0e1fd1897d1e9edd97f54ccef466aa1ddb3019a298"
+    },
+    {
+      "bytes": 443,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-RS-RANGE-BREADTH-001/run-authorization.json",
+      "sha256": "8a13cf416357a48dc595a10aee3d5c895b8be9e535555e638626588f63e0624c"
+    },
+    {
+      "bytes": 1183,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-RS-RANGE-BREADTH-001/stderr.txt",
+      "sha256": "ee7986354f8bc37e3ce627d4ceb7ebce414c27ad5aad645b976ee63e5a6c56de"
+    },
+    {
+      "bytes": 352,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-RS-RANGE-BREADTH-001/stdout.txt",
+      "sha256": "f3b7e7de52cf0d79ea03992a406a45b1d55f8263770c2b7a61f341def9a0ae2e"
+    }
+  ],
+  "generated_at": "2026-09-02T18:10:31+08:00",
+  "git_commit": "5c47cb9e312db523d205e7bbb7c21e5aeaaed21d",
+  "kind": "run",
+  "metadata": {
+    "reason": "shared simulator queue incomplete before performance metrics output",
+    "status": "INVALID"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-RS-RANGE-BREADTH-001"
+}

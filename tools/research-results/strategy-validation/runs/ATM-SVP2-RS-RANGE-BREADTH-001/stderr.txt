@@ -1,0 +1,11 @@
+RS_RANGE_BREADTH_FORMAL_ERROR: queue incomplete: pending target suppressed or remained incomplete
+Traceback (most recent call last):
+  File "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine/scripts/run_rs_range_breadth_formal.py", line 110, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine/scripts/run_rs_range_breadth_formal.py", line 103, in main
+    print(run([str(BINARY), "--repo-root", str(ROOT), "--output-dir", str(output)]), end="")
+          ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine/scripts/run_rs_range_breadth_formal.py", line 20, in run
+    raise RuntimeError(f"command failed ({result.returncode}): {' '.join(command)}")
+RuntimeError: command failed (1): /Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine/.build/release/RSRangeBreadthFormal --repo-root /Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine --output-dir /Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine/tools/research-results/strategy-validation/runs/ATM-SVP2-RS-RANGE-BREADTH-001/engine
