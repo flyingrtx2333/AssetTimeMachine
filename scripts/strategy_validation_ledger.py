@@ -52,6 +52,19 @@ RESULT_REQUIRED_FIELDS = {
     "decision",
     "artifacts",
 }
+RUN_STARTED_REQUIRED_FIELDS = {
+    "trial_id",
+    "protocol_id",
+    "preregistration_record_hash",
+    "implementation_commit",
+    "formal_run_budget",
+    "output_directory",
+    "nonce_sha256",
+    "permanent",
+    "authority_remote",
+    "authority_ref",
+    "authority_base_commit",
+}
 HOLDOUT_BURN_REQUIRED_FIELDS = {
     "protocol_id",
     "holdout_id",
@@ -230,6 +243,7 @@ def verify_records(records: list[dict[str, Any]]) -> None:
     previous_timestamp: datetime | None = None
     seen_hashes: set[str] = set()
     preregistrations: dict[str, dict[str, Any]] = {}
+    started_trials: dict[str, dict[str, Any]] = {}
     result_trials: set[str] = set()
     burned_holdout_by_strategy_version: dict[str, str] = {}
     upgraded_protocols: set[tuple[str, str]] = set()
@@ -283,6 +297,38 @@ def verify_records(records: list[dict[str, Any]]) -> None:
             if trial_id in preregistrations:
                 raise SystemExit(f"Duplicate PREREGISTER for trial_id={trial_id}")
             preregistrations[trial_id] = record
+        elif event == "RUN_STARTED":
+            require_payload_fields(payload, RUN_STARTED_REQUIRED_FIELDS, "RUN_STARTED")
+            if not trial_id:
+                raise SystemExit(f"RUN_STARTED missing trial_id at sequence {index}")
+            trial_id = str(trial_id)
+            preregistration = preregistrations.get(trial_id)
+            if preregistration is None:
+                raise SystemExit(f"RUN_STARTED for trial_id={trial_id} has no earlier PREREGISTER")
+            prereg_payload = preregistration["payload"]
+            if trial_id in started_trials:
+                raise SystemExit(f"Duplicate RUN_STARTED for trial_id={trial_id}")
+            if payload["protocol_id"] != prereg_payload["protocol_id"]:
+                raise SystemExit("RUN_STARTED protocol_id does not match preregistration")
+            if payload["preregistration_record_hash"] != preregistration["record_hash"]:
+                raise SystemExit("RUN_STARTED preregistration_record_hash mismatch")
+            if payload["implementation_commit"] != prereg_payload.get("implementation_commit"):
+                raise SystemExit("RUN_STARTED implementation_commit mismatch")
+            if payload["formal_run_budget"] != 1 or prereg_payload["formal_run_budget"] != 1:
+                raise SystemExit("RUN_STARTED requires a preregistered one-shot budget")
+            if payload["permanent"] is not True:
+                raise SystemExit("RUN_STARTED permanent must be true")
+            authority = prereg_payload.get("run_budget_authority")
+            if not isinstance(authority, dict) or payload["authority_remote"] != authority.get("remote") or payload["authority_ref"] != authority.get("ref"):
+                raise SystemExit("RUN_STARTED authority mismatch")
+            if not isinstance(payload["authority_base_commit"], str) or len(payload["authority_base_commit"]) != 40:
+                raise SystemExit("RUN_STARTED authority_base_commit invalid")
+            if not isinstance(payload["output_directory"], str) or not payload["output_directory"]:
+                raise SystemExit("RUN_STARTED output_directory must be non-empty")
+            nonce_sha256 = payload["nonce_sha256"]
+            if not isinstance(nonce_sha256, str) or len(nonce_sha256) != 64 or any(c not in "0123456789abcdef" for c in nonce_sha256.lower()):
+                raise SystemExit("RUN_STARTED nonce_sha256 must be a SHA-256 hex digest")
+            started_trials[trial_id] = record
         elif event == "RESULT":
             if not trial_id:
                 raise SystemExit(f"RESULT missing trial_id at sequence {index}")
@@ -295,6 +341,12 @@ def verify_records(records: list[dict[str, Any]]) -> None:
             if trial_id in result_trials:
                 raise SystemExit(f"Duplicate RESULT for trial_id={trial_id}")
             validate_result_payload(payload, preregistration)
+            if preregistration["payload"].get("requires_durable_run_reservation") is True:
+                started = started_trials.get(trial_id)
+                if started is None:
+                    raise SystemExit(f"RESULT for trial_id={trial_id} has no earlier RUN_STARTED")
+                if payload.get("run_budget_record_hash") != started["record_hash"]:
+                    raise SystemExit("RESULT run_budget_record_hash mismatch")
             result_trials.add(trial_id)
         elif event == "PROTOCOL_UPGRADE":
             require_payload_fields(payload, PROTOCOL_UPGRADE_REQUIRED_FIELDS, "PROTOCOL_UPGRADE")
