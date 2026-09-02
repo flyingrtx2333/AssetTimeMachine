@@ -1,0 +1,121 @@
+{
+  "files": [
+    {
+      "bytes": 186316,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-06-26",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GOR-QREG-001/CONTROL-CASH-YIELD-CNY-portfolio.csv",
+      "row_count": 6245,
+      "sha256": "c4eb73234c65cb97da4cf2569bf13beb135aba55303384be81dd610715a083e7"
+    },
+    {
+      "bytes": 184164,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-06-26",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GOR-QREG-001/CONTROL-SIGN-REVERSAL-portfolio.csv",
+      "row_count": 6245,
+      "sha256": "7fd91979a793d71ab65eeaa79a76da28ba5406f9ac82446b5ceb5eeec3af3ef1"
+    },
+    {
+      "bytes": 183794,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-06-26",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GOR-QREG-001/CONTROL-STATE-INDEPENDENT-50-50-portfolio.csv",
+      "row_count": 6245,
+      "sha256": "7c33df4be56bc6e7b4e8b88d46e87789bf9b1af00cd40602d5382e1e80d5bf7a"
+    },
+    {
+      "bytes": 184863,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-06-26",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GOR-QREG-001/GOR-QREG-252-63-APP-portfolio.csv",
+      "row_count": 6245,
+      "sha256": "b8c2f8f0f811eb6e14d577205ac815778d0a323494d3b97818e92dc0105f08e6"
+    },
+    {
+      "bytes": 185402,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-06-26",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GOR-QREG-001/GOR-QREG-252-63-BPS25-portfolio.csv",
+      "row_count": 6245,
+      "sha256": "74f4a7e3cc08186919acbb2b15664a2ecbf518945a53d9665045f2f6c4b5cc52"
+    },
+    {
+      "bytes": 1445,
+      "columns": [
+        "signal_index",
+        "signal_date",
+        "gold_target",
+        "nasdaq_target",
+        "reason"
+      ],
+      "date_column": "signal_date",
+      "first_date": "2002-07-11",
+      "format": "csv",
+      "last_date": "2026-04-28",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GOR-QREG-001/GOR-QREG-252-63-schedule.csv",
+      "row_count": 29,
+      "sha256": "739aeb9f651990fe0fb7eb6d0bc3e3a3c41fa09822c14a01bc9dc6aed81e06d5"
+    },
+    {
+      "bytes": 14851,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GOR-QREG-001/candidate-metrics.json",
+      "sha256": "55fa1dbd8a5ed26aa0a78e7dbd16cd6f3dbd5b9d4dad4f478485e7831440e5bf"
+    },
+    {
+      "bytes": 525,
+      "format": "log",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GOR-QREG-001/formal-run.log",
+      "sha256": "01926fc8a1234b3ec1387837c37742bbefe5b586ec25cdf12de8e8c0e6cde278"
+    },
+    {
+      "bytes": 435,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GOR-QREG-001/run-guard-receipt.json",
+      "sha256": "f0af8ad2e576163112cf980afcdea7ffae56ef4de0ce3918c8369ed2bda1a8b6"
+    }
+  ],
+  "generated_at": "2026-09-02T11:53:15+08:00",
+  "git_commit": "42b27a1f1b067a8890c0ea766fefa87c737bafea",
+  "kind": "result",
+  "metadata": {
+    "candidate_id": "GOR-QREG-252-63",
+    "decision": "REJECTED",
+    "formal_run_count": 1,
+    "trade_csv_missing": true,
+    "trade_csv_note": "formal runner did not emit the preregistered per-trade execution artifact; no rerun was performed because formal_run_budget=1; this deficiency cannot rescue the mechanically rejected candidate"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-GOR-QREG-001"
+}

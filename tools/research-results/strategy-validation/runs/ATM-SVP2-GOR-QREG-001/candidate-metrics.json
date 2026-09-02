@@ -1,0 +1,453 @@
+{
+  "app_product_cost" : {
+    "constraints" : {
+      "financing_allowed" : false,
+      "max_actual_gross" : 1,
+      "max_target_gross" : 1,
+      "min_cash" : 0,
+      "min_target_weight" : 1,
+      "pass" : true,
+      "shorting_allowed" : false,
+      "signal_only_symbols" : [
+        "oil_wti_cny",
+        "usd_per_cny"
+      ],
+      "traded_symbols" : [
+        "gold_cny",
+        "nasdaq"
+      ]
+    },
+    "mechanical_product_gate" : {
+      "checks" : {
+        "constraints_pass" : true,
+        "COVID_CRASH_2020_mdd_le_15pct" : false,
+        "full_cagr_ge_10pct" : false,
+        "full_cagr_gt_cash_control" : true,
+        "full_mdd_le_10pct" : false,
+        "full_sharpe_gt_sign_reversal_falsification" : false,
+        "full_sharpe_gt_state_independent_50_50" : false,
+        "GFC_2008_2009_mdd_le_15pct" : false,
+        "last10_cagr_ge_10pct" : false,
+        "last10_mdd_le_10pct" : false,
+        "same_immutable_schedule_at_both_costs" : true,
+        "since2020_cagr_ge_10pct" : false,
+        "since2020_mdd_le_10pct" : false,
+        "since2022_cagr_ge_10pct" : true,
+        "since2022_mdd_le_10pct" : false,
+        "TIGHTENING_2022_mdd_le_15pct" : false
+      },
+      "pass" : false
+    },
+    "metrics" : {
+      "full_history" : {
+        "available" : true,
+        "cagr_percent" : 3.39054212487504,
+        "end" : "2026-08-07",
+        "mdd_percent" : 54.183986170072252,
+        "observations" : 6245,
+        "sharpe" : 0.26498056112673557,
+        "start" : "2001-06-26",
+        "total_return" : 1.3103381348655114
+      },
+      "last_10_years" : {
+        "available" : true,
+        "cagr_percent" : 6.125198718312852,
+        "end" : "2026-08-07",
+        "mdd_percent" : 35.168087929828395,
+        "observations" : 2492,
+        "sharpe" : 0.38868578665613834,
+        "start" : "2016-08-08",
+        "total_return" : 0.81167017105643358
+      },
+      "since_2020" : {
+        "available" : true,
+        "cagr_percent" : 9.6655571254082631,
+        "end" : "2026-08-07",
+        "mdd_percent" : 32.917188480438284,
+        "observations" : 1645,
+        "sharpe" : 0.50893626575092099,
+        "start" : "2020-01-02",
+        "total_return" : 0.83773391295039401
+      },
+      "since_2022" : {
+        "available" : true,
+        "cagr_percent" : 13.119282343263027,
+        "end" : "2026-08-07",
+        "mdd_percent" : 30.281009978000494,
+        "observations" : 1143,
+        "sharpe" : 0.65627338774805066,
+        "start" : "2022-01-03",
+        "total_return" : 0.76119253978033252
+      },
+      "stress_periods" : {
+        "COVID_CRASH_2020" : {
+          "available" : true,
+          "cagr_percent" : -74.125359728791267,
+          "end" : "2020-04-30",
+          "mdd_percent" : 29.383308084806302,
+          "observations" : 50,
+          "sharpe" : -1.8211326514781085,
+          "start" : "2020-02-19",
+          "total_return" : -0.23109946646962465
+        },
+        "GFC_2008_2009" : {
+          "available" : true,
+          "cagr_percent" : -25.90812274954245,
+          "end" : "2009-06-30",
+          "mdd_percent" : 38.345187240178127,
+          "observations" : 206,
+          "sharpe" : -0.51216928485398905,
+          "start" : "2008-09-02",
+          "total_return" : -0.21894997514639503
+        },
+        "TIGHTENING_2022" : {
+          "available" : true,
+          "cagr_percent" : -28.530445246496839,
+          "end" : "2022-12-30",
+          "mdd_percent" : 29.202814456712424,
+          "observations" : 250,
+          "sharpe" : -0.89289799694958172,
+          "start" : "2022-01-03",
+          "total_return" : -0.28250561930519702
+        }
+      }
+    },
+    "schedule_event_count" : 29,
+    "schedule_fingerprint" : "a6dc1f183dddc470"
+  },
+  "candidate_id" : "GOR-QREG-252-63",
+  "controls" : {
+    "cash_yield_cny" : {
+      "metrics" : {
+        "full_history" : {
+          "available" : true,
+          "cagr_percent" : 0.47746758541897805,
+          "end" : "2026-08-07",
+          "mdd_percent" : 0,
+          "observations" : 6245,
+          "sharpe" : 20.03510284383033,
+          "start" : "2001-06-26",
+          "total_return" : 0.12707671506713614
+        },
+        "last_10_years" : {
+          "available" : true,
+          "cagr_percent" : 0.35061153241056076,
+          "end" : "2026-08-07",
+          "mdd_percent" : 0,
+          "observations" : 2492,
+          "sharpe" : 25.600776916105158,
+          "start" : "2016-08-08",
+          "total_return" : 0.035604649611164829
+        },
+        "since_2020" : {
+          "available" : true,
+          "cagr_percent" : 0.35061153241051635,
+          "end" : "2026-08-07",
+          "mdd_percent" : 0,
+          "observations" : 1645,
+          "sharpe" : 25.455562479925195,
+          "start" : "2020-01-02",
+          "total_return" : 0.02335257768628396
+        },
+        "since_2022" : {
+          "available" : true,
+          "cagr_percent" : 0.35061153241053855,
+          "end" : "2026-08-07",
+          "mdd_percent" : 0,
+          "observations" : 1143,
+          "sharpe" : 25.42945567578041,
+          "start" : "2022-01-03",
+          "total_return" : 0.016199550864011592
+        },
+        "stress_periods" : {
+          "COVID_CRASH_2020" : {
+            "available" : true,
+            "cagr_percent" : 0.35061153241033871,
+            "end" : "2020-04-30",
+            "mdd_percent" : 0,
+            "observations" : 50,
+            "sharpe" : 24.557524266187304,
+            "start" : "2020-02-19",
+            "total_return" : 0.00068058415325000787
+          },
+          "GFC_2008_2009" : {
+            "available" : true,
+            "cagr_percent" : 0.4651282224042097,
+            "end" : "2009-06-30",
+            "mdd_percent" : 0,
+            "observations" : 206,
+            "sharpe" : 22.358367528002251,
+            "start" : "2008-09-02",
+            "total_return" : 0.0038315242749358269
+          },
+          "TIGHTENING_2022" : {
+            "available" : true,
+            "cagr_percent" : 0.35061153241060516,
+            "end" : "2022-12-30",
+            "mdd_percent" : 0,
+            "observations" : 250,
+            "sharpe" : 25.521159913356882,
+            "start" : "2022-01-03",
+            "total_return" : 0.0034652480332220126
+          }
+        }
+      },
+      "role" : "cash hurdle; cannot rescue candidate"
+    },
+    "sign_reversal_falsification" : {
+      "metrics" : {
+        "full_history" : {
+          "available" : true,
+          "cagr_percent" : 12.765540788702978,
+          "end" : "2026-08-07",
+          "mdd_percent" : 40.182170318212037,
+          "observations" : 6245,
+          "sharpe" : 0.74798739464866526,
+          "start" : "2001-06-26",
+          "total_return" : 19.434979815338973
+        },
+        "last_10_years" : {
+          "available" : true,
+          "cagr_percent" : 17.277527604489929,
+          "end" : "2026-08-07",
+          "mdd_percent" : 23.745841853956286,
+          "observations" : 2492,
+          "sharpe" : 1.0166770180764184,
+          "start" : "2016-08-08",
+          "total_return" : 3.9188521419871103
+        },
+        "since_2020" : {
+          "available" : true,
+          "cagr_percent" : 18.644385068806102,
+          "end" : "2026-08-07",
+          "mdd_percent" : 23.745841853956193,
+          "observations" : 1645,
+          "sharpe" : 0.9830838724653207,
+          "start" : "2020-01-02",
+          "total_return" : 2.0881333394019306
+        },
+        "since_2022" : {
+          "available" : true,
+          "cagr_percent" : 18.16520867754128,
+          "end" : "2026-08-07",
+          "mdd_percent" : 23.745841853956225,
+          "observations" : 1143,
+          "sharpe" : 0.97488954628936897,
+          "start" : "2022-01-03",
+          "total_return" : 1.1519249137489092
+        },
+        "stress_periods" : {
+          "COVID_CRASH_2020" : {
+            "available" : true,
+            "cagr_percent" : 117.90717394516457,
+            "end" : "2020-04-30",
+            "mdd_percent" : 10.35238581683145,
+            "observations" : 50,
+            "sharpe" : 2.2643453055525051,
+            "start" : "2020-02-19",
+            "total_return" : 0.16347143424229627
+          },
+          "GFC_2008_2009" : {
+            "available" : true,
+            "cagr_percent" : 13.998280331381796,
+            "end" : "2009-06-30",
+            "mdd_percent" : 31.020066734304187,
+            "observations" : 206,
+            "sharpe" : 0.52260074049138594,
+            "start" : "2008-09-02",
+            "total_return" : 0.11401104241556759
+          },
+          "TIGHTENING_2022" : {
+            "available" : true,
+            "cagr_percent" : 10.374837968362073,
+            "end" : "2022-12-30",
+            "mdd_percent" : 11.999573588692735,
+            "observations" : 250,
+            "sharpe" : 0.75988831806010981,
+            "start" : "2022-01-03",
+            "total_return" : 0.10248134248329177
+          }
+        }
+      },
+      "role" : "falsification control; cannot replace candidate"
+    },
+    "state_independent_50_50" : {
+      "metrics" : {
+        "full_history" : {
+          "available" : true,
+          "cagr_percent" : 10.877979944498438,
+          "end" : "2026-08-07",
+          "mdd_percent" : 34.45802566211286,
+          "observations" : 6245,
+          "sharpe" : 0.79784241656239596,
+          "start" : "2001-06-26",
+          "total_return" : 12.373918765126488
+        },
+        "last_10_years" : {
+          "available" : true,
+          "cagr_percent" : 15.263922321831359,
+          "end" : "2026-08-07",
+          "mdd_percent" : 19.907109516718418,
+          "observations" : 2492,
+          "sharpe" : 1.0299838204997169,
+          "start" : "2016-08-08",
+          "total_return" : 3.136952937121662
+        },
+        "since_2020" : {
+          "available" : true,
+          "cagr_percent" : 16.733065206219557,
+          "end" : "2026-08-07",
+          "mdd_percent" : 19.907109516718428,
+          "observations" : 1645,
+          "sharpe" : 0.99361657303645634,
+          "start" : "2020-01-02",
+          "total_return" : 1.7744450348011429
+        },
+        "since_2022" : {
+          "available" : true,
+          "cagr_percent" : 16.592562061137926,
+          "end" : "2026-08-07",
+          "mdd_percent" : 16.421530386455807,
+          "observations" : 1143,
+          "sharpe" : 1.0131033585368368,
+          "start" : "2022-01-03",
+          "total_return" : 1.0235358639833882
+        },
+        "stress_periods" : {
+          "COVID_CRASH_2020" : {
+            "available" : true,
+            "cagr_percent" : -13.014076499756467,
+            "end" : "2020-04-30",
+            "mdd_percent" : 19.907109516718403,
+            "observations" : 50,
+            "sharpe" : -0.14356674827909899,
+            "start" : "2020-02-19",
+            "total_return" : -0.026738275886160401
+          },
+          "GFC_2008_2009" : {
+            "available" : true,
+            "cagr_percent" : 0.15777332672770594,
+            "end" : "2009-06-30",
+            "mdd_percent" : 24.926906500107833,
+            "observations" : 206,
+            "sharpe" : 0.1359525880645957,
+            "start" : "2008-09-02",
+            "total_return" : 0.0013000187652123518
+          },
+          "TIGHTENING_2022" : {
+            "available" : true,
+            "cagr_percent" : -15.668834245980278,
+            "end" : "2022-12-30",
+            "mdd_percent" : 16.421530386455807,
+            "observations" : 250,
+            "sharpe" : -0.71958248331008867,
+            "start" : "2022-01-03",
+            "total_return" : -0.15501442246819175
+          }
+        }
+      },
+      "role" : "state-independent control; cannot rescue candidate"
+    }
+  },
+  "decision" : "REJECTED",
+  "engine_version" : "atm-swift-clock-v3-2026-08-31",
+  "formal_bps25" : {
+    "constraints" : {
+      "financing_allowed" : false,
+      "max_actual_gross" : 1,
+      "max_target_gross" : 1,
+      "min_cash" : 0,
+      "min_target_weight" : 1,
+      "pass" : true,
+      "shorting_allowed" : false,
+      "signal_only_symbols" : [
+        "oil_wti_cny",
+        "usd_per_cny"
+      ],
+      "traded_symbols" : [
+        "gold_cny",
+        "nasdaq"
+      ]
+    },
+    "metrics" : {
+      "full_history" : {
+        "available" : true,
+        "cagr_percent" : 5.8360597152851801,
+        "end" : "2026-08-07",
+        "mdd_percent" : 52.605074572181621,
+        "observations" : 6245,
+        "sharpe" : 0.37876239995097699,
+        "start" : "2001-06-26",
+        "total_return" : 3.1558256959935838
+      },
+      "last_10_years" : {
+        "available" : true,
+        "cagr_percent" : 8.7824922529482272,
+        "end" : "2026-08-07",
+        "mdd_percent" : 30.975369266230345,
+        "observations" : 2492,
+        "sharpe" : 0.50762525085830557,
+        "start" : "2016-08-08",
+        "total_return" : 1.3197431714938075
+      },
+      "since_2020" : {
+        "available" : true,
+        "cagr_percent" : 11.740140179504422,
+        "end" : "2026-08-07",
+        "mdd_percent" : 30.975369266230366,
+        "observations" : 1645,
+        "sharpe" : 0.58888862956115828,
+        "start" : "2020-01-02",
+        "total_return" : 1.0795195869993832
+      },
+      "since_2022" : {
+        "available" : true,
+        "cagr_percent" : 15.167786633825763,
+        "end" : "2026-08-07",
+        "mdd_percent" : 29.617114437341975,
+        "observations" : 1143,
+        "sharpe" : 0.7357892246155231,
+        "start" : "2022-01-03",
+        "total_return" : 0.91246616706219119
+      },
+      "stress_periods" : {
+        "COVID_CRASH_2020" : {
+          "available" : true,
+          "cagr_percent" : -71.232668311463925,
+          "end" : "2020-04-30",
+          "mdd_percent" : 29.383308084806281,
+          "observations" : 50,
+          "sharpe" : -1.6678413805119816,
+          "start" : "2020-02-19",
+          "total_return" : -0.21509536587949729
+        },
+        "GFC_2008_2009" : {
+          "available" : true,
+          "cagr_percent" : -24.032636307765166,
+          "end" : "2009-06-30",
+          "mdd_percent" : 37.061887538533909,
+          "observations" : 206,
+          "sharpe" : -0.45420508343868915,
+          "start" : "2008-09-02",
+          "total_return" : -0.2026929918064504
+        },
+        "TIGHTENING_2022" : {
+          "available" : true,
+          "cagr_percent" : -28.530445246496761,
+          "end" : "2022-12-30",
+          "mdd_percent" : 29.202814456712368,
+          "observations" : 250,
+          "sharpe" : -0.89289799694957672,
+          "start" : "2022-01-03",
+          "total_return" : -0.28250561930519624
+        }
+      }
+    },
+    "schedule_event_count" : 29,
+    "schedule_fingerprint" : "a6dc1f183dddc470"
+  },
+  "no_parameter_rescue" : true,
+  "protocol_id" : "ATM-SVP-2",
+  "same_schedule_replayed_at_both_costs" : true,
+  "trial_id" : "ATM-SVP2-GOR-QREG-001"
+}
