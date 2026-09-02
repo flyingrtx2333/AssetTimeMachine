@@ -1,0 +1,366 @@
+{
+  "app_product_stress" : {
+    "constraints" : {
+      "financing_allowed" : false,
+      "max_actual_gross" : 1,
+      "max_target_gross" : 1,
+      "min_cash" : 0,
+      "min_holding_units" : 4182.4256923952862,
+      "min_target_weight" : 0.5,
+      "pass" : true,
+      "shorting_allowed" : false
+    },
+    "events_entered" : 217,
+    "events_exited" : 216,
+    "fill_count" : 1455,
+    "mechanical_product_gate" : {
+      "checks" : {
+        "constraints_pass" : true,
+        "COVID_CRASH_2020_mdd_le_15pct" : false,
+        "full_cagr_ge_10pct" : false,
+        "full_mdd_le_10pct" : false,
+        "full_mdd_le_15pct" : false,
+        "GFC_2008_2009_mdd_le_15pct" : false,
+        "last10_cagr_gt_0" : false,
+        "last10_mdd_le_15pct" : false,
+        "since2020_cagr_gt_0" : true,
+        "since2020_mdd_le_15pct" : false,
+        "since2022_cagr_gt_0" : false,
+        "since2022_mdd_le_15pct" : false,
+        "TIGHTENING_2022_mdd_le_15pct" : false
+      },
+      "pass" : false
+    },
+    "metrics" : {
+      "full_history" : {
+        "annualized_volatility" : 0.16051170941912371,
+        "available" : true,
+        "cagr" : -0.080738753413840292,
+        "cagr_percent" : -8.0738753413840296,
+        "end" : "2026-08-07",
+        "mdd" : 0.910302480309228,
+        "mdd_percent" : 91.030248030922806,
+        "observations" : 6245,
+        "sharpe" : -0.44394842751983871,
+        "start" : "2001-06-26",
+        "total_return" : -0.87927570528626087
+      },
+      "last_10_years" : {
+        "annualized_volatility" : 0.16346069481915632,
+        "available" : true,
+        "cagr" : -0.0089080368030094448,
+        "cagr_percent" : -0.89080368030094448,
+        "end" : "2026-08-07",
+        "mdd" : 0.3228010462249073,
+        "mdd_percent" : 32.280104622490732,
+        "observations" : 2492,
+        "sharpe" : 0.02712938764245185,
+        "start" : "2016-08-08",
+        "total_return" : -0.085559392441789672
+      },
+      "since_2020" : {
+        "annualized_volatility" : 0.18559577157205848,
+        "available" : true,
+        "cagr" : 0.0075749952816763777,
+        "cagr_percent" : 0.75749952816763777,
+        "end" : "2026-08-07",
+        "mdd" : 0.32280104622490907,
+        "mdd_percent" : 32.28010462249091,
+        "observations" : 1645,
+        "sharpe" : 0.1335753691552429,
+        "start" : "2020-01-02",
+        "total_return" : 0.0510319311777363
+      },
+      "since_2022" : {
+        "annualized_volatility" : 0.1663871833095065,
+        "available" : true,
+        "cagr" : -0.0022008650611081704,
+        "cagr_percent" : -0.22008650611081704,
+        "end" : "2026-08-07",
+        "mdd" : 0.25427944671005953,
+        "mdd_percent" : 25.427944671005953,
+        "observations" : 1143,
+        "sharpe" : 0.069361488524430651,
+        "start" : "2022-01-03",
+        "total_return" : -0.010065138740995794
+      },
+      "stress_periods" : {
+        "COVID_CRASH_2020" : {
+          "annualized_volatility" : 0.56004756922602494,
+          "available" : true,
+          "cagr" : -0.35566430206488675,
+          "cagr_percent" : -35.566430206488675,
+          "end" : "2020-04-30",
+          "mdd" : 0.24380923384977823,
+          "mdd_percent" : 24.380923384977823,
+          "observations" : 50,
+          "sharpe" : -0.5050527235832597,
+          "start" : "2020-02-19",
+          "total_return" : -0.081891909653907469
+        },
+        "GFC_2008_2009" : {
+          "annualized_volatility" : 0.31307042377046307,
+          "available" : true,
+          "cagr" : -0.4127640092237217,
+          "cagr_percent" : -41.276400922372169,
+          "end" : "2009-06-30",
+          "mdd" : 0.46297645911130103,
+          "mdd_percent" : 46.297645911130104,
+          "observations" : 206,
+          "sharpe" : -1.5424551839621257,
+          "start" : "2008-09-02",
+          "total_return" : -0.35511820734982902
+        },
+        "TIGHTENING_2022" : {
+          "annualized_volatility" : 0.18941943991208166,
+          "available" : true,
+          "cagr" : -0.25067810243538113,
+          "cagr_percent" : -25.067810243538112,
+          "end" : "2022-12-30",
+          "mdd" : 0.25220050244854642,
+          "mdd_percent" : 25.22005024485464,
+          "observations" : 250,
+          "sharpe" : -1.4282045407244131,
+          "start" : "2022-01-03",
+          "total_return" : -0.24815768373584157
+        }
+      }
+    },
+    "signals_ignored_during_events" : 103,
+    "target_fingerprint" : "49d210055b11943e",
+    "trade_fingerprint" : "783558672a7f49bd"
+  },
+  "candidate_id" : "GNR-5",
+  "cost_model" : {
+    "formal_primary" : {
+      "cost_regime_id" : "ATM-COST-2026-08-28-BPS25",
+      "fee_percent" : 0.025000000000000001,
+      "slippage_percent" : 0
+    },
+    "product_acceptance_stress" : {
+      "fee_percent" : 1,
+      "slippage_percent" : 0.050000000000000003
+    },
+    "product_decision_uses" : "product_acceptance_stress_only"
+  },
+  "decision" : "REJECTED",
+  "engine_version" : "atm-swift-clock-v3-2026-08-31",
+  "formal_bps25" : {
+    "constraints" : {
+      "financing_allowed" : false,
+      "max_actual_gross" : 1,
+      "max_target_gross" : 1,
+      "min_cash" : 0,
+      "min_holding_units" : 34457.532197208202,
+      "min_target_weight" : 0.5,
+      "pass" : true,
+      "shorting_allowed" : false
+    },
+    "events_entered" : 222,
+    "events_exited" : 221,
+    "fill_count" : 1345,
+    "metrics" : {
+      "full_history" : {
+        "annualized_volatility" : 0.15785108748531002,
+        "available" : true,
+        "cagr" : 0.10316568341005561,
+        "cagr_percent" : 10.31656834100556,
+        "end" : "2026-08-07",
+        "mdd" : 0.54626672198094062,
+        "mdd_percent" : 54.626672198094063,
+        "observations" : 6245,
+        "sharpe" : 0.70113519566850069,
+        "start" : "2001-06-26",
+        "total_return" : 10.773149316658753
+      },
+      "last_10_years" : {
+        "annualized_volatility" : 0.16149697337803134,
+        "available" : true,
+        "cagr" : 0.20042841001024447,
+        "cagr_percent" : 20.042841001024449,
+        "end" : "2026-08-07",
+        "mdd" : 0.21492969222265126,
+        "mdd_percent" : 21.492969222265128,
+        "observations" : 2492,
+        "sharpe" : 1.2123353018447396,
+        "start" : "2016-08-08",
+        "total_return" : 5.2092169595003472
+      },
+      "since_2020" : {
+        "annualized_volatility" : 0.18454492110718784,
+        "available" : true,
+        "cagr" : 0.23771248524730693,
+        "cagr_percent" : 23.771248524730694,
+        "end" : "2026-08-07",
+        "mdd" : 0.21492969222265165,
+        "mdd_percent" : 21.492969222265167,
+        "observations" : 1645,
+        "sharpe" : 1.2483683427508085,
+        "start" : "2020-01-02",
+        "total_return" : 3.0819914305192384
+      },
+      "since_2022" : {
+        "annualized_volatility" : 0.16786552146431533,
+        "available" : true,
+        "cagr" : 0.24153745503096835,
+        "cagr_percent" : 24.153745503096836,
+        "end" : "2026-08-07",
+        "mdd" : 0.13017584417102265,
+        "mdd_percent" : 13.017584417102265,
+        "observations" : 1143,
+        "sharpe" : 1.3726255845472815,
+        "start" : "2022-01-03",
+        "total_return" : 1.7002555566276616
+      },
+      "stress_periods" : {
+        "COVID_CRASH_2020" : {
+          "annualized_volatility" : 0.54716592431536115,
+          "available" : true,
+          "cagr" : -0.19814546417406431,
+          "cagr_percent" : -19.814546417406433,
+          "end" : "2020-04-30",
+          "mdd" : 0.21492969222265151,
+          "mdd_percent" : 21.492969222265152,
+          "observations" : 50,
+          "sharpe" : -0.1311804357852194,
+          "start" : "2020-02-19",
+          "total_return" : -0.04201790826604479
+        },
+        "GFC_2008_2009" : {
+          "annualized_volatility" : 0.31126530570310851,
+          "available" : true,
+          "cagr" : -0.27060934677134874,
+          "cagr_percent" : -27.060934677134874,
+          "end" : "2009-06-30",
+          "mdd" : 0.41404300561737933,
+          "mdd_percent" : 41.404300561737934,
+          "observations" : 206,
+          "sharpe" : -0.85817888951462218,
+          "start" : "2008-09-02",
+          "total_return" : -0.22897858081862532
+        },
+        "TIGHTENING_2022" : {
+          "annualized_volatility" : 0.19386925971963431,
+          "available" : true,
+          "cagr" : -0.067246826700668061,
+          "cagr_percent" : -6.7246826700668061,
+          "end" : "2022-12-30",
+          "mdd" : 0.13017584417102265,
+          "mdd_percent" : 13.017584417102265,
+          "observations" : 250,
+          "sharpe" : -0.2625948582847511,
+          "start" : "2022-01-03",
+          "total_return" : -0.066490965446178163
+        }
+      }
+    },
+    "signals_ignored_during_events" : 106,
+    "target_fingerprint" : "6f54fefc8c8758ca",
+    "trade_fingerprint" : "af826b4288f07f4c"
+  },
+  "gold_nasdaq_dual_trend_barbell_baseline_app_cost" : {
+    "fill_count" : 78,
+    "metrics" : {
+      "full_history" : {
+        "annualized_volatility" : 0.11378581370878453,
+        "available" : true,
+        "cagr" : 0.092648396122217536,
+        "cagr_percent" : 9.2648396122217527,
+        "end" : "2026-08-07",
+        "mdd" : 0.17344026276452737,
+        "mdd_percent" : 17.344026276452738,
+        "observations" : 5946,
+        "sharpe" : 0.83584919287717308,
+        "start" : "2002-09-18",
+        "total_return" : 7.3005243415995142
+      },
+      "last_10_years" : {
+        "annualized_volatility" : 0.11972031741463336,
+        "available" : true,
+        "cagr" : 0.11178041651853299,
+        "cagr_percent" : 11.178041651853299,
+        "end" : "2026-08-07",
+        "mdd" : 0.17235264734228581,
+        "mdd_percent" : 17.235264734228579,
+        "observations" : 2492,
+        "sharpe" : 0.94529295705396021,
+        "start" : "2016-08-08",
+        "total_return" : 1.8840395316717844
+      },
+      "since_2020" : {
+        "annualized_volatility" : 0.13609265718527594,
+        "available" : true,
+        "cagr" : 0.11982320632296273,
+        "cagr_percent" : 11.982320632296272,
+        "end" : "2026-08-07",
+        "mdd" : 0.17235264734228573,
+        "mdd_percent" : 17.235264734228572,
+        "observations" : 1645,
+        "sharpe" : 0.89999995500866514,
+        "start" : "2020-01-02",
+        "total_return" : 1.1094266420830841
+      },
+      "since_2022" : {
+        "annualized_volatility" : 0.13519498521614881,
+        "available" : true,
+        "cagr" : 0.15562646442214945,
+        "cagr_percent" : 15.562646442214945,
+        "end" : "2026-08-07",
+        "mdd" : 0.1717028117468091,
+        "mdd_percent" : 17.170281174680909,
+        "observations" : 1143,
+        "sharpe" : 1.1378045457354231,
+        "start" : "2022-01-03",
+        "total_return" : 0.94275775087651081
+      },
+      "stress_periods" : {
+        "COVID_CRASH_2020" : {
+          "annualized_volatility" : 0.26580035678241626,
+          "available" : true,
+          "cagr" : -0.48536266540680451,
+          "cagr_percent" : -48.536266540680451,
+          "end" : "2020-04-30",
+          "mdd" : 0.17235264734228561,
+          "mdd_percent" : 17.235264734228561,
+          "observations" : 50,
+          "sharpe" : -2.3638115861206135,
+          "start" : "2020-02-19",
+          "total_return" : -0.12114043441756506
+        },
+        "GFC_2008_2009" : {
+          "annualized_volatility" : 0.11745345711862507,
+          "available" : true,
+          "cagr" : -0.014905521390144449,
+          "cagr_percent" : -1.4905521390144449,
+          "end" : "2009-06-30",
+          "mdd" : 0.084860533878547681,
+          "mdd_percent" : 8.4860533878547688,
+          "observations" : 206,
+          "sharpe" : -0.06964408125749795,
+          "start" : "2008-09-02",
+          "total_return" : -0.012299735610741602
+        },
+        "TIGHTENING_2022" : {
+          "annualized_volatility" : 0.10149799954387732,
+          "available" : true,
+          "cagr" : -0.10775433536148404,
+          "cagr_percent" : -10.775433536148405,
+          "end" : "2022-12-30",
+          "mdd" : 0.13464543862966072,
+          "mdd_percent" : 13.464543862966071,
+          "observations" : 250,
+          "sharpe" : -1.0724756428572391,
+          "start" : "2022-01-03",
+          "total_return" : -0.10656985302332866
+        }
+      }
+    },
+    "target_fingerprint" : "2fdda393552b0abb",
+    "trade_fingerprint" : "c4dc486e8260b2a9"
+  },
+  "no_parameter_rescue" : true,
+  "protocol_id" : "ATM-SVP-2",
+  "strategy_lineage" : "gnr5-gold-nasdaq-single-day-shock-five-day-reversal-v1",
+  "target_fingerprint_parity" : false,
+  "trial_id" : "ATM-SVP2-GNR5-001"
+}

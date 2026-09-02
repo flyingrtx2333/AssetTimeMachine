@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine/scripts/run_gnr5_reversal_formal.py", line 136, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine/scripts/run_gnr5_reversal_formal.py", line 121, in main
+    result = validate_result(output_dir / "candidate-metrics.json")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine/scripts/run_gnr5_reversal_formal.py", line 84, in validate_result
+    raise RuntimeError("BPS25 and App product stress target fingerprints differ")
+RuntimeError: BPS25 and App product stress target fingerprints differ

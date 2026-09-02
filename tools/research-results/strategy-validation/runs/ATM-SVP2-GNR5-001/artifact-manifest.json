@@ -1,0 +1,157 @@
+{
+  "files": [
+    {
+      "bytes": 174527,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-06-26",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/GNR-5-APP-STRESS-portfolio.csv",
+      "row_count": 6245,
+      "sha256": "5e841cf371934735f59a1fc5f4319c7fb2066d0b71795d34b5c2b12b7a48a122"
+    },
+    {
+      "bytes": 295758,
+      "columns": [
+        "date",
+        "gold_target",
+        "nasdaq_target",
+        "cash",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-06-26",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/GNR-5-APP-STRESS-targets.csv",
+      "row_count": 6245,
+      "sha256": "e45ad9b94f11e6ef5b7a14c7f72a57902f0b1d6b97c3a115fb06994c6a212cb6"
+    },
+    {
+      "bytes": 114749,
+      "columns": [
+        "date",
+        "symbol",
+        "action",
+        "price",
+        "cash_amount",
+        "units"
+      ],
+      "date_column": "date",
+      "first_date": "2001-06-26",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/GNR-5-APP-STRESS-trades.csv",
+      "row_count": 1455,
+      "sha256": "1898b4da772d63dfa5243feea8b44b3879df4db7a619cd71ad78a8572fb6c40c"
+    },
+    {
+      "bytes": 180636,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-06-26",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/GNR-5-BPS25-portfolio.csv",
+      "row_count": 6245,
+      "sha256": "dbcd95c7793f85d5f48b637b0809f7a381eb2eefc56a2a12b0ed1672b5a8b5a3"
+    },
+    {
+      "bytes": 299881,
+      "columns": [
+        "date",
+        "gold_target",
+        "nasdaq_target",
+        "cash",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-06-26",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/GNR-5-BPS25-targets.csv",
+      "row_count": 6245,
+      "sha256": "ae8dfd757cde137fe28ef55d8fbffa4dc4f646bbc705116a9bdc0bc276568532"
+    },
+    {
+      "bytes": 101523,
+      "columns": [
+        "date",
+        "symbol",
+        "action",
+        "price",
+        "cash_amount",
+        "units"
+      ],
+      "date_column": "date",
+      "first_date": "2001-06-26",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/GNR-5-BPS25-trades.csv",
+      "row_count": 1345,
+      "sha256": "fc782a173cd9a77b2ac1899aec5480546c64b7dbe6f8463be8bfcb3df3218b22"
+    },
+    {
+      "bytes": 172403,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2002-09-18",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/GOLD-NASDAQ-DUAL-TREND-BASELINE-portfolio.csv",
+      "row_count": 5946,
+      "sha256": "3a955885580d6ebf8ae787bc8afbbc7092f89df1679ae7c5a114d506b81deb86"
+    },
+    {
+      "bytes": 12624,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/candidate-metrics.json",
+      "sha256": "855abc740293631ec715528f7c5d823bc2ceda8aa982280eac08688e67f61fc9"
+    },
+    {
+      "bytes": 819,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/execution.json",
+      "sha256": "92534c7d8b08b0d5d0353824bf3281b41cbd6aadee68300d4542098a7e37389f"
+    },
+    {
+      "bytes": 431,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/run-authorization.json",
+      "sha256": "7394afb1a0d9a05d9a2b7a2151b3888a9af14a8c5be09b7aab0334450bde1bf1"
+    },
+    {
+      "bytes": 760,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/stderr.txt",
+      "sha256": "01c37e0ad0d4acf68c327ef448d6807d72a11e8aca85eaffac3c548e61785371"
+    },
+    {
+      "bytes": 283,
+      "format": "txt",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/stdout.txt",
+      "sha256": "dff39c0969d2c46b7de352259936c467f4110415619f95cc8641687db1c5f627"
+    }
+  ],
+  "generated_at": "2026-09-02T11:25:51+08:00",
+  "git_commit": "e4cd9c7cde45d71dd270ce7cabeb8aae64171432",
+  "kind": "result",
+  "metadata": {
+    "candidate_id": "GNR-5",
+    "decision": "REJECTED",
+    "formal_return_code": 1,
+    "reason": "target-path parity failed and App-cost mechanical gates failed"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-GNR5-001"
+}

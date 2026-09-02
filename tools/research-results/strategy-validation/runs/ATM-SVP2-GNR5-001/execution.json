@@ -1,0 +1,18 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_gnr5_reversal_formal.py",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001"
+  ],
+  "execution_git_commit": "e4cd9c7cde45d71dd270ce7cabeb8aae64171432",
+  "finished_at": "2026-09-02T11:23:13+08:00",
+  "preregistration_record_hash": "602b94692b7bf07162fdc313c0a1fcf07b2a51b0f59efed29d57bd495fbe8335",
+  "protocol_id": "ATM-SVP-2",
+  "return_code": 1,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/run-authorization.json",
+  "started_at": "2026-09-02T11:21:25+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/stdout.txt",
+  "trial_id": "ATM-SVP2-GNR5-001"
+}

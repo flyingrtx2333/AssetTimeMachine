@@ -1,0 +1,3 @@
+assembled=/private/tmp/atm_gnr5_reversal_formal.swift bytes=1121413
+GNR5_COMPILE_OK binary=/private/tmp/atm_gnr5_reversal_formal
+GNR5_FORMAL_COMPLETE trial_id=ATM-SVP2-GNR5-001 decision=REJECTED target_parity=false bps25_fingerprint=6f54fefc8c8758ca app_fingerprint=49d210055b11943e
