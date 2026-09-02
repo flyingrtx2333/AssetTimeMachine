@@ -1,0 +1,289 @@
+        if ProcessInfo.processInfo.environment["ATM_GNR5_FORMAL"] == "1" {
+            let outputDir = ProcessInfo.processInfo.environment["ATM_GNR5_OUTPUT_DIR"] ?? ""
+            guard !outputDir.isEmpty else {
+                print("GNR5_OUTPUT_DIR_MISSING")
+                return
+            }
+            let trialID = ProcessInfo.processInfo.environment["ATM_SVP_TRIAL_ID"] ?? "ATM-SVP2-GNR5-001"
+            let candidateID = "GNR-5"
+            let roleSymbols = [GNR5ReversalStrategy.goldSymbol, GNR5ReversalStrategy.nasdaqSymbol]
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            let inputs = roleSymbols.compactMap { options[$0] }.map { option in
+                BacktestEngine.advancedAssetInput(for: option) { seriesBySymbol[normalizedHistorySymbol($0)] }
+            }
+            guard inputs.count == 2 else {
+                print("GNR5_INPUTS_MISSING")
+                return
+            }
+
+            func settings(feePercent: Double, slippagePercent: Double) -> AdvancedBacktestRiskSettings {
+                AdvancedBacktestRiskSettings(
+                    feeRate: feePercent,
+                    slippageRate: slippagePercent,
+                    maxPositionRatio: 100,
+                    cooldownDays: 0,
+                    stopLossRatio: 0,
+                    takeProfitRatio: 0
+                )
+            }
+            let config = ResearchTargetStrategyConfig(
+                symbol: "gnr5_gold_nasdaq_shock_reversal",
+                title: "GNR-5 Gold-Nasdaq Shock Five-Day Reversal",
+                warmupSessions: 1,
+                rebalanceSessions: 1,
+                rebalanceBand: 0,
+                maxGrossExposure: 1,
+                allowsFinancedExposure: false,
+                financingAnnualRate: 0,
+                buyReason: "GNR-5 frozen event target"
+            )
+
+            struct GNR5RunAudit {
+                let run: ResearchTargetStrategyRun
+                let enteredEvents: Int
+                let exitedEvents: Int
+                let ignoredSignals: Int
+            }
+            func runCandidate(_ riskSettings: AdvancedBacktestRiskSettings) -> GNR5RunAudit? {
+                var runtime = GNR5ReversalStrategy.Runtime()
+                var pending = [String: Double]()
+                guard let run = BacktestEngine.runResearchTargetProviderStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: riskSettings,
+                    config: config,
+                    contextualRebalanceDecision: { context, data in
+                        guard let gold = data.pricesBySymbol[GNR5ReversalStrategy.goldSymbol],
+                              let nasdaq = data.pricesBySymbol[GNR5ReversalStrategy.nasdaqSymbol],
+                              let goldObserved = data.observedBySymbol[GNR5ReversalStrategy.goldSymbol],
+                              let nasdaqObserved = data.observedBySymbol[GNR5ReversalStrategy.nasdaqSymbol],
+                              let instruction = runtime.instruction(
+                                signalIndex: context.signalIndex,
+                                goldPrices: gold,
+                                nasdaqPrices: nasdaq,
+                                goldObserved: goldObserved,
+                                nasdaqObserved: nasdaqObserved
+                              ) else {
+                            return BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+                        }
+                        pending = instruction.weights
+                        return BacktestRebalanceDecision(shouldRebalance: true, refreshOverlay: false)
+                    },
+                    targetWeights: { _, _ in pending }
+                ) else { return nil }
+                return GNR5RunAudit(
+                    run: run,
+                    enteredEvents: runtime.enteredEvents,
+                    exitedEvents: runtime.exitedEvents,
+                    ignoredSignals: runtime.ignoredSignals
+                )
+            }
+
+            guard let bps25 = runCandidate(settings(feePercent: 0.025, slippagePercent: 0)),
+                  let appStress = runCandidate(settings(feePercent: 1.00, slippagePercent: 0.05)),
+                  let baseline = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                    assetInputs: inputs,
+                    initialCash: 100_000,
+                    settings: settings(feePercent: 1.00, slippagePercent: 0.05),
+                    mode: .goldNasdaqDualTrendBarbell
+                  ) else {
+                print("GNR5_RUN_FAILED")
+                return
+            }
+
+            func metrics(_ points: [BacktestSeriesPoint]) -> [String: Any] {
+                guard let value = BacktestMetricsCalculator.performanceMetrics(from: points) else {
+                    return ["available": false]
+                }
+                return [
+                    "available": true,
+                    "start": points.first?.date.recordDateString ?? "",
+                    "end": points.last?.date.recordDateString ?? "",
+                    "observations": points.count,
+                    "cagr": value.annualizedReturn as Any,
+                    "cagr_percent": (value.annualizedReturn ?? 0) * 100,
+                    "mdd": value.maxDrawdown,
+                    "mdd_percent": value.maxDrawdown * 100,
+                    "sharpe": value.sharpeRatio as Any,
+                    "annualized_volatility": value.annualizedVolatility as Any,
+                    "total_return": value.totalReturn
+                ]
+            }
+            func sliced(_ points: [BacktestSeriesPoint], start: String, end: String = "9999-12-31") -> [BacktestSeriesPoint] {
+                points.filter { point in
+                    let key = point.date.recordDateString
+                    return key >= start && key <= end
+                }
+            }
+            func lastTenYearStart(_ points: [BacktestSeriesPoint]) -> String {
+                guard let last = points.last?.date,
+                      let start = BacktestSeriesAlignment.historicalSeriesCalendar.date(byAdding: .year, value: -10, to: last) else { return "" }
+                return start.recordDateString
+            }
+            let stressPeriods: [(String, String, String)] = [
+                ("GFC_2008_2009", "2008-09-01", "2009-06-30"),
+                ("COVID_CRASH_2020", "2020-02-19", "2020-04-30"),
+                ("TIGHTENING_2022", "2022-01-01", "2022-12-31")
+            ]
+            func windowMetrics(_ points: [BacktestSeriesPoint]) -> [String: Any] {
+                var output: [String: Any] = [
+                    "full_history": metrics(points),
+                    "last_10_years": metrics(sliced(points, start: lastTenYearStart(points))),
+                    "since_2020": metrics(sliced(points, start: "2020-01-01")),
+                    "since_2022": metrics(sliced(points, start: "2022-01-01"))
+                ]
+                output["stress_periods"] = Dictionary(uniqueKeysWithValues: stressPeriods.map { name, start, end in
+                    (name, metrics(sliced(points, start: start, end: end)))
+                })
+                return output
+            }
+
+            func tradeFingerprint(_ trades: [AdvancedBacktestTrade]) -> String {
+                var hash: UInt64 = 1469598103934665603
+                let text = trades.map { "\($0.date.recordDateString)|\($0.assetSymbol)|\(String(describing: $0.action))" }.joined(separator: "\n")
+                for byte in text.utf8 {
+                    hash ^= UInt64(byte)
+                    hash &*= UInt64(1099511628211)
+                }
+                return String(format: "%016llx", hash)
+            }
+            func constraints(_ run: ResearchTargetStrategyRun) -> [String: Any] {
+                let maxTargetGross = run.dailyStates.map { $0.targetWeights.values.reduce(0, +) }.max() ?? 0
+                let minTargetWeight = run.dailyStates.flatMap { $0.targetWeights.values }.min() ?? 0
+                let minCash = run.dailyStates.map(\.cash).min() ?? 0
+                let maxActualGross = run.dailyStates.map { state in
+                    guard state.portfolioValue > 0 else { return 0 }
+                    return max(state.portfolioValue - state.cash, 0) / state.portfolioValue
+                }.max() ?? 0
+                let minUnits = run.dailyStates.flatMap { $0.holdingsBySymbol.values }.min() ?? 0
+                let pass = maxTargetGross <= 1.000000001 && maxActualGross <= 1.000000001
+                    && minTargetWeight >= -1e-10 && minUnits >= -1e-10 && minCash >= -1e-8
+                return [
+                    "max_target_gross": maxTargetGross,
+                    "max_actual_gross": maxActualGross,
+                    "min_target_weight": minTargetWeight,
+                    "min_holding_units": minUnits,
+                    "min_cash": minCash,
+                    "financing_allowed": false,
+                    "shorting_allowed": false,
+                    "pass": pass
+                ]
+            }
+            func mddPercent(_ metric: [String: Any]) -> Double { metric["mdd_percent"] as? Double ?? .infinity }
+            func cagrPercent(_ metric: [String: Any]) -> Double { metric["cagr_percent"] as? Double ?? -.infinity }
+            func gate(_ windows: [String: Any], constraints: [String: Any]) -> [String: Any] {
+                let full = windows["full_history"] as! [String: Any]
+                let ten = windows["last_10_years"] as! [String: Any]
+                let since2020 = windows["since_2020"] as! [String: Any]
+                let since2022 = windows["since_2022"] as! [String: Any]
+                let stress = windows["stress_periods"] as! [String: [String: Any]]
+                var checks: [String: Bool] = [
+                    "full_cagr_ge_10pct": cagrPercent(full) >= 10,
+                    "full_mdd_le_10pct": mddPercent(full) <= 10,
+                    "last10_cagr_gt_0": cagrPercent(ten) > 0,
+                    "since2020_cagr_gt_0": cagrPercent(since2020) > 0,
+                    "since2022_cagr_gt_0": cagrPercent(since2022) > 0,
+                    "full_mdd_le_15pct": mddPercent(full) <= 15,
+                    "last10_mdd_le_15pct": mddPercent(ten) <= 15,
+                    "since2020_mdd_le_15pct": mddPercent(since2020) <= 15,
+                    "since2022_mdd_le_15pct": mddPercent(since2022) <= 15,
+                    "constraints_pass": constraints["pass"] as? Bool == true
+                ]
+                for (name, value) in stress {
+                    checks["\(name)_mdd_le_15pct"] = mddPercent(value) <= 15
+                }
+                return ["checks": checks, "pass": checks.values.allSatisfy { $0 }]
+            }
+
+            let bpsTargetFingerprint = GNR5ReversalStrategy.targetFingerprint(bps25.run.dailyStates)
+            let appTargetFingerprint = GNR5ReversalStrategy.targetFingerprint(appStress.run.dailyStates)
+            let bpsWindows = windowMetrics(bps25.run.report.points)
+            let appWindows = windowMetrics(appStress.run.report.points)
+            let baselineWindows = windowMetrics(baseline.report.points)
+            let bpsConstraints = constraints(bps25.run)
+            let appConstraints = constraints(appStress.run)
+            let targetParity = bpsTargetFingerprint == appTargetFingerprint
+            let appGate = gate(appWindows, constraints: appConstraints)
+            let decision = (appGate["pass"] as? Bool == true) && targetParity ? "PASS" : "REJECTED"
+
+            let result: [String: Any] = [
+                "protocol_id": ProcessInfo.processInfo.environment["ATM_SVP_PROTOCOL_ID"] ?? "ATM-SVP-2",
+                "trial_id": trialID,
+                "candidate_id": candidateID,
+                "strategy_lineage": "gnr5-gold-nasdaq-single-day-shock-five-day-reversal-v1",
+                "engine_version": BacktestEngine.defaultEngineVersion,
+                "cost_model": [
+                    "formal_primary": ["cost_regime_id": "ATM-COST-2026-08-28-BPS25", "fee_percent": 0.025, "slippage_percent": 0.0],
+                    "product_acceptance_stress": ["fee_percent": 1.0, "slippage_percent": 0.05],
+                    "product_decision_uses": "product_acceptance_stress_only"
+                ],
+                "target_fingerprint_parity": targetParity,
+                "formal_bps25": [
+                    "metrics": bpsWindows,
+                    "constraints": bpsConstraints,
+                    "target_fingerprint": bpsTargetFingerprint,
+                    "trade_fingerprint": tradeFingerprint(bps25.run.report.trades),
+                    "fill_count": bps25.run.report.trades.count,
+                    "events_entered": bps25.enteredEvents,
+                    "events_exited": bps25.exitedEvents,
+                    "signals_ignored_during_events": bps25.ignoredSignals
+                ],
+                "app_product_stress": [
+                    "metrics": appWindows,
+                    "constraints": appConstraints,
+                    "target_fingerprint": appTargetFingerprint,
+                    "trade_fingerprint": tradeFingerprint(appStress.run.report.trades),
+                    "fill_count": appStress.run.report.trades.count,
+                    "events_entered": appStress.enteredEvents,
+                    "events_exited": appStress.exitedEvents,
+                    "signals_ignored_during_events": appStress.ignoredSignals,
+                    "mechanical_product_gate": appGate
+                ],
+                "gold_nasdaq_dual_trend_barbell_baseline_app_cost": [
+                    "metrics": baselineWindows,
+                    "target_fingerprint": GNR5ReversalStrategy.targetFingerprint(baseline.dailyStates),
+                    "trade_fingerprint": tradeFingerprint(baseline.report.trades),
+                    "fill_count": baseline.report.trades.count
+                ],
+                "decision": decision,
+                "no_parameter_rescue": true
+            ]
+
+            let manager = FileManager.default
+            try? manager.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+            let root = URL(fileURLWithPath: outputDir)
+            if let data = try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys]) {
+                try? data.write(to: root.appendingPathComponent("candidate-metrics.json"))
+            }
+            func writePortfolio(_ name: String, _ points: [BacktestSeriesPoint]) {
+                let lines = ["date,portfolio_value"] + points.map { "\($0.date.recordDateString),\(String(format: "%.10f", $0.portfolioValue))" }
+                try? (lines.joined(separator: "\n") + "\n").write(
+                    to: root.appendingPathComponent("\(name)-portfolio.csv"), atomically: true, encoding: .utf8
+                )
+            }
+            func writeTrades(_ name: String, _ trades: [AdvancedBacktestTrade]) {
+                let lines = ["date,symbol,action,price,cash_amount,units"] + trades.map {
+                    "\($0.date.recordDateString),\($0.assetSymbol),\(String(describing: $0.action)),\($0.price),\($0.cashAmount),\($0.units)"
+                }
+                try? (lines.joined(separator: "\n") + "\n").write(
+                    to: root.appendingPathComponent("\(name)-trades.csv"), atomically: true, encoding: .utf8
+                )
+            }
+            func writeTargets(_ name: String, _ states: [BacktestDailyState]) {
+                let lines = ["date,gold_target,nasdaq_target,cash,portfolio_value"] + states.map {
+                    "\($0.date.recordDateString),\($0.targetWeights[GNR5ReversalStrategy.goldSymbol] ?? 0),\($0.targetWeights[GNR5ReversalStrategy.nasdaqSymbol] ?? 0),\($0.cash),\($0.portfolioValue)"
+                }
+                try? (lines.joined(separator: "\n") + "\n").write(
+                    to: root.appendingPathComponent("\(name)-targets.csv"), atomically: true, encoding: .utf8
+                )
+            }
+            writePortfolio("GNR-5-BPS25", bps25.run.report.points)
+            writePortfolio("GNR-5-APP-STRESS", appStress.run.report.points)
+            writePortfolio("GOLD-NASDAQ-DUAL-TREND-BASELINE", baseline.report.points)
+            writeTrades("GNR-5-BPS25", bps25.run.report.trades)
+            writeTrades("GNR-5-APP-STRESS", appStress.run.report.trades)
+            writeTargets("GNR-5-BPS25", bps25.run.dailyStates)
+            writeTargets("GNR-5-APP-STRESS", appStress.run.dailyStates)
+            print("GNR5_FORMAL_COMPLETE trial_id=\(trialID) decision=\(decision) target_parity=\(targetParity) bps25_fingerprint=\(bpsTargetFingerprint) app_fingerprint=\(appTargetFingerprint)")
+            return
+        }

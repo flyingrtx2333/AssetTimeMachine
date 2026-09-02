@@ -1,0 +1,104 @@
+{
+  "trial_id": "ATM-SVP2-GNR5-001",
+  "protocol_id": "ATM-SVP-2",
+  "protocol_component": "GNR5_GOLD_NASDAQ_SINGLE_DAY_SHOCK_FIVE_DAY_REVERSAL",
+  "strategy_lineage": "gnr5-gold-nasdaq-single-day-shock-five-day-reversal-v1; new ATM-COST-2026-08-28-BPS25 lineage with fixed App-cost product stress replay",
+  "hypothesis": "An extreme one-day CNY gold-minus-Nasdaq return spread tends to reverse over the next five common real observation days, so temporarily holding the laggard can improve a naturally drifting 50/50 gold-Nasdaq portfolio while keeping product-level drawdown at or below 10% without leverage.",
+  "evidence_class": "R1_RETROSPECTIVE",
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-GNR5-001.json",
+  "allowed_changes": [
+    "exact GNR-5 single candidate only",
+    "formal BPS25 primary replay and mechanically paired App 1.00% fee + 0.05% slippage product-acceptance stress replay over the identical target path",
+    "mechanical reporting of frozen windows and comparison to gold-nasdaq-dual-trend-barbell"
+  ],
+  "candidate_ids": [
+    "GNR-5"
+  ],
+  "candidate_count": 1,
+  "selection_metric": "No selection or optimization. One exact candidate is evaluated once; product acceptance is determined only by the frozen App-cost stress replay and mechanical gates.",
+  "pass_fail_gates": [
+    "App-cost full-history CAGR >=10%",
+    "App-cost full-history MDD <=10%",
+    "App-cost last-10-calendar-years CAGR >0",
+    "App-cost 2020+ CAGR >0",
+    "App-cost 2022+ CAGR >0",
+    "App-cost full-history, last-10-years, 2020+, 2022+, GFC 2008-09-01..2009-06-30, COVID 2020-02-19..2020-04-30 and 2022 tightening window MDD each <=15%",
+    "formal BPS25 and App-cost target fingerprints exactly equal",
+    "max requested and marked-to-market actual gross <=100%, target weights/holding units/cash nonnegative, no shorting, financing or leverage",
+    "strict T-1 and common-real-observation contract tests pass under atm-swift-clock-v3-2026-08-31"
+  ],
+  "formal_run_budget": 1,
+  "follow_up_policy": "If any mechanical product gate fails, record REJECTED and stop. No threshold, 60-day window, five-day hold, asset, event, baseline, cost substitution, delay, persistence or rescue variant is allowed after viewing results. Any genuinely different mechanism requires a new lineage and preregistration; GNR-5 itself remains closed.",
+  "swift_engine_entrypoint": "scripts/run_gnr5_reversal_formal.py -> tools/gnr5_reversal_formal.swiftpart + AssetTimeMachine/Backtest/GNR5ReversalStrategy.swift -> BacktestEngine.runResearchTargetProviderStrategyWithTrace -> shared BacktestDailySimulator; baseline uses BacktestEngine goldNasdaqDualTrendBarbell mode",
+  "expected_outputs": [
+    "formal BPS25 full history, last 10 years, 2020+, 2022+ and three frozen stress-period metrics",
+    "fixed App 1.00% fee + 0.05% slippage replay over the identical target fingerprint with the same windows",
+    "current gold-nasdaq-dual-trend-barbell App-cost baseline metrics over the same windows",
+    "target/trade fingerprints, target paths, portfolio paths, fill and event counts",
+    "target and actual gross, minimum target weight, holding units and cash constraints",
+    "mechanical product gate checks and PASS or REJECTED decision",
+    "run authorization receipt, execution record, stdout/stderr and SHA-256 artifact manifest"
+  ],
+  "candidate_definition": {
+    "candidate_id": "GNR-5",
+    "assets": [
+      "gold_cny",
+      "nasdaq"
+    ],
+    "signal_observations": "intersection of dates where gold_cny and nasdaq each have a real observation; forward-filled values never form returns, signal observations or holding-day counts",
+    "spread_return": "d_t = log(gold_cny_t/gold_cny_previous_common) - log(nasdaq_cny_t/nasdaq_cny_previous_common)",
+    "standardization": "z_t uses sample mean and sample standard deviation of exactly the previous 60 common-observation spread returns, excluding d_t",
+    "positive_trigger": "z_t >= 2.0; at the next common executable opportunity target 100% nasdaq",
+    "negative_trigger": "z_t <= -2.0; at the next common executable opportunity target 100% gold_cny",
+    "holding_rule": "hold the event target through exactly five subsequent common real observation days after the signal; schedule return to baseline after the fifth day so execution occurs at the next common executable opportunity",
+    "overlap_rule": "ignore all new signals while an event is active, including the fifth holding observation",
+    "baseline": "establish 50/50 gold_cny/nasdaq once; allow natural drift; trade only at initial establishment, event entry and event exit",
+    "causality": "strict T-1 signal and target decision, T or later common-real execution through BacktestDailySimulator",
+    "execution": "sell before buy; no rebalance band; no leverage, financing or shorting; cash uses CashYieldCNY"
+  },
+  "cost_models": {
+    "formal_primary": {
+      "cost_regime_id": "ATM-COST-2026-08-28-BPS25",
+      "fee_rate_percent": 0.025,
+      "slippage_rate_percent": 0.0,
+      "interpretation": "2.5 bps all-in per executed fill"
+    },
+    "product_acceptance_stress": {
+      "fee_rate_percent": 1.0,
+      "slippage_rate_percent": 0.05,
+      "target_fingerprint_must_equal_formal_primary": true,
+      "sole_basis_for_product_decision": true
+    },
+    "modeling_rule": "One formal family and one formal command: BPS25 is the new-lineage primary result; the App-cost run is a fixed preregistered stress replay, not a second candidate or cost grid. Low-cost performance may never substitute for the product-stress conclusion."
+  },
+  "evaluation_windows": {
+    "full_history": "all available App fixture history after engine warmup",
+    "last_10_years": "latest portfolio date minus exactly 10 calendar years through latest",
+    "since_2020": "2020-01-01 through latest",
+    "since_2022": "2022-01-01 through latest",
+    "stress_periods": {
+      "GFC_2008_2009": "2008-09-01 through 2009-06-30",
+      "COVID_CRASH_2020": "2020-02-19 through 2020-04-30",
+      "TIGHTENING_2022": "2022-01-01 through 2022-12-31"
+    }
+  },
+  "comparison": {
+    "baseline_id": "gold-nasdaq-dual-trend-barbell",
+    "cost": "App 1.00% fee + 0.05% slippage",
+    "engine": "atm-swift-clock-v3-2026-08-31",
+    "rule": "report same-window metrics; comparison is descriptive and cannot rescue a failed mechanical product gate"
+  },
+  "forbidden_changes": [
+    "parameter grid or any threshold other than absolute z=2.0",
+    "lookback other than exactly 60 prior common spread returns",
+    "holding period other than exactly five subsequent common observations",
+    "population standard deviation or inclusion of current return in the standardization window",
+    "signals from forward-filled or non-common observations",
+    "overlapping, stacked or refreshed events",
+    "periodic baseline rebalancing rather than natural drift",
+    "assets other than gold_cny and nasdaq or any BTC/fund/external proxy sleeve",
+    "leverage, borrowing, margin, shorting, negative cash or gross above 100%",
+    "using BPS25 results as the product conclusion",
+    "post-result rescue, alternative stress periods or candidate replacement"
+  ]
+}

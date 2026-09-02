@@ -41,6 +41,7 @@ let package = Package(
                 "BacktestFXConverter.swift",
                 "BacktestAdvancedSeriesPreparer.swift",
                 "BacktestEngine.swift",
+                "GNR5ReversalStrategy.swift",
                 "AssetTimeMachineServerSupport.swift",
                 "PublicBacktestCore.swift"
             ],
