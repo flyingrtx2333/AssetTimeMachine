@@ -68,16 +68,17 @@ Local private credential configuration:
 
 - `FRK_TOKEN` is stored outside the repository in `~/.config/flyingrtx/asset-time-machine.env`, with permissions restricted to the current user. Never copy its value into this file or another source-controlled file.
 - Never print the value in logs, screenshots, test output, commits, pull requests, deployment artifacts, or user-facing responses.
-- `FRK_TOKEN` is the FlyingrtxFast AssetTimeMachine factor-library import API key. Use it only for the factor-import scoped internal endpoints under `/api/v1/asset-time-machine/internal/factor-imports` and the related prospective-forward-snapshot read used by factor research; it is not a user login token, backend admin password, FRP token, or general-purpose API credential.
-- Preferred production usage is `python3 scripts/publish_factor_library_manifest.py ...`. The maintained helper reads `FRK_TOKEN` from the process environment first, then the private env file. Use `--token-file` only to select another local private env file.
+- `FRK_TOKEN` is the FlyingrtxFast AssetTimeMachine factor/strategy-library import API key. Use it only for the scoped internal endpoints under `/api/v1/asset-time-machine/internal/factor-imports` and `/api/v1/asset-time-machine/internal/strategy-imports`, plus the related prospective-forward-snapshot read used by factor research; it is not a user login token, backend admin password, FRP token, or general-purpose API credential.
+- Preferred production usage is `python3 scripts/publish_factor_library_manifest.py ...` for factors and `python3 scripts/publish_strategy_library_manifest.py ...` for strategies. The maintained helpers read `FRK_TOKEN` from the process environment first, then the private env file. Use `--token-file` only to select another local private env file.
 - Never put the literal token on a shell/tool command line merely to test it. Load it through the maintained helper and verify access with `--status-only` or `--validate-only`.
 
-### Factor-library research sync rule
+### Factor/strategy-library research sync rule
 
-- Every formal factor candidate that reaches a recorded result must be archived to the FlyingrtxFast factor library, regardless of PASS/FAIL. Rejected factors are intentionally retained to prevent survivorship bias. Strategy-architecture candidates such as `HR-A/B/C` are not factors and must not be uploaded as factors.
-- A factor study is not operationally closed until its `factor-library-v1` manifest exists and the production import status is `completed` with `failed_count=0`.
-- After each completed factor-research trial: generate/update the manifest, run remote `--validate-only`, publish with `scripts/publish_factor_library_manifest.py`, run `--status-only`, and reconcile the expected factor count against the research ledger.
-- Preserve preregistration/result artifacts and the original lifecycle status; never promote or hide a failed factor merely to make the library look cleaner.
+- Every formal factor or strategy candidate that reaches a recorded result must be archived to the matching FlyingrtxFast library, regardless of PASS/FAIL. Rejected candidates are intentionally retained to prevent survivorship bias. Strategy-architecture candidates such as `HR-A/B/C` belong only in the strategy library and must not be uploaded as factors.
+- A formal factor study is not operationally closed until its `factor-library-v1` manifest exists, remote validation succeeds, it is published, and the production import status is `completed` with `failed_count=0`.
+- A formal strategy study is not operationally closed until every recorded PASS/FAIL candidate is included in a `strategy-library-v2` manifest, remote validation succeeds, it is published with `scripts/publish_strategy_library_manifest.py`, and `--status-only` reports `completed` with `failed_count=0`. A local `candidate-metrics` file by itself is never a completed strategy archive.
+- After each completed factor- or strategy-research trial: generate/update the matching manifest, run remote `--validate-only`, publish with the matching maintained helper, run `--status-only`, and reconcile the expected candidate count against the research ledger.
+- Preserve preregistration/result artifacts and the original lifecycle status; never promote or hide a failed factor or strategy merely to make either library look cleaner.
 
 ## Build, Test, and Development Commands
 

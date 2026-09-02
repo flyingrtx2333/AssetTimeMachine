@@ -478,15 +478,15 @@ final class PublicBacktestCoreTests: XCTestCase {
         XCTAssertEqual(tripled.0.trades.last?.action, .sell)
     }
 
-    func testOHLCFeaturePreparationRejectsCloseThatDoesNotMatchPrimarySeries() throws {
+    func testOHLCFeaturePreparationKeepsIndependentCloseWithoutChangingCanonicalPrices() throws {
         let series = historySeries(
             symbol: "gold_cny",
-            dates: ["2026-08-28", "2026-08-31"],
-            prices: [100, 101],
-            opens: [100, 101],
-            highs: [101, 111],
-            lows: [99, 100],
-            closes: [100, 110]
+            dates: ["2026-08-28", "2026-08-31", "2026-09-01"],
+            prices: [100, 101, 102],
+            opens: [100, 101, 102],
+            highs: [101, 111, 101],
+            lows: [99, 100, 100],
+            closes: [100, 110, 102]
         )
         let option = BacktestAssetOption(
             symbol: "gold_cny",
@@ -503,9 +503,51 @@ final class PublicBacktestCoreTests: XCTestCase {
             bollingerBands: { values, _, _ in Array(repeating: nil, count: values.count) }
         ))
 
-        XCTAssertEqual(prepared.pricePoints.count, 2)
-        XCTAssertEqual(prepared.ohlcPoints.count, 1)
-        XCTAssertEqual(prepared.ohlcPoints.first?.close, 100)
+        XCTAssertEqual(prepared.pricePoints.count, 3)
+        XCTAssertEqual(prepared.pricePoints.map(\.cnyPrice), [100, 101, 102])
+        XCTAssertEqual(prepared.ohlcPoints.count, 2)
+        XCTAssertEqual(prepared.ohlcPoints.map(\.close), [100, 110])
+    }
+
+    func testPublicHistoryFixtureKeepsGoldCanonicalPricesAndIndependentOHLCBars() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let historyURL = root.appendingPathComponent("tools/fixtures/backtest-history/public_history.json")
+        let response = try JSONDecoder().decode(
+            PublicHistoryResponse.self,
+            from: Data(contentsOf: historyURL)
+        )
+        let gold = try XCTUnwrap(response.series.first(where: { $0.symbol == "gold_cny" }))
+        let prepared = try XCTUnwrap(BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
+            assetSeries: gold,
+            assetOption: BacktestAssetOption(
+                symbol: "gold_cny",
+                title: "黄金",
+                color: .blue,
+                requiresHistoricalFX: false,
+                historicalFXSymbol: nil
+            ),
+            fxSeries: nil,
+            movingAverage: { values, _ in Array(repeating: nil, count: values.count) },
+            bollingerBands: { values, _, _ in Array(repeating: nil, count: values.count) }
+        ))
+
+        XCTAssertEqual(gold.prices.count, 6_398)
+        XCTAssertEqual(prepared.pricePoints.count, 6_398)
+        XCTAssertEqual(prepared.pricePoints.map(\.cnyPrice), gold.prices)
+        XCTAssertEqual(gold.dailyBars.count, 6_386)
+        XCTAssertEqual(prepared.ohlcPoints.count, 6_386)
+
+        let canonicalPriceByDate = Dictionary(
+            uniqueKeysWithValues: zip(prepared.pricePoints.map(\.date), prepared.pricePoints.map(\.cnyPrice))
+        )
+        XCTAssertTrue(prepared.ohlcPoints.contains { bar in
+            guard let canonicalPrice = canonicalPriceByDate[bar.date] else { return false }
+            return abs(bar.close - canonicalPrice) / canonicalPrice > 0.001
+        })
     }
 
     func testCashAccrualUsesCalendarTimeRatherThanFrameCount() throws {
@@ -920,7 +962,7 @@ final class PublicBacktestCoreTests: XCTestCase {
         XCTAssertEqual(merged.ohlcCoverageRatio, 1)
     }
 
-    func testHistoryMergeRejectsIndexOutlierAndMismatchedOHLC() throws {
+    func testHistoryMergeRejectsCanonicalOutlierButKeepsIndependentValidOHLC() throws {
         let existing = historySeries(
             symbol: "test_index",
             dates: ["2026-08-27", "2026-08-28"],
@@ -937,21 +979,24 @@ final class PublicBacktestCoreTests: XCTestCase {
             currency: "CNY",
             unit: "index",
             source: "test",
-            dates: ["2026-08-28", "2026-08-31"],
-            prices: [102, 170],
+            dates: ["2026-08-28"],
+            prices: [170],
             hasOHLC: true,
             ohlcSource: "test",
             ohlcCoverageRatio: 1,
-            openPrices: [102, 170],
-            highPrices: [103, 171],
-            lowPrices: [101, 169],
-            closePrices: [50, 170],
-            volumes: [1, 1]
+            openPrices: [50],
+            highPrices: [52],
+            lowPrices: [49],
+            closePrices: [51],
+            volumes: [1]
         )
         let merged = MarketHistorySeriesMerger.merge(existing: existing, incoming: incoming)
         XCTAssertEqual(merged.dates, ["2026-08-27", "2026-08-28"])
-        XCTAssertEqual(merged.prices, [100, 102])
-        XCTAssertNil(merged.closePrices?[1])
+        XCTAssertEqual(merged.prices, [100, 101])
+        XCTAssertEqual(merged.openPrices?[1], 50)
+        XCTAssertEqual(merged.highPrices?[1], 52)
+        XCTAssertEqual(merged.lowPrices?[1], 49)
+        XCTAssertEqual(merged.closePrices?[1], 51)
     }
 
     func testHistoryMergeKeepsValidCachedPointWhenOverlapRevisionIsAnOutlier() throws {

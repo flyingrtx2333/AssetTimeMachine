@@ -12,11 +12,6 @@ nonisolated struct PreparedAdvancedSeries {
 }
 
 nonisolated enum BacktestAdvancedSeriesPreparer {
-    /// OHLC features and the primary close series must describe the same bar.
-    /// A small tolerance permits provider rounding without allowing a revised or
-    /// differently oriented close series to drive the risk overlay.
-    private static let maximumOHLCPrimaryCloseRelativeDifference = 0.001
-
     static func preparedAdvancedSeries(
         assetSeries: PublicHistorySeries?,
         assetOption: BacktestAssetOption,
@@ -73,8 +68,6 @@ nonisolated enum BacktestAdvancedSeriesPreparer {
                       min(open, high, low, close) > 0,
                       high >= max(open, close, low),
                       low <= min(open, close, high),
-                      abs(close - assetSeries.prices[index]) / assetSeries.prices[index]
-                        <= maximumOHLCPrimaryCloseRelativeDifference,
                       let cnyMultiplier = BacktestFXConverter.cnyMultiplier(
                         on: date,
                         assetOption: assetOption,

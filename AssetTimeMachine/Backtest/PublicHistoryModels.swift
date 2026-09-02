@@ -205,17 +205,23 @@ nonisolated enum MarketHistorySeriesMerger {
                       abs(fallback.price / previousAcceptedPrice - 1) <= maximumMove else {
                     continue
                 }
-                point = fallback
+                // Canonical prices govern valuation/execution, while OHLC may come
+                // from an independent real-bar source. Fall back only the rejected
+                // canonical value; never replace a valid incoming bar with cached OHLC.
+                point.price = fallback.price
             }
             if let open = point.open,
                let high = point.high,
                let low = point.low,
                let close = point.close {
-                let validGeometry = min(open, high, low, close) > 0
-                    && high >= max(open, close, low)
-                    && low <= min(open, close, high)
-                let matchesPrimary = abs(close - point.price) / point.price <= 0.001
-                if !validGeometry || !matchesPrimary {
+                let validGeometry = open.isFinite
+                    && high.isFinite
+                    && low.isFinite
+                    && close.isFinite
+                    && min(open, high, low, close) > 0
+                    && low <= min(open, close)
+                    && max(open, close) <= high
+                if !validGeometry {
                     point.open = nil
                     point.high = nil
                     point.low = nil
