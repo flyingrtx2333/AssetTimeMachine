@@ -1,0 +1,272 @@
+{
+  "app_product_cost" : {
+    "constraints" : {
+      "financing_allowed" : false,
+      "max_actual_gross" : 1,
+      "max_target_gross" : 1,
+      "min_cash" : 0,
+      "min_target_weight" : 1,
+      "pass" : true,
+      "shorting_allowed" : false,
+      "traded_symbols" : [
+        "gold_cny",
+        "nasdaq"
+      ]
+    },
+    "mechanical_product_gate" : {
+      "checks" : {
+        "constraints_pass" : true,
+        "full_cagr_ge_10pct" : false,
+        "full_mdd_le_10pct" : false,
+        "full_sharpe_gt_natural_50_50" : false,
+        "full_sharpe_gt_swap_placebo" : true,
+        "last10_cagr_ge_10pct" : true,
+        "last10_mdd_le_10pct" : false,
+        "same_immutable_schedule_at_both_costs" : true,
+        "same_macro_review_clock_for_candidate_and_controls" : true,
+        "since2020_cagr_ge_10pct" : true,
+        "since2020_mdd_le_10pct" : false,
+        "since2022_cagr_ge_10pct" : true,
+        "since2022_mdd_le_10pct" : false
+      },
+      "pass" : false
+    },
+    "metrics" : {
+      "full_history" : {
+        "available" : true,
+        "cagr_percent" : 9.1769749340672835,
+        "end" : "2026-08-07",
+        "mdd_percent" : 26.537504420013253,
+        "observations" : 6245,
+        "sharpe" : 0.68274667238510756,
+        "start" : "2001-06-26",
+        "total_return" : 8.0705787741518762
+      },
+      "last_10_years" : {
+        "available" : true,
+        "cagr_percent" : 13.765985886905941,
+        "end" : "2026-08-07",
+        "mdd_percent" : 11.99957358869268,
+        "observations" : 2492,
+        "sharpe" : 1.0506333781012129,
+        "start" : "2016-08-08",
+        "total_return" : 2.629897124465129
+      },
+      "since_2020" : {
+        "available" : true,
+        "cagr_percent" : 15.303750068064549,
+        "end" : "2026-08-07",
+        "mdd_percent" : 11.999573588692737,
+        "observations" : 1645,
+        "sharpe" : 1.1003013817778655,
+        "start" : "2020-01-02",
+        "total_return" : 1.5579218870289044
+      },
+      "since_2022" : {
+        "available" : true,
+        "cagr_percent" : 19.633117890649455,
+        "end" : "2026-08-07",
+        "mdd_percent" : 11.999573588692684,
+        "observations" : 1143,
+        "sharpe" : 1.3474900747091128,
+        "start" : "2022-01-03",
+        "total_return" : 1.277430488642691
+      }
+    },
+    "review_clock_fingerprint" : "5a31ff8f56f7bcf4",
+    "schedule_event_count" : 36,
+    "schedule_fingerprint" : "0bc994b60b85a20c"
+  },
+  "candidate_id" : "MACRO-SAHM-CPI-001",
+  "controls" : {
+    "naturally_drifting_50_50" : {
+      "constraints" : {
+        "financing_allowed" : false,
+        "max_actual_gross" : 1,
+        "max_target_gross" : 1,
+        "min_cash" : 0,
+        "min_target_weight" : 0.5,
+        "pass" : true,
+        "shorting_allowed" : false,
+        "traded_symbols" : [
+          "gold_cny",
+          "nasdaq"
+        ]
+      },
+      "metrics" : {
+        "full_history" : {
+          "available" : true,
+          "cagr_percent" : 10.220923740841602,
+          "end" : "2026-08-07",
+          "mdd_percent" : 32.21487852258128,
+          "observations" : 6245,
+          "sharpe" : 0.74709389633617618,
+          "start" : "2001-06-26",
+          "total_return" : 10.519461149233626
+        },
+        "last_10_years" : {
+          "available" : true,
+          "cagr_percent" : 14.524658930699697,
+          "end" : "2026-08-07",
+          "mdd_percent" : 17.746595710923728,
+          "observations" : 2492,
+          "sharpe" : 1.0554385616253854,
+          "start" : "2016-08-08",
+          "total_return" : 2.8792537230200663
+        },
+        "since_2020" : {
+          "available" : true,
+          "cagr_percent" : 16.590805033737112,
+          "end" : "2026-08-07",
+          "mdd_percent" : 17.746595710923664,
+          "observations" : 1645,
+          "sharpe" : 1.050432748681972,
+          "start" : "2020-01-02",
+          "total_return" : 1.7522205534742712
+        },
+        "since_2022" : {
+          "available" : true,
+          "cagr_percent" : 17.711535488689311,
+          "end" : "2026-08-07",
+          "mdd_percent" : 17.74659571092371,
+          "observations" : 1143,
+          "sharpe" : 1.1275819023738409,
+          "start" : "2022-01-03",
+          "total_return" : 1.1142520237344669
+        }
+      },
+      "review_clock_fingerprint" : "5a31ff8f56f7bcf4",
+      "role" : "fixed control; cannot rescue candidate",
+      "schedule_event_count" : 1,
+      "schedule_fingerprint" : "ce2b76bd27993b39"
+    },
+    "swap_placebo" : {
+      "constraints" : {
+        "financing_allowed" : false,
+        "max_actual_gross" : 1,
+        "max_target_gross" : 1,
+        "min_cash" : 0,
+        "min_target_weight" : 1,
+        "pass" : true,
+        "shorting_allowed" : false,
+        "traded_symbols" : [
+          "gold_cny",
+          "nasdaq"
+        ]
+      },
+      "metrics" : {
+        "full_history" : {
+          "available" : true,
+          "cagr_percent" : 3.0747804596811035,
+          "end" : "2026-08-07",
+          "mdd_percent" : 32.712163771326559,
+          "observations" : 6245,
+          "sharpe" : 0.26082031271038664,
+          "start" : "2001-06-26",
+          "total_return" : 1.1395076928093886
+        },
+        "last_10_years" : {
+          "available" : true,
+          "cagr_percent" : 6.1589849436507693,
+          "end" : "2026-08-07",
+          "mdd_percent" : 30.975369266230356,
+          "observations" : 2492,
+          "sharpe" : 0.40192447529176256,
+          "start" : "2016-08-08",
+          "total_return" : 0.81744373368513901
+        },
+        "since_2020" : {
+          "available" : true,
+          "cagr_percent" : 7.3709765145828277,
+          "end" : "2026-08-07",
+          "mdd_percent" : 30.975369266230384,
+          "observations" : 1645,
+          "sharpe" : 0.43585087289039093,
+          "start" : "2020-01-02",
+          "total_return" : 0.59850511107655113
+        },
+        "since_2022" : {
+          "available" : true,
+          "cagr_percent" : 9.2102505807277968,
+          "end" : "2026-08-07",
+          "mdd_percent" : 29.617114437341929,
+          "observations" : 1143,
+          "sharpe" : 0.5172350700992574,
+          "start" : "2022-01-03",
+          "total_return" : 0.49858597605809329
+        }
+      },
+      "review_clock_fingerprint" : "5a31ff8f56f7bcf4",
+      "role" : "falsification control; cannot replace candidate",
+      "schedule_event_count" : 36,
+      "schedule_fingerprint" : "9ff69659a5fe2c15"
+    }
+  },
+  "decision" : "REJECTED",
+  "engine_version" : "atm-swift-clock-v3-2026-08-31",
+  "formal_bps25" : {
+    "constraints" : {
+      "financing_allowed" : false,
+      "max_actual_gross" : 1,
+      "max_target_gross" : 1,
+      "min_cash" : 0,
+      "min_target_weight" : 1,
+      "pass" : true,
+      "shorting_allowed" : false,
+      "traded_symbols" : [
+        "gold_cny",
+        "nasdaq"
+      ]
+    },
+    "metrics" : {
+      "full_history" : {
+        "available" : true,
+        "cagr_percent" : 11.759361312980632,
+        "end" : "2026-08-07",
+        "mdd_percent" : 22.891337366411179,
+        "observations" : 6245,
+        "sharpe" : 0.85022898098626776,
+        "start" : "2001-06-26",
+        "total_return" : 15.316119793125967
+      },
+      "last_10_years" : {
+        "available" : true,
+        "cagr_percent" : 16.494496278036852,
+        "end" : "2026-08-07",
+        "mdd_percent" : 11.999573588692737,
+        "observations" : 2492,
+        "sharpe" : 1.2424197832617672,
+        "start" : "2016-08-08",
+        "total_return" : 3.6002536313566811
+      },
+      "since_2020" : {
+        "available" : true,
+        "cagr_percent" : 16.93584610941241,
+        "end" : "2026-08-07",
+        "mdd_percent" : 11.999573588692716,
+        "observations" : 1645,
+        "sharpe" : 1.2089306842438059,
+        "start" : "2020-01-02",
+        "total_return" : 1.8063873979400276
+      },
+      "since_2022" : {
+        "available" : true,
+        "cagr_percent" : 20.982601884143961,
+        "end" : "2026-08-07",
+        "mdd_percent" : 11.999573588692652,
+        "observations" : 1143,
+        "sharpe" : 1.435221571962787,
+        "start" : "2022-01-03",
+        "total_return" : 1.3977947888460034
+      }
+    },
+    "review_clock_fingerprint" : "5a31ff8f56f7bcf4",
+    "schedule_event_count" : 36,
+    "schedule_fingerprint" : "0bc994b60b85a20c"
+  },
+  "macro_review_clock_fingerprint" : "5a31ff8f56f7bcf4",
+  "no_parameter_rescue" : true,
+  "protocol_id" : "ATM-SVP-2",
+  "same_schedule_replayed_at_both_costs" : true,
+  "trial_id" : "ATM-SVP2-MACRO-SAHM-CPI-001"
+}

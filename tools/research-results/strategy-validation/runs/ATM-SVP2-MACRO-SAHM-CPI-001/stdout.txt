@@ -1,0 +1,5 @@
+assembled=/private/tmp/atm_macro_sahm_cpi_formal.swift bytes=1120962
+MACRO_SAHM_CPI_COMPILE_OK binary=/private/tmp/atm_macro_sahm_cpi_formal
+MACRO_SAHM_CPI_FORMAL_COMPLETE trial_id=ATM-SVP2-MACRO-SAHM-CPI-001 decision=REJECTED schedule_fingerprint=0bc994b60b85a20c
+{"candidate_id": "MACRO-SAHM-CPI-001", "decision": "REJECTED", "result": "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine/tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/candidate-metrics.json", "review_clock_fingerprint": "5a31ff8f56f7bcf4", "schedule_fingerprint": "0bc994b60b85a20c", "trial_id": "ATM-SVP2-MACRO-SAHM-CPI-001"}
+MACRO_SAHM_CPI_FORMAL_RESULT_VALID

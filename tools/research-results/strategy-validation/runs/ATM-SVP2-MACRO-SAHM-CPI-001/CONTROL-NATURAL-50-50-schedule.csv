@@ -1,0 +1,2 @@
+signal_index,signal_date,gold_target,nasdaq_target,reason,reference_month,unrate_row_hash,cpi_row_hash
+0,2001-06-25,0.5,0.5,first_warm_control_50_50_no_rebalance,2001-02,6d16f84c57fe0a7d,d59b91f46dd0d528

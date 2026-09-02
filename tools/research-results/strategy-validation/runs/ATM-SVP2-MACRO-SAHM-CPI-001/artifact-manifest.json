@@ -1,0 +1,163 @@
+{
+  "files": [
+    {
+      "bytes": 183760,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-06-26",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/CONTROL-NATURAL-50-50-portfolio.csv",
+      "row_count": 6245,
+      "sha256": "911a9d51efacaf19b7f8c19c55f12ab92c41c4b6e5934ef4a7ef32443b907046"
+    },
+    {
+      "bytes": 204,
+      "columns": [
+        "signal_index",
+        "signal_date",
+        "gold_target",
+        "nasdaq_target",
+        "reason",
+        "reference_month",
+        "unrate_row_hash",
+        "cpi_row_hash"
+      ],
+      "date_column": "signal_date",
+      "first_date": "2001-06-25",
+      "format": "csv",
+      "last_date": "2001-06-25",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/CONTROL-NATURAL-50-50-schedule.csv",
+      "row_count": 1,
+      "sha256": "be8b8c188de4ed35b04a4687bbc073828345a7d729f6a821b1256104d69fefe4"
+    },
+    {
+      "bytes": 184809,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-06-26",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/CONTROL-SWAP-PLACEBO-portfolio.csv",
+      "row_count": 6245,
+      "sha256": "725b3460d5f8c29c93102ecaa7ed9fd76ddca268ee990a9cf27ed1eb32462a27"
+    },
+    {
+      "bytes": 3593,
+      "columns": [
+        "signal_index",
+        "signal_date",
+        "gold_target",
+        "nasdaq_target",
+        "reason",
+        "reference_month",
+        "unrate_row_hash",
+        "cpi_row_hash"
+      ],
+      "date_column": "signal_date",
+      "first_date": "2001-06-25",
+      "format": "csv",
+      "last_date": "2025-12-02",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/CONTROL-SWAP-PLACEBO-schedule.csv",
+      "row_count": 36,
+      "sha256": "fe401ff8887f3b408558bb48b3ae7372ccbdb819c7a57fb68b6467004ce3e91d"
+    },
+    {
+      "bytes": 183892,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-06-26",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/MACRO-SAHM-CPI-001-APP-portfolio.csv",
+      "row_count": 6245,
+      "sha256": "cb2d294b4199c9cd43b6761aea1c6ae3d3e6cb9f8b4ead4692f1aad6254ec251"
+    },
+    {
+      "bytes": 183647,
+      "columns": [
+        "date",
+        "portfolio_value"
+      ],
+      "date_column": "date",
+      "first_date": "2001-06-26",
+      "format": "csv",
+      "last_date": "2026-08-07",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/MACRO-SAHM-CPI-001-BPS25-portfolio.csv",
+      "row_count": 6245,
+      "sha256": "6ea47662ec1121d3f9573c3fe3207072b485c44e929c2ec4fdd768721272bd14"
+    },
+    {
+      "bytes": 3467,
+      "columns": [
+        "signal_index",
+        "signal_date",
+        "gold_target",
+        "nasdaq_target",
+        "reason",
+        "reference_month",
+        "unrate_row_hash",
+        "cpi_row_hash"
+      ],
+      "date_column": "signal_date",
+      "first_date": "2001-06-25",
+      "format": "csv",
+      "last_date": "2025-12-02",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/MACRO-SAHM-CPI-001-schedule.csv",
+      "row_count": 36,
+      "sha256": "5a57c3e23353c93012ab23f14f3fc0db62ac5d3b928f1784074254df171ebfcc"
+    },
+    {
+      "bytes": 8577,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/candidate-metrics.json",
+      "sha256": "3ce702fe57f3c37f4d23a88ff3e5790cd57392f8b6a05ab189105d6c6124b875"
+    },
+    {
+      "bytes": 870,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/execution.json",
+      "sha256": "53d9ccd264651a95f4bfead82bf1bae8760102de890da36a6397f394e6ac90a7"
+    },
+    {
+      "bytes": 441,
+      "format": "json",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/run-authorization.json",
+      "sha256": "1362016a5b26ac209fd80914069306b40cb20e5ada4a2ebd44fb3b4eb81c80a9"
+    },
+    {
+      "bytes": 0,
+      "format": "text",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 668,
+      "format": "text",
+      "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/stdout.txt",
+      "sha256": "1022e6df65cb95783879d96c9a79d7d1f646e7d2c0707abeed1233afeb7d277f"
+    }
+  ],
+  "generated_at": "2026-09-02T12:52:40+08:00",
+  "git_commit": "3ddeef2fa1f008dd0c1f416fe245e7e4aa5b6cfd",
+  "kind": "result",
+  "metadata": {
+    "candidate_id": "MACRO-SAHM-CPI-001",
+    "decision": "REJECTED",
+    "formal_run_count": 1,
+    "macro_review_clock_fingerprint": "5a31ff8f56f7bcf4",
+    "no_parameter_rescue": true,
+    "schedule_fingerprint": "0bc994b60b85a20c"
+  },
+  "protocol_id": "ATM-SVP-2",
+  "trial_id": "ATM-SVP2-MACRO-SAHM-CPI-001"
+}

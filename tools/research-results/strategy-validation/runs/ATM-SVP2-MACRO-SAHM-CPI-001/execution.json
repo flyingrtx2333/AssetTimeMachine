@@ -1,0 +1,18 @@
+{
+  "command": [
+    "python3",
+    "scripts/run_macro_sahm_cpi_formal.py",
+    "--output-dir",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001"
+  ],
+  "execution_git_commit": "3ddeef2fa1f008dd0c1f416fe245e7e4aa5b6cfd",
+  "finished_at": "2026-09-02T12:51:00+08:00",
+  "preregistration_record_hash": "ca639b973a6959267a8fed980280b4459cc926f83c87ae79b03d2a2b466d6412",
+  "protocol_id": "ATM-SVP-2",
+  "return_code": 0,
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/run-authorization.json",
+  "started_at": "2026-09-02T12:49:46+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/stdout.txt",
+  "trial_id": "ATM-SVP2-MACRO-SAHM-CPI-001"
+}
