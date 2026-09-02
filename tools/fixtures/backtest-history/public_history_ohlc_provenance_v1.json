@@ -1,0 +1,213 @@
+{
+  "schema_version": "public-history-ohlc-provenance-v1",
+  "artifact_semantics": {
+    "immutable_for_input_hashes": true,
+    "contains_wall_clock_time": false,
+    "reads_strategy_performance": false,
+    "mutates_public_history_fixture": false
+  },
+  "generator": {
+    "path": "scripts/audit_public_history_ohlc_provenance.py",
+    "bytes": 27147,
+    "sha256": "3f95ae5d5dd719f1148d6e36230535a46e572c74c9023f7d99b80a8c74b95f80"
+  },
+  "inputs": {
+    "public_history_fixture": {
+      "path": "tools/fixtures/backtest-history/public_history.json",
+      "bytes": 5178861,
+      "sha256": "35bcfc9a06079ca8c3a2bb69ac4bad377e5314a313a6ca279c7817df139e124b"
+    },
+    "choice_gc00y_source": {
+      "path": "tools/fixtures/backtest-history/sources/choice/GC00Y_daily_1990-01-03_2026-07-08.xlsx",
+      "bytes": 566752,
+      "sha256": "97d72953caf6fb498754929b17347c837ae83e7e000bdebe22e273361e4786f5"
+    },
+    "production_apply_report": {
+      "path": "tools/fixtures/backtest-history/sources/choice/gc00y-production-apply-20260902.json",
+      "bytes": 211779,
+      "sha256": "33ee5b589e322d7f4a477c4a30818f8ab49168b21bee0aa4b577700fdcbda847"
+    }
+  },
+  "rules": {
+    "target_assets": [
+      "gold_cny",
+      "nasdaq_composite",
+      "sp500"
+    ],
+    "row_validation": "strictly increasing canonical ISO dates; finite positive canonical prices; OHLC is either all-null, canonical-close fallback only, or four finite positive fields; complete bars must satisfy low <= min(open, close) <= max(open, close) <= high; volume is null or finite nonnegative",
+    "gold_conversion_formula": "CNY_per_gram = GC00Y_USD_per_troy_oz * CNY_per_USD / 31.1034768, rounded HALF_UP to six decimals",
+    "fx_policy": "production apply used latest causal CNY_per_USD; fixture usd_per_cny is checked only for causal date coverage with <=7 calendar-day staleness because its serialized precision cannot reproduce production values",
+    "choice_value_verification": {
+      "ohlc": "intersect the exact Decimal CNY_per_USD intervals implied by each current 6dp O/H/L/C value and corresponding Choice field; require one non-empty common interval",
+      "volume": "exact Decimal equality with the same-date Choice row",
+      "failure": "fail closed; no similarity threshold"
+    },
+    "gold_classification": {
+      "missing": "all four fixture OHLC fields are null, or open/high/low are null while close_prices equals canonical prices (API close fallback)",
+      "choice_imported": "date is listed in the immutable successful production apply report; current O/H/L/C jointly fit one Choice-to-CNY 6dp rounding interval and volume exactly matches Choice",
+      "native_preexisting": "complete fixture OHLC not listed among production Choice updates; exact upstream row provenance is not claimed",
+      "anti_heuristic": "canonical prices != close_prices and numerical similarity are reported only as diagnostics and never used to assign provenance"
+    },
+    "digest_encoding": "sha256(prefix || UTF-8 domain || NUL || repeated canonical-JSON(record) || LF); canonical JSON sorts object keys and uses compact separators"
+  },
+  "choice_source_audit": {
+    "sheet_name": "Sheet0",
+    "metadata_footer": "数据来源：妙想Choice",
+    "source_rows": 9224,
+    "valid_rows": 9223,
+    "date_start": "1990-01-03",
+    "date_end": "2026-07-08",
+    "invalid_geometry_count": 1,
+    "invalid_geometry_dates": [
+      "2018-03-30"
+    ],
+    "zero_volume_rows": 107
+  },
+  "fx_input_audit": {
+    "symbol": "usd_per_cny",
+    "provider_label": "Frankfurter · ECB reference rates",
+    "row_count": 6816,
+    "date_start": "2000-01-13",
+    "date_end": "2026-09-01",
+    "row_digest": {
+      "algorithm": "sha256",
+      "domain": "asset/usd_per_cny/date-price",
+      "sha256": "464a731b080be39d31316cb81625a40cb8fa9df8007baf5608c959c34a97b545"
+    }
+  },
+  "assets": {
+    "gold_cny": {
+      "provider_labels": {
+        "source": "CME Group · COMEX",
+        "ohlc_source": "CME Group · COMEX"
+      },
+      "row_count": 6398,
+      "date_start": "2001-06-25",
+      "date_end": "2026-08-31",
+      "complete_ohlc_rows": 6386,
+      "missing_ohlc_rows": 12,
+      "missing_ohlc_dates": [
+        "2001-09-14",
+        "2001-11-26",
+        "2001-11-28",
+        "2002-07-08",
+        "2004-01-05",
+        "2005-01-03",
+        "2005-01-05",
+        "2005-11-28",
+        "2006-09-04",
+        "2007-01-02",
+        "2010-11-24",
+        "2019-01-01"
+      ],
+      "missing_all_null_rows": 0,
+      "missing_all_null_dates": [],
+      "missing_canonical_close_fallback_rows": 12,
+      "missing_canonical_close_fallback_dates": [
+        "2001-09-14",
+        "2001-11-26",
+        "2001-11-28",
+        "2002-07-08",
+        "2004-01-05",
+        "2005-01-03",
+        "2005-01-05",
+        "2005-11-28",
+        "2006-09-04",
+        "2007-01-02",
+        "2010-11-24",
+        "2019-01-01"
+      ],
+      "partial_ohlc_rows": 0,
+      "geometry_violations": 0,
+      "row_digest": {
+        "algorithm": "sha256",
+        "domain": "asset/gold_cny/fixture-rows",
+        "sha256": "9a0b9c32a1d98902341ebcd0478dc6d5b210bd8f0c55f73f89c940150051e9c7"
+      },
+      "provider_label_only": false,
+      "choice_source_row_proof": true,
+      "row_level_proof_basis": "immutable successful production apply membership plus current fixture O/H/L/C jointly fitting one Choice-to-CNY 6dp rounding interval and exact Choice volume; canonical-close differences are diagnostic only",
+      "classification_counts": {
+        "choice_imported": 1451,
+        "native_preexisting": 4935,
+        "missing": 12
+      },
+      "classification_digest": {
+        "algorithm": "sha256",
+        "domain": "asset/gold_cny/date-classification",
+        "sha256": "e8c1101aad32669933625bc80043a652a6e2776efbaecc4b34542d4639e9566d"
+      },
+      "classification_date_digests": {
+        "choice_imported": "c1cf211e4c1dabed3406a8846433eed2f9a4e8badff1b754f10441b6fc0131c1",
+        "native_preexisting": "93a37adf3147b32a1a9c982f7681e35df5e1d97e590f8c416574f143a9cd5040",
+        "missing": "4f63bba3c0f39f28628225dc32f365baca03d3d541a149f050502c74f4b85707"
+      },
+      "ambiguous_dates_expanded": false,
+      "ambiguous_dates_count": 0,
+      "independent_close_differs_from_canonical": {
+        "count": 1451,
+        "dates_sha256": "44bccc24d73816363204aeb8034a280b6ba5d02542b62ddbba303b29518c1777"
+      }
+    },
+    "nasdaq_composite": {
+      "provider_labels": {
+        "source": "Nasdaq · Yahoo Finance",
+        "ohlc_source": "Nasdaq · Yahoo Finance"
+      },
+      "row_count": 6708,
+      "date_start": "2000-01-03",
+      "date_end": "2026-09-01",
+      "complete_ohlc_rows": 6707,
+      "missing_ohlc_rows": 1,
+      "missing_ohlc_dates": [
+        "2026-09-01"
+      ],
+      "missing_all_null_rows": 0,
+      "missing_all_null_dates": [],
+      "missing_canonical_close_fallback_rows": 1,
+      "missing_canonical_close_fallback_dates": [
+        "2026-09-01"
+      ],
+      "partial_ohlc_rows": 0,
+      "geometry_violations": 0,
+      "row_digest": {
+        "algorithm": "sha256",
+        "domain": "asset/nasdaq_composite/fixture-rows",
+        "sha256": "f3205849ae8fce3d61c1e59812ac411ea9d48855e425398707475ce94b9211da"
+      },
+      "provider_label_only": true,
+      "row_level_source_proof": false,
+      "provider_caveat": "provider labels are fixture metadata only; no frozen raw provider file is available"
+    },
+    "sp500": {
+      "provider_labels": {
+        "source": "S&P Dow Jones Indices · Yahoo Finance",
+        "ohlc_source": "S&P Dow Jones Indices · Yahoo Finance"
+      },
+      "row_count": 6719,
+      "date_start": "2000-01-03",
+      "date_end": "2026-09-01",
+      "complete_ohlc_rows": 6718,
+      "missing_ohlc_rows": 1,
+      "missing_ohlc_dates": [
+        "2026-09-01"
+      ],
+      "missing_all_null_rows": 0,
+      "missing_all_null_dates": [],
+      "missing_canonical_close_fallback_rows": 1,
+      "missing_canonical_close_fallback_dates": [
+        "2026-09-01"
+      ],
+      "partial_ohlc_rows": 0,
+      "geometry_violations": 0,
+      "row_digest": {
+        "algorithm": "sha256",
+        "domain": "asset/sp500/fixture-rows",
+        "sha256": "12307ce326ab5bd787cec685cbb66d709670201f696c54042c2aa1de58c558bb"
+      },
+      "provider_label_only": true,
+      "row_level_source_proof": false,
+      "provider_caveat": "provider labels are fixture metadata only; no frozen raw provider file is available"
+    }
+  }
+}
