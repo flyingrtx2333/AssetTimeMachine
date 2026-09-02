@@ -9,7 +9,9 @@ let package = Package(
     products: [
         .library(name: "AssetTimeMachineBacktestCore", targets: ["AssetTimeMachineBacktestCore"]),
         .executable(name: "AssetTimeMachineBacktestWorker", targets: ["AssetTimeMachineBacktestWorker"]),
-        .executable(name: "AssetTimeMachineBacktestCompute", targets: ["AssetTimeMachineBacktestCompute"])
+        .executable(name: "AssetTimeMachineBacktestCompute", targets: ["AssetTimeMachineBacktestCompute"]),
+        .executable(name: "RSRangeBreadthFreeze", targets: ["RSRangeBreadthFreeze"]),
+        .executable(name: "RSRangeBreadthFormal", targets: ["RSRangeBreadthFormal"])
     ],
     dependencies: [
         .package(url: "https://github.com/hummingbird-project/hummingbird.git", exact: "2.22.0"),
@@ -44,6 +46,9 @@ let package = Package(
                 "GNR5ReversalStrategy.swift",
                 "GORQREG25263Strategy.swift",
                 "MacroSahmCPIStrategy.swift",
+                "RSRangeBreadthStrategy.swift",
+                "RSRangeBreadthFreezeSupport.swift",
+                "RSRangeBreadthFormalSupport.swift",
                 "AssetTimeMachineServerSupport.swift",
                 "PublicBacktestCore.swift"
             ],
@@ -64,6 +69,16 @@ let package = Package(
             name: "AssetTimeMachineBacktestCompute",
             dependencies: ["AssetTimeMachineBacktestCore"],
             path: "Server/Sources/Compute"
+        ),
+        .executableTarget(
+            name: "RSRangeBreadthFreeze",
+            dependencies: ["AssetTimeMachineBacktestCore"],
+            path: "Server/Sources/RSRangeBreadthFreeze"
+        ),
+        .executableTarget(
+            name: "RSRangeBreadthFormal",
+            dependencies: ["AssetTimeMachineBacktestCore"],
+            path: "Server/Sources/RSRangeBreadthFormal"
         ),
         .testTarget(
             name: "AssetTimeMachineBacktestCoreTests",

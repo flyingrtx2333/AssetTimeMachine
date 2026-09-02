@@ -4921,6 +4921,44 @@ nonisolated enum BacktestEngine {
         )
     }
 
+    static func researchMarketDataFrame(
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
+        config: ResearchTargetStrategyConfig,
+        dateBounds: ClosedRange<Date>? = nil
+    ) -> MarketDataFrame? {
+        let preparedSeries: [PreparedAdvancedSeries] = assetInputs.compactMap { input in
+            guard input.assetSeries != nil,
+                  !input.assetOption.requiresHistoricalFX || input.fxSeries != nil else { return nil }
+            return preparedAdvancedSeries(assetSeries: input.assetSeries, assetOption: input.assetOption, fxSeries: input.fxSeries)
+        }
+        guard preparedSeries.count == assetInputs.count, preparedSeries.count >= 2 else { return nil }
+        let aligned = alignedRotationPriceSeries(from: preparedSeries, zeroFillBeforeFirstSymbols: config.zeroFillBeforeFirstSymbols)
+        let dates = aligned.dates
+        let allSymbols = preparedSeries.map(\.assetOption.symbol)
+        guard config.signalOnlySymbols.isSubset(of: Set(allSymbols)) else { return nil }
+        let tradable = allSymbols.filter { !config.signalOnlySymbols.contains($0) }
+        guard !dates.isEmpty, !tradable.isEmpty else { return nil }
+        let requested: ClosedRange<Int>
+        if let dateBounds {
+            guard let start = dates.firstIndex(where: { $0 >= dateBounds.lowerBound }),
+                  let end = dates.lastIndex(where: { $0 <= dateBounds.upperBound }), start <= end else { return nil }
+            requested = start...end
+        } else {
+            requested = 0...(dates.count - 1)
+        }
+        let start = max(requested.lowerBound, max(config.warmupSessions, 1))
+        guard start < requested.upperBound else { return nil }
+        return MarketDataFrame(
+            dates: dates,
+            pricesBySymbol: aligned.pricesBySymbol,
+            observedBySymbol: aligned.observedBySymbol,
+            ohlcBySymbol: Dictionary(uniqueKeysWithValues: preparedSeries.map { ($0.assetOption.symbol, $0.ohlcPoints) }),
+            tradableSymbols: tradable,
+            optionBySymbol: Dictionary(uniqueKeysWithValues: preparedSeries.map { ($0.assetOption.symbol, $0.assetOption) }),
+            simulationRange: start...requested.upperBound
+        )
+    }
+
     static func runResearchTargetProviderStrategy(
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestAssetOption, fxSeries: PublicHistorySeries?)],
         initialCash: Double,
