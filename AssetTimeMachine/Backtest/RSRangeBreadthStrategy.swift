@@ -613,7 +613,13 @@ nonisolated enum RSRangeBreadthSharedSimulator {
         execution: BacktestExecutionConfig
     ) throws -> RSRangeBreadthSimulationValidation {
         let requiredSymbols = Set(RSRangeBreadthStrategy.assetOrder)
-        guard requiredSymbols.isSubset(of: Set(frame.tradableSymbols)),
+        let uniqueTradableSymbols = Set(frame.tradableSymbols)
+        guard !frame.dates.isEmpty,
+              zip(frame.dates, frame.dates.dropFirst()).allSatisfy({ $0 < $1 }),
+              frame.dates.indices.contains(frame.simulationRange.lowerBound),
+              frame.dates.indices.contains(frame.simulationRange.upperBound),
+              frame.tradableSymbols.count == uniqueTradableSymbols.count,
+              requiredSymbols.isSubset(of: uniqueTradableSymbols),
               requiredSymbols.isSubset(of: Set(frame.optionBySymbol.keys)),
               !artifact.executableDates.isEmpty else {
             throw RSRangeBreadthError.invalidInput("shared simulator frame coverage")
