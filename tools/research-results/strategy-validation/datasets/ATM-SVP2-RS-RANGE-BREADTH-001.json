@@ -1,0 +1,44 @@
+{
+  "cutoff" : "2026-08-31",
+  "files" : [
+    {
+      "bytes" : 5178861,
+      "format" : "json",
+      "path" : "tools/fixtures/backtest-history/public_history.json",
+      "sha256" : "35bcfc9a06079ca8c3a2bb69ac4bad377e5314a313a6ca279c7817df139e124b"
+    },
+    {
+      "bytes" : 3469,
+      "format" : "json",
+      "path" : "tools/fixtures/backtest-history/choice_gc00y_backfill_audit_2026-09-02.json",
+      "sha256" : "cf48271c5c771e5db37a1e121d3b212f2dad95cde5f92dfedc8826d760cb7826"
+    }
+  ],
+  "implementation_commit" : "07efbae691196a68ee784c80dbdea29ce3346fff",
+  "kind" : "dataset",
+  "performance_viewed_before_freeze" : false,
+  "protocol_id" : "ATM-SVP-2",
+  "runtime" : {
+    "build" : "25F84",
+    "os" : "macOS 26.5.2",
+    "swift" : "Apple Swift version 6.2.4 (swiftlang-6.2.4.1.4 clang-1700.6.4.2)",
+    "target" : "arm64-apple-macosx26.0"
+  },
+  "series_contract" : {
+    "asset_order" : [
+      "gold_cny",
+      "nasdaq",
+      "sp500"
+    ],
+    "canonical_price_role" : "valuation and executable-date eligibility only",
+    "fixture_symbol_mapping" : {
+      "gold_cny" : "gold_cny",
+      "nasdaq" : "nasdaq_composite",
+      "sp500" : "sp500"
+    },
+    "fx_symbol" : "usd_per_cny",
+    "ohlc_role" : "signal only; all four same-session fields converted together by BacktestAdvancedSeriesPreparer",
+    "source_id_rule" : "every frozen bar row carries fixture SHA, cutoff, App/fixture symbol, OHLC source/version; gold rows also carry Choice audit SHA"
+  },
+  "trial_id" : "ATM-SVP2-RS-RANGE-BREADTH-001"
+}
