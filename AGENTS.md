@@ -541,7 +541,9 @@ Pull requests should describe the user-facing change, list verification commands
 
 ## Current Known Operational Notes
 
-- Latest TestFlight release: version `1.14` build `200`, Delivery UUID `4d659e37-4f51-438c-8d2a-07022bce64a9`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.14-200`.
+- Latest TestFlight release: version `1.14` build `201`, Delivery UUID `b2283a01-2be6-42ff-9eea-280bced94ed2`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.14-201`.
+- Build 201 ships the clock-v3 backtest execution model: strict signal/execution separation, real-session execution checks, cross-venue sell-before-buy settlement, calendar-time cash accrual, observed-frequency metrics, refreshed App-engine baselines, and stale-data protection for current allocation advice. It moves the corrected gold–Nasdaq dual-trend strategy to the recommended catalog position while retaining the balanced strategy as the migration-safe default. It also includes the build-200 monthly-expense estimator and widget/appearance refinements.
+- Previous TestFlight release: version `1.14` build `200`, Delivery UUID `4d659e37-4f51-438c-8d2a-07022bce64a9`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.14-200`.
 - Build 200 adds the compact unified monthly-expense estimator in Settings, with monthly/annual filtering, inline entry, annual-to-monthly conversion, swipe deletion, local persistence, and Dashboard monthly-expense synchronization. It also packages the current app/widget appearance refinements and three-locale copy.
 - Previous TestFlight release: version `1.13` build `198`, Delivery UUID `ed7fc6be-eb2b-4a3b-96de-57975a0b95d8`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.13-198`.
 - Build 198 adds ratio/amount switching to Quant rebalance advice, makes record quick editors auto-focus without a redundant keyboard gap, compacts direct-amount editing, adds the Dashboard financial-freedom progress sweep, and makes manual market refreshes request fresh overview, FX, and history data.
