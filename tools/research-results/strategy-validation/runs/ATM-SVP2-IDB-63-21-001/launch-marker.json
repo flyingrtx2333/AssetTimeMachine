@@ -1,0 +1,10 @@
+{
+  "executable_sha256" : "6cf78b9d2ca15444e1c3b96deb6257ae1e67da114d2ec615b48ca66dc13c76f1",
+  "execution_git_commit" : "a2d81d20b00734d36c11d25944a3c81577d8fd26",
+  "guard_receipt_sha256" : "1dc3a7947b1bda85d9271c73b2e5dee706cb4fc9402046bd28b4acd584995fd6",
+  "run_budget_record_hash" : "f12bcee693cbf861542f07e4b794b54fa74867625f79ad67b781beeb591d6469",
+  "schema_version" : 1,
+  "slot_sha256" : "d8b62482a90722a29c85242f25b10a10e7554f5e59aff7255df4a23e0f4b4a88",
+  "state" : "LAUNCHED_PERMANENT_NO_RETRY",
+  "trial_id" : "ATM-SVP2-IDB-63-21-001"
+}

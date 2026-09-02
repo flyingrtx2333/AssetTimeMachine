@@ -1,0 +1,11 @@
+{
+  "candidate_count": 1,
+  "evidence_class": "D0_EXPOSED",
+  "execution_git_commit": "a2d81d20b00734d36c11d25944a3c81577d8fd26",
+  "formal_run_budget": 1,
+  "ledger_head_at_authorization": "f12bcee693cbf861542f07e4b794b54fa74867625f79ad67b781beeb591d6469",
+  "preregistration_record_hash": "24094a81a5d5fbac7d9528300769e617458957ae1171654d2f92108a09e386fc",
+  "protocol_id": "ATM-SVP-2",
+  "run_budget_record_hash": "f12bcee693cbf861542f07e4b794b54fa74867625f79ad67b781beeb591d6469",
+  "trial_id": "ATM-SVP2-IDB-63-21-001"
+}

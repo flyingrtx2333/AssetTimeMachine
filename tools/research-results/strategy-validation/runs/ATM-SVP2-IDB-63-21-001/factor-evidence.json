@@ -1,0 +1,10 @@
+{
+  "candidate_id": "IDB-63-21",
+  "evidence_role": "preregistered_falsification_control_not_factor_candidate",
+  "factor_library_required": false,
+  "factor_mechanism": null,
+  "protocol_id": "ATM-SVP-2",
+  "reason": "formal launch returned code 1 without complete validated metrics",
+  "status": "NOT_PRODUCED",
+  "trial_id": "ATM-SVP2-IDB-63-21-001"
+}

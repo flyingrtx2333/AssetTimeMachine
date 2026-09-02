@@ -1,0 +1,19 @@
+{
+  "command": [
+    "/opt/miniconda3/bin/python3",
+    "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine/scripts/run_intraday_downside_breadth_formal.py",
+    "--output-dir",
+    "/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine/tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001"
+  ],
+  "execution_git_commit": "a2d81d20b00734d36c11d25944a3c81577d8fd26",
+  "finished_at": "2026-09-03T00:21:43+08:00",
+  "preregistration_record_hash": "24094a81a5d5fbac7d9528300769e617458957ae1171654d2f92108a09e386fc",
+  "protocol_id": "ATM-SVP-2",
+  "return_code": 1,
+  "run_budget_record_hash": "f12bcee693cbf861542f07e4b794b54fa74867625f79ad67b781beeb591d6469",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/run-authorization.json",
+  "started_at": "2026-09-03T00:21:13+08:00",
+  "stderr": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/stderr.txt",
+  "stdout": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/stdout.txt",
+  "trial_id": "ATM-SVP2-IDB-63-21-001"
+}

@@ -1,0 +1,95 @@
+{
+  "batch_key": "ATM-SVP2-IDB-63-21-001-strategy-library-v2",
+  "run": {
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/artifact-manifest.json",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-IDB-63-21-001.json",
+    "decision": "INVALID / PERMANENTLY CLOSED: the one-shot formal launch returned code 1 without a complete validated performance artifact; no retry or parameter rescue is permitted.",
+    "evidence_class": "D0_EXPOSED",
+    "execution_commit": "a2d81d20b00734d36c11d25944a3c81577d8fd26",
+    "finished_at": "2026-09-03T00:21:43+08:00",
+    "methodology": {
+      "formal_result_source": "hash-chained trial-ledger RESULT and committed candidate-metrics.json",
+      "metric_display_basis": "fixed CNY 100000, fee 0.01, slippage 0.0005, zero financing",
+      "no_parameter_rescue": true,
+      "permanent_no_retry": true
+    },
+    "preregistration_hash": "24094a81a5d5fbac7d9528300769e617458957ae1171654d2f92108a09e386fc",
+    "protocol_id": "ATM-SVP-2",
+    "run_key": "ATM-SVP2-IDB-63-21-001",
+    "started_at": "2026-09-03T00:21:13+08:00",
+    "status": "INVALID",
+    "title": "IDB 日内下跌广度黄金轮动正式验证"
+  },
+  "schema_version": "strategy-library-v2",
+  "source_commit": "a2d81d20b00734d36c11d25944a3c81577d8fd26",
+  "source_repository": "AssetTimeMachine",
+  "strategies": [
+    {
+      "description": "以纳指与标普收盘相对开盘的有符号日内方向衡量下跌广度，在黄金与股票指数间轮动。",
+      "display_name": "IDB 日内下跌广度 63/21",
+      "family": "intraday-downside-breadth",
+      "result": {
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/results/ATM-SVP2-IDB-63-21-001.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-IDB-63-21-001/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/trial-ledger.jsonl"
+          }
+        ],
+        "candidate_id": "IDB-63-21",
+        "conclusion": "INVALID / PERMANENTLY CLOSED: the one-shot formal launch returned code 1 without a complete validated performance artifact; no retry or parameter rescue is permitted.",
+        "constraints": {
+          "financing_allowed": false,
+          "leverage_allowed": false,
+          "max_gross_limit": 1.0,
+          "shorting_allowed": false
+        },
+        "gates": {},
+        "metrics": {
+          "strategy_library_validation": {
+            "basis": "formal launch produced no complete metrics",
+            "status": "INVALID"
+          }
+        },
+        "result_status": "INVALID",
+        "robust_strategy_pass": false
+      },
+      "source_project": "AssetTimeMachine",
+      "strategy_key": "IDB-63-21",
+      "strategy_kind": "allocation",
+      "tags": [
+        "formal",
+        "invalid",
+        "permanently-closed",
+        "ohlc",
+        "return-blind"
+      ],
+      "version": {
+        "assets": [
+          "gold_cny",
+          "nasdaq",
+          "sp500"
+        ],
+        "code_sha256": "997bd58c8df6ea12bdcd5b2f8bf8265a7e3cd74ca048f9f5fd42d1aa261dab47",
+        "financing_allowed": false,
+        "leverage_allowed": false,
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "mechanism_text": "两个指数各取63个共同OHLC观察的log(C/O)均值，每21个共同观察复核；收盘后入队，下一可执行session起生效。",
+        "parameters": {
+          "lookback": 63,
+          "review_step": 21,
+          "threshold": 0
+        },
+        "shorting_allowed": false,
+        "source_path": "AssetTimeMachine/Backtest/IntradayDownsideBreadthStrategy.swift",
+        "target_fingerprint": "4672d2bb6c6ab1647a9424a2d7d61803d115ba01c3ad86e6a17d7b414a1c1ef4",
+        "version_key": "intraday-downside-breadth-63-21-v1"
+      }
+    }
+  ]
+}
