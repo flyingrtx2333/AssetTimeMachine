@@ -272,4 +272,68 @@ final class RSRangeBreadthStrategyTests: XCTestCase {
             execution: .init(initialCash: 100_000, feeRate: 0, slippageRate: 0, rebalanceBand: 0, financingAnnualRate: 0, allowsFinancedExposure: false, buyReason: "executable date test")
         ))
     }
+
+    func testSharedSimulatorRejectsMalformedDatesRangeAndDuplicateTradables() throws {
+        let base = datedBars(count: 315, qMode: { _ in (100, 110, 90, 100) })
+        let assets = RSRangeBreadthStrategy.assetOrder.enumerated().map { offset, symbol in
+            RSRangeBreadthAssetInput(symbol: symbol, sourceID: "source-\(offset)", currency: "CNY", bars: base)
+        }
+        let dates = base.map { BacktestSeriesAlignment.historicalSeriesDate(from: $0.date)! }
+        let artifact = try RSRangeBreadthScheduleBuilder.build(assets: assets, config: config(executableDates: base.map(\.date)))
+        let prices = Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, Array(repeating: 100.0, count: dates.count)) })
+        let observed = Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, Array(repeating: true, count: dates.count)) })
+        let options = Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, BacktestAssetOption(symbol: $0, title: $0, color: .blue, requiresHistoricalFX: false, historicalFXSymbol: nil)) })
+        let execution = BacktestExecutionConfig(initialCash: 100_000, feeRate: 0, slippageRate: 0, rebalanceBand: 0, financingAnnualRate: 0, allowsFinancedExposure: false, buyReason: "malformed frame test")
+
+        var duplicateDates = dates
+        duplicateDates[10] = duplicateDates[9]
+        let duplicateDateFrame = MarketDataFrame(
+            dates: duplicateDates, pricesBySymbol: prices, observedBySymbol: observed, ohlcBySymbol: [:],
+            tradableSymbols: RSRangeBreadthStrategy.assetOrder, optionBySymbol: options, simulationRange: 1...(dates.count - 1)
+        )
+        XCTAssertThrowsError(try RSRangeBreadthSharedSimulator.run(artifact: artifact, variant: .candidate, frame: duplicateDateFrame, execution: execution))
+
+        let duplicateTradableFrame = MarketDataFrame(
+            dates: dates, pricesBySymbol: prices, observedBySymbol: observed, ohlcBySymbol: [:],
+            tradableSymbols: RSRangeBreadthStrategy.assetOrder + [RSRangeBreadthStrategy.assetOrder[0]], optionBySymbol: options,
+            simulationRange: 1...(dates.count - 1)
+        )
+        XCTAssertThrowsError(try RSRangeBreadthSharedSimulator.run(artifact: artifact, variant: .candidate, frame: duplicateTradableFrame, execution: execution))
+
+        let outOfRangeFrame = MarketDataFrame(
+            dates: dates, pricesBySymbol: prices, observedBySymbol: observed, ohlcBySymbol: [:],
+            tradableSymbols: RSRangeBreadthStrategy.assetOrder, optionBySymbol: options, simulationRange: 1...dates.count
+        )
+        XCTAssertThrowsError(try RSRangeBreadthSharedSimulator.run(artifact: artifact, variant: .candidate, frame: outOfRangeFrame, execution: execution))
+    }
+
+    func testSharedSimulatorDefersUntilJointRealExecutionDate() throws {
+        let base = datedBars(count: 315, qMode: { _ in (100, 110, 90, 100) })
+        let assets = RSRangeBreadthStrategy.assetOrder.enumerated().map { offset, symbol in
+            RSRangeBreadthAssetInput(symbol: symbol, sourceID: "source-\(offset)", currency: "CNY", bars: base)
+        }
+        let dates = base.map { BacktestSeriesAlignment.historicalSeriesDate(from: $0.date)! }
+        let baselineArtifact = try RSRangeBreadthScheduleBuilder.build(assets: assets, config: config(executableDates: base.map(\.date)))
+        let firstEventDate = try XCTUnwrap(baselineArtifact.reviews.first(where: { $0.candidate.event })?.date)
+        let firstEventIndex = try XCTUnwrap(base.firstIndex(where: { $0.date == firstEventDate }))
+        let closedIndex = firstEventIndex + 1
+        let completionIndex = firstEventIndex + 2
+        let executableDates = base.map(\.date).filter { $0 != base[closedIndex].date }
+        let artifact = try RSRangeBreadthScheduleBuilder.build(assets: assets, config: config(executableDates: executableDates))
+        var observed = Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, Array(repeating: true, count: dates.count)) })
+        observed[RSRangeBreadthStrategy.assetOrder[2]]![closedIndex] = false
+        let options = Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, BacktestAssetOption(symbol: $0, title: $0, color: .blue, requiresHistoricalFX: false, historicalFXSymbol: nil)) })
+        let frame = MarketDataFrame(
+            dates: dates,
+            pricesBySymbol: Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, Array(repeating: 100.0, count: dates.count)) }),
+            observedBySymbol: observed, ohlcBySymbol: [:], tradableSymbols: RSRangeBreadthStrategy.assetOrder,
+            optionBySymbol: options, simulationRange: 1...(dates.count - 1)
+        )
+        let validated = try RSRangeBreadthSharedSimulator.run(
+            artifact: artifact, variant: .candidate, frame: frame,
+            execution: .init(initialCash: 100_000, feeRate: 0, slippageRate: 0, rebalanceBand: 0, financingAnnualRate: 0, allowsFinancedExposure: false, buyReason: "joint observation test")
+        )
+        XCTAssertEqual(validated.trace.first?.reviewDate, firstEventDate)
+        XCTAssertEqual(validated.trace.first?.completionDate, base[completionIndex].date)
+    }
 }
