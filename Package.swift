@@ -11,7 +11,9 @@ let package = Package(
         .executable(name: "AssetTimeMachineBacktestWorker", targets: ["AssetTimeMachineBacktestWorker"]),
         .executable(name: "AssetTimeMachineBacktestCompute", targets: ["AssetTimeMachineBacktestCompute"]),
         .executable(name: "RSRangeBreadthFreeze", targets: ["RSRangeBreadthFreeze"]),
-        .executable(name: "RSRangeBreadthFormal", targets: ["RSRangeBreadthFormal"])
+        .executable(name: "RSRangeBreadthFormal", targets: ["RSRangeBreadthFormal"]),
+        .executable(name: "IntradayDownsideBreadthFreeze", targets: ["IntradayDownsideBreadthFreeze"]),
+        .executable(name: "IntradayDownsideBreadthFormal", targets: ["IntradayDownsideBreadthFormal"])
     ],
     dependencies: [
         .package(url: "https://github.com/hummingbird-project/hummingbird.git", exact: "2.22.0"),
@@ -49,6 +51,9 @@ let package = Package(
                 "RSRangeBreadthStrategy.swift",
                 "RSRangeBreadthFreezeSupport.swift",
                 "RSRangeBreadthFormalSupport.swift",
+                "IntradayDownsideBreadthStrategy.swift",
+                "IntradayDownsideBreadthFreezeSupport.swift",
+                "IntradayDownsideBreadthFormalSupport.swift",
                 "AssetTimeMachineServerSupport.swift",
                 "PublicBacktestCore.swift"
             ],
@@ -79,6 +84,16 @@ let package = Package(
             name: "RSRangeBreadthFormal",
             dependencies: ["AssetTimeMachineBacktestCore"],
             path: "Server/Sources/RSRangeBreadthFormal"
+        ),
+        .executableTarget(
+            name: "IntradayDownsideBreadthFreeze",
+            dependencies: ["AssetTimeMachineBacktestCore"],
+            path: "Server/Sources/IntradayDownsideBreadthFreeze"
+        ),
+        .executableTarget(
+            name: "IntradayDownsideBreadthFormal",
+            dependencies: ["AssetTimeMachineBacktestCore"],
+            path: "Server/Sources/IntradayDownsideBreadthFormal"
         ),
         .testTarget(
             name: "AssetTimeMachineBacktestCoreTests",

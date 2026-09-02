@@ -61,6 +61,17 @@ def find_trial(records: list[dict[str, Any]], trial_id: str) -> tuple[dict[str, 
     return preregistration, result_record
 
 
+def find_run_started(records: list[dict[str, Any]], trial_id: str) -> dict[str, Any] | None:
+    matches = [
+        record for record in records
+        if record.get("event") == "RUN_STARTED"
+        and (record.get("payload") or {}).get("trial_id") == trial_id
+    ]
+    if len(matches) > 1:
+        raise SystemExit(f"Duplicate RUN_STARTED for trial_id={trial_id}")
+    return matches[0] if matches else None
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--trial-id", required=True)
@@ -94,6 +105,15 @@ def main() -> None:
             "Formal run refused: working-ledger preregistration differs from the version committed in HEAD"
         )
 
+    requires_reservation = preregistration["payload"].get("requires_durable_run_reservation") is True
+    run_started = find_run_started(records, args.trial_id)
+    committed_run_started = find_run_started(committed_records, args.trial_id)
+    if requires_reservation:
+        if run_started is None or committed_run_started is None:
+            raise SystemExit(f"Formal run refused: trial_id={args.trial_id} has no committed RUN_STARTED")
+        if run_started["record_hash"] != committed_run_started["record_hash"]:
+            raise SystemExit("Formal run refused: RUN_STARTED differs from committed HEAD")
+
     protocol_id = preregistration["payload"]["protocol_id"]
     receipt = {
         "protocol_id": protocol_id,
@@ -105,6 +125,8 @@ def main() -> None:
         "candidate_count": preregistration["payload"]["candidate_count"],
         "formal_run_budget": preregistration["payload"]["formal_run_budget"],
     }
+    if run_started is not None:
+        receipt["run_budget_record_hash"] = run_started["record_hash"]
     if args.receipt:
         receipt_path = Path(args.receipt)
         receipt_path.parent.mkdir(parents=True, exist_ok=True)

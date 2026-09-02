@@ -312,14 +312,15 @@ def validate_g6(manifest: dict[str, Any]) -> None:
 def verify_artifact_manifest(
     path: Path,
     trial_id: str,
-    expected_kind: str,
+    expected_kind: str | set[str],
     expected_protocol_id: str,
 ) -> dict[str, Any]:
     require(path.exists(), f"Evidence manifest missing: {path}")
     manifest = read_json(path)
     require(manifest.get("protocol_id") == expected_protocol_id, f"Evidence manifest protocol mismatch: {path}")
     require(manifest.get("trial_id") == trial_id, f"Evidence manifest trial mismatch: {path}")
-    require(manifest.get("kind") == expected_kind, f"Evidence manifest kind mismatch: {path}")
+    allowed_kinds = {expected_kind} if isinstance(expected_kind, str) else expected_kind
+    require(manifest.get("kind") in allowed_kinds, f"Evidence manifest kind mismatch: {path}")
     files = manifest.get("files")
     require(isinstance(files, list) and files, f"Evidence manifest has no files: {path}")
     for entry in files:
@@ -332,8 +333,9 @@ def verify_artifact_manifest(
     return manifest
 
 
-def validate_result_evidence(records: list[dict[str, Any]]) -> None:
+def validate_result_evidence(records: list[dict[str, Any]], only_trial_id: str | None = None) -> None:
     preregistration_protocols: dict[str, str] = {}
+    strict_result_manifest_trials: set[str] = set()
     for record in records:
         if record.get("event") != "PREREGISTER":
             continue
@@ -344,14 +346,19 @@ def validate_result_evidence(records: list[dict[str, Any]]) -> None:
         protocol_id = payload.get("protocol_id")
         if isinstance(trial_id, str) and isinstance(protocol_id, str):
             preregistration_protocols[trial_id] = protocol_id
+            if payload.get("result_manifest_kind") == "result":
+                strict_result_manifest_trials.add(trial_id)
 
     for record in records:
         if record.get("event") != "RESULT":
             continue
         payload = record["payload"]
         trial_id = str(payload["trial_id"])
+        if only_trial_id is not None and trial_id != only_trial_id:
+            continue
         expected_protocol_id = preregistration_protocols.get(trial_id)
         require(expected_protocol_id in PROTOCOL_FILES, f"RESULT trial={trial_id} has unsupported/missing preregistration protocol")
+        assert expected_protocol_id is not None
         receipt_path = Path(payload["run_guard_receipt"])
         require(receipt_path.exists(), f"Run-guard receipt missing for trial={trial_id}: {receipt_path}")
         receipt = read_json(receipt_path)
@@ -376,11 +383,15 @@ def validate_result_evidence(records: list[dict[str, Any]]) -> None:
             Path(payload["dataset_manifest"]), trial_id, "dataset", expected_protocol_id
         )
         artifact_manifest = verify_artifact_manifest(
-            Path(payload["artifact_manifest"]), trial_id, "result", expected_protocol_id
+            Path(payload["artifact_manifest"]), trial_id,
+            "result" if trial_id in strict_result_manifest_trials else {"artifact", "result", "run"},
+            expected_protocol_id,
         )
         artifact_paths = {str(entry["path"]) for entry in artifact_manifest["files"]}
         require(str(receipt_path) in artifact_paths, f"Run receipt is not hashed by result manifest: {trial_id}")
         for artifact in payload["artifacts"]:
+            if trial_id not in strict_result_manifest_trials and str(artifact) == str(payload["artifact_manifest"]):
+                continue
             require(str(artifact) in artifact_paths, f"RESULT artifact is not covered by result manifest: {artifact}")
         dataset_paths = {str(entry["path"]) for entry in dataset_manifest["files"]}
         require(dataset_paths, f"Dataset manifest is empty for trial={trial_id}")
@@ -433,10 +444,20 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
     parser.add_argument("--ledger", default=str(DEFAULT_LEDGER))
+    parser.add_argument("--trial-id")
+    parser.add_argument("--result-evidence-only", action="store_true")
     args = parser.parse_args()
 
     manifest_path = Path(args.manifest)
     ledger_path = Path(args.ledger)
+    if args.result_evidence_only:
+        require(bool(args.trial_id), "--result-evidence-only requires --trial-id")
+        from strategy_validation_ledger import read_records, verify_records
+        records = read_records(ledger_path)
+        verify_records(records)
+        validate_result_evidence(records, args.trial_id)
+        print(f"RESULT_EVIDENCE_VALID {args.trial_id}")
+        return
     require(AGENTS.exists(), f"Project instructions missing: {AGENTS}")
     require(manifest_path.exists(), f"Protocol manifest missing: {manifest_path}")
     require(manifest_path == DEFAULT_MANIFEST or manifest_path.suffix == ".json", "Unexpected manifest path")

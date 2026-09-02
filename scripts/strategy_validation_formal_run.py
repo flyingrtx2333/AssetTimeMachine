@@ -69,40 +69,51 @@ def main() -> None:
             "ATM_SVP_RUN_GUARD_RECEIPT": str(receipt_path),
         }
     )
+    if receipt.get("run_budget_record_hash"):
+        env["ATM_SVP_RUN_BUDGET_RECORD_HASH"] = str(receipt["run_budget_record_hash"])
 
     started_at = now_iso()
-    with stdout_path.open("w", encoding="utf-8") as stdout_handle, stderr_path.open("w", encoding="utf-8") as stderr_handle:
-        process = subprocess.run(
-            command,
-            env=env,
-            text=True,
-            stdout=stdout_handle,
-            stderr=stderr_handle,
-            check=False,
-        )
+    process_return_code = -255
+    failure: BaseException | None = None
+    try:
+        with stdout_path.open("w", encoding="utf-8") as stdout_handle, stderr_path.open("w", encoding="utf-8") as stderr_handle:
+            process = subprocess.run(
+                command,
+                env=env,
+                text=True,
+                stdout=stdout_handle,
+                stderr=stderr_handle,
+                check=False,
+            )
+            process_return_code = process.returncode
+    except BaseException as error:
+        failure = error
     finished_at = now_iso()
 
     execution = {
         "protocol_id": protocol_id,
         "trial_id": args.trial_id,
         "preregistration_record_hash": receipt["preregistration_record_hash"],
+        "run_budget_record_hash": receipt.get("run_budget_record_hash"),
         "execution_git_commit": receipt["execution_git_commit"],
         "run_guard_receipt": str(receipt_path),
         "command": command,
         "started_at": started_at,
         "finished_at": finished_at,
-        "return_code": process.returncode,
+        "return_code": process_return_code,
         "stdout": str(stdout_path),
         "stderr": str(stderr_path),
     }
     execution_path.write_text(json.dumps(execution, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
-    if process.returncode != 0:
+    if failure is not None:
+        raise failure
+    if process_return_code != 0:
         print(
-            f"FORMAL_RUN_FAILED trial_id={args.trial_id} return_code={process.returncode} "
+            f"FORMAL_RUN_FAILED trial_id={args.trial_id} return_code={process_return_code} "
             f"execution={execution_path}"
         )
-        raise SystemExit(process.returncode)
+        raise SystemExit(process_return_code)
     print(f"FORMAL_RUN_COMPLETE trial_id={args.trial_id} execution={execution_path}")
 
 
