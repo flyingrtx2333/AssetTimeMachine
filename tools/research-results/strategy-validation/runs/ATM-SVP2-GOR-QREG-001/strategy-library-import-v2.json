@@ -1,0 +1,205 @@
+{
+  "schema_version": "strategy-library-v2",
+  "batch_key": "ATM-SVP2-GOR-QREG-001-strategy-library-v2",
+  "source_repository": "AssetTimeMachine",
+  "source_commit": "42b27a1f1b067a8890c0ea766fefa87c737bafea",
+  "run": {
+    "run_key": "ATM-SVP2-GOR-QREG-001",
+    "title": "金油比季度状态轮动 252/63正式验证",
+    "protocol_id": "ATM-SVP-2",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-GOR-QREG-001.json",
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-GOR-QREG-001/artifact-manifest.json",
+    "preregistration_hash": "a69f202a7638cd0a4d1598b3a6a8ed9f0420499b39a3a641d85dd49d108a62a9",
+    "execution_commit": "42b27a1f1b067a8890c0ea766fefa87c737bafea",
+    "status": "FAIL",
+    "decision": "REJECTED / NO_CANDIDATE_ADMITTED. GOR-QREG-252-63 failed the frozen App-cost return, drawdown, stress-period and falsification gates. App 1.00% fee plus 0.05% slippage produced full-history CAGR 3.390542% and MDD 54.183986%; last-10-year CAGR 6.125199% and MDD 35.168088%; 2020+ CAGR 9.665557% and MDD 32.917188%; 2022+ CAGR 13.119282% and MDD 30.281009%. Its full-history Sharpe 0.264981 was below both naturally drifting 50/50 (0.797842) and sign-reversal (0.747987), falsifying the frozen direction rule. All three stress-period MDD gates failed. The immutable BPS25 and App-cost schedule fingerprint matched exactly (a6dc1f183dddc470, 29 events), and exposure constraints passed. The runner omitted the preregistered per-trade CSV; no rerun was performed because formal_run_budget=1. This artifact deficiency cannot rescue a mechanically rejected candidate. No parameter, direction, blend, cadence, threshold, asset, cost or integration rescue is allowed within this lineage.",
+    "methodology": {
+      "metric_display_basis": "App product cost: 1.00% fee + 0.05% slippage",
+      "formal_result_source": "hash-chained trial-ledger RESULT and committed candidate-metrics.json",
+      "no_parameter_rescue": true
+    },
+    "started_at": null,
+    "finished_at": "2026-09-02T11:54:07+08:00"
+  },
+  "strategies": [
+    {
+      "strategy_key": "GOR-QREG-252-63",
+      "display_name": "金油比季度状态轮动 252/63",
+      "family": "gold-oil-regime-rotation",
+      "strategy_kind": "allocation",
+      "description": "以金油比相对过去252个共同观察均值的状态，在黄金与纳指之间按63个共同观察日复核轮动。",
+      "tags": [
+        "formal",
+        "failed",
+        "permanently-closed",
+        "app-cost"
+      ],
+      "source_project": "AssetTimeMachine",
+      "version": {
+        "version_key": "gor-qreg-252-63-v1",
+        "mechanism_text": "R=gold_cny/oil_wti_cny；固定共同观察序号每63期复核，R高于前252期均值配黄金，否则配纳指。",
+        "parameters": {
+          "lookback": 252,
+          "review_step": 63,
+          "threshold": "prior_mean"
+        },
+        "assets": [
+          "gold_cny",
+          "nasdaq",
+          "oil_wti_cny",
+          "usd_per_cny"
+        ],
+        "source_path": "AssetTimeMachine/Backtest/GORQREG25263Strategy.swift",
+        "target_fingerprint": "a6dc1f183dddc470",
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "leverage_allowed": false,
+        "shorting_allowed": false,
+        "financing_allowed": false
+      },
+      "result": {
+        "candidate_id": "GOR-QREG-252-63",
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "cagr_percent": 3.39054212487504,
+        "sharpe": 0.26498056112673557,
+        "mdd_percent": 54.18398617007225,
+        "since2020_cagr_percent": 9.665557125408263,
+        "since2022_cagr_percent": 13.119282343263027,
+        "max_gross": 1,
+        "metrics": {
+          "strategy_library_validation": {
+            "status": "FAIL",
+            "basis": "formal App-cost product gates"
+          },
+          "display_cost_regime": "App 1.00% fee + 0.05% slippage",
+          "windows": {
+            "full_history": {
+              "available": true,
+              "cagr_percent": 3.39054212487504,
+              "end": "2026-08-07",
+              "mdd_percent": 54.18398617007225,
+              "observations": 6245,
+              "sharpe": 0.26498056112673557,
+              "start": "2001-06-26",
+              "total_return": 1.3103381348655114
+            },
+            "last_10_years": {
+              "available": true,
+              "cagr_percent": 6.125198718312852,
+              "end": "2026-08-07",
+              "mdd_percent": 35.168087929828395,
+              "observations": 2492,
+              "sharpe": 0.38868578665613834,
+              "start": "2016-08-08",
+              "total_return": 0.8116701710564336
+            },
+            "since_2020": {
+              "available": true,
+              "cagr_percent": 9.665557125408263,
+              "end": "2026-08-07",
+              "mdd_percent": 32.917188480438284,
+              "observations": 1645,
+              "sharpe": 0.508936265750921,
+              "start": "2020-01-02",
+              "total_return": 0.837733912950394
+            },
+            "since_2022": {
+              "available": true,
+              "cagr_percent": 13.119282343263027,
+              "end": "2026-08-07",
+              "mdd_percent": 30.281009978000494,
+              "observations": 1143,
+              "sharpe": 0.6562733877480507,
+              "start": "2022-01-03",
+              "total_return": 0.7611925397803325
+            },
+            "stress_periods": {
+              "COVID_CRASH_2020": {
+                "available": true,
+                "cagr_percent": -74.12535972879127,
+                "end": "2020-04-30",
+                "mdd_percent": 29.383308084806302,
+                "observations": 50,
+                "sharpe": -1.8211326514781085,
+                "start": "2020-02-19",
+                "total_return": -0.23109946646962465
+              },
+              "GFC_2008_2009": {
+                "available": true,
+                "cagr_percent": -25.90812274954245,
+                "end": "2009-06-30",
+                "mdd_percent": 38.34518724017813,
+                "observations": 206,
+                "sharpe": -0.512169284853989,
+                "start": "2008-09-02",
+                "total_return": -0.21894997514639503
+              },
+              "TIGHTENING_2022": {
+                "available": true,
+                "cagr_percent": -28.53044524649684,
+                "end": "2022-12-30",
+                "mdd_percent": 29.202814456712424,
+                "observations": 250,
+                "sharpe": -0.8928979969495817,
+                "start": "2022-01-03",
+                "total_return": -0.282505619305197
+              }
+            }
+          }
+        },
+        "gates": {
+          "checks": {
+            "constraints_pass": true,
+            "COVID_CRASH_2020_mdd_le_15pct": false,
+            "full_cagr_ge_10pct": false,
+            "full_cagr_gt_cash_control": true,
+            "full_mdd_le_10pct": false,
+            "full_sharpe_gt_sign_reversal_falsification": false,
+            "full_sharpe_gt_state_independent_50_50": false,
+            "GFC_2008_2009_mdd_le_15pct": false,
+            "last10_cagr_ge_10pct": false,
+            "last10_mdd_le_10pct": false,
+            "same_immutable_schedule_at_both_costs": true,
+            "since2020_cagr_ge_10pct": false,
+            "since2020_mdd_le_10pct": false,
+            "since2022_cagr_ge_10pct": true,
+            "since2022_mdd_le_10pct": false,
+            "TIGHTENING_2022_mdd_le_15pct": false
+          },
+          "pass": false
+        },
+        "constraints": {
+          "financing_allowed": false,
+          "max_actual_gross": 1,
+          "max_target_gross": 1,
+          "min_cash": 0,
+          "min_target_weight": 1,
+          "pass": true,
+          "shorting_allowed": false,
+          "signal_only_symbols": [
+            "oil_wti_cny",
+            "usd_per_cny"
+          ],
+          "traded_symbols": [
+            "gold_cny",
+            "nasdaq"
+          ]
+        },
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GOR-QREG-001/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GOR-QREG-001/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/trial-ledger.jsonl"
+          }
+        ],
+        "conclusion": "REJECTED / NO_CANDIDATE_ADMITTED. GOR-QREG-252-63 failed the frozen App-cost return, drawdown, stress-period and falsification gates. App 1.00% fee plus 0.05% slippage produced full-history CAGR 3.390542% and MDD 54.183986%; last-10-year CAGR 6.125199% and MDD 35.168088%; 2020+ CAGR 9.665557% and MDD 32.917188%; 2022+ CAGR 13.119282% and MDD 30.281009%. Its full-history Sharpe 0.264981 was below both naturally drifting 50/50 (0.797842) and sign-reversal (0.747987), falsifying the frozen direction rule. All three stress-period MDD gates failed. The immutable BPS25 and App-cost schedule fingerprint matched exactly (a6dc1f183dddc470, 29 events), and exposure constraints passed. The runner omitted the preregistered per-trade CSV; no rerun was performed because formal_run_budget=1. This artifact deficiency cannot rescue a mechanically rejected candidate. No parameter, direction, blend, cadence, threshold, asset, cost or integration rescue is allowed within this lineage."
+      }
+    }
+  ]
+}

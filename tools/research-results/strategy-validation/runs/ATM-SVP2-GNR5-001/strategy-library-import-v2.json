@@ -1,0 +1,214 @@
+{
+  "schema_version": "strategy-library-v2",
+  "batch_key": "ATM-SVP2-GNR5-001-strategy-library-v2",
+  "source_repository": "AssetTimeMachine",
+  "source_commit": "e4cd9c7cde45d71dd270ce7cabeb8aae64171432",
+  "run": {
+    "run_key": "ATM-SVP2-GNR5-001",
+    "title": "黄金纳指冲击反转 GNR-5正式验证",
+    "protocol_id": "ATM-SVP-2",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-GNR5-001.json",
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/artifact-manifest.json",
+    "preregistration_hash": "602b94692b7bf07162fdc313c0a1fcf07b2a51b0f59efed29d57bd495fbe8335",
+    "execution_commit": "e4cd9c7cde45d71dd270ce7cabeb8aae64171432",
+    "status": "FAIL",
+    "decision": "REJECTED / NO_CANDIDATE_ADMITTED. GNR-5 failed the frozen App-cost product gates and the mandatory identical-target-path replay check. App 1.00% fee + 0.05% slippage produced full-history CAGR -8.073875% and MDD 91.030248%; last-10-year CAGR -0.890804%, 2020+ CAGR 0.757500%, and 2022+ CAGR -0.220087%. Formal BPS25 target fingerprint 6f54fefc8c8758ca differed from App-cost fingerprint 49d210055b11943e; event counts were 222 versus 217 and fill counts 1345 versus 1455, proving execution/cost feedback changed the event path under this integration. The formal wrapper therefore returned 1 after preserving all outputs. No threshold, lookback, holding-period, baseline, cost, persistence or integration rescue rerun is allowed for GNR-5.",
+    "methodology": {
+      "metric_display_basis": "App product cost: 1.00% fee + 0.05% slippage",
+      "formal_result_source": "hash-chained trial-ledger RESULT and committed candidate-metrics.json",
+      "no_parameter_rescue": true
+    },
+    "started_at": "2026-09-02T11:21:25+08:00",
+    "finished_at": "2026-09-02T11:25:31+08:00"
+  },
+  "strategies": [
+    {
+      "strategy_key": "GNR-5",
+      "display_name": "黄金纳指冲击反转 GNR-5",
+      "family": "gold-nasdaq-reversal",
+      "strategy_kind": "allocation",
+      "description": "黄金与纳指共同观察日价差收益达到 ±2σ 后切换至单一资产并持有五个共同观察日。",
+      "tags": [
+        "formal",
+        "failed",
+        "permanently-closed",
+        "app-cost"
+      ],
+      "source_project": "AssetTimeMachine",
+      "version": {
+        "version_key": "gnr-5-v1",
+        "mechanism_text": "以前60个共同观察价差收益估计样本均值与标准差；当前 z>=2 配置100%纳指，z<=-2配置100%黄金，事件持有五个后续共同观察日。",
+        "parameters": {
+          "lookback": 60,
+          "z_threshold": 2.0,
+          "hold_common_observations": 5
+        },
+        "assets": [
+          "gold_cny",
+          "nasdaq"
+        ],
+        "source_path": "AssetTimeMachine/Backtest/GNR5ReversalStrategy.swift",
+        "target_fingerprint": "49d210055b11943e",
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "leverage_allowed": false,
+        "shorting_allowed": false,
+        "financing_allowed": false
+      },
+      "result": {
+        "candidate_id": "GNR-5",
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "cagr_percent": -8.07387534138403,
+        "sharpe": -0.4439484275198387,
+        "mdd_percent": 91.0302480309228,
+        "since2020_cagr_percent": 0.7574995281676378,
+        "since2022_cagr_percent": -0.22008650611081704,
+        "max_gross": 1,
+        "metrics": {
+          "strategy_library_validation": {
+            "status": "FAIL",
+            "basis": "formal App-cost product gates"
+          },
+          "display_cost_regime": "App 1.00% fee + 0.05% slippage",
+          "windows": {
+            "full_history": {
+              "annualized_volatility": 0.1605117094191237,
+              "available": true,
+              "cagr": -0.08073875341384029,
+              "cagr_percent": -8.07387534138403,
+              "end": "2026-08-07",
+              "mdd": 0.910302480309228,
+              "mdd_percent": 91.0302480309228,
+              "observations": 6245,
+              "sharpe": -0.4439484275198387,
+              "start": "2001-06-26",
+              "total_return": -0.8792757052862609
+            },
+            "last_10_years": {
+              "annualized_volatility": 0.16346069481915632,
+              "available": true,
+              "cagr": -0.008908036803009445,
+              "cagr_percent": -0.8908036803009445,
+              "end": "2026-08-07",
+              "mdd": 0.3228010462249073,
+              "mdd_percent": 32.28010462249073,
+              "observations": 2492,
+              "sharpe": 0.02712938764245185,
+              "start": "2016-08-08",
+              "total_return": -0.08555939244178967
+            },
+            "since_2020": {
+              "annualized_volatility": 0.18559577157205848,
+              "available": true,
+              "cagr": 0.007574995281676378,
+              "cagr_percent": 0.7574995281676378,
+              "end": "2026-08-07",
+              "mdd": 0.32280104622490907,
+              "mdd_percent": 32.28010462249091,
+              "observations": 1645,
+              "sharpe": 0.1335753691552429,
+              "start": "2020-01-02",
+              "total_return": 0.0510319311777363
+            },
+            "since_2022": {
+              "annualized_volatility": 0.1663871833095065,
+              "available": true,
+              "cagr": -0.0022008650611081704,
+              "cagr_percent": -0.22008650611081704,
+              "end": "2026-08-07",
+              "mdd": 0.25427944671005953,
+              "mdd_percent": 25.427944671005953,
+              "observations": 1143,
+              "sharpe": 0.06936148852443065,
+              "start": "2022-01-03",
+              "total_return": -0.010065138740995794
+            },
+            "stress_periods": {
+              "COVID_CRASH_2020": {
+                "annualized_volatility": 0.5600475692260249,
+                "available": true,
+                "cagr": -0.35566430206488675,
+                "cagr_percent": -35.566430206488675,
+                "end": "2020-04-30",
+                "mdd": 0.24380923384977823,
+                "mdd_percent": 24.380923384977823,
+                "observations": 50,
+                "sharpe": -0.5050527235832597,
+                "start": "2020-02-19",
+                "total_return": -0.08189190965390747
+              },
+              "GFC_2008_2009": {
+                "annualized_volatility": 0.31307042377046307,
+                "available": true,
+                "cagr": -0.4127640092237217,
+                "cagr_percent": -41.27640092237217,
+                "end": "2009-06-30",
+                "mdd": 0.46297645911130103,
+                "mdd_percent": 46.297645911130104,
+                "observations": 206,
+                "sharpe": -1.5424551839621257,
+                "start": "2008-09-02",
+                "total_return": -0.355118207349829
+              },
+              "TIGHTENING_2022": {
+                "annualized_volatility": 0.18941943991208166,
+                "available": true,
+                "cagr": -0.25067810243538113,
+                "cagr_percent": -25.067810243538112,
+                "end": "2022-12-30",
+                "mdd": 0.2522005024485464,
+                "mdd_percent": 25.22005024485464,
+                "observations": 250,
+                "sharpe": -1.428204540724413,
+                "start": "2022-01-03",
+                "total_return": -0.24815768373584157
+              }
+            }
+          }
+        },
+        "gates": {
+          "checks": {
+            "constraints_pass": true,
+            "COVID_CRASH_2020_mdd_le_15pct": false,
+            "full_cagr_ge_10pct": false,
+            "full_mdd_le_10pct": false,
+            "full_mdd_le_15pct": false,
+            "GFC_2008_2009_mdd_le_15pct": false,
+            "last10_cagr_gt_0": false,
+            "last10_mdd_le_15pct": false,
+            "since2020_cagr_gt_0": true,
+            "since2020_mdd_le_15pct": false,
+            "since2022_cagr_gt_0": false,
+            "since2022_mdd_le_15pct": false,
+            "TIGHTENING_2022_mdd_le_15pct": false
+          },
+          "pass": false
+        },
+        "constraints": {
+          "financing_allowed": false,
+          "max_actual_gross": 1,
+          "max_target_gross": 1,
+          "min_cash": 0,
+          "min_holding_units": 4182.425692395286,
+          "min_target_weight": 0.5,
+          "pass": true,
+          "shorting_allowed": false
+        },
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-GNR5-001/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/trial-ledger.jsonl"
+          }
+        ],
+        "conclusion": "REJECTED / NO_CANDIDATE_ADMITTED. GNR-5 failed the frozen App-cost product gates and the mandatory identical-target-path replay check. App 1.00% fee + 0.05% slippage produced full-history CAGR -8.073875% and MDD 91.030248%; last-10-year CAGR -0.890804%, 2020+ CAGR 0.757500%, and 2022+ CAGR -0.220087%. Formal BPS25 target fingerprint 6f54fefc8c8758ca differed from App-cost fingerprint 49d210055b11943e; event counts were 222 versus 217 and fill counts 1345 versus 1455, proving execution/cost feedback changed the event path under this integration. The formal wrapper therefore returned 1 after preserving all outputs. No threshold, lookback, holding-period, baseline, cost, persistence or integration rescue rerun is allowed for GNR-5."
+      }
+    }
+  ]
+}

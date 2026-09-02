@@ -1,0 +1,168 @@
+{
+  "schema_version": "strategy-library-v2",
+  "batch_key": "ATM-SVP2-MACRO-SAHM-CPI-001-strategy-library-v2",
+  "source_repository": "AssetTimeMachine",
+  "source_commit": "3ddeef2fa1f008dd0c1f416fe245e7e4aa5b6cfd",
+  "run": {
+    "run_key": "ATM-SVP2-MACRO-SAHM-CPI-001",
+    "title": "Sahm-CPI 月度宏观轮动正式验证",
+    "protocol_id": "ATM-SVP-2",
+    "evidence_class": "R1_RETROSPECTIVE",
+    "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-MACRO-SAHM-CPI-001.json",
+    "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/artifact-manifest.json",
+    "preregistration_hash": "ca639b973a6959267a8fed980280b4459cc926f83c87ae79b03d2a2b466d6412",
+    "execution_commit": "3ddeef2fa1f008dd0c1f416fe245e7e4aa5b6cfd",
+    "status": "FAIL",
+    "decision": "REJECTED / PERMANENTLY CLOSED. MACRO-SAHM-CPI-001 failed the frozen App-cost product gate: full-history CAGR 9.176975% < 10%, full-history MDD 26.537504% > 10%, last-10-year/2020+/2022+ MDD 11.999574% > 10%, and full-history Sharpe 0.682747 did not exceed the naturally drifting 50/50 control Sharpe 0.747094. The immutable dual-cost schedule and candidate/control macro review clock checks passed. No threshold, direction, weight, timing, data, freshness, cost, control, or other rescue rerun is allowed.",
+    "methodology": {
+      "metric_display_basis": "App product cost: 1.00% fee + 0.05% slippage",
+      "formal_result_source": "hash-chained trial-ledger RESULT and committed candidate-metrics.json",
+      "no_parameter_rescue": true
+    },
+    "started_at": "2026-09-02T12:49:46+08:00",
+    "finished_at": "2026-09-02T12:52:50+08:00"
+  },
+  "strategies": [
+    {
+      "strategy_key": "MACRO-SAHM-CPI-001",
+      "display_name": "Sahm-CPI 月度宏观轮动",
+      "family": "macro-regime-allocation",
+      "strategy_kind": "allocation",
+      "description": "用实时首发 Sahm Rule 与 CPI 同比划分衰退、通胀和增长状态，在黄金、标普与纳指间月度配置。",
+      "tags": [
+        "formal",
+        "failed",
+        "permanently-closed",
+        "app-cost"
+      ],
+      "source_project": "AssetTimeMachine",
+      "version": {
+        "version_key": "macro-sahm-cpi-001-v1",
+        "mechanism_text": "仅使用冻结的初值发布数据；Sahm>=0.50配标普，非衰退且CPI同比>=2%配黄金，否则配纳指；发布后严格T-1执行。",
+        "parameters": {
+          "sahm_threshold": 0.5,
+          "cpi_yoy_threshold_percent": 2.0,
+          "freshness_days": 62
+        },
+        "assets": [
+          "gold_cny",
+          "nasdaq",
+          "sp500",
+          "usd_per_cny",
+          "SAHMREALTIME",
+          "CPIAUCSL"
+        ],
+        "source_path": "AssetTimeMachine/Backtest/MacroSahmCPIStrategy.swift",
+        "target_fingerprint": "0bc994b60b85a20c",
+        "lifecycle_status": "rejected",
+        "max_gross_limit": 1.0,
+        "leverage_allowed": false,
+        "shorting_allowed": false,
+        "financing_allowed": false
+      },
+      "result": {
+        "candidate_id": "MACRO-SAHM-CPI-001",
+        "result_status": "FAIL",
+        "robust_strategy_pass": false,
+        "cagr_percent": 9.176974934067283,
+        "sharpe": 0.6827466723851076,
+        "mdd_percent": 26.537504420013253,
+        "since2020_cagr_percent": 15.303750068064549,
+        "since2022_cagr_percent": 19.633117890649455,
+        "max_gross": 1,
+        "metrics": {
+          "strategy_library_validation": {
+            "status": "FAIL",
+            "basis": "formal App-cost product gates"
+          },
+          "display_cost_regime": "App 1.00% fee + 0.05% slippage",
+          "windows": {
+            "full_history": {
+              "available": true,
+              "cagr_percent": 9.176974934067283,
+              "end": "2026-08-07",
+              "mdd_percent": 26.537504420013253,
+              "observations": 6245,
+              "sharpe": 0.6827466723851076,
+              "start": "2001-06-26",
+              "total_return": 8.070578774151876
+            },
+            "last_10_years": {
+              "available": true,
+              "cagr_percent": 13.765985886905941,
+              "end": "2026-08-07",
+              "mdd_percent": 11.99957358869268,
+              "observations": 2492,
+              "sharpe": 1.050633378101213,
+              "start": "2016-08-08",
+              "total_return": 2.629897124465129
+            },
+            "since_2020": {
+              "available": true,
+              "cagr_percent": 15.303750068064549,
+              "end": "2026-08-07",
+              "mdd_percent": 11.999573588692737,
+              "observations": 1645,
+              "sharpe": 1.1003013817778655,
+              "start": "2020-01-02",
+              "total_return": 1.5579218870289044
+            },
+            "since_2022": {
+              "available": true,
+              "cagr_percent": 19.633117890649455,
+              "end": "2026-08-07",
+              "mdd_percent": 11.999573588692684,
+              "observations": 1143,
+              "sharpe": 1.3474900747091128,
+              "start": "2022-01-03",
+              "total_return": 1.277430488642691
+            }
+          }
+        },
+        "gates": {
+          "checks": {
+            "constraints_pass": true,
+            "full_cagr_ge_10pct": false,
+            "full_mdd_le_10pct": false,
+            "full_sharpe_gt_natural_50_50": false,
+            "full_sharpe_gt_swap_placebo": true,
+            "last10_cagr_ge_10pct": true,
+            "last10_mdd_le_10pct": false,
+            "same_immutable_schedule_at_both_costs": true,
+            "same_macro_review_clock_for_candidate_and_controls": true,
+            "since2020_cagr_ge_10pct": true,
+            "since2020_mdd_le_10pct": false,
+            "since2022_cagr_ge_10pct": true,
+            "since2022_mdd_le_10pct": false
+          },
+          "pass": false
+        },
+        "constraints": {
+          "financing_allowed": false,
+          "max_actual_gross": 1,
+          "max_target_gross": 1,
+          "min_cash": 0,
+          "min_target_weight": 1,
+          "pass": true,
+          "shorting_allowed": false,
+          "traded_symbols": [
+            "gold_cny",
+            "nasdaq"
+          ]
+        },
+        "artifacts": [
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/candidate-metrics.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/runs/ATM-SVP2-MACRO-SAHM-CPI-001/artifact-manifest.json"
+          },
+          {
+            "path": "tools/research-results/strategy-validation/trial-ledger.jsonl"
+          }
+        ],
+        "conclusion": "REJECTED / PERMANENTLY CLOSED. MACRO-SAHM-CPI-001 failed the frozen App-cost product gate: full-history CAGR 9.176975% < 10%, full-history MDD 26.537504% > 10%, last-10-year/2020+/2022+ MDD 11.999574% > 10%, and full-history Sharpe 0.682747 did not exceed the naturally drifting 50/50 control Sharpe 0.747094. The immutable dual-cost schedule and candidate/control macro review clock checks passed. No threshold, direction, weight, timing, data, freshness, cost, control, or other rescue rerun is allowed."
+      }
+    }
+  ]
+}
