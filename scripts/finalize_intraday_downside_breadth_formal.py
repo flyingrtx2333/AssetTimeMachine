@@ -153,6 +153,53 @@ def successful_payload(metrics: dict[str, Any]) -> tuple[str, list[dict[str, Any
                 raise SystemExit(f"formal {name} metrics must be finite")
     if not isinstance(metrics["factor_mechanism"], dict) or not isinstance(metrics["checks"], dict):
         raise SystemExit("formal factor/check evidence malformed")
+    prereg = load(PREREG_PATH)
+    expected_fingerprints = (prereg.get("frozen_schedule") or {}).get("fingerprints")
+    if not isinstance(expected_fingerprints, dict) or metrics["schedule_fingerprints"] != expected_fingerprints:
+        raise SystemExit("formal schedule fingerprints do not match preregistration")
+    factor = metrics["factor_mechanism"]
+    factor_windows = factor.get("windows")
+    if not isinstance(factor_windows, dict) or set(factor_windows) != expected_windows:
+        raise SystemExit("formal factor windows incomplete")
+    factor_directions: dict[str, bool] = {}
+    for window_id, evidence in factor_windows.items():
+        if not isinstance(evidence, dict):
+            raise SystemExit("formal factor window malformed")
+        risk_count, calm_count = evidence.get("risk_count"), evidence.get("calm_count")
+        risk_median, calm_median = evidence.get("risk_median"), evidence.get("calm_median")
+        if not isinstance(risk_count, int) or isinstance(risk_count, bool) or not isinstance(calm_count, int) or isinstance(calm_count, bool):
+            raise SystemExit("formal factor counts malformed")
+        if not isinstance(risk_median, (int, float)) or isinstance(risk_median, bool) or not math.isfinite(risk_median):
+            raise SystemExit("formal factor medians malformed")
+        if not isinstance(calm_median, (int, float)) or isinstance(calm_median, bool) or not math.isfinite(calm_median):
+            raise SystemExit("formal factor medians malformed")
+        sufficient = risk_count >= 5 and calm_count >= 5
+        direction = risk_median < calm_median
+        if evidence.get("sufficient") is not sufficient or evidence.get("direction") is not direction:
+            raise SystemExit("formal factor evidence disagrees with independent recomputation")
+        factor_directions[window_id] = sufficient and direction
+    factor_all = all(factor_directions.values())
+    if factor.get("sufficient") is not factor_all or factor.get("direction") is not factor_all:
+        raise SystemExit("formal aggregate factor evidence disagrees with independent recomputation")
+    independent_checks: dict[str, bool] = {}
+    for window_id in expected_windows:
+        candidate = metrics["candidate"][window_id]
+        natural = metrics["natural"][window_id]
+        placebo = metrics["placebo"][window_id]
+        independent_checks[window_id] = (
+            candidate["cagr"] >= 0.09
+            and candidate["sharpe"] >= 0.80
+            and candidate["mdd"] <= 0.10
+            and candidate["sharpe"] > natural["sharpe"]
+            and candidate["sharpe"] > placebo["sharpe"]
+            and candidate["mdd"] < natural["mdd"]
+            and factor_directions[window_id]
+        )
+    if metrics["checks"] != independent_checks:
+        raise SystemExit("formal child checks disagree with independent gate recomputation")
+    independent_decision = "PASS" if all(independent_checks.values()) else "FAIL"
+    if decision != independent_decision:
+        raise SystemExit("formal child decision disagrees with independent gate recomputation")
     candidate_result = {
         "candidate_id": CANDIDATE_ID,
         "metrics": {
