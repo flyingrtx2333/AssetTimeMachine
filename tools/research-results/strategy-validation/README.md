@@ -2,6 +2,18 @@
 
 当前治理协议：`docs/strategies/validation/strategy-validation-protocol-v2.md`（`ATM-SVP-2`）；`ATM-SVP-1` 仍独立冻结并作为继承基线保留。
 
+## 冻结正式工件与当前线上复跑
+
+- 本目录的 protocol、ledger、manifest 和 RESULT 是**正式、冻结的历史证据**；不得为追随当前线上数据而改写旧结果。
+- 当前线上行情重跑须标为 `POST_HOC_CURRENT_REPLAY`，不写入正式 RESULT、不消耗 formal-run budget、也不改变既有 Gate 状态。它的用途是发现数据/代码漂移，而不是重新挑选参数。
+- 使用生产接口时默认只读：`/api/v1/money/public/history?...&period=all&include_ohlc=true` 不得附带 `refresh=true`，除非用户明确授权刷新服务端数据。保存请求、抓取时间、逐序列实际末日、原始/归一化输入 SHA-256、代码 HEAD、引擎/成本配置和全窗口输出。
+- NFCI 策略必须使用生产 `/api/v1/money/public/nfci-asof` 的 point-in-time 行（`release_date`、`reference_date`、`available_at`）。严禁把当前修订宏观序列或旧 local CSV 静默替换为“等价”输入。
+- 当正式旧结果与当前线上复跑不一致，两个结果都保留并明确标注各自的代码、数据和成本口径；不得用后验调参把当前复跑调回旧数字。
+
+### V11 current-data note
+
+V11 的 14.35% CAGR / 7.69% MDD / 1.52 Sharpe 是 2026-08-20 冻结工件中的历史输出，不能作为当前产品成绩。2026-09-04 在 Flyingrtx 生产行情与 NFCI as-of 数据、当前 App engine、1.00% 单边费率和 0.05% 滑点下的只读线上复跑为：全史 6.03% CAGR、15.86% MDD、0.686 Sharpe（463 笔交易）。完整输入 hash 与窗口在研究归档：`/Volumes/江波龙/Allprojects/AssetTimeMachineResearch/studies/v11-online-replay-2026-09-04/ONLINE_REPLAY.md`。该记录不改变 V11 的 `G3 PARTIAL`、`G4 INVALID_SOURCE_UNAVAILABLE`、`G6 RUNNING` 状态，且 V11 不得作为当前推荐/宣传基线。
+
 ## 当前状态
 
 运行：

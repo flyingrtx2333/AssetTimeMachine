@@ -1,6 +1,7 @@
 # Xcode / local build products
 build/
 .build/
+.swiftpm/
 DerivedData/
 *.xcarchive
 *.ipa

@@ -272,6 +272,14 @@ struct TodayPositionAdviceCard: View {
                 }
                 .padding(.bottom, 6)
 
+                if !adviceStore.actions.isEmpty,
+                   adviceStore.actions.allSatisfy({ $0.kind == .hold }) {
+                    Text(AppLocalization.string("今天不操作"))
+                        .font(AppTypography.captionStrong)
+                        .foregroundStyle(AssetTheme.positive)
+                        .padding(.bottom, 8)
+                }
+
                 actionTableHeader
 
                 Divider()
@@ -299,11 +307,19 @@ struct TodayPositionAdviceCard: View {
     }
 
     private func provenanceSection(_ advice: StrategyRebalanceAdvice) -> some View {
-        Text(
-            "\(AppLocalization.format("信号截至 %@", advice.asOfDate.recordDateString)) · "
-                + "\(AppLocalization.string("资产记录")) "
-                + (adviceStore.snapshotDate?.recordDateString ?? AppLocalization.string("暂无记录"))
-        )
+        VStack(alignment: .leading, spacing: 5) {
+            if let reason = advice.signalReason {
+                Text(AppLocalization.format("信号原因：%@", reason))
+            }
+            Text(
+                "\(AppLocalization.format("信号截至 %@", advice.asOfDate.recordDateString)) · "
+                    + "\(AppLocalization.string("资产记录")) "
+                    + (adviceStore.snapshotDate?.recordDateString ?? AppLocalization.string("暂无记录"))
+            )
+            if let nextReviewDate = advice.nextReviewDate {
+                Text(AppLocalization.format("下次复核：%@（每日）", nextReviewDate.recordDateString))
+            }
+        }
         .font(AppTypography.caption)
         .foregroundStyle(AssetTheme.textSecondary)
         .fixedSize(horizontal: false, vertical: true)

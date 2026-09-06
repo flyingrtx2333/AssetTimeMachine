@@ -175,6 +175,13 @@ nonisolated struct ResearchTargetStrategyRun {
 nonisolated struct AdvancedRotationStrategyRun {
     let report: AdvancedBacktestReport
     let dailyStates: [BacktestDailyState]
+    let latestSignalReason: String?
+
+    init(report: AdvancedBacktestReport, dailyStates: [BacktestDailyState], latestSignalReason: String? = nil) {
+        self.report = report
+        self.dailyStates = dailyStates
+        self.latestSignalReason = latestSignalReason
+    }
 }
 
 nonisolated struct BacktestRebalanceDecision {
@@ -4705,6 +4712,15 @@ nonisolated enum BacktestEngine {
         nfciAsOf: BacktestNFCIAsOfData? = nil,
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedBacktestReport? {
+        if RecentWindowOverlayStrategy.mode(for: mode) != nil {
+            return runRecentWindowOverlayStrategyWithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                mode: mode,
+                dateBounds: dateBounds
+            )?.report
+        }
         if mode == .nfciDualCoreSimplifiedV11QualRole {
             guard let resolvedNFCIAsOf = nfciAsOf ?? BacktestMacroSnapshotStore.shared.nfciAsOfSnapshot() else {
                 return nil
@@ -4813,6 +4829,15 @@ nonisolated enum BacktestEngine {
         nfciAsOf: BacktestNFCIAsOfData? = nil,
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedRotationStrategyRun? {
+        if RecentWindowOverlayStrategy.mode(for: mode) != nil {
+            return runRecentWindowOverlayStrategyWithTrace(
+                assetInputs: assetInputs,
+                initialCash: initialCash,
+                settings: settings,
+                mode: mode,
+                dateBounds: dateBounds
+            )
+        }
         if mode == .nfciDualCoreSimplifiedV11QualRole {
             guard let resolvedNFCIAsOf = nfciAsOf ?? BacktestMacroSnapshotStore.shared.nfciAsOfSnapshot() else {
                 return nil
@@ -6340,6 +6365,9 @@ nonisolated enum BacktestEngine {
              .riskContributionRecoveryRouter,
              .riskContributionCashConfidenceRouter,
              .riskContributionCashConfidenceLowNoise,
+             .recentVolatilityManagedIdleCash,
+             .recentPairSpreadZ252Shift25,
+             .recentGoldEquityRelativeZ252Shift25,
              .nfciDualCoreV1,
              .nfciDualCoreSimplifiedV11,
              .nfciDualCoreSimplifiedV11QualRole:
@@ -8159,7 +8187,8 @@ nonisolated enum BacktestEngine {
             return nil
         }
 
-        let optionsBySymbol = Dictionary(uniqueKeysWithValues: assetInputs.map { ($0.assetOption.symbol, $0.assetOption) })
+        var optionsBySymbol = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+        for input in assetInputs { optionsBySymbol[input.assetOption.symbol] = input.assetOption }
         let allocations = latestState.targetWeights
             .filter { $0.value > 0.0001 }
             .compactMap { symbol, weight -> StrategyRebalanceAllocation? in
@@ -8186,8 +8215,25 @@ nonisolated enum BacktestEngine {
             lookbackSessions: 0,
             rebalanceSessions: 0,
             targetAnnualVolatility: nil,
-            allocations: allocations
+            allocations: allocations,
+            signalReason: run.latestSignalReason ?? recentWindowAdviceReason(for: mode),
+            nextReviewDate: RecentWindowOverlayStrategy.mode(for: mode) == nil
+                ? nil
+                : BacktestSeriesAlignment.nextStrategyWeekday(after: adviceAsOfDate ?? latestState.date)
         )
+    }
+
+    private static func recentWindowAdviceReason(for mode: AdvancedBacktestStrategyMode) -> String? {
+        switch mode {
+        case .recentVolatilityManagedIdleCash:
+            return AppLocalization.string("严格使用上一交易日数据：63日组合波动低于10%目标时，仅用闲置现金等比例增配；否则保持低噪增强基准仓位。")
+        case .recentPairSpreadZ252Shift25:
+            return AppLocalization.string("严格使用上一交易日数据：两组252日配对Z分数超过±1时卖出相对偏贵一侧、买入相对偏低一侧；区间内保持基准。")
+        case .recentGoldEquityRelativeZ252Shift25:
+            return AppLocalization.string("严格使用上一交易日数据：黄金/可用权益篮子252日Z分数超过±1时做25%均值回归转移；区间内保持基准。")
+        default:
+            return nil
+        }
     }
 
     static func advancedRuleBasedRebalanceAdvice(

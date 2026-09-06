@@ -315,7 +315,9 @@ final class StrategyAdviceProjectionStore: ObservableObject {
                     momentum: allocation.momentum,
                     annualizedVolatility: allocation.annualizedVolatility
                 )
-            }
+            },
+            signalReason: advice.signalReason,
+            nextReviewDate: advice.nextReviewDate
         )
     }
 }

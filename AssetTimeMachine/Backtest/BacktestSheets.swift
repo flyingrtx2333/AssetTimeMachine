@@ -1790,6 +1790,12 @@ extension AdvancedBacktestStrategyTemplate {
         case .riskContributionCashConfidenceRouter,
              .riskContributionCashConfidenceLowNoise:
             growth = 1.00; stability = 1.00; defense = 1.00; flexibility = 1.00
+        case .recentVolatilityManagedIdleCash:
+            growth = 0.90; stability = 0.82; defense = 0.78; flexibility = 0.92
+        case .recentPairSpreadZ252Shift25:
+            growth = 0.82; stability = 0.82; defense = 0.82; flexibility = 0.90
+        case .recentGoldEquityRelativeZ252Shift25:
+            growth = 0.82; stability = 0.78; defense = 0.76; flexibility = 0.90
         case .nfciDualCoreV1,
              .nfciDualCoreSimplifiedV11,
              .nfciDualCoreSimplifiedV11QualRole:

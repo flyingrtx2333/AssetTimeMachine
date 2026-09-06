@@ -14,7 +14,7 @@ public struct PublicBacktestFixedCosts: Codable, Equatable, Sendable {
     public let transactionFeeRate: Double
     public let slippageRate: Double
 
-    public init(transactionFeeRate: Double = 0.01, slippageRate: Double = 0.0005) {
+    public init(transactionFeeRate: Double = 0.00025, slippageRate: Double = 0.0005) {
         self.transactionFeeRate = transactionFeeRate
         self.slippageRate = slippageRate
     }

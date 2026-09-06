@@ -432,6 +432,7 @@ nonisolated public enum RSRangeBreadthFreezeCommand {
     }
 
     private static func process(_ executable: String, _ arguments: [String], root: URL) throws -> String {
+#if os(macOS)
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
@@ -441,6 +442,9 @@ nonisolated public enum RSRangeBreadthFreezeCommand {
         let output = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
         guard process.terminationStatus == 0 else { throw FreezeError.invalid("git check failed: \(output)") }
         return output
+#else
+        throw FreezeError.invalid("freeze CLI process execution is available on macOS only")
+#endif
     }
 
     private static func fileSHA256(_ url: URL, root: URL) throws -> String {

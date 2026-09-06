@@ -107,10 +107,10 @@ App 内策略指标必须以当前 Swift `BacktestEngine` 的实际运行为准�
 
 1% 交易费是产品默认和基线口径，不得为了改善回测数字擅自降低。成本敏感性测试可以通过环境变量临时运行，但不能替代 App 默认结果。
 
-实际验证命令：
+固定快照验证命令（只验证对应冻结输入下的可复现性，不代表当前线上表现）：
 
 ```bash
-cd ~/Desktop/AllProjects/AssetTimeMachine
+cd /Volumes/江波龙/Allprojects/AssetTimeMachine
 
 xcrun swiftc \
   -parse-as-library \
@@ -133,7 +133,7 @@ ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json \
   --baseline tools/expected_backtest_metrics/app/current_app_default.json
 ```
 
-当前精选策略固定基准（2026-08-10 刷新，行情有效至 2026-08-07；交易费 1%、滑点 0.05%）：
+历史精选策略固定基准（2026-08-10 刷新，行情有效至 2026-08-07；交易费 1%、滑点 0.05%）：
 
 | 精选策略 | 全历史年化 | 全历史最大回撤 | 最近10年年化 | 最近10年最大回撤 | 全历史 Sharpe |
 |---|---:|---:|---:|---:|---:|
@@ -143,6 +143,8 @@ ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json \
 | 金纳双趋势 | 10.20% | 16.93% | 13.94% | 16.93% | 0.904 |
 | 防守配置 | 8.58% | 11.67% | 5.55% | 11.67% | 0.992 |
 
+上表是冻结 fixture 的历史回归基线，**不是当前线上策略成绩，也不能直接用于产品推荐或发布文案**。当前线上复跑必须使用生产 API、当前 Swift 引擎和当前成本，并单独记录抓取时间、逐序列末日、输入 SHA-256、代码 HEAD 与结果窗口；禁止以旧 fixture 的漂亮数字覆盖线上复跑。
+
 `低噪增强`的完整生产逻辑、执行时序、参数、回测切片与风险边界见
 [`docs/strategies/low-noise-enhanced.md`](docs/strategies/low-noise-enhanced.md)。它在最终产品层严格限制总风险资产仓位不超过 100%，不允许融资或负现金。
 
@@ -150,7 +152,16 @@ ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json \
 
 新策略研究只能新增 Swift `StrategyTargetProvider`/Swift CLI 搜索入口，并必须通过同一个 `BacktestDailySimulator` 与 pinned fixture baseline 验证后，才能更新 README 或 App 可见指标。
 
-新的研究工作材料统一放在 `/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachineResearch`：策略家族与非正式测试在 `strategies/`，因子工作在 `factors/`，研究简报在 `studies/`，通用研究工具在 `tools/`。正式 ATM-SVP 的 preregistration、数据清单、结果和 Git 提交仍必须保留在本仓库的 `tools/research-results/strategy-validation/`，以维持可复现和审计边界。
+新的研究工作材料统一放在 `/Volumes/江波龙/Allprojects/AssetTimeMachineResearch`：策略家族与非正式测试在 `strategies/`，因子工作在 `factors/`，研究简报在 `studies/`，通用研究工具在 `tools/`。正式 ATM-SVP 的 preregistration、数据清单、结果和 Git 提交仍必须保留在本仓库的 `tools/research-results/strategy-validation/`，以维持可复现和审计边界。
+
+### 冻结研究、当前线上复跑与点时宏观数据
+
+- **冻结 fixture / 正式历史工件**回答“该历史实验当时在那份输入与代码下产生了什么”；它们不可重写，但不自动等于当前 App 成绩。
+- **当前线上复跑**回答“当前 App 引擎在生产行情库的当前可用输入下如何表现”。它是 `POST_HOC_CURRENT_REPLAY`，不消耗或替代正式验证预算，也不单独构成策略准入证据。
+- 线上复跑使用 `https://api.flyingrtx.com/api/v1/money/public/history`，默认不得带 `refresh=true`，除非用户明确授权服务器刷新。美元资产必须同时请求 `usd_per_cny`，并记录每条序列实际末日，不能只看请求结束日期。
+- 涉及 NFCI 的策略必须从 `https://api.flyingrtx.com/api/v1/money/public/nfci-asof` 取得含 `release_date`、`reference_date`、`available_at` 的首次可见/as-of 记录；**不得**用当前修订版 FRED/ALFRED 序列或观察期日期替代可用时间。
+- 任何线上复跑都须保存原始响应及归一化输入的 SHA-256、接口/环境、抓取时间、代码 HEAD、引擎与成本配置、覆盖末日和全部报告窗口。若与旧工件不同，只能报告差异，不得回头调参“救回”旧结果。
+- V11 的旧冻结结果（14.35% CAGR / 7.69% MDD / 1.52 Sharpe）仅为历史 ATM-SVP 工件，且仍有 `G3 PARTIAL`、`G4 INVALID_SOURCE_UNAVAILABLE`、`G6 RUNNING` 等限制。2026-09-04 的服务器当前回放为全史 6.03% CAGR / 15.86% MDD / 0.686 Sharpe；详见研究归档 `AssetTimeMachineResearch/studies/v11-online-replay-2026-09-04/ONLINE_REPLAY.md`。V11 不是当前推荐、准入或对外宣传基线。
 
 ## 资产分类设计
 
