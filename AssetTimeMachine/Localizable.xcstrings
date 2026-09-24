@@ -13510,6 +13510,29 @@
         }
       }
     },
+    "相当于黄金": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gold equivalent"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "相当于黄金"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "相當於黃金"
+          }
+        }
+      }
+    },
     "拉长": {
       "extractionState": "stale",
       "localizations": {
