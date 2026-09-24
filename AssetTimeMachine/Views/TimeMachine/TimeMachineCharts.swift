@@ -789,8 +789,23 @@ struct TimeMachineHeroTrendCard: View {
                 TimeMachineUnifiedTrendSelectionItem(
                     id: TimeMachineAssetSeries.liabilities.id,
                     title: AppLocalization.string("负债"),
-                    value: amountsVisible ? compactCurrency(selectedPoint.liabilities) : "••••••",
+                    value: amountsVisible ? selectedPoint.liabilities.currencyString(code: "CNY") : "••••••",
                     color: AssetTheme.negative
+                ),
+                at: insertionIndex
+            )
+        }
+        if visibleSeriesIDs.contains("gold_cny"),
+           let goldEquivalent = selectedPoint.goldEquivalent,
+           goldEquivalent.isFinite {
+            let marketIDs = Set(marketOptions.map(\.symbol))
+            let insertionIndex = items.firstIndex { marketIDs.contains($0.id) } ?? items.endIndex
+            items.insert(
+                TimeMachineUnifiedTrendSelectionItem(
+                    id: "gold_equivalent",
+                    title: AppLocalization.string("相当于黄金"),
+                    value: "\(goldEquivalent.plainNumberString()) g",
+                    color: AssetTheme.gold
                 ),
                 at: insertionIndex
             )
@@ -937,6 +952,12 @@ struct TimeMachineHeroTrendCard: View {
                         ) { date in
                             selectedDate = date
                         }
+                        .simultaneousGesture(
+                            TapGesture()
+                                .onEnded {
+                                    selectedDate = nil
+                                }
+                        )
 
                         TimeMachineChartSelectionGuideReporter(
                             proxy: proxy,
@@ -1073,7 +1094,7 @@ struct TimeMachineHeroTrendCard: View {
                 Spacer(minLength: 8)
             }
 
-            Text(amountsVisible ? compactCurrency(selectedPoint.netAssets) : "••••••")
+            Text(amountsVisible ? selectedPoint.netAssets.currencyString(code: "CNY") : "••••••")
                 .font(.system(size: 33, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(AssetTheme.goldSoft)
@@ -1099,7 +1120,7 @@ struct TimeMachineHeroTrendCard: View {
         let rate = abs(firstPoint.netAssets) > 0.000_1 ? change / abs(firstPoint.netAssets) : 0
         return AppLocalization.format(
             "较期初 %@ · %@",
-            signedCompactCurrency(change),
+            signedCurrency(change),
             signedPercent(rate)
         )
     }
@@ -1110,17 +1131,9 @@ struct TimeMachineHeroTrendCard: View {
         return change > 0 ? AssetTheme.positive : (change < 0 ? AssetTheme.negative : AssetTheme.textSecondary)
     }
 
-    private func compactCurrency(_ value: Double) -> String {
-        "\(renminbiSymbol)\(value.compactNumberString(maxFractionDigits: 1, currencyCode: "CNY"))"
-    }
-
-    private func signedCompactCurrency(_ value: Double) -> String {
+    private func signedCurrency(_ value: Double) -> String {
         let sign = value > 0 ? "+" : (value < 0 ? "−" : "")
-        return "\(sign)\(renminbiSymbol)\(abs(value).compactNumberString(maxFractionDigits: 1, currencyCode: "CNY"))"
-    }
-
-    private var renminbiSymbol: String {
-        AppLocalization.currentLanguage == .english ? "CN¥" : "¥"
+        return "\(sign)\(abs(value).currencyString(code: "CNY"))"
     }
 
     private func signedPercent(_ value: Double) -> String {
@@ -1149,7 +1162,7 @@ struct TimeMachineHeroTrendCard: View {
     ) -> String {
         switch scale {
         case .assetValue:
-            return amountsVisible ? compactCurrency(point.displayValue) : "••••••"
+            return amountsVisible ? point.displayValue.currencyString(code: "CNY") : "••••••"
         case .marketReturn:
             return point.displayValue.percentString(maxFractionDigits: 1)
         }
@@ -1782,7 +1795,7 @@ struct TimeMachineMonthlySurplusCard: View {
     }
 
     private func surplusBarColor(for value: Double) -> Color {
-        value >= 0 ? AssetTheme.goldSoft : AssetTheme.negative
+        value >= 0 ? AssetTheme.positive : AssetTheme.negative
     }
 
     private func surplusAxisLabel(_ value: Double) -> String {
@@ -1879,7 +1892,7 @@ struct TimeMachineAnnualSurplusCard: View {
                             yEnd: .value(AppLocalization.string("年结余"), normalized(point.surplus, in: domain)),
                             width: .fixed(barWidth)
                         )
-                        .foregroundStyle((point.surplus >= 0 ? AssetTheme.goldSoft : AssetTheme.negative).opacity(selectedPoint?.id == point.id ? 1 : 0.84))
+                        .foregroundStyle((point.surplus >= 0 ? AssetTheme.positive : AssetTheme.negative).opacity(selectedPoint?.id == point.id ? 1 : 0.84))
                     }
 
                     if let selectedPoint {
