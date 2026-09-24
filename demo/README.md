@@ -14,7 +14,7 @@ python3 scripts/generate_demo_import_json.py --days 1096 --end-date 2026-08-20 -
 
 ```bash
 xcrun simctl launch <DEVICE_ID> com.flyingrtx.AssetTimeMachine \
-  -importJSONPath /Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachine/demo/time-machine-demo.json \
+  -importJSONPath "$PWD/demo/time-machine-demo.json" \
   -replaceExistingImport \
   -openTimeMachineTab
 ```

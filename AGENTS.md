@@ -1,5 +1,11 @@
 # Repository Guidelines
 
+## Current local workspace
+
+The App repository and the independent research workspace `AssetTimeMachineResearch` are siblings; both are readable through the default workspace root. Use workspace-relative `AssetTimeMachine/...` and `AssetTimeMachineResearch/...` paths and resolve helper paths from the current repository instead of hard-coding absolute roots. Do not alter immutable artifact paths inside historical results.
+
+For new research, the user's later fee instruction and the research workspace `AGENTS.md` apply: 0.025% per fill, zero base slippage unless the specific study freezes another scenario. Historical 1% results and current App product defaults remain unchanged.
+
 This repository is the **AssetTimeMachine** SwiftUI + SwiftData iOS app. It connects to the Flyingrtx backend for public market data and AssetTimeMachine cloud sync.
 
 ## Project Structure & Module Organization
@@ -21,7 +27,7 @@ This repository is the **AssetTimeMachine** SwiftUI + SwiftData iOS app. It conn
 - `demo/` contains sample import/history JSON files.
 - `scripts/` contains helper conversion/demo/search scripts.
 - `tools/` contains App-adjacent backtest parity and formal-governance utilities. Keep tools that must run against the committed App source here.
-- The independent research workspace is `/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachineResearch`. Put exploratory study briefs, strategy/factor working material, and reusable research-only utilities there; its `README.md` defines the layout. Formal ATM-SVP artifacts and executable code remain committed in this repository before a formal run.
+- The independent research workspace is the sibling `AssetTimeMachineResearch` directory. Put exploratory study briefs, strategy/factor working material, and reusable research-only utilities there; its `README.md` defines the layout. Formal ATM-SVP artifacts and executable code remain committed in this repository before a formal run.
 - `marketing/` contains App Store copy, screenshots, icon prompts, and backups.
   - Final App Store poster exports should also be copied to the local OneDrive delivery folder:
     `/Users/xiangjunsheng/Library/CloudStorage/OneDrive-个人/作品合集/个人-IOSAPP资产时光机-2026`
@@ -44,7 +50,7 @@ The app currently uses the Flyingrtx API:
 
 Known local/server project locations:
 
-- iOS app repo: `~/Desktop/AllProjects/AssetTimeMachine`
+- iOS app repo: this repository
 - Backend/local full-stack project: `~/Desktop/FlyingrtxFast`
 - Server IP: `1.14.58.29`
 - Server static roots under `/www/wwwroot`, with known dirs:
@@ -85,7 +91,6 @@ Local private credential configuration:
 Open in Xcode:
 
 ```bash
-cd ~/Desktop/AllProjects/AssetTimeMachine
 open AssetTimeMachine.xcodeproj
 ```
 
@@ -143,7 +148,7 @@ xcodebuild \
   build
 ```
 
-Backtest golden metrics use the pinned fixture at `tools/fixtures/backtest-history/public_history.json` through `ATM_HISTORY_FIXTURE`, so verification remains reproducible after a snapshot is taken. Before formal strategy research or reporting App-comparable metrics, refresh the snapshot and all golden rows from the same `period=all`, 12-symbol, `include_ohlc=true` request used by the App metric dump:
+Backtest golden metrics use the pinned fixture at `tools/fixtures/backtest-history/public_history.json` through `ATM_HISTORY_FIXTURE`, so verification remains reproducible after a snapshot is taken. A pinned-fixture verification is a regression check, not proof of current production performance. Before formal strategy research or reporting App-comparable metrics, refresh the snapshot and all golden rows from the same `period=all`, 12-symbol, `include_ohlc=true` request used by the App metric dump:
 
 ```bash
 python3 scripts/refresh_app_backtest_baseline.py
@@ -168,7 +173,6 @@ open -a Simulator
 Build, install, and launch the Debug app:
 
 ```bash
-cd ~/Desktop/AllProjects/AssetTimeMachine
 xcodebuild \
   -project AssetTimeMachine.xcodeproj \
   -scheme AssetTimeMachine \
@@ -220,7 +224,6 @@ Do not commit this env file or key material.
 Prefer the maintained release helper for normal TestFlight uploads:
 
 ```bash
-cd ~/Desktop/AllProjects/AssetTimeMachine
 scripts/release_testflight.sh --commit-message "chore(ios): release testflight build"
 ```
 
@@ -268,7 +271,6 @@ PY
 ### 2. Archive
 
 ```bash
-cd ~/Desktop/AllProjects/AssetTimeMachine
 BUILD_DIR="$PWD/build/TestFlight-1.0.5-<build>"
 ARCHIVE="$BUILD_DIR/AssetTimeMachine.xcarchive"
 LOG="$BUILD_DIR/archive.log"
@@ -402,7 +404,7 @@ Current App defaults are initial cash 100,000 CNY, fee 1.00%, and slippage 0.05%
 
 The product Sharpe ratio must remain calculated and visible. The current implementation uses daily returns with a zero risk-free-rate assumption.
 
-Current product results from the clock-v3 pinned fixture, refreshed on 2026-08-31 with data through 2026-08-07:
+Current product regression results from the clock-v3 pinned fixture, refreshed on 2026-08-31 with data through 2026-08-07. They are historical regression baselines, not current online performance claims:
 
 | Product strategy | Type | Full annualized | Full max drawdown | Last 10Y annualized | Last 10Y max drawdown | Full Sharpe |
 |---|---|---:|---:|---:|---:|---:|
@@ -425,8 +427,6 @@ If this table disagrees with a non-App script, trust `tools/strategy_metric_dump
 Use this command before reporting or updating product-facing strategy metrics:
 
 ```bash
-cd ~/Desktop/AllProjects/AssetTimeMachine
-
 xcrun swiftc \
   -parse-as-library \
   -module-cache-path /private/tmp/atm-swift-module-cache \
@@ -446,7 +446,7 @@ The dump fetches live history from `https://api.flyingrtx.com`, so it may need n
 
 ### How to find / research strategies
 
-Use `/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachineResearch` as the working home for new research:
+Use the sibling `AssetTimeMachineResearch` workspace as the working home for new research:
 
 - `strategies/` for strategy families and non-formal tests;
 - `factors/` for factor research;
@@ -469,7 +469,7 @@ Use this order when looking for a new strategy candidate:
 2. Check the research workspace and reusable Swift dump/verifier before adding new strategy code:
 
    ```bash
-   ls /Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachineResearch
+   ls ../AssetTimeMachineResearch
    ls tools
    sed -n '1,160p' tools/strategy_metric_dump.swift
    ```
@@ -488,9 +488,13 @@ Use this order when looking for a new strategy candidate:
 - Product-claim hard rule: G0-G6 are project-defined validation gates, not an industry certification. App copy, README, release notes, and user-facing answers must state the exact gate status (`PASS` / `PARTIAL` / `PENDING` / `RUNNING` / `FAIL`) and must not compress `G3 PARTIAL`, `G4 PENDING`, or `G6 RUNNING` into claims such as “fully validated”, “institutional-grade validated”, or “generalization passed”.
 - Pristine holdout data may be used only once. For current ATM-SVP-2 G4, use `scripts/strategy_validation_exposure_scan.py` and `scripts/strategy_validation_holdout.py`: select exact source series from metadata only, freeze the five-role manifest and mechanically derived common evaluation window, freeze the same-window identity reference, commit `HOLDOUT_BURNED` before fetching any full holdout history, and require `authorize-open` before first full-history access. A burned/opened holdout may not be replaced even if fetch or formal evaluation fails. Any target-path-changing logic or parameter change still requires a new strategy version and a new prospective clock.
 - Do not trust one-off `/tmp` research scripts for App-facing strategy metrics.
+- A user-requested current rerun must use the Flyingrtx production public-history endpoint without `refresh=true`, current App engine, and the current product cost regime. Label it `POST_HOC_CURRENT_REPLAY`; it is not a formal ATM-SVP result and cannot promote a strategy.
+- Preserve online-replay provenance: endpoint and environment, query time, requested symbols, actual per-series date ends, currency/FX mapping, raw-response and normalized-input SHA-256, code HEAD, engine version, costs, and every reported window. USD assets require `usd_per_cny`; do not silently omit the FX series.
+- Any NFCI/macro strategy rerun additionally requires `/api/v1/money/public/nfci-asof`. Decode and retain `release_date`, `reference_date`, and `available_at`; do not substitute revised values, infer availability from reference dates, or replace server as-of rows with local legacy CSVs.
+- V11 historical frozen metrics are not current truth. The 2026-09-04 production online replay at current cost yielded full-history 6.03% CAGR, 15.86% MDD, and 0.686 Sharpe; its record is `AssetTimeMachineResearch/studies/v11-online-replay-2026-09-04/ONLINE_REPLAY.md`. V11 remains non-promotable: G3 `PARTIAL`, G4 `INVALID_SOURCE_UNAVAILABLE`, G6 `RUNNING`.
 - New strategy candidates must be implemented as Swift target providers and replayed through the current unified App/backtest simulator before being presented as product results. Prefer `tools/strategy_metric_dump.swift` for current product metrics.
 - Do not copy high-return/high-Sharpe values from non-App scripts into README, AGENTS, App cards, App subtitles, release notes, or user-facing answers unless a Swift App-engine run produces the same values.
-- Keep App-coupled Swift comparison/search code under `tools/`; keep exploratory strategy/factor tools and study material in `/Users/xiangjunsheng/Desktop/AllProjects/AssetTimeMachineResearch`.
+- Keep App-coupled Swift comparison/search code under `tools/`; keep exploratory strategy/factor tools and study material in the sibling `AssetTimeMachineResearch` workspace.
 - For multi-asset backtests across gold/US equities/A-shares, use recent valid price forward-fill with enough holiday tolerance; do not accidentally delete dates because one market is closed.
 - K-line charts must use real OHLC data. Do not fake OHLC from close-only series.
 - User preference: no BTC in main AssetTimeMachine strategy line unless explicitly requested.
@@ -543,6 +547,7 @@ Pull requests should describe the user-facing change, list verification commands
 ## Current Known Operational Notes
 
 - Latest TestFlight release: version `1.14` build `201`, Delivery UUID `b2283a01-2be6-42ff-9eea-280bced94ed2`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.14-201`.
+- Build 202 (1.14) uploaded to TestFlight and reached `BUILD-STATUS: VALID`; Delivery UUID `75a089d6-ae0e-46e9-954b-c512582f113b`; archive and IPA: `build/TestFlight-1.14-202`.
 - Build 201 ships the clock-v3 backtest execution model: strict signal/execution separation, real-session execution checks, cross-venue sell-before-buy settlement, calendar-time cash accrual, observed-frequency metrics, refreshed App-engine baselines, and stale-data protection for current allocation advice. It moves the corrected gold–Nasdaq dual-trend strategy to the recommended catalog position while retaining the balanced strategy as the migration-safe default. It also includes the build-200 monthly-expense estimator and widget/appearance refinements.
 - Previous TestFlight release: version `1.14` build `200`, Delivery UUID `4d659e37-4f51-438c-8d2a-07022bce64a9`, App Store Connect status `BUILD-STATUS: VALID`, artifact directory `build/TestFlight-1.14-200`.
 - Build 200 adds the compact unified monthly-expense estimator in Settings, with monthly/annual filtering, inline entry, annual-to-monthly conversion, swipe deletion, local persistence, and Dashboard monthly-expense synchronization. It also packages the current app/widget appearance refinements and three-locale copy.

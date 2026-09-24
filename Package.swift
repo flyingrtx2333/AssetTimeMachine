@@ -47,6 +47,10 @@ let package = Package(
                 "BacktestEngine.swift",
                 "GNR5ReversalStrategy.swift",
                 "GORQREG25263Strategy.swift",
+                "RecentWindowCorrVarSchedule.swift",
+                "RecentWindowFrozenCandidateSchedules.swift",
+                "RecentWindowOverlayStrategy.swift",
+                "RecentWindowProductSeries.swift",
                 "MacroSahmCPIStrategy.swift",
                 "RSRangeBreadthStrategy.swift",
                 "RSRangeBreadthFreezeSupport.swift",
@@ -57,6 +61,7 @@ let package = Package(
                 "AssetTimeMachineServerSupport.swift",
                 "PublicBacktestCore.swift"
             ],
+            resources: [.process("BacktestData/RecentWindow")],
             swiftSettings: [
                 .define("ATM_SERVER")
             ]

@@ -2,6 +2,15 @@ import XCTest
 @testable import AssetTimeMachineBacktestCore
 
 final class PublicBacktestCoreTests: XCTestCase {
+    func testPublicBacktestFixedCostsUseCurrentProductDefaults() {
+        let costs = PublicBacktestFixedCosts()
+
+        XCTAssertEqual(costs.transactionFeeRate, 0.00025, accuracy: 0.000_000_000_1)
+        XCTAssertEqual(costs.slippageRate, 0.0005, accuracy: 0.000_000_000_1)
+        XCTAssertEqual(BacktestDefaults.advancedFeeRatePercent, 0.025, accuracy: 0.000_000_000_1)
+        XCTAssertEqual(BacktestDefaults.advancedSlippageRatePercent, 0.05, accuracy: 0.000_000_000_1)
+    }
+
     func testQuantStrategyProxyOverridesRecordedMarketSymbol() throws {
         let category = AssetCategory(group: .financial)
         let item = AssetItem(

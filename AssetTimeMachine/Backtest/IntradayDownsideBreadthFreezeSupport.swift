@@ -348,9 +348,13 @@ nonisolated public enum IntradayDownsideBreadthFreezeCommand {
         }
     }
     private static func process(_ executable: String, _ arguments: [String], _ root: URL) throws -> String {
+#if os(macOS)
         let task = Process(); task.executableURL = URL(fileURLWithPath: executable); task.arguments = arguments; task.currentDirectoryURL = root
         let pipe = Pipe(); task.standardOutput = pipe; task.standardError = pipe; try task.run(); task.waitUntilExit()
         let output = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
         guard task.terminationStatus == 0 else { throw FreezeError.invalid(output) }; return output
+#else
+        throw FreezeError.invalid("freeze CLI process execution is available on macOS only")
+#endif
     }
 }

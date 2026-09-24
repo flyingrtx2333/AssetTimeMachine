@@ -2,6 +2,10 @@
 build/
 .build/
 DerivedData/
+xcuserdata/
+*.xcuserstate
+.swiftpm/
+.workbuddy-ai/
 *.xcarchive
 *.ipa
 *.dSYM

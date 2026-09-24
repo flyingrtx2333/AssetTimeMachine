@@ -4,12 +4,32 @@ from __future__ import annotations
 import argparse, hashlib, json, os, subprocess, sys
 from pathlib import Path
 
+try:
+    from artifact_paths import (
+        read_bytes as artifact_read_bytes,
+        resolve as resolve_artifact,
+        sha256_of as artifact_sha256,
+    )
+except ImportError:  # imported as scripts.<name>
+    from scripts.artifact_paths import (
+        read_bytes as artifact_read_bytes,
+        resolve as resolve_artifact,
+        sha256_of as artifact_sha256,
+    )
+
 ROOT = Path(__file__).resolve().parents[1]
 TRIAL_ID = "ATM-SVP2-RS-RANGE-BREADTH-001"
 CANDIDATE_ID = "RS-RANGE-BREADTH-21-252-001"
-PREREG = ROOT / "tools/research-results/strategy-validation/preregistrations" / f"{TRIAL_ID}.json"
-SCHEDULE = ROOT / "tools/research-results/strategy-validation/preregistrations/RS-RANGE-BREADTH-21-252-001-schedule.json"
-DATASET = ROOT / "tools/research-results/strategy-validation/datasets" / f"{TRIAL_ID}.json"
+SV_DIR = "tools/research-results/strategy-validation"
+PREREG_LOGICAL = f"{SV_DIR}/preregistrations/{TRIAL_ID}.json"
+SCHEDULE_LOGICAL = f"{SV_DIR}/preregistrations/RS-RANGE-BREADTH-21-252-001-schedule.json"
+DATASET_LOGICAL = f"{SV_DIR}/datasets/{TRIAL_ID}.json"
+FIXTURE_LOGICAL = "tools/fixtures/backtest-history/public_history.json"
+# Logical paths are the frozen identity recorded in the preregistration and ledger;
+# resolve() maps them to whichever checkout currently holds the bytes.
+PREREG = resolve_artifact(PREREG_LOGICAL, repo_root=ROOT)
+SCHEDULE = resolve_artifact(SCHEDULE_LOGICAL, repo_root=ROOT)
+DATASET = resolve_artifact(DATASET_LOGICAL, repo_root=ROOT)
 BINARY = ROOT / ".build/release/RSRangeBreadthFormal"
 
 
@@ -41,14 +61,16 @@ def validate_inputs() -> dict:
     if prereg.get("trial_id") != TRIAL_ID or prereg.get("candidate_ids") != [CANDIDATE_ID]:
         raise SystemExit("preregistration identity mismatch")
     frozen = prereg.get("frozen_schedule", {})
-    if frozen.get("path") != str(SCHEDULE.relative_to(ROOT)) or frozen.get("sha256") != sha(SCHEDULE):
+    if frozen.get("path") != SCHEDULE_LOGICAL or frozen.get("sha256") != artifact_sha256(SCHEDULE_LOGICAL, repo_root=ROOT):
         raise SystemExit("schedule binding mismatch")
-    if prereg.get("dataset_manifest") != str(DATASET.relative_to(ROOT)) or prereg.get("fixture", {}).get("dataset_manifest_sha256") != sha(DATASET):
+    if prereg.get("dataset_manifest") != DATASET_LOGICAL or prereg.get("fixture", {}).get("dataset_manifest_sha256") != sha(DATASET):
         raise SystemExit("dataset binding mismatch")
     dataset = json.loads(DATASET.read_text())
     for entry in dataset.get("files", []):
-        path = ROOT / entry["path"]
-        if not path.is_file() or path.stat().st_size != entry["bytes"] or sha(path) != entry["sha256"]:
+        # entry["path"] is a frozen logical path; read_bytes decompresses .xz transparently
+        # and verifies against the recorded logical size/hash.
+        payload = artifact_read_bytes(entry["path"], repo_root=ROOT)
+        if len(payload) != entry["bytes"] or hashlib.sha256(payload).hexdigest() != entry["sha256"]:
             raise SystemExit(f"dataset file mismatch: {entry['path']}")
     return prereg
 

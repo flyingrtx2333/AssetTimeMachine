@@ -5722,6 +5722,59 @@ struct StrategyMetricDump {
             takeProfitRatio: 0
         )
 
+        if CommandLine.arguments.contains("--dump-recent-window") {
+            let recentSettings = AdvancedBacktestRiskSettings(
+                feeRate: 0.025,
+                slippageRate: 0,
+                maxPositionRatio: 100,
+                cooldownDays: 0,
+                stopLossRatio: 0,
+                takeProfitRatio: 0
+            )
+            let modes: [AdvancedBacktestStrategyMode] = [
+                .recentVolatilityManagedIdleCash,
+                .recentPairSpreadZ252Shift25,
+                .recentGoldEquityRelativeZ252Shift25,
+            ]
+            let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.map { ($0.symbol, $0) })
+            var rows: [SliceMetricRow] = []
+            for mode in modes {
+                let inputs = mode.requiredSignalAssetSymbols.compactMap { options[$0] }.map { option in
+                    BacktestEngine.advancedAssetInput(for: option) { symbol in
+                        seriesBySymbol[normalizedHistorySymbol(symbol)]
+                    }
+                }
+                guard inputs.count == mode.requiredSignalAssetSymbols.count,
+                      let run = BacktestEngine.runAdvancedRotationStrategyWithTrace(
+                        assetInputs: inputs,
+                        initialCash: 100_000,
+                        settings: recentSettings,
+                        mode: mode
+                      ),
+                      let latest = run.dailyStates.last else {
+                    print("RECENT_WINDOW_NO_REPORT id=\(mode.rawValue)")
+                    continue
+                }
+                let advice = BacktestEngine.advancedRotationRebalanceAdvice(
+                    assetInputs: inputs,
+                    mode: mode,
+                    initialCash: 100_000,
+                    settings: recentSettings,
+                    strategyRun: run
+                )
+                let targets = latest.targetWeights.filter { $0.value > 0.000001 }.sorted { $0.key < $1.key }
+                    .map { "\($0.key)=\(String(format: "%.6f", $0.value))" }.joined(separator: ";")
+                print("RECENT_WINDOW_ADVICE id=\(mode.rawValue) as_of=\(latest.date.backtestDateString) targets=\(targets) reason=\(advice?.signalReason ?? "-") next_review=\(advice?.nextReviewDate?.backtestDateString ?? "-")")
+                rows.append(contentsOf: metricRowsForSlices(
+                    title: mode.title,
+                    id: mode.rawValue,
+                    points: run.report.points
+                ))
+            }
+            printSliceRows(rows, header: "APP_RECENT_WINDOW_METRICS")
+            return
+        }
+
         if CommandLine.arguments.contains("--verify-app-baseline") {
             let baselinePath = argumentValue(after: "--baseline")
                 ?? ProcessInfo.processInfo.environment["ATM_BASELINE_PATH"]

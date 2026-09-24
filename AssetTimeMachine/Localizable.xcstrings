@@ -31492,6 +31492,513 @@
           }
         }
       }
+    },
+
+    "510210上证综指ETF": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "510210 SSE Composite ETF"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "510210上证综指ETF"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "510210上證綜指ETF"
+          }
+        }
+      }
+    },
+    "510300沪深300ETF": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "510300 CSI 300 ETF"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "510300沪深300ETF"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "510300滬深300ETF"
+          }
+        }
+      }
+    },
+    "511990货币基金": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "511990 Money Market Fund"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "511990货币基金"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "511990貨幣基金"
+          }
+        }
+      }
+    },
+    "ONEQ纳斯达克ETF": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ONEQ Nasdaq ETF"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ONEQ纳斯达克ETF"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ONEQ納斯達克ETF"
+          }
+        }
+      }
+    },
+    "SPY标普500ETF": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SPY S&P 500 ETF"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SPY标普500ETF"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SPY標普500ETF"
+          }
+        }
+      }
+    },
+    "T-1 63日组合波动 %@，仓位倍数 %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T-1 63-day portfolio volatility %@, allocation multiplier %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T-1 63日组合波动 %@，仓位倍数 %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T−1 63日組合波動 %@，倉位倍數 %@"
+          }
+        }
+      }
+    },
+    "T-1 配对Z分数：ONEQ/SPY %@，510300/510210 %@；阈值±1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T-1 pair Z-scores: ONEQ/SPY %@, 510300/510210 %@; threshold ±1"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T-1 配对Z分数：ONEQ/SPY %@，510300/510210 %@；阈值±1"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T−1 配對 Z 分數：ONEQ/SPY %@，510300/510210 %@；閾值 ±1"
+          }
+        }
+      }
+    },
+    "T-1 黄金/权益Z分数 %@，黄金转移比例 %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T-1 gold/equity Z-score %@, gold transfer ratio %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T-1 黄金/权益Z分数 %@，黄金转移比例 %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T−1 黃金/權益 Z 分數 %@，黃金轉移比例 %@"
+          }
+        }
+      }
+    },
+    "下次复核：%@（每日）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next review: %@ (daily)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下次复核：%@（每日）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下次覆核：%@（每日）"
+          }
+        }
+      }
+    },
+    "严格使用上一交易日数据：63日组合波动低于10%目标时，仅用闲置现金等比例增配；否则保持低噪增强基准仓位。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uses prior-trading-day data only: when 63-day portfolio volatility is below the 10% target, deploy idle cash proportionally; otherwise keep the Low-Noise Enhanced baseline allocation."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "严格使用上一交易日数据：63日组合波动低于10%目标时，仅用闲置现金等比例增配；否则保持低噪增强基准仓位。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "嚴格使用上一交易日資料：63日組合波動低於10%目標時，僅用閒置現金等比例增配；否則維持低噪增強基準倉位。"
+          }
+        }
+      }
+    },
+    "严格使用上一交易日数据：两组252日配对Z分数超过±1时卖出相对偏贵一侧、买入相对偏低一侧；区间内保持基准。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uses prior-trading-day data only: when either 252-day pair Z-score exceeds ±1, sell the relatively expensive leg and buy the cheaper leg; otherwise keep the baseline."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "严格使用上一交易日数据：两组252日配对Z分数超过±1时卖出相对偏贵一侧、买入相对偏低一侧；区间内保持基准。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "嚴格使用上一交易日資料：兩組252日配對 Z 分數超過 ±1 時賣出相對偏貴一側、買入相對偏低一側；區間內維持基準。"
+          }
+        }
+      }
+    },
+    "严格使用上一交易日数据：黄金/可用权益篮子252日Z分数超过±1时做25%均值回归转移；区间内保持基准。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uses prior-trading-day data only: when the 252-day Z-score between gold and the available equity basket exceeds ±1, shift 25% toward the mean; otherwise keep the baseline."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "严格使用上一交易日数据：黄金/可用权益篮子252日Z分数超过±1时做25%均值回归转移；区间内保持基准。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "嚴格使用上一交易日資料：黃金/可用權益籃子252日 Z 分數超過 ±1 時做25%均值回歸轉移；區間內維持基準。"
+          }
+        }
+      }
+    },
+    "今天不操作": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No action today"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天不操作"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天不操作"
+          }
+        }
+      }
+    },
+    "信号原因：%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signal reason: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "信号原因：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "訊號原因：%@"
+          }
+        }
+      }
+    },
+    "尚不足": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insufficient data"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚不足"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "資料不足"
+          }
+        }
+      }
+    },
+    "近期研究·跨市场配对回归": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent research · Cross-market pair mean reversion"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近期研究·跨市场配对回归"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近期研究・跨市場配對均值回歸"
+          }
+        }
+      }
+    },
+    "近期研究·闲置现金控波部署": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent research · Idle-cash volatility management"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近期研究·闲置现金控波部署"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近期研究・閒置現金控波部署"
+          }
+        }
+      }
+    },
+    "近期研究·黄金权益相对回归": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent research · Gold/equity relative mean reversion"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近期研究·黄金权益相对回归"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近期研究・黃金權益相對均值回歸"
+          }
+        }
+      }
+    },
+    "近期研究（探索）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent research (exploratory)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近期研究（探索）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近期研究（探索）"
+          }
+        }
+      }
+    },
+    "近期窗口探索策略（未通过正式验证、非推荐）：在低噪增强上，以严格T−1的ONEQ/SPY和510300/510210各252日对数比率Z分数做均值回归；超过±1时在对应配对内转移总权重的25%，保持配对总仓不变；每日复核。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent-window exploratory strategy (not formally validated; not recommended): starting from Low-Noise Enhanced, apply mean reversion to strict T−1 252-day log-ratio Z-scores for ONEQ/SPY and 510300/510210. When either pair exceeds ±1, shift 25% of that pair’s total weight toward the relatively cheaper leg, keeping pair exposure unchanged; review daily."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近期窗口探索策略（未通过正式验证、非推荐）：在低噪增强上，以严格T−1的ONEQ/SPY和510300/510210各252日对数比率Z分数做均值回归；超过±1时在对应配对内转移总权重的25%，保持配对总仓不变；每日复核。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近期窗口探索策略（未通過正式驗證、非推薦）：在低噪增強上，以嚴格 T−1 的 ONEQ/SPY 和 510300/510210 各252日對數比率 Z 分數做均值回歸；超過 ±1 時在對應配對內轉移總權重的25%，維持配對總倉不變；每日覆核。"
+          }
+        }
+      }
+    },
+    "近期窗口探索策略（未通过正式验证、非推荐）：在低噪增强的产品化持仓上，以严格T−1的63个交易日组合波动估计为依据，只把闲置现金部署到10%目标波动，不降低原风险仓，不加杠杆；每日复核，手续费和滑点采用你的设置。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent-window exploratory strategy (not formally validated; not recommended): on the Low-Noise Enhanced portfolio, use strict T−1 realized volatility over the latest 63 sessions to deploy idle cash toward a 10% volatility target. Do not reduce existing risk holdings or use leverage; review daily. Fees and slippage follow the configured settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近期窗口探索策略（未通过正式验证、非推荐）：在低噪增强的产品化持仓上，以严格T−1的63个交易日组合波动估计为依据，只把闲置现金部署到10%目标波动，不降低原风险仓，不加杠杆；每日复核，手续费和滑点采用你的设置。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近期窗口探索策略（未通過正式驗證、非推薦）：在低噪增強的產品化持倉上，以嚴格 T−1 的63個交易日組合波動估計為依據，只把閒置現金部署到10%目標波動，不降低原風險倉，不加槓桿；每日覆核，手續費和滑點採用你的設定。"
+          }
+        }
+      }
+    },
+    "近期窗口探索策略（未通过正式验证、非推荐）：比较黄金与当时已上市权益产品篮子的严格T−1相对价格，按252日Z分数在超过±1时转移黄金与权益合计仓位的25%；总仓不变、不融资、不做空，每日复核。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent-window exploratory strategy (not formally validated; not recommended): compare gold with the then-listed equity-product basket using strict T−1 relative prices and a 252-day Z-score. When it exceeds ±1, shift 25% of combined gold/equity weight; keep total exposure unchanged, with no leverage or shorting; review daily."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近期窗口探索策略（未通过正式验证、非推荐）：比较黄金与当时已上市权益产品篮子的严格T−1相对价格，按252日Z分数在超过±1时转移黄金与权益合计仓位的25%；总仓不变、不融资、不做空，每日复核。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近期窗口探索策略（未通過正式驗證、非推薦）：比較黃金與當時已上市權益產品籃子的嚴格 T−1 相對價格，按252日 Z 分數在超過 ±1 時轉移黃金與權益合計倉位的25%；總倉不變、不融資、不做空，每日覆核。"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

@@ -624,6 +624,7 @@ nonisolated public enum IntradayDownsideBreadthFormalCommand {
     }
 
     private static func gitHead(root: URL) throws -> String {
+#if os(macOS)
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
         process.arguments = ["rev-parse", "HEAD"]
@@ -638,9 +639,13 @@ nonisolated public enum IntradayDownsideBreadthFormalCommand {
             throw CommandError("cannot resolve execution Git commit")
         }
         return value.trimmingCharacters(in: .whitespacesAndNewlines)
+#else
+        throw CommandError("formal CLI process execution is available on macOS only")
+#endif
     }
 
     private static func processOutput(_ executable: String, _ arguments: [String], root: URL) throws -> String {
+#if os(macOS)
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
@@ -653,6 +658,9 @@ nonisolated public enum IntradayDownsideBreadthFormalCommand {
         let output = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
         guard process.terminationStatus == 0 else { throw CommandError(output) }
         return output.trimmingCharacters(in: .whitespacesAndNewlines)
+#else
+        throw CommandError("formal CLI process execution is available on macOS only")
+#endif
     }
 
     private static func validateRuntime() throws {

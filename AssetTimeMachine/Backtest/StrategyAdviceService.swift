@@ -34,9 +34,18 @@ actor StrategyAdviceService {
                         }
                     }
                     if template.mode.isRotation {
+                        let settings = AdvancedBacktestRiskSettings(
+                            feeRate: BacktestDefaults.advancedFeeRatePercent,
+                            slippageRate: BacktestDefaults.advancedSlippageRatePercent,
+                            maxPositionRatio: min(template.maxPositionRatio, 100),
+                            cooldownDays: template.cooldownDays,
+                            stopLossRatio: template.stopLossRatio,
+                            takeProfitRatio: template.takeProfitRatio
+                        )
                         return BacktestEngine.advancedRotationRebalanceAdvice(
                             assetInputs: assetInputs,
                             mode: template.mode,
+                            settings: settings,
                             nfciAsOf: nfciAsOf
                         )
                     }

@@ -599,8 +599,8 @@ struct AdvancedBacktestView: View {
         }
 
         if template.mode.isRotation {
-            return abs(feeRate - BacktestDefaults.advancedFeeRatePercent) < 0.01
-                && abs(slippageRate - BacktestDefaults.advancedSlippageRatePercent) < 0.01
+            return abs(feeRate - template.mode.defaultFeeRatePercent) < 0.0001
+                && abs(slippageRate - template.mode.defaultSlippageRatePercent) < 0.0001
         }
 
         let expectedTradeAmount = max(initialCash * template.tradeAmountRatio, 1)
@@ -633,8 +633,8 @@ struct AdvancedBacktestView: View {
             sellDirection = template.sellRule.direction
             sellDays = template.sellRule.days
             tradeAmount = max(initialCash * template.tradeAmountRatio, 1)
-            feeRate = BacktestDefaults.advancedFeeRatePercent
-            slippageRate = BacktestDefaults.advancedSlippageRatePercent
+            feeRate = template.mode.defaultFeeRatePercent
+            slippageRate = template.mode.defaultSlippageRatePercent
             maxPositionRatio = template.maxPositionRatio
             cooldownDays = Double(template.cooldownDays)
             stopLossRatio = template.stopLossRatio

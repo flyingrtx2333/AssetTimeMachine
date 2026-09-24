@@ -339,6 +339,9 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
     case riskContributionRecoveryRouter
     case riskContributionCashConfidenceRouter
     case riskContributionCashConfidenceLowNoise
+    case recentVolatilityManagedIdleCash
+    case recentPairSpreadZ252Shift25
+    case recentGoldEquityRelativeZ252Shift25
     case nfciDualCoreV1
     case nfciDualCoreSimplifiedV11
     case nfciDualCoreSimplifiedV11QualRole
@@ -451,6 +454,12 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
             return AppLocalization.string("无融资置信度恢复")
         case .riskContributionCashConfidenceLowNoise:
             return AppLocalization.string("低噪增强")
+        case .recentVolatilityManagedIdleCash:
+            return AppLocalization.string("近期研究·闲置现金控波部署")
+        case .recentPairSpreadZ252Shift25:
+            return AppLocalization.string("近期研究·跨市场配对回归")
+        case .recentGoldEquityRelativeZ252Shift25:
+            return AppLocalization.string("近期研究·黄金权益相对回归")
         case .nfciDualCoreV1:
             return AppLocalization.string("NFCI 双核心（前瞻）")
         case .nfciDualCoreSimplifiedV11:
@@ -570,6 +579,12 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
             return AppLocalization.string("当前无融资夏普冠军：保留15%快速桥接和最高20.75%的恢复袖套；高波动时自动收缩至19%，并按95日动量、下行波动与趋势效率在纳指/标普间分配。恢复袖套在双指数3日同时下跌5%时退出，退出后冷却150日。领导资产切换继续使用Beta(2,2)兑现率校准；非清仓减仓且基础净值距252日高点不足4%时，按总仓位下降与总换手冲击保留最多25%的缓冲，广泛减仓时分散到本次卖出资产。全部信号严格使用T−1数据，总仓位封顶100%，现金不得为负，统一计入1%交易费与0.05%滑点。")
         case .riskContributionCashConfidenceLowNoise:
             return AppLocalization.string("严格无杠杆增强策略：沿用置信度恢复底层和20.75%恢复袖套，以100%总仓硬上限运行；关闭历史上冗余的宽度微刹车与成熟纳指刹车，在低波且趋势确认时更充分使用闲置现金。领导资产保持不变且总风险变化不超过2%时，按组合波动采用20%/30%/50%的分级换手过滤；黄金领导且60日组合波动达到12%时恢复更快调仓。近峰减仓执行80%，并保留5%的A股退出哨兵。全部信号严格使用T−1数据，禁止融资和负现金，统一计入1%交易费与0.05%滑点。")
+        case .recentVolatilityManagedIdleCash:
+            return AppLocalization.string("近期窗口探索策略（未通过正式验证、非推荐）：在低噪增强的产品化持仓上，以严格T−1的63个交易日组合波动估计为依据，只把闲置现金部署到10%目标波动，不降低原风险仓，不加杠杆；每日复核，手续费和滑点采用你的设置。")
+        case .recentPairSpreadZ252Shift25:
+            return AppLocalization.string("近期窗口探索策略（未通过正式验证、非推荐）：在低噪增强上，以严格T−1的ONEQ/SPY和510300/510210各252日对数比率Z分数做均值回归；超过±1时在对应配对内转移总权重的25%，保持配对总仓不变；每日复核。")
+        case .recentGoldEquityRelativeZ252Shift25:
+            return AppLocalization.string("近期窗口探索策略（未通过正式验证、非推荐）：比较黄金与当时已上市权益产品篮子的严格T−1相对价格，按252日Z分数在超过±1时转移黄金与权益合计仓位的25%；总仓不变、不融资、不做空，每日复核。")
         case .nfciDualCoreV1:
             return AppLocalization.string("前瞻观察中的冻结策略 V1：50% 低噪增强+C3/L3 与 50% 无融资置信度恢复+C3/L3+1.30×风险预算在目标仓位层等权融合；NFCI Credit 采用8次发布变化≤-0.03，Leverage采用4次发布变化≤-0.03，仅使用服务器 first-seen/initial-release 点时数据。总仓位≤100%，不融资、不做空，25%偏离带统一成交。用户手续费只影响成交，不改变策略目标。")
         case .nfciDualCoreSimplifiedV11:
@@ -585,6 +600,28 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
 
     nonisolated var isRotation: Bool {
         self != .ruleBased
+    }
+
+    nonisolated var defaultFeeRatePercent: Double {
+        switch self {
+        case .recentVolatilityManagedIdleCash,
+             .recentPairSpreadZ252Shift25,
+             .recentGoldEquityRelativeZ252Shift25:
+            return 0.025
+        default:
+            return BacktestDefaults.advancedFeeRatePercent
+        }
+    }
+
+    nonisolated var defaultSlippageRatePercent: Double {
+        switch self {
+        case .recentVolatilityManagedIdleCash,
+             .recentPairSpreadZ252Shift25,
+             .recentGoldEquityRelativeZ252Shift25:
+            return 0
+        default:
+            return BacktestDefaults.advancedSlippageRatePercent
+        }
     }
 
     nonisolated var requiredSignalAssetSymbols: [String] {
@@ -639,6 +676,10 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
              .nfciDualCoreV1,
              .nfciDualCoreSimplifiedV11:
             return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
+        case .recentVolatilityManagedIdleCash,
+             .recentPairSpreadZ252Shift25,
+             .recentGoldEquityRelativeZ252Shift25:
+            return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
         case .nfciDualCoreSimplifiedV11QualRole:
             return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite", "qual"]
         default:
@@ -655,7 +696,10 @@ enum AdvancedBacktestStrategyMode: String, Codable, Sendable {
              .riskContributionCashConfidenceLowNoise,
              .nfciDualCoreV1,
              .nfciDualCoreSimplifiedV11,
-             .nfciDualCoreSimplifiedV11QualRole:
+             .nfciDualCoreSimplifiedV11QualRole,
+             .recentVolatilityManagedIdleCash,
+             .recentPairSpreadZ252Shift25,
+             .recentGoldEquityRelativeZ252Shift25:
             return ["gold_cny", "nasdaq"]
         case .convexCrashHedgeComposite,
              .onlineStrategyAllocator,
@@ -1372,6 +1416,8 @@ struct StrategyRebalanceAdvice: Sendable {
     let rebalanceSessions: Int
     let targetAnnualVolatility: Double?
     let allocations: [StrategyRebalanceAllocation]
+    var signalReason: String? = nil
+    var nextReviewDate: Date? = nil
 
     var totalTargetWeight: Double {
         allocations.reduce(0) { $0 + $1.targetWeight }
@@ -2016,6 +2062,42 @@ struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
             takeProfitRatio: 0
         ),
         .init(
+            id: "recent-volatility-managed-idle-cash",
+            mode: .recentVolatilityManagedIdleCash,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            categoryLocalizationKey: "近期研究（探索）",
+            titleLocalizationKey: "近期研究·闲置现金控波部署",
+            annualizedReturn: 0, maxDrawdown: 0, sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1, maxPositionRatio: 100, cooldownDays: 0,
+            stopLossRatio: 0, takeProfitRatio: 0
+        ),
+        .init(
+            id: "recent-pair-spread-z252-shift25",
+            mode: .recentPairSpreadZ252Shift25,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            categoryLocalizationKey: "近期研究（探索）",
+            titleLocalizationKey: "近期研究·跨市场配对回归",
+            annualizedReturn: 0, maxDrawdown: 0, sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1, maxPositionRatio: 100, cooldownDays: 0,
+            stopLossRatio: 0, takeProfitRatio: 0
+        ),
+        .init(
+            id: "recent-gold-equity-relative-z252-shift25",
+            mode: .recentGoldEquityRelativeZ252Shift25,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            categoryLocalizationKey: "近期研究（探索）",
+            titleLocalizationKey: "近期研究·黄金权益相对回归",
+            annualizedReturn: 0, maxDrawdown: 0, sharpeRatio: 0,
+            buyRule: .init(direction: .priceAboveMA60, days: 1),
+            sellRule: .init(direction: .priceBelowMA60, days: 1),
+            tradeAmountRatio: 1, maxPositionRatio: 100, cooldownDays: 0,
+            stopLossRatio: 0, takeProfitRatio: 0
+        ),
+        .init(
             id: "nfci-dual-core-v1",
             mode: .nfciDualCoreV1,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
@@ -2362,6 +2444,9 @@ enum BacktestProductStrategyCatalog {
 
     static let experimentalTemplateIDs: [String] = [
         "nfci-dual-core-v11-qual-role",
+        "recent-volatility-managed-idle-cash",
+        "recent-pair-spread-z252-shift25",
+        "recent-gold-equity-relative-z252-shift25",
     ]
 
     static let basicTemplateIDs = [
@@ -3386,7 +3471,8 @@ struct BacktestPerformanceMetrics {
 }
 
 enum BacktestDefaults {
-    nonisolated static let advancedFeeRatePercent: Double = 1.0
+    /// Current product execution fee, expressed as a percentage: 2.5 bps = 0.025% per side.
+    nonisolated static let advancedFeeRatePercent: Double = 0.025
     nonisolated static let advancedSlippageRatePercent: Double = 0.05
     static let cashWeight: Double = 50
     static let goldWeight: Double = 25
@@ -3424,6 +3510,11 @@ enum BacktestDefaults {
         .init(symbol: "usd_cash", title: AppLocalization.string("美元现金"), color: AssetTheme.textSecondary, requiresHistoricalFX: false, historicalFXSymbol: nil),
         .init(symbol: "oil_wti_cny", title: AppLocalization.string("WTI原油"), color: AssetTheme.accentOrange, requiresHistoricalFX: false, historicalFXSymbol: nil),
         .init(symbol: "qual", title: AppLocalization.string("QUAL美国质量因子"), color: AssetTheme.accentBlue, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny", category: "etf", iconName: "chart.line.uptrend.xyaxis", currency: "USD", unit: "share"),
+        .init(symbol: "money511990_cny", title: AppLocalization.string("511990货币基金"), color: AssetTheme.textSecondary, requiresHistoricalFX: false, historicalFXSymbol: nil, category: "etf", iconName: "banknote", currency: "CNY", unit: "share"),
+        .init(symbol: "spy_tr", title: AppLocalization.string("SPY标普500ETF"), color: AssetTheme.goldSoft, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny", category: "etf", iconName: "chart.line.uptrend.xyaxis", currency: "USD", unit: "share"),
+        .init(symbol: "oneq_tr", title: AppLocalization.string("ONEQ纳斯达克ETF"), color: AssetTheme.accentBlue, requiresHistoricalFX: true, historicalFXSymbol: "usd_per_cny", category: "etf", iconName: "chart.line.uptrend.xyaxis", currency: "USD", unit: "share"),
+        .init(symbol: "etf510210_cny", title: AppLocalization.string("510210上证综指ETF"), color: AssetTheme.accentOrange, requiresHistoricalFX: false, historicalFXSymbol: nil, category: "etf", iconName: "chart.line.uptrend.xyaxis", currency: "CNY", unit: "share"),
+        .init(symbol: "etf510300_cny", title: AppLocalization.string("510300沪深300ETF"), color: AssetTheme.textPrimary, requiresHistoricalFX: false, historicalFXSymbol: nil, category: "etf", iconName: "chart.line.uptrend.xyaxis", currency: "CNY", unit: "share"),
     ] }
     static var strategyAssetOptions: [BacktestAssetOption] { dcaAssetOptions + internalStrategyAssetOptions }
 
