@@ -67,7 +67,7 @@ python3 scripts/research_agent_worker.py \
 持续运行时去掉 `--once`。默认状态目录位于独立研究工作区：
 
 ```text
-AssetTimeMachineResearch/agent/
+../FlyingrtxFast/research/asset-time-machine/workspace/agent/
 ```
 
 准备 Worker 使用 `agent/preparation/`，正式执行 Worker 使用 `agent/execution/`。其中保存：

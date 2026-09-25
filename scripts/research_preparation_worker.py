@@ -558,7 +558,13 @@ def default_state_dir() -> Path:
     research_root = (
         Path(workspace).expanduser()
         if workspace
-        else Path.home() / "Desktop" / "AllProjects" / "AssetTimeMachineResearch"
+        else (
+            Path(__file__).resolve().parents[1].parent
+            / "FlyingrtxFast"
+            / "research"
+            / "asset-time-machine"
+            / "workspace"
+        )
     )
     return research_root / "agent" / "preparation"
 

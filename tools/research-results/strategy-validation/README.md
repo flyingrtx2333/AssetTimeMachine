@@ -12,7 +12,7 @@
 
 ### V11 current-data note
 
-V11 的 14.35% CAGR / 7.69% MDD / 1.52 Sharpe 是 2026-08-20 冻结工件中的历史输出，不能作为当前产品成绩。2026-09-04 在 Flyingrtx 生产行情与 NFCI as-of 数据、当前 App engine、1.00% 单边费率和 0.05% 滑点下的只读线上复跑为：全史 6.03% CAGR、15.86% MDD、0.686 Sharpe（463 笔交易）。完整输入 hash 与窗口在研究归档：`AssetTimeMachineResearch/studies/v11-online-replay-2026-09-04/ONLINE_REPLAY.md`。该记录不改变 V11 的 `G3 PARTIAL`、`G4 INVALID_SOURCE_UNAVAILABLE`、`G6 RUNNING` 状态，且 V11 不得作为当前推荐/宣传基线。
+V11 的 14.35% CAGR / 7.69% MDD / 1.52 Sharpe 是 2026-08-20 冻结工件中的历史输出，不能作为当前产品成绩。2026-09-04 在 Flyingrtx 生产行情与 NFCI as-of 数据、当前 App engine、1.00% 单边费率和 0.05% 滑点下的只读线上复跑为：全史 6.03% CAGR、15.86% MDD、0.686 Sharpe（463 笔交易）。完整输入 hash 与窗口在研究归档：`../FlyingrtxFast/research/asset-time-machine/workspace/studies/v11-online-replay-2026-09-04/ONLINE_REPLAY.md`。该记录不改变 V11 的 `G3 PARTIAL`、`G4 INVALID_SOURCE_UNAVAILABLE`、`G6 RUNNING` 状态，且 V11 不得作为当前推荐/宣传基线。
 
 ## 当前状态
 

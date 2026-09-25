@@ -150,7 +150,7 @@ ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json \
 
 新策略研究只能新增 Swift `StrategyTargetProvider`/Swift CLI 搜索入口，并必须通过同一个 `BacktestDailySimulator` 与 pinned fixture baseline 验证后，才能更新 README 或 App 可见指标。
 
-新的研究工作材料统一放在与本仓库同级的 `AssetTimeMachineResearch` 目录：策略家族与非正式测试在 `strategies/`，因子工作在 `factors/`，研究简报在 `studies/`，通用研究工具在 `tools/`。正式 ATM-SVP 的 preregistration、数据清单、结果和 Git 提交仍必须保留在本仓库的 `tools/research-results/strategy-validation/`，以维持可复现和审计边界。
+新的研究工作材料统一放在位于相邻 FlyingrtxFast 仓库的 `research/asset-time-machine/workspace/` 目录：策略家族与非正式测试在 `strategies/`，因子工作在 `factors/`，研究简报在 `studies/`，通用研究工具在 `tools/`。正式 ATM-SVP 的 preregistration、数据清单、结果和 Git 提交仍必须保留在本仓库的 `tools/research-results/strategy-validation/`，以维持可复现和审计边界。
 
 ### 冻结研究、当前线上复跑与点时宏观数据
 
@@ -159,7 +159,7 @@ ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json \
 - 线上复跑使用 `https://api.flyingrtx.com/api/v1/money/public/history`，默认不得带 `refresh=true`，除非用户明确授权服务器刷新。美元资产必须同时请求 `usd_per_cny`，并记录每条序列实际末日，不能只看请求结束日期。
 - 涉及 NFCI 的策略必须从 `https://api.flyingrtx.com/api/v1/money/public/nfci-asof` 取得含 `release_date`、`reference_date`、`available_at` 的首次可见/as-of 记录；**不得**用当前修订版 FRED/ALFRED 序列或观察期日期替代可用时间。
 - 任何线上复跑都须保存原始响应及归一化输入的 SHA-256、接口/环境、抓取时间、代码 HEAD、引擎与成本配置、覆盖末日和全部报告窗口。若与旧工件不同，只能报告差异，不得回头调参“救回”旧结果。
-- V11 的旧冻结结果（14.35% CAGR / 7.69% MDD / 1.52 Sharpe）仅为历史 ATM-SVP 工件，且仍有 `G3 PARTIAL`、`G4 INVALID_SOURCE_UNAVAILABLE`、`G6 RUNNING` 等限制。2026-09-04 的服务器当前回放为全史 6.03% CAGR / 15.86% MDD / 0.686 Sharpe；详见研究归档 `AssetTimeMachineResearch/studies/v11-online-replay-2026-09-04/ONLINE_REPLAY.md`。V11 不是当前推荐、准入或对外宣传基线。
+- V11 的旧冻结结果（14.35% CAGR / 7.69% MDD / 1.52 Sharpe）仅为历史 ATM-SVP 工件，且仍有 `G3 PARTIAL`、`G4 INVALID_SOURCE_UNAVAILABLE`、`G6 RUNNING` 等限制。2026-09-04 的服务器当前回放为全史 6.03% CAGR / 15.86% MDD / 0.686 Sharpe；详见研究归档 `../FlyingrtxFast/research/asset-time-machine/workspace/studies/v11-online-replay-2026-09-04/ONLINE_REPLAY.md`。V11 不是当前推荐、准入或对外宣传基线。
 
 ## 资产分类设计
 

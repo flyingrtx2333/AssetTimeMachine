@@ -2,7 +2,7 @@
 
 ## Current local workspace
 
-The App repository and the independent research workspace `AssetTimeMachineResearch` are siblings; both are readable through the default workspace root. Use workspace-relative `AssetTimeMachine/...` and `AssetTimeMachineResearch/...` paths and resolve helper paths from the current repository instead of hard-coding absolute roots. Do not alter immutable artifact paths inside historical results.
+The research workspace is in the sibling FlyingrtxFast repository at `research/asset-time-machine/workspace/`. Resolve it relative to this checkout or use `ASSET_TIME_MACHINE_RESEARCH_WORKSPACE`; verify the sibling checkout before use. Do not alter immutable artifact paths inside historical results.
 
 For new research, the user's later fee instruction and the research workspace `AGENTS.md` apply: 0.025% per fill, zero base slippage unless the specific study freezes another scenario. Historical 1% results and current App product defaults remain unchanged.
 
@@ -27,7 +27,7 @@ This repository is the **AssetTimeMachine** SwiftUI + SwiftData iOS app. It conn
 - `demo/` contains sample import/history JSON files.
 - `scripts/` contains helper conversion/demo/search scripts.
 - `tools/` contains App-adjacent backtest parity and formal-governance utilities. Keep tools that must run against the committed App source here.
-- The independent research workspace is the sibling `AssetTimeMachineResearch` directory. Put exploratory study briefs, strategy/factor working material, and reusable research-only utilities there; its `README.md` defines the layout. Formal ATM-SVP artifacts and executable code remain committed in this repository before a formal run.
+- The independent research workspace is the `../FlyingrtxFast/research/asset-time-machine/workspace/` directory. Put exploratory study briefs, strategy/factor working material, and reusable research-only utilities there; its `README.md` defines the layout. Formal ATM-SVP artifacts and executable code remain committed in this repository before a formal run.
 - `marketing/` contains App Store copy, screenshots, icon prompts, and backups.
   - Final App Store poster exports should also be copied to the local OneDrive delivery folder:
     `/Users/xiangjunsheng/Library/CloudStorage/OneDrive-个人/作品合集/个人-IOSAPP资产时光机-2026`
@@ -446,7 +446,7 @@ The dump fetches live history from `https://api.flyingrtx.com`, so it may need n
 
 ### How to find / research strategies
 
-Use the sibling `AssetTimeMachineResearch` workspace as the working home for new research:
+Use `../FlyingrtxFast/research/asset-time-machine/workspace/` as the working home for new research:
 
 - `strategies/` for strategy families and non-formal tests;
 - `factors/` for factor research;
@@ -469,7 +469,7 @@ Use this order when looking for a new strategy candidate:
 2. Check the research workspace and reusable Swift dump/verifier before adding new strategy code:
 
    ```bash
-   ls ../AssetTimeMachineResearch
+   ls ../FlyingrtxFast/research/asset-time-machine/workspace
    ls tools
    sed -n '1,160p' tools/strategy_metric_dump.swift
    ```
@@ -491,10 +491,10 @@ Use this order when looking for a new strategy candidate:
 - A user-requested current rerun must use the Flyingrtx production public-history endpoint without `refresh=true`, current App engine, and the current product cost regime. Label it `POST_HOC_CURRENT_REPLAY`; it is not a formal ATM-SVP result and cannot promote a strategy.
 - Preserve online-replay provenance: endpoint and environment, query time, requested symbols, actual per-series date ends, currency/FX mapping, raw-response and normalized-input SHA-256, code HEAD, engine version, costs, and every reported window. USD assets require `usd_per_cny`; do not silently omit the FX series.
 - Any NFCI/macro strategy rerun additionally requires `/api/v1/money/public/nfci-asof`. Decode and retain `release_date`, `reference_date`, and `available_at`; do not substitute revised values, infer availability from reference dates, or replace server as-of rows with local legacy CSVs.
-- V11 historical frozen metrics are not current truth. The 2026-09-04 production online replay at current cost yielded full-history 6.03% CAGR, 15.86% MDD, and 0.686 Sharpe; its record is `AssetTimeMachineResearch/studies/v11-online-replay-2026-09-04/ONLINE_REPLAY.md`. V11 remains non-promotable: G3 `PARTIAL`, G4 `INVALID_SOURCE_UNAVAILABLE`, G6 `RUNNING`.
+- V11 historical frozen metrics are not current truth. The 2026-09-04 production online replay at current cost yielded full-history 6.03% CAGR, 15.86% MDD, and 0.686 Sharpe; its record is `../FlyingrtxFast/research/asset-time-machine/workspace/studies/v11-online-replay-2026-09-04/ONLINE_REPLAY.md`. V11 remains non-promotable: G3 `PARTIAL`, G4 `INVALID_SOURCE_UNAVAILABLE`, G6 `RUNNING`.
 - New strategy candidates must be implemented as Swift target providers and replayed through the current unified App/backtest simulator before being presented as product results. Prefer `tools/strategy_metric_dump.swift` for current product metrics.
 - Do not copy high-return/high-Sharpe values from non-App scripts into README, AGENTS, App cards, App subtitles, release notes, or user-facing answers unless a Swift App-engine run produces the same values.
-- Keep App-coupled Swift comparison/search code under `tools/`; keep exploratory strategy/factor tools and study material in the sibling `AssetTimeMachineResearch` workspace.
+- Keep App-coupled Swift comparison/search code under `tools/`; keep exploratory strategy/factor tools and study material in the `../FlyingrtxFast/research/asset-time-machine/workspace/`.
 - For multi-asset backtests across gold/US equities/A-shares, use recent valid price forward-fill with enough holiday tolerance; do not accidentally delete dates because one market is closed.
 - K-line charts must use real OHLC data. Do not fake OHLC from close-only series.
 - User preference: no BTC in main AssetTimeMachine strategy line unless explicitly requested.
