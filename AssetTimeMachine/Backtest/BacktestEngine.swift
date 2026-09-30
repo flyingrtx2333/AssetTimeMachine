@@ -290,10 +290,10 @@ nonisolated enum BacktestDailySimulator {
                 portfolioValuesByIndex: portfolioValuesByIndex,
                 refreshOverlay: false
             )
-            let decision = pendingTargetWeights == nil
-                ? (contextualRebalanceDecision?(decisionContext)
-                    ?? rebalanceDecision(index, signalIndex))
-                : BacktestRebalanceDecision(shouldRebalance: false, refreshOverlay: false)
+            // Observe every eligible signal, including one-shot updates while
+            // an earlier target waits for a quote or settlement.
+            let decision = contextualRebalanceDecision?(decisionContext)
+                ?? rebalanceDecision(index, signalIndex)
             if decision.shouldRebalance {
                 let targetWeights: [String: Double]
                 if signalIndex >= 0, frame.dates.indices.contains(signalIndex) {
@@ -326,24 +326,10 @@ nonisolated enum BacktestDailySimulator {
 
                 if canExecuteTarget {
 
-                let requiresSale = heldSymbols.contains { symbol in
-                    guard let units = unitsBySymbol[symbol], units > 0 else { return false }
-                    guard targetSymbols.contains(symbol),
-                          let targetWeight = targetWeights[symbol],
-                          let price = frame.pricesBySymbol[symbol]?[index] else { return true }
-                    let currentValue = units * price
-                    return currentValue > preRebalanceValue * targetWeight * (1 + execution.rebalanceBand)
-                }
-                let requiresBuy = targetSymbols.contains { symbol in
-                    guard let targetWeight = targetWeights[symbol],
-                          let price = frame.pricesBySymbol[symbol]?[index],
-                          price > 0 else { return false }
-                    let currentValue = (unitsBySymbol[symbol] ?? 0) * price
-                    let targetValue = preRebalanceValue * targetWeight
-                    return currentValue <= 0.0001
-                        ? targetValue > 0.0001
-                        : currentValue < targetValue * (1 - execution.rebalanceBand)
-                }
+                // Snapshot settled cash before today's sales. Sale proceeds
+                // stay in NAV but cannot fund purchases until a later session.
+                var settledBuyBudget = Swift.max(cash, 0)
+                var hasSettlementDeferredBuy = false
 
                 for symbol in heldSymbols.subtracting(targetSymbols).sorted() {
                     guard let price = frame.pricesBySymbol[symbol]?[index],
@@ -431,11 +417,8 @@ nonisolated enum BacktestDailySimulator {
                     }
                 }
 
-                // A daily bar has no reliable cross-venue intraday ordering. When
-                // a rotation needs both sells and buys, settle the sells first and
-                // defer all buys to the next fully observed session. This prevents
-                // later US-close proceeds from financing an earlier China close.
-                if !requiresSale || !requiresBuy {
+                // Previously settled cash remains usable even if today's
+                // marked holdings trigger another small sale.
                 let totalValue = portfolioValue(at: index)
                 for symbol in targetSymbols.sorted() {
                     guard let targetWeight = targetWeights[symbol],
@@ -458,9 +441,15 @@ nonisolated enum BacktestDailySimulator {
                     } else {
                         desiredGap = 0.0
                     }
+                    let availableBudget = Swift.min(Swift.max(cash, 0), settledBuyBudget)
+                    if !execution.allowsFinancedExposure,
+                       desiredGap > availableBudget + 0.0001,
+                       cash > availableBudget + 0.0001 {
+                        hasSettlementDeferredBuy = true
+                    }
                     let amountToInvest = execution.allowsFinancedExposure
                         ? desiredGap
-                        : Swift.min(cash, desiredGap)
+                        : Swift.min(availableBudget, desiredGap)
                     if amountToInvest > 0 {
                         let executionPrice = price * (1 + execution.slippageRate)
                         let invested = amountToInvest * (1 - execution.feeRate)
@@ -470,6 +459,7 @@ nonisolated enum BacktestDailySimulator {
                         unitsBySymbol[symbol] = previousUnits + units
                         averageCostBySymbol[symbol] = (previousCost + amountToInvest) / Swift.max(previousUnits + units, Double.leastNonzeroMagnitude)
                         cash -= amountToInvest
+                        settledBuyBudget = Swift.max(settledBuyBudget - amountToInvest, 0)
                         heldSymbols.insert(symbol)
                         if entryDateBySymbol[symbol] == nil { entryDateBySymbol[symbol] = date }
                         trades.append(.init(
@@ -487,8 +477,7 @@ nonisolated enum BacktestDailySimulator {
                         ))
                     }
                 }
-                }
-                if !requiresSale || !requiresBuy {
+                if !hasSettlementDeferredBuy {
                     pendingTargetWeights = nil
                     didExecuteTarget?(index)
                 }
@@ -559,7 +548,7 @@ nonisolated enum BacktestDailySimulator {
 nonisolated enum BacktestEngine {
     /// Increment whenever event-time, execution, valuation, or metric semantics
     /// change in a way that invalidates pinned strategy baselines.
-    static let defaultEngineVersion = "atm-swift-clock-v3-2026-08-31"
+    static let defaultEngineVersion = "atm-swift-settlement-v4-2026-09-30"
 
     private typealias HistoricalPricePoint = BacktestHistoricalPricePoint
     private typealias HistoricalLookup = BacktestHistoricalLookup

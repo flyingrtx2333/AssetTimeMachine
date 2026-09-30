@@ -545,6 +545,9 @@ public enum PublicBacktestCore {
         BacktestProductStrategyCatalog.curatedTemplateIDs.compactMap { id in
             guard let template = AdvancedBacktestStrategyTemplate.all.first(where: { $0.id == id }),
                   template.mode.isRotation,
+                  // Price-only public history cannot prewarm macro strategies.
+                  // NFCI remains available through the separately frozen forward API.
+                  !template.mode.requiresNFCIAsOf,
                   let profile = descriptorProfilesByID[id] else { return nil }
             return StrategyDescriptor(
                 id: id,

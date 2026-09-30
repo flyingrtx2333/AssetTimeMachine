@@ -51,7 +51,7 @@ final class PublicBacktestCoreTests: XCTestCase {
     }
 
     func testEngineVersionIsPinned() {
-        XCTAssertEqual(PublicBacktestCore.defaultEngineVersion, "atm-swift-clock-v3-2026-08-31")
+        XCTAssertEqual(PublicBacktestCore.defaultEngineVersion, "atm-swift-settlement-v4-2026-09-30")
         XCTAssertFalse(PublicBacktestCore.engineVersion.isEmpty)
     }
 
@@ -166,7 +166,9 @@ final class PublicBacktestCoreTests: XCTestCase {
     func testPublicCatalogUsesTheCuratedRotationRegistry() {
         XCTAssertEqual(
             PublicBacktestCore.strategyIDs,
-            BacktestProductStrategyCatalog.curatedTemplateIDs
+            BacktestProductStrategyCatalog.curatedTemplateIDs.filter { id in
+                AdvancedBacktestStrategyTemplate.all.first { $0.id == id }?.mode.requiresNFCIAsOf == false
+            }
         )
         XCTAssertTrue(PublicBacktestCore.strategyIDs.contains("risk-contribution-cash-confidence-low-noise"))
         XCTAssertFalse(PublicBacktestCore.strategyIDs.contains("risk-contribution-reallocation"))
