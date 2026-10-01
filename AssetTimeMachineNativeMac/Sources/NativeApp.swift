@@ -34,6 +34,24 @@ struct AssetTimeMachineNativeApp: App {
                 } else {
                     Text(store.error ?? "无法备份本机数据库").padding(30)
                 }
+            } else if AppPreviewSession.isActive, store.container == nil {
+                VStack(spacing: 14) {
+                    Text("选择独立性能测试文件夹").font(.headline)
+                    Text("仅访问指定的测试数据与测量结果，不读取或同步账户数据。")
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                    Button("选择测试文件夹") {
+                        let panel = NSOpenPanel()
+                        panel.canChooseDirectories = true
+                        panel.canChooseFiles = false
+                        panel.allowsMultipleSelection = false
+                        if panel.runModal() == .OK, let directory = panel.url {
+                            do {
+                                try NativeStoreBootstrap.grantPerformanceAccess(to: directory)
+                                store = NativeStoreBootstrap()
+                            } catch { NSLog("[NativeMac] test access failed: %@", error.localizedDescription) }
+                        }
+                    }
+                }.padding(28)
             } else if let container = store.container {
                 NativeRootView(startsOffline: startsOffline)
                     .modelContainer(container)

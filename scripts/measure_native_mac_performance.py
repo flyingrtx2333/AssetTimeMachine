@@ -46,6 +46,10 @@ def launch_fixture(app: Path, store: Path, arguments: list[str], log_path: Path)
                     raise RuntimeError(f"Could not identify the isolated GUI process: {log_path}")
                 else:
                     time.sleep(0.25)
+            # Reopen the already identified application to bring its window forward.
+            # Keep identical fixture arguments if LaunchServices creates a new instance.
+            subprocess.run(["open", "-a", str(app), "--args", "-macPerfStorePath", str(store.resolve()),
+                            "-macPerfRunID", run_id, *arguments], check=True)
             yield pid
         finally:
             if pid is not None:

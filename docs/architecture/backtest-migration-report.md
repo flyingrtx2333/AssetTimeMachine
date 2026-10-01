@@ -113,4 +113,6 @@ Linux 运行宿主只有约 2GB 内存。后续验证容器限制为 768MB 内�
 - `native-final-performance-visible.log`、`native-reopen-sample.txt`：四轮部分有效内存值及后续窗口创建阻塞采样。
 - `native-full-final/`、`native-isolation-after-keychain.sample`：凭证隔离后三轮 1 年数据及无钥匙串等待的主线程采样；完整矩阵尚未完成。
 - `keychain-adapter-tests-final.log`、`native-keychain-fix-build.log`：禁止自动弹窗、凭证缓存、静默迁移及退出保持的 12 项检查；正式 Mac 签名已补齐授权的应用身份与钥匙串组。
+- `keychain-system-probe.log`、`ios-keychain-fix-validation.log`、`catalyst-keychain-fix-validation.log`：临时开发签名程序仅对 UUID 服务名的合成凭证进行真实系统保存、读取、重启读取、清除；无授权弹窗，未读取真实账户凭证。两端 Release 编译通过。
+- `source-snapshot.json`、`source-snapshot.bundle`：专用本地 Git 快照，包含可构建的既有 UI/Mac/同步源及共享计算库；主分支、工作区和原暂存区保持原样。后续凭证测试/文档改动尚未归入该快照，不代表发布门禁已完成。
 - `final-source-manifest.json`：实际计算源文件哈希，尚不等同于完整发布源提交。

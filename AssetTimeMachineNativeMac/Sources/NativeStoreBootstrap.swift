@@ -6,6 +6,29 @@ import SwiftData
 /// A new store is created only after the user chooses how to start; unreadable stores stop startup.
 @MainActor
 final class NativeStoreBootstrap {
+    private static var performanceAccess: URL?
+
+    static func grantPerformanceAccess(to directory: URL) throws {
+        precondition(AppPreviewSession.isActive)
+        let data = try directory.bookmarkData(options: .withSecurityScope,
+                                             includingResourceValuesForKeys: nil, relativeTo: nil)
+        UserDefaults.standard.set(data, forKey: "nativeMac.performanceDirectoryBookmark")
+    }
+
+    private static func accessPerformanceStore(_ url: URL) throws -> URL {
+        if performanceAccess != nil { return url }
+        if let data = UserDefaults.standard.data(forKey: "nativeMac.performanceDirectoryBookmark") {
+            var stale = false
+            let directory = try URL(resolvingBookmarkData: data, options: .withSecurityScope,
+                                    relativeTo: nil, bookmarkDataIsStale: &stale)
+            if url.standardizedFileURL.path.hasPrefix(directory.standardizedFileURL.path + "/"),
+               directory.startAccessingSecurityScopedResource() {
+                performanceAccess = directory
+                if stale { try grantPerformanceAccess(to: directory) }
+            }
+        }
+        return url
+    }
     let container: ModelContainer?
     let error: String?
     let sourceURL: URL?
@@ -27,7 +50,7 @@ final class NativeStoreBootstrap {
             let url: URL
             let baseline: StoreSummary
             if let testURL {
-                url = testURL
+                url = try Self.accessPerformanceStore(testURL)
                 baseline = try Self.inspect(url)
             } else if createFresh {
                 url = try Self.newStoreURL()
